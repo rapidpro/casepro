@@ -1,0 +1,7 @@
+- extends "smartmin/read.html"
+- load smartmin i18n
+
+- block read-buttons
+  %a.btn.btn-default.pull-right{ href:"{% url 'orgs_ext.org_edit' %}" }
+    %span.glyphicon.glyphicon-pencil
+    - trans "Edit"

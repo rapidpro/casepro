@@ -1,0 +1,33 @@
+-e git+https://github.com/nyaruka/smartmin.git#egg=smartmin-dev
+-e git+https://github.com/rapidpro/dash.git#egg=dash
+-e git+https://github.com/rapidpro/rapidpro-python#egg=rapidpro-python
+boto
+celery
+celery-with-redis
+coverage
+django==1.7.2
+django-celery
+django-celery-transactions
+django-compressor
+django-debug-toolbar
+django-digest
+django-guardian
+django-nose
+django-redis
+django-reversion
+django-rosetta
+django-storages
+dj-database-url
+enum34
+gunicorn
+hamlpy
+mock
+nose
+pillow
+pisa
+psycopg2
+pycountry
+python-dateutil
+raven
+sorl-thumbnail==11.12.1b
+xlutils

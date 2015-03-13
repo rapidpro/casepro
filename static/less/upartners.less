@@ -1,0 +1,88 @@
+/**
+ * Angular support
+ */
+[ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
+  display: none !important;
+}
+
+/**
+ * Bootstrap customization
+ */
+.navbar {
+  margin-bottom: 10px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.15);
+  background-color: #2A5032;
+  color: white;
+
+  .navbar-brand {
+    color: #eee;
+    text-shadow: none;
+  }
+
+  .navbar-nav > li > a {
+    color: #ccc;
+    text-shadow: none;
+  }
+
+  .nav > li > a:hover, .nav > li > a:focus {
+    background-color: rgba(10, 10, 10, .25);
+  }
+
+  .nav .open > a, .nav .open > a:hover {
+    background-color: rgba(10, 10, 10, .25);
+  }
+}
+
+.content {
+  border-radius: 0px;
+}
+
+footer {
+  padding-top: 10px;
+  height: 20px;
+
+  .login-link {
+    float: right;
+  }
+
+  ul.lang-switcher {
+    text-align: center;
+
+    li {
+      list-style-type: none;
+      display: inline-block;
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+  }
+}
+
+/**
+ * Spinner placeholder for items that are loading
+ */
+.loading {
+  background: url('../img/loading.gif') no-repeat center center;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+/**
+ * Consistent layout for read page tables
+ */
+.read-label {
+  width: 33%
+}
+.read-value {
+  width: 66%
+}
+
+/**
+ * Helper classes
+ */
+.centered {
+  text-align: center;
+}
+
+.italicized {
+  font-style: italic;
+}

@@ -1,0 +1,12 @@
+%ul.lang-switcher
+  -for lang in LANGUAGES
+    %li
+      -if lang.0 == request.LANGUAGE_CODE
+        {{ lang.1 }}
+      -else
+        %form{ action:"/i18n/setlang/", method:"POST" }
+          %input{ type:"hidden", name:"next", value:"{{ request.path }}" }
+          %input{ type:"hidden", name:"language", value:"{{ lang.0 }}" }
+          {% csrf_token %}
+          %a.lang-submit{ href:"#", onclick:'$(this).closest("form").submit();' }
+            {{ lang.1 }}
