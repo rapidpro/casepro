@@ -4,7 +4,7 @@
 - block table-controls
   .clearfix
     .pull-away.buttons
-      - if org_perms.profiles.profile_user_create
+      - if org_perms.profiles.profile_user_create or perms.profiles.profile_user_create
         %a.btn.btn-default{ href:"{% url 'profiles.user_create' %}" }
           %span.glyphicon.glyphicon-plus
           - trans "Add"

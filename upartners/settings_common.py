@@ -44,7 +44,7 @@ SITE_HOST_PATTERN = 'http://%s.localhost:8000'
 SITE_CHOOSER_TEMPLATE = 'home/org_chooser.haml'
 SITE_USER_HOME = '/'
 SITE_ALLOW_NO_ORG = ('orgs_ext.org_create', 'orgs_ext.org_update', 'orgs_ext.org_list',
-                     'profiles.admin_create', 'profiles.admin_update', 'profiles.admin_list')
+                     'profiles.user_create', 'profiles.user_update', 'profiles.user_read', 'profiles.user_list')
 
 # On Unix systems, a value of None will cause Django to use the same
 # timezone as the operating system.
@@ -217,7 +217,9 @@ INSTALLED_APPS = (
 
     # custom
     'upartners.home',
+    'upartners.labels',
     'upartners.orgs_ext',
+    'upartners.partners',
     'upartners.profiles'
 )
 
@@ -300,7 +302,10 @@ GROUP_PERMISSIONS = {
 
         'profiles.profile.*',
     ),
-    "Editors": (
+    "Managers": (
+        'profiles.profile_user_read',
+    ),
+    "Analysts": (
         'profiles.profile_user_read',
     ),
 }

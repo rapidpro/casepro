@@ -89,7 +89,6 @@ class UserCRUDLTest(UPartnersTest):
 
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['form'].fields['regions'].choices), 3)  # can assign to any org region
 
         # submit with no fields entered
         response = self.url_post('unicef', url, dict())
@@ -119,7 +118,7 @@ class UserCRUDLTest(UPartnersTest):
         self.assertFormError(response, 'form', None, "Email address already taken.")
 
         # check de-activating user
-        data = dict(full_name="Morris", email="mo2@chat.com", regions=[], is_active=False)
+        data = dict(full_name="Morris", email="mo2@chat.com", is_active=False)
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
 

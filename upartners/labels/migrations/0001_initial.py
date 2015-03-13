@@ -2,23 +2,22 @@
 from __future__ import unicode_literals
 
 from django.db import models, migrations
-from django.conf import settings
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ('orgs', '0008_org_timezone'),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Profile',
+            name='Label',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('full_name', models.CharField(max_length=128, null=True, verbose_name='Full name')),
-                ('change_password', models.BooleanField(default=False, help_text='User must change password on next login')),
-                ('user', models.OneToOneField(to=settings.AUTH_USER_MODEL)),
+                ('uuid', models.CharField(unique=True, max_length=36)),
+                ('name', models.CharField(help_text='Name of this label', max_length=32, verbose_name='Name')),
+                ('org', models.ForeignKey(related_name='labels', verbose_name='Organization', to='orgs.Org')),
             ],
             options={
             },

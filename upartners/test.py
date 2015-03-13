@@ -4,10 +4,11 @@ import datetime
 import pytz
 import redis
 
+from dash.utils import random_string
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
 from django.test import TestCase
-from uuid import uuid4
+from upartners.partners.models import Partner, PARTNER_MANAGER, PARTNER_ANALYST
 
 
 class UPartnersTest(TestCase):
@@ -20,17 +21,23 @@ class UPartnersTest(TestCase):
         self.superuser = User.objects.create_superuser(username="root", email="super@user.com", password="root")
 
         # some orgs
-        self.unicef = self.create_org("UNICEF", timezone="Asia/Kabul", subdomain="unicef")
+        self.unicef = self.create_org("UNICEF", timezone="Africa/Kampala", subdomain="unicef")
         self.nyaruka = self.create_org("Nyaruka", timezone="Africa/Kigali", subdomain="nyaruka")
 
         # some admins for those orgs
-        self.admin = self.create_admin(self.unicef, "Richard", "admin@unicef.org")
+        self.admin = self.create_admin(self.unicef, "Kidus", "kidus@unicef.org")
         self.norbert = self.create_admin(self.nyaruka, "Norbert Kwizera", "norbert@nyaruka.com")
 
-        # some users in those regions
-        self.user1 = self.create_user(self.unicef, "Sam Sims", "sam@unicef.org")
-        self.user2 = self.create_user(self.unicef, "Sue", "sue@unicef.org")
-        self.user3 = self.create_user(self.nyaruka, "Nic", "nic@nyaruka.com")
+        # some partners
+        self.moh = self.create_partner(self.unicef, "MOH")
+        self.who = self.create_partner(self.unicef, "WHO")
+        self.klab = self.create_partner(self.nyaruka, "kLab")
+
+        # some users in those partners
+        self.user1 = self.create_user(self.unicef, self.moh, PARTNER_MANAGER, "Evan", "evan@unicef.org")
+        self.user2 = self.create_user(self.unicef, self.moh, PARTNER_ANALYST, "Bob", "bob@unicef.org")
+        self.user2 = self.create_user(self.unicef, self.who, PARTNER_MANAGER, "Carol", "carol@unicef.org")
+        self.user4 = self.create_user(self.nyaruka, self.klab, PARTNER_ANALYST, "Bosco", "bosco@klab.rw")
 
     def clear_cache(self):
         # we are extra paranoid here and actually hardcode redis to 'localhost' and '10'
@@ -39,18 +46,19 @@ class UPartnersTest(TestCase):
         r.flushdb()
 
     def create_org(self, name, timezone, subdomain):
-        org = Org.objects.create(name=name, timezone=timezone, subdomain=subdomain, api_token=unicode(uuid4()),
+        return Org.objects.create(name=name, timezone=timezone, subdomain=subdomain, api_token=random_string(32),
                                   created_by=self.superuser, modified_by=self.superuser)
-        org.set_config('facility_code_field', 'facility_code')
-        return org
+
+    def create_partner(self, org, name):
+        return Partner.create(org, name)
 
     def create_admin(self, org, full_name, email):
         user = User.create(None, full_name, email, password=email, change_password=False)
         user.org_admins.add(org)
         return user
 
-    def create_user(self, org, full_name, email):
-        return User.create(org, full_name, email, password=email, change_password=False)
+    def create_user(self, org, partner, group, full_name, email):
+        return User.create(org, partner, group, full_name, email, password=email, change_password=False)
 
     def login(self, user):
         result = self.client.login(username=user.username, password=user.username)

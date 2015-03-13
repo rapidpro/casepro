@@ -59,7 +59,7 @@
 
           %nav#admin-top-navbar-collapse.admin-top-navbar.collapse.navbar-collapse{ role:"navigation"}
             %ul.nav.navbar-nav
-              -if request.user.is_superuser
+              -if request.user.is_superuser and not request.org
                 %li.dropdown
                   %a.dropdown-toggle{href:"#", data-toggle:"dropdown"}
                     - trans "Site Manage"
@@ -69,10 +69,10 @@
                       %a{href:"{% url 'orgs_ext.org_list' %}"}
                         - trans "Orgs"
                     %li
-                      %a{ href:"{% url 'profiles.admin_list' %}"}
+                      %a{ href:"{% url 'profiles.user_list' %}" }
                         - trans "Users"
 
-              -if org_perms.orgs.org_home or org_perms.groups.group_list or org_perms.groups.region_list or org_perms.profiles.profile_user_list or org_perms.polls.poll_list or org_perms.msgs.message_list
+              -if org_perms.orgs.org_home or org_perms.profiles.profile_user_list
                 %li.dropdown
                   %a.dropdown-toggle{href:"#", data-toggle:"dropdown"}
                     - trans "Administration"

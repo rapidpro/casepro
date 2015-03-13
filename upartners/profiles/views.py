@@ -35,6 +35,9 @@ class UserForm(forms.ModelForm):
     change_password = forms.BooleanField(label=_("Require change"), required=False,
                                          help_text=_("Whether user must change password on next login."))
 
+    groups = forms.MultipleChoiceField(choices=(('A', _("Administrators")), ('E', _("Editors")), ('V', _("Viewers"))),
+                                       required=True, initial='E', label=_("Groups"))
+
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user')
 
@@ -93,11 +96,14 @@ class UserCRUDL(SmartCRUDL):
     actions = ('create', 'update', 'read', 'self', 'list')
 
     class Create(OrgPermsMixin, UserFormMixin, SmartCreateView):
-        fields = ('full_name', 'email', 'password', 'confirm_password', 'change_password', 'regions')
         form_class = UserForm
         permission = 'profiles.profile_user_create'
-        success_message = _("New supervisor created")
-        title = _("Create Supervisor")
+
+        def derive_fields(self):
+            fields = ['full_name', 'email', 'password', 'confirm_password', 'change_password']
+            if self.request.org:
+                fields.append('groups')
+            return fields
 
         def save(self, obj):
             org = self.request.user.get_org()
@@ -107,16 +113,14 @@ class UserCRUDL(SmartCRUDL):
             self.object = User.create(org, full_name, obj.email, password, change_password)
 
     class Update(OrgPermsMixin, UserFormMixin, SmartUpdateView):
-        fields = ('full_name', 'email', 'new_password', 'confirm_password', 'regions', 'is_active')
         form_class = UserForm
         permission = 'profiles.profile_user_update'
-        success_message = _("Supervisor updated")
-        title = _("Edit Supervisor")
 
-        def derive_initial(self):
-            initial = super(UserCRUDL.Update, self).derive_initial()
-            initial['regions'] = self.object.regions.all()
-            return initial
+        def derive_fields(self):
+            fields = ['full_name', 'email', 'new_password', 'confirm_password']
+            if self.request.org:
+                fields.append('groups')
+            return fields + ['is_active']
 
     class Self(OrgPermsMixin, UserFormMixin, SmartUpdateView):
         """
@@ -156,7 +160,6 @@ class UserCRUDL(SmartCRUDL):
             return fields + ['confirm_password']
 
     class Read(OrgPermsMixin, UserFieldsMixin, SmartReadView):
-        fields = ('full_name', 'type', 'email')
         permission = 'profiles.profile_user_read'
 
         def derive_title(self):
@@ -164,6 +167,12 @@ class UserCRUDL(SmartCRUDL):
                 return _("My Profile")
             else:
                 return super(UserCRUDL.Read, self).derive_title()
+
+        def derive_fields(self):
+            fields = ['full_name', 'email']
+            if self.request.org:
+                fields.append('groups')
+            return fields
 
         def get_queryset(self):
             queryset = super(UserCRUDL.Read, self).get_queryset()
@@ -184,61 +193,22 @@ class UserCRUDL(SmartCRUDL):
             context['edit_button_url'] = edit_button_url
             return context
 
-        def get_type(self, obj):
+        def get_groups(self, obj):
             if obj.is_admin_for(self.request.org):
                 return _("Administrator")
             else:
-                return _("Supervisor")
+                return _("User")
 
     class List(OrgPermsMixin, UserFieldsMixin, SmartListView):
         default_order = ('profile__full_name',)
-        fields = ('full_name', 'email', 'regions')
+        fields = ('full_name', 'email')
         permission = 'profiles.profile_user_list'
         select_related = ('profile',)
-        title = _("Supervisors")
 
         def derive_queryset(self, **kwargs):
             qs = super(UserCRUDL.List, self).derive_queryset(**kwargs)
-            qs = qs.filter(pk__in=self.request.org.get_org_editors(), is_active=True)
+            org = self.request.org
+            if org:
+                qs = qs.filter(Q(pk__in=org.get_org_admins()) | Q(pk__in=org.get_org_editors()) | Q(pk__in=org.get_org_viewers()))
+            qs = qs.filter(is_active=True, pk__gt=1)
             return qs
-
-
-class ManageUserCRUDL(SmartCRUDL):
-    """
-    CRUDL used only by superusers to manage users outside the context of an organization
-    """
-    model = User
-    model_name = 'Admin'
-    path = 'admin'
-    actions = ('create', 'update', 'list')
-
-    class Create(OrgPermsMixin, UserFormMixin, SmartCreateView):
-        fields = ('full_name', 'email', 'password', 'confirm_password', 'change_password')
-        form_class = UserForm
-
-        def save(self, obj):
-            full_name = self.form.cleaned_data['full_name']
-            password = self.form.cleaned_data['password']
-            change_password = self.form.cleaned_data['change_password']
-            self.object = User.create(None, full_name, obj.email, password, change_password)
-
-    class Update(OrgPermsMixin, UserFormMixin, SmartUpdateView):
-        fields = ('full_name', 'email', 'new_password', 'confirm_password', 'is_active')
-        form_class = UserForm
-
-    class List(UserFieldsMixin, SmartListView):
-        fields = ('full_name', 'email', 'orgs')
-        default_order = ('profile__full_name',)
-        select_related = ('profile', 'org_admins', 'org_editors')
-
-        def derive_queryset(self, **kwargs):
-            qs = super(ManageUserCRUDL.List, self).derive_queryset(**kwargs)
-            qs = qs.filter(is_active=True).exclude(profile=None)
-            return qs
-
-        def get_orgs(self, obj):
-            orgs = set(obj.org_admins.all()) | set(obj.org_editors.all())
-            return ", ".join([unicode(o) for o in orgs])
-
-        def lookup_field_link(self, context, field, obj):
-            return reverse('profiles.admin_update', args=[obj.pk])

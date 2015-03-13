@@ -39,10 +39,5 @@ class OrgExtCRUDL(SmartCRUDL):
         success_url = '@orgs_ext.org_home'
         form_class = OrgForm
 
-        def get_form_kwargs(self):
-            kwargs = super(OrgExtCRUDL.Edit, self).get_form_kwargs()
-            kwargs['org'] = self.request.user.get_org()
-            return kwargs
-
     class Choose(OrgCRUDL.Choose):
         pass

@@ -1,16 +1,18 @@
 from __future__ import absolute_import, unicode_literals
 
-from django.contrib.auth.models import User
+from dash.utils import get_obj_cacheable
+from django.contrib.auth.models import User, Group
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
+from upartners.partners.models import PARTNER_ANALYST, PARTNER_MANAGER
 from .models import Profile
 
 
 # ================================== Monkey patching for the User class ====================================
 
-def _user_create(cls, org, full_name, email, password, change_password=False):
+def _user_create(cls, org, partner, group, full_name, email, password, change_password=False):
     """
-    Creates a regular user with specific region access
+    Creates a user
     """
     # create auth user
     user = cls.objects.create(is_active=True, username=email, email=email)
@@ -20,9 +22,18 @@ def _user_create(cls, org, full_name, email, password, change_password=False):
     # add profile
     Profile.objects.create(user=user, full_name=full_name, change_password=change_password)
 
-    # setup as org editor with limited region access
-    if org:
-        user.org_editors.add(org)
+    if partner:
+        # setup as partner user login with given group
+        if group == PARTNER_ANALYST:
+            partner.analysts.add(user)
+        elif group == PARTNER_MANAGER:
+            partner.managers.add(user)
+        else:
+            raise ValueError("Invalid partner group")
+    elif org:
+        # setup as org administrator
+        org.administrators.add(org)
+
     return user
 
 
@@ -57,6 +68,25 @@ def _user_is_admin_for(user, org):
     return org.administrators.filter(pk=user.pk).exists()
 
 
+def _user_get_partner(user):
+    # we could potentially allow users to switch between partner orgs, but for now we assume a user has only one
+    return get_obj_cacheable(user, '_partner', lambda: user.manage_partners.first() or user.analyst_partners.first())
+
+
+def _user_get_group(user, org):
+    if user.is_admin_for(org):
+        return Group.objects.get(name="Administrators")
+
+    partner = user.get_partner()
+    if partner:
+        if user in partner.managers.all():
+            return Group.objects.get(name="Managers")
+        elif user in partner.analysts.all():
+            return Group.objects.get(name="Analysts")
+
+    return None
+
+
 def _user_unicode(user):
     if user.has_profile():
         if user.profile.full_name:
@@ -72,4 +102,6 @@ User.clean = _user_clean
 User.has_profile = _user_has_profile
 User.get_full_name = _user_get_full_name
 User.is_admin_for = _user_is_admin_for
+User.get_partner = _user_get_partner
+User.get_group = _user_get_group
 User.__unicode__ = _user_unicode
