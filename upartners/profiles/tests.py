@@ -1,21 +1,27 @@
 from __future__ import absolute_import, unicode_literals
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.core.urlresolvers import reverse
+from upartners.partners.models import PARTNER_MANAGER
 from upartners.test import UPartnersTest
 
 
 class UserPatchTest(UPartnersTest):
     def test_create_user(self):
-        user = User.create(self.unicef, "Mo Polls", "mo@trac.com", "Qwerty123", False)
+        user = User.create(self.unicef, self.moh, PARTNER_MANAGER, "Mo Polls", "mo@moh.com", "Qwerty123", False)
         self.assertEqual(user.profile.full_name, "Mo Polls")
 
         self.assertEqual(user.first_name, "")
         self.assertEqual(user.last_name, "")
-        self.assertEqual(user.email, "mo@trac.com")
+        self.assertEqual(user.email, "mo@moh.com")
         self.assertEqual(user.get_full_name(), "Mo Polls")
         self.assertIsNotNone(user.password)
+
         self.assertFalse(user.profile.change_password)
+        self.assertEqual(user.profile.partner, self.moh)
+
+        user.set_org(self.unicef)
+        self.assertEqual(user.get_org_group(), Group.objects.get(name="Editors"))
 
     def test_has_profile(self):
         self.assertFalse(self.superuser.has_profile())
@@ -24,8 +30,8 @@ class UserPatchTest(UPartnersTest):
 
     def test_get_full_name(self):
         self.assertEqual(self.superuser.get_full_name(), "")
-        self.assertEqual(self.admin.get_full_name(), "Richard")
-        self.assertEqual(self.user1.get_full_name(), "Sam Sims")
+        self.assertEqual(self.admin.get_full_name(), "Kidus")
+        self.assertEqual(self.user1.get_full_name(), "Evan")
 
     def test_is_admin_for(self):
         self.assertTrue(self.admin.is_admin_for(self.unicef))
@@ -35,10 +41,10 @@ class UserPatchTest(UPartnersTest):
     def test_unicode(self):
         self.assertEqual(unicode(self.superuser), "root")
 
-        self.assertEqual(unicode(self.user1), "Sam Sims")
+        self.assertEqual(unicode(self.user1), "Evan")
         self.user1.profile.full_name = None
         self.user1.profile.save()
-        self.assertEqual(unicode(self.user1), "sam@unicef.org")
+        self.assertEqual(unicode(self.user1), "evan@unicef.org")
 
 
 class UserCRUDLTest(UPartnersTest):

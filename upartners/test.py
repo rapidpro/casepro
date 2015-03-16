@@ -36,7 +36,7 @@ class UPartnersTest(TestCase):
         # some users in those partners
         self.user1 = self.create_user(self.unicef, self.moh, PARTNER_MANAGER, "Evan", "evan@unicef.org")
         self.user2 = self.create_user(self.unicef, self.moh, PARTNER_ANALYST, "Bob", "bob@unicef.org")
-        self.user2 = self.create_user(self.unicef, self.who, PARTNER_MANAGER, "Carol", "carol@unicef.org")
+        self.user3 = self.create_user(self.unicef, self.who, PARTNER_MANAGER, "Carol", "carol@unicef.org")
         self.user4 = self.create_user(self.nyaruka, self.klab, PARTNER_ANALYST, "Bosco", "bosco@klab.rw")
 
     def clear_cache(self):
@@ -53,12 +53,12 @@ class UPartnersTest(TestCase):
         return Partner.create(org, name)
 
     def create_admin(self, org, full_name, email):
-        user = User.create(None, full_name, email, password=email, change_password=False)
-        user.org_admins.add(org)
+        user = User.create(org, None, None, full_name, email, password=email, change_password=False)
+        org.administrators.add(user)
         return user
 
-    def create_user(self, org, partner, group, full_name, email):
-        return User.create(org, partner, group, full_name, email, password=email, change_password=False)
+    def create_user(self, org, partner, role, full_name, email):
+        return User.create(org, partner, role, full_name, email, password=email, change_password=False)
 
     def login(self, user):
         result = self.client.login(username=user.username, password=user.username)

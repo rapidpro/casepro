@@ -282,13 +282,17 @@ MEDIA_URL = "/media/"
 
 # this lets us easily create new permissions across our objects
 PERMISSIONS = {
-    '*': ('create', # can create an object
-          'read',   # can read an object, viewing it's details
-          'update', # can update an object
-          'delete', # can delete an object,
-          'list'),  # can view a list of the objects
+    '*': ('create',  # can create an object
+          'read',    # can read an object, viewing it's details
+          'update',  # can update an object
+          'delete',  # can delete an object,
+          'list'),   # can view a list of the objects
 
     'orgs.org': ('create', 'update', 'list', 'edit', 'home'),
+
+    'labels.label': ('select', 'list'),
+
+    'partners.partner': ('create', 'update', 'list'),
 
     # can't create profiles.user.* permissions because we don't own User
     'profiles.profile': ('user_create', 'user_read', 'user_update', 'user_list'),
@@ -300,12 +304,16 @@ GROUP_PERMISSIONS = {
         'orgs.org_home',
         'orgs.org_edit',
 
+        'labels.label.*',
+        'partners.partner.*',
         'profiles.profile.*',
     ),
-    "Managers": (
+    "Editors": (
+        'labels.label_list',
         'profiles.profile_user_read',
     ),
-    "Analysts": (
+    "Viewers": (
+        'labels.label_list',
         'profiles.profile_user_read',
     ),
 }

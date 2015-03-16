@@ -1,0 +1,10 @@
+- extends "smartmin/list.html"
+- load smartmin i18n
+
+- block table-controls
+  .clearfix
+    .pull-away.buttons
+      - if org_perms.partners.partner_create
+        %a.btn.btn-default{ href:"{% url 'partners.partner_create' %}" }
+          %span.glyphicon.glyphicon-plus
+          - trans "Add"

@@ -9,34 +9,37 @@ from django.core.validators import MinLengthValidator
 from django.db.models import Q
 from django.http import Http404
 from smartmin.users.views import SmartCRUDL, SmartCreateView, SmartListView, SmartReadView, SmartUpdateView
+from upartners.partners.models import Partner
+from upartners.profiles import ROLE_ANALYST, ROLE_CHOICES
 
 
 class UserForm(forms.ModelForm):
     """
     Form for user profiles
     """
-    full_name = forms.CharField(max_length=128, label=_("Full name"))
+    full_name = forms.CharField(label=_("Full name"), max_length=128)
 
-    is_active = forms.BooleanField(label=_("Active"), required=False,
-                                   help_text=_("Whether this user is active, disable to remove access."))
+    partner = forms.ModelChoiceField(label=_("Partner Organization"), queryset=Partner.objects.none())
 
-    email = forms.CharField(max_length=256,
-                            label=_("Email"), help_text=_("Email address and login."))
+    role = forms.ChoiceField(label=_("Role"), choices=ROLE_CHOICES, required=True, initial=ROLE_ANALYST)
 
-    password = forms.CharField(widget=forms.PasswordInput, validators=[MinLengthValidator(8)],
-                               label=_("Password"), help_text=_("Password used to log in (minimum of 8 characters)."))
+    email = forms.CharField(label=_("Email"), max_length=256,
+                            help_text=_("Email address and login."))
+
+    password = forms.CharField(label=_("Password"), widget=forms.PasswordInput, validators=[MinLengthValidator(8)],
+                               help_text=_("Password used to log in (minimum of 8 characters)."))
 
     new_password = forms.CharField(widget=forms.PasswordInput, validators=[MinLengthValidator(8)], required=False,
                                    label=_("New password"),
                                    help_text=_("Password used to login (minimum of 8 characters, optional)."))
 
-    confirm_password = forms.CharField(widget=forms.PasswordInput, required=False, label=_("Confirm password"))
+    confirm_password = forms.CharField(label=_("Confirm password"), widget=forms.PasswordInput, required=False)
 
     change_password = forms.BooleanField(label=_("Require change"), required=False,
                                          help_text=_("Whether user must change password on next login."))
 
-    groups = forms.MultipleChoiceField(choices=(('A', _("Administrators")), ('E', _("Editors")), ('V', _("Viewers"))),
-                                       required=True, initial='E', label=_("Groups"))
+    is_active = forms.BooleanField(label=_("Active"), required=False,
+                                   help_text=_("Whether this user is active, disable to remove access."))
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user')
@@ -100,27 +103,30 @@ class UserCRUDL(SmartCRUDL):
         permission = 'profiles.profile_user_create'
 
         def derive_fields(self):
-            fields = ['full_name', 'email', 'password', 'confirm_password', 'change_password']
+            fields = ['full_name']
             if self.request.org:
-                fields.append('groups')
-            return fields
+                fields += ['partner', 'role']
+            return fields + ['email', 'password', 'confirm_password', 'change_password']
 
         def save(self, obj):
+            data = self.form.cleaned_data
             org = self.request.user.get_org()
             full_name = self.form.cleaned_data['full_name']
-            password = self.form.cleaned_data['password']
+            partner = data.get('partner', None)
+            role = data.get('role', None)
+            password = ['password']
             change_password = self.form.cleaned_data['change_password']
-            self.object = User.create(org, full_name, obj.email, password, change_password)
+            self.object = User.create(org, partner, role, full_name, obj.email, password, change_password)
 
     class Update(OrgPermsMixin, UserFormMixin, SmartUpdateView):
         form_class = UserForm
         permission = 'profiles.profile_user_update'
 
         def derive_fields(self):
-            fields = ['full_name', 'email', 'new_password', 'confirm_password']
+            fields = ['full_name']
             if self.request.org:
-                fields.append('groups')
-            return fields + ['is_active']
+                fields += ['partner', 'role']
+            return fields + ['email', 'new_password', 'confirm_password', 'is_active']
 
     class Self(OrgPermsMixin, UserFormMixin, SmartUpdateView):
         """
@@ -171,7 +177,7 @@ class UserCRUDL(SmartCRUDL):
         def derive_fields(self):
             fields = ['full_name', 'email']
             if self.request.org:
-                fields.append('groups')
+                fields += ['partner', 'role']
             return fields
 
         def get_queryset(self):

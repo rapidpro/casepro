@@ -1,38 +1,41 @@
 from __future__ import absolute_import, unicode_literals
 
-from dash.utils import get_obj_cacheable
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
-from upartners.partners.models import PARTNER_ANALYST, PARTNER_MANAGER
 from .models import Profile
+
+
+ROLE_ANALYST = 'A'
+ROLE_MANAGER = 'M'
+
+ROLE_CHOICES = ((ROLE_ANALYST, _("Data Analyst")), (ROLE_MANAGER, _("Manager")))
 
 
 # ================================== Monkey patching for the User class ====================================
 
-def _user_create(cls, org, partner, group, full_name, email, password, change_password=False):
+def _user_create(cls, org, partner, role, full_name, email, password, change_password=False):
     """
     Creates a user
     """
+    if role and (not org or not partner):  # pragma: no cover
+        raise ValueError("Only users in partner organizations can be assigned a role")
+
     # create auth user
     user = cls.objects.create(is_active=True, username=email, email=email)
     user.set_password(password)
     user.save()
 
     # add profile
-    Profile.objects.create(user=user, full_name=full_name, change_password=change_password)
+    Profile.objects.create(user=user, partner=partner, full_name=full_name, change_password=change_password)
 
-    if partner:
-        # setup as partner user login with given group
-        if group == PARTNER_ANALYST:
-            partner.analysts.add(user)
-        elif group == PARTNER_MANAGER:
-            partner.managers.add(user)
-        else:
-            raise ValueError("Invalid partner group")
-    elif org:
-        # setup as org administrator
-        org.administrators.add(org)
+    if org:
+        if role == ROLE_ANALYST:
+            org.viewers.add(user)
+        elif role == ROLE_MANAGER:
+            org.editors.add(user)
+        else:  # pragma: no cover
+            raise ValueError("Invalid user role: %s" % role)
 
     return user
 
@@ -68,25 +71,6 @@ def _user_is_admin_for(user, org):
     return org.administrators.filter(pk=user.pk).exists()
 
 
-def _user_get_partner(user):
-    # we could potentially allow users to switch between partner orgs, but for now we assume a user has only one
-    return get_obj_cacheable(user, '_partner', lambda: user.manage_partners.first() or user.analyst_partners.first())
-
-
-def _user_get_group(user, org):
-    if user.is_admin_for(org):
-        return Group.objects.get(name="Administrators")
-
-    partner = user.get_partner()
-    if partner:
-        if user in partner.managers.all():
-            return Group.objects.get(name="Managers")
-        elif user in partner.analysts.all():
-            return Group.objects.get(name="Analysts")
-
-    return None
-
-
 def _user_unicode(user):
     if user.has_profile():
         if user.profile.full_name:
@@ -102,6 +86,4 @@ User.clean = _user_clean
 User.has_profile = _user_has_profile
 User.get_full_name = _user_get_full_name
 User.is_admin_for = _user_is_admin_for
-User.get_partner = _user_get_partner
-User.get_group = _user_get_group
 User.__unicode__ = _user_unicode

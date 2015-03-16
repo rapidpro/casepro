@@ -1,0 +1,14 @@
+- extends "smartmin/list.html"
+- load smartmin i18n
+
+- block table-controls
+  .clearfix
+    .pull-back
+      - blocktrans
+        Each label is a message label in RapidPro.
+
+    .pull-away.buttons
+      - if org_perms.labels.label_select
+        %a.btn.btn-default.pull-right{ href:"{% url 'labels.label_select' %}" }
+          %span.glyphicon.glyphicon-download
+          - trans "Select"
