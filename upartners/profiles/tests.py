@@ -2,13 +2,13 @@ from __future__ import absolute_import, unicode_literals
 
 from django.contrib.auth.models import User, Group
 from django.core.urlresolvers import reverse
-from upartners.partners.models import PARTNER_MANAGER
+from upartners.profiles import ROLE_ANALYST, ROLE_MANAGER
 from upartners.test import UPartnersTest
 
 
 class UserPatchTest(UPartnersTest):
     def test_create_user(self):
-        user = User.create(self.unicef, self.moh, PARTNER_MANAGER, "Mo Polls", "mo@moh.com", "Qwerty123", False)
+        user = User.create(self.unicef, self.moh, ROLE_MANAGER, "Mo Polls", "mo@moh.com", "Qwerty123", False)
         self.assertEqual(user.profile.full_name, "Mo Polls")
 
         self.assertEqual(user.first_name, "")
@@ -58,29 +58,37 @@ class UserCRUDLTest(UPartnersTest):
         response = self.url_post('unicef', url, dict())
         self.assertEqual(response.status_code, 200)
         self.assertFormError(response, 'form', 'full_name', 'This field is required.')
+        self.assertFormError(response, 'form', 'partner', 'This field is required.')
+        self.assertFormError(response, 'form', 'role', 'This field is required.')
         self.assertFormError(response, 'form', 'email', 'This field is required.')
         self.assertFormError(response, 'form', 'password', 'This field is required.')
 
         # submit again with all required fields but invalid password
-        data = dict(full_name="Mo Polls", email="mo@trac.com", password="123", confirm_password="123")
+        data = dict(full_name="Mo Polls", partner=self.moh.pk, role=ROLE_ANALYST,
+                    email="mo@trac.com", password="123", confirm_password="123")
         response = self.url_post('unicef', url, data)
         self.assertFormError(response, 'form', 'password', "Ensure this value has at least 8 characters (it has 3).")
 
         # submit again with valid password but mismatched confirmation
-        data = dict(full_name="Mo Polls", email="mo@trac.com", password="Qwerty123", confirm_password="123")
+        data = dict(full_name="Mo Polls", partner=self.moh.pk, role=ROLE_ANALYST,
+                    email="mo@trac.com", password="Qwerty123", confirm_password="123")
         response = self.url_post('unicef', url, data)
         self.assertFormError(response, 'form', 'confirm_password', "Passwords don't match.")
 
         # submit again with valid password and confirmation
-        data = dict(full_name="Mo Polls", email="mo@trac.com", password="Qwerty123", confirm_password="Qwerty123")
+        data = dict(full_name="Mo Polls", partner=self.moh.pk, role=ROLE_ANALYST,
+                    email="mo@trac.com", password="Qwerty123", confirm_password="Qwerty123")
         response = self.url_post('unicef', url, data)
+
         self.assertEqual(response.status_code, 302)
 
         # check new user and profile
         user = User.objects.get(email="mo@trac.com")
         self.assertEqual(user.profile.full_name, "Mo Polls")
+        self.assertEqual(user.profile.partner, self.moh)
         self.assertEqual(user.email, "mo@trac.com")
         self.assertEqual(user.username, "mo@trac.com")
+        self.assertTrue(user in self.unicef.viewers.all())
 
         # try again with same email address
         data = dict(full_name="Mo Polls II", email="mo@trac.com", password="Qwerty123", confirm_password="Qwerty123")
@@ -100,10 +108,13 @@ class UserCRUDLTest(UPartnersTest):
         response = self.url_post('unicef', url, dict())
         self.assertEqual(response.status_code, 200)
         self.assertFormError(response, 'form', 'full_name', 'This field is required.')
+        self.assertFormError(response, 'form', 'partner', 'This field is required.')
+        self.assertFormError(response, 'form', 'role', 'This field is required.')
         self.assertFormError(response, 'form', 'email', 'This field is required.')
 
         # submit with all fields entered
-        data = dict(full_name="Morris", email="mo2@chat.com", is_active=True)
+        data = dict(full_name="Morris", partner=self.moh.pk, role=ROLE_ANALYST,
+                    email="mo2@chat.com", is_active=True)
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
 
@@ -114,17 +125,20 @@ class UserCRUDLTest(UPartnersTest):
         self.assertEqual(user.username, "mo2@chat.com")
 
         # submit again for good measure
-        data = dict(full_name="Morris", email="mo2@chat.com", is_active=True)
+        data = dict(full_name="Morris", partner=self.moh.pk, role=ROLE_ANALYST,
+                    email="mo2@chat.com", is_active=True)
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
 
         # try giving user someone else's email address
-        data = dict(full_name="Morris", email="eric@nyaruka.com", password="Qwerty123", confirm_password="Qwerty123")
+        data = dict(full_name="Morris", partner=self.moh.pk, role=ROLE_ANALYST,
+                    email="bob@unicef.org", password="Qwerty123", confirm_password="Qwerty123")
         response = self.url_post('unicef', url, data)
         self.assertFormError(response, 'form', None, "Email address already taken.")
 
         # check de-activating user
-        data = dict(full_name="Morris", email="mo2@chat.com", is_active=False)
+        data = dict(full_name="Morris", partner=self.moh.pk, role=ROLE_ANALYST,
+                    email="mo2@chat.com", is_active=False)
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
 
@@ -147,7 +161,7 @@ class UserCRUDLTest(UPartnersTest):
         self.assertEqual(response.context['edit_button_url'], reverse('profiles.user_update', args=[self.user1.pk]))
 
         # try to view user from other org
-        response = self.url_get('unicef', reverse('profiles.user_read', args=[self.user3.pk]))
+        response = self.url_get('unicef', reverse('profiles.user_read', args=[self.user4.pk]))
         self.assertEqual(response.status_code, 404)
 
         # log in as a user
@@ -175,7 +189,7 @@ class UserCRUDLTest(UPartnersTest):
 
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['object_list']), 2)
+        self.assertEqual(len(response.context['object_list']), 4)
 
     def test_self(self):
         url = reverse('profiles.user_self')

@@ -42,9 +42,11 @@ class UserForm(forms.ModelForm):
                                    help_text=_("Whether this user is active, disable to remove access."))
 
     def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user')
+        self.org = kwargs.pop('org')
 
         super(UserForm, self).__init__(*args, **kwargs)
+
+        self.fields['partner'].queryset = Partner.get_all(self.org)
 
     def clean(self):
         cleaned_data = super(UserForm, self).clean()
@@ -66,13 +68,14 @@ class UserFormMixin(object):
     """
     def get_form_kwargs(self):
         kwargs = super(UserFormMixin, self).get_form_kwargs()
-        kwargs['user'] = self.request.user
+        kwargs['org'] = self.request.org
         return kwargs
 
     def derive_initial(self):
         initial = super(UserFormMixin, self).derive_initial()
         if self.object:
             initial['full_name'] = self.object.profile.full_name
+            initial['partner'] = self.object.profile.partner
         return initial
 
     def post_save(self, obj):
@@ -92,6 +95,9 @@ class UserFormMixin(object):
 class UserFieldsMixin(object):
     def get_full_name(self, obj):
         return obj.profile.full_name
+
+    def get_partner(self, obj):
+        return obj.profile.partner
 
 
 class UserCRUDL(SmartCRUDL):
@@ -176,16 +182,16 @@ class UserCRUDL(SmartCRUDL):
 
         def derive_fields(self):
             fields = ['full_name', 'email']
-            if self.request.org:
-                fields += ['partner', 'role']
-            return fields
+            if self.object.profile.partner:
+                fields += ['partner']
+            return fields + ['role']
 
         def get_queryset(self):
             queryset = super(UserCRUDL.Read, self).get_queryset()
 
             # only allow access to active users attached to this org
             org = self.request.org
-            return queryset.filter(Q(org_editors=org) | Q(org_admins=org)).filter(is_active=True)
+            return queryset.filter(Q(org_admins=org) | Q(org_editors=org) | Q(org_viewers=org)).filter(is_active=True)
 
         def get_context_data(self, **kwargs):
             context = super(UserCRUDL.Read, self).get_context_data(**kwargs)
@@ -199,11 +205,16 @@ class UserCRUDL(SmartCRUDL):
             context['edit_button_url'] = edit_button_url
             return context
 
-        def get_groups(self, obj):
-            if obj.is_admin_for(self.request.org):
+        def get_role(self, obj):
+            org = self.request.org
+            if obj.is_admin_for(org):
                 return _("Administrator")
+            elif org.editors.filter(pk=obj.pk).exists():
+                return _("Manager")
+            elif org.viewers.filter(pk=obj.pk).exists():
+                return _("Data Analyst")
             else:
-                return _("User")
+                return None
 
     class List(OrgPermsMixin, UserFieldsMixin, SmartListView):
         default_order = ('profile__full_name',)

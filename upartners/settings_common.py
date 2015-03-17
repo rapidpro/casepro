@@ -290,7 +290,7 @@ PERMISSIONS = {
 
     'orgs.org': ('create', 'update', 'list', 'edit', 'home'),
 
-    'labels.label': ('select', 'list'),
+    'labels.label': ('create', 'update', 'list'),
 
     'partners.partner': ('create', 'update', 'list'),
 

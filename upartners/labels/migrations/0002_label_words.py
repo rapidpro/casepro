@@ -13,8 +13,8 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='label',
-            name='is_active',
-            field=models.BooleanField(default=True, help_text='Whether this label is active'),
-            preserve_default=True,
+            name='words',
+            field=models.CharField(default='', max_length=1024, verbose_name='Match words'),
+            preserve_default=False,
         ),
     ]
