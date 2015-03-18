@@ -4,7 +4,6 @@ from dash.orgs.views import OrgObjPermsMixin, OrgPermsMixin
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 from smartmin.users.views import SmartCRUDL, SmartCreateView, SmartListView, SmartReadView, SmartUpdateView
-from upartners.labels.models import Label
 from upartners.partners.models import Partner
 
 
@@ -16,7 +15,7 @@ class PartnerForm(forms.ModelForm):
         super(PartnerForm, self).__init__(*args, **kwargs)
 
     class Meta:
-        model = Label
+        model = Partner
         fields = ('name',)
 
 
@@ -60,4 +59,4 @@ class PartnerCRUDL(SmartCRUDL):
             return qs
 
         def get_labels(self, obj):
-            return ",".join([l.name for l in obj.get_labels()])
+            return ", ".join([l.name for l in obj.get_labels()])

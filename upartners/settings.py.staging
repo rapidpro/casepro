@@ -161,3 +161,6 @@ CACHES = {
         }
     }
 }
+
+BROKER_URL = 'redis://localhost:6379/17'
+CELERY_RESULT_BACKEND = BROKER_URL

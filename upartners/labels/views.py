@@ -69,6 +69,7 @@ class LabelCRUDL(SmartCRUDL):
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'description', 'partners')
+        default_order = ('name',)
 
         def get_partners(self, obj):
             return ', '.join([p.name for p in obj.get_partners()])

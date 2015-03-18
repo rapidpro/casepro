@@ -18,5 +18,5 @@ class HomeView(OrgPermsMixin, SmartTemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(HomeView, self).get_context_data(**kwargs)
-        context['labels'] = Label.get_all(self.request.org, with_counts=True)
+        context['labels'] = Label.get_all(self.request.org, with_counts=True).order_by('name')
         return context
