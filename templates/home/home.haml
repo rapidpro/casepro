@@ -5,4 +5,49 @@
 
 - block content
 
-  TODO!
+  - for label in labels
+    .row.label-details
+      .col-md-2
+        .label-count
+          .
+            %span.glyphicon.glyphicon-tag{ style:"font-size: 3em" }
+          .
+            {{ label.count }}
+      .col-md-10
+        .label-name
+          %a{ href:"{% url 'labels.label_read' label.pk %}" }
+            {{ label.name }}
+        .label-description
+          {{ label.description }}
+        .label-partners
+          - for partner in label.partners.all
+            - if partner.is_active
+              %span.label-partner
+                %span.glyphicon.glyphicon-user
+                %a{ href:"{% url 'partners.partner_read' partner.pk %}" }
+                  {{ partner.name }}
+
+- block extra-style
+  {{ block.super }}
+  :css
+    .label-details {
+      padding: 1em;
+      border-top: 1px solid #eee;
+    }
+    .label-details:first-of-type {
+      border-top: none;
+    }
+    .label-count {
+      margin-top: 0.5em;
+      text-align: center;
+    }
+    .label-name {
+      font-size: 2em;
+    }
+    .label-description {
+      margin-bottom: 0.4em;
+    }
+    .label-partner {
+      display: inline-block;
+      margin-right: 1em;
+    }

@@ -2,7 +2,7 @@ Django==1.7.2
 Markdown==2.6.1
 Pillow==2.7.0
 Pygments==2.0.2
--e git+https://github.com/rapidpro/rapidpro-python@e77c5ce067cca7af41b3514ab0e0e2a09af7dbd1#egg=rapidpro-python
+-e git+https://github.com/rapidpro/rapidpro-python@d6b47aa0ac37fc4670814774cefa6ac6f4f064e8#egg=rapidpro-python
 amqp==1.4.6
 anyjson==0.3.3
 billiard==3.3.0.19
@@ -41,7 +41,7 @@ python-dateutil==2.4.1
 pytz==2014.10
 raven==5.2.0
 redis==2.10.3
-requests==2.5.3
+requests==2.6.0
 six==1.9.0
 -e git+https://github.com/nyaruka/smartmin.git@5b203cb9b6491b5856ffb8e2762593e0a3e79ad8#egg=smartmin-master
 sorl-thumbnail==11.12.1b

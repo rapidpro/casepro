@@ -21,6 +21,9 @@ def _user_create(cls, org, partner, role, full_name, email, password, change_pas
     if role and (not org or not partner):  # pragma: no cover
         raise ValueError("Only users in partner organizations can be assigned a role")
 
+    if partner and partner.org_id != org.pk:  # pragma: no cover
+        raise ValueError("Org and partner org mismatch")
+
     # create auth user
     user = cls.objects.create(is_active=True, username=email, email=email)
     user.set_password(password)

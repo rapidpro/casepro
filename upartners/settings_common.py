@@ -290,9 +290,9 @@ PERMISSIONS = {
 
     'orgs.org': ('create', 'update', 'list', 'edit', 'home'),
 
-    'labels.label': ('create', 'update', 'list'),
+    'labels.label': ('create', 'read', 'update', 'list'),
 
-    'partners.partner': ('create', 'update', 'list'),
+    'partners.partner': ('create', 'read', 'update', 'list'),
 
     # can't create profiles.user.* permissions because we don't own User
     'profiles.profile': ('user_create', 'user_read', 'user_update', 'user_list'),
@@ -309,11 +309,13 @@ GROUP_PERMISSIONS = {
         'profiles.profile.*',
     ),
     "Editors": (
-        'labels.label_list',
+        'labels.label_read',
+        'partners.partner_read',
         'profiles.profile_user_read',
     ),
     "Viewers": (
-        'labels.label_list',
+        'labels.label_read',
+        'partners.partner_read',
         'profiles.profile_user_read',
     ),
 }

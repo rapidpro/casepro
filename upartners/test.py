@@ -11,6 +11,7 @@ from django.test import TestCase
 from upartners.labels.models import Label
 from upartners.partners.models import Partner
 from upartners.profiles import ROLE_ANALYST, ROLE_MANAGER
+from uuid import uuid4
 
 
 class UPartnersTest(TestCase):
@@ -30,21 +31,21 @@ class UPartnersTest(TestCase):
         self.admin = self.create_admin(self.unicef, "Kidus", "kidus@unicef.org")
         self.norbert = self.create_admin(self.nyaruka, "Norbert Kwizera", "norbert@nyaruka.com")
 
-        # some message labels
-        self.aids = self.create_label(self.unicef, "AIDS", 'Messages about AIDS', ['aids', 'hiv'])
-        self.pregnancy = self.create_label(self.unicef, "pregnancy", 'Messages about pregnancy', ['pregnant', 'pregnancy'])
-        self.code = self.create_label(self.nyaruka, "code", 'Messages about code', ['java', 'python', 'go'])
-
         # some partners
-        self.moh = self.create_partner(self.unicef, "MOH", [self.aids, self.pregnancy])
-        self.who = self.create_partner(self.unicef, "WHO", [self.aids])
-        self.klab = self.create_partner(self.nyaruka, "kLab", [self.code])
+        self.moh = self.create_partner(self.unicef, "MOH")
+        self.who = self.create_partner(self.unicef, "WHO")
+        self.klab = self.create_partner(self.nyaruka, "kLab")
 
         # some users in those partners
         self.user1 = self.create_user(self.unicef, self.moh, ROLE_MANAGER, "Evan", "evan@unicef.org")
         self.user2 = self.create_user(self.unicef, self.moh, ROLE_ANALYST, "Bob", "bob@unicef.org")
         self.user3 = self.create_user(self.unicef, self.who, ROLE_MANAGER, "Carol", "carol@unicef.org")
         self.user4 = self.create_user(self.nyaruka, self.klab, ROLE_ANALYST, "Bosco", "bosco@klab.rw")
+
+        # some message labels
+        self.aids = self.create_label(self.unicef, "AIDS", 'Messages about AIDS', ['aids', 'hiv'], [self.moh, self.who])
+        self.pregnancy = self.create_label(self.unicef, "pregnancy", 'Messages about pregnancy', ['pregnant', 'pregnancy'], [self.moh])
+        self.code = self.create_label(self.nyaruka, "code", 'Messages about code', ['java', 'python', 'go'], [self.klab])
 
     def clear_cache(self):
         # we are extra paranoid here and actually hardcode redis to 'localhost' and '10'
@@ -56,11 +57,14 @@ class UPartnersTest(TestCase):
         return Org.objects.create(name=name, timezone=timezone, subdomain=subdomain, api_token=random_string(32),
                                   created_by=self.superuser, modified_by=self.superuser)
 
-    def create_label(self, org, name, description, words):
-        return Label.create(org, name, description, words)
+    def create_partner(self, org, name):
+        return Partner.create(org, name)
 
-    def create_partner(self, org, name, labels):
-        return Partner.create(org, name, labels)
+    def create_label(self, org, name, description, words, partners):
+        label = Label.create(org, name, description, words, partners, update_flow=False)
+        label.uuid = unicode(uuid4())
+        label.save()
+        return label
 
     def create_admin(self, org, full_name, email):
         user = User.create(None, None, None, full_name, email, password=email, change_password=False)

@@ -18,10 +18,8 @@ class Partner(models.Model):
     is_active = models.BooleanField(default=True, help_text="Whether this partner is active")
 
     @classmethod
-    def create(cls, org, name, labels):
-        partner = cls.objects.create(org=org, name=name)
-        partner.labels.add(*labels)
-        return partner
+    def create(cls, org, name):
+        return cls.objects.create(org=org, name=name)
 
     @classmethod
     def get_all(cls, org):
@@ -34,12 +32,10 @@ class Partner(models.Model):
         return User.objects.filter(profile__partner=self, is_active=True)
 
     def get_managers(self):
-        group = Group.objects.get(name="Editors")
-        return self.get_users().filter(groups=group).distinct()
+        return self.get_users().filter(org_editors=self.org_id)
 
     def get_analysts(self):
-        group = Group.objects.get(name="Viewers")
-        return self.get_users().filter(groups=group).distinct()
+        return self.get_users().filter(org_viewers=self.org_id)
 
     def __unicode__(self):
         return self.name

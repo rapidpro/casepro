@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals
 from dash.orgs.views import OrgObjPermsMixin, OrgPermsMixin
 from django import forms
 from django.utils.translation import ugettext_lazy as _
-from smartmin.users.views import SmartCRUDL, SmartCreateView, SmartListView, SmartUpdateView
+from smartmin.users.views import SmartCRUDL, SmartCreateView, SmartListView, SmartReadView, SmartUpdateView
 from upartners.labels.models import Label
 from upartners.partners.models import Partner
 
@@ -11,18 +11,13 @@ from upartners.partners.models import Partner
 class PartnerForm(forms.ModelForm):
     name = forms.CharField(label=_("Name"), max_length=128)
 
-    labels = forms.ModelMultipleChoiceField(label=_("Labels"), queryset=Label.objects.none())
-
     def __init__(self, *args, **kwargs):
         org = kwargs.pop('org')
-
         super(PartnerForm, self).__init__(*args, **kwargs)
-
-        self.fields['labels'].queryset = Label.get_all(org)
 
     class Meta:
         model = Label
-        fields = ('name', 'labels')
+        fields = ('name',)
 
 
 class PartnerFormMixin(object):
@@ -33,7 +28,7 @@ class PartnerFormMixin(object):
 
 
 class PartnerCRUDL(SmartCRUDL):
-    actions = ('create', 'update', 'list')
+    actions = ('create', 'read', 'update', 'list')
     model = Partner
 
     class Create(OrgPermsMixin, PartnerFormMixin, SmartCreateView):
@@ -42,12 +37,18 @@ class PartnerCRUDL(SmartCRUDL):
         def save(self, obj):
             data = self.form.cleaned_data
             org = self.request.user.get_org()
-            name = data['name']
-            labels = data['labels']
-            self.object = Partner.create(org, name, labels)
+            self.object = Partner.create(org, data['name'])
 
     class Update(OrgObjPermsMixin, PartnerFormMixin, SmartUpdateView):
         form_class = PartnerForm
+
+    class Read(OrgObjPermsMixin, SmartReadView):
+        def get_context_data(self, **kwargs):
+            context = super(PartnerCRUDL.Read, self).get_context_data(**kwargs)
+            context['labels'] = self.object.get_labels()
+            context['managers'] = self.object.get_managers()
+            context['analysts'] = self.object.get_analysts()
+            return context
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'labels')

@@ -3,8 +3,8 @@ from __future__ import absolute_import, unicode_literals
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django import forms
 from django.utils.translation import ugettext_lazy as _
-from smartmin.users.views import SmartCRUDL, SmartCreateView, SmartUpdateView, SmartListView
-from upartners.labels.models import Label
+from smartmin.users.views import SmartCRUDL, SmartCreateView, SmartUpdateView, SmartReadView, SmartListView
+from upartners.labels.models import Label, parse_words
 from upartners.partners.models import Partner
 
 
@@ -25,6 +25,9 @@ class LabelForm(forms.ModelForm):
 
         self.fields['partners'].queryset = Partner.get_all(org)
 
+    def clean_words(self):
+        return ','.join(parse_words(self.cleaned_data['words']))
+
     class Meta:
         model = Label
         fields = ('name', 'description', 'words', 'partners')
@@ -38,7 +41,7 @@ class LabelFormMixin(object):
 
 
 class LabelCRUDL(SmartCRUDL):
-    actions = ('create', 'update', 'list')
+    actions = ('create', 'read', 'update', 'list')
     model = Label
 
     class Create(OrgPermsMixin, LabelFormMixin, SmartCreateView):
@@ -49,13 +52,9 @@ class LabelCRUDL(SmartCRUDL):
             org = self.request.user.get_org()
             name = data['name']
             description = data['description']
-            words = data['words']
-            self.object = Label.create(org, name, description, words)
-
-        def post_save(self, obj):
-            obj = super(LabelCRUDL.Create, self).post_save(obj)
-            obj.partners.add(**self.form.cleaned_data['partners'])
-            return obj
+            words = parse_words(data['words'])
+            partners = data['partners']
+            self.object = Label.create(org, name, description, words, partners)
 
     class Update(OrgObjPermsMixin, LabelFormMixin, SmartUpdateView):
         form_class = LabelForm
@@ -65,8 +64,11 @@ class LabelCRUDL(SmartCRUDL):
             initial['words'] = ', '.join(self.object.get_words())
             return initial
 
+    class Read(OrgObjPermsMixin, SmartReadView):
+        fields = ('name', 'description')
+
     class List(OrgPermsMixin, SmartListView):
-        fields = ('name', 'description', 'count', 'partners')
+        fields = ('name', 'description', 'partners')
 
         def get_partners(self, obj):
             return ', '.join([p.name for p in obj.get_partners()])

@@ -1,0 +1,55 @@
+- extends "smartmin/read.html"
+- load smartmin i18n
+
+- block pre-content
+  .page-header.clearfix
+    %h2.pull-back
+      %span.glyphicon.glyphicon-user
+      &nbsp;
+      {{ title }}
+
+    .page-header-buttons
+      - if org_perms.partners.partner_update
+        %a.btn.btn-default{ href:"{% url 'partners.partner_update' object.pk %}" }
+          %span.glyphicon.glyphicon-pencil
+          - trans "Edit"
+
+- block content
+
+  .row
+    .col-md-8
+      %h3
+        - trans "Managers"
+      - for user in managers
+        .partner-user
+          .partner-user-name
+            %a{ href:"{% url 'profiles.user_read' user.pk %}" }
+              {{ user.profile.full_name }}
+          .partner-user-email
+            {{ user.email }}
+
+      %h3
+        - trans "Data Analysts"
+      - for user in analysts
+        .partner-user
+          .partner-user-name
+            %a{ href:"{% url 'profiles.user_read' user.pk %}" }
+              {{ user.profile.full_name }}
+          .partner-user-email
+            {{ user.email }}
+
+    .col-md-4
+      %h3
+        - trans "Labels"
+      - for label in labels
+        .
+          %span.glyphicon.glyphicon-tag
+          %a{ href:"{% url 'labels.label_read' label.pk %}" }
+            {{ label.name }}
+
+- block extra-style
+  {{ block.super }}
+  :css
+    .partner-user-name {
+      font-size: 1.2em;
+    }

@@ -1,0 +1,33 @@
+- extends "smartmin/read.html"
+- load smartmin i18n
+
+- block pre-content
+  .page-header.clearfix
+    %h2.pull-back
+      %span.glyphicon.glyphicon-tag
+      &nbsp;
+      {{ title }}
+
+    .page-header-buttons
+      - if org_perms.labels.label_update
+        %a.btn.btn-default{ href:"{% url 'labels.label_update' object.pk %}" }
+          %span.glyphicon.glyphicon-pencil
+          - trans "Edit"
+
+- block content
+
+  .row
+    .col-md-2
+      .label-menu
+        Cases
+      .label-menu
+        Labels
+      .label-menu
+        Groups
+    .col-md-10
+      Messages
+
+- block extra-style
+  {{ block.super }}
+  :css
+
