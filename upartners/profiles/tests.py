@@ -2,6 +2,8 @@ from __future__ import absolute_import, unicode_literals
 
 from django.contrib.auth.models import User, Group
 from django.core.urlresolvers import reverse
+from django.test.utils import override_settings
+from mock import patch
 from upartners.profiles import ROLE_ANALYST, ROLE_MANAGER
 from upartners.test import UPartnersTest
 
@@ -271,7 +273,11 @@ class UserCRUDLTest(UPartnersTest):
 
 
 class ForcePasswordChangeMiddlewareTest(UPartnersTest):
-    def test_process_view(self):
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @patch('dash.orgs.models.TembaClient.get_labels')
+    def test_process_view(self, mock_get_labels):
+        mock_get_labels.return_value = []
+
         self.user1.profile.change_password = True
         self.user1.profile.save()
 

@@ -1,8 +1,17 @@
 - extends "smartmin/read.html"
 - load smartmin i18n
 
+- block pre-content
+  .page-header.clearfix
+    %h2.pull-back
+      %span.glyphicon.glyphicon-user
+      &nbsp;
+      {{ title }}
+
+    .page-header-buttons
+      - if edit_button_url
+        %a.btn.btn-default{ href:"{{ edit_button_url }}" }
+          %span.glyphicon.glyphicon-pencil
+          - trans "Edit"
+
 - block read-buttons
-  .btn-group.pull-away
-    %a.btn.btn-default{ href:"{{ edit_button_url }}" }
-      %span.glyphicon.glyphicon-pencil
-      - trans "Edit"

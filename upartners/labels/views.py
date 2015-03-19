@@ -4,7 +4,7 @@ from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 from smartmin.users.views import SmartCRUDL, SmartCreateView, SmartUpdateView, SmartReadView, SmartListView
-from upartners.labels.models import Label, parse_words
+from upartners.labels.models import Label, parse_keywords
 from upartners.partners.models import Partner
 
 
@@ -13,8 +13,8 @@ class LabelForm(forms.ModelForm):
 
     description = forms.CharField(label=_("Description"), max_length=255, widget=forms.Textarea)
 
-    words = forms.CharField(label=_("Match words"), widget=forms.Textarea,
-                            help_text=_("Match messages containing any of these words"))
+    keywords = forms.CharField(label=_("Keywords"), widget=forms.Textarea, required=False,
+                               help_text=_("Match messages containing any of these words"))
 
     partners = forms.ModelMultipleChoiceField(label=_("Visible to"), queryset=Partner.objects.none())
 
@@ -25,12 +25,12 @@ class LabelForm(forms.ModelForm):
 
         self.fields['partners'].queryset = Partner.get_all(org)
 
-    def clean_words(self):
-        return ','.join(parse_words(self.cleaned_data['words']))
+    def clean_keywords(self):
+        return ','.join(parse_keywords(self.cleaned_data['keywords']))
 
     class Meta:
         model = Label
-        fields = ('name', 'description', 'words', 'partners')
+        fields = ('name', 'description', 'keywords', 'partners')
 
 
 class LabelFormMixin(object):
@@ -52,7 +52,7 @@ class LabelCRUDL(SmartCRUDL):
             org = self.request.user.get_org()
             name = data['name']
             description = data['description']
-            words = parse_words(data['words'])
+            words = parse_keywords(data['keywords'])
             partners = data['partners']
             self.object = Label.create(org, name, description, words, partners)
 
@@ -61,7 +61,7 @@ class LabelCRUDL(SmartCRUDL):
 
         def derive_initial(self):
             initial = super(LabelCRUDL.Update, self).derive_initial()
-            initial['words'] = ', '.join(self.object.get_words())
+            initial['keywords'] = ', '.join(self.object.get_keywords())
             return initial
 
     class Read(OrgObjPermsMixin, SmartReadView):
@@ -70,6 +70,11 @@ class LabelCRUDL(SmartCRUDL):
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'description', 'partners')
         default_order = ('name',)
+
+        def derive_queryset(self, **kwargs):
+            qs = super(LabelCRUDL.List, self).derive_queryset(**kwargs)
+            qs = qs.filter(org=self.request.org, is_active=True)
+            return qs
 
         def get_partners(self, obj):
             return ', '.join([p.name for p in obj.get_partners()])

@@ -43,9 +43,12 @@ class UPartnersTest(TestCase):
         self.user4 = self.create_user(self.nyaruka, self.klab, ROLE_ANALYST, "Bosco", "bosco@klab.rw")
 
         # some message labels
-        self.aids = self.create_label(self.unicef, "AIDS", 'Messages about AIDS', ['aids', 'hiv'], [self.moh, self.who])
-        self.pregnancy = self.create_label(self.unicef, "pregnancy", 'Messages about pregnancy', ['pregnant', 'pregnancy'], [self.moh])
-        self.code = self.create_label(self.nyaruka, "code", 'Messages about code', ['java', 'python', 'go'], [self.klab])
+        self.aids = self.create_label(self.unicef, "AIDS", 'Messages about AIDS',
+                                      ['aids', 'hiv'], [self.moh, self.who], 'L-001')
+        self.pregnancy = self.create_label(self.unicef, "pregnancy", 'Messages about pregnancy',
+                                           ['pregnant', 'pregnancy'], [self.moh], 'L-002')
+        self.code = self.create_label(self.nyaruka, "code", 'Messages about code',
+                                      ['java', 'python', 'go'], [self.klab], 'L-003')
 
     def clear_cache(self):
         # we are extra paranoid here and actually hardcode redis to 'localhost' and '10'
@@ -60,11 +63,8 @@ class UPartnersTest(TestCase):
     def create_partner(self, org, name):
         return Partner.create(org, name)
 
-    def create_label(self, org, name, description, words, partners):
-        label = Label.create(org, name, description, words, partners, update_flow=False)
-        label.uuid = unicode(uuid4())
-        label.save()
-        return label
+    def create_label(self, org, name, description, words, partners, uuid):
+        return Label.create(org, name, description, words, partners, uuid, update_flow=False)
 
     def create_admin(self, org, full_name, email):
         user = User.create(None, None, None, full_name, email, password=email, change_password=False)
