@@ -18,16 +18,61 @@
 
   .row
     .col-md-2
-      .label-menu
+      .up-label-menu
         Cases
-      .label-menu
+      .up-label-menu
         Labels
-      .label-menu
+      .up-label-menu
         Groups
     .col-md-10
-      Messages
+      .{ ng-controller:"LabelMessagesController", ng-init:"init({{ object.pk }})", infinite-scroll:"loadOldMessages()", infinite-scroll-disabled:"loading_old || !has_older" }
+        .up-message{ ng-repeat:"message in messages", ng-class:"{ flagged: message.flagged }" }
+          .up-message-actions
+            %input{ type:"checkbox", ng-model:"selection.[[ message.id ]]" }
+            %a.flag{ ng-click:"toggleMessageFlag(message)" }
+              %span.glyphicon.glyphicon-flag
+          .up-message-time
+            [[ message.time | autodate ]]
+          .up-message-text
+            [[ message.text ]]
+
+
+- block extra-script
+  :javascript
+
 
 - block extra-style
   {{ block.super }}
   :css
+    .up-message {
+      padding: 3px;
+      border-bottom: 1px solid #eee;
+    }
+    .up-message:first-of-type {
+      border-top: 1px solid #eee;
+    }
+    .up-message .up-message-actions {
+      float: left;
+      width: 50px;
+    }
+    .up-message .up-message-actions input[type="checkbox"] {
+      width: auto;
+      margin-right: 7px;
+    }
+    .up-message-time {
+      float: right;
+      font-size: 0.7em;
+      margin-left: 3px;
+      margin-bottom: 3px;
+    }
+    .up-message-text {
+      margin-left: 50px;
+    }
+    .up-message .flag {
+      color: #ddd;
+    }
+    .up-message.flagged .flag {
+      color: #444 !important;
+    }
+
 

@@ -147,11 +147,14 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/libs/jquery.1.11.1.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/angular.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/highcharts.js"></script>
+    <script type='text/javascript' src='{{ STATIC_URL }}js/ng-infinite-scroll.min.js'></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/select2.min.js"></script>
 
     {% compress js %}
     %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/upartners.coffee" }
+    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/services.coffee" }
+    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/controllers.coffee" }
+    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/filters.coffee" }
     {% endcompress %}
 
     :javascript

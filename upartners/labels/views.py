@@ -2,7 +2,9 @@ from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django import forms
+from django.http import JsonResponse, HttpResponseBadRequest
 from django.utils.translation import ugettext_lazy as _
+from django.views.generic import View
 from smartmin.users.views import SmartCRUDL, SmartCreateView, SmartUpdateView, SmartReadView, SmartListView
 from upartners.labels.models import Label, parse_keywords
 from upartners.partners.models import Partner
@@ -41,7 +43,7 @@ class LabelFormMixin(object):
 
 
 class LabelCRUDL(SmartCRUDL):
-    actions = ('create', 'read', 'update', 'list')
+    actions = ('create', 'read', 'update', 'list', 'messages')
     model = Label
 
     class Create(OrgPermsMixin, LabelFormMixin, SmartCreateView):
@@ -78,3 +80,46 @@ class LabelCRUDL(SmartCRUDL):
 
         def get_partners(self, obj):
             return ', '.join([p.name for p in obj.get_partners()])
+
+    class Messages(OrgPermsMixin, SmartReadView):
+        permission = 'labels.label_read'
+
+        def get_context_data(self, **kwargs):
+            context = super(LabelCRUDL.Messages, self).get_context_data(**kwargs)
+
+            page = int(self.request.GET.get('page', 1))
+
+            client = self.request.org.get_temba_client()
+            pager = client.pager(start_page=page)
+            messages = client.get_messages(pager=pager, labels=[self.object.name])
+
+            context['page'] = page
+            context['has_more'] = pager.has_more()
+            context['messages'] = messages
+            return context
+
+        def render_to_response(self, context, **response_kwargs):
+            def render_msg(m):
+                flagged = 'Flagged' in m.labels
+                return {'id': m.id, 'text': m.text, 'time': m.created_on, 'flagged': flagged}
+
+            results = [render_msg(msg) for msg in context['messages']]
+
+            return JsonResponse({'page': context['page'], 'has_more': context['has_more'], 'results': results})
+
+
+class MessageActions(View):
+    actions = ('flag', 'unflag')
+
+    @classmethod
+    def get_url_pattern(cls):
+        return r'^messages/(?P<action>%s)/$' % '|'.join(cls.actions)
+
+    def post(self, request, *args, **kwargs):
+        action = kwargs['action']
+        message_ids = self.request.POST.get('message_ids', [])
+
+        # TODO implement an endpoint in RapidPro that lets us label messages
+        # client = self.request.org.get_temba_client()
+
+        return HttpResponseBadRequest("Not yet implemented")

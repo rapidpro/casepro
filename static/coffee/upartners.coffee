@@ -1,4 +1,4 @@
-app = angular.module('upartners', []);
+app = angular.module('upartners', ['infinite-scroll', 'upartners.services', 'upartners.controllers', 'upartners.filters']);
 
 app.config [ '$interpolateProvider', '$httpProvider', ($interpolateProvider, $httpProvider) ->
   # Since Django uses {{ }}, we will have angular use [[ ]] instead.
