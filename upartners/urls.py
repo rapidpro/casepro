@@ -4,6 +4,7 @@ from django.conf import settings
 from django.conf.urls import patterns, include, url
 
 urlpatterns = patterns('',
+                       url(r'', include('upartners.groups.urls')),
                        url(r'', include('upartners.home.urls')),
                        url(r'', include('upartners.labels.urls')),
                        url(r'', include('upartners.partners.urls')),

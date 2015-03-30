@@ -1,0 +1,14 @@
+- extends "smartmin/list.html"
+- load smartmin i18n
+
+- block table-controls
+  .clearfix
+    .pull-back
+      - blocktrans
+        Each filter group is a contact group in RapidPro.
+
+    .pull-away.buttons
+      - if org_perms.groups.group_select
+        %a.btn.btn-default.pull-right{ href:"{% url 'groups.group_select' %}" }
+          %span.glyphicon.glyphicon-check
+          - trans "Select Groups"

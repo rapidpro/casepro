@@ -213,6 +213,8 @@ INSTALLED_APPS = (
     'dash.utils',
 
     # custom
+    'upartners.cases',
+    'upartners.groups',
     'upartners.home',
     'upartners.labels',
     'upartners.orgs_ext',
@@ -287,6 +289,8 @@ PERMISSIONS = {
 
     'orgs.org': ('create', 'update', 'list', 'edit', 'home'),
 
+    'groups.group': ('select', 'list'),
+
     'labels.label': ('create', 'read', 'update', 'list'),
 
     'partners.partner': ('create', 'read', 'update', 'list'),
@@ -301,6 +305,7 @@ GROUP_PERMISSIONS = {
         'orgs.org_home',
         'orgs.org_edit',
 
+        'groups.group.*',
         'labels.label.*',
         'partners.partner.*',
         'profiles.profile.*',
@@ -322,7 +327,7 @@ GROUP_PERMISSIONS = {
 #-----------------------------------------------------------------------------------
 LOGIN_URL = "/users/login/"
 LOGOUT_URL = "/users/logout/"
-LOGIN_REDIRECT_URL = "/manage/org/choose/"
+LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
 #-----------------------------------------------------------------------------------

@@ -1,0 +1,74 @@
+- extends "labels/label_base.html"
+- load smartmin i18n
+
+- block label-items
+  .{ ng-controller:"LabelMessagesController", ng-init:"init({{ object.pk }})", infinite-scroll:"loadOldMessages()", infinite-scroll-disabled:"loading_old || !has_older" }
+    .items-toolbar.clearfix
+      .btn-group.pull-away
+        %button.btn.btn-default{ ng-disabled:"selected.length == 0", ng-click:"labelSelection()", type:"button" }
+          %span.glyphicon.glyphicon-tag
+          - trans "Label"
+        %button.btn.btn-default{ ng-disabled:"selected.length == 0", ng-click:"flagSelection()", type:"button" }
+          %span.glyphicon.glyphicon-flag
+          - trans "Flag"
+        %button.btn.btn-default{ ng-disabled:"selected.length == 0", ng-click:"replyToSelection()", type:"button" }
+          - trans "Reply"
+        %button.btn.btn-default{ ng-disabled:"selected.length == 0", ng-click:"forwardSelection()", type:"button" }
+          %span.glyphicon.glyphicon-share-alt
+          - trans "Forward"
+        %button.btn.btn-default{ ng-disabled:"selected.length == 0", ng-click:"archiveSelection()", type:"button" }
+          %span.glyphicon.glyphicon-folder-close
+          - trans "Archive"
+    .up-message{ ng-repeat:"message in messages", ng-class:"{ flagged: message.flagged }" }
+      .up-message-actions
+        %input{ type:"checkbox", ng-model:"message.selected", ng-change:"selectionUpdate()" }
+        %a.flag{ ng-click:"toggleMessageFlag(message)" }
+          %span.glyphicon.glyphicon-flag
+      .up-message-time
+        [[ message.time | autodate ]]
+      .up-message-text
+        [[ message.text ]]
+    .loading{ ng-if:"loading" }
+    .none{ ng-hide:"messages.length > 0" }
+      - trans "No messages"
+
+
+- block extra-style
+  {{ block.super }}
+  :css
+    .items-toolbar {
+      padding-bottom: 5px;
+    }
+    .up-message {
+      padding: 3px;
+      border-bottom: 1px solid #eee;
+    }
+    .up-message:first-of-type {
+      border-top: 1px solid #eee;
+    }
+    .up-message .up-message-actions {
+      float: left;
+      width: 50px;
+    }
+    .up-message .up-message-actions input[type="checkbox"] {
+      width: auto;
+      margin-right: 7px;
+    }
+    .up-message-time {
+      float: right;
+      font-size: 0.7em;
+      margin-left: 3px;
+      margin-bottom: 3px;
+    }
+    .up-message-text {
+      margin-left: 50px;
+    }
+    .up-message .flag {
+      color: #ddd;
+      cursor: pointer;
+    }
+    .up-message.flagged .flag {
+      color: #444 !important;
+    }
+
+

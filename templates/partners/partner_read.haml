@@ -4,7 +4,7 @@
 - block pre-content
   .page-header.clearfix
     %h2.pull-back
-      %span.glyphicon.glyphicon-user
+      %span.glyphicon.glyphicon-home
       &nbsp;
       {{ title }}
 
@@ -44,7 +44,7 @@
       - for label in labels
         .
           %span.glyphicon.glyphicon-tag
-          %a{ href:"{% url 'labels.label_read' label.pk %}" }
+          %a{ href:"{% url 'labels.label_inbox' label.pk %}" }
             {{ label.name }}
 
 - block extra-style

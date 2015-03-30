@@ -72,7 +72,7 @@
                       %a{ href:"{% url 'profiles.user_list' %}" }
                         - trans "Users"
 
-              -if org_perms.orgs.org_home or org_perms.partners.partner_list or org_perms.labels.label_list or org_perms.profiles.profile_user_list
+              -if org_perms.orgs.org_home or org_perms.partners.partner_list or org_perms.labels.label_list or org_perms.groups.group_list or org_perms.profiles.profile_user_list
                 %li.dropdown
                   %a.dropdown-toggle{href:"#", data-toggle:"dropdown"}
                     - trans "Administration"
@@ -92,6 +92,11 @@
                       %li
                         %a{ href:"{% url 'labels.label_list' %}" }
                           - trans "Labels"
+
+                    - if org_perms.groups.group_list
+                      %li
+                        %a{ href:"{% url 'groups.group_list' %}" }
+                          - trans "Groups"
 
                     - if org_perms.profiles.profile_user_list
                       %li

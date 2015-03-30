@@ -15,7 +15,7 @@
             {{ label.count }}
       .col-md-10
         .label-name
-          %a{ href:"{% url 'labels.label_read' label.pk %}" }
+          %a{ href:"{% url 'labels.label_inbox' label.pk %}" }
             {{ label.name }}
         .label-description
           {{ label.description }}
@@ -23,7 +23,7 @@
           - for partner in label.partners.all
             - if partner.is_active
               %span.label-partner
-                %span.glyphicon.glyphicon-user
+                %span.glyphicon.glyphicon-eye-open
                 %a{ href:"{% url 'partners.partner_read' partner.pk %}" }
                   {{ partner.name }}
 

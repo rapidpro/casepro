@@ -58,15 +58,6 @@ footer {
 }
 
 /**
- * Spinner placeholder for items that are loading
- */
-.loading {
-  background: url('../img/loading.gif') no-repeat center center;
-  min-width: 32px;
-  min-height: 32px;
-}
-
-/**
  * Consistent layout for read page tables
  */
 .read-label {
@@ -99,10 +90,23 @@ footer {
 }
 
 /**
- * Other...
+ * Components...
  */
 
 .page-header-buttons {
   float: right;
   margin-top: 15px;
+}
+
+.loading {
+  background: url('../img/loading.gif') no-repeat center center;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.none {
+  .italicized;
+
+  text-align: center;
+  padding: 1em;
 }

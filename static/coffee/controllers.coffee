@@ -6,7 +6,7 @@ controllers = angular.module('upartners.controllers', ['upartners.services']);
 controllers.controller 'LabelMessagesController', [ '$scope', 'MessageService', ($scope, MessageService) ->
 
   $scope.messages = []
-  $scope.selection = {}
+  $scope.selected = []
   $scope.loading_old = false
   $scope.has_older = true
 
@@ -32,4 +32,9 @@ controllers.controller 'LabelMessagesController', [ '$scope', 'MessageService', 
     if old_state != message.flagged
       MessageService.flagMessages([message.id], message.flagged)
 
+  $scope.selectionUpdate = () ->
+    $scope.selected = (msg.id for msg in $scope.messages when msg.selected)
+
+  $scope.archiveSelection = () ->
+    alert("TODO: archive: " + $scope.selected)
 ]

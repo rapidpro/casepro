@@ -6,6 +6,8 @@ from django.http import JsonResponse, HttpResponseBadRequest
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
 from smartmin.users.views import SmartCRUDL, SmartCreateView, SmartUpdateView, SmartReadView, SmartListView
+from upartners.cases.models import Case
+from upartners.groups.models import Group
 from upartners.labels.models import Label, parse_keywords
 from upartners.partners.models import Partner
 
@@ -42,8 +44,21 @@ class LabelFormMixin(object):
         return kwargs
 
 
+class LabelReadView(OrgObjPermsMixin, SmartReadView):
+    permission = 'labels.label_read'
+
+    def get_context_data(self, **kwargs):
+        context = super(LabelReadView, self).get_context_data(**kwargs)
+
+        context['inbox_count'] = self.object.get_count()
+        context['open_count'] = Case.get_open(self.request.org, self.object).count()
+        context['closed_count'] = Case.get_closed(self.request.org, self.object).count()
+        context['groups'] = Group.get_all(self.request.org)
+        return context
+
+
 class LabelCRUDL(SmartCRUDL):
-    actions = ('create', 'read', 'update', 'list', 'messages')
+    actions = ('create', 'update', 'list', 'inbox', 'open', 'closed', 'messages', 'cases')
     model = Label
 
     class Create(OrgPermsMixin, LabelFormMixin, SmartCreateView):
@@ -66,9 +81,6 @@ class LabelCRUDL(SmartCRUDL):
             initial['keywords'] = ', '.join(self.object.get_keywords())
             return initial
 
-    class Read(OrgObjPermsMixin, SmartReadView):
-        fields = ('name', 'description')
-
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'description', 'partners')
         default_order = ('name',)
@@ -81,7 +93,28 @@ class LabelCRUDL(SmartCRUDL):
         def get_partners(self, obj):
             return ', '.join([p.name for p in obj.get_partners()])
 
+    class Inbox(LabelReadView):
+        """
+        Shows all inbox messages with this label
+        """
+        pass
+
+    class Open(LabelReadView):
+        """
+        Shows all open cases with this label
+        """
+        template_name = 'labels/label_cases.haml'
+
+    class Closed(LabelReadView):
+        """
+        Shows all closed cases with this label
+        """
+        template_name = 'labels/label_cases.haml'
+
     class Messages(OrgPermsMixin, SmartReadView):
+        """
+        JSON endpoint for fetching messages
+        """
         permission = 'labels.label_read'
 
         def get_context_data(self, **kwargs):
@@ -104,6 +137,33 @@ class LabelCRUDL(SmartCRUDL):
                 return {'id': m.id, 'text': m.text, 'time': m.created_on, 'flagged': flagged}
 
             results = [render_msg(msg) for msg in context['messages']]
+
+            return JsonResponse({'page': context['page'], 'has_more': context['has_more'], 'results': results})
+
+    class Cases(OrgPermsMixin, SmartReadView):
+        """
+        JSON endpoint for fetching cases
+        """
+        permission = 'labels.label_read'
+
+        def get_context_data(self, **kwargs):
+            context = super(LabelCRUDL.Cases, self).get_context_data(**kwargs)
+
+            page = int(self.request.GET.get('page', 1))
+            status = self.request.GET.get('status', 'open')
+
+            # TODO
+
+            context['page'] = 1
+            context['has_more'] = False
+            context['messages'] = []
+            return context
+
+        def render_to_response(self, context, **response_kwargs):
+            def render_case(c):
+                return {'id': c.id, 'text': c.text, 'time': c.opened_on}
+
+            results = [render_case(case) for case in context['cases']]
 
             return JsonResponse({'page': context['page'], 'has_more': context['has_more'], 'results': results})
 
