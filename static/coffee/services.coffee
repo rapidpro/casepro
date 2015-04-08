@@ -3,10 +3,10 @@ services = angular.module('upartners.services', []);
 #=====================================================================
 # Date utilities
 #=====================================================================
-parse_iso8601 = (str) ->
+parseIso8601 = (str) ->
   if str then new Date(Date.parse str) else null
 
-format_iso8601 = (date) ->
+formatIso8601 = (date) ->
   if date then date.toISOString() else null
 
 
@@ -22,10 +22,16 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #=====================================================================
     # Fetches old messages for the given label
     #=====================================================================
-    fetchOldMessages: (label_id, page, callback) ->
-      params = {start_time: (format_iso8601 @start_time), page: page}
+    fetchOldMessages: (labelId, page, searchParams, callback) ->
+      params = {start_time: (formatIso8601 @start_time), page: page}
 
-      $http.get '/label/messages/' + label_id + '/?' + $.param(params)
+      # add search params
+      params.text = searchParams.text
+      params.after = formatIso8601(searchParams.after)
+      params.before = formatIso8601(searchParams.before)
+      params.groups = searchParams.groups
+
+      $http.get '/label/messages/' + labelId + '/?' + $.param(params)
       .success (data) =>
         @_processMessages data.results
         callback(data.results, data.has_more)
@@ -33,11 +39,30 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #=====================================================================
     # Flag or un-flag messages
     #=====================================================================
-    flagMessages: (message_ids, flagged) ->
+    flagMessages: (messages, flagged) ->
+      for msg in messages
+        msg.flagged = flagged
+
       action = if flagged then 'flag' else 'unflag'
-      $http.post '/messages/' + action + '/?' + $.param({message_ids: message_ids})
-      .error (data, status, headers, config) =>
-        console.log(data)
+      $http.post '/messages/' + action + '/?' + $.param({message_ids: (msg.id for msg in messages)})
+
+    #=====================================================================
+    # Label messages
+    #=====================================================================
+    labelMessages: (messages, labelUuid) ->
+      for msg in messages
+        msg.flagged = flagged
+
+      $http.post '/messages/label/?' + $.param({message_ids: (msg.id for msg in messages)})
+
+    #=====================================================================
+    # Archive messages
+    #=====================================================================
+    archiveMessages: (messages) ->
+      for msg in messages
+        msg.archived = true
+
+      $http.post '/messages/archive/?' + $.param({message_ids: (msg.id for msg in messages)})
 
     #=====================================================================
     # Processes incoming messages
@@ -45,5 +70,6 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     _processMessages: (messages) ->
       for msg in messages
         # parse datetime string
-        msg.time = parse_iso8601 msg.time
+        msg.time = parseIso8601 msg.time
+        msg.archived = false
 ]

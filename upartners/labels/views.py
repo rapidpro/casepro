@@ -6,6 +6,7 @@ from django.http import JsonResponse, HttpResponseBadRequest
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
 from smartmin.users.views import SmartCRUDL, SmartCreateView, SmartUpdateView, SmartReadView, SmartListView
+from temba.utils import parse_iso8601
 from upartners.cases.models import Case
 from upartners.groups.models import Group
 from upartners.labels.models import Label, parse_keywords
@@ -54,6 +55,7 @@ class LabelReadView(OrgObjPermsMixin, SmartReadView):
         context['open_count'] = Case.get_open(self.request.org, self.object).count()
         context['closed_count'] = Case.get_closed(self.request.org, self.object).count()
         context['groups'] = Group.get_all(self.request.org)
+        context['labels'] = Label.get_all(self.request.org)
         return context
 
 
@@ -121,10 +123,17 @@ class LabelCRUDL(SmartCRUDL):
             context = super(LabelCRUDL.Messages, self).get_context_data(**kwargs)
 
             page = int(self.request.GET.get('page', 1))
+            text = self.request.GET.get('text', None)
+            after = parse_iso8601(self.request.GET.get('after', None))
+            before = parse_iso8601(self.request.GET.get('before', None))
+            groups = self.request.GET.get('groups', None)
+            reverse = self.request.GET.get('reverse', 'false')
 
             client = self.request.org.get_temba_client()
             pager = client.pager(start_page=page)
-            messages = client.get_messages(pager=pager, labels=[self.object.name], direction='I', _types=['I'])
+            messages = client.get_messages(pager=pager, labels=[self.object.name],
+                                           direction='I', _types=['I'],
+                                           after=after, before=before, groups=groups)
 
             context['page'] = page
             context['has_more'] = pager.has_more()
@@ -132,9 +141,15 @@ class LabelCRUDL(SmartCRUDL):
             return context
 
         def render_to_response(self, context, **response_kwargs):
+            label_from_names = {l.name: l for l in Label.get_all(self.request.org)}
+
+            def render_label(l):
+                return {'id': l.pk, 'name': l.name, 'uuid': l.uuid}
+
             def render_msg(m):
                 flagged = 'Flagged' in m.labels
-                return {'id': m.id, 'text': m.text, 'time': m.created_on, 'flagged': flagged}
+                labels = [render_label(label_from_names[l]) for l in m.labels if l in label_from_names]
+                return {'id': m.id, 'text': m.text, 'time': m.created_on, 'labels': labels, 'flagged': flagged}
 
             results = [render_msg(msg) for msg in context['messages']]
 
@@ -169,7 +184,7 @@ class LabelCRUDL(SmartCRUDL):
 
 
 class MessageActions(View):
-    actions = ('flag', 'unflag')
+    actions = ('flag', 'unflag', 'label', 'archive')
 
     @classmethod
     def get_url_pattern(cls):

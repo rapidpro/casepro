@@ -18,7 +18,7 @@
     <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
     <!--[if lt IE 9]>
       <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-      <![endif]-->
+    <![endif]-->
 
     <!-- Mobile viewport optimized: j.mp/bplateviewport -->
     %meta{ name:"viewport", content:"width=device-width, initial-scale=1.0"}
@@ -29,11 +29,11 @@
     :css
     - compress css
       - block styles
-        %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/bootstrap.css"}
-        %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/bootstrap-theme.css"}
-        %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/smartmin_styles.css"}
-        %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/select2.css"}
-        %link{ type:"text/less", rel:"stylesheet", href:"{{ STATIC_URL }}less/upartners.less"}
+        %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/bootstrap.css" }
+        %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/smartmin_styles.css" }
+        %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/select2.min.css" }
+        %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/select2-bootstrap.min.css" }
+        %link{ type:"text/less", rel:"stylesheet", href:"{{ STATIC_URL }}less/upartners.less" }
 
     - block extra-less
     - block extra-style
@@ -146,12 +146,13 @@
     .footer-container
       .container
         %footer
-          {% include 'lang_switcher.haml' %}
+          //{% include 'lang_switcher.haml' %}
 
     <!-- JavaScript at the bottom for fast page loading -->
     <script type="text/javascript" src="{{ STATIC_URL }}js/libs/jquery.1.11.1.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/angular.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/ui-bootstrap-tpls-0.12.1.min.js"></script>
     <script type='text/javascript' src='{{ STATIC_URL }}js/ng-infinite-scroll.min.js'></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/select2.min.js"></script>
 

@@ -18,7 +18,7 @@
 
   .row
     .col-md-2
-      .up-label-menu
+      .label-menu
         %h3
           - trans "Cases"
         %ul
@@ -34,15 +34,6 @@
             %a{ href:"{% url 'labels.label_closed' object.pk %}" }
               - blocktrans with count=closed_count
                 Closed ({{ count }})
-      .up-label-menu
-        %h3
-          - trans "Groups"
-        %ul
-          - for group in groups
-            %li
-              %a{ href:"{% url 'labels.label_inbox' object.pk %}?group={{ group.pk }}" }
-                {{ group.name }}
-
     .col-md-10
       - block label-items
 
@@ -50,14 +41,14 @@
 - block extra-style
   {{ block.super }}
   :css
-    .up-label-menu {
+    .label-menu {
       margin-bottom: 1em;
     }
-    .up-label-menu h3 {
+    .label-menu h3 {
       margin: 0 0 1em 0;
       font-size: 1.2em;
     }
-    .up-label-menu ul {
+    .label-menu ul {
       margin: 0;
       padding: 0;
       list-style: none;

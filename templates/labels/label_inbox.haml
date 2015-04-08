@@ -2,73 +2,175 @@
 - load smartmin i18n
 
 - block label-items
-  .{ ng-controller:"LabelMessagesController", ng-init:"init({{ object.pk }})", infinite-scroll:"loadOldMessages()", infinite-scroll-disabled:"loading_old || !has_older" }
-    .items-toolbar.clearfix
-      .btn-group.pull-away
-        %button.btn.btn-default{ ng-disabled:"selected.length == 0", ng-click:"labelSelection()", type:"button" }
-          %span.glyphicon.glyphicon-tag
-          - trans "Label"
-        %button.btn.btn-default{ ng-disabled:"selected.length == 0", ng-click:"flagSelection()", type:"button" }
-          %span.glyphicon.glyphicon-flag
-          - trans "Flag"
-        %button.btn.btn-default{ ng-disabled:"selected.length == 0", ng-click:"replyToSelection()", type:"button" }
-          - trans "Reply"
-        %button.btn.btn-default{ ng-disabled:"selected.length == 0", ng-click:"forwardSelection()", type:"button" }
-          %span.glyphicon.glyphicon-share-alt
-          - trans "Forward"
-        %button.btn.btn-default{ ng-disabled:"selected.length == 0", ng-click:"archiveSelection()", type:"button" }
-          %span.glyphicon.glyphicon-folder-close
-          - trans "Archive"
-    .up-message{ ng-repeat:"message in messages", ng-class:"{ flagged: message.flagged }" }
-      .up-message-actions
-        %input{ type:"checkbox", ng-model:"message.selected", ng-change:"selectionUpdate()" }
-        %a.flag{ ng-click:"toggleMessageFlag(message)" }
-          %span.glyphicon.glyphicon-flag
-      .up-message-time
-        [[ message.time | autodate ]]
-      .up-message-text
-        [[ message.text ]]
-    .loading{ ng-if:"loading" }
-    .none{ ng-hide:"messages.length > 0" }
-      - trans "No messages"
+  .{ ng-controller:"LabelMessagesController", ng-init:"init({{ object.pk }})", infinite-scroll:"loadOldMessages()", infinite-scroll-disabled:"loadingOld || !hasOlder" }
+    .search-toolbar
+      .row
+        .col-md-12{ style:"padding-bottom: 5px" }
+          %form.form-inline
+            %input.form-control{ ng-model:"search.text", type:"text", placeholder:"Containing", style:"width: 300px" }
+            %span.date-range{ ng-controller:"DateRangeController" }
+              .form-group
+                %label{ for:"search-after" }
+                  - trans "From"
+                .input-group.date-picker
+                  %input.form-control{ type:"text", datepicker-popup:"[[ format ]]", ng-model:"search.after", is-open:"afterOpen", min-date:"afterMin", max-date:"afterMax", ng-change:"onAfterChange()" }
+                  %span.input-group-btn
+                    %button.btn.btn-default{ type:"button", ng-click:"openAfter($event)" }
+                      %i.glyphicon.glyphicon-calendar
+              .form-group
+                %label{ for:"search-before" }
+                  - trans "Until"
+                .input-group.date-picker
+                  %input.form-control{ type:"text", datepicker-popup:"[[ format ]]", ng-model:"search.before", is-open:"beforeOpen", min-date:"beforeMin", max-date:"beforeMax", ng-change:"onBeforeChange()" }
+                  %span.input-group-btn
+                    %button.btn.btn-default{ type:"button", ng-click:"openBefore($event)" }
+                      %i.glyphicon.glyphicon-calendar
+            .checkbox
+              %input{ type:"checkbox", ng-model:"search.reverse" }
+              %label
+                - trans "Oldest first"
+      .row
+        .col-md-12
+          .pull-back
+            %select.select2.group-select{ id:"search-groups", multiple:"multiple", ng-model:"search.groups", data-placeholder:"Select groups to include" }
+              - for group in groups
+                %option{ value:"{{ group.uuid }}" }
+                  {{ group.name }}
+          .pull-away
+            %button.btn.btn-default{ type:"button", ng-click:"onMessageSearch()" }
+              %span.glyphicon.glyphicon-search
+              - trans "Search"
 
+    .selection-toolbar
+      .row
+        .col-md-12
+          .selection-info.pull-back
+            %span{ ng-show:"selection.length == 1" }
+              1 message selected
+            %span{ ng-show:"selection.length > 1" }
+              [[ selection.length ]] messages selected
+          .selection-buttons.btn-group.pull-away
+            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"labelSelection()", type:"button" }
+              %span.glyphicon.glyphicon-tag
+              - trans "Label"
+            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"flagSelection()", type:"button" }
+              %span.glyphicon.glyphicon-flag
+              - trans "Flag"
+            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"replyToSelection()", type:"button" }
+              - trans "Reply"
+            %button.btn.btn-default{ ng-disabled:"selection.length != 1", ng-click:"caseForSelection()", type:"button" }
+              - trans "Open Case"
+            %button.btn.btn-default{ ng-disabled:"selection.length != 1", ng-click:"forwardSelection()", type:"button" }
+              %span.glyphicon.glyphicon-share-alt
+              - trans "Forward"
+            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"archiveSelection()", type:"button" }
+              - trans "Archive"
+    .messages
+      .message{ ng-repeat:"message in messages | filter:{ archived: false }", ng-class:"{ flagged: message.flagged }" }
+        .message-actions
+          %input{ type:"checkbox", ng-model:"message.selected", ng-change:"selectionUpdate()" }
+          %a.flag{ ng-click:"toggleMessageFlag(message)" }
+            %span.glyphicon.glyphicon-flag
+        .message-time
+          [[ message.time | autodate ]]
+        .message-text
+          %span.label-container{ ng-repeat:"label in message.labels | filter:isOtherLabel" }
+            %span.label.label-default
+              [[ label.name ]]
+            &nbsp;
+          [[ message.text ]]
+      .loading{ ng-if:"loadingOld" }
+      .none{ ng-hide:"messages.length > 0" }
+        - trans "No messages"
+
+    %script{ type:"text/ng-template", id:"flagModal.html" }
+      .modal-header
+        %h3.modal-title
+          Flag
+        .modal-body
+          Flag the selected [[ selection.length ]] messages?
+        .modal-footer
+          %button.btn.btn-primary{ ng-click:"ok()" }
+            - trans "OK"
+          %button.btn.btn-warning{ ng-click:"cancel()" }
+            - trans "Cancel"
+
+    %script{ type:"text/ng-template", id:"labelModal.html" }
+      .modal-header
+        %h3.modal-title
+          Label
+        .modal-body
+          Apply label
+          %select.form-control{ ng-model:"" }
+            - for label in labels
+              - if label.pk != object.pk
+                %option{ value:"{{ label.id }}" }
+                  {{ label.name }}
+          to the selected [[ selection.length ]] messages?
+        .modal-footer
+          %button.btn.btn-primary{ ng-click:"ok()" }
+            - trans "OK"
+          %button.btn.btn-warning{ ng-click:"cancel()" }
+            - trans "Cancel"
+
+    %script{ type:"text/ng-template", id:"archiveModal.html" }
+      .modal-header
+        %h3.modal-title
+          Archive
+        .modal-body
+          Remove the selected [[ selection.length ]] messages from the inbox?
+        .modal-footer
+          %button.btn.btn-primary{ ng-click:"ok()" }
+            - trans "OK"
+          %button.btn.btn-warning{ ng-click:"cancel()" }
+            - trans "Cancel"
 
 - block extra-style
   {{ block.super }}
   :css
-    .items-toolbar {
-      padding-bottom: 5px;
+    .search-toolbar {
+      padding: 4px;
+      background-color: #f7f7f7;
     }
-    .up-message {
+    .search-toolbar .group-select {
+      width: 500px;
+    }
+    .selection-toolbar {
+      padding: 4px;
+      background-color: #F4E4F5;
+      border-top: 1px solid #ddd;
+    }
+    .selection-info {
+      padding: 6px 0 0 6px;
+    }
+    .message {
       padding: 3px;
       border-bottom: 1px solid #eee;
     }
-    .up-message:first-of-type {
+    .message:first-of-type {
       border-top: 1px solid #eee;
     }
-    .up-message .up-message-actions {
+    .message .message-actions {
       float: left;
       width: 50px;
     }
-    .up-message .up-message-actions input[type="checkbox"] {
+    .message .message-actions input[type="checkbox"] {
       width: auto;
       margin-right: 7px;
     }
-    .up-message-time {
+    .message-time {
       float: right;
       font-size: 0.7em;
       margin-left: 3px;
       margin-bottom: 3px;
     }
-    .up-message-text {
+    .message-text {
       margin-left: 50px;
     }
-    .up-message .flag {
+    .message .flag {
       color: #ddd;
       cursor: pointer;
     }
-    .up-message.flagged .flag {
+    .message.flagged .flag {
       color: #444 !important;
     }
-
-
