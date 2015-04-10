@@ -150,7 +150,7 @@ class LabelCRUDL(SmartCRUDL):
 
             client = self.request.org.get_temba_client()
             pager = client.pager(start_page=page)
-            messages = client.get_messages(pager=pager, labels=[self.object.name], direction='I', _types=['I'],
+            messages = client.get_messages(pager=pager, labels=[self.object.name], direction='I',
                                            after=after, before=before, groups=groups, text=text, reverse=reverse)
 
             context['page'] = page
