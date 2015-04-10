@@ -1,5 +1,6 @@
 services = angular.module('upartners.services', []);
 
+
 #=====================================================================
 # Date utilities
 #=====================================================================
@@ -30,11 +31,12 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       params.after = formatIso8601(searchParams.after)
       params.before = formatIso8601(searchParams.before)
       params.groups = searchParams.groups
+      params.reverse = searchParams.reverse
 
       $http.get '/label/messages/' + labelId + '/?' + $.param(params)
       .success (data) =>
         @_processMessages data.results
-        callback(data.results, data.has_more)
+        callback(data.results, data.total, data.has_more)
 
     #=====================================================================
     # Flag or un-flag messages
@@ -44,16 +46,20 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
         msg.flagged = flagged
 
       action = if flagged then 'flag' else 'unflag'
-      $http.post '/messages/' + action + '/?' + $.param({message_ids: (msg.id for msg in messages)})
+      @_messagesAction messages, action, null
 
     #=====================================================================
     # Label messages
     #=====================================================================
-    labelMessages: (messages, labelUuid) ->
+    labelMessages: (messages, label) ->
+      without_label = []
       for msg in messages
-        msg.flagged = flagged
+        if label not in msg.labels
+          without_label.push(msg)
+          msg.labels.push(label)
 
-      $http.post '/messages/label/?' + $.param({message_ids: (msg.id for msg in messages)})
+      if without_label.length > 0
+        @_messagesAction without_label, 'label', label
 
     #=====================================================================
     # Archive messages
@@ -62,7 +68,20 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       for msg in messages
         msg.archived = true
 
-      $http.post '/messages/archive/?' + $.param({message_ids: (msg.id for msg in messages)})
+      @_messagesAction messages, 'archive', null
+
+    #=====================================================================
+    # POSTs to the messages action endpoint
+    #=====================================================================
+    _messagesAction: (messages, action, label) ->
+      data = new FormData();
+      data.append('message_ids', (msg.id for msg in messages))
+      data.append('label', label)
+
+      $http.post '/messages/' + action + '/', data, {
+        transformRequest: angular.identity,
+        headers: {'Content-Type': undefined}
+      }
 
     #=====================================================================
     # Processes incoming messages

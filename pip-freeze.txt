@@ -1,16 +1,16 @@
 Django==1.7.2
 Markdown==2.6.1
-Pillow==2.7.0
+Pillow==2.8.1
 Pygments==2.0.2
--e git+https://github.com/rapidpro/rapidpro-python@772db1c44c20b850316bf86764d721315deb991b#egg=rapidpro-python
+-e git+https://github.com/rapidpro/rapidpro-python@ef66e4aef0aa388380e3721a87aae83557b25ba5#egg=rapidpro-python
 amqp==1.4.6
 anyjson==0.3.3
 billiard==3.3.0.19
-boto==2.36.0
+boto==2.38.0
 celery==3.1.17
 celery-with-redis==3.0
 coverage==3.7.1
--e git+https://github.com/rapidpro/dash.git@426918ea298f337abf014af839cf66db708c9222#egg=dash-master
+-e git+https://github.com/rapidpro/dash.git@ade5432dc7719dc615e555473674c8af5c4992cd#egg=dash-master
 dj-database-url==0.3.0
 django-appconf==1.0.1
 django-celery==3.1.16
@@ -22,7 +22,7 @@ django-guardian==1.2.5
 django-nose==1.3
 django-redis==3.8.3
 django-reversion==1.8.5
-django-rosetta==0.7.5
+django-rosetta==0.7.6
 django-storages==1.1.8
 django-timezones==0.2
 enum34==1.0.4
@@ -31,19 +31,19 @@ hamlpy==0.82.2
 kombu==3.0.24
 microsofttranslator==0.5
 mock==1.0.1
-nose==1.3.4
-phonenumbers==7.0.2
+nose==1.3.6
+phonenumbers==7.0.4
 pisa==3.0.33
-polib==1.0.4
+polib==1.0.6
 psycopg2==2.6
 pycountry==1.10
-python-dateutil==2.4.1
-pytz==2014.10
+python-dateutil==2.4.2
+pytz==2015.2
 raven==5.2.0
 redis==2.10.3
 requests==2.6.0
 six==1.9.0
--e git+https://github.com/nyaruka/smartmin.git@5b203cb9b6491b5856ffb8e2762593e0a3e79ad8#egg=smartmin-master
+-e git+https://github.com/nyaruka/smartmin.git@ee5d66be64079359714d913d5635e8de8e96885b#egg=smartmin-master
 sorl-thumbnail==11.12.1b
 sqlparse==0.1.14
 wsgiref==0.1.2

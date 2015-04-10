@@ -1,8 +1,9 @@
 from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
+from dash.utils import intersection
 from django import forms
-from django.http import JsonResponse, HttpResponseBadRequest
+from django.http import JsonResponse, HttpResponse
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
 from smartmin.users.views import SmartCRUDL, SmartCreateView, SmartUpdateView, SmartReadView, SmartListView
@@ -11,6 +12,16 @@ from upartners.cases.models import Case
 from upartners.groups.models import Group
 from upartners.labels.models import Label, parse_keywords
 from upartners.partners.models import Partner
+
+
+SYSTEM_LABEL_FLAGGED = "Flagged"
+
+
+def parse_ids_param(val):
+    ids = []
+    for id_str in val.split(','):
+        ids.append(int(id_str))
+    return ids
 
 
 class LabelForm(forms.ModelForm):
@@ -131,29 +142,29 @@ class LabelCRUDL(SmartCRUDL):
 
             client = self.request.org.get_temba_client()
             pager = client.pager(start_page=page)
-            messages = client.get_messages(pager=pager, labels=[self.object.name],
-                                           direction='I', _types=['I'],
-                                           after=after, before=before, groups=groups)
+            messages = client.get_messages(pager=pager, labels=[self.object.name], direction='I', _types=['I'],
+                                           after=after, before=before, groups=groups, text=text, reverse=reverse)
 
             context['page'] = page
             context['has_more'] = pager.has_more()
+            context['total'] = pager.total
             context['messages'] = messages
             return context
 
         def render_to_response(self, context, **response_kwargs):
-            label_from_names = {l.name: l for l in Label.get_all(self.request.org)}
-
-            def render_label(l):
-                return {'id': l.pk, 'name': l.name, 'uuid': l.uuid}
+            display_labels = {l.name for l in Label.get_all(self.request.org) if l != self.object}
 
             def render_msg(m):
                 flagged = 'Flagged' in m.labels
-                labels = [render_label(label_from_names[l]) for l in m.labels if l in label_from_names]
+                labels = intersection(display_labels, m.labels)
                 return {'id': m.id, 'text': m.text, 'time': m.created_on, 'labels': labels, 'flagged': flagged}
 
             results = [render_msg(msg) for msg in context['messages']]
 
-            return JsonResponse({'page': context['page'], 'has_more': context['has_more'], 'results': results})
+            return JsonResponse({'page': context['page'],
+                                 'has_more': context['has_more'],
+                                 'total': context['total'],
+                                 'results': results})
 
     class Cases(OrgPermsMixin, SmartReadView):
         """
@@ -192,9 +203,17 @@ class MessageActions(View):
 
     def post(self, request, *args, **kwargs):
         action = kwargs['action']
-        message_ids = self.request.POST.get('message_ids', [])
+        message_ids = parse_ids_param(self.request.POST.get('message_ids', ''))
+        label = self.request.POST.get('label', None)
+        client = self.request.org.get_temba_client()
 
-        # TODO implement an endpoint in RapidPro that lets us label messages
-        # client = self.request.org.get_temba_client()
+        if action == 'flag':
+            client.label_messages(message_ids, label=SYSTEM_LABEL_FLAGGED)
+        elif action == 'unflag':
+            client.unlabel_messages(message_ids, label=SYSTEM_LABEL_FLAGGED)
+        elif action == 'label':
+            client.label_messages(message_ids, label=label)
+        elif action == 'archive':
+            client.archive_messages(message_ids)
 
-        return HttpResponseBadRequest("Not yet implemented")
+        return HttpResponse(status=204)

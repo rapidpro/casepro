@@ -1,8 +1,10 @@
 controllers = angular.module('upartners.controllers', ['upartners.services']);
 
+
 #============================================================================
 # Label messages controller
 #============================================================================
+
 controllers.controller 'LabelMessagesController', [ '$scope', '$modal', 'MessageService', ($scope, $modal, MessageService) ->
 
   $scope.messages = []
@@ -12,18 +14,21 @@ controllers.controller 'LabelMessagesController', [ '$scope', '$modal', 'Message
   $scope.search = { text: null, groups: [], after: null, before: null, reverse: false }
   $scope.activeSearch = {}
   $scope.page = 1
+  $scope.totalMessages = 0
 
   $scope.init = (labelId) ->
     $scope.labelId = labelId
+
     $scope.loadOldMessages()
 
   #============================================================================
-  # Loads old messages - called by infinite scroller
+  # Message fetching
   #============================================================================
+
   $scope.loadOldMessages = ->
     $scope.loadingOld = true
 
-    MessageService.fetchOldMessages $scope.labelId, $scope.page, $scope.search, (messages, hasOlder) ->
+    MessageService.fetchOldMessages $scope.labelId, $scope.page, $scope.search, (messages, total, hasOlder) ->
       if $scope.page == 1
         $scope.messages = messages
       else
@@ -31,36 +36,51 @@ controllers.controller 'LabelMessagesController', [ '$scope', '$modal', 'Message
 
       $scope.hasOlder = hasOlder
       $scope.page += 1
+      $scope.totalMessages = total
       $scope.loadingOld = false
-
-  $scope.toggleMessageFlag = (message) ->
-    prevState = message.flagged
-    message.flagged = !prevState
-    MessageService.flagMessages([message], message.flagged)
-
-  $scope.isOtherLabel = (label) ->
-    return label.id != $scope.labelId
 
   $scope.onMessageSearch = () ->
     $scope.activeSearch = $scope.search
     $scope.page = 1
     $scope.loadOldMessages()
 
-  $scope.selectionUpdate = () ->
+  $scope.toggleMessageFlag = (message) ->
+    prevState = message.flagged
+    message.flagged = !prevState
+    MessageService.flagMessages([message], message.flagged)
+
+  #============================================================================
+  # Selection controls
+  #============================================================================
+
+  $scope.selectAll = () ->
+    for msg in $scope.messages
+      msg.selected = true
+    $scope.updateSelection()
+
+  $scope.selectNone = () ->
+    for msg in $scope.messages
+      msg.selected = false
+    $scope.selection = []
+
+  $scope.updateSelection = () ->
     $scope.selection = (msg for msg in $scope.messages when msg.selected)
 
-  $scope.labelSelection = () ->
-    $modal.open({templateUrl: 'labelModal.html', controller: 'LabelModalController', resolve: { selection: () -> return $scope.selection }})
-    .result.then () ->
-      alert('TODO: label ' + $scope.selection)
+  #============================================================================
+  # Selection actions
+  #============================================================================
+
+  $scope.labelSelection = (label) ->
+    _showConfirm 'Apply the label <strong>' + label + '</strong> to the selected messages?', () ->
+      MessageService.labelMessages($scope.selection, label)
 
   $scope.flagSelection = () ->
-    $modal.open({templateUrl: 'flagModal.html', controller: 'FlagModalController', resolve: { selection: () -> return $scope.selection }})
-    .result.then () ->
+    _showConfirm 'Flag the selected messages?', () ->
       MessageService.flagMessages($scope.selection, true)
 
   $scope.caseForSelection = () ->
-    alert("TODO: open cases for: " + $scope.selection)
+    _showConfirm 'Open a new case for the selected message?', () ->
+      alert("TODO: open case for: " + $scope.selection)
 
   $scope.replyToSelection = () ->
     alert("TODO: reply to: " + $scope.selection)
@@ -69,26 +89,26 @@ controllers.controller 'LabelMessagesController', [ '$scope', '$modal', 'Message
     alert("TODO: forward: " + $scope.selection)
 
   $scope.archiveSelection = () ->
-    $modal.open({templateUrl: 'archiveModal.html', controller: 'ArchiveModalController', resolve: { selection: () -> return $scope.selection }})
+    _showConfirm 'Archive the selected messages? This will remove them from the inbox.', () ->
+      MessageService.archiveMessages($scope.selection)
+
+  #============================================================================
+  # Support functions
+  #============================================================================
+
+  _showConfirm = (prompt, callback) ->
+    $modal.open({templateUrl: 'confirmModal.html', controller: 'ConfirmModalController', resolve: {prompt: () -> prompt}})
     .result.then () ->
-      alert('TODO: archive ' + $scope.selection)
+      callback()
 ]
 
 
-controllers.controller 'FlagModalController', [ '$scope', '$modalInstance', 'selection', ($scope, $modalInstance, selection) ->
-  $scope.selection = selection
-  $scope.ok = () -> $modalInstance.close(true)
-  $scope.cancel = () -> $modalInstance.dismiss('cancel')
-]
+#============================================================================
+# Confirmation modal dialog controller
+#============================================================================
 
-controllers.controller 'LabelModalController', [ '$scope', '$modalInstance', 'selection', ($scope, $modalInstance, selection) ->
-  $scope.selection = selection
-  $scope.ok = () -> $modalInstance.close(true)
-  $scope.cancel = () -> $modalInstance.dismiss('cancel')
-]
-
-controllers.controller 'ArchiveModalController', [ '$scope', '$modalInstance', 'selection', ($scope, $modalInstance, selection) ->
-  $scope.selection = selection
+controllers.controller 'ConfirmModalController', [ '$scope', '$modalInstance', 'prompt', ($scope, $modalInstance, prompt) ->
+  $scope.prompt = prompt
   $scope.ok = () -> $modalInstance.close(true)
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
@@ -97,6 +117,7 @@ controllers.controller 'ArchiveModalController', [ '$scope', '$modalInstance', '
 #============================================================================
 # Date range controller
 #============================================================================
+
 controllers.controller 'DateRangeController', [ '$scope', ($scope) ->
   $scope.afterOpen = false
   $scope.afterMin = null

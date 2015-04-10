@@ -2,7 +2,7 @@
 - load smartmin i18n
 
 - block label-items
-  .{ ng-controller:"LabelMessagesController", ng-init:"init({{ object.pk }})", infinite-scroll:"loadOldMessages()", infinite-scroll-disabled:"loadingOld || !hasOlder" }
+  .{ ng-controller:"LabelMessagesController", ng-init:"init({{ object.pk }})" }
     .search-toolbar
       .row
         .col-md-12{ style:"padding-bottom: 5px" }
@@ -44,18 +44,37 @@
     .selection-toolbar
       .row
         .col-md-12
-          .selection-info.pull-back
-            %span{ ng-show:"selection.length == 1" }
-              1 message selected
-            %span{ ng-show:"selection.length > 1" }
-              [[ selection.length ]] messages selected
-          .selection-buttons.btn-group.pull-away
-            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"labelSelection()", type:"button" }
-              %span.glyphicon.glyphicon-tag
-              - trans "Label"
-            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"flagSelection()", type:"button" }
+          .selection-controls.pull-back
+            .btn-group{ dropdown:"true" }
+              %button.btn.btn-default.dropdown-toggle{ type:"button", dropdown-toggle:"true" }
+                - trans "Select"
+                %span.caret
+              %ul.dropdown-menu
+                %li
+                  %a{ href:"#", ng-click:"selectAll()" }
+                    - trans "All"
+                %li
+                  %a{ href:"#", ng-click:"selectNone()" }
+                    - trans "None"
+
+          %span.selection-info{ ng-show:"selection.length > 0" }
+            [[ selection.length ]] of [[ totalMessages ]] messages selected
+          %span.selection-info{ ng-show:"selection.length == 0" }
+            [[ totalMessages ]] messages
+
+          .selection-actions.btn-group.pull-away
+            .btn-group{ dropdown:"true" }
+              %button.btn.btn-default.dropdown-toggle{ type:"button", dropdown-toggle:"true", ng-disabled:"selection.length == 0", tooltip:"Label" }
+                %span.glyphicon.glyphicon-tag
+                %span.caret
+              %ul.dropdown-menu
+                - for label in labels
+                  - if label != self.object
+                    %li
+                      %a{ href:"#", ng-click:'labelSelection("{{ label.name }}")' }
+                        {{ label.name }}
+            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"flagSelection()", type:"button", tooltip:"Flag" }
               %span.glyphicon.glyphicon-flag
-              - trans "Flag"
             %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"replyToSelection()", type:"button" }
               - trans "Reply"
             %button.btn.btn-default{ ng-disabled:"selection.length != 1", ng-click:"caseForSelection()", type:"button" }
@@ -65,65 +84,37 @@
               - trans "Forward"
             %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"archiveSelection()", type:"button" }
               - trans "Archive"
-    .messages
+
+    .messages{ infinite-scroll:"loadOldMessages()", infinite-scroll-disabled:"loadingOld || !hasOlder" }
       .message{ ng-repeat:"message in messages | filter:{ archived: false }", ng-class:"{ flagged: message.flagged }" }
         .message-actions
-          %input{ type:"checkbox", ng-model:"message.selected", ng-change:"selectionUpdate()" }
+          %input{ type:"checkbox", ng-model:"message.selected", ng-change:"updateSelection()" }
           %a.flag{ ng-click:"toggleMessageFlag(message)" }
             %span.glyphicon.glyphicon-flag
         .message-time
           [[ message.time | autodate ]]
         .message-text
-          %span.label-container{ ng-repeat:"label in message.labels | filter:isOtherLabel" }
+          %span.label-container{ ng-repeat:"label in message.labels" }
             %span.label.label-default
-              [[ label.name ]]
+              [[ label ]]
             &nbsp;
           [[ message.text ]]
       .loading{ ng-if:"loadingOld" }
       .none{ ng-hide:"messages.length > 0" }
         - trans "No messages"
 
-    %script{ type:"text/ng-template", id:"flagModal.html" }
+    %script{ type:"text/ng-template", id:"confirmModal.html" }
       .modal-header
         %h3.modal-title
-          Flag
+          - trans "Confirm"
         .modal-body
-          Flag the selected [[ selection.length ]] messages?
+          %span{ ng-bind-html:"prompt" }
         .modal-footer
           %button.btn.btn-primary{ ng-click:"ok()" }
             - trans "OK"
           %button.btn.btn-warning{ ng-click:"cancel()" }
             - trans "Cancel"
 
-    %script{ type:"text/ng-template", id:"labelModal.html" }
-      .modal-header
-        %h3.modal-title
-          Label
-        .modal-body
-          Apply label
-          %select.form-control{ ng-model:"" }
-            - for label in labels
-              - if label.pk != object.pk
-                %option{ value:"{{ label.id }}" }
-                  {{ label.name }}
-          to the selected [[ selection.length ]] messages?
-        .modal-footer
-          %button.btn.btn-primary{ ng-click:"ok()" }
-            - trans "OK"
-          %button.btn.btn-warning{ ng-click:"cancel()" }
-            - trans "Cancel"
-
-    %script{ type:"text/ng-template", id:"archiveModal.html" }
-      .modal-header
-        %h3.modal-title
-          Archive
-        .modal-body
-          Remove the selected [[ selection.length ]] messages from the inbox?
-        .modal-footer
-          %button.btn.btn-primary{ ng-click:"ok()" }
-            - trans "OK"
-          %button.btn.btn-warning{ ng-click:"cancel()" }
-            - trans "Cancel"
 
 - block extra-style
   {{ block.super }}
@@ -141,7 +132,8 @@
       border-top: 1px solid #ddd;
     }
     .selection-info {
-      padding: 6px 0 0 6px;
+      display: inline-block;
+      padding: 7px 0 0 7px;
     }
     .message {
       padding: 3px;
