@@ -1,9 +1,12 @@
 services = angular.module('upartners.services', []);
 
 
+DEFAULT_POST_OPTS = {transformRequest: angular.identity, headers: {'Content-Type': undefined}}
+
 #=====================================================================
 # Date utilities
 #=====================================================================
+
 parseIso8601 = (str) ->
   if str then new Date(Date.parse str) else null
 
@@ -14,15 +17,16 @@ formatIso8601 = (date) ->
 #=====================================================================
 # Message service
 #=====================================================================
+
 services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) ->
   new class MessageService
     constructor: ->
       @start_time = new Date()
       @old_last_page = 1
 
-    #=====================================================================
+    #----------------------------------------------------------------------------
     # Fetches old messages for the given label
-    #=====================================================================
+    #----------------------------------------------------------------------------
     fetchOldMessages: (labelId, page, searchParams, callback) ->
       params = {start_time: (formatIso8601 @start_time), page: page}
 
@@ -38,9 +42,16 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
         @_processMessages data.results
         callback(data.results, data.total, data.has_more)
 
-    #=====================================================================
+    #----------------------------------------------------------------------------
+    # Reply-to messages
+    #----------------------------------------------------------------------------
+    replyToMessages: (messages, message) ->
+      action = if flagged then 'flag' else 'unflag'
+      @_messagesAction messages, action, null
+
+    #----------------------------------------------------------------------------
     # Flag or un-flag messages
-    #=====================================================================
+    #----------------------------------------------------------------------------
     flagMessages: (messages, flagged) ->
       for msg in messages
         msg.flagged = flagged
@@ -48,9 +59,9 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       action = if flagged then 'flag' else 'unflag'
       @_messagesAction messages, action, null
 
-    #=====================================================================
+    #----------------------------------------------------------------------------
     # Label messages
-    #=====================================================================
+    #----------------------------------------------------------------------------
     labelMessages: (messages, label) ->
       without_label = []
       for msg in messages
@@ -61,34 +72,52 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       if without_label.length > 0
         @_messagesAction without_label, 'label', label
 
-    #=====================================================================
+    #----------------------------------------------------------------------------
     # Archive messages
-    #=====================================================================
+    #----------------------------------------------------------------------------
     archiveMessages: (messages) ->
       for msg in messages
         msg.archived = true
 
       @_messagesAction messages, 'archive', null
 
-    #=====================================================================
+    #----------------------------------------------------------------------------
     # POSTs to the messages action endpoint
-    #=====================================================================
+    #----------------------------------------------------------------------------
     _messagesAction: (messages, action, label) ->
       data = new FormData();
       data.append('message_ids', (msg.id for msg in messages))
       data.append('label', label)
 
-      $http.post '/messages/' + action + '/', data, {
-        transformRequest: angular.identity,
-        headers: {'Content-Type': undefined}
-      }
+      $http.post '/messages/' + action + '/', data, DEFAULT_POST_OPTS
 
-    #=====================================================================
+    #----------------------------------------------------------------------------
     # Processes incoming messages
-    #=====================================================================
+    #----------------------------------------------------------------------------
     _processMessages: (messages) ->
       for msg in messages
         # parse datetime string
         msg.time = parseIso8601 msg.time
         msg.archived = false
+]
+
+
+#=====================================================================
+# Case service
+#=====================================================================
+
+services.factory 'CaseService', ['$rootScope', '$http', ($rootScope, $http) ->
+  new class CaseService
+
+    #----------------------------------------------------------------------------
+    # Creates new case
+    #----------------------------------------------------------------------------
+    createNewCase: (message, callback) ->
+      data = new FormData();
+      data.append('message_id', message.id)
+      data.append('labels', message.labels)
+
+      $http.post '/case/create/', data, DEFAULT_POST_OPTS
+      .success (data) ->
+        callback(data.case_id)
 ]

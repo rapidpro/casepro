@@ -61,12 +61,20 @@ class LabelReadView(OrgObjPermsMixin, SmartReadView):
 
     def get_context_data(self, **kwargs):
         context = super(LabelReadView, self).get_context_data(**kwargs)
+        user = self.request.user
+
+        # TODO move this to middleware
+        self.request.partner = user.profile.partner if user.has_profile() else None
+
+        partners = list(Partner.get_all(self.request.org))
 
         context['inbox_count'] = self.object.get_count()
         context['open_count'] = Case.get_open(self.request.org, self.object).count()
         context['closed_count'] = Case.get_closed(self.request.org, self.object).count()
         context['groups'] = Group.get_all(self.request.org)
         context['labels'] = Label.get_all(self.request.org)
+        context['partners'] = partners
+
         return context
 
 
@@ -157,7 +165,8 @@ class LabelCRUDL(SmartCRUDL):
             def render_msg(m):
                 flagged = 'Flagged' in m.labels
                 labels = intersection(display_labels, m.labels)
-                return {'id': m.id, 'text': m.text, 'time': m.created_on, 'labels': labels, 'flagged': flagged}
+                return {'id': m.id, 'text': m.text, 'contact': m.contact, 'time': m.created_on,
+                        'labels': labels, 'flagged': flagged}
 
             results = [render_msg(msg) for msg in context['messages']]
 
@@ -217,3 +226,11 @@ class MessageActions(View):
             client.archive_messages(message_ids)
 
         return HttpResponse(status=204)
+
+
+class ContactActions(View):
+    actions = ('send',)
+
+    @classmethod
+    def get_url_pattern(cls):
+        return r'^contacts/(?P<action>%s)/$' % '|'.join(cls.actions)

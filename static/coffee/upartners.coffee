@@ -24,11 +24,3 @@ $ ->
   # initialize select2 widgets
   $('.select2').each ->
     $(this).select2({ theme: "bootstrap" })
-
-  # initialize datetime picker widgets
-  #$('.datepicker').each ->
-  #  $(this).datetimepicker({
-  #    format: 'MMM DD, YYYY',
-  #    maxDate: new Date()
-  #  })
-
