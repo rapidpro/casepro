@@ -2,6 +2,35 @@ controllers = angular.module('upartners.controllers', ['upartners.services']);
 
 
 #============================================================================
+# Label controller
+#============================================================================
+
+controllers.controller 'LabelController', [ '$scope', '$modal', '$window', ($scope, $modal, $window) ->
+
+  $scope.init = (labelId) ->
+    $scope.labelId = labelId
+
+    $scope.partners = $window.contextData.partners
+    $scope.labels = $window.contextData.labels
+    $scope.otherLabels = (l for l in $scope.labels when l.id != $scope.labelId)
+    $scope.groups = $window.contextData.groups
+
+  $scope.deleteLabel = () ->
+    $scope.showConfirm 'Delete this label?', true, () ->
+      alert('TODO: delete label')
+
+  #----------------------------------------------------------------------------
+  # Support functions
+  #----------------------------------------------------------------------------
+
+  $scope.showConfirm = (prompt, danger, callback) ->
+    resolve = {prompt: (() -> prompt), danger: (() -> danger)}
+    $modal.open({templateUrl: 'confirmModal.html', controller: 'ConfirmModalController', resolve: resolve})
+    .result.then () ->
+      callback()
+]
+
+#============================================================================
 # Label messages controller
 #============================================================================
 
@@ -16,10 +45,7 @@ controllers.controller 'LabelMessagesController', [ '$scope', '$modal', 'Message
   $scope.page = 1
   $scope.totalMessages = 0
 
-  $scope.init = (labelId, partners) ->
-    $scope.labelId = labelId
-    $scope.partners = partners
-
+  $scope.init = () ->
     $scope.loadOldMessages()
 
   #----------------------------------------------------------------------------
@@ -67,15 +93,15 @@ controllers.controller 'LabelMessagesController', [ '$scope', '$modal', 'Message
   #----------------------------------------------------------------------------
 
   $scope.labelSelection = (label) ->
-    _showConfirm 'Apply the label <strong>' + label + '</strong> to the selected messages?', () ->
+    $scope.showConfirm 'Apply the label <strong>' + label + '</strong> to the selected messages?', false, () ->
       MessageService.labelMessages($scope.selection, label)
 
   $scope.flagSelection = () ->
-    _showConfirm 'Flag the selected messages?', () ->
+    $scope.showConfirm 'Flag the selected messages?', false, () ->
       MessageService.flagMessages($scope.selection, true)
 
   $scope.caseForSelection = () ->
-    $modal.open({templateUrl: 'openCaseModal.html', controller: 'OpenCaseModalController', resolve: {}})
+    $modal.open({templateUrl: 'openCaseModal.html', controller: 'OpenCaseModalController', resolve: {partners: () -> $scope.partners}})
     .result.then (partner) ->
       alert("TODO: open case assigned to " + partner + " for: " + $scope.selection)
 
@@ -92,22 +118,13 @@ controllers.controller 'LabelMessagesController', [ '$scope', '$modal', 'Message
       alert("TODO: forward '" + data.message + "' to: " + data.recipient)
 
   $scope.archiveSelection = () ->
-    _showConfirm 'Archive the selected messages? This will remove them from the inbox.', () ->
+    $scope.showConfirm 'Archive the selected messages? This will remove them from the inbox.', false, () ->
       MessageService.archiveMessages($scope.selection)
 
   $scope.toggleMessageFlag = (message) ->
     prevState = message.flagged
     message.flagged = !prevState
     MessageService.flagMessages([message], message.flagged)
-
-  #----------------------------------------------------------------------------
-  # Support functions
-  #----------------------------------------------------------------------------
-
-  _showConfirm = (prompt, callback) ->
-    $modal.open({templateUrl: 'confirmModal.html', controller: 'ConfirmModalController', resolve: {prompt: () -> prompt}})
-    .result.then () ->
-      callback()
 ]
 
 
@@ -115,8 +132,9 @@ controllers.controller 'LabelMessagesController', [ '$scope', '$modal', 'Message
 # Modal dialog controllers
 #============================================================================
 
-controllers.controller 'ConfirmModalController', [ '$scope', '$modalInstance', 'prompt', ($scope, $modalInstance, prompt) ->
+controllers.controller 'ConfirmModalController', [ '$scope', '$modalInstance', 'prompt', 'danger', ($scope, $modalInstance, prompt, danger) ->
   $scope.prompt = prompt
+  $scope.danger = danger
   $scope.ok = () -> $modalInstance.close(true)
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
@@ -134,9 +152,10 @@ controllers.controller 'ForwardModalController', [ '$scope', '$modalInstance', '
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
 
-controllers.controller 'OpenCaseModalController', [ '$scope', '$modalInstance', ($scope, $modalInstance) ->
-  $scope.partner = null
-  $scope.ok = () -> $modalInstance.close($scope.partner)
+controllers.controller 'OpenCaseModalController', [ '$scope', '$modalInstance', 'partners', ($scope, $modalInstance, partners) ->
+  $scope.partners = partners
+  $scope.selectedPartner = partners[0]
+  $scope.ok = () -> $modalInstance.close($scope.selectedPartner)
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
 

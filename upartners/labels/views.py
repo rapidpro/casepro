@@ -1,5 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
+import json
+
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import intersection
 from django import forms
@@ -18,6 +20,9 @@ SYSTEM_LABEL_FLAGGED = "Flagged"
 
 
 def parse_csv(csv, as_ints=False):
+    """
+    Parses a comma separated list of values as strings or integers
+    """
     items = []
     for val in csv.split(','):
         items.append(int(val) if as_ints else val.strip())
@@ -63,17 +68,26 @@ class LabelReadView(OrgObjPermsMixin, SmartReadView):
         context = super(LabelReadView, self).get_context_data(**kwargs)
         user = self.request.user
 
-        # TODO move this to middleware
+        # TODO move this to middleware ?
         self.request.partner = user.profile.partner if user.has_profile() else None
 
-        partners = list(Partner.get_all(self.request.org))
+        labels = Label.get_all(self.request.org)
+        partners = Partner.get_all(self.request.org)
+        groups = Group.get_all(self.request.org)
 
         context['inbox_count'] = self.object.get_count()
         context['open_count'] = Case.get_open(self.request.org, self.object).count()
         context['closed_count'] = Case.get_closed(self.request.org, self.object).count()
-        context['groups'] = Group.get_all(self.request.org)
-        context['labels'] = Label.get_all(self.request.org)
-        context['partners'] = partners
+
+        # TODO figure out how to initialize the group options with angular and remove this
+        context['groups'] = groups
+
+        # angular app requires context data in JSON format
+        context['context_data_json'] = json.dumps(dict(
+            labels=[dict(id=l.pk, name=l.name) for l in labels],
+            partners=[dict(id=p.pk, name=p.name) for p in partners],
+            groups=[dict(id=g.pk, name=g.name) for g in groups],
+        ))
 
         return context
 

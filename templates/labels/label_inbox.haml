@@ -2,7 +2,7 @@
 - load smartmin i18n
 
 - block label-items
-  .{ ng-controller:"LabelMessagesController", ng-init:"init({{ object.pk }})" }
+  .{ ng-controller:"LabelMessagesController", ng-init:"init()" }
     .search-toolbar
       .row
         .col-md-12{ style:"padding-bottom: 5px" }
@@ -68,11 +68,9 @@
                 %span.glyphicon.glyphicon-tag
                 %span.caret
               %ul.dropdown-menu
-                - for label in labels
-                  - if label != object
-                    %li
-                      %a{ href:"#", ng-click:'labelSelection("{{ label.name }}")' }
-                        {{ label.name }}
+                %li{ ng-repeat:"label in otherLabels" }
+                  %a{ href:"#", ng-click:"labelSelection(label.name)" }
+                    [[ label.name ]]
             %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"flagSelection()", type:"button", tooltip:"Flag" }
               %span.glyphicon.glyphicon-flag
             %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"replyToSelection()", type:"button" }
@@ -103,18 +101,6 @@
       .none{ ng-hide:"messages.length > 0" }
         - trans "No messages"
 
-    %script{ type:"text/ng-template", id:"confirmModal.html" }
-      .modal-header
-        %h3.modal-title
-          - trans "Confirm"
-        .modal-body
-          %span{ ng-bind-html:"prompt" }
-        .modal-footer
-          %button.btn.btn-primary{ ng-click:"ok()" }
-            - trans "OK"
-          %button.btn.btn-warning{ ng-click:"cancel()" }
-            - trans "Cancel"
-
     %script{ type:"text/ng-template", id:"replyModal.html" }
       .modal-header
         %h3.modal-title
@@ -126,7 +112,7 @@
         .modal-footer
           %button.btn.btn-primary{ ng-click:"ok()" }
             - trans "Send"
-          %button.btn.btn-warning{ ng-click:"cancel()" }
+          %button.btn.btn-default{ ng-click:"cancel()" }
             - trans "Cancel"
 
     %script{ type:"text/ng-template", id:"forwardModal.html" }
@@ -148,7 +134,7 @@
         .modal-footer
           %button.btn.btn-primary{ ng-click:"ok()" }
             - trans "Send"
-          %button.btn.btn-warning{ ng-click:"cancel()" }
+          %button.btn.btn-default{ ng-click:"cancel()" }
             - trans "Cancel"
 
     %script{ type:"text/ng-template", id:"openCaseModal.html" }
@@ -162,14 +148,11 @@
             .form-group
               %label.control-label{ for:"case-partner" }
                 - trans "Assigned to"
-              %select.form-control{ ng-model:"partner", id:"case-partner" }
-                - for partner in partners
-                  %option{ value:"{{ partner.pk }}" }
-                    {{ partner.name }}
+              %select.form-control{ ng-model:"selectedPartner", ng-options:"p.name for p in partners track by p.id", id:"case-partner" }
         .modal-footer
           %button.btn.btn-primary{ ng-click:"ok()" }
             - trans "Open"
-          %button.btn.btn-warning{ ng-click:"cancel()" }
+          %button.btn.btn-default{ ng-click:"cancel()" }
             - trans "Cancel"
 
 
