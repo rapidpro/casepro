@@ -17,11 +17,11 @@ from upartners.partners.models import Partner
 SYSTEM_LABEL_FLAGGED = "Flagged"
 
 
-def parse_ids_param(val):
-    ids = []
-    for id_str in val.split(','):
-        ids.append(int(id_str))
-    return ids
+def parse_csv(csv, as_ints=False):
+    items = []
+    for val in csv.split(','):
+        items.append(int(val) if as_ints else val.strip())
+    return items
 
 
 class LabelForm(forms.ModelForm):
@@ -145,13 +145,16 @@ class LabelCRUDL(SmartCRUDL):
             text = self.request.GET.get('text', None)
             after = parse_iso8601(self.request.GET.get('after', None))
             before = parse_iso8601(self.request.GET.get('before', None))
-            groups = self.request.GET.get('groups', None)
+
+            group_uuids = self.request.GET.get('groups', None)
+            group_uuids = parse_csv(group_uuids) if group_uuids else None
+
             reverse = self.request.GET.get('reverse', 'false')
 
             client = self.request.org.get_temba_client()
             pager = client.pager(start_page=page)
             messages = client.get_messages(pager=pager, labels=[self.object.name], direction='I',
-                                           after=after, before=before, groups=groups, text=text, reverse=reverse)
+                                           after=after, before=before, groups=group_uuids, text=text, reverse=reverse)
 
             context['page'] = page
             context['has_more'] = pager.has_more()
@@ -212,7 +215,7 @@ class MessageActions(View):
 
     def post(self, request, *args, **kwargs):
         action = kwargs['action']
-        message_ids = parse_ids_param(self.request.POST.get('message_ids', ''))
+        message_ids = parse_csv(self.request.POST.get('message_ids', ''), as_ints=True)
         label = self.request.POST.get('label', None)
         client = self.request.org.get_temba_client()
 
