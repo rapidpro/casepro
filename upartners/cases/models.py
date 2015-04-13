@@ -31,9 +31,13 @@ class Case(models.Model):
 
     labels = models.ManyToManyField(Label, verbose_name=_("Labels"), related_name='cases')
 
-    partner = models.ForeignKey(Partner, related_name="cases")
+    assignee = models.ForeignKey(Partner, related_name="cases")
 
-    contact_uuid = models.CharField(max_length=36)
+    contact_uuid = models.CharField(max_length=36, db_index=True)
+
+    message_id = models.IntegerField()
+
+    message_on = models.DateTimeField(help_text="When initial message was sent")
 
     opened_on = models.DateTimeField(auto_now_add=True,
                                      help_text="When this case was opened")
@@ -42,8 +46,29 @@ class Case(models.Model):
                                      help_text="When this case was closed")
 
     @classmethod
-    def open(cls, org, user, labels, partner, contact_uuid):
-        case = cls.objects.create(org=org, partner=partner, contact_uuid=contact_uuid)
+    def get_all(cls, org, label=None):
+        qs = cls.objects.filter(org=org)
+        if label:
+            qs = qs.filter(labels=label)
+        return qs
+
+    @classmethod
+    def get_open(cls, org, label=None):
+        return cls.get_all(org, label).filter(closed_on=None)
+
+    @classmethod
+    def get_closed(cls, org, label=None):
+        return cls.get_all(org, label).exclude(closed_on=None)
+
+    @classmethod
+    def get_for_contact(cls, org, contact_uuid):
+        return cls.get_all(org).filter(contact_uuid)
+
+    @classmethod
+    def open(cls, org, user, labels, partner, contact_uuid, message_id, message_on):
+        case = cls.objects.create(org=org, assignee=partner, contact_uuid=contact_uuid,
+                                  message_id=message_id, message_on=message_on)
+
         case.labels.add(*labels)
 
         CaseAction.create(case, user, ACTION_OPEN, assignee=partner)
@@ -74,8 +99,8 @@ class Case(models.Model):
         if not self._can_edit(user):
             raise PermissionDenied()
 
-        self.partner = partner
-        self.save(update_fields=('partner',))
+        self.assignee = partner
+        self.save(update_fields=('assignee',))
 
         CaseAction.create(self, user, ACTION_REASSIGN, assignee=partner)
 
@@ -83,32 +108,17 @@ class Case(models.Model):
         if user.is_admin_for(self.org):
             return True
 
-        return user.has_profile() and user.profile.partner == self.partner
-
-    @classmethod
-    def get_all(cls, org, label=None):
-        qs = cls.objects.filter(org=org)
-        if label:
-            qs = qs.filter(labels=label)
-        return qs
-
-    @classmethod
-    def get_open(cls, org, label=None):
-        return cls.get_all(org, label).filter(closed_on=None)
-
-    @classmethod
-    def get_closed(cls, org, label=None):
-        return cls.get_all(org, label).exclude(closed_on=None)
+        return user.has_profile() and user.profile.partner == self.assignee
 
 
 class CaseAction(models.Model):
-    case = models.ForeignKey(Case, related_name="history")
+    case = models.ForeignKey(Case, related_name="actions")
 
     action = models.CharField(max_length=1, choices=CASE_ACTION_CHOICES)
 
-    performed_by = models.ForeignKey(User, related_name="case_actions")
+    created_by = models.ForeignKey(User, related_name="case_actions")
 
-    performed_on = models.DateTimeField(auto_now_add=True)
+    created_on = models.DateTimeField(auto_now_add=True)
 
     assignee = models.ForeignKey(Partner, null=True, related_name="case_actions")
 
@@ -116,7 +126,15 @@ class CaseAction(models.Model):
 
     @classmethod
     def create(cls, case, user, action, assignee=None, note=None):
-        CaseAction.objects.create(case=case, action=action, performed_by=user, assignee=assignee, note=note)
+        CaseAction.objects.create(case=case, action=action, created_by=user, assignee=assignee, note=note)
+
+    def as_json(self):
+        return dict(id=self.pk,
+                    action=self.action,
+                    created_by=dict(id=self.created_by.pk, name=self.created_by.get_full_name()),
+                    created_on=self.created_on,
+                    assignee=self.assignee.as_json(),
+                    note=self.note)
 
     class Meta:
         ordering = ('pk',)

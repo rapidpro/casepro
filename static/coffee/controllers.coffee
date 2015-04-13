@@ -2,18 +2,32 @@ controllers = angular.module('upartners.controllers', ['upartners.services']);
 
 
 #============================================================================
-# Label controller
+# Inbox controller
 #============================================================================
 
-controllers.controller 'LabelController', [ '$scope', '$modal', '$window', ($scope, $modal, $window) ->
+controllers.controller 'InboxController', [ '$scope', '$modal', '$window', ($scope, $modal, $window) ->
 
-  $scope.init = (labelId) ->
-    $scope.labelId = labelId
-
+  $scope.init = (initialLabelId) ->
     $scope.partners = $window.contextData.partners
     $scope.labels = $window.contextData.labels
-    $scope.otherLabels = (l for l in $scope.labels when l.id != $scope.labelId)
     $scope.groups = $window.contextData.groups
+
+    # find and activate initial label
+    initialLabel = null
+    for l in $scope.labels
+        if l.id == initialLabelId
+          initialLabel = l
+          break
+    $scope.activateLabel initialLabel
+
+  $scope.activateLabel = (label) ->
+    $scope.activeLabel = label
+    if label
+      $scope.inactiveLabels = (l for l in $scope.labels when l.id != label.id)
+    else
+      $scope.inactiveLabels = $scope.labels
+
+    $scope.$broadcast('activeLabelChange')
 
   $scope.deleteLabel = () ->
     $scope.showConfirm 'Delete this label?', true, () ->
@@ -31,10 +45,10 @@ controllers.controller 'LabelController', [ '$scope', '$modal', '$window', ($sco
 ]
 
 #============================================================================
-# Label messages controller
+# Messages controller
 #============================================================================
 
-controllers.controller 'LabelMessagesController', [ '$scope', '$modal', 'MessageService', ($scope, $modal, MessageService) ->
+controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageService', ($scope, $modal, MessageService) ->
 
   $scope.messages = []
   $scope.selection = []
@@ -46,16 +60,25 @@ controllers.controller 'LabelMessagesController', [ '$scope', '$modal', 'Message
   $scope.totalMessages = 0
 
   $scope.init = () ->
-    $scope.loadOldMessages()
+    $scope.$on 'activeLabelChange', () ->
+      $scope.search = { text: null, groups: [], after: null, before: null, reverse: false }
+      $scope.onMessageSearch()
+
+    $scope.onMessageSearch()
 
   #----------------------------------------------------------------------------
   # Message fetching
   #----------------------------------------------------------------------------
 
+  $scope.onMessageSearch = () ->
+    $scope.activeSearch = $scope.search
+    $scope.page = 1
+    $scope.loadOldMessages()
+
   $scope.loadOldMessages = ->
     $scope.loadingOld = true
 
-    MessageService.fetchOldMessages $scope.labelId, $scope.page, $scope.search, (messages, total, hasOlder) ->
+    MessageService.fetchOldMessages $scope.activeLabel, $scope.page, $scope.search, (messages, total, hasOlder) ->
       if $scope.page == 1
         $scope.messages = messages
       else
@@ -65,11 +88,6 @@ controllers.controller 'LabelMessagesController', [ '$scope', '$modal', 'Message
       $scope.page += 1
       $scope.totalMessages = total
       $scope.loadingOld = false
-
-  $scope.onMessageSearch = () ->
-    $scope.activeSearch = $scope.search
-    $scope.page = 1
-    $scope.loadOldMessages()
 
   #----------------------------------------------------------------------------
   # Selection controls
@@ -125,6 +143,38 @@ controllers.controller 'LabelMessagesController', [ '$scope', '$modal', 'Message
     prevState = message.flagged
     message.flagged = !prevState
     MessageService.flagMessages([message], message.flagged)
+]
+
+
+#============================================================================
+# Case controller
+#============================================================================
+
+controllers.controller 'CaseController', [ '$scope', '$modal', '$window', ($scope, $modal, $window) ->
+
+  $scope.init = (caseId) ->
+    $scope.caseId = caseId
+
+  $scope.closeCase = () ->
+    alert('TODO')
+]
+
+
+#============================================================================
+# Case timeline controller
+#============================================================================
+
+controllers.controller 'CaseTimelineController', [ '$scope', 'CaseService', ($scope, CaseService) ->
+
+  $scope.timeline = []
+
+  $scope.init = () ->
+    $scope.update()
+
+  $scope.update = () ->
+    CaseService.fetchTimeline $scope.caseId, null, (events) ->
+      $scope.timeline = events
+
 ]
 
 

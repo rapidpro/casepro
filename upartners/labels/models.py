@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.models import Org
-from dash.utils import get_obj_cacheable
+from dash.utils import get_obj_cacheable, intersection
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from upartners.partners.models import Partner
@@ -15,6 +15,16 @@ def parse_keywords(csv):
         if w:
             keywords.append(w)
     return keywords
+
+
+def message_as_json(msg, include_labels):
+    """
+    Prepares a message (fetched from RapidPro) for JSON serialization
+    """
+    flagged = 'Flagged' in msg.labels
+    labels = intersection(include_labels, msg.labels)
+    return {'id': msg.id, 'text': msg.text, 'contact': msg.contact,
+            'time': msg.created_on, 'labels': labels, 'flagged': flagged}
 
 
 class Label(models.Model):

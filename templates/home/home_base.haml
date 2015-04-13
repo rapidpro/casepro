@@ -8,41 +8,46 @@
   %script{ type:"text/javascript" }
     var contextData = {{ context_data_json|safe }};
 
-  .{ ng-controller:"LabelController", ng-init:"init({{ object.pk }})" }
+  .{ ng-controller:"InboxController", ng-init:'init({{ initial_label_id|default:"null" }})' }
     .page-header.clearfix
       %h2.pull-back
-        %span.glyphicon.glyphicon-tag
-        &nbsp;
-        {{ title }}
+        %span{ ng-if:"activeLabel" }
+          %span.glyphicon.glyphicon-tag
+          &nbsp;
+          [[ activeLabel.name ]]
+        %span{ ng-if:"!activeLabel" }
+          - trans "Inbox"
 
-      .page-header-buttons
+      .page-header-buttons{ ng-if:"activeLabel" }
         - if org_perms.labels.label_update or org_perms.labels.label_delete
           .btn-group
             - if org_perms.labels.label_update
-              %a.btn.btn-default{ href:"{% url 'labels.label_update' object.pk %}", tooltip:"Edit" }
+              %a.btn.btn-default{ ng-href:"'/label/update/[[ activeLabel.id ]]/", tooltip:"Edit Label" }
                 %span.glyphicon.glyphicon-pencil
             - if org_perms.labels.label_delete
-              %button.btn.btn-default{ ng-click:"deleteLabel()", tooltip:"Delete" }
+              %button.btn.btn-default{ ng-click:"deleteLabel()", tooltip:"Delete Label" }
                 %span.glyphicon.glyphicon-trash
 
     .row
       .col-md-2
         .label-menu
-          %h3
-            - trans "Cases"
           %ul
             %li
-              %a{ href:"{% url 'labels.label_inbox' object.pk %}" }
-                - blocktrans with count=inbox_count
-                  Inbox ({{ count }})
-            %li
-              %a{ href:"{% url 'labels.label_open' object.pk %}" }
-                - blocktrans with count=open_count
-                  Open ({{ count }})
-            %li
-              %a{ href:"{% url 'labels.label_closed' object.pk %}" }
-                - blocktrans with count=closed_count
-                  Closed ({{ count }})
+              %a{ href:"#", ng-click:"activateLabel(null)" }
+                %strong{ ng-if:"!activeLabel" }
+                  - trans "Inbox"
+                %span{ ng-if:"activeLabel" }
+                  - trans "Inbox"
+        .label-menu
+          %h3
+            - trans "Labels"
+          %ul
+            %li{ ng-repeat:"label in labels" }
+              %a{ href:"#", ng-click:"activateLabel(label)" }
+                %strong{ ng-if:"label == activeLabel" }
+                  [[ label.name ]]
+                %span{ ng-if:"label != activeLabel" }
+                  [[ label.name ]]
       .col-md-10
         - block label-items
 

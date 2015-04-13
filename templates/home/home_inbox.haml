@@ -1,8 +1,8 @@
-- extends "labels/label_base.html"
+- extends "home/home_base.html"
 - load smartmin i18n
 
 - block label-items
-  .{ ng-controller:"LabelMessagesController", ng-init:"init()" }
+  .{ ng-controller:"MessagesController", ng-init:"init()" }
     .search-toolbar
       .row
         .col-md-12{ style:"padding-bottom: 5px" }
@@ -68,7 +68,7 @@
                 %span.glyphicon.glyphicon-tag
                 %span.caret
               %ul.dropdown-menu
-                %li{ ng-repeat:"label in otherLabels" }
+                %li{ ng-repeat:"label in inactiveLabels" }
                   %a{ href:"#", ng-click:"labelSelection(label.name)" }
                     [[ label.name ]]
             %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"flagSelection()", type:"button", tooltip:"Flag" }

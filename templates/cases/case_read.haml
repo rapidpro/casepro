@@ -1,0 +1,45 @@
+- extends "smartmin/read.html"
+- load smartmin i18n
+
+- block pre-content
+
+- block content
+
+  .{ ng-controller:"CaseController", ng-init:"init({{ object.pk }})" }
+    .page-header.clearfix
+      %h2.pull-back
+        - if object.closed_on
+          %span.glyphicon.glyphicon-folder-close
+        - else
+          %span.glyphicon.glyphicon-folder-open
+        &nbsp;
+        Case #{{ object.pk }}
+
+      .page-header-buttons
+        %button.btn.btn-default{ type:"button", ng-click:"closeCase()" }
+          - trans "Close"
+
+    .row
+      .col-md-12
+        .{ ng-controller:"CaseTimelineController", ng-init:"init()" }
+          .row.timeline-event{ ng-repeat:"event in timeline", ng-class:'{ "event.is_action": "italic" }' }
+            .timeline-action{ ng-if:"event.is_action" }
+              [[ event.time | autodate ]]
+              %span{ ng-if:'event.item.action == "O"' }
+                %a{ ng-href:"user/read/[[ event.item.created_by.id ]]/" }
+                  [[ event.item.created_by.name ]]
+                opened this case
+
+            .timeline-message{ ng-if:"event.is_message" }
+              M [[ event.time | autodate ]]: [[ event.text ]]
+
+
+- block extra-style
+  {{ block.super }}
+  :css
+    .timeline-event .timeline-action {
+      background-color: #FAFD9A;
+    }
+    .timeline-event .timeline-message {
+      background-color: #91ACC3;
+    }

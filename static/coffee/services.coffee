@@ -27,8 +27,8 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     # Fetches old messages for the given label
     #----------------------------------------------------------------------------
-    fetchOldMessages: (labelId, page, searchParams, callback) ->
-      params = {start_time: (formatIso8601 @start_time), page: page}
+    fetchOldMessages: (label, page, searchParams, callback) ->
+      params = {start_time: (formatIso8601 @start_time), page: page, label: if label then label.id else null}
 
       # add search params
       params.text = searchParams.text
@@ -37,7 +37,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       params.groups = searchParams.groups.join(',')
       params.reverse = searchParams.reverse
 
-      $http.get '/label/messages/' + labelId + '/?' + $.param(params)
+      $http.get '/messages/?' + $.param(params)
       .success (data) =>
         @_processMessages data.results
         callback(data.results, data.total, data.has_more)
@@ -65,12 +65,12 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     labelMessages: (messages, label) ->
       without_label = []
       for msg in messages
-        if label not in msg.labels
+        if label.name not in msg.labels
           without_label.push(msg)
-          msg.labels.push(label)
+          msg.labels.push(label.name)
 
       if without_label.length > 0
-        @_messagesAction without_label, 'label', label
+        @_messagesAction without_label, 'label', label.name
 
     #----------------------------------------------------------------------------
     # Archive messages
@@ -89,7 +89,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       data.append('message_ids', (msg.id for msg in messages))
       data.append('label', label)
 
-      $http.post '/messages/' + action + '/', data, DEFAULT_POST_OPTS
+      $http.post '/message_action/' + action + '/', data, DEFAULT_POST_OPTS
 
     #----------------------------------------------------------------------------
     # Processes incoming messages
@@ -120,4 +120,20 @@ services.factory 'CaseService', ['$rootScope', '$http', ($rootScope, $http) ->
       $http.post '/case/create/', data, DEFAULT_POST_OPTS
       .success (data) ->
         callback(data.case_id)
+
+    #----------------------------------------------------------------------------
+    # Fetches timeline events
+    #----------------------------------------------------------------------------
+    fetchTimeline: (caseId, after, callback) ->
+      params = {after: (formatIso8601 after)}
+
+      $http.get '/case/timeline/' + caseId + '/?' + $.param(params)
+      .success (data) =>
+        for event in data.results
+          # parse datetime string
+          event.time = parseIso8601 event.time
+          event.is_action = event.type == 'A'
+          event.is_message = event.type == 'M'
+
+        callback(data.results)
 ]

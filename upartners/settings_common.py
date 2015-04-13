@@ -289,9 +289,11 @@ PERMISSIONS = {
 
     'orgs.org': ('create', 'update', 'list', 'edit', 'home'),
 
+    'cases.case': ('create', 'read', 'list'),
+
     'groups.group': ('select', 'list'),
 
-    'labels.label': ('create', 'read', 'update', 'list'),
+    'labels.label': ('create', 'update', 'list'),
 
     'partners.partner': ('create', 'read', 'update', 'list'),
 
@@ -305,18 +307,23 @@ GROUP_PERMISSIONS = {
         'orgs.org_home',
         'orgs.org_edit',
 
+        'cases.case.*',
         'groups.group.*',
         'labels.label.*',
         'partners.partner.*',
         'profiles.profile.*',
     ),
     "Editors": (
-        'labels.label_read',
+        'cases.case_create',
+        'cases.case_read',
+        'cases.case_list',
         'partners.partner_read',
         'profiles.profile_user_read',
     ),
     "Viewers": (
-        'labels.label_read',
+        'cases.case_create',
+        'cases.case_read',
+        'cases.case_list',
         'partners.partner_read',
         'profiles.profile_user_read',
     ),

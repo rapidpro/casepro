@@ -10,6 +10,7 @@ from upartners.test import UPartnersTest
 
 class CaseTest(UPartnersTest):
     def test_lifecyle(self):
+        d0 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
         d1 = datetime(2014, 1, 2, 7, 0, tzinfo=timezone.utc)
         d2 = datetime(2014, 1, 2, 8, 0, tzinfo=timezone.utc)
         d3 = datetime(2014, 1, 2, 9, 0, tzinfo=timezone.utc)
@@ -19,31 +20,31 @@ class CaseTest(UPartnersTest):
 
         with patch.object(timezone, 'now', return_value=d1):
             # MOH user assigns to self
-            case = Case.open(self.unicef, self.user1, [self.aids], self.moh, 'C-001')
+            case = Case.open(self.unicef, self.user1, [self.aids], self.moh, 'C-001', 123, d0)
 
         self.assertEqual(case.org, self.unicef)
         self.assertEqual(set(case.labels.all()), {self.aids})
-        self.assertEqual(case.partner, self.moh)
+        self.assertEqual(case.assignee, self.moh)
         self.assertEqual(case.contact_uuid, 'C-001')
         self.assertEqual(case.opened_on, d1)
         self.assertIsNone(case.closed_on)
 
-        actions = case.history.all()
+        actions = case.actions.all()
         self.assertEqual(len(actions), 1)
         self.assertEqual(actions[0].action, ACTION_OPEN)
-        self.assertEqual(actions[0].performed_by, self.user1)
-        self.assertEqual(actions[0].performed_on, d1)
+        self.assertEqual(actions[0].created_by, self.user1)
+        self.assertEqual(actions[0].created_on, d1)
         self.assertEqual(actions[0].assignee, self.moh)
 
         with patch.object(timezone, 'now', return_value=d2):
             # other user in MOH adds a note
             case.add_note(self.user2, "Interesting")
 
-        actions = case.history.all()
+        actions = case.actions.all()
         self.assertEqual(len(actions), 2)
         self.assertEqual(actions[1].action, ACTION_ADD_NOTE)
-        self.assertEqual(actions[1].performed_by, self.user2)
-        self.assertEqual(actions[1].performed_on, d2)
+        self.assertEqual(actions[1].created_by, self.user2)
+        self.assertEqual(actions[1].created_on, d2)
         self.assertEqual(actions[1].note, "Interesting")
 
         # user from other partner org can't close case
@@ -56,11 +57,11 @@ class CaseTest(UPartnersTest):
         self.assertEqual(case.opened_on, d1)
         self.assertEqual(case.closed_on, d3)
 
-        actions = case.history.all()
+        actions = case.actions.all()
         self.assertEqual(len(actions), 3)
         self.assertEqual(actions[2].action, ACTION_CLOSE)
-        self.assertEqual(actions[2].performed_by, self.user1)
-        self.assertEqual(actions[2].performed_on, d3)
+        self.assertEqual(actions[2].created_by, self.user1)
+        self.assertEqual(actions[2].created_on, d3)
 
         with patch.object(timezone, 'now', return_value=d4):
             # but second user re-opens it
@@ -69,23 +70,23 @@ class CaseTest(UPartnersTest):
         self.assertEqual(case.opened_on, d1)  # unchanged
         self.assertIsNone(case.closed_on)
 
-        actions = case.history.all()
+        actions = case.actions.all()
         self.assertEqual(len(actions), 4)
         self.assertEqual(actions[3].action, ACTION_REOPEN)
-        self.assertEqual(actions[3].performed_by, self.user2)
-        self.assertEqual(actions[3].performed_on, d4)
+        self.assertEqual(actions[3].created_by, self.user2)
+        self.assertEqual(actions[3].created_on, d4)
 
         with patch.object(timezone, 'now', return_value=d5):
             # and re-assigns it to different partner
             case.reassign(self.user2, self.who)
 
-        self.assertEqual(case.partner, self.who)
+        self.assertEqual(case.assignee, self.who)
 
-        actions = case.history.all()
+        actions = case.actions.all()
         self.assertEqual(len(actions), 5)
         self.assertEqual(actions[4].action, ACTION_REASSIGN)
-        self.assertEqual(actions[4].performed_by, self.user2)
-        self.assertEqual(actions[4].performed_on, d5)
+        self.assertEqual(actions[4].created_by, self.user2)
+        self.assertEqual(actions[4].created_on, d5)
         self.assertEqual(actions[4].assignee, self.who)
 
         with patch.object(timezone, 'now', return_value=d6):
@@ -95,8 +96,8 @@ class CaseTest(UPartnersTest):
         self.assertEqual(case.opened_on, d1)
         self.assertEqual(case.closed_on, d6)
 
-        actions = case.history.all()
+        actions = case.actions.all()
         self.assertEqual(len(actions), 6)
         self.assertEqual(actions[5].action, ACTION_CLOSE)
-        self.assertEqual(actions[5].performed_by, self.user3)
-        self.assertEqual(actions[5].performed_on, d6)
+        self.assertEqual(actions[5].created_by, self.user3)
+        self.assertEqual(actions[5].created_on, d6)
