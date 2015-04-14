@@ -107,6 +107,12 @@
                 %li
                   %a{ href:"/" }
                     - trans "Home"
+                %li
+                  %a{ href:"/inbox/" }
+                    - trans "Inbox"
+                %li
+                  %a{ href:"/case/" }
+                    - trans "Cases"
 
             %ul.nav.navbar-nav.navbar-right
               - block login
@@ -172,7 +178,7 @@
         });
       });
 
-      function display_alert(type, text) {
+      function displayAlert(type, text) {
         $('.content').prepend('<div class="alert alert-' + type + '"><a class="close" data-dismiss="alert">×</a>' + text + '</div>');
       }
 

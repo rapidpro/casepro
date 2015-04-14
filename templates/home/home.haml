@@ -15,7 +15,7 @@
             {{ label.count }}
       .col-md-10
         .label-name
-          %a{ href:"{% url 'labels.label_inbox' label.pk %}" }
+          %a{ href:"{% url 'home.label' label.pk %}" }
             {{ label.name }}
         .label-description
           {{ label.description }}

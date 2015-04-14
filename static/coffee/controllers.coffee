@@ -1,11 +1,13 @@
 controllers = angular.module('upartners.controllers', ['upartners.services']);
 
 
+URN_SCHEMES = {tel: "Phone", twitter: "Twitter"}
+
 #============================================================================
 # Inbox controller
 #============================================================================
 
-controllers.controller 'InboxController', [ '$scope', '$modal', '$window', ($scope, $modal, $window) ->
+controllers.controller 'InboxController', [ '$scope', '$window', 'LabelService', 'UtilsService', ($scope, $window, LabelService, UtilsService) ->
 
   $scope.init = (initialLabelId) ->
     $scope.partners = $window.contextData.partners
@@ -29,26 +31,19 @@ controllers.controller 'InboxController', [ '$scope', '$modal', '$window', ($sco
 
     $scope.$broadcast('activeLabelChange')
 
-  $scope.deleteLabel = () ->
-    $scope.showConfirm 'Delete this label?', true, () ->
-      alert('TODO: delete label')
-
-  #----------------------------------------------------------------------------
-  # Support functions
-  #----------------------------------------------------------------------------
-
-  $scope.showConfirm = (prompt, danger, callback) ->
-    resolve = {prompt: (() -> prompt), danger: (() -> danger)}
-    $modal.open({templateUrl: 'confirmModal.html', controller: 'ConfirmModalController', resolve: resolve})
-    .result.then () ->
-      callback()
+  $scope.onDeleteLabel = () ->
+    UtilsService.showConfirm 'Delete the label <strong>' + $scope.activeLabel.name + '</strong>?', true, () ->
+      LabelService.deleteLabel $scope.activeLabel, () ->
+        $scope.labels = (l for l in $scope.labels when l.id != $scope.activeLabel.id)
+        $scope.activateLabel(null)
+        UtilsService.displayAlert('success', 'Label was deleted')
 ]
 
 #============================================================================
 # Messages controller
 #============================================================================
 
-controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageService', ($scope, $modal, MessageService) ->
+controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageService', 'UtilsService', ($scope, $modal, MessageService, UtilsService) ->
 
   $scope.messages = []
   $scope.selection = []
@@ -56,27 +51,31 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
   $scope.hasOlder = true
   $scope.search = { text: null, groups: [], after: null, before: null, reverse: false }
   $scope.activeSearch = {}
-  $scope.page = 1
+  $scope.page = 0
   $scope.totalMessages = 0
 
   $scope.init = () ->
     $scope.$on 'activeLabelChange', () ->
-      $scope.search = { text: null, groups: [], after: null, before: null, reverse: false }
-      $scope.onMessageSearch()
+      $scope.onClearSearch()
 
+    $scope.onClearSearch()
+
+  #----------------------------------------------------------------------------
+  # Message searching and fetching
+  #----------------------------------------------------------------------------
+
+  $scope.onClearSearch = () ->
+    $scope.search = { text: null, groups: [], after: null, before: null, reverse: false }
     $scope.onMessageSearch()
-
-  #----------------------------------------------------------------------------
-  # Message fetching
-  #----------------------------------------------------------------------------
 
   $scope.onMessageSearch = () ->
     $scope.activeSearch = $scope.search
-    $scope.page = 1
+    $scope.page = 0
     $scope.loadOldMessages()
 
   $scope.loadOldMessages = ->
     $scope.loadingOld = true
+    $scope.page += 1
 
     MessageService.fetchOldMessages $scope.activeLabel, $scope.page, $scope.search, (messages, total, hasOlder) ->
       if $scope.page == 1
@@ -85,7 +84,6 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
         $scope.messages = $scope.messages.concat messages
 
       $scope.hasOlder = hasOlder
-      $scope.page += 1
       $scope.totalMessages = total
       $scope.loadingOld = false
 
@@ -111,38 +109,51 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
   #----------------------------------------------------------------------------
 
   $scope.labelSelection = (label) ->
-    $scope.showConfirm 'Apply the label <strong>' + label + '</strong> to the selected messages?', false, () ->
-      MessageService.labelMessages($scope.selection, label)
+    UtilsService.showConfirm 'Apply the label <strong>' + label + '</strong> to the selected messages?', false, () ->
+      MessageService.labelMessages $scope.selection, label
 
   $scope.flagSelection = () ->
-    $scope.showConfirm 'Flag the selected messages?', false, () ->
-      MessageService.flagMessages($scope.selection, true)
+    UtilsService.showConfirm 'Flag the selected messages?', false, () ->
+      MessageService.flagMessages $scope.selection, true
 
   $scope.caseForSelection = () ->
     $modal.open({templateUrl: 'openCaseModal.html', controller: 'OpenCaseModalController', resolve: {partners: () -> $scope.partners}})
-    .result.then (partner) ->
-      alert("TODO: open case assigned to " + partner + " for: " + $scope.selection)
+    .result.then (assignee) ->
+      alert("TODO: open case assigned to " + assignee + " for: " + $scope.selection)
 
   $scope.replyToSelection = () ->
     $modal.open({templateUrl: 'replyModal.html', controller: 'ReplyModalController', resolve: {}})
-    .result.then (message) ->
-      alert("TODO: reply with '" + message + "' to: " + $scope.selection)
+    .result.then (text) ->
+      MessageService.replyToMessages $scope.selection, text, () ->
+        UtilsService.displayAlert 'success', 'Reply sent to contacts'
 
   $scope.forwardSelection = () ->
-    original = $scope.selection[0].text
+    initialText = '"' + $scope.selection[0].text + '"'
 
-    $modal.open({templateUrl: 'forwardModal.html', controller: 'ForwardModalController', resolve: {original: () -> original}})
+    $modal.open({templateUrl: 'composeModal.html', controller: 'ComposeModalController', resolve: {
+      title: () -> "Forward",
+      initialText: () -> initialText
+    }})
     .result.then (data) ->
-      alert("TODO: forward '" + data.message + "' to: " + data.recipient)
+      MessageService.sendNewMessage data.urn, data.text, () ->
+        UtilsService.displayAlert 'success', 'Message forwarded to ' + data.urn.path
 
   $scope.archiveSelection = () ->
-    $scope.showConfirm 'Archive the selected messages? This will remove them from the inbox.', false, () ->
-      MessageService.archiveMessages($scope.selection)
+    UtilsService.showConfirm 'Archive the selected messages? This will remove them from the inbox.', false, () ->
+      MessageService.archiveMessages $scope.selection
+
+  #----------------------------------------------------------------------------
+  # Other
+  #----------------------------------------------------------------------------
 
   $scope.toggleMessageFlag = (message) ->
     prevState = message.flagged
     message.flagged = !prevState
     MessageService.flagMessages([message], message.flagged)
+
+  $scope.filterDisplayLabels = (labels) ->
+    # filters out the active label from the given set of message labels
+    if $scope.activeLabel then (l for l in labels when l.id != $scope.activeLabel.id) else labels
 ]
 
 
@@ -150,13 +161,18 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
 # Case controller
 #============================================================================
 
-controllers.controller 'CaseController', [ '$scope', '$modal', '$window', ($scope, $modal, $window) ->
+controllers.controller 'CaseController', [ '$scope', '$modal', '$window', 'CaseService', 'UtilsService', ($scope, $modal, $window, CaseService, UtilsService) ->
 
   $scope.init = (caseId) ->
     $scope.caseId = caseId
 
-  $scope.closeCase = () ->
+  $scope.reassignCase = () ->
     alert('TODO')
+
+  $scope.closeCase = () ->
+    UtilsService.showConfirm 'Close this case?', true, () ->
+      CaseService.closeCase $scope.caseId, () ->
+        $window.location.href = '/case/'
 ]
 
 
@@ -190,22 +206,34 @@ controllers.controller 'ConfirmModalController', [ '$scope', '$modalInstance', '
 ]
 
 controllers.controller 'ReplyModalController', [ '$scope', '$modalInstance', ($scope, $modalInstance) ->
-  $scope.message = ''
-  $scope.ok = () -> $modalInstance.close($scope.message)
+  $scope.text = ''
+  $scope.ok = () -> $modalInstance.close($scope.text)
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
 
-controllers.controller 'ForwardModalController', [ '$scope', '$modalInstance', 'original', ($scope, $modalInstance, original) ->
-  $scope.recipient = ''
-  $scope.message = '"' + original + '"'
-  $scope.ok = () -> $modalInstance.close({message: $scope.message, recipient: $scope.recipient})
+controllers.controller 'ComposeModalController', [ '$scope', '$modalInstance', 'title', 'initialText', ($scope, $modalInstance, title, initialText) ->
+  $scope.title = title
+  $scope.urn_scheme = null
+  $scope.urn_path = ''
+  $scope.text = initialText
+
+  $scope.setScheme = (scheme) ->
+    $scope.urn_scheme = scheme
+    $scope.urn_scheme_label = URN_SCHEMES[scheme]
+
+  $scope.ok = () ->
+    urn = {scheme: $scope.urn_scheme, path: $scope.urn_path, urn: ($scope.urn_scheme + ':' + $scope.urn_path)}
+    $modalInstance.close({text: $scope.text, urn: urn})
+
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
+
+  $scope.setScheme('tel')
 ]
 
 controllers.controller 'OpenCaseModalController', [ '$scope', '$modalInstance', 'partners', ($scope, $modalInstance, partners) ->
   $scope.partners = partners
-  $scope.selectedPartner = partners[0]
-  $scope.ok = () -> $modalInstance.close($scope.selectedPartner)
+  $scope.assignee = partners[0]
+  $scope.ok = () -> $modalInstance.close($scope.assignee)
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
 

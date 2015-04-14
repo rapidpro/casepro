@@ -1,11 +1,14 @@
 from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.models import Org
-from dash.utils import get_obj_cacheable, intersection
+from dash.utils import get_obj_cacheable
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from upartners.partners.models import Partner
 from .tasks import update_labelling_flow
+
+
+SYSTEM_LABEL_FLAGGED = "Flagged"
 
 
 def parse_keywords(csv):
@@ -15,16 +18,6 @@ def parse_keywords(csv):
         if w:
             keywords.append(w)
     return keywords
-
-
-def message_as_json(msg, include_labels):
-    """
-    Prepares a message (fetched from RapidPro) for JSON serialization
-    """
-    flagged = 'Flagged' in msg.labels
-    labels = intersection(include_labels, msg.labels)
-    return {'id': msg.id, 'text': msg.text, 'contact': msg.contact,
-            'time': msg.created_on, 'labels': labels, 'flagged': flagged}
 
 
 class Label(models.Model):
@@ -58,7 +51,7 @@ class Label(models.Model):
 
     @classmethod
     def get_all(cls, org):
-        return cls.objects.filter(org=org)
+        return cls.objects.filter(org=org, is_active=True)
 
     @classmethod
     def fetch_counts(cls, org, labels):
@@ -79,6 +72,13 @@ class Label(models.Model):
 
     def get_partners(self):
         return self.partners.filter(is_active=True)
+
+    def release(self):
+        self.is_active = False
+        self.save(update_fields=('is_active',))
+
+    def as_json(self):
+        return {'id': self.pk, 'name': self.name, 'count': getattr(self, 'count', None)}
 
     def __unicode__(self):
         return self.name

@@ -35,7 +35,7 @@ class Case(models.Model):
 
     contact_uuid = models.CharField(max_length=36, db_index=True)
 
-    message_id = models.IntegerField()
+    message_id = models.IntegerField(unique=True)
 
     message_on = models.DateTimeField(help_text="When initial message was sent")
 
@@ -129,12 +129,12 @@ class CaseAction(models.Model):
         CaseAction.objects.create(case=case, action=action, created_by=user, assignee=assignee, note=note)
 
     def as_json(self):
-        return dict(id=self.pk,
-                    action=self.action,
-                    created_by=dict(id=self.created_by.pk, name=self.created_by.get_full_name()),
-                    created_on=self.created_on,
-                    assignee=self.assignee.as_json(),
-                    note=self.note)
+        return {'id': self.pk,
+                'action': self.action,
+                'created_by': dict(id=self.created_by.pk, name=self.created_by.get_full_name()),
+                'created_on': self.created_on,
+                'assignee': self.assignee.as_json() if self.assignee else None,
+                'note': self.note}
 
     class Meta:
         ordering = ('pk',)

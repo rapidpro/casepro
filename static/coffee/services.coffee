@@ -45,9 +45,17 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     # Reply-to messages
     #----------------------------------------------------------------------------
-    replyToMessages: (messages, message) ->
-      action = if flagged then 'flag' else 'unflag'
-      @_messagesAction messages, action, null
+    replyToMessages: (messages, text, callback) ->
+      # it's generally better to send via URNs but anon orgs won't have them
+      urns = []
+      contacts = []
+      for msg in messages
+        if msg.urn
+          urns.push(msg.urn)
+        else
+          contacts.push(msg.contact)
+
+      @_messagesSend urns, contacts, text, callback
 
     #----------------------------------------------------------------------------
     # Flag or un-flag messages
@@ -82,6 +90,12 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       @_messagesAction messages, 'archive', null
 
     #----------------------------------------------------------------------------
+    # Send new message
+    #----------------------------------------------------------------------------
+    sendNewMessage: (urn, text, callback) ->
+      @_messagesSend [urn.urn], [], text, callback
+
+    #----------------------------------------------------------------------------
     # POSTs to the messages action endpoint
     #----------------------------------------------------------------------------
     _messagesAction: (messages, action, label) ->
@@ -90,6 +104,21 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       data.append('label', label)
 
       $http.post '/message_action/' + action + '/', data, DEFAULT_POST_OPTS
+      .success () =>
+        callback()
+
+    #----------------------------------------------------------------------------
+    # POSTs to the messages send endpoint and returns new broadcast id
+    #----------------------------------------------------------------------------
+
+    _messagesSend: (urns, contacts, text, callback) ->
+      data = new FormData();
+      data.append('urns', urns)
+      data.append('contacts', contacts)
+      data.append('text', text)
+      $http.post '/message_send/', data, DEFAULT_POST_OPTS
+      .success (data) =>
+        callback(data.broadcast_id)
 
     #----------------------------------------------------------------------------
     # Processes incoming messages
@@ -101,25 +130,49 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
         msg.archived = false
 ]
 
+#=====================================================================
+# Label service
+#=====================================================================
+
+services.factory 'LabelService', ['$http', ($http) ->
+  new class LabelService
+
+    #----------------------------------------------------------------------------
+    # Deletes a label
+    #----------------------------------------------------------------------------
+    deleteLabel: (label, callback) ->
+      $http.post '/label/delete/' + label.id + '/'
+      .success () ->
+        callback()
+]
+
 
 #=====================================================================
 # Case service
 #=====================================================================
 
-services.factory 'CaseService', ['$rootScope', '$http', ($rootScope, $http) ->
+services.factory 'CaseService', ['$http', ($http) ->
   new class CaseService
 
     #----------------------------------------------------------------------------
     # Creates new case
     #----------------------------------------------------------------------------
     createNewCase: (message, callback) ->
-      data = new FormData();
+      data = new FormData()
       data.append('message_id', message.id)
       data.append('labels', message.labels)
 
       $http.post '/case/create/', data, DEFAULT_POST_OPTS
       .success (data) ->
         callback(data.case_id)
+
+    #----------------------------------------------------------------------------
+    # Closes an existing case
+    #----------------------------------------------------------------------------
+    closeCase: (caseId, callback) ->
+      $http.post '/case/close/' + caseId + '/'
+      .success () ->
+        callback()
 
     #----------------------------------------------------------------------------
     # Fetches timeline events
@@ -136,4 +189,23 @@ services.factory 'CaseService', ['$rootScope', '$http', ($rootScope, $http) ->
           event.is_message = event.type == 'M'
 
         callback(data.results)
+]
+
+
+#=====================================================================
+# Utils service
+#=====================================================================
+
+services.factory 'UtilsService', ['$window', '$modal', ($window, $modal) ->
+  new class UtilsService
+
+    displayAlert: (type, message) ->
+      # TODO angularize ?
+      $window.displayAlert type, message
+
+    showConfirm: (prompt, danger, callback) ->
+      resolve = {prompt: (() -> prompt), danger: (() -> danger)}
+      $modal.open({templateUrl: 'confirmModal.html', controller: 'ConfirmModalController', resolve: resolve})
+      .result.then () ->
+        callback()
 ]

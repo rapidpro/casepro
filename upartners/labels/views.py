@@ -2,8 +2,9 @@ from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django import forms
+from django.http import HttpResponse
 from django.utils.translation import ugettext_lazy as _
-from smartmin.users.views import SmartCRUDL, SmartCreateView, SmartUpdateView, SmartListView
+from smartmin.users.views import SmartCRUDL, SmartCreateView, SmartUpdateView, SmartListView, SmartDeleteView
 from upartners.partners.models import Partner
 from .models import Label, parse_keywords
 
@@ -16,7 +17,7 @@ class LabelForm(forms.ModelForm):
     keywords = forms.CharField(label=_("Keywords"), widget=forms.Textarea, required=False,
                                help_text=_("Match messages containing any of these words"))
 
-    partners = forms.ModelMultipleChoiceField(label=_("Visible to"), queryset=Partner.objects.none())
+    partners = forms.ModelMultipleChoiceField(label=_("Visible to"), queryset=Partner.objects.none(), required=False)
 
     def __init__(self, *args, **kwargs):
         org = kwargs.pop('org')
@@ -41,7 +42,7 @@ class LabelFormMixin(object):
 
 
 class LabelCRUDL(SmartCRUDL):
-    actions = ('create', 'update', 'list')
+    actions = ('create', 'update', 'delete', 'list')
     model = Label
 
     class Create(OrgPermsMixin, LabelFormMixin, SmartCreateView):
@@ -63,6 +64,12 @@ class LabelCRUDL(SmartCRUDL):
             initial = super(LabelCRUDL.Update, self).derive_initial()
             initial['keywords'] = ', '.join(self.object.get_keywords())
             return initial
+
+    class Delete(OrgObjPermsMixin, SmartDeleteView):
+        def post(self, request, *args, **kwargs):
+            label = self.get_object()
+            label.release()
+            return HttpResponse(status=204)
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'description', 'partners')

@@ -1,13 +1,13 @@
 - extends "home/home_base.html"
 - load smartmin i18n
 
-- block label-items
+- block inbox-items
   .{ ng-controller:"MessagesController", ng-init:"init()" }
     .search-toolbar
-      .row
-        .col-md-12{ style:"padding-bottom: 5px" }
-          %form.form-inline
-            %input.form-control{ ng-model:"search.text", type:"text", placeholder:"Containing", style:"width: 300px" }
+      %form.form-inline
+        .row
+          .col-md-12{ style:"padding-bottom: 5px" }
+            %input.form-control{ ng-model:"search.text", type:"text", placeholder:"Containing", style:"width: 250px" }
             %span.date-range{ ng-controller:"DateRangeController" }
               .form-group
                 %label{ for:"search-after" }
@@ -29,17 +29,20 @@
               %input{ type:"checkbox", ng-model:"search.reverse" }
               %label
                 - trans "Oldest first"
-      .row
-        .col-md-12
-          .pull-back
-            %select.select2.group-select{ id:"search-groups", multiple:"multiple", ng-model:"search.groups", data-placeholder:"Select groups to include" }
-              - for group in groups
-                %option{ value:"{{ group.uuid }}" }
-                  {{ group.name }}
-          .pull-away
-            %button.btn.btn-default{ type:"button", ng-click:"onMessageSearch()" }
-              %span.glyphicon.glyphicon-search
-              - trans "Search"
+        .row
+          .col-md-12
+            .pull-back
+              %select.select2.group-select{ id:"search-groups", multiple:"multiple", ng-model:"search.groups", data-placeholder:"Select groups to include" }
+                - for group in groups
+                  %option{ value:"{{ group.uuid }}" }
+                    {{ group.name }}
+            .pull-away
+              // figure out why form is double-submitted when this is moved to ng-submit on the form. jQuery conflict?
+              %button.btn.btn-default{ type:"button", ng-click:"onMessageSearch()" }
+                %span.glyphicon.glyphicon-search
+                - trans "Search"
+              %button.btn.btn-default{ type:"button", ng-click:"onClearSearch()" }
+                - trans "Clear"
 
     .selection-toolbar
       .row
@@ -92,9 +95,9 @@
         .message-time
           [[ message.time | autodate ]]
         .message-text
-          %span.label-container{ ng-repeat:"label in message.labels" }
-            %span.label.label-default
-              [[ label ]]
+          %span.label-container{ ng-repeat:"label in filterDisplayLabels(message.labels)" }
+            %span.label.label-primary
+              [[ label.name ]]
             &nbsp;
           [[ message.text ]]
       .loading{ ng-if:"loadingOld" }
@@ -108,29 +111,40 @@
         .modal-body
           %p
             - trans "Send the following reply to each contact"
-          %textarea.form-control{ ng-model:"message" }
+          %textarea.form-control{ ng-model:"text" }
         .modal-footer
           %button.btn.btn-primary{ ng-click:"ok()" }
             - trans "Send"
           %button.btn.btn-default{ ng-click:"cancel()" }
             - trans "Cancel"
 
-    %script{ type:"text/ng-template", id:"forwardModal.html" }
+    %script{ type:"text/ng-template", id:"composeModal.html" }
       .modal-header
         %h3.modal-title
-          - trans "Forward"
+          [[ title ]]
         .modal-body
-          %p
-            - trans "Forward the following message"
           %form
             .form-group
-              %label.control-label{ for:"forward-recipient" }
+              %label.control-label
                 - trans "Recipient"
-              %input.form-control{ type:"text", ng-model:"recipient", id:"forward-recipient" }
+              .input-group
+                .input-group-btn
+                  %button.btn.btn-default.dropdown-toggle{ type:"button", data-toggle:"dropdown" }
+                    [[ urn_scheme_label ]]
+                    %span.caret
+                  %ul.dropdown-menu
+                    %li
+                      %a{ href:"#", ng-click:'setScheme("tel")' }
+                        - trans "Phone"
+                    %li
+                      %a{ href:"#", ng-click:'setScheme("twitter")' }
+                        - trans "Twitter"
+                %input.form-control{ type:"text", ng-model:"urn_path", style:"width: 300px" }
+
             .form-group
-              %label.control-label{ for:"forward-message" }
+              %label.control-label{ for:"forward-text" }
                 - trans "Message"
-              %textarea.form-control{ ng-model:"message", id:"forward-message" }
+              %textarea.form-control{ ng-model:"text", id:"forward-text" }
         .modal-footer
           %button.btn.btn-primary{ ng-click:"ok()" }
             - trans "Send"
@@ -148,7 +162,7 @@
             .form-group
               %label.control-label{ for:"case-partner" }
                 - trans "Assigned to"
-              %select.form-control{ ng-model:"selectedPartner", ng-options:"p.name for p in partners track by p.id", id:"case-partner" }
+              %select.form-control{ ng-model:"assignee", ng-options:"p.name for p in partners track by p.id", id:"case-partner" }
         .modal-footer
           %button.btn.btn-primary{ ng-click:"ok()" }
             - trans "Open"

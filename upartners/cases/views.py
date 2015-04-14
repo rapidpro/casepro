@@ -1,16 +1,17 @@
 from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.views import OrgPermsMixin
-from django.http import JsonResponse
-from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView
+from django.http import HttpResponse, JsonResponse
+from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView, SmartUpdateView
 from temba.utils import parse_iso8601
-from upartners.labels.models import Label, message_as_json
-from .models import Case, CaseAction
+from upartners.home.models import message_as_json
+from upartners.labels.models import Label
+from .models import Case
 
 
 class CaseCRUDL(SmartCRUDL):
     model = Case
-    actions = ('create', 'read', 'list', 'timeline')
+    actions = ('create', 'read', 'list', 'close', 'timeline')
 
     class Create(OrgPermsMixin, SmartCreateView):
         def derive_fields(self):
@@ -54,6 +55,14 @@ class CaseCRUDL(SmartCRUDL):
         def get_labels(self, obj):
             return obj.labels.all()
 
+    class Close(OrgPermsMixin, SmartUpdateView):
+        permission = 'cases.case_update'
+
+        def post(self, request, *args, **kwargs):
+            case = self.get_object()
+            case.close(self.request.user)
+            return HttpResponse(status=204)
+
     class Timeline(OrgPermsMixin, SmartReadView):
         """
         JSON endpoint for fetching case actions and messages
@@ -76,10 +85,10 @@ class CaseCRUDL(SmartCRUDL):
             if after:
                 actions = actions.filter(created_on__gt=after)
 
-            include_labels = {l.name for l in Label.get_all(self.request.org)}
+            label_map = {l.name: l for l in Label.get_all(self.request.org)}
 
-            timeline = [dict(time=m.created_on, type='M', item=message_as_json(m, include_labels)) for m in messages]
-            timeline += [dict(time=a.created_on, type='A', item=a.as_json()) for a in actions]
+            timeline = [{'time': m.created_on, 'type': 'M', 'item': message_as_json(m, label_map)} for m in messages]
+            timeline += [{'time': a.created_on, 'type': 'A', 'item': a.as_json()} for a in actions]
             timeline = sorted(timeline, key=lambda event: event['time'])
 
             context['timeline'] = timeline

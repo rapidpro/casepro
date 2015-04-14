@@ -62,5 +62,8 @@ class Group(models.Model):
             else:
                 cls.create(org, group_names[group_uuid], group_uuid)
 
+    def as_json(self):
+        return {'id': self.pk, 'name': self.name}
+
     def __unicode__(self):
         return self.name

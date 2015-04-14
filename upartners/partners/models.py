@@ -38,7 +38,7 @@ class Partner(models.Model):
         return self.get_users().filter(org_viewers=self.org_id)
 
     def as_json(self):
-        return dict(id=self.pk, name=self.name)
+        return {'id': self.pk, 'name': self.name}
 
     def __unicode__(self):
         return self.name

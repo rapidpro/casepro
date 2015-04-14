@@ -5,6 +5,8 @@
 
 - block content
 
+  - include 'common_dialogs.haml'
+
   %script{ type:"text/javascript" }
     var contextData = {{ context_data_json|safe }};
 
@@ -16,16 +18,18 @@
           &nbsp;
           [[ activeLabel.name ]]
         %span{ ng-if:"!activeLabel" }
+          %span.glyphicon.glyphicon-envelope
+          &nbsp;
           - trans "Inbox"
 
       .page-header-buttons{ ng-if:"activeLabel" }
         - if org_perms.labels.label_update or org_perms.labels.label_delete
           .btn-group
             - if org_perms.labels.label_update
-              %a.btn.btn-default{ ng-href:"'/label/update/[[ activeLabel.id ]]/", tooltip:"Edit Label" }
+              %a.btn.btn-default{ ng-href:"/label/update/[[ activeLabel.id ]]/", tooltip:"Edit Label" }
                 %span.glyphicon.glyphicon-pencil
             - if org_perms.labels.label_delete
-              %button.btn.btn-default{ ng-click:"deleteLabel()", tooltip:"Delete Label" }
+              %button.btn.btn-default{ ng-click:"onDeleteLabel()", tooltip:"Delete Label" }
                 %span.glyphicon.glyphicon-trash
 
     .row
@@ -45,25 +49,11 @@
             %li{ ng-repeat:"label in labels" }
               %a{ href:"#", ng-click:"activateLabel(label)" }
                 %strong{ ng-if:"label == activeLabel" }
-                  [[ label.name ]]
+                  [[ label.name ]] ([[ label.count ]])
                 %span{ ng-if:"label != activeLabel" }
-                  [[ label.name ]]
+                  [[ label.name ]] ([[ label.count ]])
       .col-md-10
-        - block label-items
-
-    %script{ type:"text/ng-template", id:"confirmModal.html" }
-      .modal-header
-        %h3.modal-title
-          - trans "Confirm"
-        .modal-body
-          %span{ ng-bind-html:"prompt" }
-        .modal-footer
-          %button.btn.btn-danger{ ng-if:"danger", ng-click:"ok()" }
-            - trans "OK"
-          %button.btn.btn-primary{ ng-if:"!danger", ng-click:"ok()" }
-            - trans "OK"
-          %button.btn.btn-default{ ng-click:"cancel()" }
-            - trans "Cancel"
+        - block inbox-items
 
 
 - block extra-style
