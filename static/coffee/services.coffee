@@ -98,14 +98,15 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     # POSTs to the messages action endpoint
     #----------------------------------------------------------------------------
-    _messagesAction: (messages, action, label) ->
+    _messagesAction: (messages, action, label, callback) ->
       data = new FormData();
       data.append('message_ids', (msg.id for msg in messages))
       data.append('label', label)
 
       $http.post '/message_action/' + action + '/', data, DEFAULT_POST_OPTS
       .success () =>
-        callback()
+        if callback
+          callback()
 
     #----------------------------------------------------------------------------
     # POSTs to the messages send endpoint and returns new broadcast id
