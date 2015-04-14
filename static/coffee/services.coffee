@@ -158,20 +158,38 @@ services.factory 'CaseService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     # Creates new case
     #----------------------------------------------------------------------------
-    createNewCase: (message, callback) ->
+    createNewCase: (message, assignee, callback) ->
       data = new FormData()
+      data.append('assignee_id', if assignee then assignee.id else null)
       data.append('message_id', message.id)
-      data.append('labels', message.labels)
-
       $http.post '/case/create/', data, DEFAULT_POST_OPTS
       .success (data) ->
         callback(data.case_id)
 
     #----------------------------------------------------------------------------
-    # Closes an existing case
+    # Re-assigns a case
+    #----------------------------------------------------------------------------
+    reassignCase: (caseId, assignee, callback) ->
+      data = new FormData()
+      data.append('assignee_id', assignee.id)
+
+      $http.post '/case/reassign/' + caseId + '/', data, DEFAULT_POST_OPTS
+      .success () ->
+        callback()
+
+    #----------------------------------------------------------------------------
+    # Closes a case
     #----------------------------------------------------------------------------
     closeCase: (caseId, callback) ->
       $http.post '/case/close/' + caseId + '/'
+      .success () ->
+        callback()
+
+    #----------------------------------------------------------------------------
+    # Re-opens a case
+    #----------------------------------------------------------------------------
+    reopenCase: (caseId, callback) ->
+      $http.post '/case/reopen/' + caseId + '/'
       .success () ->
         callback()
 
@@ -203,6 +221,12 @@ services.factory 'UtilsService', ['$window', '$modal', ($window, $modal) ->
     displayAlert: (type, message) ->
       # TODO angularize ?
       $window.displayAlert type, message
+
+    navigate: (url) ->
+      $window.location.href = url
+
+    refresh: () ->
+      @navigate $window.location.href
 
     showConfirm: (prompt, danger, callback) ->
       resolve = {prompt: (() -> prompt), danger: (() -> danger)}

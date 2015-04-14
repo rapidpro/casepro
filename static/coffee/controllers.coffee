@@ -43,7 +43,7 @@ controllers.controller 'InboxController', [ '$scope', '$window', 'LabelService',
 # Messages controller
 #============================================================================
 
-controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageService', 'UtilsService', ($scope, $modal, MessageService, UtilsService) ->
+controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageService', 'CaseService', 'UtilsService', ($scope, $modal, MessageService, CaseService, UtilsService) ->
 
   $scope.messages = []
   $scope.selection = []
@@ -119,7 +119,8 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
   $scope.caseForSelection = () ->
     $modal.open({templateUrl: 'openCaseModal.html', controller: 'OpenCaseModalController', resolve: {partners: () -> $scope.partners}})
     .result.then (assignee) ->
-      alert("TODO: open case assigned to " + assignee + " for: " + $scope.selection)
+      CaseService.createNewCase $scope.selection[0], assignee, (caseId) ->
+        UtilsService.navigate '/case/read/' + caseId + '/'
 
   $scope.replyToSelection = () ->
     $modal.open({templateUrl: 'replyModal.html', controller: 'ReplyModalController', resolve: {}})
@@ -161,7 +162,7 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
 # Case controller
 #============================================================================
 
-controllers.controller 'CaseController', [ '$scope', '$modal', '$window', 'CaseService', 'UtilsService', ($scope, $modal, $window, CaseService, UtilsService) ->
+controllers.controller 'CaseController', [ '$scope', '$modal', 'CaseService', 'UtilsService', ($scope, $modal, CaseService, UtilsService) ->
 
   $scope.init = (caseId) ->
     $scope.caseId = caseId
@@ -172,7 +173,12 @@ controllers.controller 'CaseController', [ '$scope', '$modal', '$window', 'CaseS
   $scope.closeCase = () ->
     UtilsService.showConfirm 'Close this case?', true, () ->
       CaseService.closeCase $scope.caseId, () ->
-        $window.location.href = '/case/'
+        UtilsService.navigate '/case/'
+
+  $scope.reopenCase = () ->
+    UtilsService.showConfirm 'Re-open this case?', false, () ->
+      CaseService.reopenCase $scope.caseId, () ->
+        UtilsService.refresh()
 ]
 
 

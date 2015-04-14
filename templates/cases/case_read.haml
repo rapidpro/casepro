@@ -7,6 +7,9 @@
 
   - include 'common_dialogs.haml'
 
+  %script{ type:"text/javascript" }
+    var contextData = {{ context_data_json|safe }};
+
   .{ ng-controller:"CaseController", ng-init:"init({{ object.pk }})" }
     .page-header.clearfix
       %h2.pull-back
@@ -20,38 +23,51 @@
       .page-header-buttons
         - if org_perms.cases.case_update
           .btn-group
-            %button.btn.btn-default{ type:"button", ng-click:"reassignCase()" }
-              - trans "Re-assign"
-            %button.btn.btn-default{ type:"button", ng-click:"closeCase()" }
-              - trans "Close"
+            - if not object.closed_on
+              %button.btn.btn-default{ type:"button", ng-click:"reassignCase()" }
+                - trans "Re-assign"
+              %button.btn.btn-default{ type:"button", ng-click:"closeCase()" }
+                - trans "Close"
+            - else
+              %button.btn.btn-default{ type:"button", ng-click:"reopenCase()" }
+                - trans "Re-open"
 
     .row
       .col-md-12
         .{ ng-controller:"CaseTimelineController", ng-init:"init()" }
-          .row.timeline-event{ ng-repeat:"event in timeline | reverse" }
-            .panel.panel-warning.timeline-action{ ng-if:"event.is_action" }
-              .panel-body
+          .panel.timeline-event{ ng-repeat:"event in timeline | reverse", ng-class:'{ "panel-warning": event.is_action, "panel-info": event.is_message }' }
+            .panel-body
+              .event-time
                 [[ event.time | autodate ]]
+
+              .timeline-action{ ng-if:"event.is_action" }
                 %span{ ng-if:'event.item.action == "O"' }
-                  %a{ ng-href:"user/read/[[ event.item.created_by.id ]]/" }
+                  %a{ ng-href:"/user/read/[[ event.item.created_by.id ]]/" }
                     [[ event.item.created_by.name ]]
-                  opened this case
+                  opened this case and assigned it to
+                  %a{ ng-href:"/partner/read/[[ event.item.assignee.id ]]/" }
+                    [[ event.item.assignee.name ]]
+
                 %span{ ng-if:'event.item.action == "C"' }
-                  %a{ ng-href:"user/read/[[ event.item.created_by.id ]]/" }
+                  %a{ ng-href:"/user/read/[[ event.item.created_by.id ]]/" }
                     [[ event.item.created_by.name ]]
                   closed this case
 
-            .panel.panel-info.timeline-message{ ng-if:"event.is_message" }
-              .panel-body
-                Message [[ event.time | autodate ]]: [[ event.text ]]
+                %span{ ng-if:'event.item.action == "R"' }
+                  %a{ ng-href:"/user/read/[[ event.item.created_by.id ]]/" }
+                    [[ event.item.created_by.name ]]
+                  re-opened this case
+
+              .timeline-message{ ng-if:"event.is_message" }
+                [[ event.item.text ]]
 
 
 - block extra-style
   {{ block.super }}
   :css
-    .timeline-event .timeline-action {
-      /*background-color: #FAFD9A;*/
-    }
-    .timeline-event .timeline-message {
-      /*background-color: #91ACC3;*/
+    .timeline-event .event-time {
+      float: right;
+      font-size: 0.7em;
+      margin-left: 3px;
+      margin-bottom: 3px;
     }

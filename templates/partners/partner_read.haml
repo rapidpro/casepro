@@ -44,7 +44,7 @@
       - for label in labels
         .
           %span.glyphicon.glyphicon-tag
-          %a{ href:"{% url 'labels.label_inbox' label.pk %}" }
+          %a{ href:"{% url 'home.label' label.pk %}" }
             {{ label.name }}
 
 - block extra-style

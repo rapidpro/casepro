@@ -110,6 +110,9 @@ class Case(models.Model):
 
         return user.has_profile() and user.profile.partner == self.assignee
 
+    def as_json(self):
+        return {'id': self.pk}
+
 
 class CaseAction(models.Model):
     case = models.ForeignKey(Case, related_name="actions")

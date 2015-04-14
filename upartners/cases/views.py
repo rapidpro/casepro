@@ -1,38 +1,40 @@
 from __future__ import absolute_import, unicode_literals
 
+import json
+
 from dash.orgs.views import OrgPermsMixin
 from django.http import HttpResponse, JsonResponse
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView, SmartUpdateView
 from temba.utils import parse_iso8601
 from upartners.home.models import message_as_json
 from upartners.labels.models import Label
+from upartners.partners.models import Partner
 from .models import Case
 
 
 class CaseCRUDL(SmartCRUDL):
     model = Case
-    actions = ('create', 'read', 'list', 'close', 'timeline')
+    actions = ('create', 'read', 'list', 'close', 'reopen', 'timeline')
 
     class Create(OrgPermsMixin, SmartCreateView):
-        def derive_fields(self):
-            fields = ['labels', 'contact_uuid', 'message_id', 'message_on']
-            if not self.request.user.profile.partner:
-                fields.append('assignee')
-            return fields
+        permission = 'cases.case_create'
 
-        def save(self, obj):
-            user = self.request.user
-            labels = self.form.cleaned_data['labels']
-            if user.profile.partner:
-                partner = user.profile.partner
-            else:
-                partner = self.form.cleaned_data['partner']
+        def post(self, request, *args, **kwargs):
+            message_id = int(request.POST['message_id'])
+            assignee_id = request.POST['assignee_id']
 
-            self.object = Case.open(self.request.org, user, labels, partner, obj.contact_uuid,
-                                    obj.message_id, obj.message_on)
+            assignee = Partner.get_all(request.org).get(pk=assignee_id) if assignee_id else None
 
-        # def render_to_response(self, context, **response_kwargs):
-        #    return JsonResponse(dict(case_id=case.pk))
+            client = request.org.get_temba_client()
+            message = client.get_message(message_id)
+
+            # map from label names to label objects
+            label_map = {l.name: l for l in Label.get_all(request.org)}
+            labels = [label_map[label_name] for label_name in message.labels if label_name in label_map]
+
+            case = Case.open(request.org, request.user, labels, assignee, message.contact, message.id, message.created_on)
+
+            return JsonResponse(dict(case_id=case.pk))
 
     class Read(OrgPermsMixin, SmartReadView):
         fields = ()
@@ -43,17 +45,37 @@ class CaseCRUDL(SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super(CaseCRUDL.Read, self).get_context_data(**kwargs)
 
+            partners = Partner.get_all(self.request.org).order_by('name')
+
+            # angular app requires context data in JSON format
+            context['context_data_json'] = json.dumps({
+                'case': self.object.as_json(),
+                'partners': [p.as_json() for p in partners],
+            })
+
             return context
 
     class List(OrgPermsMixin, SmartListView):
-        fields = ('labels', 'contact_uuid', 'opened_on')
+        fields = ('id', 'labels', 'opened_on')
         default_order = ('-opened_on',)
 
         def derive_queryset(self, **kwargs):
             return Case.get_all(self.request.org)
 
+        def get_id(self, obj):
+            return '#%d' % obj.pk
+
         def get_labels(self, obj):
-            return obj.labels.all()
+            return ', '.join([l.name for l in obj.labels.all()])
+
+    class Reassign(OrgPermsMixin, SmartUpdateView):
+        permission = 'cases.case_update'
+
+        def post(self, request, *args, **kwargs):
+            assignee = Partner.get_all(request.org).get(pk=request.POST['assignee_id'])
+            case = self.get_object()
+            case.reassign(self.request.user, assignee)
+            return HttpResponse(status=204)
 
     class Close(OrgPermsMixin, SmartUpdateView):
         permission = 'cases.case_update'
@@ -61,6 +83,14 @@ class CaseCRUDL(SmartCRUDL):
         def post(self, request, *args, **kwargs):
             case = self.get_object()
             case.close(self.request.user)
+            return HttpResponse(status=204)
+
+    class Reopen(OrgPermsMixin, SmartUpdateView):
+        permission = 'cases.case_update'
+
+        def post(self, request, *args, **kwargs):
+            case = self.get_object()
+            case.reopen(self.request.user)
             return HttpResponse(status=204)
 
     class Timeline(OrgPermsMixin, SmartReadView):
