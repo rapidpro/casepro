@@ -63,7 +63,7 @@ class Group(models.Model):
                 cls.create(org, group_names[group_uuid], group_uuid)
 
     def as_json(self):
-        return {'id': self.pk, 'name': self.name}
+        return {'id': self.pk, 'name': self.name, 'uuid': self.uuid}
 
     def __unicode__(self):
         return self.name

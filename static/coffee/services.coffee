@@ -34,7 +34,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       params.text = searchParams.text
       params.after = formatIso8601(searchParams.after)
       params.before = formatIso8601(searchParams.before)
-      params.groups = searchParams.groups.join(',')
+      params.groups = (g.uuid for g in searchParams.groups).join(',')
       params.reverse = searchParams.reverse
 
       $http.get '/messages/?' + $.param(params)

@@ -32,10 +32,14 @@
         .row
           .col-md-12
             .pull-back
-              %select.select2.group-select{ id:"search-groups", multiple:"multiple", ng-model:"search.groups", data-placeholder:"Select groups to include" }
-                - for group in groups
-                  %option{ value:"{{ group.uuid }}" }
-                    {{ group.name }}
+              // HAML doesn't seem to like dashes in tag names...
+              <ui-select multiple ng-model="search.groups" theme="bootstrap" class="group-select">
+                <ui-select-match placeholder="Select groups...">[[ $item.name ]]</ui-select-match>
+                <ui-select-choices repeat="group in groups">
+                  [[ group.name ]]
+                </ui-select-choices>
+              </ui-select>
+
             .pull-away
               // figure out why form is double-submitted when this is moved to ng-submit on the form. jQuery conflict?
               %button.btn.btn-default{ type:"button", ng-click:"onMessageSearch()" }

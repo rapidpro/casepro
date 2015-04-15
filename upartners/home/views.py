@@ -61,12 +61,6 @@ class InboxView(OrgPermsMixin, SmartTemplateView):
             label.count = count
 
         context['initial_label_id'] = self.kwargs.get('label_id', None)
-        #context['inbox_count'] = self.object.get_count()
-        #context['open_count'] = Case.get_open(self.request.org, self.object).count()
-        #context['closed_count'] = Case.get_closed(self.request.org, self.object).count()
-
-        # TODO figure out how to initialize the group select2 options with angular and remove this
-        context['groups'] = groups
 
         # angular app requires context data in JSON format
         context['context_data_json'] = json.dumps({
@@ -103,12 +97,6 @@ class CasesView(OrgPermsMixin, SmartTemplateView):
             label.count = count
 
         context['initial_label_id'] = self.kwargs.get('label_id', None)
-        #context['inbox_count'] = self.object.get_count()
-        #context['open_count'] = Case.get_open(self.request.org, self.object).count()
-        #context['closed_count'] = Case.get_closed(self.request.org, self.object).count()
-
-        # TODO figure out how to initialize the group select2 options with angular and remove this
-        context['groups'] = groups
 
         # angular app requires context data in JSON format
         context['context_data_json'] = json.dumps({

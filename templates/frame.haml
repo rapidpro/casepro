@@ -31,8 +31,7 @@
       - block styles
         %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/bootstrap.css" }
         %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/smartmin_styles.css" }
-        %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/select2.min.css" }
-        %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/select2-bootstrap.min.css" }
+        %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/select.min.css" }
         %link{ type:"text/less", rel:"stylesheet", href:"{{ STATIC_URL }}less/upartners.less" }
 
     - block extra-less
@@ -161,7 +160,7 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/angular-sanitize.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/ui-bootstrap-tpls-0.12.1.min.js"></script>
     <script type='text/javascript' src='{{ STATIC_URL }}js/ng-infinite-scroll.min.js'></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/select2.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/select.min.js"></script>
 
     {% compress js %}
     %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/upartners.coffee" }

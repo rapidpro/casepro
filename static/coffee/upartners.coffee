@@ -1,6 +1,7 @@
 app = angular.module('upartners', [
   'ngSanitize',
   'ui.bootstrap',
+  'ui.select',
   'infinite-scroll',
   'upartners.services',
   'upartners.controllers',

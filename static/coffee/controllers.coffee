@@ -74,7 +74,7 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
     $scope.onMessageSearch()
 
   $scope.onMessageSearch = () ->
-    $scope.activeSearch = $scope.search
+    $scope.activeSearch = angular.copy($scope.search)
     $scope.page = 0
     $scope.loadOldMessages()
 
@@ -82,7 +82,7 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
     $scope.loadingOld = true
     $scope.page += 1
 
-    MessageService.fetchOldMessages $scope.activeLabel, $scope.page, $scope.search, (messages, total, hasOlder) ->
+    MessageService.fetchOldMessages $scope.activeLabel, $scope.page, $scope.activeSearch, (messages, total, hasOlder) ->
       if $scope.page == 1
         $scope.messages = messages
       else
