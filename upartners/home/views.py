@@ -11,7 +11,8 @@ from temba.utils import parse_iso8601
 from upartners.groups.models import Group
 from upartners.labels.models import Label, SYSTEM_LABEL_FLAGGED
 from upartners.partners.models import Partner
-from .models import message_as_json, parse_csv
+from .models import message_as_json, parse_csv, MessageExport
+from .tasks import message_export
 
 
 class HomeView(OrgPermsMixin, SmartTemplateView):
@@ -41,7 +42,6 @@ class InboxView(OrgPermsMixin, SmartTemplateView):
     """
     Inbox view
     """
-    title = _("Inbox")
     template_name = 'home/home_inbox.haml'
 
     def has_permission(self, request, *args, **kwargs):
@@ -75,9 +75,8 @@ class InboxView(OrgPermsMixin, SmartTemplateView):
 
 class CasesView(OrgPermsMixin, SmartTemplateView):
     """
-    Inbox view
+    TODO
     """
-    title = _("Inbox")
     template_name = 'home/home_cases.haml'
 
     def has_permission(self, request, *args, **kwargs):
@@ -109,7 +108,33 @@ class CasesView(OrgPermsMixin, SmartTemplateView):
         return context
 
 
-class MessageFetchView(OrgPermsMixin, SmartTemplateView):
+class MessageSearchMixin(object):
+    def derive_search(self):
+        """
+        Collects and prepares message search parameters into JSON serializable dict
+        """
+        request = self.request
+
+        label_id = request.GET.get('label', None)
+        if label_id:
+            labels = [Label.get_all(request.org).get(pk=label_id)]
+        else:
+            labels = Label.get_all(request.org)
+        labels = [l.name for l in labels]
+
+        text = request.GET.get('text', None)
+        after = parse_iso8601(request.GET.get('after', None))
+        before = parse_iso8601(request.GET.get('before', None))
+
+        groups = request.GET.get('groups', None)
+        groups = parse_csv(groups) if groups else None
+
+        reverse = request.GET.get('reverse', 'false')
+
+        return {'labels': labels, 'text': text, 'after': after, 'before': before, 'groups': groups, 'reverse': reverse}
+
+
+class MessageFetchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
     """
     AJAX endpoint for fetching messages
     """
@@ -119,27 +144,14 @@ class MessageFetchView(OrgPermsMixin, SmartTemplateView):
     def get_context_data(self, **kwargs):
         context = super(MessageFetchView, self).get_context_data(**kwargs)
 
+        search = self.derive_search()
         page = int(self.request.GET.get('page', 1))
-
-        label_id = self.request.GET.get('label', None)
-        if label_id:
-            labels = [Label.get_all(self.request.org).get(pk=label_id)]
-        else:
-            labels = Label.get_all(self.request.org)
-
-        text = self.request.GET.get('text', None)
-        after = parse_iso8601(self.request.GET.get('after', None))
-        before = parse_iso8601(self.request.GET.get('before', None))
-
-        group_uuids = self.request.GET.get('groups', None)
-        group_uuids = parse_csv(group_uuids) if group_uuids else None
-
-        reverse = self.request.GET.get('reverse', 'false')
 
         client = self.request.org.get_temba_client()
         pager = client.pager(start_page=page)
-        messages = client.get_messages(pager=pager, labels=[l.name for l in labels], direction='I',
-                                       after=after, before=before, groups=group_uuids, text=text, reverse=reverse)
+        messages = client.get_messages(pager=pager, labels=search['labels'], direction='I',
+                                       after=search['after'], before=search['before'],
+                                       groups=search['groups'], text=search['text'], reverse=search['reverse'])
 
         context['page'] = page
         context['has_more'] = pager.has_more()
@@ -160,7 +172,7 @@ class MessageFetchView(OrgPermsMixin, SmartTemplateView):
 
 class MessageActionView(OrgPermsMixin, View):
     """
-    AJAX endoint for bulk message actions. Takes a list of message ids.
+    AJAX endpoint for bulk message actions. Takes a list of message ids.
     """
     def has_permission(self, request, *args, **kwargs):
         return request.user.is_authenticated()
@@ -188,7 +200,7 @@ class MessageActionView(OrgPermsMixin, View):
 
 class MessageSendView(OrgPermsMixin, View):
     """
-    AJAX endoint for message sending. Takes a list of contact UUIDs or URNs
+    AJAX endpoint for message sending. Takes a list of contact UUIDs or URNs
     """
     def has_permission(self, request, *args, **kwargs):
         return request.user.is_authenticated()
@@ -202,3 +214,20 @@ class MessageSendView(OrgPermsMixin, View):
         broadcast = client.create_broadcast(urns=urns, contacts=contacts, text=text)
 
         return JsonResponse({'broadcast_id': broadcast.id})
+
+
+class MessageExportView(OrgPermsMixin, MessageSearchMixin, View):
+    """
+    AJAX endpoint for exporting a message search
+    """
+    def has_permission(self, request, *args, **kwargs):
+        return request.user.is_authenticated()
+
+    def post(self, request, *args, **kwargs):
+
+        search = self.derive_search()
+        export = MessageExport.create(self.request.org, self.request.user, search)
+
+        message_export.delay(export.pk)
+
+        return JsonResponse({'export_id': export.pk})

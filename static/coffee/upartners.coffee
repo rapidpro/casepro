@@ -20,8 +20,3 @@ app.config [ '$interpolateProvider', '$httpProvider', ($interpolateProvider, $ht
   # Disabled since we reverted to Angular 1.2.x
   # $httpProvider.useApplyAsync(true);
 ]
-
-$ ->
-  # initialize select2 widgets
-  $('.select2').each ->
-    $(this).select2({ theme: "bootstrap" })

@@ -1,5 +1,11 @@
 from __future__ import absolute_import, unicode_literals
 
+import json
+
+from dash.orgs.models import Org
+from django.contrib.auth.models import User
+from django.db import models
+from django.utils.translation import ugettext_lazy as _
 from upartners.labels.models import SYSTEM_LABEL_FLAGGED
 
 
@@ -31,3 +37,22 @@ def message_as_json(msg, label_map):
             'labels': labels,
             'flagged': flagged,
             'direction': msg.direction}
+
+
+class MessageExport(models.Model):
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='exports')
+
+    search = models.TextField()
+
+    filename = models.CharField(max_length=512)
+
+    created_by = models.ForeignKey(User, related_name="exports")
+
+    created_on = models.DateTimeField(auto_now_add=True)
+
+    @classmethod
+    def create(cls, org, user, search):
+        return MessageExport.objects.create(org=org, created_by=user, search=json.dumps(search))
+
+    def get_search(self):
+        return json.loads(self.search)

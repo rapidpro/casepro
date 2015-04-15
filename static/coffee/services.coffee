@@ -27,20 +27,25 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     # Fetches old messages for the given label
     #----------------------------------------------------------------------------
-    fetchOldMessages: (label, page, searchParams, callback) ->
-      params = {start_time: (formatIso8601 @start_time), page: page, label: if label then label.id else null}
+    fetchOldMessages: (label, page, search, callback) ->
+      searchParams = @_searchToParams search
+      otherParams = {start_time: (formatIso8601 @start_time), page: page, label: if label then label.id else null}
 
-      # add search params
-      params.text = searchParams.text
-      params.after = formatIso8601(searchParams.after)
-      params.before = formatIso8601(searchParams.before)
-      params.groups = (g.uuid for g in searchParams.groups).join(',')
-      params.reverse = searchParams.reverse
-
-      $http.get '/messages/?' + $.param(params)
+      $http.get '/messages/?' + $.param(otherParams) + '&' + searchParams
       .success (data) =>
         @_processMessages data.results
         callback(data.results, data.total, data.has_more)
+
+    #----------------------------------------------------------------------------
+    # Starts a message export
+    #----------------------------------------------------------------------------
+    startExport: (label, search, callback) ->
+      searchParams = @_searchToParams search
+      otherParams = {label: if label then label.id else null}
+
+      $http.post '/message_export/?' + $.param(otherParams) + '&' + searchParams
+      .success () =>
+        callback()
 
     #----------------------------------------------------------------------------
     # Reply-to messages
@@ -79,7 +84,6 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       if without_label.length > 0
         @_messagesAction without_label, 'label', label.name
 
-
     #----------------------------------------------------------------------------
     # Archive messages
     #----------------------------------------------------------------------------
@@ -88,12 +92,23 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
         for msg in messages
           msg.archived = true
 
-
     #----------------------------------------------------------------------------
     # Send new message
     #----------------------------------------------------------------------------
     sendNewMessage: (urn, text, callback) ->
       @_messagesSend [urn.urn], [], text, callback
+
+    #----------------------------------------------------------------------------
+    # Convert search object to URL params
+    #----------------------------------------------------------------------------
+    _searchToParams: (search) ->
+      params = {}
+      params.text = search.text
+      params.after = formatIso8601(search.after)
+      params.before = formatIso8601(search.before)
+      params.groups = (g.uuid for g in search.groups).join(',')
+      params.reverse = search.reverse
+      $.param(params)
 
     #----------------------------------------------------------------------------
     # POSTs to the messages action endpoint
@@ -111,7 +126,6 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     # POSTs to the messages send endpoint and returns new broadcast id
     #----------------------------------------------------------------------------
-
     _messagesSend: (urns, contacts, text, callback) ->
       data = new FormData();
       data.append('urns', urns)

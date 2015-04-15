@@ -45,8 +45,11 @@
               %button.btn.btn-default{ type:"button", ng-click:"onMessageSearch()" }
                 %span.glyphicon.glyphicon-search
                 - trans "Search"
-              %button.btn.btn-default{ type:"button", ng-click:"onClearSearch()" }
-                - trans "Clear"
+              .btn-group
+                %button.btn.btn-default{ type:"button", ng-click:"onClearSearch()" }
+                  - trans "Clear"
+                %button.btn.btn-default{ type:"button", ng-click:"onExportSearch()" }
+                  - trans "Export"
 
     .selection-toolbar
       .row
@@ -58,10 +61,10 @@
                 %span.caret
               %ul.dropdown-menu
                 %li
-                  %a{ href:"#", ng-click:"selectAll()" }
+                  %a{ href:"#", ng-click:"onSelectAll()" }
                     - trans "All"
                 %li
-                  %a{ href:"#", ng-click:"selectNone()" }
+                  %a{ href:"#", ng-click:"onSelectNone()" }
                     - trans "None"
 
           %span.selection-info{ ng-show:"selection.length > 0" }

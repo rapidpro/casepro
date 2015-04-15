@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from django.conf.urls import patterns, url
-from .views import HomeView, InboxView, CasesView, MessageFetchView, MessageActionView, MessageSendView
+from .views import HomeView, InboxView, CasesView, MessageFetchView, MessageActionView, MessageSendView, MessageExportView
 
 urlpatterns = patterns('',
                        url(r'^$', HomeView.as_view(), name='home.home'),
@@ -10,4 +10,5 @@ urlpatterns = patterns('',
                        url(r'^cases/$', CasesView.as_view(), name='home.cases'),
                        url(r'^messages/$', MessageFetchView.as_view(), name='home.message_fetch'),
                        url(r'^message_action/(?P<action>\w+)/$', MessageActionView.as_view(), name='home.message_action'),
-                       url(r'^message_send/$', MessageSendView.as_view(), name='home.message_send'))
+                       url(r'^message_send/$', MessageSendView.as_view(), name='home.message_send'),
+                       url(r'^message_export/$', MessageExportView.as_view(), name='home.message_export'))

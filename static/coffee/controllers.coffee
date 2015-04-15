@@ -69,14 +69,19 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
   # Message searching and fetching
   #----------------------------------------------------------------------------
 
-  $scope.onClearSearch = () ->
-    $scope.search = { text: null, groups: [], after: null, before: null, reverse: false }
-    $scope.onMessageSearch()
-
   $scope.onMessageSearch = () ->
     $scope.activeSearch = angular.copy($scope.search)
     $scope.page = 0
     $scope.loadOldMessages()
+
+  $scope.onClearSearch = () ->
+    $scope.search = { text: null, groups: [], after: null, before: null, reverse: false }
+    $scope.onMessageSearch()
+
+  $scope.onExportSearch = () ->
+    UtilsService.confirmModal "Export the current message search?", null, () ->
+      MessageService.startExport $scope.activeLabel, $scope.activeSearch, () ->
+        UtilsService.displayAlert 'success', "Export initiated and will be sent to your email address when complete"
 
   $scope.loadOldMessages = ->
     $scope.loadingOld = true
@@ -96,12 +101,12 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
   # Selection controls
   #----------------------------------------------------------------------------
 
-  $scope.selectAll = () ->
+  $scope.onSelectAll = () ->
     for msg in $scope.messages
       msg.selected = true
     $scope.updateSelection()
 
-  $scope.selectNone = () ->
+  $scope.onSelectNone = () ->
     for msg in $scope.messages
       msg.selected = false
     $scope.selection = []
