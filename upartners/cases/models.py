@@ -11,13 +11,13 @@ from upartners.partners.models import Partner
 
 
 ACTION_OPEN = 'O'
-ACTION_ADD_NOTE = 'N'
+ACTION_NOTE = 'N'
 ACTION_REASSIGN = 'A'
 ACTION_CLOSE = 'C'
 ACTION_REOPEN = 'R'
 
 CASE_ACTION_CHOICES = ((ACTION_OPEN, _("Open")),
-                       (ACTION_ADD_NOTE, _("Add Note")),
+                       (ACTION_NOTE, _("Add Note")),
                        (ACTION_REASSIGN, _("Reassign")),
                        (ACTION_CLOSE, _("Close")),
                        (ACTION_REOPEN, _("Reopen")))
@@ -64,6 +64,9 @@ class Case(models.Model):
     def get_for_contact(cls, org, contact_uuid):
         return cls.get_all(org).filter(contact_uuid)
 
+    def get_labels(self):
+        return self.labels.filter(is_active=True)
+
     @classmethod
     def open(cls, org, user, labels, partner, contact_uuid, message_id, message_on):
         case = cls.objects.create(org=org, assignee=partner, contact_uuid=contact_uuid,
@@ -74,35 +77,35 @@ class Case(models.Model):
         CaseAction.create(case, user, ACTION_OPEN, assignee=partner)
         return case
 
-    def add_note(self, user, text):
-        CaseAction.create(self, user, ACTION_ADD_NOTE, note=text)
+    def note(self, user, note):
+        CaseAction.create(self, user, ACTION_NOTE, note=note)
 
-    def close(self, user):
+    def close(self, user, note=None):
         if not self._can_edit(user):
             raise PermissionDenied()
 
         self.closed_on = timezone.now()
         self.save(update_fields=('closed_on',))
 
-        CaseAction.create(self, user, ACTION_CLOSE)
+        CaseAction.create(self, user, ACTION_CLOSE, note=note)
 
-    def reopen(self, user):
+    def reopen(self, user, note=None):
         if not self._can_edit(user):
             raise PermissionDenied()
 
         self.closed_on = None
         self.save(update_fields=('closed_on',))
 
-        CaseAction.create(self, user, ACTION_REOPEN)
+        CaseAction.create(self, user, ACTION_REOPEN, note=note)
 
-    def reassign(self, user, partner):
+    def reassign(self, user, partner, note=None):
         if not self._can_edit(user):
             raise PermissionDenied()
 
         self.assignee = partner
         self.save(update_fields=('assignee',))
 
-        CaseAction.create(self, user, ACTION_REASSIGN, assignee=partner)
+        CaseAction.create(self, user, ACTION_REASSIGN, assignee=partner, note=note)
 
     def _can_edit(self, user):
         if user.is_admin_for(self.org):
@@ -111,7 +114,10 @@ class Case(models.Model):
         return user.has_profile() and user.profile.partner == self.assignee
 
     def as_json(self):
-        return {'id': self.pk}
+        return {'id': self.pk,
+                'assignee': self.assignee.as_json(),
+                'labels': [l.as_json() for l in self.get_labels()],
+                'is_closed': self.closed_on is not None}
 
 
 class CaseAction(models.Model):
@@ -134,7 +140,7 @@ class CaseAction(models.Model):
     def as_json(self):
         return {'id': self.pk,
                 'action': self.action,
-                'created_by': dict(id=self.created_by.pk, name=self.created_by.get_full_name()),
+                'created_by': {'id': self.created_by.pk, 'name': self.created_by.get_full_name()},
                 'created_on': self.created_on,
                 'assignee': self.assignee.as_json() if self.assignee else None,
                 'note': self.note}

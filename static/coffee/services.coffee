@@ -61,11 +61,10 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     # Flag or un-flag messages
     #----------------------------------------------------------------------------
     flagMessages: (messages, flagged) ->
-      for msg in messages
-        msg.flagged = flagged
-
       action = if flagged then 'flag' else 'unflag'
-      @_messagesAction messages, action, null
+      @_messagesAction messages, action, null, () ->
+        for msg in messages
+          msg.flagged = flagged
 
     #----------------------------------------------------------------------------
     # Label messages
@@ -80,14 +79,15 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       if without_label.length > 0
         @_messagesAction without_label, 'label', label.name
 
+
     #----------------------------------------------------------------------------
     # Archive messages
     #----------------------------------------------------------------------------
     archiveMessages: (messages) ->
-      for msg in messages
-        msg.archived = true
+      @_messagesAction messages, 'archive', null, () ->
+        for msg in messages
+          msg.archived = true
 
-      @_messagesAction messages, 'archive', null
 
     #----------------------------------------------------------------------------
     # Send new message
@@ -156,58 +156,94 @@ services.factory 'CaseService', ['$http', ($http) ->
   new class CaseService
 
     #----------------------------------------------------------------------------
-    # Creates new case
+    # Opens a new case
     #----------------------------------------------------------------------------
-    createNewCase: (message, assignee, callback) ->
+    openCase: (message, assignee, callback) ->
       data = new FormData()
       data.append('assignee_id', if assignee then assignee.id else null)
       data.append('message_id', message.id)
       $http.post '/case/create/', data, DEFAULT_POST_OPTS
-      .success (data) ->
-        callback(data.case_id)
+      .success (_case) ->
+        callback(_case)
+
+    #----------------------------------------------------------------------------
+    # Fetches an existing case by it's id
+    #----------------------------------------------------------------------------
+    fetchCase: (caseId, callback) ->
+      $http.get '/case/fetch/' + caseId + '/'
+      .success (_case) ->
+        callback(_case)
+
+    #----------------------------------------------------------------------------
+    # Adds a note to a case
+    #----------------------------------------------------------------------------
+    noteCase: (_case, note, callback) ->
+      data = new FormData()
+      data.append('note', note)
+
+      $http.post '/case/note/' + _case.id + '/', data, DEFAULT_POST_OPTS
+      .success () ->
+        callback()
 
     #----------------------------------------------------------------------------
     # Re-assigns a case
     #----------------------------------------------------------------------------
-    reassignCase: (caseId, assignee, callback) ->
+    reassignCase: (_case, assignee, callback) ->
       data = new FormData()
       data.append('assignee_id', assignee.id)
 
-      $http.post '/case/reassign/' + caseId + '/', data, DEFAULT_POST_OPTS
+      $http.post '/case/reassign/' + _case.id + '/', data, DEFAULT_POST_OPTS
       .success () ->
         callback()
 
     #----------------------------------------------------------------------------
     # Closes a case
     #----------------------------------------------------------------------------
-    closeCase: (caseId, callback) ->
-      $http.post '/case/close/' + caseId + '/'
+    closeCase: (_case, note, callback) ->
+      data = new FormData()
+      data.append('note', note)
+
+      $http.post '/case/close/' + _case.id + '/', data, DEFAULT_POST_OPTS
       .success () ->
+        _case.is_closed = true
         callback()
 
     #----------------------------------------------------------------------------
     # Re-opens a case
     #----------------------------------------------------------------------------
-    reopenCase: (caseId, callback) ->
-      $http.post '/case/reopen/' + caseId + '/'
+    reopenCase: (_case, note, callback) ->
+      data = new FormData()
+      data.append('note', note)
+
+      $http.post '/case/reopen/' + _case.id + '/', data, DEFAULT_POST_OPTS
       .success () ->
+        _case.is_closed = false
         callback()
 
     #----------------------------------------------------------------------------
     # Fetches timeline events
     #----------------------------------------------------------------------------
-    fetchTimeline: (caseId, after, callback) ->
-      params = {after: (formatIso8601 after)}
+    fetchTimeline: (_case, lastEventTime, lastMessageId, lastActionId, callback) ->
+      params = {
+        since_event_time: (formatIso8601 lastEventTime),
+        since_message_id: lastMessageId,
+        since_action_id: lastActionId
+      }
 
-      $http.get '/case/timeline/' + caseId + '/?' + $.param(params)
+      $http.get '/case/timeline/' + _case.id + '/?' + $.param(params)
       .success (data) =>
         for event in data.results
           # parse datetime string
           event.time = parseIso8601 event.time
           event.is_action = event.type == 'A'
-          event.is_message = event.type == 'M'
+          event.is_message_in = event.type == 'M' and event.item.direction == 'I'
+          event.is_message_out = event.type == 'M' and event.item.direction == 'O'
 
-        callback(data.results)
+        newLastEventTime = (parseIso8601 data.last_event_time) or lastEventTime
+        newLastMessageId = data.last_message_id or lastMessageId
+        newLastActionId = data.last_action_id or lastActionId
+
+        callback(data.results, newLastEventTime, newLastMessageId, newLastActionId)
 ]
 
 
@@ -228,9 +264,21 @@ services.factory 'UtilsService', ['$window', '$modal', ($window, $modal) ->
     refresh: () ->
       @navigate $window.location.href
 
-    showConfirm: (prompt, danger, callback) ->
-      resolve = {prompt: (() -> prompt), danger: (() -> danger)}
+    confirmModal: (prompt, style, callback) ->
+      resolve = {prompt: (() -> prompt), style: (() -> style)}
       $modal.open({templateUrl: 'confirmModal.html', controller: 'ConfirmModalController', resolve: resolve})
       .result.then () ->
         callback()
+
+    assignModal: (title, prompt, partners, callback) ->
+      resolve = {title: (() -> title), prompt: (() -> prompt), partners: (() -> partners)}
+      $modal.open({templateUrl: 'assignModal.html', controller: 'AssignModalController', resolve: resolve})
+      .result.then (assignee) ->
+        callback(assignee)
+
+    noteModal: (title, prompt, style, callback) ->
+      resolve = {title: (() -> title), prompt: (() -> prompt), style: (() -> style)}
+      $modal.open({templateUrl: 'noteModal.html', controller: 'NoteModalController', resolve: resolve})
+      .result.then (note) ->
+        callback(note)
 ]

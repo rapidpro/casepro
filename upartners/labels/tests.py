@@ -58,7 +58,6 @@ class LabelCRUDLTest(UPartnersTest):
         self.assertEqual(response.status_code, 200)
         self.assertFormError(response, 'form', 'name', 'This field is required.')
         self.assertFormError(response, 'form', 'description', 'This field is required.')
-        self.assertFormError(response, 'form', 'partners', 'This field is required.')
 
         # submit again with data
         response = self.url_post('unicef', url, dict(name="Ebola", description="Msgs about ebola",

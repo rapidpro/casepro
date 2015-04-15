@@ -151,24 +151,6 @@
           %button.btn.btn-default{ ng-click:"cancel()" }
             - trans "Cancel"
 
-    %script{ type:"text/ng-template", id:"openCaseModal.html" }
-      .modal-header
-        %h3.modal-title
-          - trans "New Case"
-        .modal-body
-          %p
-            - trans "Open a new case for the selected message?"
-          - if not request.partner
-            .form-group
-              %label.control-label{ for:"case-partner" }
-                - trans "Assigned to"
-              %select.form-control{ ng-model:"assignee", ng-options:"p.name for p in partners track by p.id", id:"case-partner" }
-        .modal-footer
-          %button.btn.btn-primary{ ng-click:"ok()" }
-            - trans "Open"
-          %button.btn.btn-default{ ng-click:"cancel()" }
-            - trans "Cancel"
-
 
 - block extra-style
   {{ block.super }}
@@ -221,6 +203,3 @@
       color: #444 !important;
     }
 
-    .modal-body .form-control {
-      width: 100%
-    }

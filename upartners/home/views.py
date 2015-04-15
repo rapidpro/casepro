@@ -50,11 +50,9 @@ class InboxView(OrgPermsMixin, SmartTemplateView):
     def get_context_data(self, **kwargs):
         context = super(InboxView, self).get_context_data(**kwargs)
         user = self.request.user
+        partner = user.get_partner()
 
-        # TODO move this to middleware ?
-        self.request.partner = user.profile.partner if user.has_profile() else None
-
-        labels = Label.get_all(self.request.org).order_by('name')
+        labels = (partner.labels if partner else Label.get_all(self.request.org)).order_by('name')
         partners = Partner.get_all(self.request.org).order_by('name')
         groups = Group.get_all(self.request.org).order_by('name')
 
@@ -72,8 +70,51 @@ class InboxView(OrgPermsMixin, SmartTemplateView):
 
         # angular app requires context data in JSON format
         context['context_data_json'] = json.dumps({
-            'labels': [l.as_json() for l in labels],
+            'user_partner': partner.as_json() if partner else None,
             'partners': [p.as_json() for p in partners],
+            'labels': [l.as_json() for l in labels],
+            'groups': [g.as_json() for g in groups],
+        })
+
+        return context
+
+
+class CasesView(OrgPermsMixin, SmartTemplateView):
+    """
+    Inbox view
+    """
+    title = _("Inbox")
+    template_name = 'home/home_cases.haml'
+
+    def has_permission(self, request, *args, **kwargs):
+        return request.user.is_authenticated()
+
+    def get_context_data(self, **kwargs):
+        context = super(CasesView, self).get_context_data(**kwargs)
+        user = self.request.user
+        partner = user.get_partner()
+
+        labels = (partner.labels if partner else Label.get_all(self.request.org)).order_by('name')
+        partners = Partner.get_all(self.request.org).order_by('name')
+        groups = Group.get_all(self.request.org).order_by('name')
+
+        # annotate labels with their count
+        for label, count in Label.fetch_counts(self.request.org, labels).iteritems():
+            label.count = count
+
+        context['initial_label_id'] = self.kwargs.get('label_id', None)
+        #context['inbox_count'] = self.object.get_count()
+        #context['open_count'] = Case.get_open(self.request.org, self.object).count()
+        #context['closed_count'] = Case.get_closed(self.request.org, self.object).count()
+
+        # TODO figure out how to initialize the group select2 options with angular and remove this
+        context['groups'] = groups
+
+        # angular app requires context data in JSON format
+        context['context_data_json'] = json.dumps({
+            'user_partner': partner.as_json() if partner else None,
+            'partners': [p.as_json() for p in partners],
+            'labels': [l.as_json() for l in labels],
             'groups': [g.as_json() for g in groups],
         })
 

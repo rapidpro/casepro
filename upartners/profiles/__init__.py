@@ -67,6 +67,10 @@ def _user_get_full_name(user):
     return user.profile.full_name if user.has_profile() else " ".join([user.first_name, user.last_name]).strip()
 
 
+def _user_get_partner(user):
+    return user.profile.partner if user.has_profile() else None
+
+
 def _user_is_admin_for(user, org):
     """
     Whether this user is an administrator for the given org
@@ -88,5 +92,6 @@ User.create = classmethod(_user_create)
 User.clean = _user_clean
 User.has_profile = _user_has_profile
 User.get_full_name = _user_get_full_name
+User.get_partner = _user_get_partner
 User.is_admin_for = _user_is_admin_for
 User.__unicode__ = _user_unicode

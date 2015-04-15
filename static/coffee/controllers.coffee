@@ -3,17 +3,22 @@ controllers = angular.module('upartners.controllers', ['upartners.services']);
 
 URN_SCHEMES = {tel: "Phone", twitter: "Twitter"}
 
+# Component refresh intervals
+INTERVAL_CASE_INFO = 5000
+INTERVAL_CASE_TIMELINE = 10000
+
 #============================================================================
 # Inbox controller
 #============================================================================
 
 controllers.controller 'InboxController', [ '$scope', '$window', 'LabelService', 'UtilsService', ($scope, $window, LabelService, UtilsService) ->
 
-  $scope.init = (initialLabelId) ->
-    $scope.partners = $window.contextData.partners
-    $scope.labels = $window.contextData.labels
-    $scope.groups = $window.contextData.groups
+  $scope.userPartner = $window.contextData.user_partner
+  $scope.partners = $window.contextData.partners
+  $scope.labels = $window.contextData.labels
+  $scope.groups = $window.contextData.groups
 
+  $scope.init = (initialLabelId) ->
     # find and activate initial label
     initialLabel = null
     for l in $scope.labels
@@ -32,11 +37,11 @@ controllers.controller 'InboxController', [ '$scope', '$window', 'LabelService',
     $scope.$broadcast('activeLabelChange')
 
   $scope.onDeleteLabel = () ->
-    UtilsService.showConfirm 'Delete the label <strong>' + $scope.activeLabel.name + '</strong>?', true, () ->
+    UtilsService.confirmModal 'Delete the label <strong>' + $scope.activeLabel.name + '</strong>?', 'danger', () ->
       LabelService.deleteLabel $scope.activeLabel, () ->
         $scope.labels = (l for l in $scope.labels when l.id != $scope.activeLabel.id)
         $scope.activateLabel(null)
-        UtilsService.displayAlert('success', 'Label was deleted')
+        UtilsService.displayAlert 'success', "Label was deleted"
 ]
 
 #============================================================================
@@ -109,18 +114,25 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
   #----------------------------------------------------------------------------
 
   $scope.labelSelection = (label) ->
-    UtilsService.showConfirm 'Apply the label <strong>' + label + '</strong> to the selected messages?', false, () ->
+    UtilsService.confirmModal 'Apply the label <strong>' + label + '</strong> to the selected messages?', null, () ->
       MessageService.labelMessages $scope.selection, label
 
   $scope.flagSelection = () ->
-    UtilsService.showConfirm 'Flag the selected messages?', false, () ->
+    UtilsService.confirmModal 'Flag the selected messages?', null, () ->
       MessageService.flagMessages $scope.selection, true
 
   $scope.caseForSelection = () ->
-    $modal.open({templateUrl: 'openCaseModal.html', controller: 'OpenCaseModalController', resolve: {partners: () -> $scope.partners}})
-    .result.then (assignee) ->
-      CaseService.createNewCase $scope.selection[0], assignee, (caseId) ->
-        UtilsService.navigate '/case/read/' + caseId + '/'
+    openCase = (assignee) ->
+      CaseService.openCase $scope.selection[0], assignee, (_case) ->
+          UtilsService.navigate '/case/read/' + _case.id + '/'
+
+    prompt = "Open a new case for the selected message?"
+    if $scope.userPartner
+      UtilsService.confirmModal prompt, null, () ->
+        openCase $scope.userPartner
+    else
+      UtilsService.assignModal "New case", prompt, $scope.partners, (assignee) ->
+        openCase assignee
 
   $scope.replyToSelection = () ->
     $modal.open({templateUrl: 'replyModal.html', controller: 'ReplyModalController', resolve: {}})
@@ -140,7 +152,7 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
         UtilsService.displayAlert 'success', 'Message forwarded to ' + data.urn.path
 
   $scope.archiveSelection = () ->
-    UtilsService.showConfirm 'Archive the selected messages? This will remove them from the inbox.', false, () ->
+    UtilsService.confirmModal 'Archive the selected messages? This will remove them from the inbox.', null, () ->
       MessageService.archiveMessages $scope.selection
 
   #----------------------------------------------------------------------------
@@ -162,23 +174,38 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
 # Case controller
 #============================================================================
 
-controllers.controller 'CaseController', [ '$scope', '$modal', 'CaseService', 'UtilsService', ($scope, $modal, CaseService, UtilsService) ->
+controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'CaseService', 'UtilsService', ($scope, $window, $timeout, CaseService, UtilsService) ->
 
-  $scope.init = (caseId) ->
-    $scope.caseId = caseId
+  $scope.case = $window.contextData.case
+  $scope.partners = $window.contextData.partners
 
-  $scope.reassignCase = () ->
-    alert('TODO')
+  $scope.init = () ->
+    $scope.refresh()
 
-  $scope.closeCase = () ->
-    UtilsService.showConfirm 'Close this case?', true, () ->
-      CaseService.closeCase $scope.caseId, () ->
+  $scope.refresh = () ->
+    CaseService.fetchCase $scope.case.id, (_case) ->
+      $scope.case = _case
+      $timeout $scope.refresh, INTERVAL_CASE_INFO
+
+  $scope.note = () ->
+    UtilsService.noteModal "Add Note", null, null, (note) ->
+      CaseService.noteCase $scope.case, note, () ->
+        $scope.$broadcast 'newCaseAction'
+
+  $scope.reassign = () ->
+    UtilsService.assignModal "Re-assign", null, $scope.partners, (assignee) ->
+      CaseService.reassignCase $scope.case, assignee, () ->
+        $scope.$broadcast 'newCaseAction'
+
+  $scope.close = () ->
+    UtilsService.noteModal "Close", "Close this case?", 'danger', (note) ->
+      CaseService.closeCase $scope.case, note, () ->
         UtilsService.navigate '/case/'
 
-  $scope.reopenCase = () ->
-    UtilsService.showConfirm 'Re-open this case?', false, () ->
-      CaseService.reopenCase $scope.caseId, () ->
-        UtilsService.refresh()
+  $scope.reopen = () ->
+    UtilsService.noteModal "Re-open", "Re-open this case?", null, (note) ->
+      CaseService.reopenCase $scope.case, note, () ->
+        $scope.$broadcast 'newCaseAction'
 ]
 
 
@@ -186,17 +213,28 @@ controllers.controller 'CaseController', [ '$scope', '$modal', 'CaseService', 'U
 # Case timeline controller
 #============================================================================
 
-controllers.controller 'CaseTimelineController', [ '$scope', 'CaseService', ($scope, CaseService) ->
+controllers.controller 'CaseTimelineController', [ '$scope', '$timeout', 'CaseService', ($scope, $timeout, CaseService) ->
 
   $scope.timeline = []
+  $scope.lastEventTime = null
+  $scope.lastActionId = null
+  $scope.lastMessageId = null
 
   $scope.init = () ->
-    $scope.update()
+    $scope.$on 'newCaseAction', () ->
+      $scope.update(false)
 
-  $scope.update = () ->
-    CaseService.fetchTimeline $scope.caseId, null, (events) ->
-      $scope.timeline = events
+    $scope.update(true)
 
+  $scope.update = (repeat) ->
+    CaseService.fetchTimeline $scope.case, $scope.lastEventTime, $scope.lastMessageId, $scope.lastActionId, (events, lastEventTime, lastMessageId, lastActionId) ->
+      $scope.timeline = $scope.timeline.concat events
+      $scope.lastEventTime = lastEventTime
+      $scope.lastMessageId = lastMessageId
+      $scope.lastActionId = lastActionId
+
+      if repeat
+        $timeout (() -> $scope.update(true)), INTERVAL_CASE_TIMELINE
 ]
 
 
@@ -204,15 +242,37 @@ controllers.controller 'CaseTimelineController', [ '$scope', 'CaseService', ($sc
 # Modal dialog controllers
 #============================================================================
 
-controllers.controller 'ConfirmModalController', [ '$scope', '$modalInstance', 'prompt', 'danger', ($scope, $modalInstance, prompt, danger) ->
+controllers.controller 'ConfirmModalController', [ '$scope', '$modalInstance', 'prompt', 'style', ($scope, $modalInstance, prompt, style) ->
   $scope.prompt = prompt
-  $scope.danger = danger
+  $scope.style = style
+
   $scope.ok = () -> $modalInstance.close(true)
+  $scope.cancel = () -> $modalInstance.dismiss('cancel')
+]
+
+controllers.controller 'AssignModalController', [ '$scope', '$modalInstance', 'title', 'prompt', 'partners', ($scope, $modalInstance, title, prompt, partners) ->
+  $scope.title = title
+  $scope.prompt = prompt
+  $scope.partners = partners
+  $scope.assignee = partners[0]
+
+  $scope.ok = () -> $modalInstance.close($scope.assignee)
+  $scope.cancel = () -> $modalInstance.dismiss('cancel')
+]
+
+controllers.controller 'NoteModalController', [ '$scope', '$modalInstance', 'title', 'prompt', 'style', ($scope, $modalInstance, title, prompt, style) ->
+  $scope.title = title
+  $scope.prompt = prompt
+  $scope.style = style or 'primary'
+  $scope.note = ''
+
+  $scope.ok = () -> $modalInstance.close($scope.note)
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
 
 controllers.controller 'ReplyModalController', [ '$scope', '$modalInstance', ($scope, $modalInstance) ->
   $scope.text = ''
+
   $scope.ok = () -> $modalInstance.close($scope.text)
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
@@ -234,13 +294,6 @@ controllers.controller 'ComposeModalController', [ '$scope', '$modalInstance', '
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 
   $scope.setScheme('tel')
-]
-
-controllers.controller 'OpenCaseModalController', [ '$scope', '$modalInstance', 'partners', ($scope, $modalInstance, partners) ->
-  $scope.partners = partners
-  $scope.assignee = partners[0]
-  $scope.ok = () -> $modalInstance.close($scope.assignee)
-  $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
 
 

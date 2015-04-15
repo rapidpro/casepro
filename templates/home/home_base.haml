@@ -42,6 +42,9 @@
                   - trans "Inbox"
                 %span{ ng-if:"activeLabel" }
                   - trans "Inbox"
+            %li
+              %a{ href:"{% url 'home.cases' %}" }
+                - trans "Cases"
         .label-menu
           %h3
             - trans "Labels"

@@ -4,7 +4,7 @@ from datetime import datetime
 from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 from mock import patch
-from upartners.cases.models import Case, ACTION_OPEN, ACTION_ADD_NOTE, ACTION_CLOSE, ACTION_REOPEN, ACTION_REASSIGN
+from upartners.cases.models import Case, ACTION_OPEN, ACTION_NOTE, ACTION_CLOSE, ACTION_REOPEN, ACTION_REASSIGN
 from upartners.test import UPartnersTest
 
 
@@ -38,11 +38,11 @@ class CaseTest(UPartnersTest):
 
         with patch.object(timezone, 'now', return_value=d2):
             # other user in MOH adds a note
-            case.add_note(self.user2, "Interesting")
+            case.note(self.user2, "Interesting")
 
         actions = case.actions.all()
         self.assertEqual(len(actions), 2)
-        self.assertEqual(actions[1].action, ACTION_ADD_NOTE)
+        self.assertEqual(actions[1].action, ACTION_NOTE)
         self.assertEqual(actions[1].created_by, self.user2)
         self.assertEqual(actions[1].created_on, d2)
         self.assertEqual(actions[1].note, "Interesting")

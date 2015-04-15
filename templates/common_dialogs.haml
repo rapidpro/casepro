@@ -5,11 +5,45 @@
     %h3.modal-title
       - trans "Confirm"
     .modal-body
-      %span{ ng-bind-html:"prompt" }
+      %p
+        %span{ ng-bind-html:"prompt" }
     .modal-footer
-      %button.btn.btn-danger{ ng-if:"danger", ng-click:"ok()" }
+      %button.btn{ ng-click:"ok()", ng-class:'{ "btn-primary": style == "primary", "btn-danger": style == "danger" }' }
         - trans "OK"
-      %button.btn.btn-primary{ ng-if:"!danger", ng-click:"ok()" }
+      %button.btn.btn-default{ ng-click:"cancel()" }
+        - trans "Cancel"
+
+%script{ type:"text/ng-template", id:"assignModal.html" }
+  .modal-header
+    %h3.modal-title
+      [[ title ]]
+    .modal-body
+      %p
+        %span{ ng-bind-html:"prompt" }
+      .form-group
+        %label.control-label
+          - trans "Assign to"
+        %select.form-control{ ng-model:"assignee", ng-options:"p.name for p in partners track by p.id" }
+    .modal-footer
+      %button.btn.btn-primary{ ng-click:"ok()" }
+        - trans "Open"
+      %button.btn.btn-default{ ng-click:"cancel()" }
+        - trans "Cancel"
+
+%script{ type:"text/ng-template", id:"noteModal.html" }
+  .modal-header
+    %h3.modal-title
+      [[ title ]]
+    .modal-body
+      %p
+        %span{ ng-bind-html:"prompt" }
+      %form
+        .form-group
+          %label.control-label
+            - trans "Note"
+          %textarea.form-control{ ng-model:"note" }
+    .modal-footer
+      %button.btn{ ng-click:"ok()", ng-class:'{ "btn-primary": style == "primary", "btn-danger": style == "danger" }' }
         - trans "OK"
       %button.btn.btn-default{ ng-click:"cancel()" }
         - trans "Cancel"

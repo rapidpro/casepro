@@ -29,4 +29,5 @@ def message_as_json(msg, label_map):
             'urn': msg.urn,
             'time': msg.created_on,
             'labels': labels,
-            'flagged': flagged}
+            'flagged': flagged,
+            'direction': msg.direction}
