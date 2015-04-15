@@ -54,7 +54,7 @@
     .row
       .col-md-12
         .{ ng-controller:"CaseTimelineController", ng-init:"init()" }
-          .timeline-event{ ng-repeat:"event in timeline | reverse", ng-class:'{ "timeline-action": event.is_action, "timeline-incoming": event.is_message_in, "timeline-outgoing": event.is_message_out }' }
+          .timeline-event.clearfix{ ng-repeat:"event in timeline | reverse", ng-class:'{ "timeline-action": event.is_action, "timeline-incoming": event.is_message_in, "timeline-outgoing": event.is_message_out }' }
             .event-time
               [[ event.time | autodate ]]
 
@@ -114,14 +114,14 @@
       border-color: #F0E1C4;
     }
     .timeline-incoming {
-      margin-right: 100px;
-      background-color: #DFF8FD;
-      border-color: #DCF3F5;
-    }
-    .timeline-outgoing {
-      margin-left: 100px;
+      margin-right: 180px;
       background-color: #DDFDDD;
       border-color: #D4F3D4;
+    }
+    .timeline-outgoing {
+      margin-left: 180px;
+      background-color: #E6FDFB;
+      border-color: #D5EBED;
     }
     .timeline-event .event-time {
       float: right;

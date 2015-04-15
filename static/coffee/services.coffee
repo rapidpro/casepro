@@ -162,7 +162,7 @@ services.factory 'CaseService', ['$http', ($http) ->
       data = new FormData()
       data.append('assignee_id', if assignee then assignee.id else null)
       data.append('message_id', message.id)
-      $http.post '/case/create/', data, DEFAULT_POST_OPTS
+      $http.post '/case/open/', data, DEFAULT_POST_OPTS
       .success (_case) ->
         callback(_case)
 
@@ -238,6 +238,9 @@ services.factory 'CaseService', ['$http', ($http) ->
           event.is_action = event.type == 'A'
           event.is_message_in = event.type == 'M' and event.item.direction == 'I'
           event.is_message_out = event.type == 'M' and event.item.direction == 'O'
+
+          console.log(event)
+
 
         newLastEventTime = (parseIso8601 data.last_event_time) or lastEventTime
         newLastMessageId = data.last_message_id or lastMessageId

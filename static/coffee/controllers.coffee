@@ -244,7 +244,7 @@ controllers.controller 'CaseTimelineController', [ '$scope', '$timeout', 'CaseSe
 
 controllers.controller 'ConfirmModalController', [ '$scope', '$modalInstance', 'prompt', 'style', ($scope, $modalInstance, prompt, style) ->
   $scope.prompt = prompt
-  $scope.style = style
+  $scope.style = style or 'primary'
 
   $scope.ok = () -> $modalInstance.close(true)
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
