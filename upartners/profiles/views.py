@@ -9,7 +9,7 @@ from django.core.validators import MinLengthValidator
 from django.db.models import Q
 from django.http import Http404
 from smartmin.users.views import SmartCRUDL, SmartCreateView, SmartListView, SmartReadView, SmartUpdateView
-from upartners.partners.models import Partner
+from upartners.cases.models import Partner
 from upartners.profiles import ROLE_ANALYST, ROLE_CHOICES
 
 
@@ -139,7 +139,7 @@ class UserCRUDL(SmartCRUDL):
         Limited update form for users to edit their own profiles
         """
         form_class = UserForm
-        success_url = '@home.home'
+        success_url = '@cases.inbox'
         success_message = _("Profile updated")
         title = _("Edit My Profile")
 

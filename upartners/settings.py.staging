@@ -39,23 +39,6 @@ RAVEN_CONFIG = {
 STATIC_URL = '/sitestatic/'
 COMPRESS_URL = '/sitestatic/'
 
-# our media is all on S3
-MEDIA_URL = 'http://dl-trac.s3.amazonaws.com/'
-
-# we store files on S3 on prod boxes
-AWS_ACCESS_KEY_ID=os.environ.get('AWS_ACCESS_KEY_ID', 'MISSING_AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY=os.environ.get('AWS_SECRET_ACCESS_KEY', 'MISSING_AWS_SECRET_ACCESS_KEY')
-AWS_STORAGE_BUCKET_NAME='dl-trac'
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
-
-# these two settings will cause our aws files to never expire
-# see http://developer.yahoo.com/performance/rules.html#expires
-AWS_QUERYSTRING_AUTH = False
-AWS_HEADERS = {
-    'Expires': 'Wed, 1 Jan 2020 20:00:00 GMT',
-    'Cache-Control': 'max-age=86400',
-}
-
 # List of finder classes that know how to find static files in
 # various locations.
 STATICFILES_FINDERS = (

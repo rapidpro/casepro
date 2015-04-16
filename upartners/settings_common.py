@@ -41,7 +41,7 @@ EMAIL_USE_TLS = True
 
 SITE_API_HOST = 'http://localhost:8001/api/v1'
 SITE_HOST_PATTERN = 'http://%s.localhost:8000'
-SITE_CHOOSER_TEMPLATE = 'home/org_chooser.haml'
+SITE_CHOOSER_TEMPLATE = 'org_chooser.haml'
 SITE_USER_HOME = '/'
 SITE_ALLOW_NO_ORG = ('orgs_ext.org_create', 'orgs_ext.org_update', 'orgs_ext.org_list',
                      'profiles.user_create', 'profiles.user_update', 'profiles.user_read', 'profiles.user_list')
@@ -214,11 +214,7 @@ INSTALLED_APPS = (
 
     # custom
     'upartners.cases',
-    'upartners.groups',
-    'upartners.home',
-    'upartners.labels',
     'upartners.orgs_ext',
-    'upartners.partners',
     'upartners.profiles'
 )
 
@@ -291,13 +287,13 @@ PERMISSIONS = {
 
     'cases.case': ('create', 'read', 'update', 'list'),
 
-    'groups.group': ('select', 'list'),
+    'cases.group': ('select', 'list'),
 
-    'home.messageexport': ('create', 'read'),
+    'cases.messageexport': ('create', 'read'),
 
-    'labels.label': ('create', 'update', 'list'),
+    'cases.label': ('create', 'update', 'list'),
 
-    'partners.partner': ('create', 'read', 'update', 'list'),
+    'cases.partner': ('create', 'read', 'update', 'list'),
 
     # can't create profiles.user.* permissions because we don't own User
     'profiles.profile': ('user_create', 'user_read', 'user_update', 'user_list'),
@@ -310,10 +306,10 @@ GROUP_PERMISSIONS = {
         'orgs.org_edit',
 
         'cases.case.*',
-        'groups.group.*',
-        'home.messageexport.*',
-        'labels.label.*',
-        'partners.partner.*',
+        'cases.group.*',
+        'cases.messageexport.*',
+        'cases.label.*',
+        'cases.partner.*',
         'profiles.profile.*',
     ),
     "Editors": (
@@ -321,9 +317,9 @@ GROUP_PERMISSIONS = {
         'cases.case_read',
         'cases.case_update',
         'cases.case_list',
-        'home.messageexport_create',
-        'home.messageexport_read',
-        'partners.partner_read',
+        'cases.messageexport_create',
+        'cases.messageexport_read',
+        'cases.partner_read',
         'profiles.profile_user_read',
     ),
     "Viewers": (
@@ -331,9 +327,9 @@ GROUP_PERMISSIONS = {
         'cases.case_read',
         'cases.case_update',
         'cases.case_list',
-        'home.messageexport_create',
-        'home.messageexport_read',
-        'partners.partner_read',
+        'cases.messageexport_create',
+        'cases.messageexport_read',
+        'cases.partner_read',
         'profiles.profile_user_read',
     ),
 }

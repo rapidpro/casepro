@@ -283,7 +283,7 @@ class ForcePasswordChangeMiddlewareTest(UPartnersTest):
 
         self.login(self.user1)
 
-        response = self.url_get('unicef', reverse('home.home'))
+        response = self.url_get('unicef', reverse('cases.inbox'))
         self.assertRedirects(response, 'http://unicef.localhost/profile/self/')
 
         response = self.url_get('unicef', reverse('profiles.user_self'))
@@ -292,5 +292,5 @@ class ForcePasswordChangeMiddlewareTest(UPartnersTest):
         self.user1.profile.change_password = False
         self.user1.profile.save()
 
-        response = self.url_get('unicef', reverse('home.home'))
+        response = self.url_get('unicef', reverse('cases.inbox'))
         self.assertEqual(response.status_code, 200)

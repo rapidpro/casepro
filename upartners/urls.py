@@ -5,10 +5,6 @@ from django.conf.urls import patterns, include, url
 
 urlpatterns = patterns('',
                        url(r'', include('upartners.cases.urls')),
-                       url(r'', include('upartners.groups.urls')),
-                       url(r'', include('upartners.home.urls')),
-                       url(r'', include('upartners.labels.urls')),
-                       url(r'', include('upartners.partners.urls')),
                        url(r'', include('upartners.profiles.urls')),
                        url(r'^manage/', include('upartners.orgs_ext.urls')),
                        url(r'^users/', include('dash.users.urls')),

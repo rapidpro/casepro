@@ -32,3 +32,11 @@ def update_labelling_flow(org_id):
         label.save()
 
     # TODO generate labelling flow and push
+
+
+@task
+def message_export(export_id):
+    from .models import MessageExport
+
+    export = MessageExport.objects.get(pk=export_id)
+    export.do_export()

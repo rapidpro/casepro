@@ -10,7 +10,7 @@
 
     .page-header-buttons
       - if org_perms.partners.partner_update
-        %a.btn.btn-default{ href:"{% url 'partners.partner_update' object.pk %}" }
+        %a.btn.btn-default{ href:"{% url 'cases.partner_update' object.pk %}" }
           %span.glyphicon.glyphicon-pencil
           - trans "Edit"
 
@@ -44,7 +44,7 @@
       - for label in labels
         .
           %span.glyphicon.glyphicon-tag
-          %a{ href:"{% url 'home.label' label.pk %}" }
+          %a{ href:"{% url 'cases.label' label.pk %}" }
             {{ label.name }}
 
 - block extra-style

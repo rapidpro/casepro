@@ -8,10 +8,8 @@ from dash.utils import random_string
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
 from django.test import TestCase
-from upartners.labels.models import Label
-from upartners.partners.models import Partner
+from upartners.cases.models import Label, Partner
 from upartners.profiles import ROLE_ANALYST, ROLE_MANAGER
-from uuid import uuid4
 
 
 class UPartnersTest(TestCase):
