@@ -10,41 +10,29 @@
   %script{ type:"text/javascript" }
     var contextData = {{ context_data_json|safe }};
 
-  .{ ng-controller:"InboxController", ng-init:'init({{ initial_label_id|default:"null" }})' }
+  .{ ng-controller:"HomeController", ng-init:'init({{ initial_label_id|default:"null" }})' }
     .page-header.clearfix
       %h2.pull-back
-        %span{ ng-if:"activeLabel" }
+        - block home-title
+
+      .page-header-buttons{ ng-if:"activeLabel" }
+        .label-name
           %span.glyphicon.glyphicon-tag
           &nbsp;
           [[ activeLabel.name ]]
-        %span{ ng-if:"!activeLabel" }
-          %span.glyphicon.glyphicon-envelope
-          &nbsp;
-          - trans "Inbox"
-
-      .page-header-buttons{ ng-if:"activeLabel" }
-        - if org_perms.labels.label_update or org_perms.labels.label_delete
+        - if org_perms.cases.label_update or org_perms.cases.label_delete
           .btn-group
-            - if org_perms.labels.label_update
+            - if org_perms.cases.label_update
               %a.btn.btn-default{ ng-href:"/label/update/[[ activeLabel.id ]]/", tooltip:"Edit Label" }
                 %span.glyphicon.glyphicon-pencil
-            - if org_perms.labels.label_delete
+            - if org_perms.cases.label_delete
               %button.btn.btn-default{ ng-click:"onDeleteLabel()", tooltip:"Delete Label" }
                 %span.glyphicon.glyphicon-trash
 
     .row
       .col-md-2
-        .label-menu
-          %ul
-            %li
-              %a{ href:"#", ng-click:"activateLabel(null)" }
-                %strong{ ng-if:"!activeLabel" }
-                  - trans "Inbox"
-                %span{ ng-if:"activeLabel" }
-                  - trans "Inbox"
-            %li
-              %a{ href:"#", onclick:'alert("TODO")' }
-                - trans "Cases"
+        - block home-menu
+
         .label-menu
           %h3
             - trans "Labels"
@@ -56,14 +44,22 @@
                 %span{ ng-if:"label != activeLabel" }
                   [[ label.name ]] ([[ label.count ]])
       .col-md-10
-        - block inbox-items
+        - block home-items
 
 
 - block extra-style
   {{ block.super }}
   :css
+    .home-menu > li > a {
+      padding: 7px 12px;
+    }
+    .label-name {
+      font-size: 20px;
+      display: inline-block;
+      padding: 3px 12px 3px 0;
+    }
     .label-menu {
-      margin-bottom: 1em;
+      margin: 1em 0;
     }
     .label-menu h3 {
       margin: 0 0 1em 0;

@@ -8,12 +8,12 @@ INTERVAL_CASE_INFO = 5000
 INTERVAL_CASE_TIMELINE = 10000
 
 #============================================================================
-# Inbox controller
+# Home controller (parent of inbox and cases)
 #============================================================================
 
-controllers.controller 'InboxController', [ '$scope', '$window', 'LabelService', 'UtilsService', ($scope, $window, LabelService, UtilsService) ->
+controllers.controller 'HomeController', [ '$scope', '$window', 'LabelService', 'UtilsService', ($scope, $window, LabelService, UtilsService) ->
 
-  $scope.userPartner = $window.contextData.user_partner
+  $scope.user = $window.contextData.user
   $scope.partners = $window.contextData.partners
   $scope.labels = $window.contextData.labels
   $scope.groups = $window.contextData.groups
@@ -42,6 +42,10 @@ controllers.controller 'InboxController', [ '$scope', '$window', 'LabelService',
         $scope.labels = (l for l in $scope.labels when l.id != $scope.activeLabel.id)
         $scope.activateLabel(null)
         UtilsService.displayAlert 'success', "Label was deleted"
+
+  $scope.filterDisplayLabels = (labels) ->
+    # filters out the active label from the given set of message labels
+    if $scope.activeLabel then (l for l in labels when l.id != $scope.activeLabel.id) else labels
 ]
 
 #============================================================================
@@ -132,9 +136,9 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
           UtilsService.navigate '/case/read/' + _case.id + '/'
 
     prompt = "Open a new case for the selected message?"
-    if $scope.userPartner
+    if $scope.user.partner
       UtilsService.confirmModal prompt, null, () ->
-        openCase $scope.userPartner
+        openCase $scope.user.partner
     else
       UtilsService.assignModal "New case", prompt, $scope.partners, (assignee) ->
         openCase assignee
@@ -168,10 +172,32 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
     prevState = message.flagged
     message.flagged = !prevState
     MessageService.flagMessages([message], message.flagged)
+]
 
-  $scope.filterDisplayLabels = (labels) ->
-    # filters out the active label from the given set of message labels
-    if $scope.activeLabel then (l for l in labels when l.id != $scope.activeLabel.id) else labels
+
+#============================================================================
+# Cases controller
+#============================================================================
+
+controllers.controller 'CasesController', [ '$scope', '$timeout', 'CaseService', 'UtilsService', ($scope, $timeout, CaseService, UtilsService) ->
+
+  $scope.cases = []
+  $scope.oldestCaseId = null
+
+  $scope.init = (caseStatus) ->
+    $scope.caseStatus = caseStatus
+
+    $scope.loadOldCases()
+
+  $scope.loadOldCases = ->
+    $scope.loadingOld = true
+
+    CaseService.searchCases $scope.activeLabel, $scope.caseStatus, $scope.oldestCaseId, (cases, total, hasOlder) ->
+      $scope.cases = $scope.cases.concat cases
+
+      $scope.hasOlder = hasOlder
+      $scope.totalCases = total
+      $scope.loadingOld = false
 ]
 
 

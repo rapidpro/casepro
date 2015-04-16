@@ -1,0 +1,19 @@
+- extends "cases/home_cases.html"
+- load smartmin i18n
+
+- block home-title
+  %span.glyphicon.glyphicon-folder-close
+  &nbsp;
+  - trans "Closed Cases"
+
+- block home-menu
+  %ul.nav.nav-pills.nav-stacked.home-menu
+    %li
+      %a{ href:"{% url 'cases.inbox' %}" }
+        - trans "Inbox"
+    %li
+      %a{ href:"{% url 'cases.cases' case_status='open' %}" }
+        - trans "Open"
+    %li.active
+      %a{ href:"{% url 'cases.cases' case_status='closed' %}" }
+        - trans "Closed"

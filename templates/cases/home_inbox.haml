@@ -1,7 +1,24 @@
-- extends "home/home_base.html"
+- extends "cases/home_base.html"
 - load smartmin i18n
 
-- block inbox-items
+- block home-title
+  %span.glyphicon.glyphicon-inbox
+  &nbsp;
+  - trans "Inbox"
+
+- block home-menu
+  %ul.nav.nav-pills.nav-stacked.home-menu
+    %li.active
+      %a{ href:"{% url 'cases.inbox' %}" }
+        - trans "Inbox"
+    %li
+      %a{ href:"{% url 'cases.cases' case_status='open' %}" }
+        - trans "Open"
+    %li
+      %a{ href:"{% url 'cases.cases' case_status='closed' %}" }
+        - trans "Closed"
+
+- block home-items
   .{ ng-controller:"MessagesController", ng-init:"init()" }
     .search-toolbar
       %form.form-inline

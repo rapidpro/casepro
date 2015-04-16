@@ -1,0 +1,51 @@
+- extends "cases/home_base.html"
+- load smartmin i18n
+
+- block home-items
+  .{ ng-controller:"CasesController", ng-init:'init("{{ case_status }}")' }
+
+    .cases{ infinite-scroll:"loadOldCases()", infinite-scroll-disabled:"loadingOld || !hasOlder" }
+      .case{ ng-repeat:"case in cases" }
+        .case-actions
+          %input{ type:"checkbox", ng-model:"case.selected", ng-change:"updateSelection()" }
+        .case-time
+          [[ case.opened_on | autodate ]]
+        .case-text
+          %span.label-container{ ng-repeat:"label in filterDisplayLabels(case.labels)" }
+            %span.label.label-primary
+              [[ label.name ]]
+            &nbsp;
+          %a{ ng-href:"/case/read/[[ case.id ]]/" }
+            TODO figure out how to display a case
+      .loading{ ng-if:"loadingOld" }
+      .none{ ng-hide:"cases.length > 0" }
+        - trans "No cases"
+
+- block extra-style
+  {{ block.super }}
+  :css
+    .case {
+      padding: 3px;
+      border-bottom: 1px solid #eee;
+    }
+    .case:first-of-type {
+      border-top: 1px solid #eee;
+    }
+    .case .case-actions {
+      float: left;
+      width: 50px;
+    }
+    .case .case-actions input[type="checkbox"] {
+      width: auto;
+      margin-right: 7px;
+    }
+    .case-time {
+      float: right;
+      font-size: 0.7em;
+      margin-left: 3px;
+      margin-bottom: 3px;
+    }
+    .case-text {
+      margin-left: 50px;
+    }
+

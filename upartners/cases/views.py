@@ -20,7 +20,7 @@ from .tasks import message_export
 
 class CaseCRUDL(SmartCRUDL):
     model = Case
-    actions = ('read', 'list', 'open', 'note', 'reassign', 'close', 'reopen', 'fetch', 'timeline')
+    actions = ('read', 'list', 'open', 'note', 'reassign', 'close', 'reopen', 'fetch', 'search', 'timeline')
 
     class Read(OrgObjPermsMixin, SmartReadView):
         fields = ()
@@ -136,6 +136,40 @@ class CaseCRUDL(SmartCRUDL):
 
         def render_to_response(self, context, **response_kwargs):
             return JsonResponse(self.object.as_json())
+
+    class Search(OrgPermsMixin, SmartListView):
+        """
+        JSON endpoint for searching for cases
+        """
+        permission = 'cases.case_list'
+
+        def derive_queryset(self, **kwargs):
+            before_id = self.request.GET.get('before_id', None)
+            label_id = self.request.GET.get('label_id', None)
+            status = self.request.GET.get('status', None)
+
+            qs = Case.get_all(self.request.org)
+
+            if before_id:
+                qs = qs.filter(pk__lt=before_id)
+            if label_id:
+                qs = qs.filter(labels=label_id)
+
+            if status == 'open':
+                qs = qs.filter(closed_on=None)
+            elif status == 'closed':
+                qs = qs.exclude(closed_on=None)
+
+            return qs.order_by('-pk').select_related('assignee')
+
+        def render_to_response(self, context, **response_kwargs):
+
+            # TODO paginate
+
+            results = [c.as_json() for c in context['object_list']]
+            return JsonResponse({'results': results,
+                                 'has_more': False,
+                                 'total': len(results)})
 
     class Timeline(OrgPermsMixin, SmartReadView):
         """
@@ -519,17 +553,12 @@ class PartnerCRUDL(SmartCRUDL):
             return ", ".join([l.name for l in obj.get_labels()])
 
 
-class InboxView(OrgPermsMixin, SmartTemplateView):
+class HomeDataMixin(object):
     """
-    Inbox view
+    Mixin to add site metadata to the context in JSON format which can then used
     """
-    template_name = 'home/home_inbox.haml'
-
-    def has_permission(self, request, *args, **kwargs):
-        return request.user.is_authenticated()
-
     def get_context_data(self, **kwargs):
-        context = super(InboxView, self).get_context_data(**kwargs)
+        context = super(HomeDataMixin, self).get_context_data(**kwargs)
         user = self.request.user
         partner = user.get_partner()
 
@@ -537,18 +566,60 @@ class InboxView(OrgPermsMixin, SmartTemplateView):
         partners = Partner.get_all(self.request.org).order_by('name')
         groups = Group.get_all(self.request.org).order_by('name')
 
-        # annotate labels with their count
-        for label, count in Label.fetch_counts(self.request.org, labels).iteritems():
-            label.count = count
-
-        context['initial_label_id'] = self.kwargs.get('label_id', None)
+        # annotate labels with counts
+        self.annotate_labels(labels)
 
         # angular app requires context data in JSON format
         context['context_data_json'] = json.dumps({
-            'user_partner': partner.as_json() if partner else None,
+            'user': {'id': user.pk, 'partner': partner.as_json() if partner else None},
             'partners': [p.as_json() for p in partners],
             'labels': [l.as_json() for l in labels],
             'groups': [g.as_json() for g in groups],
         })
+
+        return context
+
+
+class InboxView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
+    """
+    Inbox view
+    """
+    template_name = 'cases/home_inbox.haml'
+
+    def has_permission(self, request, *args, **kwargs):
+        return request.user.is_authenticated()
+
+    def annotate_labels(self, labels):
+        for label, count in Label.get_message_counts(self.request.org, labels).iteritems():
+            label.count = count
+
+    def get_context_data(self, **kwargs):
+        context = super(InboxView, self).get_context_data(**kwargs)
+
+        context['initial_label_id'] = self.kwargs.get('label_id', None)
+
+        return context
+
+
+class CasesView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
+    """
+    Open or closed cases views
+    """
+
+    def has_permission(self, request, *args, **kwargs):
+        return request.user.is_authenticated()
+
+    def get_template_names(self):
+        case_status = self.kwargs['case_status']
+        return ['cases/home_open.haml'] if case_status == 'open' else ['cases/home_closed.haml']
+
+    def annotate_labels(self, labels):
+        for label, count in Label.get_case_counts(self.request.org, labels).iteritems():
+            label.count = count
+
+    def get_context_data(self, **kwargs):
+        context = super(CasesView, self).get_context_data(**kwargs)
+
+        context['case_status'] = self.kwargs['case_status']
 
         return context

@@ -28,22 +28,22 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     # Fetches old messages for the given label
     #----------------------------------------------------------------------------
     fetchOldMessages: (label, page, search, callback) ->
-      searchParams = @_searchToParams search
-      otherParams = {start_time: (formatIso8601 @start_time), page: page, label: if label then label.id else null}
+      searchParams = @_searchToParams(search)
+      otherParams = {start_time: formatIso8601(@start_time), page: page, label: if label then label.id else null}
 
-      $http.get '/message/?' + $.param(otherParams) + '&' + searchParams
+      $http.get('/message/?' + $.param(otherParams) + '&' + searchParams)
       .success (data) =>
-        @_processMessages data.results
+        @_processMessages(data.results)
         callback(data.results, data.total, data.has_more)
 
     #----------------------------------------------------------------------------
     # Starts a message export
     #----------------------------------------------------------------------------
     startExport: (label, search, callback) ->
-      searchParams = @_searchToParams search
+      searchParams = @_searchToParams(search)
       otherParams = {label: if label then label.id else null}
 
-      $http.post '/messageexport/create/?' + $.param(otherParams) + '&' + searchParams
+      $http.post('/messageexport/create/?' + $.param(otherParams) + '&' + searchParams)
       .success () =>
         callback()
 
@@ -60,16 +60,17 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
         else
           contacts.push(msg.contact)
 
-      @_messagesSend urns, contacts, text, callback
+      @_messagesSend(urns, contacts, text, callback)
 
     #----------------------------------------------------------------------------
     # Flag or un-flag messages
     #----------------------------------------------------------------------------
     flagMessages: (messages, flagged) ->
       action = if flagged then 'flag' else 'unflag'
-      @_messagesAction messages, action, null, () ->
+      @_messagesAction(messages, action, null, () ->
         for msg in messages
           msg.flagged = flagged
+      )
 
     #----------------------------------------------------------------------------
     # Label messages
@@ -82,21 +83,22 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
           msg.labels.push(label.name)
 
       if without_label.length > 0
-        @_messagesAction without_label, 'label', label.name
+        @_messagesAction(without_label, 'label', label.name)
 
     #----------------------------------------------------------------------------
     # Archive messages
     #----------------------------------------------------------------------------
     archiveMessages: (messages) ->
-      @_messagesAction messages, 'archive', null, () ->
+      @_messagesAction(messages, 'archive', null, () ->
         for msg in messages
           msg.archived = true
+      )
 
     #----------------------------------------------------------------------------
     # Send new message
     #----------------------------------------------------------------------------
     sendNewMessage: (urn, text, callback) ->
-      @_messagesSend [urn.urn], [], text, callback
+      @_messagesSend([urn.urn], [], text, callback)
 
     #----------------------------------------------------------------------------
     # Convert search object to URL params
@@ -131,7 +133,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       data.append('urns', urns)
       data.append('contacts', contacts)
       data.append('text', text)
-      $http.post '/message/send/', data, DEFAULT_POST_OPTS
+      $http.post('/message/send/', data, DEFAULT_POST_OPTS)
       .success (data) =>
         callback(data.broadcast_id)
 
@@ -141,7 +143,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     _processMessages: (messages) ->
       for msg in messages
         # parse datetime string
-        msg.time = parseIso8601 msg.time
+        msg.time = parseIso8601(msg.time)
         msg.archived = false
 ]
 
@@ -156,7 +158,7 @@ services.factory 'LabelService', ['$http', ($http) ->
     # Deletes a label
     #----------------------------------------------------------------------------
     deleteLabel: (label, callback) ->
-      $http.post '/label/delete/' + label.id + '/'
+      $http.post('/label/delete/' + label.id + '/')
       .success () ->
         callback()
 ]
@@ -170,21 +172,32 @@ services.factory 'CaseService', ['$http', ($http) ->
   new class CaseService
 
     #----------------------------------------------------------------------------
+    # Searches for cases
+    #----------------------------------------------------------------------------
+    searchCases: (label, status, beforeId, callback) ->
+      params = {label: (if label then label.id else null), status: status, before_id: beforeId}
+      $http.get('/case/search/?' + $.param(params))
+      .success (data) =>
+        @_processCases(data.results)
+        callback(data.results, data.total, data.has_more)
+
+    #----------------------------------------------------------------------------
+    # Fetches an existing case by it's id
+    #----------------------------------------------------------------------------
+    fetchCase: (caseId, callback) ->
+      $http.get('/case/fetch/' + caseId + '/')
+      .success (_case) =>
+        @_processCases([_case])
+        callback(_case)
+
+    #----------------------------------------------------------------------------
     # Opens a new case
     #----------------------------------------------------------------------------
     openCase: (message, assignee, callback) ->
       data = new FormData()
       data.append('assignee_id', if assignee then assignee.id else null)
       data.append('message_id', message.id)
-      $http.post '/case/open/', data, DEFAULT_POST_OPTS
-      .success (_case) ->
-        callback(_case)
-
-    #----------------------------------------------------------------------------
-    # Fetches an existing case by it's id
-    #----------------------------------------------------------------------------
-    fetchCase: (caseId, callback) ->
-      $http.get '/case/fetch/' + caseId + '/'
+      $http.post('/case/open/', data, DEFAULT_POST_OPTS)
       .success (_case) ->
         callback(_case)
 
@@ -195,7 +208,7 @@ services.factory 'CaseService', ['$http', ($http) ->
       data = new FormData()
       data.append('note', note)
 
-      $http.post '/case/note/' + _case.id + '/', data, DEFAULT_POST_OPTS
+      $http.post('/case/note/' + _case.id + '/', data, DEFAULT_POST_OPTS)
       .success () ->
         callback()
 
@@ -206,7 +219,7 @@ services.factory 'CaseService', ['$http', ($http) ->
       data = new FormData()
       data.append('assignee_id', assignee.id)
 
-      $http.post '/case/reassign/' + _case.id + '/', data, DEFAULT_POST_OPTS
+      $http.post('/case/reassign/' + _case.id + '/', data, DEFAULT_POST_OPTS)
       .success () ->
         callback()
 
@@ -217,7 +230,7 @@ services.factory 'CaseService', ['$http', ($http) ->
       data = new FormData()
       data.append('note', note)
 
-      $http.post '/case/close/' + _case.id + '/', data, DEFAULT_POST_OPTS
+      $http.post('/case/close/' + _case.id + '/', data, DEFAULT_POST_OPTS)
       .success () ->
         _case.is_closed = true
         callback()
@@ -229,7 +242,7 @@ services.factory 'CaseService', ['$http', ($http) ->
       data = new FormData()
       data.append('note', note)
 
-      $http.post '/case/reopen/' + _case.id + '/', data, DEFAULT_POST_OPTS
+      $http.post('/case/reopen/' + _case.id + '/', data, DEFAULT_POST_OPTS)
       .success () ->
         _case.is_closed = false
         callback()
@@ -244,7 +257,7 @@ services.factory 'CaseService', ['$http', ($http) ->
         since_action_id: lastActionId
       }
 
-      $http.get '/case/timeline/' + _case.id + '/?' + $.param(params)
+      $http.get('/case/timeline/' + _case.id + '/?' + $.param(params))
       .success (data) =>
         for event in data.results
           # parse datetime string
@@ -256,11 +269,18 @@ services.factory 'CaseService', ['$http', ($http) ->
           console.log(event)
 
 
-        newLastEventTime = (parseIso8601 data.last_event_time) or lastEventTime
+        newLastEventTime = parseIso8601(data.last_event_time) or lastEventTime
         newLastMessageId = data.last_message_id or lastMessageId
         newLastActionId = data.last_action_id or lastActionId
 
         callback(data.results, newLastEventTime, newLastMessageId, newLastActionId)
+
+    #----------------------------------------------------------------------------
+    # Processes incoming cases
+    #----------------------------------------------------------------------------
+    _processCases: (cases) ->
+      for c in cases
+        c.opened_on = parseIso8601(c.opened_on)
 ]
 
 
@@ -273,13 +293,13 @@ services.factory 'UtilsService', ['$window', '$modal', ($window, $modal) ->
 
     displayAlert: (type, message) ->
       # TODO angularize ?
-      $window.displayAlert type, message
+      $window.displayAlert(type, message)
 
     navigate: (url) ->
       $window.location.href = url
 
     refresh: () ->
-      @navigate $window.location.href
+      @navigate($window.location.href)
 
     confirmModal: (prompt, style, callback) ->
       resolve = {prompt: (() -> prompt), style: (() -> style)}

@@ -270,7 +270,7 @@ class Label(models.Model):
         return cls.objects.filter(org=org, is_active=True)
 
     @classmethod
-    def fetch_counts(cls, org, labels):
+    def get_message_counts(cls, org, labels):
         label_by_uuid = {l.uuid: l for l in labels if l.uuid}
         if label_by_uuid:
             temba_labels = org.get_temba_client().get_labels(uuids=label_by_uuid.keys())
@@ -279,6 +279,16 @@ class Label(models.Model):
             counts_by_uuid = {}
 
         return {l: counts_by_uuid[l.uuid] if l.uuid in counts_by_uuid else 0 for l in labels}
+
+    @classmethod
+    def get_case_counts(cls, org, labels):
+
+        from django.db.models import Count
+        labels.values('cases').annotate(total=Count('cases'))
+
+        # import pdb; pdb.set_trace()
+
+        return {}
 
     def get_count(self):
         return get_obj_cacheable(self, '_count', lambda: self.fetch_counts(self.org, [self])[self])
@@ -394,6 +404,7 @@ class Case(models.Model):
         return {'id': self.pk,
                 'assignee': self.assignee.as_json(),
                 'labels': [l.as_json() for l in self.get_labels()],
+                'opened_on': self.opened_on,
                 'is_closed': self.closed_on is not None}
 
 
