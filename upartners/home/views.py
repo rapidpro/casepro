@@ -2,11 +2,13 @@ from __future__ import absolute_import, unicode_literals
 
 import json
 
-from dash.orgs.views import OrgPermsMixin
+from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
+from django.core.files.storage import default_storage
+from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
-from smartmin.users.views import SmartTemplateView
+from smartmin.users.views import SmartCRUDL, SmartCreateView, SmartReadView, SmartTemplateView
 from temba.utils import parse_iso8601
 from upartners.groups.models import Group
 from upartners.labels.models import Label, SYSTEM_LABEL_FLAGGED
@@ -216,18 +218,45 @@ class MessageSendView(OrgPermsMixin, View):
         return JsonResponse({'broadcast_id': broadcast.id})
 
 
-class MessageExportView(OrgPermsMixin, MessageSearchMixin, View):
-    """
-    AJAX endpoint for exporting a message search
-    """
-    def has_permission(self, request, *args, **kwargs):
-        return request.user.is_authenticated()
+class MessageExportCRUDL(SmartCRUDL):
+    model = MessageExport
+    actions = ('create', 'read')
 
-    def post(self, request, *args, **kwargs):
+    class Create(OrgPermsMixin, MessageSearchMixin, SmartCreateView):
+        def post(self, request, *args, **kwargs):
 
-        search = self.derive_search()
-        export = MessageExport.create(self.request.org, self.request.user, search)
+            search = self.derive_search()
+            export = MessageExport.create(self.request.org, self.request.user, search)
 
-        message_export.delay(export.pk)
+            message_export.delay(export.pk)
 
-        return JsonResponse({'export_id': export.pk})
+            return JsonResponse({'export_id': export.pk})
+
+    class Read(OrgObjPermsMixin, SmartReadView):
+        """
+        Download view for message exports
+        """
+        title = _("Download Messages")
+
+        @classmethod
+        def derive_url_pattern(cls, path, action):
+            return r'%s/download/(?P<pk>\d+)/' % path
+
+        def get(self, request, *args, **kwargs):
+            if 'download' in request.GET:
+                export = self.get_object()
+
+                export_file = default_storage.open(export.filename, 'rb')
+                user_filename = 'message_export.xls'
+
+                response = HttpResponse(export_file, content_type='application/vnd.ms-excel')
+                response['Content-Disposition'] = 'attachment; filename=%s' % user_filename
+
+                return response
+            else:
+                return super(MessageExportCRUDL.Read, self).get(request, *args, **kwargs)
+
+        def get_context_data(self, **kwargs):
+            context = super(MessageExportCRUDL.Read, self).get_context_data(**kwargs)
+            context['download_url'] = '%s?download=1' % reverse('home.messageexport_read', args=[self.object.pk])
+            return context

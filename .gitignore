@@ -28,6 +28,7 @@ downloads/
 eggs/
 lib/
 lib64/
+media/
 parts/
 sdist/
 var/

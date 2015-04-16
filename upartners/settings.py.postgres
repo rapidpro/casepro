@@ -11,6 +11,8 @@ INSTALLED_APPS = INSTALLED_APPS + ('django_nose',)
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
+HOSTNAME = 'localhost:8000'
+
 SITE_API_HOST = 'http://localhost:8001/api/v1'  # rapidpro.io
 
 # we store files on S3 on prod boxes

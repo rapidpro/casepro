@@ -31,7 +31,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       searchParams = @_searchToParams search
       otherParams = {start_time: (formatIso8601 @start_time), page: page, label: if label then label.id else null}
 
-      $http.get '/messages/?' + $.param(otherParams) + '&' + searchParams
+      $http.get '/message/?' + $.param(otherParams) + '&' + searchParams
       .success (data) =>
         @_processMessages data.results
         callback(data.results, data.total, data.has_more)
@@ -43,7 +43,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       searchParams = @_searchToParams search
       otherParams = {label: if label then label.id else null}
 
-      $http.post '/message_export/?' + $.param(otherParams) + '&' + searchParams
+      $http.post '/messageexport/create/?' + $.param(otherParams) + '&' + searchParams
       .success () =>
         callback()
 
@@ -118,7 +118,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       data.append('message_ids', (msg.id for msg in messages))
       data.append('label', label)
 
-      $http.post '/message_action/' + action + '/', data, DEFAULT_POST_OPTS
+      $http.post '/message/action/' + action + '/', data, DEFAULT_POST_OPTS
       .success () =>
         if callback
           callback()
@@ -131,7 +131,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       data.append('urns', urns)
       data.append('contacts', contacts)
       data.append('text', text)
-      $http.post '/message_send/', data, DEFAULT_POST_OPTS
+      $http.post '/message/send/', data, DEFAULT_POST_OPTS
       .success (data) =>
         callback(data.broadcast_id)
 

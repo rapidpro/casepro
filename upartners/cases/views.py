@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 import json
 
-from dash.orgs.views import OrgPermsMixin
+from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django.http import HttpResponse, JsonResponse
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView, SmartUpdateView
 from temba.utils import parse_iso8601
@@ -16,7 +16,7 @@ class CaseCRUDL(SmartCRUDL):
     model = Case
     actions = ('read', 'list', 'open', 'note', 'reassign', 'close', 'reopen', 'fetch', 'timeline')
 
-    class Read(OrgPermsMixin, SmartReadView):
+    class Read(OrgObjPermsMixin, SmartReadView):
         fields = ()
 
         def derive_queryset(self, **kwargs):

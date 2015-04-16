@@ -1,0 +1,14 @@
+{% load tz %}
+{% load i18n %}
+
+{% blocktrans with link=link %}
+Hi there!
+
+Your message export is ready and can be downloaded by clicking on the following link:
+
+{{ link }}
+
+Thanks,
+
+The U-Report Partners Team
+{% endblocktrans %}

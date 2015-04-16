@@ -11,8 +11,4 @@ def message_export(export_id):
     from .models import MessageExport
 
     export = MessageExport.objects.get(pk=export_id)
-
-    client = export.org.get_temba_client()
-    search = export.get_search()
-
-    # TODO run export
+    export.do_export()

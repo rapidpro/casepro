@@ -293,6 +293,8 @@ PERMISSIONS = {
 
     'groups.group': ('select', 'list'),
 
+    'home.messageexport': ('create', 'read'),
+
     'labels.label': ('create', 'update', 'list'),
 
     'partners.partner': ('create', 'read', 'update', 'list'),
@@ -309,6 +311,7 @@ GROUP_PERMISSIONS = {
 
         'cases.case.*',
         'groups.group.*',
+        'home.messageexport.*',
         'labels.label.*',
         'partners.partner.*',
         'profiles.profile.*',
@@ -318,6 +321,8 @@ GROUP_PERMISSIONS = {
         'cases.case_read',
         'cases.case_update',
         'cases.case_list',
+        'home.messageexport_create',
+        'home.messageexport_read',
         'partners.partner_read',
         'profiles.profile_user_read',
     ),
@@ -326,6 +331,8 @@ GROUP_PERMISSIONS = {
         'cases.case_read',
         'cases.case_update',
         'cases.case_list',
+        'home.messageexport_create',
+        'home.messageexport_read',
         'partners.partner_read',
         'profiles.profile_user_read',
     ),
