@@ -4,19 +4,42 @@
 - block home-items
   .{ ng-controller:"CasesController", ng-init:'init("{{ case_status }}")' }
 
-    .cases{ infinite-scroll:"loadOldCases()", infinite-scroll-disabled:"loadingOld || !hasOlder" }
-      .case{ ng-repeat:"case in cases" }
+    .selection-toolbar
+      .row
+        .col-md-12
+          .selection-controls.pull-back
+            .btn-group{ dropdown:"true" }
+              %button.btn.btn-default.dropdown-toggle{ type:"button", dropdown-toggle:"true" }
+                - trans "Select"
+                %span.caret
+              %ul.dropdown-menu
+                %li
+                  %a{ href:"#", ng-click:"onSelectAll()" }
+                    - trans "All"
+                %li
+                  %a{ href:"#", ng-click:"onSelectNone()" }
+                    - trans "None"
+
+          %span.selection-info{ ng-show:"selection.length > 0" }
+            [[ selection.length ]] of [[ totalItems() ]] cases selected
+          %span.selection-info{ ng-show:"selection.length == 0" }
+            [[ totalItems() ]] cases
+
+    .cases{ infinite-scroll:"loadOldItems()", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
+      .case{ ng-repeat:"item in items" }
+        .case-actions
+          %input{ type:"checkbox", ng-model:"item.selected", ng-change:"onChangeSelection()" }
         .case-time
-          [[ case.opened_on | autodate ]]
+          [[ item.opened_on | autodate ]]
         .case-text
-          %span.label-container{ ng-repeat:"label in filterDisplayLabels(case.labels)" }
+          %span.label-container{ ng-repeat:"label in filterDisplayLabels(item.labels)" }
             %span.label.label-success
               [[ label.name ]]
             &nbsp;
-          %a{ ng-href:"/case/read/[[ case.id ]]/" }
+          %a{ ng-href:"/case/read/[[ item.id ]]/" }
             TODO figure out how to display a case
-      .loading{ ng-if:"loadingOld" }
-      .none{ ng-hide:"cases.length > 0" }
+      .loading{ ng-if:"oldItemsLoading" }
+      .none{ ng-hide:"items.length > 0" }
         - trans "No cases"
 
 - block extra-style
@@ -29,6 +52,14 @@
     .case:first-of-type {
       border-top: 1px solid #eee;
     }
+    .case .case-actions {
+      float: left;
+      width: 25px;
+    }
+    .case .case-actions input[type="checkbox"] {
+      width: auto;
+      margin-right: 7px;
+    }
     .case-time {
       float: right;
       font-size: 0.7em;
@@ -36,5 +67,6 @@
       margin-bottom: 3px;
     }
     .case-text {
+      margin-left: 25px;
     }
 

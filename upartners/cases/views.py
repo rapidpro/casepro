@@ -131,11 +131,16 @@ class CaseCRUDL(SmartCRUDL):
         JSON endpoint for searching for cases
         """
         permission = 'cases.case_list'
+        paginate_by = 25
 
         def derive_queryset(self, **kwargs):
-            before_id = self.request.GET.get('before_id', None)
-            label_id = self.request.GET.get('label_id', None)
+            label_id = self.request.GET.get('label', None)
             status = self.request.GET.get('status', None)
+
+            before_id = self.request.GET.get('before_id', None)
+            after_id = self.request.GET.get('after_id', None)
+            before_time = self.request.REQUEST.get('before_time', None)
+            after_time = self.request.REQUEST.get('after_time', None)
 
             label = Label.get_all(self.request.org).get(pk=label_id) if label_id else None
 
@@ -148,17 +153,32 @@ class CaseCRUDL(SmartCRUDL):
 
             if before_id:
                 qs = qs.filter(pk__lt=before_id)
+            if after_id:
+                qs = qs.filter(pk__gt=after_id)
+            if before_time:
+                qs = qs.filter(opened_on__lt=parse_iso8601(before_time))
+            if after_time:
+                qs = qs.filter(opened_on__gt=parse_iso8601(after_time))
 
             return qs.order_by('-pk').select_related('assignee')
 
         def render_to_response(self, context, **response_kwargs):
+            count = context['paginator'].count
+            has_more = context['page_obj'].has_next()
+            results = list(context['object_list'])
 
-            # TODO paginate
+            if results:
+                max_id = results[0].pk
+                min_id = results[-1].pk
+            else:
+                max_id = None
+                min_id = None
 
-            results = [c.as_json() for c in context['object_list']]
-            return JsonResponse({'results': results,
-                                 'has_more': False,
-                                 'total': len(results)})
+            return JsonResponse({'results': [obj.as_json() for obj in results],
+                                 'min_id': min_id,
+                                 'max_id': max_id,
+                                 'has_more': has_more,
+                                 'total': count})
 
     class Timeline(OrgPermsMixin, SmartReadView):
         """
@@ -372,7 +392,7 @@ class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
         context = super(MessageSearchView, self).get_context_data(**kwargs)
 
         search = self.derive_search()
-        page = int(self.request.GET.get('page', 1))
+        page = int(self.request.GET.get('page', 0))
 
         client = self.request.org.get_temba_client()
         pager = client.pager(start_page=page)

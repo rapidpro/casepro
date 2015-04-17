@@ -4,11 +4,13 @@ controllers = angular.module('upartners.controllers', ['upartners.services']);
 URN_SCHEMES = {tel: "Phone", twitter: "Twitter"}
 
 # Component refresh intervals
+INTERVAL_MESSAGES_NEW = 15000
+INTERVAL_CASES_NEW = 5000
 INTERVAL_CASE_INFO = 5000
 INTERVAL_CASE_TIMELINE = 10000
 
 #============================================================================
-# Home controller (parent of inbox and cases)
+# Home controller (DOM parent of inbox and cases)
 #============================================================================
 
 controllers.controller 'HomeController', [ '$scope', '$window', 'LabelService', 'UtilsService', ($scope, $window, LabelService, UtilsService) ->
@@ -48,20 +50,54 @@ controllers.controller 'HomeController', [ '$scope', '$window', 'LabelService', 
     if $scope.activeLabel then (l for l in labels when l.id != $scope.activeLabel.id) else labels
 ]
 
+
+#============================================================================
+# Base controller class for CasesController and MessagesController
+#============================================================================
+
+controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
+
+  $scope.items = []
+  $scope.startTime = new Date()
+  $scope.oldItemsLoading = false
+  $scope.oldItemsPage = 0
+  $scope.oldItemsMore = false
+  $scope.oldItemsTotal = 0
+  $scope.newItemsMaxId = null
+  $scope.newItemsCount = 0
+  $scope.selection = []
+
+  $scope.totalItems = () ->
+    return $scope.oldItemsTotal + $scope.newItemsCount
+
+  #----------------------------------------------------------------------------
+  # Selection controls
+  #----------------------------------------------------------------------------
+
+  $scope.onSelectAll = () ->
+    for item in $scope.items
+      item.selected = true
+    $scope.onChangeSelection()
+
+  $scope.onSelectNone = () ->
+    for item in $scope.items
+      item.selected = false
+    $scope.selection = []
+
+  $scope.onChangeSelection = () ->
+    $scope.selection = (item for item in $scope.items when item.selected)
+])
+
+
 #============================================================================
 # Messages controller
 #============================================================================
 
-controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageService', 'CaseService', 'UtilsService', ($scope, $modal, MessageService, CaseService, UtilsService) ->
+controllers.controller 'MessagesController', [ '$scope', '$modal', '$controller', 'MessageService', 'CaseService', 'UtilsService', ($scope, $modal, $controller, MessageService, CaseService, UtilsService) ->
+  $controller('BaseItemsController', {$scope: $scope})
 
-  $scope.messages = []
-  $scope.selection = []
-  $scope.loadingOld = false
-  $scope.hasOlder = true
   $scope.search = { text: null, groups: [], after: null, before: null, reverse: false }
   $scope.activeSearch = {}
-  $scope.page = 0
-  $scope.totalMessages = 0
 
   $scope.init = () ->
     $scope.$on 'activeLabelChange', () ->
@@ -69,13 +105,16 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
 
     $scope.onClearSearch()
 
+    #$scope.refreshNewItems() TODO fix this so it works with an active search
+
   #----------------------------------------------------------------------------
   # Message searching and fetching
   #----------------------------------------------------------------------------
 
   $scope.onMessageSearch = () ->
+    $scope.items = []
     $scope.activeSearch = angular.copy($scope.search)
-    $scope.page = 0
+    $scope.oldItemsPage = 0
     $scope.loadOldMessages()
 
   $scope.onClearSearch = () ->
@@ -87,36 +126,27 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
       MessageService.startExport $scope.activeLabel, $scope.activeSearch, () ->
         UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
 
-  $scope.loadOldMessages = ->
-    $scope.loadingOld = true
-    $scope.page += 1
+  $scope.loadOldMessages = () ->
+    $scope.oldItemsLoading = true
+    $scope.oldItemsPage += 1
 
-    MessageService.fetchOldMessages $scope.activeLabel, $scope.page, $scope.activeSearch, (messages, total, hasOlder) ->
-      if $scope.page == 1
-        $scope.messages = messages
-      else
-        $scope.messages = $scope.messages.concat messages
+    MessageService.fetchOldMessages $scope.activeLabel, $scope.activeSearch, $scope.oldItemsPage, (messages, total, hasMore) ->
+      $scope.items = $scope.items.concat(messages)
+      $scope.oldItemsMore = hasMore
+      $scope.oldItemsTotal = total
+      $scope.oldItemsLoading = false
 
-      $scope.hasOlder = hasOlder
-      $scope.totalMessages = total
-      $scope.loadingOld = false
+  $scope.refreshNewItems = () ->
+    afterTime = $scope.newItemsMaxTime or $scope.startTime
 
-  #----------------------------------------------------------------------------
-  # Selection controls
-  #----------------------------------------------------------------------------
+    MessageService.fetchNewMessages $scope.activeLabel, $scope.activeSearch, afterTime, $scope.newItemsMaxId, (cases, maxTime, maxId) ->
+      $scope.items = cases.concat($scope.items)
+      if cases.length > 0
+        $scope.newItemsMaxTime = maxTime
+        $scope.newItemsMaxId = maxId
+        $scope.newItemsCount += cases.length
 
-  $scope.onSelectAll = () ->
-    for msg in $scope.messages
-      msg.selected = true
-    $scope.updateSelection()
-
-  $scope.onSelectNone = () ->
-    for msg in $scope.messages
-      msg.selected = false
-    $scope.selection = []
-
-  $scope.updateSelection = () ->
-    $scope.selection = (msg for msg in $scope.messages when msg.selected)
+      $timeout($scope.refreshNewItems, INTERVAL_MESSAGES_NEW)
 
   #----------------------------------------------------------------------------
   # Selection actions
@@ -176,33 +206,55 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
 
 
 #============================================================================
-# Cases controller
+# Cases listing controller
 #============================================================================
 
-controllers.controller 'CasesController', [ '$scope', '$timeout', 'CaseService', 'UtilsService', ($scope, $timeout, CaseService, UtilsService) ->
-
-  $scope.cases = []
-  $scope.oldestCaseId = null
+controllers.controller('CasesController', [ '$scope', '$timeout', '$controller', 'CaseService', 'UtilsService', ($scope, $timeout, $controller, CaseService, UtilsService) ->
+  $controller('BaseItemsController', {$scope: $scope})
 
   $scope.init = (caseStatus) ->
     $scope.caseStatus = caseStatus
 
-    $scope.loadOldCases()
+    $scope.$on 'activeLabelChange', () ->
+      $scope.onClearSearch()
 
-  $scope.loadOldCases = ->
-    $scope.loadingOld = true
+    $scope.onClearSearch()
+    $scope.refreshNewItems()
 
-    CaseService.searchCases $scope.activeLabel, $scope.caseStatus, $scope.oldestCaseId, (cases, total, hasOlder) ->
-      $scope.cases = $scope.cases.concat(cases)
+  $scope.onSearch = () ->
+    $scope.items = []
+    $scope.activeSearch = angular.copy($scope.search)
+    $scope.oldItemsPage = 0
+    $scope.loadOldItems()
 
-      $scope.hasOlder = hasOlder
-      $scope.totalCases = total
-      $scope.loadingOld = false
-]
+  $scope.onClearSearch = () ->
+    $scope.search = { }
+    $scope.onSearch()
+
+  $scope.loadOldItems = () ->
+    $scope.oldItemsLoading = true
+    $scope.oldItemsPage += 1
+
+    CaseService.fetchOldCases $scope.activeLabel, $scope.caseStatus, $scope.startTime, $scope.oldItemsPage, (cases, total, hasMore) ->
+      $scope.items = $scope.items.concat(cases)
+      $scope.oldItemsMore = hasMore
+      $scope.oldItemsTotal = total
+      $scope.oldItemsLoading = false
+
+  $scope.refreshNewItems = () ->
+    CaseService.fetchNewCases $scope.activeLabel, $scope.caseStatus, $scope.startTime, $scope.newItemsMaxId, (cases, maxId) ->
+      $scope.items = cases.concat($scope.items)
+      if cases.length > 0
+        $scope.newItemsMaxId = maxId
+        $scope.newItemsCount += cases.length
+
+      $timeout($scope.refreshNewItems, INTERVAL_CASES_NEW)
+
+])
 
 
 #============================================================================
-# Case controller
+# Case view controller
 #============================================================================
 
 controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'CaseService', 'MessageService', 'UtilsService', ($scope, $window, $timeout, CaseService, MessageService, UtilsService) ->

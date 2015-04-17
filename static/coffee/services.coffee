@@ -20,14 +20,11 @@ formatIso8601 = (date) ->
 
 services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) ->
   new class MessageService
-    constructor: ->
-      @start_time = new Date()
-      @old_last_page = 1
 
     #----------------------------------------------------------------------------
     # Fetches old messages for the given label
     #----------------------------------------------------------------------------
-    fetchOldMessages: (label, page, search, callback) ->
+    fetchOldMessages: (label, search, page, callback) ->
       searchParams = @_searchToParams(search)
       otherParams = {start_time: formatIso8601(@start_time), page: page, label: if label then label.id else null}
 
@@ -35,6 +32,18 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       .success (data) =>
         @_processMessages(data.results)
         callback(data.results, data.total, data.has_more)
+
+    #----------------------------------------------------------------------------
+    # Fetches new messages for the given label
+    #----------------------------------------------------------------------------
+    fetchNewMessages: (label, search, afterTime, afterId, callback) ->
+      searchParams = @_searchToParams(search)
+      otherParams = {after_time: formatIso8601(afterTime), after_id: afterId, label: if label then label.id else null}
+
+      $http.get('/message/?' + $.param(otherParams) + '&' + searchParams)
+      .success (data) =>
+        @_processMessages(data.results)
+        callback(data.results, data.total, data.max_time, data.max_id)
 
     #----------------------------------------------------------------------------
     # Starts a message export
@@ -176,14 +185,36 @@ services.factory 'CaseService', ['$http', ($http) ->
   new class CaseService
 
     #----------------------------------------------------------------------------
-    # Searches for cases
+    # Fetches old cases
     #----------------------------------------------------------------------------
-    searchCases: (label, status, beforeId, callback) ->
-      params = {label: (if label then label.id else null), status: status, before_id: beforeId}
+    fetchOldCases: (label, status, startTime, page, callback) ->
+      params = {}
+      params['label'] = (if label then label.id else null)
+      params['status'] = status
+      params['before_time'] = formatIso8601(startTime)
+      params['page'] = page
+
       $http.get('/case/search/?' + $.param(params))
       .success (data) =>
         @_processCases(data.results)
         callback(data.results, data.total, data.has_more)
+
+    #----------------------------------------------------------------------------
+    # Fetches new cases
+    #----------------------------------------------------------------------------
+    fetchNewCases: (label, status, startTime, afterId, callback) ->
+      params = {}
+      params['label'] = (if label then label.id else null)
+      params['status'] = status
+      if afterId
+        params['after_id'] = afterId
+      else
+        params['after_time'] = formatIso8601(startTime)
+
+      $http.get('/case/search/?' + $.param(params))
+      .success (data) =>
+        @_processCases(data.results)
+        callback(data.results, data.max_id)
 
     #----------------------------------------------------------------------------
     # Fetches an existing case by it's id

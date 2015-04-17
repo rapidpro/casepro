@@ -85,9 +85,9 @@
                     - trans "None"
 
           %span.selection-info{ ng-show:"selection.length > 0" }
-            [[ selection.length ]] of [[ totalMessages ]] messages selected
+            [[ selection.length ]] of [[ totalItems() ]] messages selected
           %span.selection-info{ ng-show:"selection.length == 0" }
-            [[ totalMessages ]] messages
+            [[ totalItems() ]] messages
 
           .selection-actions.btn-group.pull-away
             .btn-group{ dropdown:"true" }
@@ -110,10 +110,10 @@
             %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"archiveSelection()", type:"button" }
               - trans "Archive"
 
-    .messages{ infinite-scroll:"loadOldMessages()", infinite-scroll-disabled:"loadingOld || !hasOlder" }
-      .message{ ng-repeat:"message in messages | filter:{ archived: false }", ng-class:"{ flagged: message.flagged }" }
+    .messages{ infinite-scroll:"loadOldMessages()", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
+      .message{ ng-repeat:"message in items | filter:{ archived: false }", ng-class:"{ flagged: message.flagged }" }
         .message-actions
-          %input{ type:"checkbox", ng-model:"message.selected", ng-change:"updateSelection()" }
+          %input{ type:"checkbox", ng-model:"message.selected", ng-change:"onChangeSelection()" }
           %a.flag{ ng-click:"toggleMessageFlag(message)" }
             %span.glyphicon.glyphicon-flag
         .message-time
@@ -124,8 +124,8 @@
               [[ label.name ]]
             &nbsp;
           [[ message.text ]]
-      .loading{ ng-if:"loadingOld" }
-      .none{ ng-hide:"messages.length > 0" }
+      .loading{ ng-if:"oldItemsLoading" }
+      .none{ ng-hide:"items.length > 0" }
         - trans "No messages"
 
     %script{ type:"text/ng-template", id:"replyModal.html" }
@@ -179,22 +179,6 @@
 - block extra-style
   {{ block.super }}
   :css
-    .search-toolbar {
-      padding: 4px;
-      background-color: #f7f7f7;
-    }
-    .search-toolbar .group-select {
-      width: 500px;
-    }
-    .selection-toolbar {
-      padding: 4px;
-      background-color: #F4E4F5;
-      border-top: 1px solid #ddd;
-    }
-    .selection-info {
-      display: inline-block;
-      padding: 7px 0 0 7px;
-    }
     .message {
       padding: 3px;
       border-bottom: 1px solid #eee;

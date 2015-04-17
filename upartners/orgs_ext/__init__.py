@@ -8,7 +8,8 @@ ORG_CONFIG_CONTACT_FIELDS = 'contact_fields'
 
 
 def _org_get_contact_fields(org):
-    return org.get_config(ORG_CONFIG_CONTACT_FIELDS)
+    fields = org.get_config(ORG_CONFIG_CONTACT_FIELDS)
+    return fields if not None else []
 
 
 def _org_set_contact_fields(org, fields):
