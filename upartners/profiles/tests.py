@@ -283,8 +283,10 @@ class ForcePasswordChangeMiddlewareTest(UPartnersTest):
 
         self.login(self.user1)
 
+        # TODO figure out why fetch_redirect_response=False became necessary after Dash update
+
         response = self.url_get('unicef', reverse('cases.inbox'))
-        self.assertRedirects(response, 'http://unicef.localhost/profile/self/')
+        self.assertRedirects(response, 'http://unicef.localhost/profile/self/', fetch_redirect_response=False)
 
         response = self.url_get('unicef', reverse('profiles.user_self'))
         self.assertEqual(response.status_code, 200)

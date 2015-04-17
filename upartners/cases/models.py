@@ -4,7 +4,7 @@ import json
 import pytz
 
 from dash.orgs.models import Org
-from dash.utils import get_obj_cacheable, random_string
+from dash.utils import get_obj_cacheable, random_string, chunks
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied

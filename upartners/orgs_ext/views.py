@@ -13,7 +13,7 @@ def org_ext_context_processor(request):
 
 
 class OrgExtCRUDL(SmartCRUDL):
-    actions = ('create', 'update', 'list', 'home', 'edit', 'choose')
+    actions = ('create', 'update', 'list', 'home', 'edit', 'chooser', 'choose')
     model = Org
 
     class Create(OrgCRUDL.Create):
@@ -70,6 +70,9 @@ class OrgExtCRUDL(SmartCRUDL):
             obj = super(OrgExtCRUDL.Edit, self).pre_save(obj)
             obj.set_contact_fields(self.form.cleaned_data['contact_fields'])
             return obj
+
+    class Chooser(OrgCRUDL.Chooser):
+        pass
 
     class Choose(OrgCRUDL.Choose):
         pass

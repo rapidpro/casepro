@@ -9,16 +9,6 @@ MAX_MESSAGE_CHARS = 140
 SYSTEM_LABEL_FLAGGED = "Flagged"
 
 
-def chunks(data, size):
-    """
-    Yield successive chunks from the given slice-able collection
-
-    TODO move to dash
-    """
-    for i in xrange(0, len(data), size):
-        yield data[i:(i + size)]
-
-
 def parse_csv(csv, as_ints=False):
     """
     Parses a comma separated list of values as strings or integers

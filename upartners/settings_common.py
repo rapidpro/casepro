@@ -41,6 +41,7 @@ EMAIL_USE_TLS = True
 
 SITE_API_HOST = 'http://localhost:8001/api/v1'
 SITE_HOST_PATTERN = 'http://%s.localhost:8000'
+SITE_CHOOSER_URL_NAME = 'orgs_ext.org_chooser'
 SITE_CHOOSER_TEMPLATE = 'org_chooser.haml'
 SITE_USER_HOME = '/'
 SITE_ALLOW_NO_ORG = ('orgs_ext.org_create', 'orgs_ext.org_update', 'orgs_ext.org_list',
