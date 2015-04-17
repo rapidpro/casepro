@@ -170,7 +170,8 @@ CACHES = {
     }
 }
 
-ORG_CONFIG_FIELDS = []
+ORG_CONFIG_FIELDS = [dict(name='contact_fields',
+                          field=dict(help_text=_("Contact fields to display"), required=False))]
 
 INSTALLED_APPS = (
     'django.contrib.auth',

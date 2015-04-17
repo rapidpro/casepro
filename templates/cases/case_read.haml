@@ -10,8 +10,11 @@
   %script{ type:"text/javascript" }
     var contextData = {{ context_data_json|safe }};
 
-  .{ ng-controller:"CaseController", ng-init:"init({{ object.pk }})" }
+  .{ ng-controller:"CaseController", ng-init:'init({{ max_msg_chars }})' }
     .page-header
+      .alert.alert-danger{ ng-if:"!contact" }
+        This case is for a contact who no longer exists in RapidPro
+
       .clearfix
         %h2.pull-back
           %span.glyphicon{ ng-class:'{ "glyphicon-folder-close": case.is_closed, "glyphicon-folder-open": !case.is_closed }' }
@@ -27,7 +30,7 @@
                 - trans "Re-assign"
               %button.btn.btn-default{ type:"button", ng-if:"!case.is_closed", ng-click:"close()" }
                 - trans "Close"
-              %button.btn.btn-default{ type:"button", ng-if:"case.is_closed", ng-click:"reopen()" }
+              %button.btn.btn-default{ type:"button", ng-if:"case.is_closed && contact", ng-click:"reopen()" }
                 - trans "Re-open"
 
       %ul.case-details
@@ -47,13 +50,22 @@
             - trans "Labels"
           :
           %span.label-container{ ng-repeat:"label in case.labels" }
-            %span.label.label-primary
+            %span.label.label-success
               [[ label.name ]]
             &nbsp;
 
     .row
-      .col-md-12
-        .{ ng-controller:"CaseTimelineController", ng-init:"init()" }
+      .col-md-8
+        %form.sendform{ ng-if:"!case.is_closed" }
+          // TODO maxlength not working due to bug in Angular 1.2.x https://github.com/angular/angular.js/issues/1405
+          %textarea.form-control{ type:"text", autocomplete:"off", placeholder:"Enter message", ng-maxlength:"{{ maxMsgChars }}", ng-model:"$parent.newMessage", ng-disabled:"sending", ng-change:"onNewMessageChanged()", ng-trim:"false" }
+          .sendform-controls.clearfix
+            %button.btn.btn-default.pull-right{ type:"button", ng-click:"sendMessage()", ng-disabled:"sending" }
+              - trans "Send"
+            %span.pull-right.chars-left
+              [[ msgCharsRemaining ]]
+
+        .timeline{ ng-controller:"CaseTimelineController", ng-init:"init()" }
           .timeline-event.clearfix{ ng-repeat:"event in timeline | reverse", ng-class:'{ "timeline-action": event.is_action, "timeline-incoming": event.is_message_in, "timeline-outgoing": event.is_message_out }' }
             .event-time
               [[ event.time | autodate ]]
@@ -86,6 +98,16 @@
 
             .{ ng-if:"event.is_message_in || event.is_message_out" }
               [[ event.item.text ]]
+      .col-md-4
+        .panel.panel-default
+          .panel-heading
+            - trans "Contact"
+          .panel-body
+            .contact-details{ ng-if:"contact" }
+              .contact-field{ ng-repeat:"(key, val) in contact.fields" }
+                %strong><
+                  [[ key ]]
+                : [[ val ]]
 
 
 - block extra-style
@@ -100,6 +122,34 @@
       margin: 5px;
       padding: 0;
       list-style: none;
+    }
+    .sendform {
+      text-align: center;
+      padding-bottom: 1em;
+    }
+    .sendform textarea {
+      width: 100%;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+    .sendform-controls {
+      background-color: #F3F3F3;
+      border-width: 0 0 1px 1px;
+      border-style: solid;
+      border-color: #CCC;
+      border-radius: 0 0 4px 4px;
+    }
+    .sendform-controls .chars-left {
+      padding: 6px 12px;
+      display: inline-block;
+      color: #888;
+    }
+    .sendform-controls button {
+      border-bottom: none;
+      border-top: none;
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+      border-bottom-left-radius: 0;
     }
     .timeline-event {
       padding: 12px;

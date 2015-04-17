@@ -15,6 +15,7 @@ from django.core.urlresolvers import reverse
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
+from temba.base import TembaNoSuchObjectError
 from upartners.email import send_upartners_email
 from . import parse_csv, SYSTEM_LABEL_FLAGGED
 from .tasks import update_labelling_flow
@@ -127,7 +128,9 @@ class MessageExport(models.Model):
         date_style = XFStyle()
         date_style.num_format_str = 'DD-MM-YYYY HH:MM:SS'
 
-        fields = ["Time", "Message ID", "Contact", "Text", "Unsolicited", "Flagged", "Labels"]
+        base_fields = ["Time", "Message ID", "Flagged", "Labels", "Text", "Contact"]
+        contact_fields = self.org.get_contact_fields()
+        all_fields = base_fields + contact_fields
         label_map = {l.name: l for l in Label.get_all(self.org)}
 
         client = self.org.get_temba_client()
@@ -135,6 +138,7 @@ class MessageExport(models.Model):
         pager = client.pager()
         all_messages = []
 
+        # fetch all messages to be exported
         while True:
             all_messages += client.get_messages(pager=pager, labels=search['labels'], direction='I',
                                                 after=search['after'], before=search['before'],
@@ -142,41 +146,57 @@ class MessageExport(models.Model):
             if not pager.has_more():
                 break
 
-        messages_sheet_number = 1
+        # extract all unique contacts in those messages
+        contact_uuids = set()
+        for msg in all_messages:
+            contact_uuids.add(msg.contact)
 
+        # fetch all contacts in batches of 25 and organize by UUID
+        contacts_by_uuid = {}
+        from . import chunks
+        for uuid_chunk in chunks(list(contact_uuids), 25):
+            for contact in client.get_contacts(uuids=uuid_chunk):
+                contacts_by_uuid[contact.uuid] = contact
+
+        def add_sheet(num):
+            sheet = book.add_sheet(unicode(_("Messages %d" % num)))
+            for col in range(len(all_fields)):
+                field = all_fields[col]
+                sheet.write(0, col, unicode(field))
+            return sheet
+
+        # even if there are no messages - still add a sheet
         if not all_messages:
-            book.add_sheet(unicode(_("Messages %d" % messages_sheet_number)))
+            add_sheet(1)
+        else:
+            sheet_number = 1
+            for msg_chunk in chunks(all_messages, 65535):
+                current_sheet = add_sheet(sheet_number)
 
-        while all_messages:
-            if len(all_messages) >= 65535:
-                messages = all_messages[:65535]
-                all_messages = all_messages[65535:]
-            else:
-                messages = all_messages
-                all_messages = None
+                row = 1
+                for msg in msg_chunk:
+                    created_on = msg.created_on.astimezone(pytz.utc).replace(tzinfo=None)
+                    flagged = SYSTEM_LABEL_FLAGGED in msg.labels
+                    labels = ', '.join([label_map[label_name].name for label_name in msg.labels if label_name in label_map])
+                    contact = contacts_by_uuid.get(msg.contact, None)  # contact may no longer exist in RapidPro
 
-            current_sheet = book.add_sheet(unicode(_("Messages %d" % messages_sheet_number)))
+                    current_sheet.write(row, 0, created_on, date_style)
+                    current_sheet.write(row, 1, msg.id)
+                    current_sheet.write(row, 2, 'Yes' if flagged else 'No')
+                    current_sheet.write(row, 3, labels)
+                    current_sheet.write(row, 4, msg.text)
+                    current_sheet.write(row, 5, msg.contact)
 
-            for col in range(len(fields)):
-                field = fields[col]
-                current_sheet.write(0, col, unicode(field))
+                    for cf in range(len(contact_fields)):
+                        if contact:
+                            contact_field = contact_fields[cf]
+                            current_sheet.write(row, 6 + cf, contact.fields.get(contact_field, None))
+                        else:
+                            current_sheet.write(row, 6 + cf, None)
 
-            row = 1
-            for msg in messages:
-                created_on = msg.created_on.astimezone(pytz.utc).replace(tzinfo=None)
-                flagged = SYSTEM_LABEL_FLAGGED in msg.labels
-                labels = ', '.join([label_map[label_name].name for label_name in msg.labels if label_name in label_map])
+                    row += 1
 
-                current_sheet.write(row, 0, created_on, date_style)
-                current_sheet.write(row, 1, msg.id)
-                current_sheet.write(row, 2, msg.contact)
-                current_sheet.write(row, 3, msg.text)
-                current_sheet.write(row, 4, 'Yes' if msg.type == 'I' else 'No')
-                current_sheet.write(row, 5, 'Yes' if flagged else 'No')
-                current_sheet.write(row, 6, labels)
-                row += 1
-
-            messages_sheet_number += 1
+                sheet_number += 1
 
         temp = NamedTemporaryFile(delete=True)
         book.save(temp)
@@ -286,6 +306,7 @@ class Label(models.Model):
         from django.db.models import Count
         labels.values('cases').annotate(total=Count('cases'))
 
+        # TODO
         # import pdb; pdb.set_trace()
 
         return {}
@@ -393,6 +414,12 @@ class Case(models.Model):
         self.save(update_fields=('assignee',))
 
         CaseAction.create(self, user, ACTION_REASSIGN, assignee=partner, note=note)
+
+    def fetch_contact(self):
+        try:
+            return self.org.get_temba_client().get_contact(self.contact_uuid)
+        except TembaNoSuchObjectError:
+            return None  # always a chance that the contact has been deleted in RapidPro
 
     def _can_edit(self, user):
         if user.is_admin_for(self.org):

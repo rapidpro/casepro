@@ -1,7 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-import json
-
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import get_obj_cacheable
 from django import forms
@@ -13,14 +11,14 @@ from django.views.generic import View
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView, SmartFormView
 from smartmin.users.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba.utils import parse_iso8601
-from . import parse_csv, message_as_json, SYSTEM_LABEL_FLAGGED
+from . import parse_csv, json_encode, message_as_json, contact_as_json, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
 from .models import Case, Group, Label, MessageExport, Partner
 from .tasks import message_export
 
 
 class CaseCRUDL(SmartCRUDL):
     model = Case
-    actions = ('read', 'list', 'open', 'note', 'reassign', 'close', 'reopen', 'fetch', 'search', 'timeline')
+    actions = ('read', 'open', 'note', 'reassign', 'close', 'reopen', 'fetch', 'search', 'timeline')
 
     class Read(OrgObjPermsMixin, SmartReadView):
         fields = ()
@@ -30,29 +28,20 @@ class CaseCRUDL(SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super(CaseCRUDL.Read, self).get_context_data(**kwargs)
+            org = self.request.org
 
-            partners = Partner.get_all(self.request.org).order_by('name')
+            contact = self.object.fetch_contact()
+            partners = Partner.get_all(org).order_by('name')
 
             # angular app requires context data in JSON format
-            context['context_data_json'] = json.dumps({
+            context['context_data_json'] = json_encode({
                 'case': self.object.as_json(),
+                'contact': contact_as_json(contact, org.get_contact_fields()) if contact else None,
                 'partners': [p.as_json() for p in partners],
             })
 
+            context['max_msg_chars'] = MAX_MESSAGE_CHARS
             return context
-
-    class List(OrgPermsMixin, SmartListView):
-        fields = ('id', 'labels', 'opened_on')
-        default_order = ('-opened_on',)
-
-        def derive_queryset(self, **kwargs):
-            return Case.get_all(self.request.org)
-
-        def get_id(self, obj):
-            return '#%d' % obj.pk
-
-        def get_labels(self, obj):
-            return ', '.join([l.name for l in obj.labels.all()])
 
     class Open(OrgPermsMixin, SmartCreateView):
         """
@@ -148,17 +137,17 @@ class CaseCRUDL(SmartCRUDL):
             label_id = self.request.GET.get('label_id', None)
             status = self.request.GET.get('status', None)
 
-            qs = Case.get_all(self.request.org)
+            label = Label.get_all(self.request.org).get(pk=label_id) if label_id else None
+
+            if status == 'open':
+                qs = Case.get_open(self.request.org, label)
+            elif status == 'closed':
+                qs = Case.get_closed(self.request.org, label)
+            else:
+                qs = Case.get_all(self.request.org, label)
 
             if before_id:
                 qs = qs.filter(pk__lt=before_id)
-            if label_id:
-                qs = qs.filter(labels=label_id)
-
-            if status == 'open':
-                qs = qs.filter(closed_on=None)
-            elif status == 'closed':
-                qs = qs.exclude(closed_on=None)
 
             return qs.order_by('-pk').select_related('assignee')
 
@@ -372,15 +361,15 @@ class MessageSearchMixin(object):
         return {'labels': labels, 'text': text, 'after': after, 'before': before, 'groups': groups, 'reverse': reverse}
 
 
-class MessageFetchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
+class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
     """
-    AJAX endpoint for fetching messages
+    JSON endpoint for fetching messages
     """
     def has_permission(self, request, *args, **kwargs):
         return request.user.is_authenticated()
 
     def get_context_data(self, **kwargs):
-        context = super(MessageFetchView, self).get_context_data(**kwargs)
+        context = super(MessageSearchView, self).get_context_data(**kwargs)
 
         search = self.derive_search()
         page = int(self.request.GET.get('page', 1))
@@ -438,17 +427,17 @@ class MessageActionView(OrgPermsMixin, View):
 
 class MessageSendView(OrgPermsMixin, View):
     """
-    AJAX endpoint for message sending. Takes a list of contact UUIDs or URNs
+    JSON endpoint for message sending. Takes a list of contact UUIDs or URNs
     """
     def has_permission(self, request, *args, **kwargs):
         return request.user.is_authenticated()
 
     def post(self, request, *args, **kwargs):
-        urns = parse_csv(self.request.POST.get('urns', ''), as_ints=False)
-        contacts = parse_csv(self.request.POST.get('contacts', ''), as_ints=False)
-        text = self.request.POST['text']
+        urns = parse_csv(request.POST.get('urns', ''), as_ints=False)
+        contacts = parse_csv(request.POST.get('contacts', ''), as_ints=False)
+        text = request.POST['text']
 
-        client = self.request.org.get_temba_client()
+        client = request.org.get_temba_client()
         broadcast = client.create_broadcast(urns=urns, contacts=contacts, text=text)
 
         return JsonResponse({'broadcast_id': broadcast.id})
@@ -570,7 +559,7 @@ class HomeDataMixin(object):
         self.annotate_labels(labels)
 
         # angular app requires context data in JSON format
-        context['context_data_json'] = json.dumps({
+        context['context_data_json'] = json_encode({
             'user': {'id': user.pk, 'partner': partner.as_json() if partner else None},
             'partners': [p.as_json() for p in partners],
             'labels': [l.as_json() for l in labels],

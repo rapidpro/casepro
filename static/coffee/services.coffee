@@ -97,8 +97,12 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     # Send new message
     #----------------------------------------------------------------------------
-    sendNewMessage: (urn, text, callback) ->
-      @_messagesSend([urn.urn], [], text, callback)
+    sendNewMessage: (urn_or_contact, text, callback) ->
+      if urn_or_contact.hasOwnProperty('uuid')
+        @_messagesSend([], [urn_or_contact.uuid], text, callback)
+      else
+        @_messagesSend([urn_or_contact.urn], [], text, callback)
+
 
     #----------------------------------------------------------------------------
     # Convert search object to URL params
@@ -259,15 +263,7 @@ services.factory 'CaseService', ['$http', ($http) ->
 
       $http.get('/case/timeline/' + _case.id + '/?' + $.param(params))
       .success (data) =>
-        for event in data.results
-          # parse datetime string
-          event.time = parseIso8601 event.time
-          event.is_action = event.type == 'A'
-          event.is_message_in = event.type == 'M' and event.item.direction == 'I'
-          event.is_message_out = event.type == 'M' and event.item.direction == 'O'
-
-          console.log(event)
-
+        @_processEvents(data.results)
 
         newLastEventTime = parseIso8601(data.last_event_time) or lastEventTime
         newLastMessageId = data.last_message_id or lastMessageId
@@ -281,6 +277,17 @@ services.factory 'CaseService', ['$http', ($http) ->
     _processCases: (cases) ->
       for c in cases
         c.opened_on = parseIso8601(c.opened_on)
+
+    #----------------------------------------------------------------------------
+    # Processes incoming case events
+    #----------------------------------------------------------------------------
+    _processEvents: (events) ->
+      for event in events
+        # parse datetime string
+        event.time = parseIso8601(event.time)
+        event.is_action = event.type == 'A'
+        event.is_message_in = event.type == 'M' and event.item.direction == 'I'
+        event.is_message_out = event.type == 'M' and event.item.direction == 'O'
 ]
 
 

@@ -120,7 +120,7 @@
           [[ message.time | autodate ]]
         .message-text
           %span.label-container{ ng-repeat:"label in filterDisplayLabels(message.labels)" }
-            %span.label.label-primary
+            %span.label.label-success
               [[ label.name ]]
             &nbsp;
           [[ message.text ]]

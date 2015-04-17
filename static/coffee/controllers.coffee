@@ -25,7 +25,7 @@ controllers.controller 'HomeController', [ '$scope', '$window', 'LabelService', 
         if l.id == initialLabelId
           initialLabel = l
           break
-    $scope.activateLabel initialLabel
+    $scope.activateLabel(initialLabel)
 
   $scope.activateLabel = (label) ->
     $scope.activeLabel = label
@@ -41,7 +41,7 @@ controllers.controller 'HomeController', [ '$scope', '$window', 'LabelService', 
       LabelService.deleteLabel $scope.activeLabel, () ->
         $scope.labels = (l for l in $scope.labels when l.id != $scope.activeLabel.id)
         $scope.activateLabel(null)
-        UtilsService.displayAlert 'success', "Label was deleted"
+        UtilsService.displayAlert('success', "Label was deleted")
 
   $scope.filterDisplayLabels = (labels) ->
     # filters out the active label from the given set of message labels
@@ -85,7 +85,7 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
   $scope.onExportSearch = () ->
     UtilsService.confirmModal "Export the current message search?", null, () ->
       MessageService.startExport $scope.activeLabel, $scope.activeSearch, () ->
-        UtilsService.displayAlert 'success', "Export initiated and will be sent to your email address when complete"
+        UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
 
   $scope.loadOldMessages = ->
     $scope.loadingOld = true
@@ -124,30 +124,30 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
 
   $scope.labelSelection = (label) ->
     UtilsService.confirmModal 'Apply the label <strong>' + label + '</strong> to the selected messages?', null, () ->
-      MessageService.labelMessages $scope.selection, label
+      MessageService.labelMessages($scope.selection, label)
 
   $scope.flagSelection = () ->
     UtilsService.confirmModal 'Flag the selected messages?', null, () ->
-      MessageService.flagMessages $scope.selection, true
+      MessageService.flagMessages($scope.selection, true)
 
   $scope.caseForSelection = () ->
     openCase = (assignee) ->
       CaseService.openCase $scope.selection[0], assignee, (_case) ->
-          UtilsService.navigate '/case/read/' + _case.id + '/'
+          UtilsService.navigate('/case/read/' + _case.id + '/')
 
     prompt = "Open a new case for the selected message?"
     if $scope.user.partner
       UtilsService.confirmModal prompt, null, () ->
-        openCase $scope.user.partner
+        openCase($scope.user.partner)
     else
       UtilsService.assignModal "New case", prompt, $scope.partners, (assignee) ->
-        openCase assignee
+        openCase(assignee)
 
   $scope.replyToSelection = () ->
     $modal.open({templateUrl: 'replyModal.html', controller: 'ReplyModalController', resolve: {}})
     .result.then (text) ->
       MessageService.replyToMessages $scope.selection, text, () ->
-        UtilsService.displayAlert 'success', 'Reply sent to contacts'
+        UtilsService.displayAlert('success', "Reply sent to contacts")
 
   $scope.forwardSelection = () ->
     initialText = '"' + $scope.selection[0].text + '"'
@@ -158,11 +158,11 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', 'MessageServi
     }})
     .result.then (data) ->
       MessageService.sendNewMessage data.urn, data.text, () ->
-        UtilsService.displayAlert 'success', 'Message forwarded to ' + data.urn.path
+        UtilsService.displayAlert('success', "Message forwarded to " + data.urn.path)
 
   $scope.archiveSelection = () ->
     UtilsService.confirmModal 'Archive the selected messages? This will remove them from the inbox.', null, () ->
-      MessageService.archiveMessages $scope.selection
+      MessageService.archiveMessages($scope.selection)
 
   #----------------------------------------------------------------------------
   # Other
@@ -193,7 +193,7 @@ controllers.controller 'CasesController', [ '$scope', '$timeout', 'CaseService',
     $scope.loadingOld = true
 
     CaseService.searchCases $scope.activeLabel, $scope.caseStatus, $scope.oldestCaseId, (cases, total, hasOlder) ->
-      $scope.cases = $scope.cases.concat cases
+      $scope.cases = $scope.cases.concat(cases)
 
       $scope.hasOlder = hasOlder
       $scope.totalCases = total
@@ -205,38 +205,62 @@ controllers.controller 'CasesController', [ '$scope', '$timeout', 'CaseService',
 # Case controller
 #============================================================================
 
-controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'CaseService', 'UtilsService', ($scope, $window, $timeout, CaseService, UtilsService) ->
+controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'CaseService', 'MessageService', 'UtilsService', ($scope, $window, $timeout, CaseService, MessageService, UtilsService) ->
 
   $scope.case = $window.contextData.case
+  $scope.contact = $window.contextData.contact
   $scope.partners = $window.contextData.partners
 
-  $scope.init = () ->
+  $scope.newMessage = ''
+  $scope.sending = false
+
+  $scope.init = (maxMsgChars) ->
+    $scope.msgCharsRemaining = $scope.maxMsgChars = maxMsgChars
+
     $scope.refresh()
 
   $scope.refresh = () ->
     CaseService.fetchCase $scope.case.id, (_case) ->
       $scope.case = _case
-      $timeout $scope.refresh, INTERVAL_CASE_INFO
+      $timeout($scope.refresh, INTERVAL_CASE_INFO)
+
+  #----------------------------------------------------------------------------
+  # Messaging
+  #----------------------------------------------------------------------------
+
+  $scope.sendMessage = ->
+    $scope.sending = true
+
+    MessageService.sendNewMessage $scope.contact, $scope.newMessage, () ->
+      $scope.newMessage = ''
+      $scope.sending = false
+
+  $scope.onNewMessageChanged = ->
+    $scope.msgCharsRemaining = $scope.maxMsgChars - $scope.newMessage.length
+
+  #----------------------------------------------------------------------------
+  # Case actions
+  #----------------------------------------------------------------------------
 
   $scope.note = () ->
     UtilsService.noteModal "Add Note", null, null, (note) ->
       CaseService.noteCase $scope.case, note, () ->
-        $scope.$broadcast 'newCaseAction'
+        $scope.$broadcast('newCaseAction')
 
   $scope.reassign = () ->
     UtilsService.assignModal "Re-assign", null, $scope.partners, (assignee) ->
       CaseService.reassignCase $scope.case, assignee, () ->
-        $scope.$broadcast 'newCaseAction'
+        $scope.$broadcast('newCaseAction')
 
   $scope.close = () ->
     UtilsService.noteModal "Close", "Close this case?", 'danger', (note) ->
       CaseService.closeCase $scope.case, note, () ->
-        UtilsService.navigate '/case/'
+        UtilsService.navigate('/case/')
 
   $scope.reopen = () ->
     UtilsService.noteModal "Re-open", "Re-open this case?", null, (note) ->
       CaseService.reopenCase $scope.case, note, () ->
-        $scope.$broadcast 'newCaseAction'
+        $scope.$broadcast('newCaseAction')
 ]
 
 
@@ -265,7 +289,7 @@ controllers.controller 'CaseTimelineController', [ '$scope', '$timeout', 'CaseSe
       $scope.lastActionId = lastActionId
 
       if repeat
-        $timeout (() -> $scope.update(true)), INTERVAL_CASE_TIMELINE
+        $timeout((() -> $scope.update(true)), INTERVAL_CASE_TIMELINE)
 ]
 
 
