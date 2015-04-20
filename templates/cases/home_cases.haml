@@ -37,7 +37,7 @@
               [[ label.name ]]
             &nbsp;
           %a{ ng-href:"/case/read/[[ item.id ]]/" }
-            TODO figure out how to display a case
+            [[ item.summary ]]
       .loading{ ng-if:"oldItemsLoading" }
       .none{ ng-hide:"items.length > 0" }
         - trans "No cases"

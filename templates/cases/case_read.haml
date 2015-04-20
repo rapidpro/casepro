@@ -54,6 +54,9 @@
               [[ label.name ]]
             &nbsp;
 
+          %a{ href:"#", ng-click:"onEditLabels()", style:"color: #AAA" }
+            %span.glyphicon.glyphicon-edit
+
     .row
       .col-md-8
         %form.sendform{ ng-if:"!case.is_closed" }
@@ -97,6 +100,10 @@
                 [[ event.item.note ]]
 
             .{ ng-if:"event.is_message_in || event.is_message_out" }
+              %span.label-container{ ng-repeat:"label in event.item.labels" }
+                %span.label.label-success
+                  [[ label.name ]]
+                &nbsp;
               [[ event.item.text ]]
       .col-md-4
         .panel.panel-default

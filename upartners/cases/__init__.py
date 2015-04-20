@@ -50,3 +50,10 @@ def contact_as_json(contact, field_keys):
     """
     return {'uuid': contact.uuid,
             'fields': {key: contact.fields.get(key, None) for key in field_keys}}
+
+
+def truncate(text, length=100, suffix='...'):
+    if len(text) > length:
+        return text[:length-len(suffix)] + suffix
+    else:
+        return text

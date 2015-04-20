@@ -6,9 +6,10 @@ from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch
-from temba.types import Label as TembaLabel
+from temba.types import Flow as TembaFlow, Label as TembaLabel, Message as TembaMessage
 from upartners.profiles import ROLE_ANALYST, ROLE_MANAGER
 from upartners.test import UPartnersTest
+from . import truncate
 from .models import Case, Label, Partner, ACTION_OPEN, ACTION_NOTE, ACTION_CLOSE, ACTION_REOPEN, ACTION_REASSIGN
 
 
@@ -24,12 +25,16 @@ class CaseTest(UPartnersTest):
 
         with patch.object(timezone, 'now', return_value=d1):
             # MOH user assigns to self
-            case = Case.open(self.unicef, self.user1, [self.aids], self.moh, 'C-001', 123, d0)
+            msg = TembaMessage.create(id=123, contact='C-001', created_on=d0, text="Hello")
+            case = Case.open(self.unicef, self.user1, [self.aids], self.moh, msg)
 
         self.assertEqual(case.org, self.unicef)
         self.assertEqual(set(case.labels.all()), {self.aids})
         self.assertEqual(case.assignee, self.moh)
         self.assertEqual(case.contact_uuid, 'C-001')
+        self.assertEqual(case.message_id, 123)
+        self.assertEqual(case.message_on, d0)
+        self.assertEqual(case.summary, "Hello")
         self.assertEqual(case.opened_on, d1)
         self.assertIsNone(case.closed_on)
 
@@ -111,12 +116,16 @@ class LabelTest(UPartnersTest):
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     @patch('dash.orgs.models.TembaClient.get_labels')
     @patch('dash.orgs.models.TembaClient.create_label')
-    def test_create(self, mock_create_label, mock_get_labels):
+    @patch('dash.orgs.models.TembaClient.create_flow')
+    @patch('dash.orgs.models.TembaClient.update_flow')
+    def test_create(self, mock_update_flow, mock_create_flow, mock_create_label, mock_get_labels):
         mock_get_labels.return_value = [
             TembaLabel.create(uuid='L-101', name="Not Ebola", parent=None, count=12),
             TembaLabel.create(uuid='L-102', name="EBOLA", parent=None, count=123)
         ]
         mock_create_label.return_value = TembaLabel.create(uuid='L-103', name="Chat", parent=None, count=0)
+        mock_create_flow.return_value = TembaFlow.create(uuid='F-101', name="Labelling")
+        mock_update_flow.return_value = TembaFlow.create(uuid='F-101', name="Labelling")
 
         ebola = Label.create(self.unicef, "Ebola", "Msgs about ebola", ['ebola', 'fever'], [self.moh, self.who])
         self.assertEqual(ebola.org, self.unicef)
@@ -127,13 +136,8 @@ class LabelTest(UPartnersTest):
         self.assertEqual(set(ebola.get_partners()), {self.moh, self.who})
         self.assertEqual(unicode(ebola), "Ebola")
 
-        # check that task fetched the UUID of the matching label in RapidPro
-        mock_get_labels.assert_called_with(name="Ebola")
-        self.assertEqual(Label.objects.get(pk=ebola.pk).uuid, 'L-102')
-
         # create local label with no match in RapidPro
-        chat = Label.create(self.unicef, "Chat", "Chatting", ['chat'], [self.moh, self.who])
-        self.assertEqual(Label.objects.get(pk=chat.pk).uuid, 'L-103')
+        Label.create(self.unicef, "Chat", "Chatting", ['chat'], [self.moh, self.who])
 
 
 class LabelCRUDLTest(UPartnersTest):

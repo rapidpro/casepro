@@ -18,7 +18,7 @@ from .tasks import message_export
 
 class CaseCRUDL(SmartCRUDL):
     model = Case
-    actions = ('read', 'open', 'note', 'reassign', 'close', 'reopen', 'fetch', 'search', 'timeline')
+    actions = ('read', 'open', 'note', 'reassign', 'close', 'reopen', 'label', 'fetch', 'search', 'timeline')
 
     class Read(OrgObjPermsMixin, SmartReadView):
         fields = ()
@@ -31,13 +31,15 @@ class CaseCRUDL(SmartCRUDL):
             org = self.request.org
 
             contact = self.object.fetch_contact()
+            labels = Label.get_all(self.request.org).order_by('name')
             partners = Partner.get_all(org).order_by('name')
 
             # angular app requires context data in JSON format
             context['context_data_json'] = json_encode({
                 'case': self.object.as_json(),
                 'contact': contact_as_json(contact, org.get_contact_fields()) if contact else None,
-                'partners': [p.as_json() for p in partners],
+                'all_labels': [l.as_json() for l in labels],
+                'all_partners': [p.as_json() for p in partners]
             })
 
             context['max_msg_chars'] = MAX_MESSAGE_CHARS
@@ -62,7 +64,7 @@ class CaseCRUDL(SmartCRUDL):
             label_map = {l.name: l for l in Label.get_all(request.org)}
             labels = [label_map[label_name] for label_name in message.labels if label_name in label_map]
 
-            case = Case.open(request.org, request.user, labels, assignee, message.contact, message.id, message.created_on)
+            case = Case.open(request.org, request.user, labels, assignee, message)
 
             return JsonResponse(case.as_json())
 
@@ -115,6 +117,20 @@ class CaseCRUDL(SmartCRUDL):
             note = request.POST.get('note', None)
 
             case.reopen(self.request.user, note)
+            return HttpResponse(status=204)
+
+    class Label(OrgPermsMixin, SmartUpdateView):
+        """
+        JSON endpoint for labelling a case
+        """
+        permission = 'cases.case_update'
+
+        def post(self, request, *args, **kwargs):
+            case = self.get_object()
+            label_ids = parse_csv(request.POST.get('labels', ''), as_ints=True)
+            labels = Label.get_all(request.org).filter(pk__in=label_ids)
+
+            case.update_labels(labels)
             return HttpResponse(status=204)
 
     class Fetch(OrgPermsMixin, SmartReadView):
@@ -201,7 +217,8 @@ class CaseCRUDL(SmartCRUDL):
 
             # Temba API doesn't have a way to filter by 'after id'. Filtering by 'after time' can lead to dups due to
             # db times being higher accuracy than those returned in API JSON. Here we remove possible dups based on id.
-            messages = [m for m in messages if m.id > since_message_id]
+            if since_message_id != self.object.message_id:
+                messages = [m for m in messages if m.id > since_message_id]
 
             # fetch actions
             actions = self.object.actions.select_related('assignee', 'created_by')

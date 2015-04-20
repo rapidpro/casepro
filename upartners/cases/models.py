@@ -17,7 +17,7 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from temba.base import TembaNoSuchObjectError
 from upartners.email import send_upartners_email
-from . import parse_csv, SYSTEM_LABEL_FLAGGED
+from . import parse_csv, truncate, SYSTEM_LABEL_FLAGGED
 from .tasks import update_labelling_flow
 
 
@@ -261,8 +261,6 @@ class Label(models.Model):
     """
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='labels')
 
-    uuid = models.CharField(max_length=36, null=True)
-
     name = models.CharField(verbose_name=_("Name"), max_length=32, help_text=_("Name of this label"))
 
     description = models.CharField(verbose_name=_("Description"), max_length=255)
@@ -275,8 +273,8 @@ class Label(models.Model):
     is_active = models.BooleanField(default=True, help_text="Whether this label is active")
 
     @classmethod
-    def create(cls, org, name, description, keywords, partners, uuid=None, update_flow=True):
-        label = cls.objects.create(org=org, name=name, description=description, keywords=','.join(keywords), uuid=uuid)
+    def create(cls, org, name, description, keywords, partners, update_flow=True):
+        label = cls.objects.create(org=org, name=name, description=description, keywords=','.join(keywords))
         label.partners.add(*partners)
 
         if update_flow:
@@ -294,14 +292,14 @@ class Label(models.Model):
 
     @classmethod
     def get_message_counts(cls, org, labels):
-        label_by_uuid = {l.uuid: l for l in labels if l.uuid}
-        if label_by_uuid:
-            temba_labels = org.get_temba_client().get_labels(uuids=label_by_uuid.keys())
-            counts_by_uuid = {l.uuid: l.count for l in temba_labels}
+        label_by_name = {l.name: l for l in labels}
+        if label_by_name:
+            temba_labels = org.get_temba_client().get_labels()
+            counts_by_name = {l.name: l.count for l in temba_labels if l.name}
         else:
-            counts_by_uuid = {}
+            counts_by_name = {}
 
-        return {l: counts_by_uuid[l.uuid] if l.uuid in counts_by_uuid else 0 for l in labels}
+        return {l: counts_by_name[l.name] if l.name in counts_by_name else 0 for l in labels}
 
     @classmethod
     def get_case_counts(cls, org, labels):
@@ -352,6 +350,8 @@ class Case(models.Model):
 
     message_on = models.DateTimeField(help_text="When initial message was sent")
 
+    summary = models.CharField(verbose_name=_("Summary"), max_length=255)
+
     opened_on = models.DateTimeField(auto_now_add=True,
                                      help_text="When this case was opened")
 
@@ -381,9 +381,10 @@ class Case(models.Model):
         return self.labels.filter(is_active=True)
 
     @classmethod
-    def open(cls, org, user, labels, partner, contact_uuid, message_id, message_on):
-        case = cls.objects.create(org=org, assignee=partner, contact_uuid=contact_uuid,
-                                  message_id=message_id, message_on=message_on)
+    def open(cls, org, user, labels, partner, message):
+        summary = truncate(message.text, 255)
+        case = cls.objects.create(org=org, assignee=partner, contact_uuid=message.contact,
+                                  summary=summary, message_id=message.id, message_on=message.created_on)
 
         case.labels.add(*labels)
 
@@ -420,6 +421,11 @@ class Case(models.Model):
 
         CaseAction.create(self, user, ACTION_REASSIGN, assignee=partner, note=note)
 
+    def update_labels(self, labels):
+        self.labels.clear()
+        for label in labels:
+            self.labels.add(label)
+
     def fetch_contact(self):
         try:
             return self.org.get_temba_client().get_contact(self.contact_uuid)
@@ -436,6 +442,7 @@ class Case(models.Model):
         return {'id': self.pk,
                 'assignee': self.assignee.as_json(),
                 'labels': [l.as_json() for l in self.get_labels()],
+                'summary': self.summary,
                 'opened_on': self.opened_on,
                 'is_closed': self.closed_on is not None}
 

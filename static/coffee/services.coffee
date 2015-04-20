@@ -283,6 +283,18 @@ services.factory 'CaseService', ['$http', ($http) ->
         callback()
 
     #----------------------------------------------------------------------------
+    # Labels a case
+    #----------------------------------------------------------------------------
+    labelCase: (_case, labels, callback) ->
+      data = new FormData()
+      data.append('labels', (l.id for l in labels))
+
+      $http.post('/case/label/' + _case.id + '/', data, DEFAULT_POST_OPTS)
+      .success () ->
+        _case.labels = labels
+        callback()
+
+    #----------------------------------------------------------------------------
     # Fetches timeline events
     #----------------------------------------------------------------------------
     fetchTimeline: (_case, lastEventTime, lastMessageId, lastActionId, callback) ->
@@ -356,4 +368,10 @@ services.factory 'UtilsService', ['$window', '$modal', ($window, $modal) ->
       $modal.open({templateUrl: 'noteModal.html', controller: 'NoteModalController', resolve: resolve})
       .result.then (note) ->
         callback(note)
+
+    labelModal: (title, prompt, labels, initial, callback) ->
+      resolve = {title: (() -> title), prompt: (() -> prompt), labels: (() -> labels), initial: (() -> initial)}
+      $modal.open({templateUrl: 'labelModal.html', controller: 'LabelModalController', resolve: resolve})
+      .result.then (selectedLabels) ->
+        callback(selectedLabels)
 ]

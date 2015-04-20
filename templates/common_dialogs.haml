@@ -3,7 +3,7 @@
 %script{ type:"text/ng-template", id:"confirmModal.html" }
   .modal-header
     %h3.modal-title
-      - trans "Confirm"
+      [[ title ]]
     .modal-body
       %p
         %span{ ng-bind-html:"prompt" }
@@ -44,6 +44,25 @@
           %textarea.form-control{ ng-model:"note" }
     .modal-footer
       %button.btn{ ng-click:"ok()", ng-class:'{ "btn-primary": style == "primary", "btn-danger": style == "danger" }' }
+        - trans "OK"
+      %button.btn.btn-default{ ng-click:"cancel()" }
+        - trans "Cancel"
+
+%script{ type:"text/ng-template", id:"labelModal.html" }
+  .modal-header
+    %h3.modal-title
+      [[ title ]]
+    .modal-body
+      %p
+        %span{ ng-bind-html:"prompt" }
+      %form
+        .{ ng-repeat:"item in selection" }
+          %input{ type:"checkbox", ng-model:"item.selected" }
+          &nbsp;
+          %label.control-label
+            [[ item.label.name ]]
+    .modal-footer
+      %button.btn.btn-primary{ ng-click:"ok()" }
         - trans "OK"
       %button.btn.btn-default{ ng-click:"cancel()" }
         - trans "Cancel"

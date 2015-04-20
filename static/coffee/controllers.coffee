@@ -261,7 +261,8 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
 
   $scope.case = $window.contextData.case
   $scope.contact = $window.contextData.contact
-  $scope.partners = $window.contextData.partners
+  $scope.allPartners = $window.contextData.all_partners
+  $scope.allLabels = $window.contextData.all_labels
 
   $scope.newMessage = ''
   $scope.sending = false
@@ -276,6 +277,10 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
       $scope.case = _case
       $timeout($scope.refresh, INTERVAL_CASE_INFO)
 
+  $scope.onEditLabels = ->
+    UtilsService.labelModal "Labels", "Update the labels for this case. This determines which other partner organizations can view this case.", $scope.allLabels, $scope.case.labels, (selectedLabels) ->
+      CaseService.labelCase $scope.case, selectedLabels, ->
+
   #----------------------------------------------------------------------------
   # Messaging
   #----------------------------------------------------------------------------
@@ -283,7 +288,7 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
   $scope.sendMessage = ->
     $scope.sending = true
 
-    MessageService.sendNewMessage $scope.contact, $scope.newMessage, () ->
+    MessageService.sendNewMessage $scope.contact, $scope.newMessage, ->
       $scope.newMessage = ''
       $scope.sending = false
 
@@ -300,7 +305,7 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
         $scope.$broadcast('newCaseAction')
 
   $scope.reassign = () ->
-    UtilsService.assignModal "Re-assign", null, $scope.partners, (assignee) ->
+    UtilsService.assignModal "Re-assign", null, $scope.allPartners, (assignee) ->
       CaseService.reassignCase $scope.case, assignee, () ->
         $scope.$broadcast('newCaseAction')
 
@@ -350,6 +355,7 @@ controllers.controller 'CaseTimelineController', [ '$scope', '$timeout', 'CaseSe
 #============================================================================
 
 controllers.controller 'ConfirmModalController', [ '$scope', '$modalInstance', 'prompt', 'style', ($scope, $modalInstance, prompt, style) ->
+  $scope.title = "Confirm"
   $scope.prompt = prompt
   $scope.style = style or 'primary'
 
@@ -374,6 +380,18 @@ controllers.controller 'NoteModalController', [ '$scope', '$modalInstance', 'tit
   $scope.note = ''
 
   $scope.ok = () -> $modalInstance.close($scope.note)
+  $scope.cancel = () -> $modalInstance.dismiss('cancel')
+]
+
+controllers.controller 'LabelModalController', [ '$scope', '$modalInstance', 'title', 'prompt', 'labels', 'initial', ($scope, $modalInstance, title, prompt, labels, initial) ->
+  $scope.title = title
+  $scope.prompt = prompt
+  $scope.selection = ({label: l, selected: (l.id in (i.id for i in initial))} for l in labels)
+
+  $scope.ok = () ->
+    selectedLabels = (item.label for item in $scope.selection when item.selected)
+    $modalInstance.close(selectedLabels)
+
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
 

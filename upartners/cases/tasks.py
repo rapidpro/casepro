@@ -59,9 +59,8 @@ def generate_labelling_flow(labels):
     ruleset_uuids = [unicode(uuid4()) for l in range(len(labels))]
 
     for label in labels:
-        keywords = ' '.join(label.get_keywords()),
+        keywords = ' '.join(label.get_keywords())
         label_action_uuid = unicode(uuid4())
-        noop_action_uuid = unicode(uuid4())
         next_ruleset_uuid = ruleset_uuids[label_num + 1] if label_num < (len(labels) - 1) else None
 
         rule_sets.append({
@@ -70,7 +69,7 @@ def generate_labelling_flow(labels):
             "operand": "@step.value",
             "rules": [
                 {
-                    "test": {"test": keywords, "base": keywords, "type": "contains_any"},
+                    "test": {"test": keywords, "type": "contains_any"},
                     "category": label.name,
                     "destination": label_action_uuid,
                     "uuid": unicode(uuid4())
@@ -78,7 +77,7 @@ def generate_labelling_flow(labels):
                 {
                     "test": {"test": "true", "type": "true"},
                     "category": "Other",
-                    "destination": noop_action_uuid,
+                    "destination": next_ruleset_uuid,
                     "uuid": unicode(uuid4())
                 }
             ],
@@ -97,18 +96,6 @@ def generate_labelling_flow(labels):
                 {"type": "add_label", "labels": [{"name": label.name}]}
             ],
             "x": 100,
-            "y": 200 * label_num + 100,
-        })
-
-        # we can't currently route a ruleset into another ruleset, so as a temporary workaround, go through an update
-        # contact action that sets contact name to contact name, i.e. (NOOP)
-        action_sets.append({
-            "destination": next_ruleset_uuid,
-            "uuid": noop_action_uuid,
-            "actions": [
-                {"type": "save", "field": "name", "value": "@contact.name", "label": "NOOP"}
-            ],
-            "x": 550,
             "y": 200 * label_num + 100,
         })
 
