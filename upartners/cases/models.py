@@ -153,7 +153,6 @@ class MessageExport(models.Model):
 
         # fetch all contacts in batches of 25 and organize by UUID
         contacts_by_uuid = {}
-        from . import chunks
         for uuid_chunk in chunks(list(contact_uuids), 25):
             for contact in client.get_contacts(uuids=uuid_chunk):
                 contacts_by_uuid[contact.uuid] = contact
@@ -281,13 +280,17 @@ class Label(models.Model):
         label.partners.add(*partners)
 
         if update_flow:
-            update_labelling_flow.delay(label.org_id)
+            cls.update_labelling_flow(org)
 
         return label
 
     @classmethod
     def get_all(cls, org):
         return cls.objects.filter(org=org, is_active=True)
+
+    @classmethod
+    def update_labelling_flow(cls, org):
+        update_labelling_flow.delay(org.pk)
 
     @classmethod
     def get_message_counts(cls, org, labels):
@@ -323,6 +326,8 @@ class Label(models.Model):
     def release(self):
         self.is_active = False
         self.save(update_fields=('is_active',))
+
+        self.update_labelling_flow(self.org)
 
     def as_json(self):
         return {'id': self.pk, 'name': self.name, 'count': getattr(self, 'count', None)}

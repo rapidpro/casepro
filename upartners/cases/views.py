@@ -336,6 +336,9 @@ class LabelCRUDL(SmartCRUDL):
             initial['keywords'] = ', '.join(self.object.get_keywords())
             return initial
 
+        def post_save(self, obj):
+            Label.update_labelling_flow(obj.org)
+
     class Delete(OrgObjPermsMixin, SmartDeleteView):
         def post(self, request, *args, **kwargs):
             label = self.get_object()

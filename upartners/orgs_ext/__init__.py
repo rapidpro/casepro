@@ -4,6 +4,7 @@ from __future__ import absolute_import, unicode_literals
 from dash.orgs.models import Org
 
 
+ORG_CONFIG_LABELLING_FLOW = 'labelling_flow'
 ORG_CONFIG_CONTACT_FIELDS = 'contact_fields'
 
 
