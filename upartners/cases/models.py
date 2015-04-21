@@ -13,23 +13,27 @@ from django.core.files.storage import default_storage
 from django.core.files.temp import NamedTemporaryFile
 from django.core.urlresolvers import reverse
 from django.db import models
+from django.db.models import Count
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from temba.base import TembaNoSuchObjectError
 from upartners.email import send_upartners_email
 from . import parse_csv, truncate, SYSTEM_LABEL_FLAGGED
-from .tasks import update_labelling_flow
 
 
 ACTION_OPEN = 'O'
 ACTION_NOTE = 'N'
 ACTION_REASSIGN = 'A'
+ACTION_LABEL = 'L'
+ACTION_UNLABEL = 'U'
 ACTION_CLOSE = 'C'
 ACTION_REOPEN = 'R'
 
 CASE_ACTION_CHOICES = ((ACTION_OPEN, _("Open")),
                        (ACTION_NOTE, _("Add Note")),
                        (ACTION_REASSIGN, _("Reassign")),
+                       (ACTION_LABEL, _("Label")),
+                       (ACTION_UNLABEL, _("Remove Label")),
                        (ACTION_CLOSE, _("Close")),
                        (ACTION_REOPEN, _("Reopen")))
 
@@ -273,22 +277,14 @@ class Label(models.Model):
     is_active = models.BooleanField(default=True, help_text="Whether this label is active")
 
     @classmethod
-    def create(cls, org, name, description, keywords, partners, update_flow=True):
+    def create(cls, org, name, description, keywords, partners):
         label = cls.objects.create(org=org, name=name, description=description, keywords=','.join(keywords))
         label.partners.add(*partners)
-
-        if update_flow:
-            cls.update_labelling_flow(org)
-
         return label
 
     @classmethod
     def get_all(cls, org):
         return cls.objects.filter(org=org, is_active=True)
-
-    @classmethod
-    def update_labelling_flow(cls, org):
-        update_labelling_flow.delay(org.pk)
 
     @classmethod
     def get_message_counts(cls, org, labels):
@@ -299,21 +295,18 @@ class Label(models.Model):
         else:
             counts_by_name = {}
 
-        return {l: counts_by_name[l.name] if l.name in counts_by_name else 0 for l in labels}
+        return {l: counts_by_name.get(l.name, 0) for l in labels}
 
     @classmethod
-    def get_case_counts(cls, org, labels):
+    def get_case_counts(cls, labels, closed=False):
+        if not closed:
+            qs = labels.filter(cases__closed_on=None)
+        else:
+            qs = labels.exclude(cases__closed_on=None)
 
-        from django.db.models import Count
-        labels.values('cases').annotate(total=Count('cases'))
+        counts_by_label = {l: l.num_cases for l in qs.annotate(num_cases=Count('cases'))}
 
-        # TODO
-        # import pdb; pdb.set_trace()
-
-        return {}
-
-    def get_count(self):
-        return get_obj_cacheable(self, '_count', lambda: self.fetch_counts(self.org, [self])[self])
+        return {l: counts_by_label.get(l, 0) for l in labels}
 
     def get_keywords(self):
         return parse_csv(self.keywords)
@@ -325,13 +318,23 @@ class Label(models.Model):
         self.is_active = False
         self.save(update_fields=('is_active',))
 
-        self.update_labelling_flow(self.org)
-
     def as_json(self):
         return {'id': self.pk, 'name': self.name, 'count': getattr(self, 'count', None)}
 
     def __unicode__(self):
         return self.name
+
+
+def case_action(func):
+    """
+    Helper decorator for cae action methods that should check the user is allowed to update the case
+    """
+    def action_wrapper(case, user, *args, **kwargs):
+        if not case.can_update(user):
+            raise PermissionDenied()
+
+        func(case, user, *args, **kwargs)
+    return action_wrapper
 
 
 class Case(models.Model):
@@ -391,40 +394,56 @@ class Case(models.Model):
         CaseAction.create(case, user, ACTION_OPEN, assignee=partner)
         return case
 
+    @case_action
     def note(self, user, note):
         CaseAction.create(self, user, ACTION_NOTE, note=note)
 
+    @case_action
     def close(self, user, note=None):
-        if not self._can_edit(user):
-            raise PermissionDenied()
-
         self.closed_on = timezone.now()
         self.save(update_fields=('closed_on',))
 
         CaseAction.create(self, user, ACTION_CLOSE, note=note)
 
+    @case_action
     def reopen(self, user, note=None):
-        if not self._can_edit(user):
-            raise PermissionDenied()
-
         self.closed_on = None
         self.save(update_fields=('closed_on',))
 
         CaseAction.create(self, user, ACTION_REOPEN, note=note)
 
+    @case_action
     def reassign(self, user, partner, note=None):
-        if not self._can_edit(user):
-            raise PermissionDenied()
-
         self.assignee = partner
         self.save(update_fields=('assignee',))
 
         CaseAction.create(self, user, ACTION_REASSIGN, assignee=partner, note=note)
 
-    def update_labels(self, labels):
-        self.labels.clear()
-        for label in labels:
-            self.labels.add(label)
+    @case_action
+    def label(self, user, label):
+        self.labels.add(label)
+
+        CaseAction.create(self, user, ACTION_LABEL, label=label)
+
+    @case_action
+    def unlabel(self, user, label):
+        self.labels.remove(label)
+
+        CaseAction.create(self, user, ACTION_UNLABEL, label=label)
+
+    def update_labels(self, user, labels):
+        """
+        Updates all this cases's labels to the given set, creating label and unlabel actions as necessary
+        """
+        current_labels = self.labels.all()
+
+        add_labels = [l for l in labels if l not in current_labels]
+        rem_labels = [l for l in current_labels if l not in labels]
+
+        for label in add_labels:
+            self.label(user, label)
+        for label in rem_labels:
+            self.unlabel(user, label)
 
     def fetch_contact(self):
         try:
@@ -432,7 +451,7 @@ class Case(models.Model):
         except TembaNoSuchObjectError:
             return None  # always a chance that the contact has been deleted in RapidPro
 
-    def _can_edit(self, user):
+    def can_update(self, user):
         if user.is_admin_for(self.org):
             return True
 
@@ -461,11 +480,13 @@ class CaseAction(models.Model):
 
     assignee = models.ForeignKey(Partner, null=True, related_name="case_actions")
 
+    label = models.ForeignKey(Label, null=True)
+
     note = models.CharField(null=True, max_length=1024)
 
     @classmethod
-    def create(cls, case, user, action, assignee=None, note=None):
-        CaseAction.objects.create(case=case, action=action, created_by=user, assignee=assignee, note=note)
+    def create(cls, case, user, action, assignee=None, label=None, note=None):
+        CaseAction.objects.create(case=case, action=action, created_by=user, assignee=assignee, label=label, note=note)
 
     def as_json(self):
         return {'id': self.pk,
@@ -473,6 +494,7 @@ class CaseAction(models.Model):
                 'created_by': {'id': self.created_by.pk, 'name': self.created_by.get_full_name()},
                 'created_on': self.created_on,
                 'assignee': self.assignee.as_json() if self.assignee else None,
+                'label': self.label.as_json() if self.label else None,
                 'note': self.note}
 
     class Meta:

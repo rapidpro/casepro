@@ -25,6 +25,10 @@
           %span.selection-info{ ng-show:"selection.length == 0" }
             [[ totalItems() ]] cases
 
+          .selection-actions.btn-group.pull-away
+            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"closeSelection()", type:"button" }
+              - trans "Close"
+
     .cases{ infinite-scroll:"loadOldItems()", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
       .case{ ng-repeat:"item in items" }
         .case-actions

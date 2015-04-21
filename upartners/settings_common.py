@@ -1,5 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
+import datetime
+import djcelery
 import sys
 
 from django.utils.translation import ugettext_lazy as _
@@ -371,12 +373,17 @@ INTERNAL_IPS = ('127.0.0.1',)
 #-----------------------------------------------------------------------------------
 # Django-celery
 #-----------------------------------------------------------------------------------
-import djcelery
 djcelery.setup_loader()
 
 BROKER_URL = 'redis://localhost:6379/%d' % (10 if TESTING else 15)
 CELERY_RESULT_BACKEND = BROKER_URL
 
-CELERYBEAT_SCHEDULE = {}
+CELERYBEAT_SCHEDULE = {
+    'label-new-messages': {
+        'task': 'upartners.cases.tasks.label_new_messages',
+        'schedule': datetime.timedelta(minutes=10),
+        'args': ()
+    },
+}
 
 CELERY_TIMEZONE = 'UTC'

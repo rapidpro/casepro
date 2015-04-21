@@ -130,7 +130,7 @@ class CaseCRUDL(SmartCRUDL):
             label_ids = parse_csv(request.POST.get('labels', ''), as_ints=True)
             labels = Label.get_all(request.org).filter(pk__in=label_ids)
 
-            case.update_labels(labels)
+            case.update_labels(self.request.user, labels)
             return HttpResponse(status=204)
 
     class Fetch(OrgPermsMixin, SmartReadView):
@@ -416,7 +416,7 @@ class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
 
         client = self.request.org.get_temba_client()
         pager = client.pager(start_page=page)
-        messages = client.get_messages(pager=pager, labels=search['labels'], direction='I',
+        messages = client.get_messages(pager=pager, labels=search['labels'], direction='I', _types=['I'],
                                        after=search['after'], before=search['before'],
                                        groups=search['groups'], text=search['text'], reverse=search['reverse'])
 
@@ -643,7 +643,8 @@ class CasesView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
         return ['cases/home_open.haml'] if case_status == 'open' else ['cases/home_closed.haml']
 
     def annotate_labels(self, labels):
-        for label, count in Label.get_case_counts(self.request.org, labels).iteritems():
+        closed = self.kwargs['case_status'] == 'closed'
+        for label, count in Label.get_case_counts(labels, closed).iteritems():
             label.count = count
 
     def get_context_data(self, **kwargs):

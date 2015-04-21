@@ -85,6 +85,16 @@
               %span{ ng-if:'event.item.action == "N"' }
                 added a note
 
+              %span{ ng-if:'event.item.action == "L"' }
+                added the label
+                  %em
+                    [[ event.item.label.name ]]
+
+              %span{ ng-if:'event.item.action == "U"' }
+                removed the label
+                  %em
+                    [[ event.item.label.name ]]
+
               %span{ ng-if:'event.item.action == "A"' }
                 re-assigned this case to
                 %a{ ng-href:"/partner/read/[[ event.item.assignee.id ]]/" }

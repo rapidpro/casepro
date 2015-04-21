@@ -118,8 +118,11 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', '$controller'
     $scope.loadOldMessages()
 
   $scope.onClearSearch = () ->
+    $scope.items = []
     $scope.search = { text: null, groups: [], after: null, before: null, reverse: false }
-    $scope.onMessageSearch()
+    $scope.activeSearch = null
+    $scope.oldItemsPage = 0
+    $scope.loadOldMessages()
 
   $scope.onExportSearch = () ->
     UtilsService.confirmModal "Export the current message search?", null, () ->
@@ -249,6 +252,10 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
         $scope.newItemsCount += cases.length
 
       $timeout($scope.refreshNewItems, INTERVAL_CASES_NEW)
+
+  $scope.closeSelection = () ->
+    UtilsService.confirmModal 'Close the selected cases?', 'danger', () ->
+      CaseService.closeCases($scope.selection)
 
 ])
 

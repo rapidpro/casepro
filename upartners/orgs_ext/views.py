@@ -2,9 +2,12 @@ from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.models import Org
 from dash.orgs.views import OrgCRUDL, OrgForm, InferOrgMixin, OrgPermsMixin, SmartUpdateView
+from dash.utils import ms_to_datetime
 from django import forms
 from django.utils.translation import ugettext_lazy as _
+from smartmin.templatetags.smartmin import format_datetime
 from smartmin.users.views import SmartCRUDL
+from . import TaskType
 
 
 def org_ext_context_processor(request):
@@ -26,7 +29,7 @@ class OrgExtCRUDL(SmartCRUDL):
         pass
 
     class Home(OrgCRUDL.Home):
-        fields = ('name', 'timezone', 'api_token', 'contact_fields')
+        fields = ('name', 'timezone', 'api_token', 'contact_fields', 'last_label_task')
         field_config = {'api_token': {'label': _("RapidPro API Token")}}
         permission = 'orgs.org_home'
 
@@ -35,6 +38,15 @@ class OrgExtCRUDL(SmartCRUDL):
 
         def get_contact_fields(self, obj):
             return ', '.join(obj.get_contact_fields())
+
+        def get_last_label_task(self, obj):
+            result = obj.get_task_result(TaskType.label_messages)
+            if result:
+                when = format_datetime(ms_to_datetime(result['time']))
+                stats = result['counts']
+                return "%s (%d new messages, %d new labels)" % (when, stats['messages'], stats['labels'])
+            else:
+                return None
 
     class Edit(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
         class OrgExtForm(OrgForm):

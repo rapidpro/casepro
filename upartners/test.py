@@ -43,9 +43,9 @@ class UPartnersTest(TestCase):
         # some message labels
         self.aids = self.create_label(self.unicef, "AIDS", 'Messages about AIDS',
                                       ['aids', 'hiv'], [self.moh, self.who])
-        self.pregnancy = self.create_label(self.unicef, "pregnancy", 'Messages about pregnancy',
+        self.pregnancy = self.create_label(self.unicef, "Pregnancy", 'Messages about pregnancy',
                                            ['pregnant', 'pregnancy'], [self.moh])
-        self.code = self.create_label(self.nyaruka, "code", 'Messages about code',
+        self.code = self.create_label(self.nyaruka, "Code", 'Messages about code',
                                       ['java', 'python', 'go'], [self.klab])
 
     def clear_cache(self):
@@ -62,7 +62,7 @@ class UPartnersTest(TestCase):
         return Partner.create(org, name)
 
     def create_label(self, org, name, description, words, partners):
-        return Label.create(org, name, description, words, partners, update_flow=False)
+        return Label.create(org, name, description, words, partners)
 
     def create_admin(self, org, full_name, email):
         user = User.create(None, None, None, full_name, email, password=email, change_password=False)

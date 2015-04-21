@@ -25,7 +25,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     # Fetches old messages for the given label
     #----------------------------------------------------------------------------
     fetchOldMessages: (label, search, page, callback) ->
-      searchParams = @_searchToParams(search)
+      searchParams = if search then @_searchToParams(search) else ''
       otherParams = {start_time: formatIso8601(@start_time), page: page, label: if label then label.id else null}
 
       $http.get('/message/?' + $.param(otherParams) + '&' + searchParams)

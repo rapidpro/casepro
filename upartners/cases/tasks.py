@@ -2,42 +2,78 @@ from __future__ import absolute_import, unicode_literals
 
 from celery.utils.log import get_task_logger
 from dash.orgs.models import Org
+from datetime import timedelta
+from dash.utils import datetime_to_ms, ms_to_datetime
+from django.utils import timezone
 from djcelery_transactions import task
-from upartners.orgs_ext import ORG_CONFIG_LABELLING_FLOW
-from uuid import uuid4
+from redis_cache import get_redis_connection
+from upartners.orgs_ext import TaskType
 
 logger = get_task_logger(__name__)
 
 
-LABELLING_FLOW_NAME = "Labelling"
-
-
 @task
-def update_labelling_flow(org_id):
+def label_new_messages():
     """
-    Updates the labelling flow in RapidPro whenever we make any local change to a label
+    Labels new unsolicited messages for all orgs in RapidPro
+    """
+    r = get_redis_connection()
+
+    # only do this if we aren't already running so we don't get backed up
+    key = 'label_new_messages'
+    if not r.get(key):
+        with r.lock(key, timeout=600):
+            for org in Org.objects.filter(is_active=True):
+                label_new_org_messages(org)
+
+
+def label_new_org_messages(org):
+    """
+    Labels new unsolicited messages for an org in RapidPro
     """
     from .models import Label
 
-    org = Org.objects.get(pk=org_id)
     client = org.get_temba_client()
     labels = Label.get_all(org)
+    label_keywords = {l: l.get_keywords() for l in labels}
+    label_matches = {l: [] for l in labels}  # message ids that match each label
 
-    # ensure all new labels have an equivalent label in RapidPro
-    existing_label_names = set([l.name for l in client.get_labels()])
-    for label in labels:
-        if label.name not in existing_label_names:
-            client.create_label(label.name, parent=None)
+    # when was this task last run?
+    last_result = org.get_task_result(TaskType.label_messages)
+    if last_result:
+        last_time = ms_to_datetime(last_result['time'])
+    else:
+        # if first time (or Redis bombed...) then we'll fetch back to 3 hours ago
+        last_time = timezone.now() - timedelta(hours=3)
 
-    # ensure labelling flow exists
-    labelling_flow_uuid = org.get_config(ORG_CONFIG_LABELLING_FLOW)
-    if not labelling_flow_uuid:
-        labelling_flow_uuid = client.create_flow(LABELLING_FLOW_NAME, 'F').uuid
-        org.set_config(ORG_CONFIG_LABELLING_FLOW, labelling_flow_uuid)
+    this_time = timezone.now()
 
-    # update labelling flow definition
-    labelling_flow_definition = generate_labelling_flow(labels)
-    client.update_flow(labelling_flow_uuid, LABELLING_FLOW_NAME, 'F', labelling_flow_definition)
+    num_messages = 0
+    num_labels = 0
+
+    # grab all un-processed unsolicited messages
+    pager = client.pager()
+    while True:
+        messages = client.get_messages(_types=['I'], statuses=['H'], after=last_time, before=this_time, pager=pager)
+        num_messages += len(messages)
+
+        for msg in messages:
+            for label in labels:
+                for keyword in label_keywords[label]:
+                    if keyword in msg.text.lower():
+                        label_matches[label].append(msg.id)
+
+        if not pager.has_more():
+            break
+
+    # add labels to matching messages
+    for label, matched_ids in label_matches.iteritems():
+        if matched_ids:
+            client.label_messages(messages=matched_ids, label=label.name)
+            num_labels += len(matched_ids)
+
+    org.set_task_result(TaskType.label_messages, {'time': datetime_to_ms(this_time),
+                                                  'counts': {'messages': num_messages, 'labels': num_labels}})
 
 
 @task
@@ -46,61 +82,3 @@ def message_export(export_id):
 
     export = MessageExport.objects.get(pk=export_id)
     export.do_export()
-
-
-def generate_labelling_flow(labels):
-    """
-    Generates the labelling flow definition from a set of labels
-    """
-    label_num = 0
-    rule_sets = []
-    action_sets = []
-
-    ruleset_uuids = [unicode(uuid4()) for l in range(len(labels))]
-
-    for label in labels:
-        keywords = ' '.join(label.get_keywords())
-        label_action_uuid = unicode(uuid4())
-        next_ruleset_uuid = ruleset_uuids[label_num + 1] if label_num < (len(labels) - 1) else None
-
-        rule_sets.append({
-            "uuid": ruleset_uuids[label_num],
-            "label": "Label %d" % (label_num + 1),
-            "operand": "@step.value",
-            "rules": [
-                {
-                    "test": {"test": keywords, "type": "contains_any"},
-                    "category": label.name,
-                    "destination": label_action_uuid,
-                    "uuid": unicode(uuid4())
-                },
-                {
-                    "test": {"test": "true", "type": "true"},
-                    "category": "Other",
-                    "destination": next_ruleset_uuid,
-                    "uuid": unicode(uuid4())
-                }
-            ],
-            "finished_key": None,
-            "response_type": "C",
-            "webhook_action": None,
-            "webhook": None,
-            "x": 300,
-            "y": 200 * label_num
-        })
-
-        action_sets.append({
-            "destination": next_ruleset_uuid,
-            "uuid": label_action_uuid,
-            "actions": [
-                {"type": "add_label", "labels": [{"name": label.name}]}
-            ],
-            "x": 100,
-            "y": 200 * label_num + 100,
-        })
-
-        label_num += 1
-
-    entry = ruleset_uuids[0] if ruleset_uuids else None
-
-    return {"entry": entry, "rule_sets": rule_sets, "action_sets": action_sets, "metadata": {}}

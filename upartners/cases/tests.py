@@ -3,14 +3,14 @@ from __future__ import absolute_import, unicode_literals
 from datetime import datetime
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
-from django.test.utils import override_settings
 from django.utils import timezone
-from mock import patch
-from temba.types import Flow as TembaFlow, Label as TembaLabel, Message as TembaMessage
+from mock import patch, call
+from temba.types import Message as TembaMessage
+from upartners.orgs_ext import TaskType
 from upartners.profiles import ROLE_ANALYST, ROLE_MANAGER
 from upartners.test import UPartnersTest
-from . import truncate
-from .models import Case, Label, Partner, ACTION_OPEN, ACTION_NOTE, ACTION_CLOSE, ACTION_REOPEN, ACTION_REASSIGN
+from .models import Case, Label, Partner, ACTION_OPEN, ACTION_NOTE, ACTION_LABEL, ACTION_UNLABEL, ACTION_CLOSE, ACTION_REOPEN, ACTION_REASSIGN
+from .tasks import label_new_org_messages
 
 
 class CaseTest(UPartnersTest):
@@ -22,6 +22,7 @@ class CaseTest(UPartnersTest):
         d4 = datetime(2014, 1, 2, 10, 0, tzinfo=timezone.utc)
         d5 = datetime(2014, 1, 2, 11, 0, tzinfo=timezone.utc)
         d6 = datetime(2014, 1, 2, 12, 0, tzinfo=timezone.utc)
+        d7 = datetime(2014, 1, 2, 13, 0, tzinfo=timezone.utc)
 
         with patch.object(timezone, 'now', return_value=d1):
             # MOH user assigns to self
@@ -99,34 +100,36 @@ class CaseTest(UPartnersTest):
         self.assertEqual(actions[4].assignee, self.who)
 
         with patch.object(timezone, 'now', return_value=d6):
+            # user from that partner re-labels it
+            case.update_labels(self.user3, [self.pregnancy])
+
+        actions = case.actions.all()
+        self.assertEqual(len(actions), 7)
+        self.assertEqual(actions[5].action, ACTION_LABEL)
+        self.assertEqual(actions[5].created_by, self.user3)
+        self.assertEqual(actions[5].created_on, d6)
+        self.assertEqual(actions[5].label, self.pregnancy)
+        self.assertEqual(actions[6].action, ACTION_UNLABEL)
+        self.assertEqual(actions[6].created_by, self.user3)
+        self.assertEqual(actions[6].created_on, d6)
+        self.assertEqual(actions[6].label, self.aids)
+
+        with patch.object(timezone, 'now', return_value=d7):
             # user from that partner org closes it again
             case.close(self.user3)
 
         self.assertEqual(case.opened_on, d1)
-        self.assertEqual(case.closed_on, d6)
+        self.assertEqual(case.closed_on, d7)
 
         actions = case.actions.all()
-        self.assertEqual(len(actions), 6)
-        self.assertEqual(actions[5].action, ACTION_CLOSE)
-        self.assertEqual(actions[5].created_by, self.user3)
-        self.assertEqual(actions[5].created_on, d6)
+        self.assertEqual(len(actions), 8)
+        self.assertEqual(actions[7].action, ACTION_CLOSE)
+        self.assertEqual(actions[7].created_by, self.user3)
+        self.assertEqual(actions[7].created_on, d7)
 
 
 class LabelTest(UPartnersTest):
-    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
-    @patch('dash.orgs.models.TembaClient.get_labels')
-    @patch('dash.orgs.models.TembaClient.create_label')
-    @patch('dash.orgs.models.TembaClient.create_flow')
-    @patch('dash.orgs.models.TembaClient.update_flow')
-    def test_create(self, mock_update_flow, mock_create_flow, mock_create_label, mock_get_labels):
-        mock_get_labels.return_value = [
-            TembaLabel.create(uuid='L-101', name="Not Ebola", parent=None, count=12),
-            TembaLabel.create(uuid='L-102', name="EBOLA", parent=None, count=123)
-        ]
-        mock_create_label.return_value = TembaLabel.create(uuid='L-103', name="Chat", parent=None, count=0)
-        mock_create_flow.return_value = TembaFlow.create(uuid='F-101', name="Labelling")
-        mock_update_flow.return_value = TembaFlow.create(uuid='F-101', name="Labelling")
-
+    def test_create(self):
         ebola = Label.create(self.unicef, "Ebola", "Msgs about ebola", ['ebola', 'fever'], [self.moh, self.who])
         self.assertEqual(ebola.org, self.unicef)
         self.assertEqual(ebola.name, "Ebola")
@@ -136,8 +139,26 @@ class LabelTest(UPartnersTest):
         self.assertEqual(set(ebola.get_partners()), {self.moh, self.who})
         self.assertEqual(unicode(ebola), "Ebola")
 
-        # create local label with no match in RapidPro
-        Label.create(self.unicef, "Chat", "Chatting", ['chat'], [self.moh, self.who])
+    @patch('dash.orgs.models.TembaClient.get_messages')
+    @patch('dash.orgs.models.TembaClient.label_messages')
+    def test_label_new_messages_task(self, mock_label_messages, mock_get_messages):
+        mock_get_messages.return_value = [
+            TembaMessage.create(id=101, text="What is aids?"),
+            TembaMessage.create(id=102, text="Can I catch Hiv?"),
+            TembaMessage.create(id=103, text="I think I'm pregnant"),
+            TembaMessage.create(id=104, text="Php is amaze"),
+        ]
+        mock_label_messages.return_value = None
+
+        label_new_org_messages(self.unicef)
+
+        mock_label_messages.assert_has_calls([call(messages=[101, 102], label='AIDS'),
+                                              call(messages=[103], label='Pregnancy')],
+                                             any_order=True)
+
+        result = self.unicef.get_task_result(TaskType.label_messages)
+        self.assertEqual(result['counts']['messages'], 4)
+        self.assertEqual(result['counts']['labels'], 3)
 
 
 class LabelCRUDLTest(UPartnersTest):
