@@ -111,13 +111,16 @@
               - trans "Archive"
 
     .messages{ infinite-scroll:"loadOldMessages()", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
-      .message{ ng-repeat:"message in items | filter:{ archived: false }", ng-class:"{ flagged: message.flagged }" }
+      .stackitem{ ng-repeat:"message in items | filter:{ archived: false }", ng-class:"{ flagged: message.flagged }" }
         .message-actions
           %input{ type:"checkbox", ng-model:"message.selected", ng-change:"onChangeSelection()" }
           %a.flag{ ng-click:"toggleMessageFlag(message)" }
             %span.glyphicon.glyphicon-flag
         .message-time
           [[ message.time | autodate ]]
+        .message-contact
+          %a{ ng-href:"/contact/read/[[ message.contact ]]/", title:"[[ message.contact ]]" }><
+            \#[[ message.contact | limitTo:6 | uppercase ]]
         .message-text
           %span.label-container{ ng-repeat:"label in filterDisplayLabels(message.labels)" }
             %span.label.label-success
@@ -179,18 +182,15 @@
 - block extra-style
   {{ block.super }}
   :css
-    .message {
-      padding: 3px;
-      border-bottom: 1px solid #eee;
-    }
-    .message:first-of-type {
-      border-top: 1px solid #eee;
-    }
-    .message .message-actions {
+    .message-actions {
       float: left;
       width: 50px;
     }
-    .message .message-actions input[type="checkbox"] {
+    .message-contact {
+      float: left;
+      width: 80px;
+    }
+    .message-actions input[type="checkbox"] {
       width: auto;
       margin-right: 7px;
     }
@@ -201,13 +201,13 @@
       margin-bottom: 3px;
     }
     .message-text {
-      margin-left: 50px;
+      margin-left: 130px;
     }
-    .message .flag {
+    .message-actions .flag {
       color: #ddd;
       cursor: pointer;
     }
-    .message.flagged .flag {
+    .flagged .message-actions .flag {
       color: #444 !important;
     }
 

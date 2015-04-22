@@ -653,3 +653,42 @@ class CasesView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
         context['case_status'] = self.kwargs['case_status']
 
         return context
+
+
+class Contact(object):
+    """
+    Dummy model object so that we can use SmartCRUDL
+    """
+    class _meta:
+        object_name = 'contact'
+        app_label = 'cases'
+
+
+class ContactCRUDL(SmartCRUDL):
+    actions = ('read',)
+    model = Contact
+
+    class Read(SmartTemplateView):
+        fields = ()
+
+        def has_permission(self, request, *args, **kwargs):
+            return request.user.is_authenticated()
+
+        @classmethod
+        def derive_url_pattern(cls, path, action):
+            return r'^%s/%s/(?P<uuid>[A-Za-z0-9\-]+)/$' % (path, action)
+
+        def get_context_data(self, **kwargs):
+            context = super(ContactCRUDL.Read, self).get_context_data(**kwargs)
+            contact_uuid = self.kwargs['uuid']
+            org = self.request.org
+
+            client = org.get_temba_client()
+            contact = client.get_contact(contact_uuid)
+
+            # angular app requires context data in JSON format
+            context['context_data_json'] = json_encode({
+                'contact': contact_as_json(contact, org.get_contact_fields())
+            })
+
+            return context

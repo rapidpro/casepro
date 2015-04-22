@@ -1,0 +1,114 @@
+- extends "smartmin/read.html"
+- load smartmin i18n
+
+- block pre-content
+
+- block content
+
+  - include 'common_dialogs.haml'
+
+  %script{ type:"text/javascript" }
+    var contextData = {{ context_data_json|safe }};
+
+  .{ ng-controller:"ContactController" }
+    .page-header
+
+      .clearfix
+        %h2.pull-back
+          %span.glyphicon.glyphicon-phone
+          &nbsp;
+          %span{ tooltip:"[[ contact.uuid ]]", tooltip-placement:"right" }
+            Contact #[[ contact.uuid | limitTo:6 | uppercase ]]
+
+      %ul.header-details
+        %li{ ng-repeat:"(field, val) in contact.fields" }
+          %strong><
+            [[ field ]]
+          : [[ val ]]
+
+    .row
+      .col-md-12
+        .timeline{ ng-controller:"ContactTimelineController", ng-init:"init()" }
+          .timeline-event.clearfix{ ng-repeat:"event in timeline | reverse", ng-class:'{ "timeline-action": event.is_action, "timeline-incoming": event.is_message_in, "timeline-outgoing": event.is_message_out }' }
+            .event-time
+              [[ event.time | autodate ]]
+
+            .{ ng-if:"event.is_action" }
+              %a{ ng-href:"/user/read/[[ event.item.created_by.id ]]/" }
+                [[ event.item.created_by.name ]]
+
+              %span{ ng-if:'event.item.action == "O"' }
+                opened this case and assigned it to
+                %a{ ng-href:"/partner/read/[[ event.item.assignee.id ]]/" }
+                  [[ event.item.assignee.name ]]
+
+              %span{ ng-if:'event.item.action == "N"' }
+                added a note
+
+              %span{ ng-if:'event.item.action == "L"' }
+                added the label
+                  %em
+                    [[ event.item.label.name ]]
+
+              %span{ ng-if:'event.item.action == "U"' }
+                removed the label
+                  %em
+                    [[ event.item.label.name ]]
+
+              %span{ ng-if:'event.item.action == "A"' }
+                re-assigned this case to
+                %a{ ng-href:"/partner/read/[[ event.item.assignee.id ]]/" }
+                  [[ event.item.assignee.name ]]
+
+              %span{ ng-if:'event.item.action == "C"' }
+                closed this case
+
+              %span{ ng-if:'event.item.action == "R"' }
+                re-opened this case
+
+              .action-note{ ng-if:"event.item.note" }
+                [[ event.item.note ]]
+
+            .{ ng-if:"event.is_message_in || event.is_message_out" }
+              %span.label-container{ ng-repeat:"label in event.item.labels" }
+                %span.label.label-success
+                  [[ label.name ]]
+                &nbsp;
+              [[ event.item.text ]]
+
+
+- block extra-style
+  {{ block.super }}
+  :css
+    .timeline-event {
+      padding: 12px;
+      margin-bottom: 16px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+    }
+    .timeline-action {
+      background-color: #FDEECF;
+      border-color: #F0E1C4;
+    }
+    .timeline-incoming {
+      margin-right: 180px;
+      background-color: #DDFDDD;
+      border-color: #D4F3D4;
+    }
+    .timeline-outgoing {
+      margin-left: 180px;
+      background-color: #E6FDFB;
+      border-color: #D5EBED;
+    }
+    .timeline-event .event-time {
+      float: right;
+      font-size: 0.7em;
+      margin-left: 3px;
+      margin-bottom: 3px;
+    }
+    .timeline-event .action-note {
+      padding: 0.5em 0 0 2em;
+      font-style: italic;
+    }

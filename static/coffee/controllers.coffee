@@ -261,6 +261,16 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
 
 
 #============================================================================
+# Contact view controller
+#============================================================================
+
+controllers.controller 'ContactController', [ '$scope', '$window', '$timeout', 'CaseService', 'UtilsService', ($scope, $window, $timeout, CaseService, UtilsService) ->
+
+  $scope.contact = $window.contextData.contact
+]
+
+
+#============================================================================
 # Case view controller
 #============================================================================
 

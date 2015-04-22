@@ -33,7 +33,7 @@
               %button.btn.btn-default{ type:"button", ng-if:"case.is_closed && contact", ng-click:"reopen()" }
                 - trans "Re-open"
 
-      %ul.case-details
+      %ul.header-details
         %li
           %strong><
             - trans "Assignee"
@@ -130,16 +130,6 @@
 - block extra-style
   {{ block.super }}
   :css
-    ul.case-details {
-      margin: 0;
-      padding: 0;
-    }
-    ul.case-details li {
-      display: inline-block;
-      margin: 5px;
-      padding: 0;
-      list-style: none;
-    }
     .sendform {
       text-align: center;
       padding-bottom: 1em;
