@@ -25,7 +25,7 @@ class CaseTest(UPartnersTest):
         d7 = datetime(2014, 1, 2, 13, 0, tzinfo=timezone.utc)
 
         with patch.object(timezone, 'now', return_value=d1):
-            # MOH user assigns to self
+            # MOH opens new case
             msg = TembaMessage.create(id=123, contact='C-001', created_on=d0, text="Hello")
             case = Case.open(self.unicef, self.user1, [self.aids], self.moh, msg)
 
@@ -45,6 +45,15 @@ class CaseTest(UPartnersTest):
         self.assertEqual(actions[0].created_by, self.user1)
         self.assertEqual(actions[0].created_on, d1)
         self.assertEqual(actions[0].assignee, self.moh)
+
+        self.assertTrue(case.accessible_by(self.user1, update=False))  # user who opened it can view and update
+        self.assertTrue(case.accessible_by(self.user1, update=True))
+        self.assertTrue(case.accessible_by(self.user2, update=False))  # user from same org can also view and update
+        self.assertTrue(case.accessible_by(self.user2, update=True))
+        self.assertTrue(case.accessible_by(self.user3, update=False))  # user from different partner with label access
+        self.assertFalse(case.accessible_by(self.user3, update=True))
+        self.assertFalse(case.accessible_by(self.user4, update=False))  # user from different org
+        self.assertFalse(case.accessible_by(self.user4, update=False))
 
         with patch.object(timezone, 'now', return_value=d2):
             # other user in MOH adds a note
@@ -138,6 +147,11 @@ class LabelTest(UPartnersTest):
         self.assertEqual(ebola.get_keywords(), ['ebola', 'fever'])
         self.assertEqual(set(ebola.get_partners()), {self.moh, self.who})
         self.assertEqual(unicode(ebola), "Ebola")
+
+    def test_get_all(self):
+        self.assertEqual(set(Label.get_all(self.unicef)), {self.aids, self.pregnancy})
+        self.assertEqual(set(Label.get_all(self.unicef, self.user1)), {self.aids, self.pregnancy})  # MOH user
+        self.assertEqual(set(Label.get_all(self.unicef, self.user3)), {self.aids})  # WHO user
 
     @patch('dash.orgs.models.TembaClient.get_messages')
     @patch('dash.orgs.models.TembaClient.label_messages')

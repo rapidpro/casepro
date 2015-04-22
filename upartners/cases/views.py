@@ -23,6 +23,10 @@ class CaseCRUDL(SmartCRUDL):
     class Read(OrgObjPermsMixin, SmartReadView):
         fields = ()
 
+        def has_permission(self, request, *args, **kwargs):
+            has_perm = super(CaseCRUDL.Read, self).has_permission(request, *args, **kwargs)
+            return has_perm and self.get_object().accessible_by(self.request.user)
+
         def derive_queryset(self, **kwargs):
             return Case.get_all(self.request.org)
 
@@ -158,14 +162,16 @@ class CaseCRUDL(SmartCRUDL):
             before_time = self.request.REQUEST.get('before_time', None)
             after_time = self.request.REQUEST.get('after_time', None)
 
-            label = Label.get_all(self.request.org).get(pk=label_id) if label_id else None
+            labels = Label.get_all(self.request.org, self.request.user)
+            if label_id:
+                labels = labels.filter(pk=label_id)
 
             if status == 'open':
-                qs = Case.get_open(self.request.org, label)
+                qs = Case.get_open(self.request.org, labels)
             elif status == 'closed':
-                qs = Case.get_closed(self.request.org, label)
+                qs = Case.get_closed(self.request.org, labels)
             else:
-                qs = Case.get_all(self.request.org, label)
+                qs = Case.get_all(self.request.org, labels)
 
             if before_id:
                 qs = qs.filter(pk__lt=before_id)
@@ -382,11 +388,10 @@ class MessageSearchMixin(object):
         """
         request = self.request
 
+        labels = Label.get_all(request.org, request.user)
         label_id = request.GET.get('label', None)
         if label_id:
-            labels = [Label.get_all(request.org).get(pk=label_id)]
-        else:
-            labels = Label.get_all(request.org)
+            labels = labels.filter(pk=label_id)
         labels = [l.name for l in labels]
 
         text = request.GET.get('text', None)
@@ -588,12 +593,13 @@ class HomeDataMixin(object):
     """
     def get_context_data(self, **kwargs):
         context = super(HomeDataMixin, self).get_context_data(**kwargs)
+        org = self.request.org
         user = self.request.user
         partner = user.get_partner()
 
-        labels = (partner.labels if partner else Label.get_all(self.request.org)).order_by('name')
-        partners = Partner.get_all(self.request.org).order_by('name')
-        groups = Group.get_all(self.request.org).order_by('name')
+        labels = Label.get_all(org, user).order_by('name')
+        partners = Partner.get_all(org).order_by('name')
+        groups = Group.get_all(org).order_by('name')
 
         # annotate labels with counts
         self.annotate_labels(labels)

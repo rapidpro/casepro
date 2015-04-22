@@ -4,7 +4,7 @@ import json
 import pytz
 
 from dash.orgs.models import Org
-from dash.utils import get_obj_cacheable, random_string, chunks
+from dash.utils import get_obj_cacheable, random_string, chunks, intersection
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
@@ -283,8 +283,12 @@ class Label(models.Model):
         return label
 
     @classmethod
-    def get_all(cls, org):
-        return cls.objects.filter(org=org, is_active=True)
+    def get_all(cls, org, user=None):
+        if not user or user.is_admin_for(org):
+            return cls.objects.filter(org=org, is_active=True)
+
+        partner = user.get_partner()
+        return partner.get_labels() if partner else cls.none()
 
     @classmethod
     def get_message_counts(cls, org, labels):
@@ -330,7 +334,7 @@ def case_action(func):
     Helper decorator for cae action methods that should check the user is allowed to update the case
     """
     def action_wrapper(case, user, *args, **kwargs):
-        if not case.can_update(user):
+        if not case.accessible_by(user, update=True):
             raise PermissionDenied()
 
         func(case, user, *args, **kwargs)
@@ -362,19 +366,19 @@ class Case(models.Model):
                                      help_text="When this case was closed")
 
     @classmethod
-    def get_all(cls, org, label=None):
+    def get_all(cls, org, labels=None):
         qs = cls.objects.filter(org=org)
-        if label:
-            qs = qs.filter(labels=label)
-        return qs
+        if labels:
+            qs = qs.filter(labels=labels)
+        return qs.distinct()
 
     @classmethod
-    def get_open(cls, org, label=None):
-        return cls.get_all(org, label).filter(closed_on=None)
+    def get_open(cls, org, labels=None):
+        return cls.get_all(org, labels).filter(closed_on=None)
 
     @classmethod
-    def get_closed(cls, org, label=None):
-        return cls.get_all(org, label).exclude(closed_on=None)
+    def get_closed(cls, org, labels=None):
+        return cls.get_all(org, labels).exclude(closed_on=None)
 
     @classmethod
     def get_for_contact(cls, org, contact_uuid):
@@ -451,11 +455,22 @@ class Case(models.Model):
         except TembaNoSuchObjectError:
             return None  # always a chance that the contact has been deleted in RapidPro
 
-    def can_update(self, user):
+    def accessible_by(self, user, update=False):
+        """
+        A user can view a case if one of these conditions is met:
+            1) they are an administrator for the case org
+            2) their partner org is assigned to the case
+            3) their partner org can view a label assigned to the case
+
+        They can additionally update the case if 1) or 2) is true
+        """
         if user.is_admin_for(self.org):
             return True
 
-        return user.has_profile() and user.profile.partner == self.assignee
+        if user.profile.partner == self.assignee:
+            return True
+
+        return not update and intersection(self.get_labels(), user.profile.partner.get_labels())
 
     def as_json(self):
         return {'id': self.pk,
