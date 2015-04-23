@@ -20,7 +20,18 @@
 
 - block home-items
   .{ ng-controller:"MessagesController", ng-init:"init()" }
-    .search-toolbar
+    .contact-toolbar{ ng-show:"activeContact" }
+      .row
+        .col-md-12
+          %span.contact-info
+            Messages for contact
+            %strong
+              \#[[ activeContact | limitTo:6 | uppercase ]]
+          .pull-away
+            %button.btn.btn-default{ type:"button", ng-click:"activateContact(null)" }
+              - trans "Back"
+
+    .search-toolbar{ ng-show:"!activeContact" }
       %form.form-inline
         .row
           .col-md-12{ style:"padding-bottom: 5px" }
@@ -58,12 +69,12 @@
               </ui-select>
 
             .pull-away
-              // figure out why form is double-submitted when this is moved to ng-submit on the form. jQuery conflict?
+              // TODO figure out why form is double-submitted when this is moved to ng-submit on the form. jQuery conflict?
               %button.btn.btn-default{ type:"button", ng-click:"onMessageSearch()" }
                 %span.glyphicon.glyphicon-search
                 - trans "Search"
               .btn-group
-                %button.btn.btn-default{ type:"button", ng-click:"onClearSearch()" }
+                %button.btn.btn-default{ type:"button", ng-click:"onResetSearch()" }
                   - trans "Clear"
                 %button.btn.btn-default{ type:"button", ng-click:"onExportSearch()" }
                   - trans "Export"
@@ -107,8 +118,8 @@
             %button.btn.btn-default{ ng-disabled:"selection.length != 1", ng-click:"forwardSelection()", type:"button" }
               %span.glyphicon.glyphicon-share-alt
               - trans "Forward"
-            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"archiveSelection()", type:"button" }
-              - trans "Archive"
+            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"dismissSelection()", type:"button" }
+              - trans "Dismiss"
 
     .messages{ infinite-scroll:"loadOldMessages()", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
       .stackitem{ ng-repeat:"message in items | filter:{ archived: false }", ng-class:"{ flagged: message.flagged }" }
@@ -119,7 +130,7 @@
         .message-time
           [[ message.time | autodate ]]
         .message-contact
-          %a{ ng-href:"/contact/read/[[ message.contact ]]/", title:"[[ message.contact ]]" }><
+          %a{ ng-click:"activateContact(message.contact)", title:"[[ message.contact ]]" }><
             \#[[ message.contact | limitTo:6 | uppercase ]]
         .message-text
           %span.label-container{ ng-repeat:"label in filterDisplayLabels(message.labels)" }

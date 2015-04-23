@@ -394,16 +394,19 @@ class MessageSearchMixin(object):
             labels = labels.filter(pk=label_id)
         labels = [l.name for l in labels]
 
-        text = request.GET.get('text', None)
-        after = parse_iso8601(request.GET.get('after', None))
-        before = parse_iso8601(request.GET.get('before', None))
+        contact = request.GET.get('contact', None)
+        contacts = [contact] if contact else None
 
         groups = request.GET.get('groups', None)
         groups = parse_csv(groups) if groups else None
 
-        reverse = request.GET.get('reverse', 'false')
-
-        return {'labels': labels, 'text': text, 'after': after, 'before': before, 'groups': groups, 'reverse': reverse}
+        return {'labels': labels,
+                'contacts': contacts,
+                'groups': groups,
+                'after': parse_iso8601(request.GET.get('after', None)),
+                'before': parse_iso8601(request.GET.get('before', None)),
+                'text': request.GET.get('text', None),
+                'reverse': request.GET.get('reverse', 'false')}
 
 
 class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
@@ -421,9 +424,11 @@ class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
 
         client = self.request.org.get_temba_client()
         pager = client.pager(start_page=page)
-        messages = client.get_messages(pager=pager, labels=search['labels'], direction='I', _types=['I'],
+        messages = client.get_messages(pager=pager, labels=search['labels'],
+                                       contacts=search['contacts'], groups=search['groups'],
+                                       direction='I', _types=['I'], statuses=['H'],
                                        after=search['after'], before=search['before'],
-                                       groups=search['groups'], text=search['text'], reverse=search['reverse'])
+                                       text=search['text'], reverse=search['reverse'])
 
         context['page'] = page
         context['has_more'] = pager.has_more()
@@ -452,7 +457,7 @@ class MessageActionView(OrgPermsMixin, View):
     def post(self, request, *args, **kwargs):
         action = kwargs['action']
         message_ids = parse_csv(self.request.POST.get('message_ids', ''), as_ints=True)
-        label = self.request.POST.get('label', None)
+        label_names = parse_csv(self.request.POST.get('labels', ''))
 
         client = self.request.org.get_temba_client()
 
@@ -461,9 +466,11 @@ class MessageActionView(OrgPermsMixin, View):
         elif action == 'unflag':
             client.unlabel_messages(message_ids, label=SYSTEM_LABEL_FLAGGED)
         elif action == 'label':
-            client.label_messages(message_ids, label=label)
-        elif action == 'archive':
-            client.archive_messages(message_ids)
+            for label_name in label_names:
+                client.label_messages(message_ids, label=label_name)
+        elif action == 'unlabel':
+            for label_name in label_names:
+                client.unlabel_messages(message_ids, label=label_name)
         else:
             return HttpResponseBadRequest("Invalid action: %s", action)
 
@@ -652,42 +659,3 @@ class CasesView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
         context['case_status'] = self.kwargs['case_status']
 
         return context
-
-
-class Contact(object):
-    """
-    Dummy model object so that we can use SmartCRUDL
-    """
-    class _meta:
-        object_name = 'contact'
-        app_label = 'cases'
-
-
-class ContactCRUDL(SmartCRUDL):
-    actions = ('read',)
-    model = Contact
-
-    class Read(SmartTemplateView):
-        fields = ()
-
-        def has_permission(self, request, *args, **kwargs):
-            return request.user.is_authenticated()
-
-        @classmethod
-        def derive_url_pattern(cls, path, action):
-            return r'^%s/%s/(?P<uuid>[A-Za-z0-9\-]+)/$' % (path, action)
-
-        def get_context_data(self, **kwargs):
-            context = super(ContactCRUDL.Read, self).get_context_data(**kwargs)
-            contact_uuid = self.kwargs['uuid']
-            org = self.request.org
-
-            client = org.get_temba_client()
-            contact = client.get_contact(contact_uuid)
-
-            # angular app requires context data in JSON format
-            context['context_data_json'] = json_encode({
-                'contact': contact_as_json(contact, org.get_contact_fields())
-            })
-
-            return context

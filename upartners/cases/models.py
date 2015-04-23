@@ -13,7 +13,7 @@ from django.core.files.storage import default_storage
 from django.core.files.temp import NamedTemporaryFile
 from django.core.urlresolvers import reverse
 from django.db import models
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from temba.base import TembaNoSuchObjectError
@@ -144,9 +144,12 @@ class MessageExport(models.Model):
 
         # fetch all messages to be exported
         while True:
-            all_messages += client.get_messages(pager=pager, labels=search['labels'], direction='I',
+            all_messages += client.get_messages(pager=pager, labels=search['labels'],
+                                                contacts=search['contacts'], groups=search['groups'],
+                                                direction='I', _types=['I'], statuses=['H'],
                                                 after=search['after'], before=search['before'],
-                                                groups=search['groups'], text=search['text'], reverse=search['reverse'])
+                                                text=search['text'], reverse=search['reverse'])
+
             if not pager.has_more():
                 break
 
@@ -369,8 +372,9 @@ class Case(models.Model):
     def get_all(cls, org, labels=None):
         qs = cls.objects.filter(org=org)
         if labels:
-            qs = qs.filter(labels=labels)
-        return qs.distinct()
+            qs = qs.filter(labels=labels).distinct()
+
+        return qs.prefetch_related('labels')
 
     @classmethod
     def get_open(cls, org, labels=None):
@@ -382,20 +386,34 @@ class Case(models.Model):
 
     @classmethod
     def get_for_contact(cls, org, contact_uuid):
-        return cls.get_all(org).filter(contact_uuid)
+        return cls.get_all(org).filter(contact_uuid=contact_uuid)
+
+    @classmethod
+    def get_open_for_contact_on(cls, org, contact_uuid, dt):
+        qs = cls.get_for_contact(org, contact_uuid)
+        return qs.filter(opened_on__lt=dt).filter(Q(closed_on=None) | Q(closed_on__gt=dt))
 
     def get_labels(self):
         return self.labels.filter(is_active=True)
 
     @classmethod
-    def open(cls, org, user, labels, partner, message):
+    def open(cls, org, user, labels, partner, message, unlabel_messages=True):
         summary = truncate(message.text, 255)
         case = cls.objects.create(org=org, assignee=partner, contact_uuid=message.contact,
                                   summary=summary, message_id=message.id, message_on=message.created_on)
-
         case.labels.add(*labels)
 
         CaseAction.create(case, user, ACTION_OPEN, assignee=partner)
+
+        # clear case labels from this message and subsequent messages from same contact
+        if unlabel_messages:
+            client = org.get_temba_client()
+            messages = client.get_messages(contacts=[message.contact], direction='I', statuses=['H'], _types=['I'],
+                                           after=message.created_on)
+            message_ids = [m.id for m in messages]
+            for label in labels:
+                client.unlabel_messages(messages=message_ids, label=label.name)
+
         return case
 
     @case_action
@@ -479,6 +497,9 @@ class Case(models.Model):
                 'summary': self.summary,
                 'opened_on': self.opened_on,
                 'is_closed': self.closed_on is not None}
+
+    def __unicode__(self):
+        return '#%d' % self.pk
 
 
 class CaseAction(models.Model):

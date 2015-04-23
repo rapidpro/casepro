@@ -24,9 +24,9 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     # Fetches old messages for the given label
     #----------------------------------------------------------------------------
-    fetchOldMessages: (label, search, page, callback) ->
+    fetchOldMessages: (search, page, callback) ->
       searchParams = if search then @_searchToParams(search) else ''
-      otherParams = {start_time: formatIso8601(@start_time), page: page, label: if label then label.id else null}
+      otherParams = {start_time: formatIso8601(@start_time), page: page}
 
       $http.get('/message/?' + $.param(otherParams) + '&' + searchParams)
       .success (data) =>
@@ -36,9 +36,9 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     # Fetches new messages for the given label
     #----------------------------------------------------------------------------
-    fetchNewMessages: (label, search, afterTime, afterId, callback) ->
+    fetchNewMessages: (search, afterTime, afterId, callback) ->
       searchParams = @_searchToParams(search)
-      otherParams = {after_time: formatIso8601(afterTime), after_id: afterId, label: if label then label.id else null}
+      otherParams = {after_time: formatIso8601(afterTime), after_id: afterId}
 
       $http.get('/message/?' + $.param(otherParams) + '&' + searchParams)
       .success (data) =>
@@ -48,11 +48,8 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     # Starts a message export
     #----------------------------------------------------------------------------
-    startExport: (label, search, callback) ->
-      searchParams = @_searchToParams(search)
-      otherParams = {label: if label then label.id else null}
-
-      $http.post('/messageexport/create/?' + $.param(otherParams) + '&' + searchParams)
+    startExport: (search, callback) ->
+      $http.post('/messageexport/create/?' + @_searchToParams(search))
       .success () =>
         callback()
 
@@ -92,13 +89,13 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
           msg.labels.push(label.name)
 
       if without_label.length > 0
-        @_messagesAction(without_label, 'label', label.name)
+        @_messagesAction(without_label, 'label', [label])
 
     #----------------------------------------------------------------------------
-    # Archive messages
+    # Unlabel messages
     #----------------------------------------------------------------------------
-    archiveMessages: (messages) ->
-      @_messagesAction(messages, 'archive', null, () ->
+    unlabelMessages: (messages, labels) ->
+      @_messagesAction(messages, 'unlabel', labels, () ->
         for msg in messages
           msg.archived = true
       )
@@ -122,16 +119,18 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       params.after = formatIso8601(search.after)
       params.before = formatIso8601(search.before)
       params.groups = (g.uuid for g in search.groups).join(',')
+      params.contact = search.contact
+      params.label = if search.label then search.label.id else null
       params.reverse = search.reverse
       $.param(params)
 
     #----------------------------------------------------------------------------
     # POSTs to the messages action endpoint
     #----------------------------------------------------------------------------
-    _messagesAction: (messages, action, label, callback) ->
+    _messagesAction: (messages, action, labels, callback) ->
       data = new FormData();
-      data.append('message_ids', (msg.id for msg in messages))
-      data.append('label', label)
+      data.append('message_ids', (m.id for m in messages))
+      data.append('labels', if labels then (l.name for l in labels) else null)
 
       $http.post '/message/action/' + action + '/', data, DEFAULT_POST_OPTS
       .success () =>

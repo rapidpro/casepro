@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from django.conf.urls import patterns, url
-from .views import CaseCRUDL, GroupCRUDL, LabelCRUDL, MessageExportCRUDL, PartnerCRUDL, ContactCRUDL
+from .views import CaseCRUDL, GroupCRUDL, LabelCRUDL, MessageExportCRUDL, PartnerCRUDL
 from .views import InboxView, CasesView, MessageSearchView, MessageActionView, MessageSendView
 
 
@@ -10,7 +10,6 @@ urlpatterns += GroupCRUDL().as_urlpatterns()
 urlpatterns += LabelCRUDL().as_urlpatterns()
 urlpatterns += MessageExportCRUDL().as_urlpatterns()
 urlpatterns += PartnerCRUDL().as_urlpatterns()
-urlpatterns += ContactCRUDL().as_urlpatterns()
 
 urlpatterns += patterns('',
                         url(r'^$', InboxView.as_view(), name='cases.inbox'),

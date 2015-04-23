@@ -110,10 +110,6 @@
                 [[ event.item.note ]]
 
             .{ ng-if:"event.is_message_in || event.is_message_out" }
-              %span.label-container{ ng-repeat:"label in event.item.labels" }
-                %span.label.label-success
-                  [[ label.name ]]
-                &nbsp;
               [[ event.item.text ]]
       .col-md-4
         .panel.panel-default

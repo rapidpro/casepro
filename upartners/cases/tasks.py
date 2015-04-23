@@ -31,10 +31,10 @@ def label_new_org_messages(org):
     """
     Labels new unsolicited messages for an org in RapidPro
     """
-    from .models import Label
+    from .models import Case, Label
 
     client = org.get_temba_client()
-    labels = Label.get_all(org)
+    labels = list(Label.get_all(org))
     label_keywords = {l: l.get_keywords() for l in labels}
     label_matches = {l: [] for l in labels}  # message ids that match each label
 
@@ -54,14 +54,17 @@ def label_new_org_messages(org):
     # grab all un-processed unsolicited messages
     pager = client.pager()
     while True:
-        messages = client.get_messages(_types=['I'], statuses=['H'], after=last_time, before=this_time, pager=pager)
+        messages = client.get_messages(direction='I', _types=['I'], statuses=['H'],
+                                       after=last_time, before=this_time, pager=pager)
         num_messages += len(messages)
 
         for msg in messages:
-            for label in labels:
-                for keyword in label_keywords[label]:
-                    if keyword in msg.text.lower():
-                        label_matches[label].append(msg.id)
+            # only apply labels if there isn't a currently open case for this contact
+            if not Case.get_open_for_contact_on(org, msg.contact, msg.created_on):
+                for label in labels:
+                    for keyword in label_keywords[label]:
+                        if keyword in msg.text.lower():
+                            label_matches[label].append(msg.id)
 
         if not pager.has_more():
             break

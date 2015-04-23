@@ -35,6 +35,8 @@
 
         .label-menu
           %h3
+            %span.glyphicon.glyphicon-tags
+            &nbsp
             - trans "Labels"
           %ul
             %li
@@ -65,7 +67,8 @@
       padding: 3px 12px 3px 0;
     }
     .label-menu {
-      margin: 1em 0;
+      margin: 0.5em 0;
+      padding: 0.5em 0;
     }
     .label-menu h3 {
       margin: 0 0 1em 0;
@@ -73,10 +76,10 @@
     }
     .label-menu ul {
       margin: 0;
-      padding: 0;
+      padding: 0 0 0 12px;
       list-style: none;
     }
-    .search-toolbar {
+    .search-toolbar, .contact-toolbar {
       padding: 4px;
       background-color: #f7f7f7;
     }
@@ -88,7 +91,7 @@
       background-color: #F4E4F5;
       border-top: 1px solid #ddd;
     }
-    .selection-info {
+    .selection-info, .contact-info {
       display: inline-block;
       padding: 7px 0 0 7px;
     }

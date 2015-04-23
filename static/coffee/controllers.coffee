@@ -20,9 +20,11 @@ controllers.controller 'HomeController', [ '$scope', '$window', '$location', 'La
   $scope.labels = $window.contextData.labels
   $scope.groups = $window.contextData.groups
 
+  $scope.activeLabel = null
+  $scope.activeContact = null
+
   $scope.init = () ->
     $scope.$on '$locationChangeSuccess', () ->
-      console.log('$locationChangeSuccess')
       params = $location.search()
       initialLabel = null
       if 'label' of params
@@ -35,12 +37,20 @@ controllers.controller 'HomeController', [ '$scope', '$window', '$location', 'La
 
   $scope.activateLabel = (label) ->
     $scope.activeLabel = label
+    $scope.activeContact = null
+
     if label
       $scope.inactiveLabels = (l for l in $scope.labels when l.id != label.id)
     else
       $scope.inactiveLabels = $scope.labels
 
     $scope.$broadcast('activeLabelChange')
+
+  $scope.activateContact = (contact) ->
+    $scope.activeLabel = null
+    $scope.activeContact = contact
+
+    $scope.$broadcast('activeContactChange')
 
   $scope.onDeleteLabel = () ->
     UtilsService.confirmModal 'Delete the label <strong>' + $scope.activeLabel.name + '</strong>?', 'danger', () ->
@@ -100,42 +110,43 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
 controllers.controller 'MessagesController', [ '$scope', '$modal', '$controller', 'MessageService', 'CaseService', 'UtilsService', ($scope, $modal, $controller, MessageService, CaseService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
-  $scope.search = { text: null, groups: [], after: null, before: null, reverse: false }
-  $scope.activeSearch = {}
-
   $scope.init = () ->
     $scope.$on 'activeLabelChange', () ->
-      $scope.onClearSearch()
+      $scope.onResetSearch()
+    $scope.$on 'activeContactChange', () ->
+      $scope.onResetSearch()
 
     #$scope.refreshNewItems() TODO fix this so it works with an active search
 
   #----------------------------------------------------------------------------
-  # Message searching and fetching
+  # Search for messages based on current search form values
   #----------------------------------------------------------------------------
-
   $scope.onMessageSearch = () ->
-    $scope.items = []
     $scope.activeSearch = angular.copy($scope.search)
+    $scope.activeSearch.label = $scope.activeLabel
+    $scope.activeSearch.contact = $scope.activeContact
+
+    $scope.items = []
     $scope.oldItemsPage = 0
     $scope.loadOldMessages()
 
-  $scope.onClearSearch = () ->
-    $scope.items = []
+  #----------------------------------------------------------------------------
+  # Reset search form and show all messages
+  #----------------------------------------------------------------------------
+  $scope.onResetSearch = () ->
     $scope.search = { text: null, groups: [], after: null, before: null, reverse: false }
-    $scope.activeSearch = null
-    $scope.oldItemsPage = 0
-    $scope.loadOldMessages()
+    $scope.onMessageSearch()
 
   $scope.onExportSearch = () ->
     UtilsService.confirmModal "Export the current message search?", null, () ->
-      MessageService.startExport $scope.activeLabel, $scope.activeSearch, () ->
+      MessageService.startExport $scope.activeSearch, () ->
         UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
 
   $scope.loadOldMessages = () ->
     $scope.oldItemsLoading = true
     $scope.oldItemsPage += 1
 
-    MessageService.fetchOldMessages $scope.activeLabel, $scope.activeSearch, $scope.oldItemsPage, (messages, total, hasMore) ->
+    MessageService.fetchOldMessages $scope.activeSearch, $scope.oldItemsPage, (messages, total, hasMore) ->
       $scope.items = $scope.items.concat(messages)
       $scope.oldItemsMore = hasMore
       $scope.oldItemsTotal = total
@@ -144,7 +155,7 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', '$controller'
   $scope.refreshNewItems = () ->
     afterTime = $scope.newItemsMaxTime or $scope.startTime
 
-    MessageService.fetchNewMessages $scope.activeLabel, $scope.activeSearch, afterTime, $scope.newItemsMaxId, (cases, maxTime, maxId) ->
+    MessageService.fetchNewMessages $scope.activeSearch, afterTime, $scope.newItemsMaxId, (cases, maxTime, maxId) ->
       $scope.items = cases.concat($scope.items)
       if cases.length > 0
         $scope.newItemsMaxTime = maxTime
@@ -195,9 +206,9 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', '$controller'
       MessageService.sendNewMessage data.urn, data.text, () ->
         UtilsService.displayAlert('success', "Message forwarded to " + data.urn.path)
 
-  $scope.archiveSelection = () ->
-    UtilsService.confirmModal 'Archive the selected messages? This will remove them from the inbox.', null, () ->
-      MessageService.archiveMessages($scope.selection)
+  $scope.dismissSelection = () ->
+    UtilsService.confirmModal 'Un-label the selected messages? This will remove them from your inbox.', null, () ->
+      MessageService.unlabelMessages($scope.selection, $scope.labels)
 
   #----------------------------------------------------------------------------
   # Other
@@ -260,16 +271,6 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
       CaseService.closeCases($scope.selection)
 
 ])
-
-
-#============================================================================
-# Contact view controller
-#============================================================================
-
-controllers.controller 'ContactController', [ '$scope', '$window', '$timeout', 'CaseService', 'UtilsService', ($scope, $window, $timeout, CaseService, UtilsService) ->
-
-  $scope.contact = $window.contextData.contact
-]
 
 
 #============================================================================

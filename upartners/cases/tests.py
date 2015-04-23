@@ -14,7 +14,9 @@ from .tasks import label_new_org_messages
 
 
 class CaseTest(UPartnersTest):
-    def test_lifecyle(self):
+    @patch('dash.orgs.models.TembaClient.get_messages')
+    @patch('dash.orgs.models.TembaClient.unlabel_messages')
+    def test_lifecyle(self, mock_unlabel_messages, mock_get_messages):
         d0 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
         d1 = datetime(2014, 1, 2, 7, 0, tzinfo=timezone.utc)
         d2 = datetime(2014, 1, 2, 8, 0, tzinfo=timezone.utc)
@@ -24,18 +26,22 @@ class CaseTest(UPartnersTest):
         d6 = datetime(2014, 1, 2, 12, 0, tzinfo=timezone.utc)
         d7 = datetime(2014, 1, 2, 13, 0, tzinfo=timezone.utc)
 
+        msg1 = TembaMessage.create(id=123, contact='C-001', created_on=d0, text="Hello")
+        msg2 = TembaMessage.create(id=234, contact='C-001', created_on=d1, text="Hello again")
+        mock_get_messages.return_value = [msg1, msg2]
+        mock_unlabel_messages.return_value = None
+
         with patch.object(timezone, 'now', return_value=d1):
             # MOH opens new case
-            msg = TembaMessage.create(id=123, contact='C-001', created_on=d0, text="Hello")
-            case = Case.open(self.unicef, self.user1, [self.aids], self.moh, msg)
+            case = Case.open(self.unicef, self.user1, [self.aids], self.moh, msg2)
 
         self.assertEqual(case.org, self.unicef)
         self.assertEqual(set(case.labels.all()), {self.aids})
         self.assertEqual(case.assignee, self.moh)
         self.assertEqual(case.contact_uuid, 'C-001')
-        self.assertEqual(case.message_id, 123)
-        self.assertEqual(case.message_on, d0)
-        self.assertEqual(case.summary, "Hello")
+        self.assertEqual(case.message_id, 234)
+        self.assertEqual(case.message_on, d1)
+        self.assertEqual(case.summary, "Hello again")
         self.assertEqual(case.opened_on, d1)
         self.assertIsNone(case.closed_on)
 
@@ -45,6 +51,9 @@ class CaseTest(UPartnersTest):
         self.assertEqual(actions[0].created_by, self.user1)
         self.assertEqual(actions[0].created_on, d1)
         self.assertEqual(actions[0].assignee, self.moh)
+
+        # check that opening the case fetched the messages and cleared the case labels from them
+        mock_unlabel_messages.assert_called_once_with(messages=[123, 234], label='AIDS')
 
         self.assertTrue(case.accessible_by(self.user1, update=False))  # user who opened it can view and update
         self.assertTrue(case.accessible_by(self.user1, update=True))
@@ -136,6 +145,42 @@ class CaseTest(UPartnersTest):
         self.assertEqual(actions[7].created_by, self.user3)
         self.assertEqual(actions[7].created_on, d7)
 
+    def test_get_open_for_contact_on(self):
+        d0 = datetime(2014, 1, 5, 0, 0, tzinfo=timezone.utc)
+        d1 = datetime(2014, 1, 10, 0, 0, tzinfo=timezone.utc)
+        d2 = datetime(2014, 1, 15, 0, 0, tzinfo=timezone.utc)
+
+        # case Jan 5th -> now
+        with patch.object(timezone, 'now', return_value=d0):
+            msg = TembaMessage.create(id=123, contact='C-001', created_on=d0, text="Hello")
+            case1 = Case.open(self.unicef, self.user1, [self.aids], self.moh, msg, unlabel_messages=False)
+
+        # case Jan 5th -> Jan 10th
+        with patch.object(timezone, 'now', return_value=d0):
+            msg = TembaMessage.create(id=234, contact='C-001', created_on=d0, text="Hello")
+            case2 = Case.open(self.unicef, self.user1, [self.pregnancy], self.moh, msg, unlabel_messages=False)
+        with patch.object(timezone, 'now', return_value=d1):
+            case2.close(self.user1)
+
+        # case Jan 5th -> Jan 15th
+        with patch.object(timezone, 'now', return_value=d0):
+            msg = TembaMessage.create(id=345, contact='C-001', created_on=d0, text="Hello")
+            case3 = Case.open(self.unicef, self.user1, [self.pregnancy], self.moh, msg, unlabel_messages=False)
+        with patch.object(timezone, 'now', return_value=d2):
+            case3.close(self.user1)
+
+        # check no cases open on Jan 4th
+        cases = Case.get_open_for_contact_on(self.unicef, 'C-001', datetime(2014, 1, 4, 0, 0, tzinfo=timezone.utc))
+        self.assertFalse(cases)
+
+        # check two cases open on Jan 12th
+        cases = Case.get_open_for_contact_on(self.unicef, 'C-001', datetime(2014, 1, 12, 0, 0, tzinfo=timezone.utc))
+        self.assertEqual(set(cases), {case1, case3})
+
+        # check one case open on Jan 16th
+        cases = Case.get_open_for_contact_on(self.unicef, 'C-001', datetime(2014, 1, 16, 0, 0, tzinfo=timezone.utc))
+        self.assertEqual(set(cases), {case1})
+
 
 class LabelTest(UPartnersTest):
     def test_create(self):
@@ -157,12 +202,18 @@ class LabelTest(UPartnersTest):
     @patch('dash.orgs.models.TembaClient.label_messages')
     def test_label_new_messages_task(self, mock_label_messages, mock_get_messages):
         mock_get_messages.return_value = [
-            TembaMessage.create(id=101, text="What is aids?"),
-            TembaMessage.create(id=102, text="Can I catch Hiv?"),
-            TembaMessage.create(id=103, text="I think I'm pregnant"),
-            TembaMessage.create(id=104, text="Php is amaze"),
+            TembaMessage.create(id=101, contact='C-001', text="What is aids?", created_on=datetime(2014, 1, 1, 7, 0, tzinfo=timezone.utc)),
+            TembaMessage.create(id=102, contact='C-002', text="Can I catch Hiv?", created_on=datetime(2014, 1, 1, 8, 0, tzinfo=timezone.utc)),
+            TembaMessage.create(id=103, contact='C-003', text="I think I'm pregnant", created_on=datetime(2014, 1, 1, 9, 0, tzinfo=timezone.utc)),
+            TembaMessage.create(id=104, contact='C-004', text="Php is amaze", created_on=datetime(2014, 1, 1, 10, 0, tzinfo=timezone.utc)),
+            TembaMessage.create(id=105, contact='C-005', text="Thanks for the pregnancy/HIV info", created_on=datetime(2014, 1, 1, 11, 0, tzinfo=timezone.utc)),
         ]
         mock_label_messages.return_value = None
+
+        # contact 5 has a case open that day
+        d1 = datetime(2014, 1, 1, 5, 0, tzinfo=timezone.utc)
+        with patch.object(timezone, 'now', return_value=d1):
+            Case.objects.create(org=self.unicef, contact_uuid='C-005', assignee=self.moh, message_id=99, message_on=d1)
 
         label_new_org_messages(self.unicef)
 
@@ -171,7 +222,7 @@ class LabelTest(UPartnersTest):
                                              any_order=True)
 
         result = self.unicef.get_task_result(TaskType.label_messages)
-        self.assertEqual(result['counts']['messages'], 4)
+        self.assertEqual(result['counts']['messages'], 5)
         self.assertEqual(result['counts']['labels'], 3)
 
 
