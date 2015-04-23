@@ -70,7 +70,7 @@
 
             .pull-away
               // TODO figure out why form is double-submitted when this is moved to ng-submit on the form. jQuery conflict?
-              %button.btn.btn-default{ type:"button", ng-click:"onMessageSearch()" }
+              %button.btn.btn-default{ type:"button", ng-click:"onSearch()" }
                 %span.glyphicon.glyphicon-search
                 - trans "Search"
               .btn-group
@@ -122,7 +122,7 @@
               - trans "Dismiss"
 
     .messages{ infinite-scroll:"loadOldMessages()", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
-      .stackitem{ ng-repeat:"message in items | filter:{ archived: false }", ng-class:"{ flagged: message.flagged }" }
+      .stackitem.clearfix{ ng-repeat:"message in items | filter:{ archived: false }", ng-class:"{ flagged: message.flagged }" }
         .message-actions
           %input{ type:"checkbox", ng-model:"message.selected", ng-change:"onChangeSelection()" }
           %a.flag{ ng-click:"toggleMessageFlag(message)" }
@@ -193,6 +193,9 @@
 - block extra-style
   {{ block.super }}
   :css
+    .search-toolbar .group-select {
+      width: 500px;
+    }
     .message-actions {
       float: left;
       width: 50px;
@@ -221,4 +224,3 @@
     .flagged .message-actions .flag {
       color: #444 !important;
     }
-

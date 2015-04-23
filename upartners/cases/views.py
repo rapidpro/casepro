@@ -156,6 +156,7 @@ class CaseCRUDL(SmartCRUDL):
         def derive_queryset(self, **kwargs):
             label_id = self.request.GET.get('label', None)
             status = self.request.GET.get('status', None)
+            assignee_id = self.request.GET.get('assignee', None)
 
             before_id = self.request.GET.get('before_id', None)
             after_id = self.request.GET.get('after_id', None)
@@ -166,12 +167,17 @@ class CaseCRUDL(SmartCRUDL):
             if label_id:
                 labels = labels.filter(pk=label_id)
 
+            assignee = Partner.get_all(self.request.org).get(pk=assignee_id) if assignee_id else None
+
             if status == 'open':
                 qs = Case.get_open(self.request.org, labels)
             elif status == 'closed':
                 qs = Case.get_closed(self.request.org, labels)
             else:
                 qs = Case.get_all(self.request.org, labels)
+
+            if assignee:
+                qs = qs.filter(assignee=assignee)
 
             if before_id:
                 qs = qs.filter(pk__lt=before_id)

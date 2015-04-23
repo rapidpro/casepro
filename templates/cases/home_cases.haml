@@ -4,6 +4,18 @@
 - block home-items
   .{ ng-controller:"CasesController", ng-init:'init("{{ case_status }}")' }
 
+    .search-toolbar{ ng-show:"!activeContact" }
+      .row
+        .col-md-12
+          %form.form-inline
+            %label
+              - trans "Assigned to"
+            %select.form-control.assignee-select{ ng-model:"search.assignee", ng-options:"p.name for p in partners track by p.id" }
+            .pull-away
+              %button.btn.btn-default{ type:"button", ng-click:"onSearch()" }
+                %span.glyphicon.glyphicon-search
+                - trans "Search"
+
     .selection-toolbar
       .row
         .col-md-12
@@ -30,11 +42,13 @@
               - trans "Close"
 
     .cases{ infinite-scroll:"loadOldItems()", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
-      .case{ ng-repeat:"item in items" }
+      .stackitem.clearfix{ ng-repeat:"item in items" }
         .case-actions
           %input{ type:"checkbox", ng-model:"item.selected", ng-change:"onChangeSelection()" }
         .case-time
           [[ item.opened_on | autodate ]]
+        .case-assignee
+          [[ item.assignee.name ]]
         .case-text
           %span.label-container{ ng-repeat:"label in filterDisplayLabels(item.labels)" }
             %span.label.label-success
@@ -49,18 +63,14 @@
 - block extra-style
   {{ block.super }}
   :css
-    .case {
-      padding: 3px;
-      border-bottom: 1px solid #eee;
+    .search-toolbar .assignee-select {
+      width: 250px;
     }
-    .case:first-of-type {
-      border-top: 1px solid #eee;
-    }
-    .case .case-actions {
+    .case-actions {
       float: left;
       width: 25px;
     }
-    .case .case-actions input[type="checkbox"] {
+    .case-actions input[type="checkbox"] {
       width: auto;
       margin-right: 7px;
     }
@@ -70,7 +80,11 @@
       margin-left: 3px;
       margin-bottom: 3px;
     }
+    .case-assignee {
+      float: left;
+      width: 200px;
+    }
     .case-text {
-      margin-left: 25px;
+      margin-left: 225px;
     }
 

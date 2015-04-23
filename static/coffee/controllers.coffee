@@ -121,7 +121,7 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', '$controller'
   #----------------------------------------------------------------------------
   # Search for messages based on current search form values
   #----------------------------------------------------------------------------
-  $scope.onMessageSearch = () ->
+  $scope.onSearch = () ->
     $scope.activeSearch = angular.copy($scope.search)
     $scope.activeSearch.label = $scope.activeLabel
     $scope.activeSearch.contact = $scope.activeContact
@@ -135,7 +135,7 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', '$controller'
   #----------------------------------------------------------------------------
   $scope.onResetSearch = () ->
     $scope.search = { text: null, groups: [], after: null, before: null, reverse: false }
-    $scope.onMessageSearch()
+    $scope.onSearch()
 
   $scope.onExportSearch = () ->
     UtilsService.confirmModal "Export the current message search?", null, () ->
@@ -232,33 +232,41 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
     $scope.caseStatus = caseStatus
 
     $scope.$on 'activeLabelChange', () ->
-      $scope.onClearSearch()
+      $scope.onResetSearch()
 
-    $scope.onClearSearch()
-    $scope.refreshNewItems()
+    #$scope.refreshNewItems()
 
+  #----------------------------------------------------------------------------
+  # Search for cases based on current search form values
+  #----------------------------------------------------------------------------
   $scope.onSearch = () ->
-    $scope.items = []
     $scope.activeSearch = angular.copy($scope.search)
+    $scope.activeSearch.label = $scope.activeLabel
+    $scope.activeSearch.status = $scope.caseStatus
+
+    $scope.items = []
     $scope.oldItemsPage = 0
     $scope.loadOldItems()
 
-  $scope.onClearSearch = () ->
-    $scope.search = { }
+  #----------------------------------------------------------------------------
+  # Reset search form and show all cases
+  #----------------------------------------------------------------------------
+  $scope.onResetSearch = () ->
+    $scope.search = { assignee: null }
     $scope.onSearch()
 
   $scope.loadOldItems = () ->
     $scope.oldItemsLoading = true
     $scope.oldItemsPage += 1
 
-    CaseService.fetchOldCases $scope.activeLabel, $scope.caseStatus, $scope.startTime, $scope.oldItemsPage, (cases, total, hasMore) ->
+    CaseService.fetchOldCases $scope.activeSearch, $scope.startTime, $scope.oldItemsPage, (cases, total, hasMore) ->
       $scope.items = $scope.items.concat(cases)
       $scope.oldItemsMore = hasMore
       $scope.oldItemsTotal = total
       $scope.oldItemsLoading = false
 
   $scope.refreshNewItems = () ->
-    CaseService.fetchNewCases $scope.activeLabel, $scope.caseStatus, $scope.startTime, $scope.newItemsMaxId, (cases, maxId) ->
+    CaseService.fetchNewCases $scope.activeSearch, $scope.startTime, $scope.newItemsMaxId, (cases, maxId) ->
       $scope.items = cases.concat($scope.items)
       if cases.length > 0
         $scope.newItemsMaxId = maxId
@@ -332,7 +340,7 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
   $scope.close = () ->
     UtilsService.noteModal "Close", "Close this case?", 'danger', (note) ->
       CaseService.closeCase $scope.case, note, () ->
-        UtilsService.navigate('/case/')
+        UtilsService.navigate('/')
 
   $scope.reopen = () ->
     UtilsService.noteModal "Re-open", "Re-open this case?", null, (note) ->

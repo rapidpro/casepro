@@ -381,7 +381,7 @@ CELERY_RESULT_BACKEND = BROKER_URL
 CELERYBEAT_SCHEDULE = {
     'label-new-messages': {
         'task': 'upartners.cases.tasks.label_new_messages',
-        'schedule': datetime.timedelta(minutes=10),
+        'schedule': datetime.timedelta(minutes=3),  # TODO reduce frequency for production?
         'args': ()
     },
 }

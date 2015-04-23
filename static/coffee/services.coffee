@@ -25,7 +25,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     # Fetches old messages for the given label
     #----------------------------------------------------------------------------
     fetchOldMessages: (search, page, callback) ->
-      searchParams = if search then @_searchToParams(search) else ''
+      searchParams = @_searchToParams(search)
       otherParams = {start_time: formatIso8601(@start_time), page: page}
 
       $http.get('/message/?' + $.param(otherParams) + '&' + searchParams)
@@ -186,14 +186,11 @@ services.factory 'CaseService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     # Fetches old cases
     #----------------------------------------------------------------------------
-    fetchOldCases: (label, status, startTime, page, callback) ->
-      params = {}
-      params['label'] = (if label then label.id else null)
-      params['status'] = status
-      params['before_time'] = formatIso8601(startTime)
-      params['page'] = page
+    fetchOldCases: (search, startTime, page, callback) ->
+      searchParams = @_searchToParams(search)
+      otherParams = {before_time: formatIso8601(startTime), page: page}
 
-      $http.get('/case/search/?' + $.param(params))
+      $http.get('/case/search/?' + $.param(otherParams) + '&' + searchParams)
       .success (data) =>
         @_processCases(data.results)
         callback(data.results, data.total, data.has_more)
@@ -201,16 +198,15 @@ services.factory 'CaseService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     # Fetches new cases
     #----------------------------------------------------------------------------
-    fetchNewCases: (label, status, startTime, afterId, callback) ->
-      params = {}
-      params['label'] = (if label then label.id else null)
-      params['status'] = status
+    fetchNewCases: (search, startTime, afterId, callback) ->
+      searchParams = @_searchToParams(search)
+      otherParams = {}
       if afterId
-        params['after_id'] = afterId
+        otherParams['after_id'] = afterId
       else
-        params['after_time'] = formatIso8601(startTime)
+        otherParams['after_time'] = formatIso8601(startTime)
 
-      $http.get('/case/search/?' + $.param(params))
+      $http.get('/case/search/?' + $.param(otherParams) + '&' + searchParams)
       .success (data) =>
         @_processCases(data.results)
         callback(data.results, data.max_id)
@@ -312,6 +308,16 @@ services.factory 'CaseService', ['$http', ($http) ->
         newLastActionId = data.last_action_id or lastActionId
 
         callback(data.results, newLastEventTime, newLastMessageId, newLastActionId)
+
+    #----------------------------------------------------------------------------
+    # Convert search object to URL params
+    #----------------------------------------------------------------------------
+    _searchToParams: (search) ->
+      params = {}
+      params.status = search.status
+      params.assignee = if search.assignee then search.assignee.id else null
+      params.label = if search.label then search.label.id else null
+      $.param(params)
 
     #----------------------------------------------------------------------------
     # Processes incoming cases
