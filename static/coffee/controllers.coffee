@@ -13,21 +13,25 @@ INTERVAL_CASE_TIMELINE = 10000
 # Home controller (DOM parent of inbox and cases)
 #============================================================================
 
-controllers.controller 'HomeController', [ '$scope', '$window', 'LabelService', 'UtilsService', ($scope, $window, LabelService, UtilsService) ->
+controllers.controller 'HomeController', [ '$scope', '$window', '$location', 'LabelService', 'UtilsService', ($scope, $window, $location, LabelService, UtilsService) ->
 
   $scope.user = $window.contextData.user
   $scope.partners = $window.contextData.partners
   $scope.labels = $window.contextData.labels
   $scope.groups = $window.contextData.groups
 
-  $scope.init = (initialLabelId) ->
-    # find and activate initial label
-    initialLabel = null
-    for l in $scope.labels
-        if l.id == initialLabelId
-          initialLabel = l
-          break
-    $scope.activateLabel(initialLabel)
+  $scope.init = () ->
+    $scope.$on '$locationChangeSuccess', () ->
+      console.log('$locationChangeSuccess')
+      params = $location.search()
+      initialLabel = null
+      if 'label' of params
+        for l in $scope.labels
+            if l.name == params.label
+              initialLabel = l
+              break
+
+      $scope.activateLabel(initialLabel)
 
   $scope.activateLabel = (label) ->
     $scope.activeLabel = label
@@ -102,8 +106,6 @@ controllers.controller 'MessagesController', [ '$scope', '$modal', '$controller'
   $scope.init = () ->
     $scope.$on 'activeLabelChange', () ->
       $scope.onClearSearch()
-
-    $scope.onClearSearch()
 
     #$scope.refreshNewItems() TODO fix this so it works with an active search
 

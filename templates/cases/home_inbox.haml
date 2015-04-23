@@ -78,10 +78,10 @@
                 %span.caret
               %ul.dropdown-menu
                 %li
-                  %a{ href:"#", ng-click:"onSelectAll()" }
+                  %a{ ng-click:"onSelectAll()" }
                     - trans "All"
                 %li
-                  %a{ href:"#", ng-click:"onSelectNone()" }
+                  %a{ ng-click:"onSelectNone()" }
                     - trans "None"
 
           %span.selection-info{ ng-show:"selection.length > 0" }
@@ -96,7 +96,7 @@
                 %span.caret
               %ul.dropdown-menu
                 %li{ ng-repeat:"label in inactiveLabels" }
-                  %a{ href:"#", ng-click:"labelSelection(label.name)" }
+                  %a{ ng-click:"labelSelection(label.name)" }
                     [[ label.name ]]
             %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"flagSelection()", type:"button", tooltip:"Flag" }
               %span.glyphicon.glyphicon-flag
@@ -161,10 +161,10 @@
                     %span.caret
                   %ul.dropdown-menu
                     %li
-                      %a{ href:"#", ng-click:'setScheme("tel")' }
+                      %a{ ng-click:'setScheme("tel")' }
                         - trans "Phone"
                     %li
-                      %a{ href:"#", ng-click:'setScheme("twitter")' }
+                      %a{ ng-click:'setScheme("twitter")' }
                         - trans "Twitter"
                 %input.form-control{ type:"text", ng-model:"urn_path", style:"width: 300px" }
 

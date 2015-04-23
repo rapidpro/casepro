@@ -628,13 +628,6 @@ class InboxView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
         for label, count in Label.get_message_counts(self.request.org, labels).iteritems():
             label.count = count
 
-    def get_context_data(self, **kwargs):
-        context = super(InboxView, self).get_context_data(**kwargs)
-
-        context['initial_label_id'] = self.kwargs.get('label_id', None)
-
-        return context
-
 
 class CasesView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
     """

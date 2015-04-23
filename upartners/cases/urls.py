@@ -14,7 +14,6 @@ urlpatterns += ContactCRUDL().as_urlpatterns()
 
 urlpatterns += patterns('',
                         url(r'^$', InboxView.as_view(), name='cases.inbox'),
-                        url(r'^inbox/(?P<label_id>\d+)/$', InboxView.as_view(), name='cases.inbox_label'),
                         url(r'^cases/(?P<case_status>open|closed)/$', CasesView.as_view(), name='cases.cases'),
                         url(r'^message/$', MessageSearchView.as_view(), name='cases.message_list'),
                         url(r'^message/action/(?P<action>\w+)/$', MessageActionView.as_view(), name='cases.message_action'),

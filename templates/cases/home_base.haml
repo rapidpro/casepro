@@ -10,7 +10,7 @@
   %script{ type:"text/javascript" }
     var contextData = {{ context_data_json|safe }};
 
-  .{ ng-controller:"HomeController", ng-init:'init({{ initial_label_id|default:"null" }})' }
+  .{ ng-controller:"HomeController", ng-init:"init()" }
     .page-header.clearfix
       %h2.pull-back
         - block home-title
@@ -37,8 +37,14 @@
           %h3
             - trans "Labels"
           %ul
+            %li
+              %a{ ng-href:"#?label=", class:"italicized" }
+                %strong{ ng-if:"!activeLabel" }
+                  All (?)
+                %span{ ng-if:"activeLabel" }
+                  All (?)
             %li{ ng-repeat:"label in labels" }
-              %a{ href:"#", ng-click:"activateLabel(label)" }
+              %a{ ng-href:"#?label=[[ label.name ]]" }
                 %strong{ ng-if:"label == activeLabel" }
                   [[ label.name ]] ([[ label.count ]])
                 %span{ ng-if:"label != activeLabel" }
