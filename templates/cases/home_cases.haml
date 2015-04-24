@@ -10,7 +10,7 @@
           %form.form-inline
             %label
               - trans "Assigned to"
-            %select.form-control.assignee-select{ ng-model:"search.assignee", ng-options:"p.name for p in partners track by p.id" }
+            %select.form-control.assignee-select{ ng-model:"searchFields.assignee", ng-options:"p.name for p in partners track by p.id" }
             .pull-away
               %button.btn.btn-default{ type:"button", ng-click:"onSearch()" }
                 %span.glyphicon.glyphicon-search

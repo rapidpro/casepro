@@ -35,13 +35,13 @@
       %form.form-inline
         .row
           .col-md-12{ style:"padding-bottom: 5px" }
-            %input.form-control{ ng-model:"search.text", type:"text", placeholder:"Containing", style:"width: 250px" }
+            %input.form-control{ ng-model:"searchFields.text", type:"text", placeholder:"Containing", style:"width: 250px" }
             %span.date-range{ ng-controller:"DateRangeController" }
               .form-group
                 %label{ for:"search-after" }
                   - trans "From"
                 .input-group.date-picker
-                  %input.form-control{ type:"text", datepicker-popup:"[[ format ]]", ng-model:"search.after", is-open:"afterOpen", min-date:"afterMin", max-date:"afterMax", ng-change:"onAfterChange()" }
+                  %input.form-control{ type:"text", datepicker-popup:"[[ format ]]", ng-model:"searchFields.after", is-open:"afterOpen", min-date:"afterMin", max-date:"afterMax", ng-change:"onAfterChange()" }
                   %span.input-group-btn
                     %button.btn.btn-default{ type:"button", ng-click:"openAfter($event)" }
                       %i.glyphicon.glyphicon-calendar
@@ -49,19 +49,15 @@
                 %label{ for:"search-before" }
                   - trans "Until"
                 .input-group.date-picker
-                  %input.form-control{ type:"text", datepicker-popup:"[[ format ]]", ng-model:"search.before", is-open:"beforeOpen", min-date:"beforeMin", max-date:"beforeMax", ng-change:"onBeforeChange()" }
+                  %input.form-control{ type:"text", datepicker-popup:"[[ format ]]", ng-model:"searchFields.before", is-open:"beforeOpen", min-date:"beforeMin", max-date:"beforeMax", ng-change:"onBeforeChange()" }
                   %span.input-group-btn
                     %button.btn.btn-default{ type:"button", ng-click:"openBefore($event)" }
                       %i.glyphicon.glyphicon-calendar
-            .checkbox
-              %input{ type:"checkbox", ng-model:"search.reverse" }
-              %label
-                - trans "Oldest first"
         .row
           .col-md-12
             .pull-back
               // HAML doesn't seem to like dashes in tag names...
-              <ui-select multiple ng-model="search.groups" theme="bootstrap" class="group-select">
+              <ui-select multiple ng-model="searchFields.groups" theme="bootstrap" class="group-select">
                 <ui-select-match placeholder="Select groups...">[[ $item.name ]]</ui-select-match>
                 <ui-select-choices repeat="group in groups">
                   [[ group.name ]]
@@ -76,8 +72,8 @@
               .btn-group
                 %button.btn.btn-default{ type:"button", ng-click:"onResetSearch()" }
                   - trans "Clear"
-                %button.btn.btn-default{ type:"button", ng-click:"onExportSearch()" }
-                  - trans "Export"
+                %button.btn.btn-default{ type:"button", ng-click:"onExportSearch()", tooltip:"Save as Excel" }
+                  %span.glyphicon.glyphicon-save
 
     .selection-toolbar
       .row

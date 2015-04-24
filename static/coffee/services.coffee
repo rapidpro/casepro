@@ -24,11 +24,12 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     # Fetches old messages for the given label
     #----------------------------------------------------------------------------
-    fetchOldMessages: (search, page, callback) ->
-      searchParams = @_searchToParams(search)
-      otherParams = {start_time: formatIso8601(@start_time), page: page}
+    fetchOld: (search, before, page, callback) ->
+      params = @_searchToParams(search)
+      params.before = formatIso8601(before)
+      params.page = page
 
-      $http.get('/message/?' + $.param(otherParams) + '&' + searchParams)
+      $http.get('/message/?' + $.param(params))
       .success (data) =>
         @_processMessages(data.results)
         callback(data.results, data.total, data.has_more)
@@ -36,20 +37,22 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     # Fetches new messages for the given label
     #----------------------------------------------------------------------------
-    fetchNewMessages: (search, afterTime, afterId, callback) ->
-      searchParams = @_searchToParams(search)
-      otherParams = {after_time: formatIso8601(afterTime), after_id: afterId}
+    fetchNew: (search, after, afterId, callback) ->
+      params = @_searchToParams(search)
+      params.after = formatIso8601(after)
+      params.after_id = afterId
 
-      $http.get('/message/?' + $.param(otherParams) + '&' + searchParams)
+      $http.get('/message/?' + $.param(params))
       .success (data) =>
         @_processMessages(data.results)
-        callback(data.results, data.total, data.max_time, data.max_id)
+        callback(data.results, data.max_time, data.max_id)
 
     #----------------------------------------------------------------------------
     # Starts a message export
     #----------------------------------------------------------------------------
     startExport: (search, callback) ->
-      $http.post('/messageexport/create/?' + @_searchToParams(search))
+      params = @_searchToParams(search)
+      $http.post('/messageexport/create/?' + $.param(params))
       .success () =>
         callback()
 
@@ -121,8 +124,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       params.groups = (g.uuid for g in search.groups).join(',')
       params.contact = search.contact
       params.label = if search.label then search.label.id else null
-      params.reverse = search.reverse
-      $.param(params)
+      return params
 
     #----------------------------------------------------------------------------
     # POSTs to the messages action endpoint

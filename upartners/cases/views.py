@@ -411,8 +411,7 @@ class MessageSearchMixin(object):
                 'groups': groups,
                 'after': parse_iso8601(request.GET.get('after', None)),
                 'before': parse_iso8601(request.GET.get('before', None)),
-                'text': request.GET.get('text', None),
-                'reverse': request.GET.get('reverse', 'false')}
+                'text': request.GET.get('text', None)}
 
 
 class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
@@ -429,17 +428,24 @@ class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
         page = int(self.request.GET.get('page', 0))
 
         client = self.request.org.get_temba_client()
-        pager = client.pager(start_page=page)
+        pager = client.pager(start_page=page) if page else None
         messages = client.get_messages(pager=pager, labels=search['labels'],
                                        contacts=search['contacts'], groups=search['groups'],
                                        direction='I', _types=['I'], statuses=['H'],
                                        after=search['after'], before=search['before'],
-                                       text=search['text'], reverse=search['reverse'])
+                                       text=search['text'])
 
-        context['page'] = page
-        context['has_more'] = pager.has_more()
-        context['total'] = pager.total
         context['messages'] = messages
+
+        if page:
+            context['page'] = page
+            context['has_more'] = pager.has_more()
+            context['total'] = pager.total
+        else:
+            context['page'] = None
+            context['has_more'] = None
+            context['total'] = len(messages)
+
         return context
 
     def render_to_response(self, context, **response_kwargs):

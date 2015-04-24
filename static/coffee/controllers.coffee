@@ -81,8 +81,24 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
   $scope.newItemsCount = 0
   $scope.selection = []
 
-  $scope.totalItems = () ->
-    return $scope.oldItemsTotal + $scope.newItemsCount
+  $scope.totalItems = () -> $scope.oldItemsTotal + $scope.newItemsCount
+
+  #----------------------------------------------------------------------------
+  # Search for items based on current search form values
+  #----------------------------------------------------------------------------
+  $scope.onSearch = () ->
+    $scope.activeSearch = $scope.buildSearch()
+
+    $scope.items = []
+    $scope.oldItemsPage = 0
+    $scope.loadOldItems()
+
+  #----------------------------------------------------------------------------
+  # Reset search form and refresh items accordingly
+  #----------------------------------------------------------------------------
+  $scope.onResetSearch = () ->
+    $scope.searchFields = $scope.searchFieldDefaults()
+    $scope.onSearch()
 
   #----------------------------------------------------------------------------
   # Selection controls
@@ -107,60 +123,60 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
 # Messages controller
 #============================================================================
 
-controllers.controller 'MessagesController', [ '$scope', '$modal', '$controller', 'MessageService', 'CaseService', 'UtilsService', ($scope, $modal, $controller, MessageService, CaseService, UtilsService) ->
+controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '$controller', 'MessageService', 'CaseService', 'UtilsService', ($scope, $timeout, $modal, $controller, MessageService, CaseService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
   $scope.init = () ->
+    $scope.searchFields = $scope.searchFieldDefaults()
+    $scope.activeSearch = $scope.buildSearch()
+
+    $scope.refreshNewItems()
+
     $scope.$on 'activeLabelChange', () ->
       $scope.onResetSearch()
     $scope.$on 'activeContactChange', () ->
       $scope.onResetSearch()
 
-    #$scope.refreshNewItems() TODO fix this so it works with an active search
+  $scope.buildSearch = () ->
+    search = angular.copy($scope.searchFields)
+    search.label = $scope.activeLabel
+    search.contact = $scope.activeContact
+    search.timeCode = Date.now()
+    return search
 
-  #----------------------------------------------------------------------------
-  # Search for messages based on current search form values
-  #----------------------------------------------------------------------------
-  $scope.onSearch = () ->
-    $scope.activeSearch = angular.copy($scope.search)
-    $scope.activeSearch.label = $scope.activeLabel
-    $scope.activeSearch.contact = $scope.activeContact
-
-    $scope.items = []
-    $scope.oldItemsPage = 0
-    $scope.loadOldMessages()
-
-  #----------------------------------------------------------------------------
-  # Reset search form and show all messages
-  #----------------------------------------------------------------------------
-  $scope.onResetSearch = () ->
-    $scope.search = { text: null, groups: [], after: null, before: null, reverse: false }
-    $scope.onSearch()
+  $scope.searchFieldDefaults = () -> { text: null, groups: [], after: null, before: null }
 
   $scope.onExportSearch = () ->
     UtilsService.confirmModal "Export the current message search?", null, () ->
       MessageService.startExport $scope.activeSearch, () ->
         UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
 
-  $scope.loadOldMessages = () ->
+  $scope.loadOldItems = () ->
     $scope.oldItemsLoading = true
     $scope.oldItemsPage += 1
 
-    MessageService.fetchOldMessages $scope.activeSearch, $scope.oldItemsPage, (messages, total, hasMore) ->
+    MessageService.fetchOld $scope.activeSearch, $scope.startTime, $scope.oldItemsPage, (messages, total, hasMore) ->
       $scope.items = $scope.items.concat(messages)
       $scope.oldItemsMore = hasMore
       $scope.oldItemsTotal = total
       $scope.oldItemsLoading = false
 
   $scope.refreshNewItems = () ->
+    # if user has specified a max time then don't bother looking for new messages
+    if $scope.activeSearch.before
+      $timeout($scope.refreshNewItems, INTERVAL_MESSAGES_NEW)
+      return
+
+    timeCode = $scope.activeSearch.timeCode
     afterTime = $scope.newItemsMaxTime or $scope.startTime
 
-    MessageService.fetchNewMessages $scope.activeSearch, afterTime, $scope.newItemsMaxId, (cases, maxTime, maxId) ->
-      $scope.items = cases.concat($scope.items)
-      if cases.length > 0
-        $scope.newItemsMaxTime = maxTime
-        $scope.newItemsMaxId = maxId
-        $scope.newItemsCount += cases.length
+    MessageService.fetchNew $scope.activeSearch, afterTime, $scope.newItemsMaxId, (cases, maxTime, maxId) ->
+      if timeCode == $scope.activeSearch.timeCode
+        $scope.items = cases.concat($scope.items)
+        if cases.length > 0
+          $scope.newItemsMaxTime = maxTime
+          $scope.newItemsMaxId = maxId
+          $scope.newItemsCount += cases.length
 
       $timeout($scope.refreshNewItems, INTERVAL_MESSAGES_NEW)
 
@@ -230,30 +246,22 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
 
   $scope.init = (caseStatus) ->
     $scope.caseStatus = caseStatus
+    $scope.searchFields = $scope.searchFieldDefaults()
+    $scope.activeSearch = $scope.buildSearch()
+
+    $scope.refreshNewItems()
 
     $scope.$on 'activeLabelChange', () ->
       $scope.onResetSearch()
 
-    #$scope.refreshNewItems()
+  $scope.buildSearch = () ->
+    search = angular.copy($scope.searchFields)
+    search.label = $scope.activeLabel
+    search.status = $scope.caseStatus
+    search.timeCode = Date.now()
+    return search
 
-  #----------------------------------------------------------------------------
-  # Search for cases based on current search form values
-  #----------------------------------------------------------------------------
-  $scope.onSearch = () ->
-    $scope.activeSearch = angular.copy($scope.search)
-    $scope.activeSearch.label = $scope.activeLabel
-    $scope.activeSearch.status = $scope.caseStatus
-
-    $scope.items = []
-    $scope.oldItemsPage = 0
-    $scope.loadOldItems()
-
-  #----------------------------------------------------------------------------
-  # Reset search form and show all cases
-  #----------------------------------------------------------------------------
-  $scope.onResetSearch = () ->
-    $scope.search = { assignee: null }
-    $scope.onSearch()
+  $scope.searchFieldDefaults = () -> { assignee: null }
 
   $scope.loadOldItems = () ->
     $scope.oldItemsLoading = true
@@ -266,11 +274,14 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
       $scope.oldItemsLoading = false
 
   $scope.refreshNewItems = () ->
+    timeCode = $scope.activeSearch.timeCode
+
     CaseService.fetchNewCases $scope.activeSearch, $scope.startTime, $scope.newItemsMaxId, (cases, maxId) ->
-      $scope.items = cases.concat($scope.items)
-      if cases.length > 0
-        $scope.newItemsMaxId = maxId
-        $scope.newItemsCount += cases.length
+      if timeCode == $scope.activeSearch.timeCode
+        $scope.items = cases.concat($scope.items)
+        if cases.length > 0
+          $scope.newItemsMaxId = maxId
+          $scope.newItemsCount += cases.length
 
       $timeout($scope.refreshNewItems, INTERVAL_CASES_NEW)
 
