@@ -220,8 +220,8 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
       MessageService.sendNewMessage data.urn, data.text, () ->
         UtilsService.displayAlert('success', "Message forwarded to " + data.urn.path)
 
-  $scope.dismissSelection = () ->
-    UtilsService.confirmModal 'Un-label the selected messages? This will remove them from your inbox.', null, () ->
+  $scope.archiveSelection = () ->
+    UtilsService.confirmModal 'Archive the selected messages? This will remove them from your inbox.', null, () ->
       MessageService.unlabelMessages($scope.selection, $scope.labels)
 
   #----------------------------------------------------------------------------

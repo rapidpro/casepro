@@ -100,13 +100,13 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
           msg.labels.push(label.name)
 
       if without_label.length > 0
-        @_messagesAction(without_label, 'label', [label])
+        @_messagesAction(without_label, 'label', label)
 
     #----------------------------------------------------------------------------
-    # Unlabel messages
+    # Archive messages
     #----------------------------------------------------------------------------
-    unlabelMessages: (messages, labels) ->
-      @_messagesAction(messages, 'unlabel', labels, () ->
+    archiveMessages: (messages) ->
+      @_messagesAction(messages, 'archive', () ->
         for msg in messages
           msg.archived = true
       )
@@ -137,10 +137,11 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     # POSTs to the messages action endpoint
     #----------------------------------------------------------------------------
-    _messagesAction: (messages, action, labels, callback) ->
+    _messagesAction: (messages, action, label, callback) ->
       data = new FormData();
-      data.append('message_ids', (m.id for m in messages))
-      data.append('labels', if labels then (l.name for l in labels) else null)
+      data.append('messages', (m.id for m in messages))
+      if label
+        data.append('label', l.id)
 
       $http.post '/message/action/' + action + '/', data, DEFAULT_POST_OPTS
       .success () =>

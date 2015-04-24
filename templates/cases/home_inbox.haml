@@ -114,8 +114,8 @@
             %button.btn.btn-default{ ng-disabled:"selection.length != 1", ng-click:"forwardSelection()", type:"button" }
               %span.glyphicon.glyphicon-share-alt
               - trans "Forward"
-            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"dismissSelection()", type:"button" }
-              - trans "Dismiss"
+            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"archiveSelection()", type:"button" }
+              - trans "Archive"
 
     .messages{ infinite-scroll:"loadOldMessages()", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
       .stackitem.clearfix{ ng-repeat:"message in items | filter:{ archived: false }", ng-class:"{ flagged: message.flagged }" }

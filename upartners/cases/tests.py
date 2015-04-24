@@ -9,7 +9,7 @@ from temba.types import Message as TembaMessage
 from upartners.orgs_ext import TaskType
 from upartners.profiles import ROLE_ANALYST, ROLE_MANAGER
 from upartners.test import UPartnersTest
-from .models import Case, Label, Partner, ACTION_OPEN, ACTION_NOTE, ACTION_LABEL, ACTION_UNLABEL, ACTION_CLOSE, ACTION_REOPEN, ACTION_REASSIGN
+from .models import Case, CaseAction, Label, Message, MessageAction, Partner
 from .tasks import label_new_org_messages
 
 
@@ -47,7 +47,7 @@ class CaseTest(UPartnersTest):
 
         actions = case.actions.all()
         self.assertEqual(len(actions), 1)
-        self.assertEqual(actions[0].action, ACTION_OPEN)
+        self.assertEqual(actions[0].action, CaseAction.OPEN)
         self.assertEqual(actions[0].created_by, self.user1)
         self.assertEqual(actions[0].created_on, d1)
         self.assertEqual(actions[0].assignee, self.moh)
@@ -70,7 +70,7 @@ class CaseTest(UPartnersTest):
 
         actions = case.actions.all()
         self.assertEqual(len(actions), 2)
-        self.assertEqual(actions[1].action, ACTION_NOTE)
+        self.assertEqual(actions[1].action, CaseAction.NOTE)
         self.assertEqual(actions[1].created_by, self.user2)
         self.assertEqual(actions[1].created_on, d2)
         self.assertEqual(actions[1].note, "Interesting")
@@ -87,7 +87,7 @@ class CaseTest(UPartnersTest):
 
         actions = case.actions.all()
         self.assertEqual(len(actions), 3)
-        self.assertEqual(actions[2].action, ACTION_CLOSE)
+        self.assertEqual(actions[2].action, CaseAction.CLOSE)
         self.assertEqual(actions[2].created_by, self.user1)
         self.assertEqual(actions[2].created_on, d3)
 
@@ -100,7 +100,7 @@ class CaseTest(UPartnersTest):
 
         actions = case.actions.all()
         self.assertEqual(len(actions), 4)
-        self.assertEqual(actions[3].action, ACTION_REOPEN)
+        self.assertEqual(actions[3].action, CaseAction.REOPEN)
         self.assertEqual(actions[3].created_by, self.user2)
         self.assertEqual(actions[3].created_on, d4)
 
@@ -112,7 +112,7 @@ class CaseTest(UPartnersTest):
 
         actions = case.actions.all()
         self.assertEqual(len(actions), 5)
-        self.assertEqual(actions[4].action, ACTION_REASSIGN)
+        self.assertEqual(actions[4].action, CaseAction.REASSIGN)
         self.assertEqual(actions[4].created_by, self.user2)
         self.assertEqual(actions[4].created_on, d5)
         self.assertEqual(actions[4].assignee, self.who)
@@ -123,11 +123,11 @@ class CaseTest(UPartnersTest):
 
         actions = case.actions.all()
         self.assertEqual(len(actions), 7)
-        self.assertEqual(actions[5].action, ACTION_LABEL)
+        self.assertEqual(actions[5].action, CaseAction.LABEL)
         self.assertEqual(actions[5].created_by, self.user3)
         self.assertEqual(actions[5].created_on, d6)
         self.assertEqual(actions[5].label, self.pregnancy)
-        self.assertEqual(actions[6].action, ACTION_UNLABEL)
+        self.assertEqual(actions[6].action, CaseAction.UNLABEL)
         self.assertEqual(actions[6].created_by, self.user3)
         self.assertEqual(actions[6].created_on, d6)
         self.assertEqual(actions[6].label, self.aids)
@@ -141,7 +141,7 @@ class CaseTest(UPartnersTest):
 
         actions = case.actions.all()
         self.assertEqual(len(actions), 8)
-        self.assertEqual(actions[7].action, ACTION_CLOSE)
+        self.assertEqual(actions[7].action, CaseAction.CLOSE)
         self.assertEqual(actions[7].created_by, self.user3)
         self.assertEqual(actions[7].created_on, d7)
 
@@ -270,6 +270,19 @@ class LabelCRUDLTest(UPartnersTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(list(response.context['object_list']), [self.aids, self.pregnancy])
+
+
+class MessageTest(UPartnersTest):
+    @patch('dash.orgs.models.TembaClient.archive_messages')
+    def test_bulk_archive(self, mock_archive_messages):
+        Message.bulk_archive(self.unicef, self.user1, [123, 234, 345])
+
+        action = MessageAction.get()
+        self.assertEqual(action.action, MessageAction.ARCHIVE)
+        self.assertEqual(action.created_by, self.user1)
+        self.assertEqual(action.messages, [123, 234, 345])
+
+        mock_archive_messages.assert_called_once_with(messages=[123, 234, 345])
 
 
 class PartnerTest(UPartnersTest):

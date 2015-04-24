@@ -11,8 +11,8 @@ from django.views.generic import View
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView, SmartFormView
 from smartmin.users.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba.utils import parse_iso8601
-from . import parse_csv, json_encode, message_as_json, contact_as_json, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
-from .models import Case, Group, Label, MessageExport, Partner
+from . import parse_csv, json_encode, contact_as_json, MAX_MESSAGE_CHARS
+from .models import Case, Group, Label, Message, MessageExport, Partner
 from .tasks import message_export
 
 
@@ -216,13 +216,13 @@ class CaseCRUDL(SmartCRUDL):
                 messages = [m for m in messages if m.id > since_message_id]
 
             # fetch actions
-            actions = self.object.actions.select_related('assignee', 'created_by')
+            actions = self.object.actions.select_related('assignee', 'created_by').order_by('pk')
             if since_action_id:
                 actions = actions.filter(pk__gt=since_action_id)
 
             label_map = {l.name: l for l in Label.get_all(self.request.org)}
 
-            timeline = [{'time': m.created_on, 'type': 'M', 'item': message_as_json(m, label_map)} for m in messages]
+            timeline = [{'time': m.created_on, 'type': 'M', 'item': Message.as_json(m, label_map)} for m in messages]
             timeline += [{'time': a.created_on, 'type': 'A', 'item': a.as_json()} for a in actions]
             timeline = sorted(timeline, key=lambda event: event['time'])
 
@@ -431,7 +431,7 @@ class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
     def render_to_response(self, context, **response_kwargs):
         label_map = {l.name: l for l in Label.get_all(self.request.org)}
 
-        results = [message_as_json(m, label_map) for m in context['messages']]
+        results = [Message.as_json(m, label_map) for m in context['messages']]
 
         return JsonResponse({'results': results, 'has_more': context['has_more'], 'total': context['total']})
 
@@ -444,22 +444,22 @@ class MessageActionView(OrgPermsMixin, View):
         return request.user.is_authenticated()
 
     def post(self, request, *args, **kwargs):
-        action = kwargs['action']
-        message_ids = parse_csv(self.request.POST.get('message_ids', ''), as_ints=True)
-        label_names = parse_csv(self.request.POST.get('labels', ''))
+        org = self.request.org
+        user = self.request.user
 
-        client = self.request.org.get_temba_client()
+        action = kwargs['action']
+        message_ids = parse_csv(self.request.POST.get('messages', ''), as_ints=True)
+        label_id = int(self.request.POST.get('label', 0))
+        label = Label.get_all(org, user).get(pk=label_id) if label_id else None
 
         if action == 'flag':
-            client.label_messages(message_ids, label=SYSTEM_LABEL_FLAGGED)
+            Message.bulk_flag(org, user, message_ids)
         elif action == 'unflag':
-            client.unlabel_messages(message_ids, label=SYSTEM_LABEL_FLAGGED)
+            Message.bulk_unflag(org, user, message_ids)
         elif action == 'label':
-            for label_name in label_names:
-                client.label_messages(message_ids, label=label_name)
-        elif action == 'unlabel':
-            for label_name in label_names:
-                client.unlabel_messages(message_ids, label=label_name)
+            Message.bulk_label(org, user, message_ids, label)
+        elif action == 'archive':
+            Message.bulk_archive(org, user, message_ids)
         else:
             return HttpResponseBadRequest("Invalid action: %s", action)
 

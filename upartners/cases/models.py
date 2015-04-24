@@ -7,6 +7,7 @@ from dash.orgs.models import Org
 from dash.utils import get_obj_cacheable, random_string, chunks, intersection
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import PermissionDenied
 from django.core.files import File
 from django.core.files.storage import default_storage
@@ -19,23 +20,6 @@ from django.utils.translation import ugettext_lazy as _
 from temba.base import TembaNoSuchObjectError
 from upartners.email import send_upartners_email
 from . import parse_csv, truncate, SYSTEM_LABEL_FLAGGED
-
-
-ACTION_OPEN = 'O'
-ACTION_NOTE = 'N'
-ACTION_REASSIGN = 'A'
-ACTION_LABEL = 'L'
-ACTION_UNLABEL = 'U'
-ACTION_CLOSE = 'C'
-ACTION_REOPEN = 'R'
-
-CASE_ACTION_CHOICES = ((ACTION_OPEN, _("Open")),
-                       (ACTION_NOTE, _("Add Note")),
-                       (ACTION_REASSIGN, _("Reassign")),
-                       (ACTION_LABEL, _("Label")),
-                       (ACTION_UNLABEL, _("Remove Label")),
-                       (ACTION_CLOSE, _("Close")),
-                       (ACTION_REOPEN, _("Reopen")))
 
 
 class Group(models.Model):
@@ -402,7 +386,7 @@ class Case(models.Model):
                                   summary=summary, message_id=message.id, message_on=message.created_on)
         case.labels.add(*labels)
 
-        CaseAction.create(case, user, ACTION_OPEN, assignee=partner)
+        CaseAction.create(case, user, CaseAction.OPEN, assignee=partner)
 
         # clear case labels from this message and subsequent messages from same contact
         if unlabel_messages:
@@ -417,40 +401,40 @@ class Case(models.Model):
 
     @case_action
     def note(self, user, note):
-        CaseAction.create(self, user, ACTION_NOTE, note=note)
+        CaseAction.create(self, user, CaseAction.NOTE, note=note)
 
     @case_action
     def close(self, user, note=None):
         self.closed_on = timezone.now()
         self.save(update_fields=('closed_on',))
 
-        CaseAction.create(self, user, ACTION_CLOSE, note=note)
+        CaseAction.create(self, user, CaseAction.CLOSE, note=note)
 
     @case_action
     def reopen(self, user, note=None):
         self.closed_on = None
         self.save(update_fields=('closed_on',))
 
-        CaseAction.create(self, user, ACTION_REOPEN, note=note)
+        CaseAction.create(self, user, CaseAction.REOPEN, note=note)
 
     @case_action
     def reassign(self, user, partner, note=None):
         self.assignee = partner
         self.save(update_fields=('assignee',))
 
-        CaseAction.create(self, user, ACTION_REASSIGN, assignee=partner, note=note)
+        CaseAction.create(self, user, CaseAction.REASSIGN, assignee=partner, note=note)
 
     @case_action
     def label(self, user, label):
         self.labels.add(label)
 
-        CaseAction.create(self, user, ACTION_LABEL, label=label)
+        CaseAction.create(self, user, CaseAction.LABEL, label=label)
 
     @case_action
     def unlabel(self, user, label):
         self.labels.remove(label)
 
-        CaseAction.create(self, user, ACTION_UNLABEL, label=label)
+        CaseAction.create(self, user, CaseAction.UNLABEL, label=label)
 
     def update_labels(self, user, labels):
         """
@@ -505,9 +489,25 @@ class CaseAction(models.Model):
     """
     An action performed on a case
     """
+    OPEN = 'O'
+    NOTE = 'N'
+    REASSIGN = 'A'
+    LABEL = 'L'
+    UNLABEL = 'U'
+    CLOSE = 'C'
+    REOPEN = 'R'
+
+    ACTION_CHOICES = ((OPEN, _("Open")),
+                      (NOTE, _("Add Note")),
+                      (REASSIGN, _("Reassign")),
+                      (LABEL, _("Label")),
+                      (UNLABEL, _("Remove Label")),
+                      (CLOSE, _("Close")),
+                      (REOPEN, _("Reopen")))
+
     case = models.ForeignKey(Case, related_name="actions")
 
-    action = models.CharField(max_length=1, choices=CASE_ACTION_CHOICES)
+    action = models.CharField(max_length=1, choices=ACTION_CHOICES)
 
     created_by = models.ForeignKey(User, related_name="case_actions")
 
@@ -532,5 +532,93 @@ class CaseAction(models.Model):
                 'label': self.label.as_json() if self.label else None,
                 'note': self.note}
 
-    class Meta:
-        ordering = ('pk',)
+
+class Message(object):
+    """
+    A pseudo-model for messages which are always fetched from RapidPro.
+    """
+    @staticmethod
+    def bulk_flag(org, user, message_ids):
+        client = org.get_temba_client()
+        client.label_messages(message_ids, label=SYSTEM_LABEL_FLAGGED)
+
+        MessageAction.create(org, user, message_ids, MessageAction.FLAG)
+
+    @staticmethod
+    def bulk_unflag(org, user, message_ids):
+        client = org.get_temba_client()
+        client.unlabel_messages(message_ids, label=SYSTEM_LABEL_FLAGGED)
+
+        MessageAction.create(org, user, message_ids, MessageAction.UNFLAG)
+
+    @staticmethod
+    def bulk_label(org, user, message_ids, label):
+        client = org.get_temba_client()
+        client.label_messages(message_ids, label=label.name)
+
+        MessageAction.create(org, user, message_ids, MessageAction.LABEL, label)
+
+    @staticmethod
+    def bulk_archive(org, user, message_ids):
+        client = org.get_temba_client()
+        client.archive_messages(message_ids)
+
+        MessageAction.create(org, user, message_ids, MessageAction.ARCHIVE)
+
+    @staticmethod
+    def as_json(msg, label_map):
+        """
+        Prepares a message (fetched from RapidPro) for JSON serialization
+        """
+        flagged = SYSTEM_LABEL_FLAGGED in msg.labels
+
+        # convert label names to JSON label objects
+        labels = [label_map[label_name].as_json() for label_name in msg.labels if label_name in label_map]
+
+        return {'id': msg.id,
+                'text': msg.text,
+                'contact': msg.contact,
+                'urn': msg.urn,
+                'time': msg.created_on,
+                'labels': labels,
+                'flagged': flagged,
+                'direction': msg.direction}
+
+
+class MessageAction(models.Model):
+    """
+    An action performed on a set of messages
+    """
+    FLAG = 'F'
+    UNFLAG = 'N'
+    LABEL = 'L'
+    ARCHIVE = 'A'
+
+    ACTION_CHOICES = ((FLAG, _("Flag")),
+                      (UNFLAG, _("Un-flag")),
+                      (LABEL, _("Label")),
+                      (ARCHIVE, _("Archive")))
+
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='message_actions')
+
+    messages = ArrayField(models.IntegerField())
+
+    action = models.CharField(max_length=1, choices=ACTION_CHOICES)
+
+    created_by = models.ForeignKey(User, related_name="message_actions")
+
+    created_on = models.DateTimeField(auto_now_add=True)
+
+    label = models.ForeignKey(Label, null=True)
+
+    @classmethod
+    def create(cls, org, user, message_ids, action, label=None):
+        MessageAction.objects.create(org=org, messages=message_ids, action=action, created_by=user, label=label)
+
+    def as_json(self):
+        return {'id': self.pk,
+                # 'messages': self.messages, TODO get length
+                'action': self.action,
+                'created_by': {'id': self.created_by.pk, 'name': self.created_by.get_full_name()},
+                'created_on': self.created_on,
+                'label': self.label.as_json() if self.label else None}
