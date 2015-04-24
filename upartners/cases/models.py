@@ -144,11 +144,10 @@ class MessageExport(models.Model):
 
         # fetch all messages to be exported
         while True:
-            all_messages += client.get_messages(pager=pager, labels=search['labels'],
+            all_messages += client.get_messages(pager=pager, labels=search['labels'], text=search['text'],
                                                 contacts=search['contacts'], groups=search['groups'],
                                                 direction='I', _types=['I'], statuses=['H'],
-                                                after=search['after'], before=search['before'],
-                                                text=search['text'], reverse=search['reverse'])
+                                                after=search['after'], before=search['before'])
 
             if not pager.has_more():
                 break

@@ -158,10 +158,8 @@ class CaseCRUDL(SmartCRUDL):
             status = self.request.GET.get('status', None)
             assignee_id = self.request.GET.get('assignee', None)
 
-            before_id = self.request.GET.get('before_id', None)
-            after_id = self.request.GET.get('after_id', None)
-            before_time = self.request.REQUEST.get('before_time', None)
-            after_time = self.request.REQUEST.get('after_time', None)
+            before = self.request.REQUEST.get('before', None)
+            after = self.request.REQUEST.get('after', None)
 
             labels = Label.get_all(self.request.org, self.request.user)
             if label_id:
@@ -179,34 +177,19 @@ class CaseCRUDL(SmartCRUDL):
             if assignee:
                 qs = qs.filter(assignee=assignee)
 
-            if before_id:
-                qs = qs.filter(pk__lt=before_id)
-            if after_id:
-                qs = qs.filter(pk__gt=after_id)
-            if before_time:
-                qs = qs.filter(opened_on__lt=parse_iso8601(before_time))
-            if after_time:
-                qs = qs.filter(opened_on__gt=parse_iso8601(after_time))
+            if before:
+                qs = qs.filter(opened_on__lt=parse_iso8601(before))
+            if after:
+                qs = qs.filter(opened_on__gt=parse_iso8601(after))
 
             return qs.order_by('-pk').select_related('assignee')
 
         def render_to_response(self, context, **response_kwargs):
             count = context['paginator'].count
             has_more = context['page_obj'].has_next()
-            results = list(context['object_list'])
+            results = [obj.as_json() for obj in list(context['object_list'])]
 
-            if results:
-                max_id = results[0].pk
-                min_id = results[-1].pk
-            else:
-                max_id = None
-                min_id = None
-
-            return JsonResponse({'results': [obj.as_json() for obj in results],
-                                 'min_id': min_id,
-                                 'max_id': max_id,
-                                 'has_more': has_more,
-                                 'total': count})
+            return JsonResponse({'results': results, 'has_more': has_more, 'total': count})
 
     class Timeline(OrgPermsMixin, SmartReadView):
         """
@@ -453,10 +436,7 @@ class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
 
         results = [message_as_json(m, label_map) for m in context['messages']]
 
-        return JsonResponse({'page': context['page'],
-                             'has_more': context['has_more'],
-                             'total': context['total'],
-                             'results': results})
+        return JsonResponse({'results': results, 'has_more': context['has_more'], 'total': context['total']})
 
 
 class MessageActionView(OrgPermsMixin, View):

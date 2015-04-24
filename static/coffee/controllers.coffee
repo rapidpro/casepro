@@ -77,7 +77,7 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
   $scope.oldItemsPage = 0
   $scope.oldItemsMore = false
   $scope.oldItemsTotal = 0
-  $scope.newItemsMaxId = null
+  $scope.newItemsMaxTime = null
   $scope.newItemsCount = 0
   $scope.selection = []
 
@@ -169,14 +169,12 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
 
     timeCode = $scope.activeSearch.timeCode
     afterTime = $scope.newItemsMaxTime or $scope.startTime
+    $scope.newItemsMaxTime = new Date()
 
-    MessageService.fetchNew $scope.activeSearch, afterTime, $scope.newItemsMaxId, (cases, maxTime, maxId) ->
+    MessageService.fetchNew $scope.activeSearch, afterTime, $scope.newItemsMaxTime, (cases) ->
       if timeCode == $scope.activeSearch.timeCode
         $scope.items = cases.concat($scope.items)
-        if cases.length > 0
-          $scope.newItemsMaxTime = maxTime
-          $scope.newItemsMaxId = maxId
-          $scope.newItemsCount += cases.length
+        $scope.newItemsCount += cases.length
 
       $timeout($scope.refreshNewItems, INTERVAL_MESSAGES_NEW)
 
@@ -267,7 +265,7 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
     $scope.oldItemsLoading = true
     $scope.oldItemsPage += 1
 
-    CaseService.fetchOldCases $scope.activeSearch, $scope.startTime, $scope.oldItemsPage, (cases, total, hasMore) ->
+    CaseService.fetchOld $scope.activeSearch, $scope.startTime, $scope.oldItemsPage, (cases, total, hasMore) ->
       $scope.items = $scope.items.concat(cases)
       $scope.oldItemsMore = hasMore
       $scope.oldItemsTotal = total
@@ -275,13 +273,13 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
 
   $scope.refreshNewItems = () ->
     timeCode = $scope.activeSearch.timeCode
+    afterTime = $scope.newItemsMaxTime or $scope.startTime
+    $scope.newItemsMaxTime = new Date()
 
-    CaseService.fetchNewCases $scope.activeSearch, $scope.startTime, $scope.newItemsMaxId, (cases, maxId) ->
+    CaseService.fetchNew $scope.activeSearch, afterTime, $scope.newItemsMaxTime, (cases) ->
       if timeCode == $scope.activeSearch.timeCode
         $scope.items = cases.concat($scope.items)
-        if cases.length > 0
-          $scope.newItemsMaxId = maxId
-          $scope.newItemsCount += cases.length
+        $scope.newItemsCount += cases.length
 
       $timeout($scope.refreshNewItems, INTERVAL_CASES_NEW)
 
