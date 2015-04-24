@@ -7,6 +7,7 @@ from django import forms
 from django.utils.translation import ugettext_lazy as _
 from smartmin.templatetags.smartmin import format_datetime
 from smartmin.users.views import SmartCRUDL
+from timezones.forms import TimeZoneField
 from . import TaskType
 
 
@@ -49,7 +50,12 @@ class OrgExtCRUDL(SmartCRUDL):
                 return None
 
     class Edit(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
-        class OrgExtForm(OrgForm):
+        class OrgExtForm(forms.ModelForm):
+            name = forms.CharField(label=_("Organization"),
+                                   help_text=_("The name of this organization"))
+
+            timezone = TimeZoneField(help_text=_("The timezone your organization is in"))
+
             contact_fields = forms.MultipleChoiceField(choices=(), label=_("Contact fields"),
                                                        help_text=_("Contact fields to display"), required=False)
 
@@ -66,8 +72,8 @@ class OrgExtCRUDL(SmartCRUDL):
 
             class Meta:
                 model = Org
+                fields = ('name', 'timezone', 'contact_fields')
 
-        fields = ('name', 'timezone', 'contact_fields')
         permission = 'orgs.org_edit'
         title = _("Edit My Organization")
         success_url = '@orgs_ext.org_home'

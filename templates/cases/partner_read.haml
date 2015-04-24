@@ -9,7 +9,7 @@
       {{ title }}
 
     .page-header-buttons
-      - if org_perms.partners.partner_update
+      - if org_perms.cases.partner_update
         %a.btn.btn-default{ href:"{% url 'cases.partner_update' object.pk %}" }
           %span.glyphicon.glyphicon-pencil
           - trans "Edit"

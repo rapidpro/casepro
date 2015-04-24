@@ -4,7 +4,7 @@
 - block table-controls
   .clearfix
     .pull-away.buttons
-      - if org_perms.partners.partner_create
+      - if org_perms.cases.partner_create
         %a.btn.btn-default{ href:"{% url 'cases.partner_create' %}" }
           %span.glyphicon.glyphicon-plus
           - trans "Add"

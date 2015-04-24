@@ -1,11 +1,11 @@
--e git+https://github.com/nyaruka/smartmin.git#egg=smartmin-dev
+-e git+https://github.com/nyaruka/smartmin.git@django18#egg=smartmin-dev
 -e git+https://github.com/rapidpro/dash.git#egg=dash
 -e git+https://github.com/rapidpro/rapidpro-python#egg=rapidpro-python
 boto
 celery
 celery-with-redis
 coverage
-django==1.7.2
+django==1.8
 django-celery
 django-celery-transactions
 django-compressor

@@ -278,7 +278,7 @@ class GroupCRUDL(SmartCRUDL):
 
         title = _("Filter Groups")
         form_class = GroupsForm
-        success_url = '@groups.group_list'
+        success_url = '@cases.group_list'
         submit_button_name = _("Update")
         success_message = _("Updated contact groups to use as filter groups")
 
@@ -347,9 +347,6 @@ class LabelCRUDL(SmartCRUDL):
             initial = super(LabelCRUDL.Update, self).derive_initial()
             initial['keywords'] = ', '.join(self.object.get_keywords())
             return initial
-
-        def post_save(self, obj):
-            Label.update_labelling_flow(obj.org)
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
         def post(self, request, *args, **kwargs):
