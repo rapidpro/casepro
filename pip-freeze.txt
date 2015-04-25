@@ -10,7 +10,7 @@ boto==2.38.0
 celery==3.1.18
 celery-with-redis==3.0
 coverage==3.7.1
--e git+https://github.com/rapidpro/dash.git@e8bc9dc3a0f047cd0115d0205c2af42926669f5a#egg=dash-master
+-e git+https://github.com/rapidpro/dash.git@d1c933043d3079ff2db96328decddbaf8d8c3eb7#egg=dash
 dj-database-url==0.3.0
 django-appconf==1.0.1
 django-celery==3.1.16
@@ -43,7 +43,7 @@ raven==5.2.0
 redis==2.10.3
 requests==2.6.2
 six==1.9.0
--e git+https://github.com/nyaruka/smartmin.git@8d3b5c38c91e28bea4e3b78f91ef5911bafb3afb#egg=smartmin-dev
+-e git+https://github.com/nyaruka/smartmin.git@8d3b5c38c91e28bea4e3b78f91ef5911bafb3afb#egg=smartmin
 sorl-thumbnail==11.12.1b
 sqlparse==0.1.15
 wsgiref==0.1.2
