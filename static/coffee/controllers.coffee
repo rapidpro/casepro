@@ -126,6 +126,8 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
 controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '$controller', 'MessageService', 'CaseService', 'UtilsService', ($scope, $timeout, $modal, $controller, MessageService, CaseService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
+  $scope.expandedMessageId = null
+
   $scope.init = () ->
     $scope.searchFields = $scope.searchFieldDefaults()
     $scope.activeSearch = $scope.buildSearch()
@@ -178,30 +180,20 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
 
       $timeout($scope.refreshNewItems, INTERVAL_MESSAGES_NEW)
 
+  $scope.expandMessage = (message) ->
+    $scope.expandedMessageId = message.id
+
   #----------------------------------------------------------------------------
   # Selection actions
   #----------------------------------------------------------------------------
 
   $scope.labelSelection = (label) ->
-    UtilsService.confirmModal 'Apply the label <strong>' + label + '</strong> to the selected messages?', null, () ->
+    UtilsService.confirmModal 'Apply the label <strong>' + label.name + '</strong> to the selected messages?', null, () ->
       MessageService.labelMessages($scope.selection, label)
 
   $scope.flagSelection = () ->
     UtilsService.confirmModal 'Flag the selected messages?', null, () ->
       MessageService.flagMessages($scope.selection, true)
-
-  $scope.caseForSelection = () ->
-    openCase = (assignee) ->
-      CaseService.openCase $scope.selection[0], assignee, (_case) ->
-          UtilsService.navigate('/case/read/' + _case.id + '/')
-
-    prompt = "Open a new case for the selected message?"
-    if $scope.user.partner
-      UtilsService.confirmModal prompt, null, () ->
-        openCase($scope.user.partner)
-    else
-      UtilsService.assignModal "New case", prompt, $scope.partners, (assignee) ->
-        openCase(assignee)
 
   $scope.replyToSelection = () ->
     $modal.open({templateUrl: 'replyModal.html', controller: 'ReplyModalController', resolve: {}})
@@ -209,8 +201,21 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
       MessageService.replyToMessages $scope.selection, text, () ->
         UtilsService.displayAlert('success', "Reply sent to contacts")
 
-  $scope.forwardSelection = () ->
-    initialText = '"' + $scope.selection[0].text + '"'
+  $scope.archiveSelection = () ->
+    UtilsService.confirmModal 'Archive the selected messages? This will remove them from your inbox.', null, () ->
+      MessageService.unlabelMessages($scope.selection, $scope.labels)
+
+  #----------------------------------------------------------------------------
+  # Single message actions
+  #----------------------------------------------------------------------------
+
+  $scope.onToggleMessageFlag = (message) ->
+    prevState = message.flagged
+    message.flagged = !prevState
+    MessageService.flagMessages([message], message.flagged)
+
+  $scope.onForwardMessage = (message) ->
+    initialText = '"' + message.text + '"'
 
     $modal.open({templateUrl: 'composeModal.html', controller: 'ComposeModalController', resolve: {
       title: () -> "Forward",
@@ -220,18 +225,23 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
       MessageService.sendNewMessage data.urn, data.text, () ->
         UtilsService.displayAlert('success', "Message forwarded to " + data.urn.path)
 
-  $scope.archiveSelection = () ->
-    UtilsService.confirmModal 'Archive the selected messages? This will remove them from your inbox.', null, () ->
-      MessageService.unlabelMessages($scope.selection, $scope.labels)
+  $scope.onCaseFromMessage = (message) ->
+    openCase = (assignee) ->
+      CaseService.openCase message, assignee, (_case) ->
+          UtilsService.navigate('/case/read/' + _case.id + '/')
 
-  #----------------------------------------------------------------------------
-  # Other
-  #----------------------------------------------------------------------------
+    prompt = "Open a new case for this message?"
+    if $scope.user.partner
+      UtilsService.confirmModal prompt, null, () ->
+        openCase($scope.user.partner)
+    else
+      UtilsService.assignModal "New case", prompt, $scope.partners, (assignee) ->
+        openCase(assignee)
 
-  $scope.toggleMessageFlag = (message) ->
-    prevState = message.flagged
-    message.flagged = !prevState
-    MessageService.flagMessages([message], message.flagged)
+  $scope.onShowMessageHistory = (message) ->
+    $modal.open({templateUrl: 'messageHistory.html', controller: 'MessageHistoryModalController', resolve: {
+      message: () -> message
+    }})
 ]
 
 
@@ -420,7 +430,7 @@ controllers.controller 'NoteModalController', [ '$scope', '$modalInstance', 'tit
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
 
-controllers.controller 'LabelModalController', [ '$scope', '$modalInstance', 'title', 'prompt', 'labels', 'initial', ($scope, $modalInstance, title, prompt, labels, initial) ->
+controllers.controller('LabelModalController', ['$scope', '$modalInstance', 'title', 'prompt', 'labels', 'initial', ($scope, $modalInstance, title, prompt, labels, initial) ->
   $scope.title = title
   $scope.prompt = prompt
   $scope.selection = ({label: l, selected: (l.id in (i.id for i in initial))} for l in labels)
@@ -430,16 +440,16 @@ controllers.controller 'LabelModalController', [ '$scope', '$modalInstance', 'ti
     $modalInstance.close(selectedLabels)
 
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
-]
+])
 
-controllers.controller 'ReplyModalController', [ '$scope', '$modalInstance', ($scope, $modalInstance) ->
+controllers.controller('ReplyModalController', [ '$scope', '$modalInstance', ($scope, $modalInstance) ->
   $scope.text = ''
 
   $scope.ok = () -> $modalInstance.close($scope.text)
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
-]
+])
 
-controllers.controller 'ComposeModalController', [ '$scope', '$modalInstance', 'title', 'initialText', ($scope, $modalInstance, title, initialText) ->
+controllers.controller('ComposeModalController', ['$scope', '$modalInstance', 'title', 'initialText', ($scope, $modalInstance, title, initialText) ->
   $scope.title = title
   $scope.urn_scheme = null
   $scope.urn_path = ''
@@ -456,7 +466,19 @@ controllers.controller 'ComposeModalController', [ '$scope', '$modalInstance', '
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 
   $scope.setScheme('tel')
-]
+])
+
+controllers.controller('MessageHistoryModalController', ['$scope', '$modalInstance', 'MessageService', 'message', ($scope, $modalInstance, MessageService, message) ->
+  $scope.message = message
+  $scope.loading = true
+
+  MessageService.fetchHistory($scope.message, (actions)->
+    $scope.actions = actions
+    $scope.loading = false
+  )
+
+  $scope.close = () -> $modalInstance.dismiss('close')
+])
 
 
 #============================================================================

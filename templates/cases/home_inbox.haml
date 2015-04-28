@@ -103,25 +103,20 @@
                 %span.caret
               %ul.dropdown-menu
                 %li{ ng-repeat:"label in inactiveLabels" }
-                  %a{ ng-click:"labelSelection(label.name)" }
+                  %a{ ng-click:"labelSelection(label)" }
                     [[ label.name ]]
             %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"flagSelection()", type:"button", tooltip:"Flag" }
               %span.glyphicon.glyphicon-flag
             %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"replyToSelection()", type:"button" }
               - trans "Reply"
-            %button.btn.btn-default{ ng-disabled:"selection.length != 1", ng-click:"caseForSelection()", type:"button" }
-              - trans "Open Case"
-            %button.btn.btn-default{ ng-disabled:"selection.length != 1", ng-click:"forwardSelection()", type:"button" }
-              %span.glyphicon.glyphicon-share-alt
-              - trans "Forward"
             %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"archiveSelection()", type:"button" }
               - trans "Archive"
 
     .messages{ infinite-scroll:"loadOldMessages()", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
-      .stackitem.clearfix{ ng-repeat:"message in items | filter:{ archived: false }", ng-class:"{ flagged: message.flagged }" }
+      .stackitem.clearfix{ ng-repeat:"message in items | filter:{ archived: false }", ng-class:"{ flagged: message.flagged }", ng-click:"expandMessage(message)" }
         .message-actions
           %input{ type:"checkbox", ng-model:"message.selected", ng-change:"onChangeSelection()" }
-          %a.flag{ ng-click:"toggleMessageFlag(message)" }
+          %a.flag{ ng-click:"onToggleMessageFlag(message)" }
             %span.glyphicon.glyphicon-flag
         .message-time
           [[ message.time | autodate ]]
@@ -134,6 +129,16 @@
               [[ label.name ]]
             &nbsp;
           [[ message.text ]]
+        .message-extra{ collapse:"expandedMessageId != message.id" }
+          .btn-group.pull-away
+            %button.btn.btn-default{ type:"button", ng-click:"onCaseFromMessage(message)" }
+              - trans "Open Case"
+            %button.btn.btn-default{ type:"button", ng-click:"onForwardMessage(message)" }
+              %span.glyphicon.glyphicon-share-alt
+              - trans "Forward"
+            %button.btn.btn-default{ type:"button", ng-click:"onShowMessageHistory(message)" }
+              %span.glyphicon.glyphicon-time
+
       .loading{ ng-if:"oldItemsLoading" }
       .none{ ng-hide:"items.length > 0" }
         - trans "No messages"
@@ -185,6 +190,42 @@
           %button.btn.btn-default{ ng-click:"cancel()" }
             - trans "Cancel"
 
+    %script{ type:"text/ng-template", id:"messageHistory.html" }
+      .modal-header
+        %h3.modal-title
+          - trans "Message History"
+        .modal-body
+          .message-history
+            .action.stackitem{ ng-repeat:"action in actions" }
+              .action-time
+                [[ action.created_on | autodate ]]
+
+              %span{ ng-if:'action.action == "F"' }
+                Flagged
+              %span{ ng-if:'action.action == "N"' }
+                Un-flagged
+              %span{ ng-if:'action.action == "L"' }
+                Label
+                %span.label.label-success<
+                  [[ action.label.name ]]
+                &nbsp;added
+              %span{ ng-if:'action.action == "U"' }
+                &nbsp;Label
+                %span.label.label-success<
+                  [[ action.label.name ]]
+                removed
+              %span{ ng-if:'action.action == "A"' }
+                archived
+
+              by
+              %a{ ng-href:"/user/read/[[ action.created_by.id ]]/" }
+                [[ action.created_by.name ]]
+
+          .loading{ ng-if:"loading" }
+        .modal-footer
+          %button.btn.btn-primary{ ng-click:"close()" }
+            - trans "Close"
+
 
 - block extra-style
   {{ block.super }}
@@ -204,7 +245,7 @@
       width: auto;
       margin-right: 7px;
     }
-    .message-time {
+    .message-time, .action-time {
       float: right;
       font-size: 0.7em;
       margin-left: 3px;
@@ -219,4 +260,8 @@
     }
     .flagged .message-actions .flag {
       color: #444 !important;
+    }
+    .message-history {
+      max-height: 300px;
+      overflow-y: scroll;
     }

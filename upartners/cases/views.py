@@ -12,7 +12,7 @@ from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, Sma
 from smartmin.users.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba.utils import parse_iso8601
 from . import parse_csv, json_encode, contact_as_json, MAX_MESSAGE_CHARS
-from .models import Case, Group, Label, Message, MessageExport, Partner
+from .models import Case, Group, Label, Message, MessageAction, MessageExport, Partner
 from .tasks import message_export
 
 
@@ -482,6 +482,20 @@ class MessageSendView(OrgPermsMixin, View):
         broadcast = client.create_broadcast(urns=urns, contacts=contacts, text=text)
 
         return JsonResponse({'broadcast_id': broadcast.id})
+
+
+class MessageHistoryView(OrgPermsMixin, View):
+    """
+    JSON endpoint for fetching message history. Takes a message id
+    """
+    def has_permission(self, request, *args, **kwargs):
+        return request.user.is_authenticated()
+
+    def get(self, request, *args, **kwargs):
+        actions = MessageAction.get_by_message(self.request.org, int(kwargs['id'])).order_by('-pk')
+        actions = [a.as_json() for a in actions]
+
+        return JsonResponse({'actions': actions})
 
 
 class MessageExportCRUDL(SmartCRUDL):

@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from django.conf.urls import patterns, url
 from .views import CaseCRUDL, GroupCRUDL, LabelCRUDL, MessageExportCRUDL, PartnerCRUDL
-from .views import InboxView, CasesView, MessageSearchView, MessageActionView, MessageSendView
+from .views import InboxView, CasesView, MessageSearchView, MessageActionView, MessageHistoryView, MessageSendView
 
 
 urlpatterns = CaseCRUDL().as_urlpatterns()
@@ -16,6 +16,7 @@ urlpatterns += patterns('',
                         url(r'^cases/(?P<case_status>open|closed)/$', CasesView.as_view(), name='cases.cases'),
                         url(r'^message/$', MessageSearchView.as_view(), name='cases.message_list'),
                         url(r'^message/action/(?P<action>\w+)/$', MessageActionView.as_view(), name='cases.message_action'),
+                        url(r'^message/history/(?P<id>\d+)/$', MessageHistoryView.as_view(), name='cases.message_history'),
                         url(r'^message/send/$', MessageSendView.as_view(), name='cases.message_send'))
 
 

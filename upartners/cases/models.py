@@ -615,6 +615,10 @@ class MessageAction(models.Model):
     def create(cls, org, user, message_ids, action, label=None):
         MessageAction.objects.create(org=org, messages=message_ids, action=action, created_by=user, label=label)
 
+    @classmethod
+    def get_by_message(cls, org, message_id):
+        return cls.objects.filter(org=org, messages__contains=[message_id]).select_related('created_by', 'label')
+
     def as_json(self):
         return {'id': self.pk,
                 # 'messages': self.messages, TODO get length

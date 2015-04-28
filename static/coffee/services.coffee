@@ -56,6 +56,15 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
         callback(data.results, maxTime, maxId)
 
     #----------------------------------------------------------------------------
+    # Fetches history for a single message
+    #----------------------------------------------------------------------------
+    fetchHistory: (message, callback) ->
+      $http.get('/message/history/' + message.id + '/')
+      .success (data) =>
+        @_processMessageActions(data.actions)
+        callback(data.actions)
+
+    #----------------------------------------------------------------------------
     # Starts a message export
     #----------------------------------------------------------------------------
     startExport: (search, callback) ->
@@ -97,7 +106,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       for msg in messages
         if label.name not in msg.labels
           without_label.push(msg)
-          msg.labels.push(label.name)
+          msg.labels.push(label)
 
       if without_label.length > 0
         @_messagesAction(without_label, 'label', label)
@@ -141,7 +150,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       data = new FormData();
       data.append('messages', (m.id for m in messages))
       if label
-        data.append('label', l.id)
+        data.append('label', label.id)
 
       $http.post '/message/action/' + action + '/', data, DEFAULT_POST_OPTS
       .success () =>
@@ -168,6 +177,13 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
         # parse datetime string
         msg.time = parseIso8601(msg.time)
         msg.archived = false
+
+    #----------------------------------------------------------------------------
+    # Processes incoming message actions
+    #----------------------------------------------------------------------------
+    _processMessageActions: (actions) ->
+      for action in actions
+        action.created_on = parseIso8601(action.created_on)
 ]
 
 #=====================================================================
