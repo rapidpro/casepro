@@ -128,7 +128,8 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
 
   $scope.expandedMessageId = null
 
-  $scope.init = () ->
+  $scope.init = (msgType) ->
+    $scope.msgType = msgType
     $scope.searchFields = $scope.searchFieldDefaults()
     $scope.activeSearch = $scope.buildSearch()
 
@@ -141,6 +142,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
 
   $scope.buildSearch = () ->
     search = angular.copy($scope.searchFields)
+    search.archived = $scope.msgType == 'archived'
     search.label = $scope.activeLabel
     search.contact = $scope.activeContact
     search.timeCode = Date.now()

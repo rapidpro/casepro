@@ -391,7 +391,8 @@ class MessageSearchMixin(object):
                 'groups': groups,
                 'after': parse_iso8601(request.GET.get('after', None)),
                 'before': parse_iso8601(request.GET.get('before', None)),
-                'text': request.GET.get('text', None)}
+                'text': request.GET.get('text', None),
+                'archived': request.GET.get('archived', '') == 'true'}
 
 
 class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
@@ -411,7 +412,7 @@ class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
         pager = client.pager(start_page=page) if page else None
         messages = client.get_messages(pager=pager, labels=search['labels'],
                                        contacts=search['contacts'], groups=search['groups'],
-                                       direction='I', _types=['I'], statuses=['H'],
+                                       direction='I', _types=['I'], statuses=['H'], archived=search['archived'],
                                        after=search['after'], before=search['before'],
                                        text=search['text'])
 
@@ -640,6 +641,30 @@ class InboxView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
         for label, count in Label.get_message_counts(self.request.org, labels).iteritems():
             label.count = count
 
+    def get_context_data(self, **kwargs):
+        context = super(InboxView, self).get_context_data(**kwargs)
+        context['msg_type'] = 'inbox'
+        return context
+
+
+class ArchivedView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
+    """
+    Archived messages view
+    """
+    template_name = 'cases/home_archived.haml'
+
+    def has_permission(self, request, *args, **kwargs):
+        return request.user.is_authenticated()
+
+    def annotate_labels(self, labels):
+        for label, count in Label.get_message_counts(self.request.org, labels).iteritems():
+            label.count = count
+
+    def get_context_data(self, **kwargs):
+        context = super(ArchivedView, self).get_context_data(**kwargs)
+        context['msg_type'] = 'archived'
+        return context
+
 
 class CasesView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
     """
@@ -660,7 +685,5 @@ class CasesView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(CasesView, self).get_context_data(**kwargs)
-
         context['case_status'] = self.kwargs['case_status']
-
         return context

@@ -17,3 +17,6 @@
     %li.active
       %a{ href:"{% url 'cases.cases' case_status='closed' %}" }
         - trans "Closed"
+    %li
+      %a{ href:"{% url 'cases.archived' %}" }
+        - trans "Archived"

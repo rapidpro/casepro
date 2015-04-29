@@ -1,0 +1,250 @@
+- extends "cases/home_base.html"
+- load smartmin i18n
+
+- block home-items
+  .{ ng-controller:"MessagesController", ng-init:'init("{{ msg_type }}")' }
+    .contact-toolbar{ ng-show:"activeContact" }
+      .row
+        .col-md-12
+          %span.contact-info
+            Messages for contact
+            %strong
+              \#[[ activeContact | limitTo:6 | uppercase ]]
+          .pull-away
+            %button.btn.btn-default{ type:"button", ng-click:"activateContact(null)" }
+              - trans "Back"
+
+    .search-toolbar{ ng-show:"!activeContact" }
+      %form.form-inline
+        .row
+          .col-md-12{ style:"padding-bottom: 5px" }
+            %input.form-control{ ng-model:"searchFields.text", type:"text", placeholder:"Containing", style:"width: 250px" }
+            %span.date-range{ ng-controller:"DateRangeController" }
+              .form-group
+                %label{ for:"search-after" }
+                  - trans "From"
+                .input-group.date-picker
+                  %input.form-control{ type:"text", datepicker-popup:"[[ format ]]", ng-model:"searchFields.after", is-open:"afterOpen", min-date:"afterMin", max-date:"afterMax", ng-change:"onAfterChange()" }
+                  %span.input-group-btn
+                    %button.btn.btn-default{ type:"button", ng-click:"openAfter($event)" }
+                      %i.glyphicon.glyphicon-calendar
+              .form-group
+                %label{ for:"search-before" }
+                  - trans "Until"
+                .input-group.date-picker
+                  %input.form-control{ type:"text", datepicker-popup:"[[ format ]]", ng-model:"searchFields.before", is-open:"beforeOpen", min-date:"beforeMin", max-date:"beforeMax", ng-change:"onBeforeChange()" }
+                  %span.input-group-btn
+                    %button.btn.btn-default{ type:"button", ng-click:"openBefore($event)" }
+                      %i.glyphicon.glyphicon-calendar
+        .row
+          .col-md-12
+            .pull-back
+              // HAML doesn't seem to like dashes in tag names...
+              <ui-select multiple ng-model="searchFields.groups" theme="bootstrap" class="group-select">
+                <ui-select-match placeholder="Select groups...">[[ $item.name ]]</ui-select-match>
+                <ui-select-choices repeat="group in groups">
+                  [[ group.name ]]
+                </ui-select-choices>
+              </ui-select>
+
+            .pull-away
+              // TODO figure out why form is double-submitted when this is moved to ng-submit on the form. jQuery conflict?
+              %button.btn.btn-default{ type:"button", ng-click:"onSearch()" }
+                %span.glyphicon.glyphicon-search
+                - trans "Search"
+              .btn-group
+                %button.btn.btn-default{ type:"button", ng-click:"onResetSearch()" }
+                  - trans "Clear"
+                %button.btn.btn-default{ type:"button", ng-click:"onExportSearch()", tooltip:"Save as Excel" }
+                  %span.glyphicon.glyphicon-save
+
+    .selection-toolbar
+      .row
+        .col-md-12
+          .selection-controls.pull-back
+            .btn-group{ dropdown:"true" }
+              %button.btn.btn-default.dropdown-toggle{ type:"button", dropdown-toggle:"true" }
+                - trans "Select"
+                %span.caret
+              %ul.dropdown-menu
+                %li
+                  %a{ ng-click:"onSelectAll()" }
+                    - trans "All"
+                %li
+                  %a{ ng-click:"onSelectNone()" }
+                    - trans "None"
+
+          %span.selection-info{ ng-show:"selection.length > 0" }
+            [[ selection.length ]] of [[ totalItems() ]] messages selected
+          %span.selection-info{ ng-show:"selection.length == 0" }
+            [[ totalItems() ]] messages
+
+          .selection-actions.btn-group.pull-away
+            .btn-group{ dropdown:"true" }
+              %button.btn.btn-default.dropdown-toggle{ type:"button", dropdown-toggle:"true", ng-disabled:"selection.length == 0", tooltip:"Label" }
+                %span.glyphicon.glyphicon-tag
+                %span.caret
+              %ul.dropdown-menu
+                %li{ ng-repeat:"label in inactiveLabels" }
+                  %a{ ng-click:"labelSelection(label)" }
+                    [[ label.name ]]
+            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"flagSelection()", type:"button", tooltip:"Flag" }
+              %span.glyphicon.glyphicon-flag
+            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"replyToSelection()", type:"button" }
+              - trans "Reply"
+            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"archiveSelection()", type:"button" }
+              - trans "Archive"
+
+    .messages{ infinite-scroll:"loadOldMessages()", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
+      .stackitem.clearfix{ ng-repeat:"message in items | filter:{ archived: false }", ng-class:"{ flagged: message.flagged }" }
+        .message-actions
+          %input{ type:"checkbox", ng-model:"message.selected", ng-change:"onChangeSelection()" }
+          %a.flag{ ng-click:"onToggleMessageFlag(message)" }
+            %span.glyphicon.glyphicon-flag
+        .message-time
+          [[ message.time | autodate ]]
+        .message-contact
+          %a{ ng-click:"activateContact(message.contact)", title:"[[ message.contact ]]" }><
+            \#[[ message.contact | limitTo:6 | uppercase ]]
+        .message-text{ ng-click:"onExpandMessage(message)" }
+          %span.label-container{ ng-repeat:"label in filterDisplayLabels(message.labels)" }
+            %span.label.label-success
+              [[ label.name ]]
+            &nbsp;
+          [[ message.text ]]
+        .message-extra{ collapse:"expandedMessageId != message.id" }
+          .btn-group.pull-away
+            %button.btn.btn-default{ type:"button", ng-click:"onCaseFromMessage(message)" }
+              - trans "Open Case"
+            %button.btn.btn-default{ type:"button", ng-click:"onForwardMessage(message)" }
+              %span.glyphicon.glyphicon-share-alt
+              - trans "Forward"
+            %button.btn.btn-default{ type:"button", ng-click:"onShowMessageHistory(message)" }
+              %span.glyphicon.glyphicon-time
+
+      .loading{ ng-if:"oldItemsLoading" }
+      .none{ ng-hide:"items.length > 0" }
+        - trans "No messages"
+
+    %script{ type:"text/ng-template", id:"replyModal.html" }
+      .modal-header
+        %h3.modal-title
+          - trans "Reply"
+        .modal-body
+          %p
+            - trans "Send the following reply to each contact and archive each message. This will remove the messages from your inbox."
+          %textarea.form-control{ ng-model:"text" }
+        .modal-footer
+          %button.btn.btn-primary{ ng-click:"ok()" }
+            - trans "Send & Archive"
+          %button.btn.btn-default{ ng-click:"cancel()" }
+            - trans "Cancel"
+
+    %script{ type:"text/ng-template", id:"composeModal.html" }
+      .modal-header
+        %h3.modal-title
+          [[ title ]]
+        .modal-body
+          %form
+            .form-group
+              %label.control-label
+                - trans "Recipient"
+              .input-group
+                .input-group-btn
+                  %button.btn.btn-default.dropdown-toggle{ type:"button", data-toggle:"dropdown" }
+                    [[ urn_scheme_label ]]
+                    %span.caret
+                  %ul.dropdown-menu
+                    %li
+                      %a{ ng-click:'setScheme("tel")' }
+                        - trans "Phone"
+                    %li
+                      %a{ ng-click:'setScheme("twitter")' }
+                        - trans "Twitter"
+                %input.form-control{ type:"text", ng-model:"urn_path", style:"width: 300px" }
+
+            .form-group
+              %label.control-label{ for:"forward-text" }
+                - trans "Message"
+              %textarea.form-control{ ng-model:"text", id:"forward-text" }
+        .modal-footer
+          %button.btn.btn-primary{ ng-click:"ok()" }
+            - trans "Send"
+          %button.btn.btn-default{ ng-click:"cancel()" }
+            - trans "Cancel"
+
+    %script{ type:"text/ng-template", id:"messageHistory.html" }
+      .modal-header
+        %h3.modal-title
+          - trans "Message History"
+        .modal-body
+          .message-history
+            .action.stackitem{ ng-repeat:"action in actions" }
+              .action-time
+                [[ action.created_on | autodate ]]
+
+              %span{ ng-if:'action.action == "F"' }
+                Flagged
+              %span{ ng-if:'action.action == "N"' }
+                Un-flagged
+              %span{ ng-if:'action.action == "L"' }
+                Label
+                %span.label.label-success<
+                  [[ action.label.name ]]
+                &nbsp;added
+              %span{ ng-if:'action.action == "U"' }
+                &nbsp;Label
+                %span.label.label-success<
+                  [[ action.label.name ]]
+                removed
+              %span{ ng-if:'action.action == "A"' }
+                archived
+
+              by
+              %a{ ng-href:"/user/read/[[ action.created_by.id ]]/" }
+                [[ action.created_by.name ]]
+
+          .loading{ ng-if:"loading" }
+        .modal-footer
+          %button.btn.btn-primary{ ng-click:"close()" }
+            - trans "Close"
+
+
+- block extra-style
+  {{ block.super }}
+  :css
+    .search-toolbar .group-select {
+      width: 500px;
+    }
+    .message-actions {
+      float: left;
+      width: 50px;
+    }
+    .message-contact {
+      float: left;
+      width: 80px;
+    }
+    .message-actions input[type="checkbox"] {
+      width: auto;
+      margin-right: 7px;
+    }
+    .message-time, .action-time {
+      float: right;
+      font-size: 0.7em;
+      margin-left: 3px;
+      margin-bottom: 3px;
+    }
+    .message-text {
+      margin-left: 130px;
+    }
+    .message-actions .flag {
+      color: #ddd;
+      cursor: pointer;
+    }
+    .flagged .message-actions .flag {
+      color: #444 !important;
+    }
+    .message-history {
+      max-height: 300px;
+      overflow-y: scroll;
+    }

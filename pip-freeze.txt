@@ -2,7 +2,7 @@ Django==1.8
 Markdown==2.6.2
 Pillow==2.8.1
 Pygments==2.0.2
--e git+https://github.com/rapidpro/rapidpro-python@54422529b1422bed580e457c6629fba4095eb3be#egg=rapidpro-python
+-e git+https://github.com/rapidpro/rapidpro-python@6d0231e6685865d0856f0985ce5b5061300c44b7#egg=rapidpro-python
 amqp==1.4.6
 anyjson==0.3.3
 billiard==3.3.0.20
@@ -20,7 +20,7 @@ django-debug-toolbar==1.3.0
 django-digest==1.13
 django-guardian==1.2.5
 django-nose==1.4
-django-redis==3.8.3
+django-redis==3.8.4
 django-reversion==1.8.6
 django-rosetta==0.7.6
 django-storages==1.1.8
