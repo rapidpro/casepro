@@ -180,7 +180,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
 
       $timeout($scope.refreshNewItems, INTERVAL_MESSAGES_NEW)
 
-  $scope.expandMessage = (message) ->
+  $scope.onExpandMessage = (message) ->
     $scope.expandedMessageId = message.id
 
   #----------------------------------------------------------------------------
@@ -197,13 +197,17 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
 
   $scope.replyToSelection = () ->
     $modal.open({templateUrl: 'replyModal.html', controller: 'ReplyModalController', resolve: {}})
-    .result.then (text) ->
-      MessageService.replyToMessages $scope.selection, text, () ->
-        UtilsService.displayAlert('success', "Reply sent to contacts")
+    .result.then((text) ->
+      MessageService.replyToMessages($scope.selection, text, () ->
+        MessageService.archiveMessages($scope.selection, () ->
+          UtilsService.displayAlert('success', "Reply sent and messages archived")
+        )
+      )
+    )
 
   $scope.archiveSelection = () ->
     UtilsService.confirmModal 'Archive the selected messages? This will remove them from your inbox.', null, () ->
-      MessageService.unlabelMessages($scope.selection, $scope.labels)
+      MessageService.archiveMessages($scope.selection, ()->)
 
   #----------------------------------------------------------------------------
   # Single message actions

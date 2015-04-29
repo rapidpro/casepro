@@ -114,10 +114,12 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     # Archive messages
     #----------------------------------------------------------------------------
-    archiveMessages: (messages) ->
-      @_messagesAction(messages, 'archive', () ->
+    archiveMessages: (messages, callback) ->
+      @_messagesAction(messages, 'archive', null, () ->
         for msg in messages
           msg.archived = true
+
+        callback()
       )
 
     #----------------------------------------------------------------------------

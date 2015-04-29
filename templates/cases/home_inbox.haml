@@ -113,7 +113,7 @@
               - trans "Archive"
 
     .messages{ infinite-scroll:"loadOldMessages()", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
-      .stackitem.clearfix{ ng-repeat:"message in items | filter:{ archived: false }", ng-class:"{ flagged: message.flagged }", ng-click:"expandMessage(message)" }
+      .stackitem.clearfix{ ng-repeat:"message in items | filter:{ archived: false }", ng-class:"{ flagged: message.flagged }" }
         .message-actions
           %input{ type:"checkbox", ng-model:"message.selected", ng-change:"onChangeSelection()" }
           %a.flag{ ng-click:"onToggleMessageFlag(message)" }
@@ -123,7 +123,7 @@
         .message-contact
           %a{ ng-click:"activateContact(message.contact)", title:"[[ message.contact ]]" }><
             \#[[ message.contact | limitTo:6 | uppercase ]]
-        .message-text
+        .message-text{ ng-click:"onExpandMessage(message)" }
           %span.label-container{ ng-repeat:"label in filterDisplayLabels(message.labels)" }
             %span.label.label-success
               [[ label.name ]]
@@ -149,11 +149,11 @@
           - trans "Reply"
         .modal-body
           %p
-            - trans "Send the following reply to each contact"
+            - trans "Send the following reply to each contact and archive each message. This will remove the messages from your inbox."
           %textarea.form-control{ ng-model:"text" }
         .modal-footer
           %button.btn.btn-primary{ ng-click:"ok()" }
-            - trans "Send"
+            - trans "Send & Archive"
           %button.btn.btn-default{ ng-click:"cancel()" }
             - trans "Cancel"
 
