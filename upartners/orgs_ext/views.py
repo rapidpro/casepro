@@ -59,6 +59,9 @@ class OrgExtCRUDL(SmartCRUDL):
             contact_fields = forms.MultipleChoiceField(choices=(), label=_("Contact fields"),
                                                        help_text=_("Contact fields to display"), required=False)
 
+            banner_text = forms.CharField(label=_("Banner text"), widget=forms.Textarea,
+                                          help_text=_("Banner text displayed to all users"), required=False)
+
             def __init__(self, *args, **kwargs):
                 org = kwargs.pop('org')
                 super(OrgExtCRUDL.Edit.OrgExtForm, self).__init__(*args, **kwargs)
@@ -70,9 +73,11 @@ class OrgExtCRUDL(SmartCRUDL):
                 self.fields['contact_fields'].choices = field_choices
                 self.fields['contact_fields'].initial = org.get_contact_fields()
 
+                self.fields['banner_text'].initial = org.get_banner_text()
+
             class Meta:
                 model = Org
-                fields = ('name', 'timezone', 'contact_fields')
+                fields = ('name', 'timezone', 'contact_fields', 'banner_text')
 
         permission = 'orgs.org_edit'
         title = _("Edit My Organization")
@@ -87,6 +92,7 @@ class OrgExtCRUDL(SmartCRUDL):
         def pre_save(self, obj):
             obj = super(OrgExtCRUDL.Edit, self).pre_save(obj)
             obj.set_contact_fields(self.form.cleaned_data['contact_fields'])
+            obj.set_banner_text(self.form.cleaned_data['banner_text'])
             return obj
 
     class Chooser(OrgCRUDL.Chooser):

@@ -16,6 +16,7 @@ LAST_TASK_CACHE_TTL = 60 * 60 * 24 * 7  # 1 week
 
 
 ORG_CONFIG_CONTACT_FIELDS = 'contact_fields'
+ORG_CONFIG_BANNER_TEXT = 'banner_text'
 
 
 def _org_get_contact_fields(org):
@@ -25,6 +26,14 @@ def _org_get_contact_fields(org):
 
 def _org_set_contact_fields(org, fields):
     org.set_config(ORG_CONFIG_CONTACT_FIELDS, fields)
+
+
+def _org_get_banner_text(org):
+    return org.get_config(ORG_CONFIG_BANNER_TEXT)
+
+
+def _org_set_banner_text(org, text):
+    org.set_config(ORG_CONFIG_BANNER_TEXT, text)
 
 
 def _org_get_task_result(org, task_type):
@@ -38,5 +47,7 @@ def _org_set_task_result(org, task_type, result):
 
 Org.get_contact_fields = _org_get_contact_fields
 Org.set_contact_fields = _org_set_contact_fields
+Org.get_banner_text = _org_get_banner_text
+Org.set_banner_text = _org_set_banner_text
 Org.get_task_result = _org_get_task_result
 Org.set_task_result = _org_set_task_result

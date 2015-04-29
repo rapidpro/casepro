@@ -3,6 +3,12 @@
 
 - block pre-content
 
+  - if banner_text
+    .well.well-sm.banner
+      %span.glyphicon.glyphicon-info-sign
+      .banner-text
+        {{ banner_text }}
+
 - block content
 
   - include 'common_dialogs.haml'
@@ -58,6 +64,17 @@
 - block extra-style
   {{ block.super }}
   :css
+    .banner {
+      margin-bottom: 0;
+    }
+    .banner .glyphicon {
+      color: #999;
+      float: left;
+      font-size: 20px;
+    }
+    .banner .banner-text {
+      margin-left: 32px;
+    }
     .home-menu > li > a {
       padding: 7px 12px;
     }

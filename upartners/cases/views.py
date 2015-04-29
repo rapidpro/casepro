@@ -622,6 +622,8 @@ class HomeDataMixin(object):
             'groups': [g.as_json() for g in groups],
         })
 
+        context['banner_text'] = org.get_banner_text()
+
         return context
 
 
