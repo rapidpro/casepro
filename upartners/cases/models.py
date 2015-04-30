@@ -5,6 +5,7 @@ import pytz
 
 from dash.orgs.models import Org
 from dash.utils import get_obj_cacheable, random_string, chunks, intersection
+from datetime import date
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
@@ -128,11 +129,7 @@ class MessageExport(models.Model):
 
         # fetch all messages to be exported
         while True:
-            all_messages += client.get_messages(pager=pager, labels=search['labels'], text=search['text'],
-                                                contacts=search['contacts'], groups=search['groups'],
-                                                direction='I', _types=['I'], statuses=['H'],
-                                                after=search['after'], before=search['before'])
-
+            all_messages += Message.search(client, search, pager)
             if not pager.has_more():
                 break
 
@@ -292,7 +289,8 @@ class Label(models.Model):
         if not closed:
             qs = labels.filter(cases__closed_on=None)
         else:
-            qs = labels.exclude(cases__closed_on=None)
+            # can't use exclude with the annotation below
+            qs = labels.filter(cases__closed_on__gt=date(1970, 1, 1))
 
         counts_by_label = {l: l.num_cases for l in qs.annotate(num_cases=Count('cases'))}
 
@@ -315,16 +313,19 @@ class Label(models.Model):
         return self.name
 
 
-def case_action(func):
+class case_action(object):
     """
     Helper decorator for cae action methods that should check the user is allowed to update the case
     """
-    def action_wrapper(case, user, *args, **kwargs):
-        if not case.accessible_by(user, update=True):
-            raise PermissionDenied()
+    def __init__(self, require_update=True):
+        self.require_update = require_update
 
-        func(case, user, *args, **kwargs)
-    return action_wrapper
+    def __call__(self, func):
+        def wrapped(case, user, *args, **kwargs):
+            if not case.accessible_by(user, update=self.require_update):
+                raise PermissionDenied()
+            func(case, user, *args, **kwargs)
+        return wrapped
 
 
 class Case(models.Model):
@@ -380,7 +381,11 @@ class Case(models.Model):
         return self.labels.filter(is_active=True)
 
     @classmethod
-    def open(cls, org, user, labels, partner, message, unlabel_messages=True):
+    def open(cls, org, user, labels, partner, message, archive_messages=True):
+        # check for open case with this contact
+        if cls.get_open_for_contact_on(org, message.contact_uuid, timezone.now()).exists():
+            raise ValueError("Contact already has open case")
+
         summary = truncate(message.text, 255)
         case = cls.objects.create(org=org, assignee=partner, contact_uuid=message.contact,
                                   summary=summary, message_id=message.id, message_on=message.created_on)
@@ -388,18 +393,17 @@ class Case(models.Model):
 
         CaseAction.create(case, user, CaseAction.OPEN, assignee=partner)
 
-        # clear case labels from this message and subsequent messages from same contact
-        if unlabel_messages:
+        # archive messages and subsequent messages from same contact
+        if archive_messages:
             client = org.get_temba_client()
             messages = client.get_messages(contacts=[message.contact], direction='I', statuses=['H'], _types=['I'],
                                            after=message.created_on)
             message_ids = [m.id for m in messages]
-            for label in labels:
-                client.unlabel_messages(messages=message_ids, label=label.name)
+            client.archive_messages(messages=message_ids)
 
         return case
 
-    @case_action
+    @case_action(require_update=False)
     def note(self, user, note):
         CaseAction.create(self, user, CaseAction.NOTE, note=note)
 
@@ -566,6 +570,16 @@ class Message(object):
         MessageAction.create(org, user, message_ids, MessageAction.ARCHIVE)
 
     @staticmethod
+    def search(client, search, pager):
+        if not search['labels']:  # no access to un-labelled messages
+            return []
+
+        return client.get_messages(pager=pager, labels=search['labels'], text=search['text'],
+                                   contacts=search['contacts'], groups=search['groups'],
+                                   direction='I', _types=['I'], statuses=['H'], archived=search['archived'],
+                                   after=search['after'], before=search['before'])
+
+    @staticmethod
     def as_json(msg, label_map):
         """
         Prepares a message (fetched from RapidPro) for JSON serialization
@@ -621,7 +635,7 @@ class MessageAction(models.Model):
 
     def as_json(self):
         return {'id': self.pk,
-                # 'messages': self.messages, TODO get length
+                # 'messages': self.messages, TODO fetch and include length ?
                 'action': self.action,
                 'created_by': {'id': self.created_by.pk, 'name': self.created_by.get_full_name()},
                 'created_on': self.created_on,

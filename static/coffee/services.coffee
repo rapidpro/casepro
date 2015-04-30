@@ -137,7 +137,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     _searchToParams: (search) ->
       params = {}
-      params.archived = search.archived
+      params.status = search.status
       params.text = search.text
       params.after = formatIso8601(search.after)
       params.before = formatIso8601(search.before)

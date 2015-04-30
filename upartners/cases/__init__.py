@@ -9,6 +9,13 @@ MAX_MESSAGE_CHARS = 140
 SYSTEM_LABEL_FLAGGED = "Flagged"
 
 
+def str_to_bool(text):
+    """
+    Parses a boolean value from the given text
+    """
+    return text and text.lower() in ['true', 'y', 'yes', '1']
+
+
 def parse_csv(csv, as_ints=False):
     """
     Parses a comma separated list of values as strings or integers

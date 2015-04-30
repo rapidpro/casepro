@@ -2,7 +2,7 @@
 - load smartmin i18n
 
 - block home-items
-  .{ ng-controller:"MessagesController", ng-init:'init("{{ msg_type }}")' }
+  .{ ng-controller:"MessagesController", ng-init:'init("{{ item_filter }}")' }
     .contact-toolbar{ ng-show:"activeContact" }
       .row
         .col-md-12
@@ -198,13 +198,15 @@
                   [[ action.label.name ]]
                 removed
               %span{ ng-if:'action.action == "A"' }
-                archived
+                Archived
 
               by
               %a{ ng-href:"/user/read/[[ action.created_by.id ]]/" }
                 [[ action.created_by.name ]]
 
           .loading{ ng-if:"loading" }
+          .none{ ng-if:"actions.length == 0" }
+            - trans "No events"
         .modal-footer
           %button.btn.btn-primary{ ng-click:"close()" }
             - trans "Close"

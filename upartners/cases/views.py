@@ -11,7 +11,7 @@ from django.views.generic import View
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView, SmartFormView
 from smartmin.users.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba.utils import parse_iso8601
-from . import parse_csv, json_encode, contact_as_json, MAX_MESSAGE_CHARS
+from . import parse_csv, json_encode, contact_as_json, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
 from .models import Case, Group, Label, Message, MessageAction, MessageExport, Partner
 from .tasks import message_export
 
@@ -392,7 +392,7 @@ class MessageSearchMixin(object):
                 'after': parse_iso8601(request.GET.get('after', None)),
                 'before': parse_iso8601(request.GET.get('before', None)),
                 'text': request.GET.get('text', None),
-                'archived': request.GET.get('archived', '') == 'true'}
+                'archived': request.GET['status'] == 'archived'}
 
 
 class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
@@ -410,11 +410,7 @@ class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
 
         client = self.request.org.get_temba_client()
         pager = client.pager(start_page=page) if page else None
-        messages = client.get_messages(pager=pager, labels=search['labels'],
-                                       contacts=search['contacts'], groups=search['groups'],
-                                       direction='I', _types=['I'], statuses=['H'], archived=search['archived'],
-                                       after=search['after'], before=search['before'],
-                                       text=search['text'])
+        messages = Message.search(client, search, pager)
 
         context['messages'] = messages
 
@@ -624,7 +620,8 @@ class HomeDataMixin(object):
         })
 
         context['banner_text'] = org.get_banner_text()
-
+        context['folder_icon'] = self.folder_icon
+        context['item_filter'] = self.item_filter
         return context
 
 
@@ -632,7 +629,10 @@ class InboxView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
     """
     Inbox view
     """
-    template_name = 'cases/home_inbox.haml'
+    template_name = 'cases/home_messages.haml'
+    title = _("Inbox")
+    folder_icon = 'glyphicon-inbox'
+    item_filter = 'inbox'
 
     def has_permission(self, request, *args, **kwargs):
         return request.user.is_authenticated()
@@ -641,17 +641,66 @@ class InboxView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
         for label, count in Label.get_message_counts(self.request.org, labels).iteritems():
             label.count = count
 
-    def get_context_data(self, **kwargs):
-        context = super(InboxView, self).get_context_data(**kwargs)
-        context['msg_type'] = 'inbox'
-        return context
+
+class FlaggedView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
+    """
+    Inbox view
+    """
+    template_name = 'cases/home_messages.haml'
+    title = _("Flagged")
+    folder_icon = 'glyphicon-flag'
+    item_filter = 'flagged'
+
+    def has_permission(self, request, *args, **kwargs):
+        return request.user.is_authenticated()
+
+    def annotate_labels(self, labels):
+        for label, count in Label.get_message_counts(self.request.org, labels).iteritems():
+            label.count = count
+
+
+class OpenCasesView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
+    """
+    Open cases view
+    """
+    template_name = 'cases/home_cases.haml'
+    title = _("Open Cases")
+    folder_icon = 'glyphicon-folder-open'
+    item_filter = 'open'
+
+    def has_permission(self, request, *args, **kwargs):
+        return request.user.is_authenticated()
+
+    def annotate_labels(self, labels):
+        for label, count in Label.get_case_counts(labels, closed=False).iteritems():
+            label.count = count
+
+
+class ClosedCasesView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
+    """
+    Closed cases view
+    """
+    template_name = 'cases/home_cases.haml'
+    title = _("Closed Cases")
+    folder_icon = 'glyphicon-folder-close'
+    item_filter = 'closed'
+
+    def has_permission(self, request, *args, **kwargs):
+        return request.user.is_authenticated()
+
+    def annotate_labels(self, labels):
+        for label, count in Label.get_case_counts(labels, closed=True).iteritems():
+            label.count = count
 
 
 class ArchivedView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
     """
     Archived messages view
     """
-    template_name = 'cases/home_archived.haml'
+    template_name = 'cases/home_messages.haml'
+    title = _("Archived")
+    folder_icon = 'glyphicon-trash'
+    item_filter = 'archived'
 
     def has_permission(self, request, *args, **kwargs):
         return request.user.is_authenticated()
@@ -659,31 +708,3 @@ class ArchivedView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
     def annotate_labels(self, labels):
         for label, count in Label.get_message_counts(self.request.org, labels).iteritems():
             label.count = count
-
-    def get_context_data(self, **kwargs):
-        context = super(ArchivedView, self).get_context_data(**kwargs)
-        context['msg_type'] = 'archived'
-        return context
-
-
-class CasesView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
-    """
-    Open or closed cases views
-    """
-
-    def has_permission(self, request, *args, **kwargs):
-        return request.user.is_authenticated()
-
-    def get_template_names(self):
-        case_status = self.kwargs['case_status']
-        return ['cases/home_open.haml'] if case_status == 'open' else ['cases/home_closed.haml']
-
-    def annotate_labels(self, labels):
-        closed = self.kwargs['case_status'] == 'closed'
-        for label, count in Label.get_case_counts(labels, closed).iteritems():
-            label.count = count
-
-    def get_context_data(self, **kwargs):
-        context = super(CasesView, self).get_context_data(**kwargs)
-        context['case_status'] = self.kwargs['case_status']
-        return context

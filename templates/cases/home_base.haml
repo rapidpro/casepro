@@ -1,5 +1,5 @@
 - extends "smartmin/read.html"
-- load smartmin i18n
+- load smartmin i18n utils
 
 - block pre-content
 
@@ -19,7 +19,9 @@
   .{ ng-controller:"HomeController", ng-init:"init()" }
     .page-header.clearfix
       %h2.pull-back
-        - block home-title
+        %span{ class:'glyphicon {{ folder_icon }}' }
+        &nbsp;
+        {{ title }}
 
       .page-header-buttons{ ng-if:"activeLabel" }
         .label-name
@@ -37,7 +39,22 @@
 
     .row
       .col-md-2
-        - block home-menu
+        %ul.nav.nav-pills.nav-stacked.home-menu
+          %li{ class:"{% if_url 'cases.inbox' 'active' '' %}" }
+            %a{ href:"{% url 'cases.inbox' %}" }
+              - trans "Inbox"
+          %li{ class:"{% if_url 'cases.flagged' 'active' '' %}" }
+            %a{ href:"{% url 'cases.flagged' %}" }
+              - trans "Flagged"
+          %li{ class:"{% if_url 'cases.cases' 'active' '' %}" }
+            %a{ href:"{% url 'cases.open' %}" }
+              - trans "Open"
+          %li{ class:"{% if_url 'cases.cases' 'active' '' %}" }
+            %a{ href:"{% url 'cases.closed' %}" }
+              - trans "Closed"
+          %li{ class:"{% if_url 'cases.archived' 'active' '' %}" }
+            %a{ href:"{% url 'cases.archived' %}" }
+              - trans "Archived"
 
         .label-menu
           %h3
@@ -48,9 +65,9 @@
             %li
               %a{ ng-href:"#?label=", class:"italicized" }
                 %strong{ ng-if:"!activeLabel" }
-                  All (?)
+                  All
                 %span{ ng-if:"activeLabel" }
-                  All (?)
+                  All
             %li{ ng-repeat:"label in labels" }
               %a{ ng-href:"#?label=[[ label.name ]]" }
                 %strong{ ng-if:"label == activeLabel" }

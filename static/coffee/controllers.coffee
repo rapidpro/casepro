@@ -128,8 +128,8 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
 
   $scope.expandedMessageId = null
 
-  $scope.init = (msgType) ->
-    $scope.msgType = msgType
+  $scope.init = (itemStatus) ->
+    $scope.itemStatus = itemStatus
     $scope.searchFields = $scope.searchFieldDefaults()
     $scope.activeSearch = $scope.buildSearch()
 
@@ -142,7 +142,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
 
   $scope.buildSearch = () ->
     search = angular.copy($scope.searchFields)
-    search.archived = $scope.msgType == 'archived'
+    search.status = $scope.itemStatus
     search.label = $scope.activeLabel
     search.contact = $scope.activeContact
     search.timeCode = Date.now()
@@ -258,8 +258,8 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
 controllers.controller('CasesController', [ '$scope', '$timeout', '$controller', 'CaseService', 'UtilsService', ($scope, $timeout, $controller, CaseService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
-  $scope.init = (caseStatus) ->
-    $scope.caseStatus = caseStatus
+  $scope.init = (itemStatus) ->
+    $scope.itemStatus = itemStatus
     $scope.searchFields = $scope.searchFieldDefaults()
     $scope.activeSearch = $scope.buildSearch()
 
@@ -270,12 +270,12 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
 
   $scope.buildSearch = () ->
     search = angular.copy($scope.searchFields)
+    search.status = $scope.itemStatus
     search.label = $scope.activeLabel
-    search.status = $scope.caseStatus
     search.timeCode = Date.now()
     return search
 
-  $scope.searchFieldDefaults = () -> { assignee: null }
+  $scope.searchFieldDefaults = () -> { assignee: $scope.user.partner }
 
   $scope.loadOldItems = () ->
     $scope.oldItemsLoading = true

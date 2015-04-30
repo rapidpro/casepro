@@ -22,10 +22,10 @@
           Case #{{ object.pk }}
 
         .page-header-buttons
-          - if org_perms.cases.case_update
-            .btn-group
-              %button.btn.btn-default{ type:"button", ng-if:"!case.is_closed", ng-click:"note()" }
-                - trans "Add Note"
+          .btn-group
+            %button.btn.btn-default{ type:"button", ng-if:"!case.is_closed", ng-click:"note()" }
+              - trans "Add Note"
+            - if org_perms.cases.case_update
               %button.btn.btn-default{ type:"button", ng-if:"!case.is_closed", ng-click:"reassign()" }
                 - trans "Re-assign"
               %button.btn.btn-default{ type:"button", ng-if:"!case.is_closed", ng-click:"close()" }

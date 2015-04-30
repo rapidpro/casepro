@@ -2,7 +2,7 @@
 - load smartmin i18n
 
 - block home-items
-  .{ ng-controller:"CasesController", ng-init:'init("{{ case_status }}")' }
+  .{ ng-controller:"CasesController", ng-init:'init("{{ item_filter }}")' }
 
     .search-toolbar{ ng-show:"!activeContact" }
       .row

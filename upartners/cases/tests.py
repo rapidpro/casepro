@@ -153,19 +153,19 @@ class CaseTest(UPartnersTest):
         # case Jan 5th -> now
         with patch.object(timezone, 'now', return_value=d0):
             msg = TembaMessage.create(id=123, contact='C-001', created_on=d0, text="Hello")
-            case1 = Case.open(self.unicef, self.user1, [self.aids], self.moh, msg, unlabel_messages=False)
+            case1 = Case.open(self.unicef, self.user1, [self.aids], self.moh, msg, archive_messages=False)
 
         # case Jan 5th -> Jan 10th
         with patch.object(timezone, 'now', return_value=d0):
             msg = TembaMessage.create(id=234, contact='C-001', created_on=d0, text="Hello")
-            case2 = Case.open(self.unicef, self.user1, [self.pregnancy], self.moh, msg, unlabel_messages=False)
+            case2 = Case.open(self.unicef, self.user1, [self.pregnancy], self.moh, msg, archive_messages=False)
         with patch.object(timezone, 'now', return_value=d1):
             case2.close(self.user1)
 
         # case Jan 5th -> Jan 15th
         with patch.object(timezone, 'now', return_value=d0):
             msg = TembaMessage.create(id=345, contact='C-001', created_on=d0, text="Hello")
-            case3 = Case.open(self.unicef, self.user1, [self.pregnancy], self.moh, msg, unlabel_messages=False)
+            case3 = Case.open(self.unicef, self.user1, [self.pregnancy], self.moh, msg, archive_messages=False)
         with patch.object(timezone, 'now', return_value=d2):
             case3.close(self.user1)
 
