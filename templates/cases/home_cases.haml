@@ -41,7 +41,7 @@
             %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"closeSelection()", type:"button" }
               - trans "Close"
 
-    .cases{ infinite-scroll:"loadOldItems()", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
+    .cases{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
       .stackitem.clearfix{ ng-repeat:"item in items" }
         .case-actions
           %input{ type:"checkbox", ng-model:"item.selected", ng-change:"onChangeSelection()" }

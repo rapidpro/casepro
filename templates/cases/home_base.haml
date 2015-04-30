@@ -46,10 +46,10 @@
           %li{ class:"{% if_url 'cases.flagged' 'active' '' %}" }
             %a{ href:"{% url 'cases.flagged' %}" }
               - trans "Flagged"
-          %li{ class:"{% if_url 'cases.cases' 'active' '' %}" }
+          %li{ class:"{% if_url 'cases.open' 'active' '' %}" }
             %a{ href:"{% url 'cases.open' %}" }
               - trans "Open"
-          %li{ class:"{% if_url 'cases.cases' 'active' '' %}" }
+          %li{ class:"{% if_url 'cases.closed' 'active' '' %}" }
             %a{ href:"{% url 'cases.closed' %}" }
               - trans "Closed"
           %li{ class:"{% if_url 'cases.archived' 'active' '' %}" }

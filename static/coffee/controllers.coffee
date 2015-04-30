@@ -9,6 +9,8 @@ INTERVAL_CASES_NEW = 5000
 INTERVAL_CASE_INFO = 5000
 INTERVAL_CASE_TIMELINE = 10000
 
+SELECT_ALL_FETCH_SIZE = 1000
+
 #============================================================================
 # Home controller (DOM parent of inbox and cases)
 #============================================================================
@@ -91,7 +93,7 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
 
     $scope.items = []
     $scope.oldItemsPage = 0
-    $scope.loadOldItems()
+    $scope.loadOldItems(false)
 
   #----------------------------------------------------------------------------
   # Reset search form and refresh items accordingly
@@ -105,9 +107,14 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
   #----------------------------------------------------------------------------
 
   $scope.onSelectAll = () ->
+    # select all loaded items
     for item in $scope.items
       item.selected = true
     $scope.onChangeSelection()
+
+    # load and select more items if there are more
+    if $scope.oldItemsMore and $scope.totalItems() < SELECT_ALL_FETCH_SIZE
+      $scope.loadOldItems(true)
 
   $scope.onSelectNone = () ->
     for item in $scope.items
@@ -116,6 +123,27 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
 
   $scope.onChangeSelection = () ->
     $scope.selection = (item for item in $scope.items when item.selected)
+
+  #----------------------------------------------------------------------------
+  # Item fetching
+  #----------------------------------------------------------------------------
+
+  $scope.loadOldItems = (forSelectAll) ->
+    $scope.oldItemsLoading = true
+    $scope.oldItemsPage += 1
+
+    $scope.fetchOldItems (items, total, hasMore) ->
+      $scope.items = $scope.items.concat(items)
+      $scope.oldItemsMore = hasMore
+      $scope.oldItemsTotal = total
+      $scope.oldItemsLoading = false
+
+      if forSelectAll
+        for item in items
+          item.selected = true
+        $scope.onChangeSelection()
+        if $scope.oldItemsMore and $scope.totalItems() < SELECT_ALL_FETCH_SIZE
+          $scope.loadOldItems(true)
 ])
 
 
@@ -155,15 +183,8 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
       MessageService.startExport $scope.activeSearch, () ->
         UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
 
-  $scope.loadOldItems = () ->
-    $scope.oldItemsLoading = true
-    $scope.oldItemsPage += 1
-
-    MessageService.fetchOld $scope.activeSearch, $scope.startTime, $scope.oldItemsPage, (messages, total, hasMore) ->
-      $scope.items = $scope.items.concat(messages)
-      $scope.oldItemsMore = hasMore
-      $scope.oldItemsTotal = total
-      $scope.oldItemsLoading = false
+  $scope.fetchOldItems = (callback) ->
+    MessageService.fetchOld $scope.activeSearch, $scope.startTime, $scope.oldItemsPage, callback
 
   $scope.refreshNewItems = () ->
     # if user has specified a max time then don't bother looking for new messages
@@ -277,15 +298,8 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
 
   $scope.searchFieldDefaults = () -> { assignee: $scope.user.partner }
 
-  $scope.loadOldItems = () ->
-    $scope.oldItemsLoading = true
-    $scope.oldItemsPage += 1
-
-    CaseService.fetchOld $scope.activeSearch, $scope.startTime, $scope.oldItemsPage, (cases, total, hasMore) ->
-      $scope.items = $scope.items.concat(cases)
-      $scope.oldItemsMore = hasMore
-      $scope.oldItemsTotal = total
-      $scope.oldItemsLoading = false
+  $scope.fetchOldItems = (callback) ->
+    CaseService.fetchOld $scope.activeSearch, $scope.startTime, $scope.oldItemsPage, callback
 
   $scope.refreshNewItems = () ->
     timeCode = $scope.activeSearch.timeCode
