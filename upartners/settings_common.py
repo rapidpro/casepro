@@ -187,6 +187,9 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.humanize',
 
+    # mo-betta permission management
+    'guardian',
+
     # versioning of our data
     'reversion',
 
@@ -347,6 +350,7 @@ LOGOUT_REDIRECT_URL = "/"
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
+    'guardian.backends.ObjectPermissionBackend',
 )
 
 ANONYMOUS_USER_ID = -1
