@@ -15,8 +15,8 @@ from .tasks import label_new_org_messages
 
 class CaseTest(UPartnersTest):
     @patch('dash.orgs.models.TembaClient.get_messages')
-    @patch('dash.orgs.models.TembaClient.unlabel_messages')
-    def test_lifecyle(self, mock_unlabel_messages, mock_get_messages):
+    @patch('dash.orgs.models.TembaClient.archive_messages')
+    def test_lifecyle(self, mock_archive_messages, mock_get_messages):
         d0 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
         d1 = datetime(2014, 1, 2, 7, 0, tzinfo=timezone.utc)
         d2 = datetime(2014, 1, 2, 8, 0, tzinfo=timezone.utc)
@@ -29,7 +29,7 @@ class CaseTest(UPartnersTest):
         msg1 = TembaMessage.create(id=123, contact='C-001', created_on=d0, text="Hello")
         msg2 = TembaMessage.create(id=234, contact='C-001', created_on=d1, text="Hello again")
         mock_get_messages.return_value = [msg1, msg2]
-        mock_unlabel_messages.return_value = None
+        mock_archive_messages.return_value = None
 
         with patch.object(timezone, 'now', return_value=d1):
             # MOH opens new case
@@ -45,15 +45,15 @@ class CaseTest(UPartnersTest):
         self.assertEqual(case.opened_on, d1)
         self.assertIsNone(case.closed_on)
 
-        actions = case.actions.all()
+        actions = case.actions.order_by('pk')
         self.assertEqual(len(actions), 1)
         self.assertEqual(actions[0].action, CaseAction.OPEN)
         self.assertEqual(actions[0].created_by, self.user1)
         self.assertEqual(actions[0].created_on, d1)
         self.assertEqual(actions[0].assignee, self.moh)
 
-        # check that opening the case fetched the messages and cleared the case labels from them
-        mock_unlabel_messages.assert_called_once_with(messages=[123, 234], label='AIDS')
+        # check that opening the case fetched the messages and archived them
+        mock_archive_messages.assert_called_once_with(messages=[123, 234])
 
         self.assertTrue(case.accessible_by(self.user1, update=False))  # user who opened it can view and update
         self.assertTrue(case.accessible_by(self.user1, update=True))
@@ -68,7 +68,7 @@ class CaseTest(UPartnersTest):
             # other user in MOH adds a note
             case.note(self.user2, "Interesting")
 
-        actions = case.actions.all()
+        actions = case.actions.order_by('pk')
         self.assertEqual(len(actions), 2)
         self.assertEqual(actions[1].action, CaseAction.NOTE)
         self.assertEqual(actions[1].created_by, self.user2)
@@ -85,7 +85,7 @@ class CaseTest(UPartnersTest):
         self.assertEqual(case.opened_on, d1)
         self.assertEqual(case.closed_on, d3)
 
-        actions = case.actions.all()
+        actions = case.actions.order_by('pk')
         self.assertEqual(len(actions), 3)
         self.assertEqual(actions[2].action, CaseAction.CLOSE)
         self.assertEqual(actions[2].created_by, self.user1)
@@ -98,7 +98,7 @@ class CaseTest(UPartnersTest):
         self.assertEqual(case.opened_on, d1)  # unchanged
         self.assertIsNone(case.closed_on)
 
-        actions = case.actions.all()
+        actions = case.actions.order_by('pk')
         self.assertEqual(len(actions), 4)
         self.assertEqual(actions[3].action, CaseAction.REOPEN)
         self.assertEqual(actions[3].created_by, self.user2)
@@ -110,7 +110,7 @@ class CaseTest(UPartnersTest):
 
         self.assertEqual(case.assignee, self.who)
 
-        actions = case.actions.all()
+        actions = case.actions.order_by('pk')
         self.assertEqual(len(actions), 5)
         self.assertEqual(actions[4].action, CaseAction.REASSIGN)
         self.assertEqual(actions[4].created_by, self.user2)
@@ -121,7 +121,7 @@ class CaseTest(UPartnersTest):
             # user from that partner re-labels it
             case.update_labels(self.user3, [self.pregnancy])
 
-        actions = case.actions.all()
+        actions = case.actions.order_by('pk')
         self.assertEqual(len(actions), 7)
         self.assertEqual(actions[5].action, CaseAction.LABEL)
         self.assertEqual(actions[5].created_by, self.user3)
@@ -139,7 +139,7 @@ class CaseTest(UPartnersTest):
         self.assertEqual(case.opened_on, d1)
         self.assertEqual(case.closed_on, d7)
 
-        actions = case.actions.all()
+        actions = case.actions.order_by('pk')
         self.assertEqual(len(actions), 8)
         self.assertEqual(actions[7].action, CaseAction.CLOSE)
         self.assertEqual(actions[7].created_by, self.user3)
@@ -277,12 +277,12 @@ class MessageTest(UPartnersTest):
     def test_bulk_archive(self, mock_archive_messages):
         Message.bulk_archive(self.unicef, self.user1, [123, 234, 345])
 
-        action = MessageAction.get()
+        action = MessageAction.objects.get()
         self.assertEqual(action.action, MessageAction.ARCHIVE)
         self.assertEqual(action.created_by, self.user1)
         self.assertEqual(action.messages, [123, 234, 345])
 
-        mock_archive_messages.assert_called_once_with(messages=[123, 234, 345])
+        mock_archive_messages.assert_called_once_with([123, 234, 345])
 
 
 class PartnerTest(UPartnersTest):

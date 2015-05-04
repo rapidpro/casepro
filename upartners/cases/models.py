@@ -383,7 +383,7 @@ class Case(models.Model):
     @classmethod
     def open(cls, org, user, labels, partner, message, archive_messages=True):
         # check for open case with this contact
-        if cls.get_open_for_contact_on(org, message.contact_uuid, timezone.now()).exists():
+        if cls.get_open_for_contact_on(org, message.contact, timezone.now()).exists():
             raise ValueError("Contact already has open case")
 
         summary = truncate(message.text, 255)
@@ -407,34 +407,34 @@ class Case(models.Model):
     def note(self, user, note):
         CaseAction.create(self, user, CaseAction.NOTE, note=note)
 
-    @case_action
+    @case_action()
     def close(self, user, note=None):
         self.closed_on = timezone.now()
         self.save(update_fields=('closed_on',))
 
         CaseAction.create(self, user, CaseAction.CLOSE, note=note)
 
-    @case_action
+    @case_action()
     def reopen(self, user, note=None):
         self.closed_on = None
         self.save(update_fields=('closed_on',))
 
         CaseAction.create(self, user, CaseAction.REOPEN, note=note)
 
-    @case_action
+    @case_action()
     def reassign(self, user, partner, note=None):
         self.assignee = partner
         self.save(update_fields=('assignee',))
 
         CaseAction.create(self, user, CaseAction.REASSIGN, assignee=partner, note=note)
 
-    @case_action
+    @case_action()
     def label(self, user, label):
         self.labels.add(label)
 
         CaseAction.create(self, user, CaseAction.LABEL, label=label)
 
-    @case_action
+    @case_action()
     def unlabel(self, user, label):
         self.labels.remove(label)
 
