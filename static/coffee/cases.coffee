@@ -1,11 +1,11 @@
-app = angular.module('upartners', [
+app = angular.module('cases', [
   'ngSanitize',
   'ui.bootstrap',
   'ui.select',
   'infinite-scroll',
-  'upartners.services',
-  'upartners.controllers',
-  'upartners.filters'
+  'cases.services',
+  'cases.controllers',
+  'cases.filters'
 ]);
 
 app.config [ '$interpolateProvider', '$httpProvider', ($interpolateProvider, $httpProvider) ->
@@ -17,6 +17,5 @@ app.config [ '$interpolateProvider', '$httpProvider', ($interpolateProvider, $ht
   $httpProvider.defaults.xsrfCookieName = 'csrftoken'
   $httpProvider.defaults.xsrfHeaderName = 'X-CSRFToken'
 
-  # Disabled since we reverted to Angular 1.2.x
-  # $httpProvider.useApplyAsync(true);
+  $httpProvider.useApplyAsync(true);
 ]

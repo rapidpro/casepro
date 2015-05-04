@@ -5,7 +5,7 @@ from django.template import loader, Context
 from django.conf import settings
 
 
-def send_upartners_email(to_email, subject, template, context):
+def send_email(to_email, subject, template, context):
     """
     Sends an email
     """

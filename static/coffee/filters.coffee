@@ -1,4 +1,4 @@
-filters = angular.module('upartners.filters', []);
+filters = angular.module('cases.filters', []);
 
 
 #----------------------------------------------------------------------------

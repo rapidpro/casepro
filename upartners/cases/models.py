@@ -19,7 +19,7 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from temba.base import TembaNoSuchObjectError
-from upartners.email import send_upartners_email
+from upartners.email import send_email
 from . import parse_csv, truncate, SYSTEM_LABEL_FLAGGED
 
 
@@ -201,7 +201,7 @@ class MessageExport(models.Model):
         import gc
         gc.collect()
 
-        send_upartners_email(self.created_by.username, subject, 'cases/email/message_export', dict(link=download_url))
+        send_email(self.created_by.username, subject, 'cases/email/message_export', dict(link=download_url))
 
 
 class Partner(models.Model):

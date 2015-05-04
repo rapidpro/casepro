@@ -8,12 +8,12 @@ from mock import patch, call
 from temba.types import Message as TembaMessage
 from upartners.orgs_ext import TaskType
 from upartners.profiles import ROLE_ANALYST, ROLE_MANAGER
-from upartners.test import UPartnersTest
+from upartners.test import BaseCasesTest
 from .models import Case, CaseAction, Label, Message, MessageAction, Partner
 from .tasks import label_new_org_messages
 
 
-class CaseTest(UPartnersTest):
+class CaseTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient.get_messages')
     @patch('dash.orgs.models.TembaClient.archive_messages')
     def test_lifecyle(self, mock_archive_messages, mock_get_messages):
@@ -182,7 +182,7 @@ class CaseTest(UPartnersTest):
         self.assertEqual(set(cases), {case1})
 
 
-class LabelTest(UPartnersTest):
+class LabelTest(BaseCasesTest):
     def test_create(self):
         ebola = Label.create(self.unicef, "Ebola", "Msgs about ebola", ['ebola', 'fever'], [self.moh, self.who])
         self.assertEqual(ebola.org, self.unicef)
@@ -226,7 +226,7 @@ class LabelTest(UPartnersTest):
         self.assertEqual(result['counts']['labels'], 3)
 
 
-class LabelCRUDLTest(UPartnersTest):
+class LabelCRUDLTest(BaseCasesTest):
     def test_create(self):
         url = reverse('cases.label_create')
 
@@ -272,7 +272,7 @@ class LabelCRUDLTest(UPartnersTest):
         self.assertEqual(list(response.context['object_list']), [self.aids, self.pregnancy])
 
 
-class MessageTest(UPartnersTest):
+class MessageTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient.archive_messages')
     def test_bulk_archive(self, mock_archive_messages):
         Message.bulk_archive(self.unicef, self.user1, [123, 234, 345])
@@ -285,7 +285,7 @@ class MessageTest(UPartnersTest):
         mock_archive_messages.assert_called_once_with([123, 234, 345])
 
 
-class PartnerTest(UPartnersTest):
+class PartnerTest(BaseCasesTest):
     def test_create(self):
         wfp = Partner.create(self.unicef, "WFP")
         self.assertEqual(wfp.org, self.unicef)

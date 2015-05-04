@@ -12,7 +12,7 @@ from upartners.cases.models import Label, Partner
 from upartners.profiles import ROLE_ANALYST, ROLE_MANAGER
 
 
-class UPartnersTest(TestCase):
+class BaseCasesTest(TestCase):
     """
     Base class for all test cases
     """

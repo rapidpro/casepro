@@ -1,4 +1,4 @@
-services = angular.module('upartners.services', []);
+services = angular.module('cases.services', []);
 
 
 DEFAULT_POST_OPTS = {transformRequest: angular.identity, headers: {'Content-Type': undefined}}

@@ -5,10 +5,10 @@ from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
 from mock import patch
 from upartners.profiles import ROLE_ANALYST, ROLE_MANAGER
-from upartners.test import UPartnersTest
+from upartners.test import BaseCasesTest
 
 
-class UserPatchTest(UPartnersTest):
+class UserPatchTest(BaseCasesTest):
     def test_create_user(self):
         user = User.create(self.unicef, self.moh, ROLE_MANAGER, "Mo Polls", "mo@moh.com", "Qwerty123", False)
         self.assertEqual(user.profile.full_name, "Mo Polls")
@@ -49,7 +49,7 @@ class UserPatchTest(UPartnersTest):
         self.assertEqual(unicode(self.user1), "evan@unicef.org")
 
 
-class UserCRUDLTest(UPartnersTest):
+class UserCRUDLTest(BaseCasesTest):
     def test_create(self):
         url = reverse('profiles.user_create')
 
@@ -272,7 +272,7 @@ class UserCRUDLTest(UPartnersTest):
         self.assertNotEqual(user.password, old_password_hash)
 
 
-class ForcePasswordChangeMiddlewareTest(UPartnersTest):
+class ForcePasswordChangeMiddlewareTest(BaseCasesTest):
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     @patch('dash.orgs.models.TembaClient.get_labels')
     def test_process_view(self, mock_get_labels):

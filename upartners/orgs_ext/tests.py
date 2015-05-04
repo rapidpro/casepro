@@ -1,10 +1,10 @@
 from __future__ import absolute_import, unicode_literals
 
 from django.core.urlresolvers import reverse
-from upartners.test import UPartnersTest
+from upartners.test import BaseCasesTest
 
 
-class OrgExtCRUDLTest(UPartnersTest):
+class OrgExtCRUDLTest(BaseCasesTest):
     def test_home(self):
         url = reverse('orgs_ext.org_home')
 

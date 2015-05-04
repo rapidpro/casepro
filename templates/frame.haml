@@ -1,13 +1,13 @@
 <!doctype html>
 - load compress thumbnail smartmin i18n
-%html{ dir:"{{ lang_direction }}", ng-app:"upartners"}
+%html{ dir:"{{ lang_direction }}", ng-app:"cases"}
 
   %head
     %meta{ charset:"utf-8"}
     %title
       - block title
         - if not org
-          - trans "U-Report Partners"
+          - trans "Cases"
         - else
           {{ org.name }}
       - block subtitle
@@ -32,7 +32,7 @@
         %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/bootstrap.css" }
         %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/smartmin_styles.css" }
         %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/select.min.css" }
-        %link{ type:"text/less", rel:"stylesheet", href:"{{ STATIC_URL }}less/upartners.less" }
+        %link{ type:"text/less", rel:"stylesheet", href:"{{ STATIC_URL }}less/cases.less" }
 
     - block extra-less
     - block extra-style
@@ -50,11 +50,17 @@
               %span.icon-bar
               %span.icon-bar
 
-          #admin-brand.navbar-brand
-            - if not org
-              - trans "U-Report Partners"
+          %a#admin-brand.navbar-brand{ href:"/" }
+            - if org and org.logo
+              {% thumbnail org.logo "x50" format="PNG" as im %}
+              %img.logo{ src:"{{ im.url }}", alt:"{{ org.name }}"}
+              {% endthumbnail %}
             - else
-              {{ org.name }}
+              .{ style:"padding: 15px" }
+                - if org
+                  {{ org.name }}
+                - else
+                  - trans "Cases"
 
           %nav#admin-top-navbar-collapse.admin-top-navbar.collapse.navbar-collapse{ role:"navigation"}
             %ul.nav.navbar-nav
@@ -101,11 +107,6 @@
                       %li
                         %a{ href:"{% url 'profiles.user_list' %}" }
                           - trans "Users"
-
-              - if org and request.user.is_authenticated
-                %li
-                  %a{ href:"/" }
-                    - trans "Home"
 
             %ul.nav.navbar-nav.navbar-right
               - block login
@@ -157,7 +158,7 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/select.min.js"></script>
 
     {% compress js %}
-    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/upartners.coffee" }
+    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/cases.coffee" }
     %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/services.coffee" }
     %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/controllers.coffee" }
     %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/filters.coffee" }

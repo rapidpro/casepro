@@ -1,4 +1,4 @@
-controllers = angular.module('upartners.controllers', ['upartners.services']);
+controllers = angular.module('cases.controllers', ['cases.services']);
 
 
 URN_SCHEMES = {tel: "Phone", twitter: "Twitter"}
