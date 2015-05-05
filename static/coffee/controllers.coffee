@@ -210,15 +210,15 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
   # Selection actions
   #----------------------------------------------------------------------------
 
-  $scope.labelSelection = (label) ->
+  $scope.onLabelSelection = (label) ->
     UtilsService.confirmModal 'Apply the label <strong>' + label.name + '</strong> to the selected messages?', null, () ->
       MessageService.labelMessages($scope.selection, label)
 
-  $scope.flagSelection = () ->
+  $scope.onFlagSelection = () ->
     UtilsService.confirmModal 'Flag the selected messages?', null, () ->
       MessageService.flagMessages($scope.selection, true)
 
-  $scope.replyToSelection = () ->
+  $scope.onReplyToSelection = () ->
     $modal.open({templateUrl: 'replyModal.html', controller: 'ReplyModalController', resolve: {}})
     .result.then((text) ->
       MessageService.replyToMessages($scope.selection, text, () ->
@@ -228,7 +228,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
       )
     )
 
-  $scope.archiveSelection = () ->
+  $scope.onArchiveSelection = () ->
     UtilsService.confirmModal 'Archive the selected messages? This will remove them from your inbox.', null, () ->
       MessageService.archiveMessages($scope.selection, ()->)
 
@@ -264,6 +264,10 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     else
       UtilsService.assignModal "New case", prompt, $scope.partners, (assignee) ->
         openCase(assignee)
+
+  $scope.onLabelMessage = (message) ->
+    UtilsService.labelModal "Labels", "Update the labels for this message. This determines which other partner organizations can view this message.", $scope.labels, message.labels, (selectedLabels) ->
+      MessageService.relabelMessage(message, selectedLabels)
 
   $scope.onShowMessageHistory = (message) ->
     $modal.open({templateUrl: 'messageHistory.html', controller: 'MessageHistoryModalController', resolve: {
@@ -346,7 +350,7 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
 
   $scope.onEditLabels = ->
     UtilsService.labelModal "Labels", "Update the labels for this case. This determines which other partner organizations can view this case.", $scope.allLabels, $scope.case.labels, (selectedLabels) ->
-      CaseService.labelCase $scope.case, selectedLabels, ->
+      CaseService.relabelCase $scope.case, selectedLabels, ->
 
   #----------------------------------------------------------------------------
   # Messaging

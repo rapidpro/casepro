@@ -86,13 +86,13 @@
                 %span.caret
               %ul.dropdown-menu
                 %li{ ng-repeat:"label in inactiveLabels" }
-                  %a{ ng-click:"labelSelection(label)" }
+                  %a{ ng-click:"onLabelSelection(label)" }
                     [[ label.name ]]
-            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"flagSelection()", type:"button", tooltip:"Flag" }
+            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onFlagSelection()", type:"button", tooltip:"Flag" }
               %span.glyphicon.glyphicon-flag
-            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"replyToSelection()", type:"button" }
+            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onReplyToSelection()", type:"button" }
               - trans "Reply"
-            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"archiveSelection()", type:"button" }
+            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onArchiveSelection()", type:"button" }
               - trans "Archive"
 
     .messages{ infinite-scroll:"loadOldMessages(false)", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
@@ -119,6 +119,8 @@
             %button.btn.btn-default{ type:"button", ng-click:"onForwardMessage(message)" }
               %span.glyphicon.glyphicon-share-alt
               - trans "Forward"
+            %button.btn.btn-default{ type:"button", ng-click:"onLabelMessage(message)" }
+              %span.glyphicon.glyphicon-tag
             %button.btn.btn-default{ type:"button", ng-click:"onShowMessageHistory(message)" }
               %span.glyphicon.glyphicon-time
 
@@ -193,7 +195,7 @@
                   [[ action.label.name ]]
                 &nbsp;added
               %span{ ng-if:'action.action == "U"' }
-                &nbsp;Label
+                Label
                 %span.label.label-success<
                   [[ action.label.name ]]
                 removed

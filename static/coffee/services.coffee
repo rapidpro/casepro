@@ -99,7 +99,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       )
 
     #----------------------------------------------------------------------------
-    # Label messages
+    # Label messages with the given label
     #----------------------------------------------------------------------------
     labelMessages: (messages, label) ->
       without_label = []
@@ -121,6 +121,17 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
 
         callback()
       )
+
+    #----------------------------------------------------------------------------
+    # Relabel the given message (removing labels if necessary)
+    #----------------------------------------------------------------------------
+    relabelMessage: (message, labels) ->
+      data = new FormData()
+      data.append('labels', (l.id for l in labels))
+
+      $http.post('/message/label/' + message.id + '/', data, DEFAULT_POST_OPTS)
+      .success () ->
+        message.labels = labels
 
     #----------------------------------------------------------------------------
     # Send new message
@@ -306,9 +317,9 @@ services.factory 'CaseService', ['$http', ($http) ->
         callback()
 
     #----------------------------------------------------------------------------
-    # Labels a case
+    # Re-labels a case
     #----------------------------------------------------------------------------
-    labelCase: (_case, labels, callback) ->
+    relabelCase: (_case, labels, callback) ->
       data = new FormData()
       data.append('labels', (l.id for l in labels))
 

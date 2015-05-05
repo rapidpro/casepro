@@ -373,12 +373,16 @@ class MessageSearchMixin(object):
         Collects and prepares message search parameters into JSON serializable dict
         """
         request = self.request
+        status = request.GET['status']
 
         labels = Label.get_all(request.org, request.user)
         label_id = request.GET.get('label', None)
         if label_id:
             labels = labels.filter(pk=label_id)
         labels = [l.name for l in labels]
+
+        if status == 'flagged':
+            labels.append('+%s' % SYSTEM_LABEL_FLAGGED)
 
         contact = request.GET.get('contact', None)
         contacts = [contact] if contact else None
@@ -392,7 +396,7 @@ class MessageSearchMixin(object):
                 'after': parse_iso8601(request.GET.get('after', None)),
                 'before': parse_iso8601(request.GET.get('before', None)),
                 'text': request.GET.get('text', None),
-                'archived': request.GET['status'] == 'archived'}
+                'archived': status == 'archived'}
 
 
 class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
@@ -455,11 +459,31 @@ class MessageActionView(OrgPermsMixin, View):
             Message.bulk_unflag(org, user, message_ids)
         elif action == 'label':
             Message.bulk_label(org, user, message_ids, label)
+        elif action == 'unlabel':
+            Message.bulk_unlabel(org, user, message_ids, label)
         elif action == 'archive':
             Message.bulk_archive(org, user, message_ids)
         else:
             return HttpResponseBadRequest("Invalid action: %s", action)
 
+        return HttpResponse(status=204)
+
+
+class MessageLabelView(OrgPermsMixin, View):
+    """
+    AJAX endpoint for labelling a message.
+    """
+    def has_permission(self, request, *args, **kwargs):
+        return request.user.is_authenticated()
+
+    def post(self, request, *args, **kwargs):
+        org = self.request.org
+        user = self.request.user
+        message = org.get_temba_client().get_message(int(kwargs['id']))
+        label_ids = parse_csv(self.request.POST.get('labels', ''), as_ints=True)
+        labels = Label.get_all(org, user).filter(pk__in=label_ids)
+
+        Message.update_labels(message, org, user, labels)
         return HttpResponse(status=204)
 
 

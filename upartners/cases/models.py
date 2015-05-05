@@ -563,18 +563,40 @@ class Message(object):
         MessageAction.create(org, user, message_ids, MessageAction.LABEL, label)
 
     @staticmethod
+    def bulk_unlabel(org, user, message_ids, label):
+        client = org.get_temba_client()
+        client.unlabel_messages(message_ids, label=label.name)
+
+        MessageAction.create(org, user, message_ids, MessageAction.UNLABEL, label)
+
+    @staticmethod
     def bulk_archive(org, user, message_ids):
         client = org.get_temba_client()
         client.archive_messages(message_ids)
 
         MessageAction.create(org, user, message_ids, MessageAction.ARCHIVE)
 
+    @classmethod
+    def update_labels(cls, msg, org, user, labels):
+        """
+        Updates all this message's labels to the given set, creating label and unlabel actions as necessary
+        """
+        current_labels = Label.get_all(org, user).filter(name__in=msg.labels)
+
+        add_labels = [l for l in labels if l not in current_labels]
+        rem_labels = [l for l in current_labels if l not in labels]
+
+        for label in add_labels:
+            cls.bulk_label(org, user, [msg.id], label)
+        for label in rem_labels:
+            cls.bulk_unlabel(org, user, [msg.id], label)
+
     @staticmethod
     def search(client, search, pager):
         if not search['labels']:  # no access to un-labelled messages
             return []
 
-        return client.get_messages(pager=pager, labels=search['labels'], text=search['text'],
+        return client.get_messages(pager=pager, text=search['text'], labels=search['labels'],
                                    contacts=search['contacts'], groups=search['groups'],
                                    direction='I', _types=['I'], statuses=['H'], archived=search['archived'],
                                    after=search['after'], before=search['before'])
@@ -606,11 +628,13 @@ class MessageAction(models.Model):
     FLAG = 'F'
     UNFLAG = 'N'
     LABEL = 'L'
+    UNLABEL = 'U'
     ARCHIVE = 'A'
 
     ACTION_CHOICES = ((FLAG, _("Flag")),
                       (UNFLAG, _("Un-flag")),
                       (LABEL, _("Label")),
+                      (UNLABEL, _("Remove Label")),
                       (ARCHIVE, _("Archive")))
 
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='message_actions')
