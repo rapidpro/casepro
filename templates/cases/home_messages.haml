@@ -96,7 +96,7 @@
               - trans "Archive"
 
     .messages{ infinite-scroll:"loadOldMessages(false)", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
-      .stackitem.clearfix{ ng-repeat:"message in items | filter:{ archived: false }", ng-class:"{ flagged: message.flagged }" }
+      .stackitem.clearfix{ ng-repeat:"message in items | filter: itemFilter", ng-class:"{ flagged: message.flagged }" }
         .message-actions
           %input{ type:"checkbox", ng-model:"message.selected", ng-change:"onChangeSelection()" }
           %a.flag{ ng-click:"onToggleMessageFlag(message)" }

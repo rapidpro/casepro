@@ -168,6 +168,9 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     $scope.$on 'activeContactChange', () ->
       $scope.onResetSearch()
 
+  $scope.itemFilter = (item) ->
+    item.archived == false and ($scope.itemStatus != 'flagged' or item.flagged)
+
   $scope.buildSearch = () ->
     search = angular.copy($scope.searchFields)
     search.status = $scope.itemStatus
