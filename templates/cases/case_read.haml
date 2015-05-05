@@ -10,7 +10,7 @@
   %script{ type:"text/javascript" }
     var contextData = {{ context_data_json|safe }};
 
-  .{ ng-controller:"CaseController", ng-init:'init({{ max_msg_chars }})' }
+  .ng-cloak{ ng-controller:"CaseController", ng-init:"init({{ max_msg_chars }})", ng-cloak:"" }
     .page-header
       .alert.alert-danger{ ng-if:"!contact" }
         This case is for a contact who no longer exists in RapidPro
