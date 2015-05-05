@@ -384,22 +384,22 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
   # Case actions
   #----------------------------------------------------------------------------
 
-  $scope.note = () ->
+  $scope.onAddNote = () ->
     UtilsService.noteModal "Add Note", null, null, (note) ->
       CaseService.noteCase $scope.case, note, () ->
         $scope.$broadcast('newCaseAction')
 
-  $scope.reassign = () ->
+  $scope.onReassign = () ->
     UtilsService.assignModal "Re-assign", null, $scope.allPartners, (assignee) ->
       CaseService.reassignCase $scope.case, assignee, () ->
         $scope.$broadcast('newCaseAction')
 
-  $scope.close = () ->
+  $scope.onClose = () ->
     UtilsService.noteModal "Close", "Close this case?", 'danger', (note) ->
       CaseService.closeCase $scope.case, note, () ->
         UtilsService.navigate('/')
 
-  $scope.reopen = () ->
+  $scope.onReopen = () ->
     UtilsService.noteModal "Re-open", "Re-open this case?", null, (note) ->
       CaseService.reopenCase $scope.case, note, () ->
         $scope.$broadcast('newCaseAction')

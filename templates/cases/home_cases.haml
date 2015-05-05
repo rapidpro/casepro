@@ -11,6 +11,8 @@
             %label
               - trans "Assigned to"
             %select.form-control.assignee-select{ ng-model:"searchFields.assignee", ng-options:"p.name for p in partners track by p.id" }
+              %option{ value:"" }
+                - trans "Anyone"
             .pull-away
               %button.btn.btn-default{ type:"button", ng-click:"onSearch()" }
                 %span.glyphicon.glyphicon-search
