@@ -37,9 +37,10 @@
           %span.selection-info{ ng-show:"selection.length == 0" }
             [[ totalItems() ]] cases
 
-          .selection-actions.btn-group.pull-away
-            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"closeSelection()", type:"button" }
-              - trans "Close"
+          .selection-actions.pull-away
+            .btn-group
+              %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"closeSelection()", type:"button" }
+                - trans "Close"
 
     .cases{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
       .stackitem.clearfix{ ng-repeat:"item in items" }

@@ -156,8 +156,8 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
 
   $scope.expandedMessageId = null
 
-  $scope.init = (itemStatus) ->
-    $scope.itemStatus = itemStatus
+  $scope.init = (itemView) ->
+    $scope.itemView = itemView
     $scope.searchFields = $scope.searchFieldDefaults()
     $scope.activeSearch = $scope.buildSearch()
 
@@ -168,12 +168,17 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     $scope.$on 'activeContactChange', () ->
       $scope.onResetSearch()
 
-  $scope.itemFilter = (item) ->
-    item.archived == false and ($scope.itemStatus != 'flagged' or item.flagged)
+  $scope.getItemFilter = () ->
+    if $scope.itemView == 'inbox'
+      return (item) -> !item.archived
+    else if $scope.itemView == 'flagged'
+      return (item) -> !item.archived and item.flagged
+    else if $scope.itemView == 'archived'
+      return (item) -> item.archived
 
   $scope.buildSearch = () ->
     search = angular.copy($scope.searchFields)
-    search.status = $scope.itemStatus
+    search.view = $scope.itemView
     search.label = $scope.activeLabel
     search.contact = $scope.activeContact
     search.timeCode = Date.now()
@@ -232,8 +237,14 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     )
 
   $scope.onArchiveSelection = () ->
-    UtilsService.confirmModal 'Archive the selected messages? This will remove them from your inbox.', null, () ->
-      MessageService.archiveMessages($scope.selection, ()->)
+    UtilsService.confirmModal('Archive the selected messages? This will remove them from your inbox.', null, () ->
+      MessageService.archiveMessages($scope.selection, null)
+    )
+
+  $scope.onRestoreSelection = () ->
+    UtilsService.confirmModal('Restore the selected messages? This will put them back in your inbox.', null, () ->
+      MessageService.restoreMessages($scope.selection, null)
+    )
 
   #----------------------------------------------------------------------------
   # Single message actions
@@ -286,8 +297,8 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
 controllers.controller('CasesController', [ '$scope', '$timeout', '$controller', 'CaseService', 'UtilsService', ($scope, $timeout, $controller, CaseService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
-  $scope.init = (itemStatus) ->
-    $scope.itemStatus = itemStatus
+  $scope.init = (itemView) ->
+    $scope.itemView = itemView
     $scope.searchFields = $scope.searchFieldDefaults()
     $scope.activeSearch = $scope.buildSearch()
 
@@ -298,7 +309,7 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
 
   $scope.buildSearch = () ->
     search = angular.copy($scope.searchFields)
-    search.status = $scope.itemStatus
+    search.view = $scope.itemView
     search.label = $scope.activeLabel
     search.timeCode = Date.now()
     return search

@@ -576,6 +576,13 @@ class Message(object):
 
         MessageAction.create(org, user, message_ids, MessageAction.ARCHIVE)
 
+    @staticmethod
+    def bulk_restore(org, user, message_ids):
+        client = org.get_temba_client()
+        client.unarchive_messages(message_ids)
+
+        MessageAction.create(org, user, message_ids, MessageAction.RESTORE)
+
     @classmethod
     def update_labels(cls, msg, org, user, labels):
         """
@@ -618,7 +625,8 @@ class Message(object):
                 'time': msg.created_on,
                 'labels': labels,
                 'flagged': flagged,
-                'direction': msg.direction}
+                'direction': msg.direction,
+                'archived': msg.archived}
 
 
 class MessageAction(models.Model):
@@ -630,12 +638,14 @@ class MessageAction(models.Model):
     LABEL = 'L'
     UNLABEL = 'U'
     ARCHIVE = 'A'
+    RESTORE = 'R'
 
     ACTION_CHOICES = ((FLAG, _("Flag")),
                       (UNFLAG, _("Un-flag")),
                       (LABEL, _("Label")),
                       (UNLABEL, _("Remove Label")),
-                      (ARCHIVE, _("Archive")))
+                      (ARCHIVE, _("Archive")),
+                      (RESTORE, _("Restore")))
 
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='message_actions')
 

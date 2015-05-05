@@ -155,7 +155,7 @@ class CaseCRUDL(SmartCRUDL):
 
         def derive_queryset(self, **kwargs):
             label_id = self.request.GET.get('label', None)
-            status = self.request.GET.get('status', None)
+            view = self.request.GET.get('view', None)
             assignee_id = self.request.GET.get('assignee', None)
 
             before = self.request.REQUEST.get('before', None)
@@ -167,9 +167,9 @@ class CaseCRUDL(SmartCRUDL):
 
             assignee = Partner.get_all(self.request.org).get(pk=assignee_id) if assignee_id else None
 
-            if status == 'open':
+            if view == 'open':
                 qs = Case.get_open(self.request.org, labels)
-            elif status == 'closed':
+            elif view == 'closed':
                 qs = Case.get_closed(self.request.org, labels)
             else:
                 qs = Case.get_all(self.request.org, labels)
@@ -373,7 +373,7 @@ class MessageSearchMixin(object):
         Collects and prepares message search parameters into JSON serializable dict
         """
         request = self.request
-        status = request.GET['status']
+        view = request.GET['view']
 
         labels = Label.get_all(request.org, request.user)
         label_id = request.GET.get('label', None)
@@ -381,7 +381,7 @@ class MessageSearchMixin(object):
             labels = labels.filter(pk=label_id)
         labels = [l.name for l in labels]
 
-        if status == 'flagged':
+        if view == 'flagged':
             labels.append('+%s' % SYSTEM_LABEL_FLAGGED)
 
         contact = request.GET.get('contact', None)
@@ -396,7 +396,7 @@ class MessageSearchMixin(object):
                 'after': parse_iso8601(request.GET.get('after', None)),
                 'before': parse_iso8601(request.GET.get('before', None)),
                 'text': request.GET.get('text', None),
-                'archived': status == 'archived'}
+                'archived': view == 'archived'}
 
 
 class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
@@ -463,6 +463,8 @@ class MessageActionView(OrgPermsMixin, View):
             Message.bulk_unlabel(org, user, message_ids, label)
         elif action == 'archive':
             Message.bulk_archive(org, user, message_ids)
+        elif action == 'restore':
+            Message.bulk_restore(org, user, message_ids)
         else:
             return HttpResponseBadRequest("Invalid action: %s", action)
 

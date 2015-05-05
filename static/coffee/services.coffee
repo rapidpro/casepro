@@ -118,8 +118,19 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       @_messagesAction(messages, 'archive', null, () ->
         for msg in messages
           msg.archived = true
+        if callback
+          callback()
+      )
 
-        callback()
+    #----------------------------------------------------------------------------
+    # Restore (i.e. un-archive) messages
+    #----------------------------------------------------------------------------
+    restoreMessages: (messages, callback) ->
+      @_messagesAction(messages, 'restore', null, () ->
+        for msg in messages
+          msg.archived = false
+        if callback
+          callback()
       )
 
     #----------------------------------------------------------------------------
@@ -148,7 +159,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     _searchToParams: (search) ->
       params = {}
-      params.status = search.status
+      params.view = search.view
       params.text = search.text
       params.after = formatIso8601(search.after)
       params.before = formatIso8601(search.before)
@@ -190,7 +201,6 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       for msg in messages
         # parse datetime string
         msg.time = parseIso8601(msg.time)
-        msg.archived = false
 
     #----------------------------------------------------------------------------
     # Processes incoming message actions
@@ -353,7 +363,7 @@ services.factory 'CaseService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     _searchToParams: (search) ->
       params = {}
-      params.status = search.status
+      params.view = search.view
       params.assignee = if search.assignee then search.assignee.id else null
       params.label = if search.label then search.label.id else null
       return params

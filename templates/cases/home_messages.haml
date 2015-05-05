@@ -79,24 +79,28 @@
           %span.selection-info{ ng-show:"selection.length == 0" }
             [[ totalItems() ]] messages
 
-          .selection-actions.btn-group.pull-away
-            .btn-group{ dropdown:"true" }
-              %button.btn.btn-default.dropdown-toggle{ type:"button", dropdown-toggle:"true", ng-disabled:"selection.length == 0", tooltip:"Label" }
-                %span.glyphicon.glyphicon-tag
-                %span.caret
-              %ul.dropdown-menu
-                %li{ ng-repeat:"label in inactiveLabels" }
-                  %a{ ng-click:"onLabelSelection(label)" }
-                    [[ label.name ]]
-            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onFlagSelection()", type:"button", tooltip:"Flag" }
-              %span.glyphicon.glyphicon-flag
-            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onReplyToSelection()", type:"button" }
-              - trans "Reply"
-            %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onArchiveSelection()", type:"button" }
-              - trans "Archive"
+          .selection-actions.pull-away
+            .btn-group{ ng-if:'itemView != "archived"' }
+              .btn-group{ dropdown:"true" }
+                %button.btn.btn-default.dropdown-toggle{ type:"button", dropdown-toggle:"true", ng-disabled:"selection.length == 0", tooltip:"Label" }
+                  %span.glyphicon.glyphicon-tag
+                  %span.caret
+                %ul.dropdown-menu
+                  %li{ ng-repeat:"label in inactiveLabels" }
+                    %a{ ng-click:"onLabelSelection(label)" }
+                      [[ label.name ]]
+              %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onFlagSelection()", type:"button", tooltip:"Flag" }
+                %span.glyphicon.glyphicon-flag
+              %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onReplyToSelection()", type:"button" }
+                - trans "Reply"
+              %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onArchiveSelection()", type:"button" }
+                - trans "Archive"
+            .btn-group{ ng-if:'itemView == "archived"' }
+              %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onRestoreSelection()", type:"button" }
+                - trans "Restore"
 
     .messages{ infinite-scroll:"loadOldMessages(false)", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
-      .stackitem.clearfix{ ng-repeat:"message in items | filter: itemFilter", ng-class:"{ flagged: message.flagged }" }
+      .stackitem.clearfix{ ng-repeat:"message in items | filter: getItemFilter()", ng-class:"{ flagged: message.flagged }" }
         .message-actions
           %input{ type:"checkbox", ng-model:"message.selected", ng-change:"onChangeSelection()" }
           %a.flag{ ng-click:"onToggleMessageFlag(message)" }
