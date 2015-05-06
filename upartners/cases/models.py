@@ -18,9 +18,18 @@ from django.db import models
 from django.db.models import Count, Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
+from enum import Enum
 from temba.base import TembaNoSuchObjectError
 from upartners.email import send_email
 from . import parse_csv, truncate, SYSTEM_LABEL_FLAGGED
+
+
+class ItemView(Enum):
+    inbox = 1
+    flagged = 2
+    open = 3
+    closed = 4
+    archived = 5
 
 
 class Group(models.Model):
@@ -272,6 +281,16 @@ class Label(models.Model):
 
         partner = user.get_partner()
         return partner.get_labels() if partner else cls.none()
+
+    @classmethod
+    def get_counts(cls, org, labels, view):
+        if view == ItemView.open:
+            return cls.get_case_counts(labels, closed=False)
+        elif view == ItemView.closed:
+            return cls.get_case_counts(labels, closed=True)
+        else:
+            # TODO figure out a solution for Flagged and Archived
+            return cls.get_message_counts(org, labels)
 
     @classmethod
     def get_message_counts(cls, org, labels):

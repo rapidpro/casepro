@@ -12,7 +12,7 @@ from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, Sma
 from smartmin.users.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba.utils import parse_iso8601
 from . import parse_csv, json_encode, contact_as_json, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
-from .models import Case, Group, Label, Message, MessageAction, MessageExport, Partner
+from .models import Case, Group, Label, Message, MessageAction, MessageExport, Partner, ItemView
 from .tasks import message_export
 
 
@@ -624,12 +624,15 @@ class PartnerCRUDL(SmartCRUDL):
             return ", ".join([l.name for l in obj.get_labels()])
 
 
-class HomeDataMixin(object):
+class BaseHomeView(OrgPermsMixin, SmartTemplateView):
     """
     Mixin to add site metadata to the context in JSON format which can then used
     """
+    def has_permission(self, request, *args, **kwargs):
+        return request.user.is_authenticated()
+
     def get_context_data(self, **kwargs):
-        context = super(HomeDataMixin, self).get_context_data(**kwargs)
+        context = super(BaseHomeView, self).get_context_data(**kwargs)
         org = self.request.org
         user = self.request.user
         partner = user.get_partner()
@@ -638,8 +641,9 @@ class HomeDataMixin(object):
         partners = Partner.get_all(org).order_by('name')
         groups = Group.get_all(org).order_by('name')
 
-        # annotate labels with counts
-        self.annotate_labels(labels)
+        # annotate labels with their counts for this view
+        for label, count in Label.get_counts(org, labels, self.item_view).iteritems():
+            label.count = count
 
         # angular app requires context data in JSON format
         context['context_data_json'] = json_encode({
@@ -651,90 +655,55 @@ class HomeDataMixin(object):
 
         context['banner_text'] = org.get_banner_text()
         context['folder_icon'] = self.folder_icon
-        context['item_filter'] = self.item_filter
+        context['item_view'] = self.item_view.name
         return context
 
 
-class InboxView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
+class InboxView(BaseHomeView):
     """
     Inbox view
     """
     template_name = 'cases/home_messages.haml'
     title = _("Inbox")
     folder_icon = 'glyphicon-inbox'
-    item_filter = 'inbox'
-
-    def has_permission(self, request, *args, **kwargs):
-        return request.user.is_authenticated()
-
-    def annotate_labels(self, labels):
-        for label, count in Label.get_message_counts(self.request.org, labels).iteritems():
-            label.count = count
+    item_view = ItemView.inbox
 
 
-class FlaggedView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
+class FlaggedView(BaseHomeView):
     """
     Inbox view
     """
     template_name = 'cases/home_messages.haml'
     title = _("Flagged")
     folder_icon = 'glyphicon-flag'
-    item_filter = 'flagged'
-
-    def has_permission(self, request, *args, **kwargs):
-        return request.user.is_authenticated()
-
-    def annotate_labels(self, labels):
-        for label, count in Label.get_message_counts(self.request.org, labels).iteritems():
-            label.count = count
+    item_view = ItemView.flagged
 
 
-class OpenCasesView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
+class OpenCasesView(BaseHomeView):
     """
     Open cases view
     """
     template_name = 'cases/home_cases.haml'
     title = _("Open Cases")
     folder_icon = 'glyphicon-folder-open'
-    item_filter = 'open'
-
-    def has_permission(self, request, *args, **kwargs):
-        return request.user.is_authenticated()
-
-    def annotate_labels(self, labels):
-        for label, count in Label.get_case_counts(labels, closed=False).iteritems():
-            label.count = count
+    item_view = ItemView.open
 
 
-class ClosedCasesView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
+class ClosedCasesView(BaseHomeView):
     """
     Closed cases view
     """
     template_name = 'cases/home_cases.haml'
     title = _("Closed Cases")
     folder_icon = 'glyphicon-folder-close'
-    item_filter = 'closed'
-
-    def has_permission(self, request, *args, **kwargs):
-        return request.user.is_authenticated()
-
-    def annotate_labels(self, labels):
-        for label, count in Label.get_case_counts(labels, closed=True).iteritems():
-            label.count = count
+    item_view = ItemView.closed
 
 
-class ArchivedView(OrgPermsMixin, HomeDataMixin, SmartTemplateView):
+class ArchivedView(BaseHomeView):
     """
     Archived messages view
     """
     template_name = 'cases/home_messages.haml'
     title = _("Archived")
     folder_icon = 'glyphicon-trash'
-    item_filter = 'archived'
-
-    def has_permission(self, request, *args, **kwargs):
-        return request.user.is_authenticated()
-
-    def annotate_labels(self, labels):
-        for label, count in Label.get_message_counts(self.request.org, labels).iteritems():
-            label.count = count
+    item_view = ItemView.archived

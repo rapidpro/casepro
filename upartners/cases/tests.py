@@ -305,3 +305,26 @@ class PartnerTest(BaseCasesTest):
         self.code.partners.add(wfp)
 
         self.assertEqual(set(wfp.get_labels()), {self.aids, self.code})
+
+
+class HomeViewsTest(BaseCasesTest):
+    @patch('dash.orgs.models.TembaClient.get_labels')
+    def test_inbox(self, mock_get_labels):
+        mock_get_labels.return_value = []
+
+        url = reverse('cases.inbox')
+
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # log in as administrator
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+        # log in as regular user
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)

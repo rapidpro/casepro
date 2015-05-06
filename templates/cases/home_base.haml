@@ -16,7 +16,7 @@
   %script{ type:"text/javascript" }
     var contextData = {{ context_data_json|safe }};
 
-  .ng-cloak{ ng-controller:"HomeController", ng-init:"init()", ng-cloak:"" }
+  .ng-cloak{ ng-controller:"HomeController", ng-init:'init("{{ item_view }}")', ng-cloak:"" }
     .page-header.clearfix
       %h2.pull-back
         %span{ class:'glyphicon {{ folder_icon }}' }

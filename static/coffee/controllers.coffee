@@ -24,7 +24,9 @@ controllers.controller 'HomeController', [ '$scope', '$window', '$location', 'La
   $scope.activeLabel = null
   $scope.activeContact = null
 
-  $scope.init = () ->
+  $scope.init = (itemView) ->
+    $scope.itemView = itemView
+
     $scope.$on '$locationChangeSuccess', () ->
       params = $location.search()
       initialLabel = null
@@ -176,8 +178,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
 
   $scope.expandedMessageId = null
 
-  $scope.init = (itemView) ->
-    $scope.itemView = itemView
+  $scope.init = () ->
     $scope.searchFields = $scope.searchFieldDefaults()
     $scope.activeSearch = $scope.buildSearch()
 
@@ -330,8 +331,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
 controllers.controller('CasesController', [ '$scope', '$timeout', '$controller', 'CaseService', 'UtilsService', ($scope, $timeout, $controller, CaseService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
-  $scope.init = (itemView) ->
-    $scope.itemView = itemView
+  $scope.init = () ->
     $scope.searchFields = $scope.searchFieldDefaults()
     $scope.activeSearch = $scope.buildSearch()
 
