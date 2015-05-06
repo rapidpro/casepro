@@ -145,6 +145,40 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(actions[7].created_by, self.user3)
         self.assertEqual(actions[7].created_on, d7)
 
+    def test_get_all(self):
+        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
+        msg1 = TembaMessage.create(id=123, contact='C-001', created_on=d1, text="Hello 1")
+        case1 = Case.open(self.unicef, self.user1, [self.aids], self.moh, msg1, archive_messages=False)
+        msg2 = TembaMessage.create(id=234, contact='C-002', created_on=d1, text="Hello 2")
+        case2 = Case.open(self.unicef, self.user2, [self.aids, self.pregnancy], self.who, msg2, archive_messages=False)
+        msg3 = TembaMessage.create(id=345, contact='C-003', created_on=d1, text="Hello 3")
+        case3 = Case.open(self.unicef, self.user3, [self.pregnancy], self.who, msg3, archive_messages=False)
+        msg4 = TembaMessage.create(id=456, contact='C-004', created_on=d1, text="Hello 4")
+        case4 = Case.open(self.nyaruka, self.user4, [self.code], self.klab, msg4, archive_messages=False)
+
+        self.assertEqual(set(Case.get_all(self.unicef)), {case1, case2, case3})  # org admins see all
+        self.assertEqual(set(Case.get_all(self.nyaruka)), {case4})
+
+        self.assertEqual(set(Case.get_all(self.unicef, user=self.user1)), {case1, case2, case3})  # case3 by label
+        self.assertEqual(set(Case.get_all(self.unicef, user=self.user2)), {case1, case2, case3})
+        self.assertEqual(set(Case.get_all(self.unicef, user=self.user3)), {case1, case2, case3})  # case3 by assignment
+        self.assertEqual(set(Case.get_all(self.nyaruka, user=self.user4)), {case4})
+
+        self.assertEqual(set(Case.get_all(self.unicef, label=self.aids)), {case1, case2})
+        self.assertEqual(set(Case.get_all(self.unicef, label=self.pregnancy)), {case2, case3})
+
+        self.assertEqual(set(Case.get_all(self.unicef, user=self.user1, label=self.pregnancy)), {case2, case3})
+        self.assertEqual(set(Case.get_all(self.unicef, user=self.user3, label=self.pregnancy)), {case2, case3})
+
+        case2.closed_on = timezone.now()
+        case2.save()
+
+        self.assertEqual(set(Case.get_open(self.unicef)), {case1, case3})
+        self.assertEqual(set(Case.get_open(self.unicef, user=self.user1, label=self.pregnancy)), {case3})
+
+        self.assertEqual(set(Case.get_closed(self.unicef)), {case2})
+        self.assertEqual(set(Case.get_closed(self.unicef, user=self.user1, label=self.pregnancy)), {case2})
+
     def test_get_open_for_contact_on(self):
         d0 = datetime(2014, 1, 5, 0, 0, tzinfo=timezone.utc)
         d1 = datetime(2014, 1, 10, 0, 0, tzinfo=timezone.utc)

@@ -280,40 +280,7 @@ class Label(models.Model):
             return cls.objects.filter(org=org, is_active=True)
 
         partner = user.get_partner()
-        return partner.get_labels() if partner else cls.none()
-
-    @classmethod
-    def get_counts(cls, org, labels, view):
-        if view == ItemView.open:
-            return cls.get_case_counts(labels, closed=False)
-        elif view == ItemView.closed:
-            return cls.get_case_counts(labels, closed=True)
-        else:
-            # TODO figure out a solution for Flagged and Archived
-            return cls.get_message_counts(org, labels)
-
-    @classmethod
-    def get_message_counts(cls, org, labels):
-        label_by_name = {l.name: l for l in labels}
-        if label_by_name:
-            temba_labels = org.get_temba_client().get_labels()
-            counts_by_name = {l.name: l.count for l in temba_labels if l.name}
-        else:
-            counts_by_name = {}
-
-        return {l: counts_by_name.get(l.name, 0) for l in labels}
-
-    @classmethod
-    def get_case_counts(cls, labels, closed=False):
-        if not closed:
-            qs = labels.filter(cases__closed_on=None)
-        else:
-            # can't use exclude with the annotation below
-            qs = labels.filter(cases__closed_on__gt=date(1970, 1, 1))
-
-        counts_by_label = {l: l.num_cases for l in qs.annotate(num_cases=Count('cases'))}
-
-        return {l: counts_by_label.get(l, 0) for l in labels}
+        return partner.get_labels() if partner else cls.objects.none()
 
     def get_keywords(self):
         return parse_csv(self.keywords)
@@ -372,20 +339,29 @@ class Case(models.Model):
                                      help_text="When this case was closed")
 
     @classmethod
-    def get_all(cls, org, labels=None):
+    def get_all(cls, org, user=None, label=None):
         qs = cls.objects.filter(org=org)
-        if labels:
-            qs = qs.filter(labels=labels).distinct()
 
-        return qs.prefetch_related('labels')
+        # if user is not an org admin, we should only return cases with partner labels or assignment
+        if user and not user.is_admin_for(org):
+            partner = user.get_partner()
+            if partner:
+                qs = qs.filter(Q(labels__in=partner.get_labels()) | Q(assignee=partner))
+            else:
+                return cls.objects.none()
+
+        if label:
+            qs = qs.filter(labels=label)
+
+        return qs.distinct()
 
     @classmethod
-    def get_open(cls, org, labels=None):
-        return cls.get_all(org, labels).filter(closed_on=None)
+    def get_open(cls, org, user=None, label=None):
+        return cls.get_all(org, user, label).filter(closed_on=None)
 
     @classmethod
-    def get_closed(cls, org, labels=None):
-        return cls.get_all(org, labels).exclude(closed_on=None)
+    def get_closed(cls, org, user=None, label=None):
+        return cls.get_all(org, user, label).exclude(closed_on=None)
 
     @classmethod
     def get_for_contact(cls, org, contact_uuid):
