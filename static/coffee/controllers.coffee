@@ -341,7 +341,10 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
       $scope.onResetSearch()
 
   $scope.getItemFilter = () ->
-    return () -> true
+    if $scope.itemView == 'open'
+      return (item) -> !item.is_closed
+    else if $scope.itemView == 'closed'
+      return (item) -> item.is_closed
 
   $scope.buildSearch = () ->
     search = angular.copy($scope.searchFields)
@@ -367,10 +370,10 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
 
       $timeout($scope.refreshNewItems, INTERVAL_CASES_NEW)
 
-  $scope.closeSelection = () ->
-    UtilsService.confirmModal 'Close the selected cases?', 'danger', () ->
-      CaseService.closeCases($scope.selection)
-
+  $scope.onCloseSelection = () ->
+    UtilsService.noteModal("Close", "Close the selected cases?", 'danger', (note) ->
+      CaseService.closeCases($scope.selection, note)
+    )
 ])
 
 
@@ -426,14 +429,18 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
         $scope.$broadcast('newCaseAction')
 
   $scope.onReassign = () ->
-    UtilsService.assignModal "Re-assign", null, $scope.allPartners, (assignee) ->
-      CaseService.reassignCase $scope.case, assignee, () ->
+    UtilsService.assignModal("Re-assign", null, $scope.allPartners, (assignee) ->
+      CaseService.reassignCase($scope.case, assignee, () ->
         $scope.$broadcast('newCaseAction')
+      )
+    )
 
   $scope.onClose = () ->
-    UtilsService.noteModal "Close", "Close this case?", 'danger', (note) ->
-      CaseService.closeCase $scope.case, note, () ->
+    UtilsService.noteModal("Close", "Close this case?", 'danger', (note) ->
+      CaseService.closeCases([$scope.case], note, () ->
         UtilsService.navigate('/')
+      )
+    )
 
   $scope.onReopen = () ->
     UtilsService.noteModal "Re-open", "Re-open this case?", null, (note) ->

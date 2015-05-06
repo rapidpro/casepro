@@ -40,8 +40,8 @@
             [[ totalItems() ]] cases
 
           .selection-actions.pull-away
-            .btn-group
-              %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"closeSelection()", type:"button" }
+            .btn-group{ ng-if:'itemView != "closed"' }
+              %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onCloseSelection()", type:"button" }
                 - trans "Close"
 
     .cases{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }

@@ -18,7 +18,8 @@ from .tasks import message_export
 
 class CaseCRUDL(SmartCRUDL):
     model = Case
-    actions = ('read', 'open', 'note', 'reassign', 'close', 'reopen', 'label', 'fetch', 'search', 'timeline')
+    actions = ('read', 'open', 'fetch', 'search', 'timeline',
+               'note', 'reassign', 'close', 'reopen', 'label')
 
     class Read(OrgObjPermsMixin, SmartReadView):
         fields = ()
@@ -72,7 +73,7 @@ class CaseCRUDL(SmartCRUDL):
 
             return JsonResponse(case.as_json())
 
-    class Note(OrgPermsMixin, SmartUpdateView):
+    class Note(OrgObjPermsMixin, SmartUpdateView):
         """
         JSON endpoint for adding a note to a case
         """
@@ -82,10 +83,10 @@ class CaseCRUDL(SmartCRUDL):
             case = self.get_object()
             note = request.POST['note']
 
-            case.note(self.request.user, note)
+            case.note(request.user, note)
             return HttpResponse(status=204)
 
-    class Reassign(OrgPermsMixin, SmartUpdateView):
+    class Reassign(OrgObjPermsMixin, SmartUpdateView):
         """
         JSON endpoint for re-assigning a case
         """
@@ -94,23 +95,26 @@ class CaseCRUDL(SmartCRUDL):
         def post(self, request, *args, **kwargs):
             assignee = Partner.get_all(request.org).get(pk=request.POST['assignee_id'])
             case = self.get_object()
-            case.reassign(self.request.user, assignee)
+            case.reassign(request.user, assignee)
             return HttpResponse(status=204)
 
-    class Close(OrgPermsMixin, SmartUpdateView):
+    class Close(OrgPermsMixin, SmartListView):
         """
-        JSON endpoint for closing a case
+        JSON endpoint for bulk closing cases
         """
         permission = 'cases.case_update'
 
         def post(self, request, *args, **kwargs):
-            case = self.get_object()
+            case_ids = parse_csv(request.POST.get('cases', ''), as_ints=True)
+            cases = Case.get_all(request.org).filter(pk__in=case_ids)
             note = request.POST.get('note', None)
 
-            case.close(self.request.user, note)
+            for case in cases:
+                case.close(request.user, note)
+
             return HttpResponse(status=204)
 
-    class Reopen(OrgPermsMixin, SmartUpdateView):
+    class Reopen(OrgObjPermsMixin, SmartUpdateView):
         """
         JSON endpoint for re-opening a case
         """
@@ -120,10 +124,10 @@ class CaseCRUDL(SmartCRUDL):
             case = self.get_object()
             note = request.POST.get('note', None)
 
-            case.reopen(self.request.user, note)
+            case.reopen(request.user, note)
             return HttpResponse(status=204)
 
-    class Label(OrgPermsMixin, SmartUpdateView):
+    class Label(OrgObjPermsMixin, SmartUpdateView):
         """
         JSON endpoint for labelling a case
         """
@@ -134,7 +138,7 @@ class CaseCRUDL(SmartCRUDL):
             label_ids = parse_csv(request.POST.get('labels', ''), as_ints=True)
             labels = Label.get_all(request.org).filter(pk__in=label_ids)
 
-            case.update_labels(self.request.user, labels)
+            case.update_labels(request.user, labels)
             return HttpResponse(status=204)
 
     class Fetch(OrgPermsMixin, SmartReadView):

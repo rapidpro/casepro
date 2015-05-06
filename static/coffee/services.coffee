@@ -293,7 +293,8 @@ services.factory 'CaseService', ['$http', ($http) ->
 
       $http.post('/case/note/' + _case.id + '/', data, DEFAULT_POST_OPTS)
       .success () ->
-        callback()
+        if callback
+          callback()
 
     #----------------------------------------------------------------------------
     # Re-assigns a case
@@ -304,19 +305,23 @@ services.factory 'CaseService', ['$http', ($http) ->
 
       $http.post('/case/reassign/' + _case.id + '/', data, DEFAULT_POST_OPTS)
       .success () ->
-        callback()
+        if callback
+          callback()
 
     #----------------------------------------------------------------------------
-    # Closes a case
+    # Closes cases
     #----------------------------------------------------------------------------
-    closeCase: (_case, note, callback) ->
+    closeCases: (cases, note, callback) ->
       data = new FormData()
+      data.append('cases', (c.id for c in cases))
       data.append('note', note)
 
-      $http.post('/case/close/' + _case.id + '/', data, DEFAULT_POST_OPTS)
+      $http.post('/case/close/', data, DEFAULT_POST_OPTS)
       .success () ->
-        _case.is_closed = true
-        callback()
+        for c in cases
+          c.is_closed = true
+        if callback
+          callback()
 
     #----------------------------------------------------------------------------
     # Re-opens a case
@@ -328,7 +333,8 @@ services.factory 'CaseService', ['$http', ($http) ->
       $http.post('/case/reopen/' + _case.id + '/', data, DEFAULT_POST_OPTS)
       .success () ->
         _case.is_closed = false
-        callback()
+        if callback
+          callback()
 
     #----------------------------------------------------------------------------
     # Re-labels a case
@@ -340,7 +346,8 @@ services.factory 'CaseService', ['$http', ($http) ->
       $http.post('/case/label/' + _case.id + '/', data, DEFAULT_POST_OPTS)
       .success () ->
         _case.labels = labels
-        callback()
+        if callback
+          callback()
 
     #----------------------------------------------------------------------------
     # Fetches timeline events
