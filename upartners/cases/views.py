@@ -159,24 +159,22 @@ class CaseCRUDL(SmartCRUDL):
 
         def derive_queryset(self, **kwargs):
             label_id = self.request.GET.get('label', None)
-            view = self.request.GET.get('view', None)
+            view = ItemView[self.request.GET['view']]
             assignee_id = self.request.GET.get('assignee', None)
 
             before = self.request.REQUEST.get('before', None)
             after = self.request.REQUEST.get('after', None)
 
-            labels = Label.get_all(self.request.org, self.request.user)
-            if label_id:
-                labels = labels.filter(pk=label_id)
+            label = Label.objects.get(pk=label_id) if label_id else None
 
             assignee = Partner.get_all(self.request.org).get(pk=assignee_id) if assignee_id else None
 
-            if view == 'open':
-                qs = Case.get_open(self.request.org, labels)
-            elif view == 'closed':
-                qs = Case.get_closed(self.request.org, labels)
+            if view == ItemView.open:
+                qs = Case.get_open(self.request.org, user=self.request.user, label=label)
+            elif view == ItemView.closed:
+                qs = Case.get_closed(self.request.org, user=self.request.user, label=label)
             else:
-                qs = Case.get_all(self.request.org, labels)
+                raise ValueError('Invalid item view for cases')
 
             if assignee:
                 qs = qs.filter(assignee=assignee)
@@ -186,7 +184,7 @@ class CaseCRUDL(SmartCRUDL):
             if after:
                 qs = qs.filter(opened_on__gt=parse_iso8601(after))
 
-            return qs.order_by('-pk').select_related('assignee')
+            return qs.prefetch_related('labels').select_related('assignee').order_by('-pk')
 
         def render_to_response(self, context, **response_kwargs):
             count = context['paginator'].count
@@ -641,10 +639,6 @@ class BaseHomeView(OrgPermsMixin, SmartTemplateView):
         partners = Partner.get_all(org).order_by('name')
         groups = Group.get_all(org).order_by('name')
 
-        # annotate labels with their counts for this view
-        for label, count in Label.get_counts(org, labels, self.item_view).iteritems():
-            label.count = count
-
         # angular app requires context data in JSON format
         context['context_data_json'] = json_encode({
             'user': {'id': user.pk, 'partner': partner.as_json() if partner else None},
@@ -656,6 +650,8 @@ class BaseHomeView(OrgPermsMixin, SmartTemplateView):
         context['banner_text'] = org.get_banner_text()
         context['folder_icon'] = self.folder_icon
         context['item_view'] = self.item_view.name
+        context['open_case_count'] = Case.get_open(org, user).count()
+        context['closed_case_count'] = Case.get_closed(org, user).count()
         return context
 
 

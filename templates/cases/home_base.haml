@@ -39,42 +39,41 @@
 
     .row
       .col-md-2
-        %ul.nav.nav-pills.nav-stacked.home-menu
-          %li{ class:"{% if_url 'cases.inbox' 'active' '' %}" }
-            %a{ href:"{% url 'cases.inbox' %}" }
-              - trans "Inbox"
-          %li{ class:"{% if_url 'cases.flagged' 'active' '' %}" }
-            %a{ href:"{% url 'cases.flagged' %}" }
-              - trans "Flagged"
-          %li{ class:"{% if_url 'cases.open' 'active' '' %}" }
-            %a{ href:"{% url 'cases.open' %}" }
-              - trans "Open"
-          %li{ class:"{% if_url 'cases.closed' 'active' '' %}" }
-            %a{ href:"{% url 'cases.closed' %}" }
-              - trans "Closed"
-          %li{ class:"{% if_url 'cases.archived' 'active' '' %}" }
-            %a{ href:"{% url 'cases.archived' %}" }
-              - trans "Archived"
-
-        .label-menu
+        .home-menu
           %h3
-            %span.glyphicon.glyphicon-tags
-            &nbsp
-            - trans "Labels"
-          %ul
-            %li
-              %a{ ng-href:"#?label=", class:"italicized" }
-                %strong{ ng-if:"!activeLabel" }
-                  All
-                %span{ ng-if:"activeLabel" }
-                  All
-            %li{ ng-repeat:"label in labels" }
-              %a{ ng-href:"#?label=[[ label.name ]]" }
-                %strong{ ng-if:"label == activeLabel" }
-                  [[ label.name ]] ([[ label.count ]])
-                %span{ ng-if:"label != activeLabel" }
-                  [[ label.name ]] ([[ label.count ]])
-      .col-md-10
+            %span.glyphicon.glyphicon-envelope
+            - trans "Messages"
+
+          %ul.nav.nav-pills.nav-stacked
+            %li{ class:"{% if_url 'cases.inbox' 'active' '' %}" }
+              %a{ href:"{% url 'cases.inbox' %}" }
+                - trans "Inbox"
+              %ul.label-menu
+                %li{ ng-repeat:"label in labels" }
+                  %a{ ng-href:"#?label=[[ label.name ]]", ng-class:'{ strong: label == activeLabel }' }
+                    [[ label.name ]]
+            %li{ class:"{% if_url 'cases.flagged' 'active' '' %}" }
+              %a{ href:"{% url 'cases.flagged' %}" }
+                - trans "Flagged"
+            %li{ class:"{% if_url 'cases.archived' 'active' '' %}" }
+              %a{ href:"{% url 'cases.archived' %}" }
+                - trans "Archived"
+
+          %h3
+            %span.glyphicon.glyphicon-briefcase
+            - trans "Cases"
+
+          %ul.nav.nav-pills.nav-stacked
+            %li{ class:"{% if_url 'cases.open' 'active' '' %}" }
+              %a{ href:"{% url 'cases.open' %}" }
+                - trans "Open"
+                ({{ open_case_count }})
+            %li{ class:"{% if_url 'cases.closed' 'active' '' %}" }
+              %a{ href:"{% url 'cases.closed' %}" }
+                - trans "Closed"
+                ({{ closed_case_count }})
+
+      .col-md-10{ ng-view:"" }
         - block home-items
 
 
@@ -92,26 +91,28 @@
     .banner .banner-text {
       margin-left: 32px;
     }
-    .home-menu > li > a {
+    .home-menu ul {
+      margin: 0 0 1em 0;
+    }
+    .home-menu ul li a {
       padding: 7px 12px;
+    }
+    .home-menu h3 {
+      margin: 0 0 1em 0;
+      font-size: 1.2em;
+    }
+    .home-menu h3 .glyphicon {
+      margin-right: 0.3em;
+    }
+    ul.label-menu {
+      margin: 0;
+      padding: 8px 0 0 12px;
+      list-style: none;
     }
     .label-name {
       font-size: 20px;
       display: inline-block;
       padding: 3px 12px 3px 0;
-    }
-    .label-menu {
-      margin: 0.5em 0;
-      padding: 0.5em 0;
-    }
-    .label-menu h3 {
-      margin: 0 0 1em 0;
-      font-size: 1.2em;
-    }
-    .label-menu ul {
-      margin: 0;
-      padding: 0 0 0 12px;
-      list-style: none;
     }
     .search-toolbar, .contact-toolbar {
       padding: 4px;
