@@ -45,7 +45,7 @@
                 - trans "Close"
 
     .cases{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
-      .stackitem.clearfix{ ng-repeat:"item in items" }
+      .stackitem.clearfix{ ng-repeat:"item in items | filter: getItemFilter()" }
         .case-actions
           %input{ type:"checkbox", ng-model:"item.selected", ng-change:"onChangeSelection()" }
         .case-time

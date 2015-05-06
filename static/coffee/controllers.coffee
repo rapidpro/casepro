@@ -14,7 +14,6 @@ SELECT_ALL_FETCH_SIZE = 1000
 #============================================================================
 # Home controller (DOM parent of inbox and cases)
 #============================================================================
-
 controllers.controller 'HomeController', [ '$scope', '$window', '$location', 'LabelService', 'UtilsService', ($scope, $window, $location, LabelService, UtilsService) ->
 
   $scope.user = $window.contextData.user
@@ -70,7 +69,6 @@ controllers.controller 'HomeController', [ '$scope', '$window', '$location', 'La
 #============================================================================
 # Base controller class for CasesController and MessagesController
 #============================================================================
-
 controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
 
   $scope.items = []
@@ -83,7 +81,18 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
   $scope.newItemsCount = 0
   $scope.selection = []
 
-  $scope.totalItems = () -> $scope.oldItemsTotal + $scope.newItemsCount
+  #----------------------------------------------------------------------------
+  # Total number of items that match current view and search
+  #----------------------------------------------------------------------------
+  $scope.totalItems = () ->
+    # need to discount the number of items which are being filtered out
+    filter = $scope.getItemFilter()
+    numHidden = 0
+    for item in $scope.items
+      if !filter(item)
+        numHidden += 1
+
+    $scope.oldItemsTotal + $scope.newItemsCount - numHidden
 
   #----------------------------------------------------------------------------
   # Search for items based on current search form values
@@ -103,31 +112,42 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
     $scope.onSearch()
 
   #----------------------------------------------------------------------------
-  # Selection controls
+  # User selects all items
   #----------------------------------------------------------------------------
-
   $scope.onSelectAll = () ->
     # select all loaded items
     for item in $scope.items
       item.selected = true
-    $scope.onChangeSelection()
+    $scope.updateSelection()
 
     # load and select more items if there are more
     if $scope.oldItemsMore and $scope.totalItems() < SELECT_ALL_FETCH_SIZE
       $scope.loadOldItems(true)
 
+  #----------------------------------------------------------------------------
+  # User selects no items
+  #----------------------------------------------------------------------------
   $scope.onSelectNone = () ->
     for item in $scope.items
       item.selected = false
     $scope.selection = []
 
+  #----------------------------------------------------------------------------
+  # User selects or deselects an item
+  #----------------------------------------------------------------------------
   $scope.onChangeSelection = () ->
-    $scope.selection = (item for item in $scope.items when item.selected)
+    $scope.updateSelection()
 
   #----------------------------------------------------------------------------
-  # Item fetching
+  # Selection has changed
   #----------------------------------------------------------------------------
+  $scope.updateSelection = () ->
+    filter = $scope.getItemFilter()
+    $scope.selection = (item for item in $scope.items when item.selected and filter(item))
 
+  #----------------------------------------------------------------------------
+  # Load old items due to scroll down or select all
+  #----------------------------------------------------------------------------
   $scope.loadOldItems = (forSelectAll) ->
     $scope.oldItemsLoading = true
     $scope.oldItemsPage += 1
@@ -141,7 +161,7 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
       if forSelectAll
         for item in items
           item.selected = true
-        $scope.onChangeSelection()
+        $scope.updateSelection()
         if $scope.oldItemsMore and $scope.totalItems() < SELECT_ALL_FETCH_SIZE
           $scope.loadOldItems(true)
 ])
@@ -220,11 +240,15 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
 
   $scope.onLabelSelection = (label) ->
     UtilsService.confirmModal 'Apply the label <strong>' + label.name + '</strong> to the selected messages?', null, () ->
-      MessageService.labelMessages($scope.selection, label)
+      MessageService.labelMessages($scope.selection, label, () ->
+        $scope.updateSelection()
+      )
 
   $scope.onFlagSelection = () ->
     UtilsService.confirmModal 'Flag the selected messages?', null, () ->
-      MessageService.flagMessages($scope.selection, true)
+      MessageService.flagMessages($scope.selection, true, () ->
+        $scope.updateSelection()
+      )
 
   $scope.onReplyToSelection = () ->
     $modal.open({templateUrl: 'replyModal.html', controller: 'ReplyModalController', resolve: {}})
@@ -232,18 +256,23 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
       MessageService.replyToMessages($scope.selection, text, () ->
         MessageService.archiveMessages($scope.selection, () ->
           UtilsService.displayAlert('success', "Reply sent and messages archived")
+          $scope.updateSelection()
         )
       )
     )
 
   $scope.onArchiveSelection = () ->
     UtilsService.confirmModal('Archive the selected messages? This will remove them from your inbox.', null, () ->
-      MessageService.archiveMessages($scope.selection, null)
+      MessageService.archiveMessages($scope.selection, () ->
+        $scope.updateSelection()
+      )
     )
 
   $scope.onRestoreSelection = () ->
     UtilsService.confirmModal('Restore the selected messages? This will put them back in your inbox.', null, () ->
-      MessageService.restoreMessages($scope.selection, null)
+      MessageService.restoreMessages($scope.selection, () ->
+        $scope.updateSelection()
+      )
     )
 
   #----------------------------------------------------------------------------
@@ -253,7 +282,9 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
   $scope.onToggleMessageFlag = (message) ->
     prevState = message.flagged
     message.flagged = !prevState
-    MessageService.flagMessages([message], message.flagged)
+    MessageService.flagMessages([message], message.flagged, () ->
+      $scope.updateSelection()
+    )
 
   $scope.onForwardMessage = (message) ->
     initialText = '"' + message.text + '"'
@@ -281,7 +312,9 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
 
   $scope.onLabelMessage = (message) ->
     UtilsService.labelModal "Labels", "Update the labels for this message. This determines which other partner organizations can view this message.", $scope.labels, message.labels, (selectedLabels) ->
-      MessageService.relabelMessage(message, selectedLabels)
+      MessageService.relabelMessage(message, selectedLabels, () ->
+        $scope.updateSelection()
+      )
 
   $scope.onShowMessageHistory = (message) ->
     $modal.open({templateUrl: 'messageHistory.html', controller: 'MessageHistoryModalController', resolve: {
@@ -306,6 +339,9 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
 
     $scope.$on 'activeLabelChange', () ->
       $scope.onResetSearch()
+
+  $scope.getItemFilter = () ->
+    return () -> true
 
   $scope.buildSearch = () ->
     search = angular.copy($scope.searchFields)

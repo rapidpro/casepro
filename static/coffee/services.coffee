@@ -91,17 +91,19 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     # Flag or un-flag messages
     #----------------------------------------------------------------------------
-    flagMessages: (messages, flagged) ->
+    flagMessages: (messages, flagged, callback) ->
       action = if flagged then 'flag' else 'unflag'
       @_messagesAction(messages, action, null, () ->
         for msg in messages
           msg.flagged = flagged
+        if callback
+          callback()
       )
 
     #----------------------------------------------------------------------------
     # Label messages with the given label
     #----------------------------------------------------------------------------
-    labelMessages: (messages, label) ->
+    labelMessages: (messages, label, callback) ->
       without_label = []
       for msg in messages
         if label.name not in msg.labels
@@ -109,7 +111,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
           msg.labels.push(label)
 
       if without_label.length > 0
-        @_messagesAction(without_label, 'label', label)
+        @_messagesAction(without_label, 'label', label, callback)
 
     #----------------------------------------------------------------------------
     # Archive messages
@@ -136,13 +138,15 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     # Relabel the given message (removing labels if necessary)
     #----------------------------------------------------------------------------
-    relabelMessage: (message, labels) ->
+    relabelMessage: (message, labels, callback) ->
       data = new FormData()
       data.append('labels', (l.id for l in labels))
 
       $http.post('/message/label/' + message.id + '/', data, DEFAULT_POST_OPTS)
       .success () ->
         message.labels = labels
+        if callback
+          callback()
 
     #----------------------------------------------------------------------------
     # Send new message
