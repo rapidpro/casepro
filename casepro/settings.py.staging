@@ -68,7 +68,7 @@ MIDDLEWARE_CLASSES = (
     'reversion.middleware.RevisionMiddleware',
     'smartmin.middleware.AjaxRedirect',
     'dash.orgs.middleware.SetOrgMiddleware',
-    'upartners.profiles.middleware.ForcePasswordChangeMiddleware'
+    'casepro.profiles.middleware.ForcePasswordChangeMiddleware'
 )
 
 LOGGING = {
@@ -115,7 +115,7 @@ LOGGING = {
             'handlers': ['console', 'sentry'],
             'propagate': False,
         },
-        'upartners': {
+        'casepro': {
             'level': 'INFO',
             'handlers': ['console', 'sentry'],
             'propagate': False,
