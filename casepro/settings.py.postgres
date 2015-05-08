@@ -39,8 +39,8 @@ SITE_API_HOST = 'http://localhost:8001/api/v1'  # rapidpro.io
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'upartners',
-        'USER': 'upartners',
+        'NAME': 'casepro',
+        'USER': 'casepro',
         'PASSWORD': 'nyaruka',
         'HOST': 'localhost',
         'PORT': '',

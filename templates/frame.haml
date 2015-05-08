@@ -7,7 +7,7 @@
     %title
       - block title
         - if not org
-          - trans "Cases"
+          - trans "CasePro"
         - else
           {{ org.name }}
       - block subtitle
@@ -60,7 +60,7 @@
                 - if org
                   {{ org.name }}
                 - else
-                  - trans "Cases"
+                  - trans "CasePro"
 
           %nav#admin-top-navbar-collapse.admin-top-navbar.collapse.navbar-collapse{ role:"navigation"}
             %ul.nav.navbar-nav

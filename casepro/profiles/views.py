@@ -9,8 +9,8 @@ from django.core.validators import MinLengthValidator
 from django.db.models import Q
 from django.http import Http404
 from smartmin.users.views import SmartCRUDL, SmartCreateView, SmartListView, SmartReadView, SmartUpdateView
-from upartners.cases.models import Partner
-from upartners.profiles import ROLE_ANALYST, ROLE_CHOICES
+from casepro.cases.models import Partner
+from casepro.profiles import ROLE_ANALYST, ROLE_CHOICES
 
 
 class UserForm(forms.ModelForm):

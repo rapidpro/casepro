@@ -20,7 +20,7 @@ from django.utils.translation import ugettext_lazy as _
 from enum import Enum
 from redis_cache import get_redis_connection
 from temba.base import TembaNoSuchObjectError
-from upartners.email import send_email
+from casepro.email import send_email
 from . import parse_csv, truncate, SYSTEM_LABEL_FLAGGED
 
 

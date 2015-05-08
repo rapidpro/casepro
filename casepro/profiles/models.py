@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from upartners.cases.models import Partner
+from casepro.cases.models import Partner
 
 
 class Profile(models.Model):

@@ -4,9 +4,9 @@ from django.conf import settings
 from django.conf.urls import patterns, include, url
 
 urlpatterns = patterns('',
-                       url(r'', include('upartners.cases.urls')),
-                       url(r'', include('upartners.profiles.urls')),
-                       url(r'^manage/', include('upartners.orgs_ext.urls')),
+                       url(r'', include('casepro.cases.urls')),
+                       url(r'', include('casepro.profiles.urls')),
+                       url(r'^manage/', include('casepro.orgs_ext.urls')),
                        url(r'^users/', include('dash.users.urls')),
                        url(r'^i18n/', include('django.conf.urls.i18n')))
 

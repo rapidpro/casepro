@@ -9,7 +9,7 @@ def send_email(to_email, subject, template, context):
     """
     Sends an email
     """
-    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'website@upartners.io')
+    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'website@casepro.io')
 
     html_template = loader.get_template(template + ".html")
     text_template = loader.get_template(template + ".txt")

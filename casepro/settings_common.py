@@ -26,7 +26,7 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',  # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'upartners.sqlite',              # Or path to database file if using sqlite3.
+        'NAME': 'casepro.sqlite',              # Or path to database file if using sqlite3.
         'USER': '',                      # Not used with sqlite3.
         'PASSWORD': '',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
@@ -122,7 +122,7 @@ STATICFILES_FINDERS = (
 
 COMPRESS_PRECOMPILERS = (
     ('text/coffeescript', 'coffee --compile --stdio'),
-    ('text/less', 'upartners.compress.LessFilter'),
+    ('text/less', 'casepro.compress.LessFilter'),
 )
 
 # Make this unique, and don't share it with anybody.
@@ -144,7 +144,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'dash.orgs.middleware.SetOrgMiddleware',
-    'upartners.profiles.middleware.ForcePasswordChangeMiddleware',
+    'casepro.profiles.middleware.ForcePasswordChangeMiddleware',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
@@ -158,10 +158,10 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'dash.orgs.context_processors.user_group_perms_processor',
     'dash.orgs.context_processors.set_org_processor',
     'dash.context_processors.lang_direction',
-    'upartners.orgs_ext.views.org_ext_context_processor'
+    'casepro.orgs_ext.views.org_ext_context_processor'
 )
 
-ROOT_URLCONF = 'upartners.urls'
+ROOT_URLCONF = 'casepro.urls'
 
 CACHES = {
     'default': {
@@ -219,9 +219,9 @@ INSTALLED_APPS = (
     'dash.utils',
 
     # custom
-    'upartners.cases',
-    'upartners.orgs_ext',
-    'upartners.profiles'
+    'casepro.cases',
+    'casepro.orgs_ext',
+    'casepro.profiles'
 )
 
 LOGGING = {
@@ -378,7 +378,7 @@ CELERY_RESULT_BACKEND = BROKER_URL
 
 CELERYBEAT_SCHEDULE = {
     'label-new-messages': {
-        'task': 'upartners.cases.tasks.label_new_messages',
+        'task': 'casepro.cases.tasks.label_new_messages',
         'schedule': datetime.timedelta(minutes=3),  # TODO reduce frequency for production?
         'args': ()
     },

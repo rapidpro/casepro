@@ -7,7 +7,7 @@ from dash.utils import datetime_to_ms, ms_to_datetime
 from django.utils import timezone
 from djcelery_transactions import task
 from redis_cache import get_redis_connection
-from upartners.orgs_ext import TaskType
+from casepro.orgs_ext import TaskType
 
 logger = get_task_logger(__name__)
 

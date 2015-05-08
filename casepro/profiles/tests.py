@@ -4,8 +4,8 @@ from django.contrib.auth.models import User, Group
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
 from mock import patch
-from upartners.profiles import ROLE_ANALYST, ROLE_MANAGER
-from upartners.test import BaseCasesTest
+from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
+from casepro.test import BaseCasesTest
 
 
 class UserPatchTest(BaseCasesTest):

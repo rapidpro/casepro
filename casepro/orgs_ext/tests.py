@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from django.core.urlresolvers import reverse
-from upartners.test import BaseCasesTest
+from casepro.test import BaseCasesTest
 
 
 class OrgExtCRUDLTest(BaseCasesTest):

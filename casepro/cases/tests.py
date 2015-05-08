@@ -6,9 +6,9 @@ from django.core.urlresolvers import reverse
 from django.utils import timezone
 from mock import patch, call
 from temba.types import Message as TembaMessage
-from upartners.orgs_ext import TaskType
-from upartners.profiles import ROLE_ANALYST, ROLE_MANAGER
-from upartners.test import BaseCasesTest
+from casepro.orgs_ext import TaskType
+from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
+from casepro.test import BaseCasesTest
 from .models import Case, CaseAction, Label, Message, MessageAction, Partner
 from .tasks import label_new_org_messages
 
