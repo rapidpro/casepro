@@ -40,6 +40,19 @@ def contact_as_json(contact, field_keys):
             'fields': {key: contact.fields.get(key, None) for key in field_keys}}
 
 
+def safe_max(*args, **kwargs):
+    """
+    Regular max won't compare dates with NoneType and raises exception for no args
+    """
+    non_nones = [v for v in args if v is not None]
+    if len(non_nones) == 0:
+        return None
+    elif len(non_nones) == 1:
+        return non_nones[0]
+    else:
+        return max(*non_nones, **kwargs)
+
+
 def truncate(text, length=100, suffix='...'):
     if len(text) > length:
         return text[:length-len(suffix)] + suffix

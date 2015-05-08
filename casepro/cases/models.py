@@ -17,19 +17,9 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
-from enum import Enum
-from redis_cache import get_redis_connection
 from temba.base import TembaNoSuchObjectError
 from casepro.email import send_email
 from . import parse_csv, truncate, SYSTEM_LABEL_FLAGGED
-
-
-class ItemView(Enum):
-    inbox = 1
-    flagged = 2
-    open = 3
-    closed = 4
-    archived = 5
 
 
 class Group(models.Model):
@@ -332,7 +322,7 @@ class Case(models.Model):
 
     summary = models.CharField(verbose_name=_("Summary"), max_length=255)
 
-    opened_on = models.DateTimeField(auto_now_add=True,
+    opened_on = models.DateTimeField(db_index=True, auto_now_add=True,
                                      help_text="When this case was opened")
 
     closed_on = models.DateTimeField(null=True,
@@ -435,6 +425,9 @@ class Case(models.Model):
 
         CaseAction.create(self, user, CaseAction.UNLABEL, label=label)
 
+    def reply_event(self, msg):
+        CaseEvent.create_reply(self, msg)
+
     def update_labels(self, user, labels):
         """
         Updates all this cases's labels to the given set, creating label and unlabel actions as necessary
@@ -510,7 +503,7 @@ class CaseAction(models.Model):
 
     created_by = models.ForeignKey(User, related_name="case_actions")
 
-    created_on = models.DateTimeField(auto_now_add=True)
+    created_on = models.DateTimeField(db_index=True, auto_now_add=True)
 
     assignee = models.ForeignKey(Partner, null=True, related_name="case_actions")
 
@@ -530,6 +523,30 @@ class CaseAction(models.Model):
                 'assignee': self.assignee.as_json() if self.assignee else None,
                 'label': self.label.as_json() if self.label else None,
                 'note': self.note}
+
+
+class CaseEvent(models.Model):
+    """
+    An event (i.e. non-user action) relating to a case
+    """
+    REPLY = 'R'
+
+    EVENT_CHOICES = ((REPLY, _("Contact replied")),)
+
+    case = models.ForeignKey(Case, related_name="events")
+
+    event = models.CharField(max_length=1, choices=EVENT_CHOICES)
+
+    created_on = models.DateTimeField(db_index=True)
+
+    @classmethod
+    def create_reply(cls, case, msg):
+        cls.objects.create(case=case, event=cls.REPLY, created_on=msg.created_on)
+
+    def as_json(self):
+        return {'id': self.pk,
+                'event': self.event,
+                'created_on': self.created_on}
 
 
 class Message(object):
@@ -681,3 +698,30 @@ class MessageAction(models.Model):
                 'created_by': {'id': self.created_by.pk, 'name': self.created_by.get_full_name()},
                 'created_on': self.created_on,
                 'label': self.label.as_json() if self.label else None}
+
+
+class Outgoing(models.Model):
+    """
+    An outgoing message (i.e. broadcast) sent by a user
+    """
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='outgoing')
+
+    broadcast_id = models.IntegerField()
+
+    created_by = models.ForeignKey(User, related_name="outgoing")
+
+    created_on = models.DateTimeField(db_index=True)
+
+    case = models.ForeignKey(Case, related_name="outgoing", null=True)
+
+    @classmethod
+    def create_bulk_reply(cls, org, user, text, contacts):
+        broadcast = org.get_temba_client().create_broadcast(text=text, contacts=contacts)
+        return cls.objects.create(org=org, broadcast_id=broadcast.id,
+                                  created_by=user, created_on=broadcast.created_on)
+
+    @classmethod
+    def create_case_reply(cls, org, user, text, case):
+        broadcast = org.get_temba_client().create_broadcast(text=text, contacts=[case.contact_uuid])
+        return cls.objects.create(org=org, broadcast_id=broadcast.id,
+                                  created_by=user, created_on=broadcast.created_on, case=case)

@@ -8,12 +8,21 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest, JsonResponse
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
+from enum import Enum
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView, SmartFormView
 from smartmin.users.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba.utils import parse_iso8601
-from . import parse_csv, json_encode, contact_as_json, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
-from .models import Case, Group, Label, Message, MessageAction, MessageExport, Partner, ItemView
+from . import parse_csv, json_encode, contact_as_json, safe_max, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
+from .models import Case, Group, Label, Message, MessageAction, MessageExport, Partner
 from .tasks import message_export
+
+
+class ItemView(Enum):
+    inbox = 1
+    flagged = 2
+    open = 3
+    closed = 4
+    archived = 5
 
 
 class CaseCRUDL(SmartCRUDL):
@@ -203,46 +212,38 @@ class CaseCRUDL(SmartCRUDL):
             context = super(CaseCRUDL.Timeline, self).get_context_data(**kwargs)
             org = self.request.org
 
-            since_time = parse_iso8601(self.request.GET.get('since_time', None)) or self.object.message_on
-            since_message_id = self.request.GET.get('since_message_id', None) or self.object.message_id
-            since_action_id = self.request.GET.get('since_action_id', None) or 0
+            after = parse_iso8601(self.request.GET.get('after', None)) or self.object.message_on
+            before = parse_iso8601(self.request.GET.get('before', None)) or self.object.closed_on
 
-            # fetch messages
-            before = self.object.closed_on
-            messages = org.get_temba_client().get_messages(contacts=[self.object.contact_uuid],
-                                                           after=since_time, before=before, reverse=True)
+            # only hit RapidPro if we have reason to believe there are new messages
+            last_event = self.object.events.order_by('-pk').first()
+            last_outgoing = self.object.outgoing_messages.order_by('-pk').first()
+            last_event_time = last_event.created_on if last_event else None
+            last_outgoing_time = last_outgoing.sent_on if last_outgoing else None
+            last_message_time = safe_max(last_event_time, last_outgoing_time)
 
-            # Temba API doesn't have a way to filter by 'after id'. Filtering by 'after time' can lead to dups due to
-            # db times being higher accuracy than those returned in API JSON. Here we remove possible dups based on id.
-            if since_message_id != self.object.message_id:
-                messages = [m for m in messages if m.id > since_message_id]
+            if last_message_time and after <= last_message_time:
+                # fetch messages in chronological order
+                messages = org.get_temba_client().get_messages(contacts=[self.object.contact_uuid],
+                                                               after=after, before=before, reverse=True)
+            else:
+                messages = []
 
-            # fetch actions
-            actions = self.object.actions.select_related('assignee', 'created_by').order_by('pk')
-            if since_action_id:
-                actions = actions.filter(pk__gt=since_action_id)
+            # fetch actions in chronological order
+            actions = self.object.actions.filter(created_on__gte=after, created_on__lte=before)
+            actions = actions.select_related('assignee', 'created_by').order_by('pk')
 
+            # merge actions and messages and JSON-ify both
             label_map = {l.name: l for l in Label.get_all(self.request.org)}
-
             timeline = [{'time': m.created_on, 'type': 'M', 'item': Message.as_json(m, label_map)} for m in messages]
             timeline += [{'time': a.created_on, 'type': 'A', 'item': a.as_json()} for a in actions]
             timeline = sorted(timeline, key=lambda event: event['time'])
 
-            last_event_time = timeline[len(timeline) - 1]['time'] if timeline else None
-            last_message_id = messages[len(messages) - 1].id if messages else None
-            last_action_id = actions[len(actions) - 1].id if actions else None
-
             context['timeline'] = timeline
-            context['last_event_time'] = last_event_time
-            context['last_message_id'] = last_message_id
-            context['last_action_id'] = last_action_id
             return context
 
         def render_to_response(self, context, **response_kwargs):
-            return JsonResponse({'results': context['timeline'],
-                                 'last_event_time': context['last_event_time'],
-                                 'last_message_id': context['last_message_id'],
-                                 'last_action_id': context['last_action_id']})
+            return JsonResponse({'results': context['timeline']})
 
 
 class GroupCRUDL(SmartCRUDL):

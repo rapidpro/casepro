@@ -1,6 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
-from datetime import datetime
+from datetime import date, datetime
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.utils import timezone
@@ -9,8 +9,22 @@ from temba.types import Message as TembaMessage
 from casepro.orgs_ext import TaskType
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
-from .models import Case, CaseAction, Label, Message, MessageAction, Partner
-from .tasks import label_new_org_messages
+from . import safe_max, truncate
+from .models import Case, CaseAction, CaseEvent, Label, Message, MessageAction, Partner
+from .tasks import process_new_org_unsolicited
+
+
+class InitTest(BaseCasesTest):
+    def test_safe_max(self):
+        self.assertEqual(safe_max(1, 2, 3), 3)
+        self.assertEqual(safe_max(None, 2, None), 2)
+        self.assertEqual(safe_max(None, None), None)
+        self.assertEqual(safe_max(date(2012, 3, 6), date(2012, 5, 2), None), date(2012, 5, 2))
+
+    def test_truncate(self):
+        self.assertEqual(truncate("Hello World", 8), "Hello...")
+        self.assertEqual(truncate("Hello World", 8, suffix="_"), "Hello W_")
+        self.assertEqual(truncate("Hello World", 98), "Hello World")
 
 
 class CaseTest(BaseCasesTest):
@@ -63,6 +77,16 @@ class CaseTest(BaseCasesTest):
         self.assertFalse(case.accessible_by(self.user3, update=True))
         self.assertFalse(case.accessible_by(self.user4, update=False))  # user from different org
         self.assertFalse(case.accessible_by(self.user4, update=False))
+
+        # TODO test user sends a reply
+
+        # contact sends a reply
+        case.reply_event(TembaMessage.create(created_on=d0))
+
+        events = case.events.order_by('pk')
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0].event, CaseEvent.REPLY)
+        self.assertEqual(events[0].created_on, d0)
 
         with patch.object(timezone, 'now', return_value=d2):
             # other user in MOH adds a note
@@ -232,33 +256,6 @@ class LabelTest(BaseCasesTest):
         self.assertEqual(set(Label.get_all(self.unicef, self.user1)), {self.aids, self.pregnancy})  # MOH user
         self.assertEqual(set(Label.get_all(self.unicef, self.user3)), {self.aids})  # WHO user
 
-    @patch('dash.orgs.models.TembaClient.get_messages')
-    @patch('dash.orgs.models.TembaClient.label_messages')
-    def test_label_new_messages_task(self, mock_label_messages, mock_get_messages):
-        mock_get_messages.return_value = [
-            TembaMessage.create(id=101, contact='C-001', text="What is aids?", created_on=datetime(2014, 1, 1, 7, 0, tzinfo=timezone.utc)),
-            TembaMessage.create(id=102, contact='C-002', text="Can I catch Hiv?", created_on=datetime(2014, 1, 1, 8, 0, tzinfo=timezone.utc)),
-            TembaMessage.create(id=103, contact='C-003', text="I think I'm pregnant", created_on=datetime(2014, 1, 1, 9, 0, tzinfo=timezone.utc)),
-            TembaMessage.create(id=104, contact='C-004', text="Php is amaze", created_on=datetime(2014, 1, 1, 10, 0, tzinfo=timezone.utc)),
-            TembaMessage.create(id=105, contact='C-005', text="Thanks for the pregnancy/HIV info", created_on=datetime(2014, 1, 1, 11, 0, tzinfo=timezone.utc)),
-        ]
-        mock_label_messages.return_value = None
-
-        # contact 5 has a case open that day
-        d1 = datetime(2014, 1, 1, 5, 0, tzinfo=timezone.utc)
-        with patch.object(timezone, 'now', return_value=d1):
-            Case.objects.create(org=self.unicef, contact_uuid='C-005', assignee=self.moh, message_id=99, message_on=d1)
-
-        label_new_org_messages(self.unicef)
-
-        mock_label_messages.assert_has_calls([call(messages=[101, 102], label='AIDS'),
-                                              call(messages=[103], label='Pregnancy')],
-                                             any_order=True)
-
-        result = self.unicef.get_task_result(TaskType.label_messages)
-        self.assertEqual(result['counts']['messages'], 5)
-        self.assertEqual(result['counts']['labels'], 3)
-
 
 class LabelCRUDLTest(BaseCasesTest):
     def test_create(self):
@@ -362,3 +359,43 @@ class HomeViewsTest(BaseCasesTest):
 
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
+
+
+class TasksTest(BaseCasesTest):
+    @patch('dash.orgs.models.TembaClient.get_messages')
+    @patch('dash.orgs.models.TembaClient.label_messages')
+    def test_process_new_unsolicited_task(self, mock_label_messages, mock_get_messages):
+        d1 = datetime(2014, 1, 1, 7, 0, tzinfo=timezone.utc)
+        d2 = datetime(2014, 1, 1, 8, 0, tzinfo=timezone.utc)
+        d3 = datetime(2014, 1, 1, 9, 0, tzinfo=timezone.utc)
+        d4 = datetime(2014, 1, 1, 10, 0, tzinfo=timezone.utc)
+        d5 = datetime(2014, 1, 1, 11, 0, tzinfo=timezone.utc)
+        mock_get_messages.return_value = [
+            TembaMessage.create(id=101, contact='C-001', text="What is aids?", created_on=d1),
+            TembaMessage.create(id=102, contact='C-002', text="Can I catch Hiv?", created_on=d2),
+            TembaMessage.create(id=103, contact='C-003', text="I think I'm pregnant", created_on=d3),
+            TembaMessage.create(id=104, contact='C-004', text="Php is amaze", created_on=d4),
+            TembaMessage.create(id=105, contact='C-005', text="Thanks for the pregnancy/HIV info", created_on=d5),
+        ]
+        mock_label_messages.return_value = None
+
+        # contact 5 has a case open that day
+        d1 = datetime(2014, 1, 1, 5, 0, tzinfo=timezone.utc)
+        with patch.object(timezone, 'now', return_value=d1):
+            case1 = Case.objects.create(org=self.unicef, contact_uuid='C-005', assignee=self.moh, message_id=99, message_on=d1)
+
+        process_new_org_unsolicited(self.unicef)
+
+        mock_label_messages.assert_has_calls([call(messages=[101, 102], label='AIDS'),
+                                              call(messages=[103], label='Pregnancy')],
+                                             any_order=True)
+
+        result = self.unicef.get_task_result(TaskType.label_messages)
+        self.assertEqual(result['counts']['messages'], 5)
+        self.assertEqual(result['counts']['labels'], 3)
+
+        # check reply event was created for message 5
+        events = case1.events.all()
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0].event, CaseEvent.REPLY)
+        self.assertEqual(events[0].created_on, d5)

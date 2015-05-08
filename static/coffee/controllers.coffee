@@ -415,6 +415,7 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
     MessageService.sendNewMessage $scope.contact, $scope.newMessage, ->
       $scope.newMessage = ''
       $scope.sending = false
+      $scope.$broadcast('timelineChanged')
 
   $scope.onNewMessageChanged = ->
     $scope.msgCharsRemaining = $scope.maxMsgChars - $scope.newMessage.length
@@ -426,12 +427,12 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
   $scope.onAddNote = () ->
     UtilsService.noteModal "Add Note", null, null, (note) ->
       CaseService.noteCase $scope.case, note, () ->
-        $scope.$broadcast('newCaseAction')
+        $scope.$broadcast('timelineChanged')
 
   $scope.onReassign = () ->
     UtilsService.assignModal("Re-assign", null, $scope.allPartners, (assignee) ->
       CaseService.reassignCase($scope.case, assignee, () ->
-        $scope.$broadcast('newCaseAction')
+        $scope.$broadcast('timelineChanged')
       )
     )
 
@@ -445,7 +446,7 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
   $scope.onReopen = () ->
     UtilsService.noteModal "Re-open", "Re-open this case?", null, (note) ->
       CaseService.reopenCase $scope.case, note, () ->
-        $scope.$broadcast('newCaseAction')
+        $scope.$broadcast('timelineChanged')
 ]
 
 
@@ -456,25 +457,24 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
 controllers.controller 'CaseTimelineController', [ '$scope', '$timeout', 'CaseService', ($scope, $timeout, CaseService) ->
 
   $scope.timeline = []
-  $scope.lastEventTime = null
-  $scope.lastActionId = null
-  $scope.lastMessageId = null
+  $scope.startTime = new Date()
+  $scope.newItemsMaxTime = null
 
   $scope.init = () ->
-    $scope.$on 'newCaseAction', () ->
-      $scope.update(false)
+    $scope.$on 'timelineChanged', () ->
+      $scope.refreshItems(false)
 
-    $scope.update(true)
+    $scope.refreshItems(true)
 
-  $scope.update = (repeat) ->
-    CaseService.fetchTimeline $scope.case, $scope.lastEventTime, $scope.lastMessageId, $scope.lastActionId, (events, lastEventTime, lastMessageId, lastActionId) ->
+  $scope.refreshItems = (repeat) ->
+    afterTime = $scope.newItemsMaxTime
+    $scope.newItemsMaxTime = new Date()
+
+    CaseService.fetchTimeline $scope.case, afterTime, $scope.newItemsMaxTime, (events) ->
       $scope.timeline = $scope.timeline.concat events
-      $scope.lastEventTime = lastEventTime
-      $scope.lastMessageId = lastMessageId
-      $scope.lastActionId = lastActionId
 
       if repeat
-        $timeout((() -> $scope.update(true)), INTERVAL_CASE_TIMELINE)
+        $timeout((() -> $scope.refreshItems(true)), INTERVAL_CASE_TIMELINE)
 ]
 
 

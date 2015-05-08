@@ -13,23 +13,23 @@ logger = get_task_logger(__name__)
 
 
 @task
-def label_new_messages():
+def process_new_unsolicited():
     """
-    Labels new unsolicited messages for all orgs in RapidPro
+    Processes new unsolicited messages for all orgs in RapidPro
     """
     r = get_redis_connection()
 
     # only do this if we aren't already running so we don't get backed up
-    key = 'label_new_messages'
+    key = 'process_new_unsolicited'
     if not r.get(key):
         with r.lock(key, timeout=600):
             for org in Org.objects.filter(is_active=True):
-                label_new_org_messages(org)
+                process_new_org_unsolicited(org)
 
 
-def label_new_org_messages(org):
+def process_new_org_unsolicited(org):
     """
-    Labels new unsolicited messages for an org in RapidPro
+    Processes new unsolicited messages for an org in RapidPro
     """
     from .models import Case, Label
 
@@ -61,8 +61,12 @@ def label_new_org_messages(org):
 
     newest_labelled = None
     for msg in messages:
-        # only apply labels if there isn't a currently open case for this contact
-        if not Case.get_open_for_contact_on(org, msg.contact, msg.created_on):
+        open_case = Case.get_open_for_contact_on(org, msg.contact, msg.created_on).first()
+
+        if open_case:
+            open_case.reply_event(msg)
+        else:
+            # only apply labels if there isn't a currently open case for this contact
             for label in labels:
                 for keyword in label_keywords[label]:
                     if keyword in msg.text.lower():

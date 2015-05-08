@@ -352,22 +352,16 @@ services.factory 'CaseService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     # Fetches timeline events
     #----------------------------------------------------------------------------
-    fetchTimeline: (_case, lastEventTime, lastMessageId, lastActionId, callback) ->
+    fetchTimeline: (_case, after, before, callback) ->
       params = {
-        since_event_time: (formatIso8601 lastEventTime),
-        since_message_id: lastMessageId,
-        since_action_id: lastActionId
+        after: formatIso8601(after),
+        before: formatIso8601(before),
       }
 
       $http.get('/case/timeline/' + _case.id + '/?' + $.param(params))
       .success (data) =>
-        @_processEvents(data.results)
-
-        newLastEventTime = parseIso8601(data.last_event_time) or lastEventTime
-        newLastMessageId = data.last_message_id or lastMessageId
-        newLastActionId = data.last_action_id or lastActionId
-
-        callback(data.results, newLastEventTime, newLastMessageId, newLastActionId)
+        @_processTimeline(data.results)
+        callback(data.results)
 
     #----------------------------------------------------------------------------
     # Convert search object to URL params
@@ -387,9 +381,9 @@ services.factory 'CaseService', ['$http', ($http) ->
         c.opened_on = parseIso8601(c.opened_on)
 
     #----------------------------------------------------------------------------
-    # Processes incoming case events
+    # Processes incoming case timeline items
     #----------------------------------------------------------------------------
-    _processEvents: (events) ->
+    _processTimeline: (events) ->
       for event in events
         # parse datetime string
         event.time = parseIso8601(event.time)
