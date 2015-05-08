@@ -5,7 +5,6 @@ import pytz
 
 from dash.orgs.models import Org
 from dash.utils import get_obj_cacheable, random_string, chunks, intersection
-from datetime import date
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
@@ -15,10 +14,11 @@ from django.core.files.storage import default_storage
 from django.core.files.temp import NamedTemporaryFile
 from django.core.urlresolvers import reverse
 from django.db import models
-from django.db.models import Count, Q
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from enum import Enum
+from redis_cache import get_redis_connection
 from temba.base import TembaNoSuchObjectError
 from upartners.email import send_email
 from . import parse_csv, truncate, SYSTEM_LABEL_FLAGGED
@@ -138,7 +138,7 @@ class MessageExport(models.Model):
 
         # fetch all messages to be exported
         while True:
-            all_messages += Message.search(client, search, pager)
+            all_messages += Message.search(self.org, search, pager)
             if not pager.has_more():
                 break
 
@@ -594,14 +594,26 @@ class Message(object):
             cls.bulk_unlabel(org, user, [msg.id], label)
 
     @staticmethod
-    def search(client, search, pager):
+    def search(org, search, pager):
         if not search['labels']:  # no access to un-labelled messages
             return []
 
-        return client.get_messages(pager=pager, text=search['text'], labels=search['labels'],
-                                   contacts=search['contacts'], groups=search['groups'],
-                                   direction='I', _types=['I'], statuses=['H'], archived=search['archived'],
-                                   after=search['after'], before=search['before'])
+        # don't hit the RapidPro API unless labelling task found new messages
+        if search['after']:
+            last_msg_time = org.get_last_msg_time()
+            if not last_msg_time or search['after'] >= last_msg_time:
+                return []
+
+        client = org.get_temba_client()
+        messages = client.get_messages(pager=pager, text=search['text'], labels=search['labels'],
+                                       contacts=search['contacts'], groups=search['groups'],
+                                       direction='I', _types=['I'], statuses=['H'], archived=search['archived'],
+                                       after=search['after'], before=search['before'])
+
+        if messages:
+            org.record_msg_time(messages[0].created_on)
+
+        return messages
 
     @staticmethod
     def as_json(msg, label_map):

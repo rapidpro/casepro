@@ -48,35 +48,40 @@ def label_new_org_messages(org):
 
     this_time = timezone.now()
 
-    num_messages = 0
+    messages = []
     num_labels = 0
 
     # grab all un-processed unsolicited messages
     pager = client.pager()
     while True:
-        messages = client.get_messages(direction='I', _types=['I'], statuses=['H'],
-                                       after=last_time, before=this_time, pager=pager)
-        num_messages += len(messages)
-
-        for msg in messages:
-            # only apply labels if there isn't a currently open case for this contact
-            if not Case.get_open_for_contact_on(org, msg.contact, msg.created_on):
-                for label in labels:
-                    for keyword in label_keywords[label]:
-                        if keyword in msg.text.lower():
-                            label_matches[label].append(msg.id)
-
+        messages += client.get_messages(direction='I', _types=['I'], statuses=['H'],
+                                        after=last_time, before=this_time, pager=pager)
         if not pager.has_more():
             break
 
+    newest_labelled = None
+    for msg in messages:
+        # only apply labels if there isn't a currently open case for this contact
+        if not Case.get_open_for_contact_on(org, msg.contact, msg.created_on):
+            for label in labels:
+                for keyword in label_keywords[label]:
+                    if keyword in msg.text.lower():
+                        label_matches[label].append(msg)
+                        if not newest_labelled:
+                            newest_labelled = msg
+
+    # record the newest/last labelled message time for this org
+    if newest_labelled:
+        org.record_msg_time(newest_labelled.created_on)
+
     # add labels to matching messages
-    for label, matched_ids in label_matches.iteritems():
-        if matched_ids:
-            client.label_messages(messages=matched_ids, label=label.name)
-            num_labels += len(matched_ids)
+    for label, matched_msgs in label_matches.iteritems():
+        if matched_msgs:
+            client.label_messages(messages=[m.id for m in matched_msgs], label=label.name)
+            num_labels += len(matched_msgs)
 
     org.set_task_result(TaskType.label_messages, {'time': datetime_to_ms(this_time),
-                                                  'counts': {'messages': num_messages, 'labels': num_labels}})
+                                                  'counts': {'messages': len(messages), 'labels': num_labels}})
 
 
 @task

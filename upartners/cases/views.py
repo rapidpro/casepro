@@ -416,7 +416,7 @@ class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
 
         client = self.request.org.get_temba_client()
         pager = client.pager(start_page=page) if page else None
-        messages = Message.search(client, search, pager)
+        messages = Message.search(self.request.org, search, pager)
 
         context['messages'] = messages
 
