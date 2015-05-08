@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-03-13 11:38+0000\n"
+"POT-Creation-Date: 2015-05-08 07:58+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,9 +18,307 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
+#: casepro/cases/models.py:41 casepro/cases/models.py:102
+#: casepro/cases/models.py:220 casepro/cases/models.py:258
+#: casepro/cases/models.py:321 casepro/cases/models.py:657
+#: casepro/orgs_ext/views.py:54 env/src/dash/dash/orgs/views.py:115
+msgid "Organization"
+msgstr ""
+
+#: casepro/cases/models.py:43 casepro/cases/models.py:222
+#: casepro/cases/models.py:260 casepro/cases/views.py:298
+#: casepro/cases/views.py:571 env/src/dash/dash/orgs/models.py:22
+#: env/src/dash/dash/orgs/models.py:336
+msgid "Name"
+msgstr ""
+
+#: casepro/cases/models.py:44
+msgid "Name of this filter group"
+msgstr ""
+
+#: casepro/cases/models.py:157
+#, python-format
+msgid "Messages %d"
+msgstr ""
+
+#: casepro/cases/models.py:223
+msgid "Name of this partner organization"
+msgstr ""
+
+#: casepro/cases/models.py:260
+msgid "Name of this label"
+msgstr ""
+
+#: casepro/cases/models.py:262 casepro/cases/views.py:300
+msgid "Description"
+msgstr ""
+
+#: casepro/cases/models.py:264 casepro/cases/views.py:302
+msgid "Keywords"
+msgstr ""
+
+#: casepro/cases/models.py:267
+msgid "Partner organizations who can access messages with this label"
+msgstr ""
+
+#: casepro/cases/models.py:323
+msgid "Labels"
+msgstr ""
+
+#: casepro/cases/models.py:333
+msgid "Summary"
+msgstr ""
+
+#: casepro/cases/models.py:499
+msgid "Open"
+msgstr ""
+
+#: casepro/cases/models.py:500
+msgid "Add Note"
+msgstr ""
+
+#: casepro/cases/models.py:501
+msgid "Reassign"
+msgstr ""
+
+#: casepro/cases/models.py:502 casepro/cases/models.py:652
+msgid "Label"
+msgstr ""
+
+#: casepro/cases/models.py:503 casepro/cases/models.py:653
+msgid "Remove Label"
+msgstr ""
+
+#: casepro/cases/models.py:504
+msgid "Close"
+msgstr ""
+
+#: casepro/cases/models.py:505
+msgid "Reopen"
+msgstr ""
+
+#: casepro/cases/models.py:650
+msgid "Flag"
+msgstr ""
+
+#: casepro/cases/models.py:651
+msgid "Un-flag"
+msgstr ""
+
+#: casepro/cases/models.py:654
+msgid "Archive"
+msgstr ""
+
+#: casepro/cases/models.py:655
+msgid "Restore"
+msgstr ""
+
+#: casepro/cases/views.py:266 env/src/smartmin/smartmin/users/views.py:198
+#: env/src/smartmin/smartmin/users/views.py:220
+msgid "Groups"
+msgstr ""
+
+#: casepro/cases/views.py:267
+msgid "Contact groups to be used as filter groups."
+msgstr ""
+
+#: casepro/cases/views.py:281
+msgid "Filter Groups"
+msgstr ""
+
+#: casepro/cases/views.py:284
+msgid "Update"
+msgstr ""
+
+#: casepro/cases/views.py:285
+msgid "Updated contact groups to use as filter groups"
+msgstr ""
+
+#: casepro/cases/views.py:303
+msgid "Match messages containing any of these words"
+msgstr ""
+
+#: casepro/cases/views.py:305
+msgid "Visible to"
+msgstr ""
+
+#: casepro/cases/views.py:544
+msgid "Download Messages"
+msgstr ""
+
+#: casepro/cases/views.py:663
+msgid "Inbox"
+msgstr ""
+
+#: casepro/cases/views.py:673
+msgid "Flagged"
+msgstr ""
+
+#: casepro/cases/views.py:683
+msgid "Open Cases"
+msgstr ""
+
+#: casepro/cases/views.py:693
+msgid "Closed Cases"
+msgstr ""
+
+#: casepro/cases/views.py:703
+msgid "Archived"
+msgstr ""
+
+#: casepro/orgs_ext/views.py:34
+msgid "RapidPro API Token"
+msgstr ""
+
+#: casepro/orgs_ext/views.py:38
+msgid "My Organization"
+msgstr ""
+
+#: casepro/orgs_ext/views.py:55 env/src/dash/dash/orgs/models.py:23
+#: env/src/dash/dash/orgs/views.py:116
+msgid "The name of this organization"
+msgstr ""
+
+#: casepro/orgs_ext/views.py:57 env/src/dash/dash/orgs/views.py:120
+msgid "The timezone your organization is in"
+msgstr ""
+
+#: casepro/orgs_ext/views.py:59
+msgid "Contact fields"
+msgstr ""
+
+#: casepro/orgs_ext/views.py:60 casepro/settings_common.py:177
+msgid "Contact fields to display"
+msgstr ""
+
+#: casepro/orgs_ext/views.py:62
+msgid "Banner text"
+msgstr ""
+
+#: casepro/orgs_ext/views.py:63 casepro/settings_common.py:179
+msgid "Banner text displayed to all users"
+msgstr ""
+
+#: casepro/orgs_ext/views.py:83
+msgid "Edit My Organization"
+msgstr ""
+
+#: casepro/profiles/__init__.py:12 casepro/profiles/views.py:215
+msgid "Data Analyst"
+msgstr ""
+
+#: casepro/profiles/__init__.py:12 casepro/profiles/views.py:213
+msgid "Manager"
+msgstr ""
+
+#: casepro/profiles/__init__.py:49
+msgid "Email address already taken."
+msgstr ""
+
+#: casepro/profiles/middleware.py:25
+msgid "You are required to change your password"
+msgstr ""
+
+#: casepro/profiles/models.py:17 casepro/profiles/views.py:20
+msgid "Full name"
+msgstr ""
+
+#: casepro/profiles/models.py:19
+msgid "User must change password on next login"
+msgstr ""
+
+#: casepro/profiles/views.py:22
+msgid "Partner Organization"
+msgstr ""
+
+#: casepro/profiles/views.py:24
+msgid "Role"
+msgstr ""
+
+#: casepro/profiles/views.py:26 env/src/dash/dash/orgs/models.py:280
+msgid "Email"
+msgstr ""
+
+#: casepro/profiles/views.py:27
+msgid "Email address and login."
+msgstr ""
+
+#: casepro/profiles/views.py:29 env/src/smartmin/smartmin/users/views.py:78
+#: env/src/smartmin/smartmin/users/views.py:199
+#: env/src/smartmin/smartmin/users/views.py:247
+msgid "Password"
+msgstr ""
+
+#: casepro/profiles/views.py:30
+msgid "Password used to log in (minimum of 8 characters)."
+msgstr ""
+
+#: casepro/profiles/views.py:33
+msgid "New password"
+msgstr ""
+
+#: casepro/profiles/views.py:34
+msgid "Password used to login (minimum of 8 characters, optional)."
+msgstr ""
+
+#: casepro/profiles/views.py:36
+msgid "Confirm password"
+msgstr ""
+
+#: casepro/profiles/views.py:38
+msgid "Require change"
+msgstr ""
+
+#: casepro/profiles/views.py:39
+msgid "Whether user must change password on next login."
+msgstr ""
+
+#: casepro/profiles/views.py:41
+msgid "Active"
+msgstr ""
+
+#: casepro/profiles/views.py:42
+msgid "Whether this user is active, disable to remove access."
+msgstr ""
+
+#: casepro/profiles/views.py:58
+msgid "Passwords don't match."
+msgstr ""
+
+#: casepro/profiles/views.py:143
+msgid "Profile updated"
+msgstr ""
+
+#: casepro/profiles/views.py:144
+msgid "Edit My Profile"
+msgstr ""
+
+#: casepro/profiles/views.py:155
+msgid "User doesn't have a profile"
+msgstr ""
+
+#: casepro/profiles/views.py:179
+msgid "My Profile"
+msgstr ""
+
+#: casepro/profiles/views.py:211 env/src/dash/dash/orgs/models.py:271
+msgid "Administrator"
+msgstr ""
+
+#: casepro/settings_common.py:69
+msgid "English"
+msgstr ""
+
+#: casepro/settings_common.py:69
+msgid "French"
+msgstr ""
+
+#: casepro/translation.py:16
+msgid "Something to trigger localizations"
+msgstr ""
+
 #: env/djcelery/templates/admin/djcelery/change_list.html:7
 #: env/djcelery/templates/djcelery/confirm_rate_limit.html:6
-#: upartners/home/views.py:12
 msgid "Home"
 msgstr ""
 
@@ -33,80 +331,84 @@ msgstr ""
 msgid "Rate limit"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/contrib/sitemaps/apps.py:8
+#: env/lib/python2.7/site-packages/django/contrib/messages/apps.py:7
+msgid "Messages"
+msgstr ""
+
+#: env/lib/python2.7/site-packages/django/contrib/sitemaps/apps.py:7
 msgid "Site Maps"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/contrib/staticfiles/apps.py:8
+#: env/lib/python2.7/site-packages/django/contrib/staticfiles/apps.py:7
 msgid "Static Files"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/contrib/syndication/apps.py:8
+#: env/lib/python2.7/site-packages/django/contrib/syndication/apps.py:7
 msgid "Syndication"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/contrib/webdesign/apps.py:8
+#: env/lib/python2.7/site-packages/django/contrib/webdesign/apps.py:7
 msgid "Web Design"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/core/validators.py:21
+#: env/lib/python2.7/site-packages/django/core/validators.py:20
 msgid "Enter a valid value."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/core/validators.py:77
-#: env/lib/python2.7/site-packages/django/forms/fields.py:664
+#: env/lib/python2.7/site-packages/django/core/validators.py:87
+#: env/lib/python2.7/site-packages/django/forms/fields.py:710
 msgid "Enter a valid URL."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/core/validators.py:115
+#: env/lib/python2.7/site-packages/django/core/validators.py:133
 msgid "Enter a valid integer."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/core/validators.py:120
+#: env/lib/python2.7/site-packages/django/core/validators.py:138
 msgid "Enter a valid email address."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/core/validators.py:185
+#: env/lib/python2.7/site-packages/django/core/validators.py:212
 msgid ""
 "Enter a valid 'slug' consisting of letters, numbers, underscores or hyphens."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/core/validators.py:188
-#: env/lib/python2.7/site-packages/django/core/validators.py:207
+#: env/lib/python2.7/site-packages/django/core/validators.py:217
+#: env/lib/python2.7/site-packages/django/core/validators.py:236
 msgid "Enter a valid IPv4 address."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/core/validators.py:193
-#: env/lib/python2.7/site-packages/django/core/validators.py:208
+#: env/lib/python2.7/site-packages/django/core/validators.py:222
+#: env/lib/python2.7/site-packages/django/core/validators.py:237
 msgid "Enter a valid IPv6 address."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/core/validators.py:203
-#: env/lib/python2.7/site-packages/django/core/validators.py:206
+#: env/lib/python2.7/site-packages/django/core/validators.py:232
+#: env/lib/python2.7/site-packages/django/core/validators.py:235
 msgid "Enter a valid IPv4 or IPv6 address."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/core/validators.py:229
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1075
+#: env/lib/python2.7/site-packages/django/core/validators.py:260
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1144
 msgid "Enter only digits separated by commas."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/core/validators.py:236
+#: env/lib/python2.7/site-packages/django/core/validators.py:269
 #, python-format
 msgid "Ensure this value is %(limit_value)s (it is %(show_value)s)."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/core/validators.py:255
+#: env/lib/python2.7/site-packages/django/core/validators.py:295
 #, python-format
 msgid "Ensure this value is less than or equal to %(limit_value)s."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/core/validators.py:262
+#: env/lib/python2.7/site-packages/django/core/validators.py:302
 #, python-format
 msgid "Ensure this value is greater than or equal to %(limit_value)s."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/core/validators.py:271
+#: env/lib/python2.7/site-packages/django/core/validators.py:311
 #, python-format
 msgid ""
 "Ensure this value has at least %(limit_value)d character (it has "
@@ -117,7 +419,7 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: env/lib/python2.7/site-packages/django/core/validators.py:282
+#: env/lib/python2.7/site-packages/django/core/validators.py:322
 #, python-format
 msgid ""
 "Ensure this value has at most %(limit_value)d character (it has "
@@ -128,260 +430,276 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: env/lib/python2.7/site-packages/django/db/models/base.py:971
-#: env/lib/python2.7/site-packages/django/forms/models.py:716
+#: env/lib/python2.7/site-packages/django/db/models/base.py:1106
+#: env/lib/python2.7/site-packages/django/forms/models.py:722
 msgid "and"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/base.py:973
+#: env/lib/python2.7/site-packages/django/db/models/base.py:1108
 #, python-format
 msgid "%(model_name)s with this %(field_labels)s already exists."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:104
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:107
 #, python-format
 msgid "Value %(value)r is not a valid choice."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:105
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:108
 msgid "This field cannot be null."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:106
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:109
 msgid "This field cannot be blank."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:107
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:110
 #, python-format
 msgid "%(model_name)s with this %(field_label)s already exists."
 msgstr ""
 
 #. Translators: The 'lookup_type' is one of 'date', 'year' or 'month'.
 #. Eg: "Title must be unique for pub_date year"
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:111
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:114
 #, python-format
 msgid ""
 "%(field_label)s must be unique for %(date_field_label)s %(lookup_type)s."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:118
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:132
 #, python-format
 msgid "Field of type: %(field_type)s"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:852
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1582
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:922
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1832
 msgid "Integer"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:856
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1580
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:926
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1830
 #, python-format
 msgid "'%(value)s' value must be an integer."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:931
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1001
 #, python-format
 msgid "'%(value)s' value must be either True or False."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:933
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1003
 msgid "Boolean (Either True or False)"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1009
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1078
 #, python-format
 msgid "String (up to %(max_length)s)"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1070
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1139
 msgid "Comma-separated integers"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1085
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1188
 #, python-format
 msgid ""
 "'%(value)s' value has an invalid date format. It must be in YYYY-MM-DD "
 "format."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1087
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1194
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1190
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1340
 #, python-format
 msgid ""
 "'%(value)s' value has the correct format (YYYY-MM-DD) but it is an invalid "
 "date."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1090
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1193
 msgid "Date (without time)"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1192
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1338
 #, python-format
 msgid ""
 "'%(value)s' value has an invalid format. It must be in YYYY-MM-DD HH:MM[:ss[."
 "uuuuuu]][TZ] format."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1196
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1342
 #, python-format
 msgid ""
 "'%(value)s' value has the correct format (YYYY-MM-DD HH:MM[:ss[.uuuuuu]]"
 "[TZ]) but it is an invalid date/time."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1200
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1346
 msgid "Date (with time)"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1306
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1498
 #, python-format
 msgid "'%(value)s' value must be a decimal number."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1308
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1500
 msgid "Decimal number"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1453
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1651
+#, python-format
+msgid ""
+"'%(value)s' value has an invalid format. It must be in [DD] [HH:[MM:]]ss[."
+"uuuuuu] format."
+msgstr ""
+
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1654
+msgid "Duration"
+msgstr ""
+
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1705
 msgid "Email address"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1479
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1729
 msgid "File path"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1546
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1796
 #, python-format
 msgid "'%(value)s' value must be a float."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1548
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1798
 msgid "Floating point number"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1632
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1899
 msgid "Big (8 byte) integer"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1647
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1914
 msgid "IPv4 address"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1677
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1950
 msgid "IP address"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1756
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2029
 #, python-format
 msgid "'%(value)s' value must be either None, True or False."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1758
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2031
 msgid "Boolean (Either True, False or None)"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1818
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2091
 msgid "Positive integer"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1830
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2103
 msgid "Positive small integer"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1843
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2116
 #, python-format
 msgid "Slug (up to %(max_length)s)"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1872
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2145
 msgid "Small integer"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1879
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2152
 msgid "Text"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1902
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2175
 #, python-format
 msgid ""
 "'%(value)s' value has an invalid format. It must be in HH:MM[:ss[.uuuuuu]] "
 "format."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1904
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2177
 #, python-format
 msgid ""
 "'%(value)s' value has the correct format (HH:MM[:ss[.uuuuuu]]) but it is an "
 "invalid time."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1907
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2180
 msgid "Time"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1989
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2308
 msgid "URL"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2012
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2331
 msgid "Raw binary data"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/files.py:225
+#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2375
+#, python-format
+msgid "'%(value)s' is not a valid UUID."
+msgstr ""
+
+#: env/lib/python2.7/site-packages/django/db/models/fields/files.py:239
 msgid "File"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/files.py:375
+#: env/lib/python2.7/site-packages/django/db/models/fields/files.py:389
 msgid "Image"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/related.py:1603
+#: env/lib/python2.7/site-packages/django/db/models/fields/related.py:1791
 #, python-format
-msgid "%(model)s instance with pk %(pk)r does not exist."
+msgid "%(model)s instance with %(field)s %(value)r does not exist."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/related.py:1605
+#: env/lib/python2.7/site-packages/django/db/models/fields/related.py:1793
 msgid "Foreign Key (type determined by related field)"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/related.py:1795
+#: env/lib/python2.7/site-packages/django/db/models/fields/related.py:2020
 msgid "One-to-one relationship"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/db/models/fields/related.py:1865
+#: env/lib/python2.7/site-packages/django/db/models/fields/related.py:2110
 msgid "Many-to-many relationship"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/fields.py:55
+#: env/lib/python2.7/site-packages/django/forms/fields.py:64
 msgid "This field is required."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/fields.py:225
+#: env/lib/python2.7/site-packages/django/forms/fields.py:237
 msgid "Enter a whole number."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/fields.py:268
-#: env/lib/python2.7/site-packages/django/forms/fields.py:305
+#: env/lib/python2.7/site-packages/django/forms/fields.py:280
+#: env/lib/python2.7/site-packages/django/forms/fields.py:317
 msgid "Enter a number."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/fields.py:307
+#: env/lib/python2.7/site-packages/django/forms/fields.py:319
 #, python-format
 msgid "Ensure that there are no more than %(max)s digit in total."
 msgid_plural "Ensure that there are no more than %(max)s digits in total."
 msgstr[0] ""
 msgstr[1] ""
 
-#: env/lib/python2.7/site-packages/django/forms/fields.py:311
+#: env/lib/python2.7/site-packages/django/forms/fields.py:323
 #, python-format
 msgid "Ensure that there are no more than %(max)s decimal place."
 msgid_plural "Ensure that there are no more than %(max)s decimal places."
 msgstr[0] ""
 msgstr[1] ""
 
-#: env/lib/python2.7/site-packages/django/forms/fields.py:315
+#: env/lib/python2.7/site-packages/django/forms/fields.py:327
 #, python-format
 msgid ""
 "Ensure that there are no more than %(max)s digit before the decimal point."
@@ -390,33 +708,37 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: env/lib/python2.7/site-packages/django/forms/fields.py:426
-#: env/lib/python2.7/site-packages/django/forms/fields.py:1132
+#: env/lib/python2.7/site-packages/django/forms/fields.py:438
+#: env/lib/python2.7/site-packages/django/forms/fields.py:1191
 msgid "Enter a valid date."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/fields.py:450
-#: env/lib/python2.7/site-packages/django/forms/fields.py:1133
+#: env/lib/python2.7/site-packages/django/forms/fields.py:462
+#: env/lib/python2.7/site-packages/django/forms/fields.py:1192
 msgid "Enter a valid time."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/fields.py:472
+#: env/lib/python2.7/site-packages/django/forms/fields.py:484
 msgid "Enter a valid date/time."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/fields.py:553
+#: env/lib/python2.7/site-packages/django/forms/fields.py:525
+msgid "Enter a valid duration."
+msgstr ""
+
+#: env/lib/python2.7/site-packages/django/forms/fields.py:591
 msgid "No file was submitted. Check the encoding type on the form."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/fields.py:554
+#: env/lib/python2.7/site-packages/django/forms/fields.py:592
 msgid "No file was submitted."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/fields.py:555
+#: env/lib/python2.7/site-packages/django/forms/fields.py:593
 msgid "The submitted file is empty."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/fields.py:557
+#: env/lib/python2.7/site-packages/django/forms/fields.py:595
 #, python-format
 msgid "Ensure this filename has at most %(max)d character (it has %(length)d)."
 msgid_plural ""
@@ -424,206 +746,205 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: env/lib/python2.7/site-packages/django/forms/fields.py:560
+#: env/lib/python2.7/site-packages/django/forms/fields.py:598
 msgid "Please either submit a file or check the clear checkbox, not both."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/fields.py:621
+#: env/lib/python2.7/site-packages/django/forms/fields.py:660
 msgid ""
 "Upload a valid image. The file you uploaded was either not an image or a "
 "corrupted image."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/fields.py:771
-#: env/lib/python2.7/site-packages/django/forms/fields.py:860
-#: env/lib/python2.7/site-packages/django/forms/models.py:1205
+#: env/lib/python2.7/site-packages/django/forms/fields.py:825
+#: env/lib/python2.7/site-packages/django/forms/fields.py:919
+#: env/lib/python2.7/site-packages/django/forms/models.py:1233
 #, python-format
 msgid "Select a valid choice. %(value)s is not one of the available choices."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/fields.py:861
-#: env/lib/python2.7/site-packages/django/forms/fields.py:976
-#: env/lib/python2.7/site-packages/django/forms/models.py:1204
+#: env/lib/python2.7/site-packages/django/forms/fields.py:920
+#: env/lib/python2.7/site-packages/django/forms/fields.py:1035
+#: env/lib/python2.7/site-packages/django/forms/models.py:1232
 msgid "Enter a list of values."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/fields.py:977
+#: env/lib/python2.7/site-packages/django/forms/fields.py:1036
 msgid "Enter a complete value."
 msgstr ""
 
+#: env/lib/python2.7/site-packages/django/forms/fields.py:1262
+msgid "Enter a valid UUID."
+msgstr ""
+
 #. Translators: This is the default suffix added to form field labels
-#: env/lib/python2.7/site-packages/django/forms/forms.py:122
+#: env/lib/python2.7/site-packages/django/forms/forms.py:129
 msgid ":"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/forms.py:192
+#: env/lib/python2.7/site-packages/django/forms/forms.py:214
 #, python-format
 msgid "(Hidden field %(name)s) %(error)s"
 msgstr ""
 
 #. Translators: If found as last label character, these punctuation
 #. characters will prevent the default label_suffix to be appended to the label
-#: env/lib/python2.7/site-packages/django/forms/forms.py:620
+#: env/lib/python2.7/site-packages/django/forms/forms.py:665
 msgid ":?.!"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/formsets.py:95
+#: env/lib/python2.7/site-packages/django/forms/formsets.py:96
 msgid "ManagementForm data is missing or has been tampered with"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/formsets.py:332
+#: env/lib/python2.7/site-packages/django/forms/formsets.py:333
 #, python-format
 msgid "Please submit %d or fewer forms."
 msgid_plural "Please submit %d or fewer forms."
 msgstr[0] ""
 msgstr[1] ""
 
-#: env/lib/python2.7/site-packages/django/forms/formsets.py:339
+#: env/lib/python2.7/site-packages/django/forms/formsets.py:340
 #, python-format
 msgid "Please submit %d or more forms."
 msgid_plural "Please submit %d or more forms."
 msgstr[0] ""
 msgstr[1] ""
 
-#: env/lib/python2.7/site-packages/django/forms/formsets.py:367
-#: env/lib/python2.7/site-packages/django/forms/formsets.py:369
+#: env/lib/python2.7/site-packages/django/forms/formsets.py:368
+#: env/lib/python2.7/site-packages/django/forms/formsets.py:370
 msgid "Order"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/formsets.py:371
+#: env/lib/python2.7/site-packages/django/forms/formsets.py:372
 msgid "Delete"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/models.py:710
+#: env/lib/python2.7/site-packages/django/forms/models.py:716
 #, python-format
 msgid "Please correct the duplicate data for %(field)s."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/models.py:714
+#: env/lib/python2.7/site-packages/django/forms/models.py:720
 #, python-format
 msgid "Please correct the duplicate data for %(field)s, which must be unique."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/models.py:720
+#: env/lib/python2.7/site-packages/django/forms/models.py:726
 #, python-format
 msgid ""
 "Please correct the duplicate data for %(field_name)s which must be unique "
 "for the %(lookup)s in %(date_field)s."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/models.py:728
+#: env/lib/python2.7/site-packages/django/forms/models.py:734
 msgid "Please correct the duplicate values below."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/models.py:1030
+#: env/lib/python2.7/site-packages/django/forms/models.py:1052
 msgid "The inline foreign key did not match the parent instance primary key."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/models.py:1096
+#: env/lib/python2.7/site-packages/django/forms/models.py:1118
 msgid "Select a valid choice. That choice is not one of the available choices."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/models.py:1207
+#: env/lib/python2.7/site-packages/django/forms/models.py:1235
 #, python-format
 msgid "\"%(pk)s\" is not a valid value for a primary key."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/models.py:1218
-msgid ""
-"Hold down \"Control\", or \"Command\" on a Mac, to select more than one."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/utils.py:157
+#: env/lib/python2.7/site-packages/django/forms/utils.py:165
 #, python-format
 msgid ""
 "%(datetime)s couldn't be interpreted in time zone %(current_timezone)s; it "
 "may be ambiguous or it may not exist."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/widgets.py:350
+#: env/lib/python2.7/site-packages/django/forms/widgets.py:345
 msgid "Currently"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/widgets.py:351
+#: env/lib/python2.7/site-packages/django/forms/widgets.py:346
 msgid "Change"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/widgets.py:352
+#: env/lib/python2.7/site-packages/django/forms/widgets.py:347
 msgid "Clear"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/widgets.py:546
+#: env/lib/python2.7/site-packages/django/forms/widgets.py:555
 msgid "Unknown"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/widgets.py:547
+#: env/lib/python2.7/site-packages/django/forms/widgets.py:556
 #: env/src/dash/dash/stories/views.py:47
 msgid "Yes"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/forms/widgets.py:548
+#: env/lib/python2.7/site-packages/django/forms/widgets.py:557
 #: env/src/dash/dash/stories/views.py:48
 msgid "No"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:855
+#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:860
 msgid "yes,no,maybe"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:884
-#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:896
+#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:889
+#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:901
 #, python-format
 msgid "%(size)d byte"
 msgid_plural "%(size)d bytes"
 msgstr[0] ""
 msgstr[1] ""
 
-#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:898
+#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:903
 #, python-format
 msgid "%s KB"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:900
+#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:905
 #, python-format
 msgid "%s MB"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:902
+#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:907
 #, python-format
 msgid "%s GB"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:904
+#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:909
 #, python-format
 msgid "%s TB"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:906
+#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:911
 #, python-format
 msgid "%s PB"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/utils/dateformat.py:59
+#: env/lib/python2.7/site-packages/django/utils/dateformat.py:61
 msgid "p.m."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/utils/dateformat.py:60
+#: env/lib/python2.7/site-packages/django/utils/dateformat.py:62
 msgid "a.m."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/utils/dateformat.py:65
+#: env/lib/python2.7/site-packages/django/utils/dateformat.py:67
 msgid "PM"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/utils/dateformat.py:66
+#: env/lib/python2.7/site-packages/django/utils/dateformat.py:68
 msgid "AM"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/utils/dateformat.py:149
+#: env/lib/python2.7/site-packages/django/utils/dateformat.py:151
 msgid "midnight"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/utils/dateformat.py:151
+#: env/lib/python2.7/site-packages/django/utils/dateformat.py:153
 msgid "noon"
 msgstr ""
 
@@ -903,77 +1224,77 @@ msgstr ""
 msgid "This is not a valid IPv6 address."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/utils/text.py:76
+#: env/lib/python2.7/site-packages/django/utils/text.py:79
 #, python-format
 msgctxt "String to return when truncating text"
 msgid "%(truncated_text)s..."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/utils/text.py:245
+#: env/lib/python2.7/site-packages/django/utils/text.py:248
 msgid "or"
 msgstr ""
 
 #. Translators: This string is used as a separator between list elements
-#: env/lib/python2.7/site-packages/django/utils/text.py:264
-#: env/lib/python2.7/site-packages/django/utils/timesince.py:57
+#: env/lib/python2.7/site-packages/django/utils/text.py:267
+#: env/lib/python2.7/site-packages/django/utils/timesince.py:58
 msgid ", "
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/utils/timesince.py:25
+#: env/lib/python2.7/site-packages/django/utils/timesince.py:10
 #, python-format
 msgid "%d year"
 msgid_plural "%d years"
 msgstr[0] ""
 msgstr[1] ""
 
-#: env/lib/python2.7/site-packages/django/utils/timesince.py:26
+#: env/lib/python2.7/site-packages/django/utils/timesince.py:11
 #, python-format
 msgid "%d month"
 msgid_plural "%d months"
 msgstr[0] ""
 msgstr[1] ""
 
-#: env/lib/python2.7/site-packages/django/utils/timesince.py:27
+#: env/lib/python2.7/site-packages/django/utils/timesince.py:12
 #, python-format
 msgid "%d week"
 msgid_plural "%d weeks"
 msgstr[0] ""
 msgstr[1] ""
 
-#: env/lib/python2.7/site-packages/django/utils/timesince.py:28
+#: env/lib/python2.7/site-packages/django/utils/timesince.py:13
 #, python-format
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
 
-#: env/lib/python2.7/site-packages/django/utils/timesince.py:29
+#: env/lib/python2.7/site-packages/django/utils/timesince.py:14
 #, python-format
 msgid "%d hour"
 msgid_plural "%d hours"
 msgstr[0] ""
 msgstr[1] ""
 
-#: env/lib/python2.7/site-packages/django/utils/timesince.py:30
+#: env/lib/python2.7/site-packages/django/utils/timesince.py:15
 #, python-format
 msgid "%d minute"
 msgid_plural "%d minutes"
 msgstr[0] ""
 msgstr[1] ""
 
-#: env/lib/python2.7/site-packages/django/utils/timesince.py:46
+#: env/lib/python2.7/site-packages/django/utils/timesince.py:47
 msgid "0 minutes"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/csrf.py:105
+#: env/lib/python2.7/site-packages/django/views/csrf.py:107
 msgid "Forbidden"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/csrf.py:106
+#: env/lib/python2.7/site-packages/django/views/csrf.py:108
 msgid "CSRF verification failed. Request aborted."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/csrf.py:110
+#: env/lib/python2.7/site-packages/django/views/csrf.py:112
 msgid ""
 "You are seeing this message because this HTTPS site requires a 'Referer "
 "header' to be sent by your Web browser, but none was sent. This header is "
@@ -981,93 +1302,117 @@ msgid ""
 "hijacked by third parties."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/csrf.py:115
+#: env/lib/python2.7/site-packages/django/views/csrf.py:117
 msgid ""
 "If you have configured your browser to disable 'Referer' headers, please re-"
 "enable them, at least for this site, or for HTTPS connections, or for 'same-"
 "origin' requests."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/csrf.py:120
+#: env/lib/python2.7/site-packages/django/views/csrf.py:122
 msgid ""
 "You are seeing this message because this site requires a CSRF cookie when "
 "submitting forms. This cookie is required for security reasons, to ensure "
 "that your browser is not being hijacked by third parties."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/csrf.py:125
+#: env/lib/python2.7/site-packages/django/views/csrf.py:127
 msgid ""
 "If you have configured your browser to disable cookies, please re-enable "
 "them, at least for this site, or for 'same-origin' requests."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/csrf.py:129
+#: env/lib/python2.7/site-packages/django/views/csrf.py:132
 msgid "More information is available with DEBUG=True."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/generic/dates.py:43
+#: env/lib/python2.7/site-packages/django/views/debug.py:583
+msgid "Welcome to Django"
+msgstr ""
+
+#: env/lib/python2.7/site-packages/django/views/debug.py:584
+msgid "It worked!"
+msgstr ""
+
+#: env/lib/python2.7/site-packages/django/views/debug.py:585
+msgid "Congratulations on your first Django-powered page."
+msgstr ""
+
+#: env/lib/python2.7/site-packages/django/views/debug.py:586
+msgid ""
+"Of course, you haven't actually done any work yet. Next, start your first "
+"app by running <code>python manage.py startapp [app_label]</code>."
+msgstr ""
+
+#: env/lib/python2.7/site-packages/django/views/debug.py:588
+msgid ""
+"You're seeing this message because you have <code>DEBUG = True</code> in "
+"your Django settings file and you haven't configured any URLs. Get to work!"
+msgstr ""
+
+#: env/lib/python2.7/site-packages/django/views/generic/dates.py:48
 msgid "No year specified"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/generic/dates.py:99
+#: env/lib/python2.7/site-packages/django/views/generic/dates.py:104
 msgid "No month specified"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/generic/dates.py:158
+#: env/lib/python2.7/site-packages/django/views/generic/dates.py:163
 msgid "No day specified"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/generic/dates.py:214
+#: env/lib/python2.7/site-packages/django/views/generic/dates.py:219
 msgid "No week specified"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/generic/dates.py:369
-#: env/lib/python2.7/site-packages/django/views/generic/dates.py:397
+#: env/lib/python2.7/site-packages/django/views/generic/dates.py:378
+#: env/lib/python2.7/site-packages/django/views/generic/dates.py:406
 #, python-format
 msgid "No %(verbose_name_plural)s available"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/generic/dates.py:650
+#: env/lib/python2.7/site-packages/django/views/generic/dates.py:660
 #, python-format
 msgid ""
 "Future %(verbose_name_plural)s not available because %(class_name)s."
 "allow_future is False."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/generic/dates.py:682
+#: env/lib/python2.7/site-packages/django/views/generic/dates.py:694
 #, python-format
 msgid "Invalid date string '%(datestr)s' given format '%(format)s'"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/generic/detail.py:54
+#: env/lib/python2.7/site-packages/django/views/generic/detail.py:55
 #, python-format
 msgid "No %(verbose_name)s found matching the query"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/generic/list.py:62
+#: env/lib/python2.7/site-packages/django/views/generic/list.py:76
 msgid "Page is not 'last', nor can it be converted to an int."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/generic/list.py:67
+#: env/lib/python2.7/site-packages/django/views/generic/list.py:81
 #, python-format
 msgid "Invalid page (%(page_number)s): %(message)s"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/generic/list.py:158
+#: env/lib/python2.7/site-packages/django/views/generic/list.py:172
 #, python-format
 msgid "Empty list and '%(class_name)s.allow_empty' is False."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/static.py:54
+#: env/lib/python2.7/site-packages/django/views/static.py:58
 msgid "Directory indexes are not allowed here."
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/static.py:56
+#: env/lib/python2.7/site-packages/django/views/static.py:60
 #, python-format
 msgid "\"%(path)s\" does not exist"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/views/static.py:97
+#: env/lib/python2.7/site-packages/django/views/static.py:100
 #, python-format
 msgid "Index of %(directory)s"
 msgstr ""
@@ -2475,19 +2820,11 @@ msgstr ""
 msgid "Create Content Block"
 msgstr ""
 
-#: env/src/dash/dash/orgs/models.py:22 env/src/dash/dash/orgs/models.py:336
-msgid "Name"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:23 env/src/dash/dash/orgs/views.py:115
-msgid "The name of this organization"
-msgstr ""
-
 #: env/src/dash/dash/orgs/models.py:26
 msgid "The logo that should be used for this organization"
 msgstr ""
 
-#: env/src/dash/dash/orgs/models.py:28 env/src/dash/dash/orgs/views.py:302
+#: env/src/dash/dash/orgs/models.py:28 env/src/dash/dash/orgs/views.py:321
 msgid "Administrators"
 msgstr ""
 
@@ -2503,7 +2840,7 @@ msgstr ""
 msgid "The viewers in your organization"
 msgstr ""
 
-#: env/src/dash/dash/orgs/models.py:34 env/src/dash/dash/orgs/views.py:302
+#: env/src/dash/dash/orgs/models.py:34 env/src/dash/dash/orgs/views.py:321
 msgid "Editors"
 msgstr ""
 
@@ -2545,10 +2882,6 @@ msgid ""
 "organization"
 msgstr ""
 
-#: env/src/dash/dash/orgs/models.py:271 upartners/profiles/views.py:180
-msgid "Administrator"
-msgstr ""
-
 #: env/src/dash/dash/orgs/models.py:272
 msgid "Editor"
 msgstr ""
@@ -2563,10 +2896,6 @@ msgstr ""
 
 #: env/src/dash/dash/orgs/models.py:278
 msgid "The organization to which the account is invited to view"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:280 upartners/profiles/views.py:24
-msgid "Email"
 msgstr ""
 
 #: env/src/dash/dash/orgs/models.py:280
@@ -2633,97 +2962,89 @@ msgstr ""
 msgid "Click this link to join"
 msgstr ""
 
-#: env/src/dash/dash/orgs/views.py:109
+#: env/src/dash/dash/orgs/views.py:110
 msgid "Your first name"
 msgstr ""
 
-#: env/src/dash/dash/orgs/views.py:110
+#: env/src/dash/dash/orgs/views.py:111
 msgid "Your last name"
 msgstr ""
 
-#: env/src/dash/dash/orgs/views.py:111
+#: env/src/dash/dash/orgs/views.py:112
 msgid "Your email address"
 msgstr ""
 
-#: env/src/dash/dash/orgs/views.py:113
+#: env/src/dash/dash/orgs/views.py:114
 msgid "Your password, at least eight letters please"
 msgstr ""
 
-#: env/src/dash/dash/orgs/views.py:114
-msgid "Organization"
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:117
+#: env/src/dash/dash/orgs/views.py:118
 msgid "The subdomain of this organization"
 msgstr ""
 
-#: env/src/dash/dash/orgs/views.py:119
-msgid "The timezone your organization is in"
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:127
+#: env/src/dash/dash/orgs/views.py:128
 msgid "That email address is already used"
 msgstr ""
 
-#: env/src/dash/dash/orgs/views.py:135
+#: env/src/dash/dash/orgs/views.py:136
 msgid "Passwords must contain at least 8 letters."
 msgstr ""
 
-#: env/src/dash/dash/orgs/views.py:180
+#: env/src/dash/dash/orgs/views.py:196
 msgid "Select your Organization"
 msgstr ""
 
-#: env/src/dash/dash/orgs/views.py:190
+#: env/src/dash/dash/orgs/views.py:206
 msgid ""
 "Your account is not associated to an organization. Please Contact the "
 "adminstrator."
 msgstr ""
 
-#: env/src/dash/dash/orgs/views.py:229 env/src/dash/dash/orgs/views.py:239
+#: env/src/dash/dash/orgs/views.py:245 env/src/dash/dash/orgs/views.py:255
 msgid "Your Organization"
 msgstr ""
 
-#: env/src/dash/dash/orgs/views.py:236
+#: env/src/dash/dash/orgs/views.py:252
 msgid "Not Set"
 msgstr ""
 
-#: env/src/dash/dash/orgs/views.py:301
+#: env/src/dash/dash/orgs/views.py:320
 msgid "Invite people to your organization"
 msgstr ""
 
-#: env/src/dash/dash/orgs/views.py:303
+#: env/src/dash/dash/orgs/views.py:322
 msgid "User group"
 msgstr ""
 
-#: env/src/dash/dash/orgs/views.py:313
+#: env/src/dash/dash/orgs/views.py:332
 msgid "One of the emails you entered is invalid."
 msgstr ""
 
-#: env/src/dash/dash/orgs/views.py:326
+#: env/src/dash/dash/orgs/views.py:345
 #, python-format
 msgid "Manage %(name)s Accounts"
 msgstr ""
 
-#: env/src/dash/dash/orgs/views.py:443 env/src/smartmin/smartmin/views.py:1257
+#: env/src/dash/dash/orgs/views.py:462 env/src/smartmin/smartmin/views.py:1257
 msgid "Create"
 msgstr ""
 
-#: env/src/dash/dash/orgs/views.py:451
+#: env/src/dash/dash/orgs/views.py:470
 msgid ""
 "Your invitation link is invalid. Please contact your organization "
 "administrator."
 msgstr ""
 
-#: env/src/dash/dash/orgs/views.py:506 env/src/dash/dash/orgs/views.py:549
+#: env/src/dash/dash/orgs/views.py:525 env/src/dash/dash/orgs/views.py:568
 #, python-format
 msgid "Join %(name)s"
 msgstr ""
 
-#: env/src/dash/dash/orgs/views.py:528
+#: env/src/dash/dash/orgs/views.py:547
 msgid "Join"
 msgstr ""
 
-#: env/src/dash/dash/orgs/views.py:536
+#: env/src/dash/dash/orgs/views.py:555
 msgid ""
 "Your invitation link has expired. Please contact your organization "
 "administrator."
@@ -2790,100 +3111,140 @@ msgstr ""
 msgid "Image to display on story page and in previews (optional)"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:308
+#: env/src/dash/dash_test_runner/settings.py:309
 msgid "The shortcode that users will use to contact U-report locally"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:309
+#: env/src/dash/dash_test_runner/settings.py:310
 msgid "The short text used to direct visitors to join U-report"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:310
+#: env/src/dash/dash_test_runner/settings.py:311
 msgid "The color used to draw the text on the join bar"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:311
+#: env/src/dash/dash_test_runner/settings.py:312
 msgid "The color used to draw the background on the join bar"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:312
+#: env/src/dash/dash_test_runner/settings.py:313
 msgid "The primary color for styling for this organization"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:313
+#: env/src/dash/dash_test_runner/settings.py:314
 msgid "The secondary color for styling for this organization"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:314
+#: env/src/dash/dash_test_runner/settings.py:315
 msgid "The background color for the site"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:315
+#: env/src/dash/dash_test_runner/settings.py:316
 msgid "Up to 6 colors for styling charts, use comma between colors"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:316
+#: env/src/dash/dash_test_runner/settings.py:317
 msgid "The Google Analytics Tracking ID for this organization"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:317
+#: env/src/dash/dash_test_runner/settings.py:318
 msgid "The URL to the Youtube channel for this organization"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:318
+#: env/src/dash/dash_test_runner/settings.py:319
 msgid "The URL to the Facebook page for this organization"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:319
+#: env/src/dash/dash_test_runner/settings.py:320
 msgid "The Twitter handle for this organization"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:320
+#: env/src/dash/dash_test_runner/settings.py:321
 msgid "The Twitter widget used for following new users"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:321
+#: env/src/dash/dash_test_runner/settings.py:322
 msgid "The Twitter widget used for searching"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:322
+#: env/src/dash/dash_test_runner/settings.py:323
 msgid "The name of txbhe Contact Group that contains registered reporters"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:323
+#: env/src/dash/dash_test_runner/settings.py:324
 msgid ""
 "The label of the Contact Field that contains the birth date of reporters"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:324
+#: env/src/dash/dash_test_runner/settings.py:325
 msgid "The label of the Contact Field that contains the gender of reporters"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:325
+#: env/src/dash/dash_test_runner/settings.py:326
 msgid ""
 "The label of the Contact Field that contains the occupation of reporters"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:326
+#: env/src/dash/dash_test_runner/settings.py:327
 msgid ""
 "The label of the Contact Field that contains the registration date of "
 "reporters"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:327
+#: env/src/dash/dash_test_runner/settings.py:328
 msgid "The label of the Contact Field that contains the State of reporters"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:328
+#: env/src/dash/dash_test_runner/settings.py:329
 msgid "The label of the Contact Field that contains the District of reporters"
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:329
+#: env/src/dash/dash_test_runner/settings.py:330
 msgid "The label assigned to U-reporters that are Male."
 msgstr ""
 
-#: env/src/dash/dash_test_runner/settings.py:330
+#: env/src/dash/dash_test_runner/settings.py:331
 msgid "The label assigned to U-reporters that are Female."
+msgstr ""
+
+#: env/src/dash/dash_test_runner/settings.py:332
+msgid "If there are jobs to be shown on the public site"
+msgstr ""
+
+#: env/src/django-guardian/docs/theme/rtd_theme/layout.html:62
+#: env/src/django-guardian/docs/theme/rtd_theme/layout_old.html:131
+msgid "About these documents"
+msgstr ""
+
+#: env/src/django-guardian/docs/theme/rtd_theme/layout.html:66
+#: env/src/django-guardian/docs/theme/rtd_theme/layout_old.html:134
+msgid "Index"
+msgstr ""
+
+#: env/src/django-guardian/docs/theme/rtd_theme/layout.html:70
+#: env/src/django-guardian/docs/theme/rtd_theme/layout_old.html:137
+#: env/src/django-guardian/docs/theme/rtd_theme/search.html:11
+#: env/src/smartmin/smartmin/templates/smartmin/list.html:14
+msgid "Search"
+msgstr ""
+
+#: env/src/django-guardian/docs/theme/rtd_theme/layout.html:73
+#: env/src/django-guardian/docs/theme/rtd_theme/layout_old.html:140
+msgid "Copyright"
+msgstr ""
+
+#: env/src/django-guardian/docs/theme/rtd_theme/layout_old.html:29
+msgid "Navigation"
+msgstr ""
+
+#: env/src/django-guardian/docs/theme/rtd_theme/search.html:33
+msgid "Search Results"
+msgstr ""
+
+#: env/src/django-guardian/docs/theme/rtd_theme/search.html:35
+msgid ""
+"Your search did not match any documents. Please make sure that all words are "
+"spelled correctly and that you've selected enough categories."
 msgstr ""
 
 #: env/src/smartmin/smartmin/templates/smartmin/delete_confirm.html:11
@@ -2913,10 +3274,6 @@ msgstr ""
 #: env/src/smartmin/smartmin/templates/smartmin/delete_confirm.html:26
 #: env/src/smartmin/smartmin/templates/smartmin/update.html:10
 msgid "Remove"
-msgstr ""
-
-#: env/src/smartmin/smartmin/templates/smartmin/list.html:14
-msgid "Search"
 msgstr ""
 
 #: env/src/smartmin/smartmin/templates/smartmin/list.html:25
@@ -3055,12 +3412,6 @@ msgid ""
 "password."
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:78
-#: env/src/smartmin/smartmin/users/views.py:199
-#: env/src/smartmin/smartmin/users/views.py:247 upartners/profiles/views.py:27
-msgid "Password"
-msgstr ""
-
 #: env/src/smartmin/smartmin/users/views.py:80
 msgid "Confirm Password"
 msgstr ""
@@ -3121,11 +3472,6 @@ msgstr ""
 
 #: env/src/smartmin/smartmin/users/views.py:195
 msgid "New user created successfully."
-msgstr ""
-
-#: env/src/smartmin/smartmin/users/views.py:198
-#: env/src/smartmin/smartmin/users/views.py:220
-msgid "Groups"
 msgstr ""
 
 #: env/src/smartmin/smartmin/users/views.py:198
@@ -3243,102 +3589,36 @@ msgstr ""
 msgid "Import %s"
 msgstr ""
 
-#: upartners/orgs_ext/views.py:29
-msgid "RapidPro API Token"
+#: templates/cases/email/message_export.html:4
+msgid "Hi there!"
 msgstr ""
 
-#: upartners/orgs_ext/views.py:33
-msgid "My Organization"
+#: templates/cases/email/message_export.html:6
+msgid ""
+"Your message export is ready and can be downloaded by clicking on the "
+"following link:"
 msgstr ""
 
-#: upartners/orgs_ext/views.py:38
-msgid "Edit My Organization"
+#: templates/cases/email/message_export.html:11
+msgid "Thanks,"
 msgstr ""
 
-#: upartners/profiles/__init__.py:32
-msgid "Email address already taken."
+#: templates/cases/email/message_export.html:13
+msgid "The U-Report Partners Team"
 msgstr ""
 
-#: upartners/profiles/middleware.py:25
-msgid "You are required to change your password"
-msgstr ""
-
-#: upartners/profiles/models.py:14 upartners/profiles/views.py:18
-msgid "Full name"
-msgstr ""
-
-#: upartners/profiles/models.py:16
-msgid "User must change password on next login"
-msgstr ""
-
-#: upartners/profiles/views.py:20
-msgid "Active"
-msgstr ""
-
-#: upartners/profiles/views.py:21
-msgid "Whether this user is active, disable to remove access."
-msgstr ""
-
-#: upartners/profiles/views.py:24
-msgid "Email address and login."
-msgstr ""
-
-#: upartners/profiles/views.py:27
-msgid "Password used to log in (minimum of 8 characters)."
-msgstr ""
-
-#: upartners/profiles/views.py:30
-msgid "New password"
-msgstr ""
-
-#: upartners/profiles/views.py:31
-msgid "Password used to login (minimum of 8 characters, optional)."
-msgstr ""
-
-#: upartners/profiles/views.py:33
-msgid "Confirm password"
-msgstr ""
-
-#: upartners/profiles/views.py:35
-msgid "Require change"
-msgstr ""
-
-#: upartners/profiles/views.py:36
-msgid "Whether user must change password on next login."
-msgstr ""
-
-#: upartners/profiles/views.py:50
-msgid "Passwords don't match."
-msgstr ""
-
-#: upartners/profiles/views.py:118
-msgid "Profile updated"
-msgstr ""
-
-#: upartners/profiles/views.py:119
-msgid "Edit My Profile"
-msgstr ""
-
-#: upartners/profiles/views.py:130
-msgid "User doesn't have a profile"
-msgstr ""
-
-#: upartners/profiles/views.py:155
-msgid "My Profile"
-msgstr ""
-
-#: upartners/profiles/views.py:182
-msgid "Supervisor"
-msgstr ""
-
-#: upartners/settings_common.py:66
-msgid "English"
-msgstr ""
-
-#: upartners/settings_common.py:66
-msgid "French"
-msgstr ""
-
-#: upartners/translation.py:16
-msgid "Something to trigger localizations"
+#: templates/cases/email/message_export.txt:4
+#, python-format
+msgid ""
+"\n"
+"Hi there!\n"
+"\n"
+"Your message export is ready and can be downloaded by clicking on the "
+"following link:\n"
+"\n"
+"%(link)s\n"
+"\n"
+"Thanks,\n"
+"\n"
+"The U-Report Partners Team\n"
 msgstr ""
