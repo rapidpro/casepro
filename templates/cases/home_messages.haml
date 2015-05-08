@@ -75,9 +75,10 @@
                     - trans "None"
 
           %span.selection-info{ ng-show:"selection.length > 0" }
-            [[ selection.length ]] of [[ totalItems() ]] messages selected
+            [[ selection.length ]] of
+            <ng-pluralize count="totalItems()" when="{'one': '1 message selected', 'other': '{} messages selected'}" />
           %span.selection-info{ ng-show:"selection.length == 0" }
-            [[ totalItems() ]] messages
+            <ng-pluralize count="totalItems()" when="{'0': 'No messages', 'one': '1 message', 'other': '{} messages'}" />
 
           .selection-actions.pull-away
             .btn-group{ ng-if:'itemView != "archived"' }
