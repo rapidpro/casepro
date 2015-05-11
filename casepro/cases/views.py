@@ -13,7 +13,7 @@ from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, Sma
 from smartmin.users.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba.utils import parse_iso8601
 from . import parse_csv, json_encode, contact_as_json, safe_max, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
-from .models import Case, Group, Label, Message, MessageAction, MessageExport, Partner
+from .models import Case, Group, Label, Message, MessageAction, MessageExport, Partner, Outgoing
 from .tasks import message_export
 
 
@@ -215,17 +215,22 @@ class CaseCRUDL(SmartCRUDL):
             after = parse_iso8601(self.request.GET.get('after', None)) or self.object.message_on
             before = parse_iso8601(self.request.GET.get('before', None)) or self.object.closed_on
 
-            # only hit RapidPro if we have reason to believe there are new messages
-            last_event = self.object.events.order_by('-pk').first()
-            last_outgoing = self.object.outgoing_messages.order_by('-pk').first()
-            last_event_time = last_event.created_on if last_event else None
-            last_outgoing_time = last_outgoing.sent_on if last_outgoing else None
-            last_message_time = safe_max(last_event_time, last_outgoing_time)
+            # if this isn't a first request for the existing items, we check on our side to see if there will be new
+            # items before hitting the RapidPro API
+            do_api_fetch = True
+            if after != self.object.message_on:
+                last_event = self.object.events.order_by('-pk').first()
+                last_outgoing = self.object.outgoing_messages.order_by('-pk').first()
+                last_event_time = last_event.created_on if last_event else None
+                last_outgoing_time = last_outgoing.created_on if last_outgoing else None
+                last_message_time = safe_max(last_event_time, last_outgoing_time)
+                do_api_fetch = last_message_time and after <= last_message_time
 
-            if last_message_time and after <= last_message_time:
+            if do_api_fetch:
                 # fetch messages in chronological order
                 messages = org.get_temba_client().get_messages(contacts=[self.object.contact_uuid],
                                                                after=after, before=before, reverse=True)
+                Message.annotate_with_sender(org, messages)
             else:
                 messages = []
 
@@ -500,14 +505,16 @@ class MessageSendView(OrgPermsMixin, View):
         return request.user.is_authenticated()
 
     def post(self, request, *args, **kwargs):
+        activity = request.POST['activity']
+        text = request.POST['text']
         urns = parse_csv(request.POST.get('urns', ''), as_ints=False)
         contacts = parse_csv(request.POST.get('contacts', ''), as_ints=False)
-        text = request.POST['text']
+        case_id = request.POST.get('case', None)
+        case = Case.objects.get(org=request.org, pk=case_id) if case_id else None
 
-        client = request.org.get_temba_client()
-        broadcast = client.create_broadcast(urns=urns, contacts=contacts, text=text)
+        outgoing = Outgoing.create(request.org, request.user, activity, text, urns=urns, contacts=contacts, case=case)
 
-        return JsonResponse({'broadcast_id': broadcast.id})
+        return JsonResponse({'id': outgoing.pk})
 
 
 class MessageHistoryView(OrgPermsMixin, View):

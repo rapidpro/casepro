@@ -86,7 +86,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
         else
           contacts.push(msg.contact)
 
-      @_messagesSend(urns, contacts, text, callback)
+      @_messagesSend('B', text, urns, contacts, null, callback)
 
     #----------------------------------------------------------------------------
     # Flag or un-flag messages
@@ -149,14 +149,16 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
           callback()
 
     #----------------------------------------------------------------------------
-    # Send new message
+    # Reply to a contact in a case
     #----------------------------------------------------------------------------
-    sendNewMessage: (urn_or_contact, text, callback) ->
-      if urn_or_contact.hasOwnProperty('uuid')
-        @_messagesSend([], [urn_or_contact.uuid], text, callback)
-      else
-        @_messagesSend([urn_or_contact.urn], [], text, callback)
+    replyInCase: (text, _case, callback) ->
+      @_messagesSend('C', text, [], [_case.contact.uuid], _case, callback)
 
+    #----------------------------------------------------------------------------
+    # Forward a message to a URN
+    #----------------------------------------------------------------------------
+    forwardToUrn: (text, urn, callback) ->
+        @_messagesSend('F', text, [urn.urn], [], null, callback)
 
     #----------------------------------------------------------------------------
     # Convert search object to URL params
@@ -189,11 +191,13 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     # POSTs to the messages send endpoint and returns new broadcast id
     #----------------------------------------------------------------------------
-    _messagesSend: (urns, contacts, text, callback) ->
+    _messagesSend: (activity, text, urns, contacts, _case, callback) ->
       data = new FormData();
+      data.append('activity', activity)
+      data.append('text', text)
       data.append('urns', urns)
       data.append('contacts', contacts)
-      data.append('text', text)
+      data.append('case', _case)
       $http.post('/message/send/', data, DEFAULT_POST_OPTS)
       .success (data) =>
         callback(data.broadcast_id)

@@ -467,6 +467,7 @@ class Case(models.Model):
 
     def as_json(self):
         return {'id': self.pk,
+                'contact': {'uuid': self.contact_uuid},
                 'assignee': self.assignee.as_json(),
                 'labels': [l.as_json() for l in self.get_labels()],
                 'summary': self.summary,
@@ -610,8 +611,24 @@ class Message(object):
         for label in rem_labels:
             cls.bulk_unlabel(org, user, [msg.id], label)
 
+    @classmethod
+    def annotate_with_sender(cls, org, messages):
+        """
+        Look for outgoing records for the given messages and annotate them with their sender if one exists
+        """
+        broadcast_ids = set([m.broadcast for m in messages if m.broadcast])
+        outgoings = Outgoing.objects.filter(org=org, broadcast_id__in=broadcast_ids)
+        broadcast_to_outgoing = {out.broadcast_id: out for out in outgoings}
+
+        for msg in messages:
+            outgoing = broadcast_to_outgoing.get(msg.broadcast, None)
+            msg.sender = outgoing.created_by if outgoing else None
+
     @staticmethod
     def search(org, search, pager):
+        """
+        Search for unsolicited messages in RapidPro
+        """
         if not search['labels']:  # no access to un-labelled messages
             return []
 
@@ -650,7 +667,8 @@ class Message(object):
                 'labels': labels,
                 'flagged': flagged,
                 'direction': msg.direction,
-                'archived': msg.archived}
+                'archived': msg.archived,
+                'sender': msg.sender.as_json() if getattr(msg, 'sender', None) else None}
 
 
 class MessageAction(models.Model):
@@ -693,9 +711,8 @@ class MessageAction(models.Model):
 
     def as_json(self):
         return {'id': self.pk,
-                # 'messages': self.messages, TODO fetch and include length ?
                 'action': self.action,
-                'created_by': {'id': self.created_by.pk, 'name': self.created_by.get_full_name()},
+                'created_by': self.created_by.as_json(),
                 'created_on': self.created_on,
                 'label': self.label.as_json() if self.label else None}
 
@@ -704,24 +721,34 @@ class Outgoing(models.Model):
     """
     An outgoing message (i.e. broadcast) sent by a user
     """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='outgoing')
+    BULK_REPLY = 'B'
+    CASE_REPLY = 'C'
+    FORWARD = 'F'
+
+    ACTIVITY_CHOICES = ((BULK_REPLY, _("Bulk Reply")), (CASE_REPLY, "Case Reply"), (FORWARD, _("Forward")))
+
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='outgoing_messages')
+
+    activity = models.CharField(max_length=1, choices=ACTIVITY_CHOICES)
 
     broadcast_id = models.IntegerField()
 
-    created_by = models.ForeignKey(User, related_name="outgoing")
+    recipient_count = models.PositiveIntegerField()
+
+    created_by = models.ForeignKey(User, related_name="outgoing_messages")
 
     created_on = models.DateTimeField(db_index=True)
 
-    case = models.ForeignKey(Case, related_name="outgoing", null=True)
+    case = models.ForeignKey(Case, null=True, related_name="outgoing_messages")
 
     @classmethod
-    def create_bulk_reply(cls, org, user, text, contacts):
-        broadcast = org.get_temba_client().create_broadcast(text=text, contacts=contacts)
-        return cls.objects.create(org=org, broadcast_id=broadcast.id,
-                                  created_by=user, created_on=broadcast.created_on)
+    def create(cls, org, user, activity, text, urns, contacts, case=None):
+        broadcast = org.get_temba_client().create_broadcast(text=text, urns=urns, contacts=contacts)
+        recipient_count = len(broadcast.urns) + len(broadcast.contacts)  # TODO update RapidPro api to expose more accurate recipient_count
 
-    @classmethod
-    def create_case_reply(cls, org, user, text, case):
-        broadcast = org.get_temba_client().create_broadcast(text=text, contacts=[case.contact_uuid])
-        return cls.objects.create(org=org, broadcast_id=broadcast.id,
-                                  created_by=user, created_on=broadcast.created_on, case=case)
+        return cls.objects.create(org=org,
+                                  broadcast_id=broadcast.id,
+                                  recipient_count=recipient_count,
+                                  activity=activity, case=case,
+                                  created_by=user,
+                                  created_on=broadcast.created_on)

@@ -88,6 +88,10 @@ def _user_unicode(user):
     return user.email or user.username
 
 
+def _user_as_json(user):
+    return {'id': user.pk, 'name': user.get_full_name()}
+
+
 User.create = classmethod(_user_create)
 User.clean = _user_clean
 User.has_profile = _user_has_profile
@@ -95,3 +99,4 @@ User.get_full_name = _user_get_full_name
 User.get_partner = _user_get_partner
 User.is_admin_for = _user_is_admin_for
 User.__unicode__ = _user_unicode
+User.as_json = _user_as_json

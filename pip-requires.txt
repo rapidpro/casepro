@@ -1,5 +1,5 @@
 -e git+https://github.com/lukaszb/django-guardian@devel#egg=django-guardian
--e git+https://github.com/nyaruka/smartmin.git@django18_2#egg=smartmin
+-e git+https://github.com/nyaruka/smartmin.git@django18#egg=smartmin
 -e git+https://github.com/rapidpro/dash.git@django18#egg=dash
 -e git+https://github.com/rapidpro/rapidpro-python#egg=rapidpro-python
 boto

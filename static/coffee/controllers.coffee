@@ -294,9 +294,11 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
       title: () -> "Forward",
       initialText: () -> initialText
     }})
-    .result.then (data) ->
-      MessageService.sendNewMessage data.urn, data.text, () ->
+    .result.then((data) ->
+      MessageService.forwardToUrn(data.text, data.urn, () ->
         UtilsService.displayAlert('success', "Message forwarded to " + data.urn.path)
+      )
+    )
 
   $scope.onCaseFromMessage = (message) ->
     openCase = (assignee) ->
@@ -412,10 +414,11 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
   $scope.sendMessage = ->
     $scope.sending = true
 
-    MessageService.sendNewMessage $scope.contact, $scope.newMessage, ->
+    MessageService.replyInCase($scope.newMessage, $scope.case, () ->
       $scope.newMessage = ''
       $scope.sending = false
       $scope.$broadcast('timelineChanged')
+    )
 
   $scope.onNewMessageChanged = ->
     $scope.msgCharsRemaining = $scope.maxMsgChars - $scope.newMessage.length

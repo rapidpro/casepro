@@ -109,7 +109,13 @@
               .action-note{ ng-if:"event.item.note" }
                 [[ event.item.note ]]
 
-            .{ ng-if:"event.is_message_in || event.is_message_out" }
+            .{ ng-if:"event.is_message_in" }
+              [[ event.item.text ]]
+
+            .{ ng-if:"event.is_message_out" }
+              %a{ ng-href:"/user/read/[[ event.item.sender.id ]]/" }><
+                [[ event.item.sender.name ]]
+              :
               [[ event.item.text ]]
       .col-md-4
         .panel.panel-default

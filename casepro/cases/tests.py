@@ -5,26 +5,14 @@ from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.utils import timezone
 from mock import patch, call
-from temba.types import Message as TembaMessage
+from temba.types import Message as TembaMessage, Broadcast as TembaBroadcast
+from temba.utils import format_iso8601
 from casepro.orgs_ext import TaskType
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
 from . import safe_max, truncate
-from .models import Case, CaseAction, CaseEvent, Label, Message, MessageAction, Partner
+from .models import Case, CaseAction, CaseEvent, Label, Message, MessageAction, Partner, Outgoing
 from .tasks import process_new_org_unsolicited
-
-
-class InitTest(BaseCasesTest):
-    def test_safe_max(self):
-        self.assertEqual(safe_max(1, 2, 3), 3)
-        self.assertEqual(safe_max(None, 2, None), 2)
-        self.assertEqual(safe_max(None, None), None)
-        self.assertEqual(safe_max(date(2012, 3, 6), date(2012, 5, 2), None), date(2012, 5, 2))
-
-    def test_truncate(self):
-        self.assertEqual(truncate("Hello World", 8), "Hello...")
-        self.assertEqual(truncate("Hello World", 8, suffix="_"), "Hello W_")
-        self.assertEqual(truncate("Hello World", 98), "Hello World")
 
 
 class CaseTest(BaseCasesTest):
@@ -240,6 +228,152 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(set(cases), {case1})
 
 
+class CaseCRUDLTest(BaseCasesTest):
+    @patch('dash.orgs.models.TembaClient.get_messages')
+    @patch('dash.orgs.models.TembaClient.create_broadcast')
+    def test_timeline(self, mock_create_broadcast, mock_get_messages):
+        d1 = datetime(2014, 1, 1, 13, 0, tzinfo=timezone.utc)
+        d2 = datetime(2014, 1, 2, 13, 0, tzinfo=timezone.utc)
+
+        # contact has sent 2 messages, user creates case from the second
+        msg1 = TembaMessage.create(id=101, contact='C-001', created_on=d1, text="Hello", direction='I',
+                                   labels=[])
+        msg2 = TembaMessage.create(id=102, contact='C-001', created_on=d2, text="What is AIDS?", direction='I',
+                                   labels=[self.aids])
+        mock_get_messages.return_value = [msg2]
+
+        case = Case.open(self.unicef, self.user1, [self.aids], self.moh, msg2, archive_messages=False)
+
+        timeline_url = reverse('cases.case_timeline', args=[case.pk])
+        t0 = timezone.now()
+
+        # log in as administrator
+        self.login(self.admin)
+
+        # request all of a timeline up to page start time
+        response = self.url_get('unicef', '%s?before=%s' % (timeline_url, format_iso8601(t0)))
+
+        self.assertEqual(len(response.json['results']), 2)
+        self.assertEqual(response.json['results'][0]['type'], 'M')
+        self.assertEqual(response.json['results'][0]['item']['text'], "What is AIDS?")
+        self.assertEqual(response.json['results'][0]['item']['contact'], 'C-001')
+        self.assertEqual(response.json['results'][0]['item']['direction'], 'I')
+        self.assertEqual(response.json['results'][1]['type'], 'A')
+        self.assertEqual(response.json['results'][1]['item']['action'], 'O')
+
+        mock_get_messages.assert_called_once_with(contacts=['C-001'], after=d2, before=t0, reverse=True)
+        mock_get_messages.reset_mock()
+
+        # page looks for new timeline activity
+        t1 = timezone.now()
+        response = self.url_get('unicef', '%s?after=%s&before=%s' % (timeline_url, format_iso8601(t0), format_iso8601(t1)))
+        self.assertEqual(len(response.json['results']), 0)
+
+        # shouldn't hit the RapidPro API
+        self.assertEqual(mock_get_messages.call_count, 0)
+        mock_get_messages.reset_mock()
+
+        # another user adds a note
+        case.note(self.user2, "Looks interesting")
+
+        # page again looks for new timeline activity
+        t2 = timezone.now()
+        response = self.url_get('unicef', '%s?after=%s&before=%s' % (timeline_url, format_iso8601(t1), format_iso8601(t2)))
+
+        self.assertEqual(len(response.json['results']), 1)
+        self.assertEqual(response.json['results'][0]['type'], 'A')
+        self.assertEqual(response.json['results'][0]['item']['note'], "Looks interesting")
+
+        # still no reason to hit the RapidPro API
+        self.assertEqual(mock_get_messages.call_count, 0)
+        mock_get_messages.reset_mock()
+
+        # user sends an outgoing message
+        d3 = timezone.now()
+        mock_create_broadcast.return_value = TembaBroadcast.create(id=201, text="It's bad", urns=[], contacts=['C-001'], created_on=d3)
+        Outgoing.create(self.unicef, self.user1, Outgoing.CASE_REPLY, "It's bad", [], ['C-001'], case)
+
+        msg3 = TembaMessage.create(id=103, contact='C-001', created_on=d3, text="It's bad", labels=[], direction='O')
+        mock_get_messages.return_value = [msg3]
+
+        # page again looks for new timeline activity
+        t3 = timezone.now()
+        response = self.url_get('unicef', '%s?after=%s&before=%s' % (timeline_url, format_iso8601(t2), format_iso8601(t3)))
+
+        self.assertEqual(len(response.json['results']), 1)
+        self.assertEqual(response.json['results'][0]['type'], 'M')
+        self.assertEqual(response.json['results'][0]['item']['text'], "It's bad")
+        self.assertEqual(response.json['results'][0]['item']['direction'], 'O')
+
+        # this time we will have hit the RapidPro API because we know there's a new outgoing message
+        mock_get_messages.assert_called_once_with(contacts=['C-001'], after=t2, before=t3, reverse=True)
+        mock_get_messages.reset_mock()
+
+        # contact sends a reply
+        d4 = timezone.now()
+        msg4 = TembaMessage.create(id=104, contact='C-001', created_on=d4, text="OK thanks", labels=[], direction='I')
+        case.reply_event(msg4)
+        mock_get_messages.return_value = [msg4]
+
+        # page again looks for new timeline activity
+        t4 = timezone.now()
+        response = self.url_get('unicef', '%s?after=%s&before=%s' % (timeline_url, format_iso8601(t3), format_iso8601(t4)))
+
+        self.assertEqual(len(response.json['results']), 1)
+        self.assertEqual(response.json['results'][0]['type'], 'M')
+        self.assertEqual(response.json['results'][0]['item']['text'], "OK thanks")
+        self.assertEqual(response.json['results'][0]['item']['direction'], 'I')
+
+        # again we will have hit the RapidPro API - this time we know there's a new incoming message
+        mock_get_messages.assert_called_once_with(contacts=['C-001'], after=t3, before=t4, reverse=True)
+        mock_get_messages.reset_mock()
+
+        # page again looks for new timeline activity
+        t5 = timezone.now()
+        response = self.url_get('unicef', '%s?after=%s&before=%s' % (timeline_url, format_iso8601(t4), format_iso8601(t5)))
+
+        self.assertEqual(len(response.json['results']), 0)
+
+        # back to having no reason to hit the RapidPro API
+        self.assertEqual(mock_get_messages.call_count, 0)
+
+
+class HomeViewsTest(BaseCasesTest):
+    @patch('dash.orgs.models.TembaClient.get_labels')
+    def test_inbox(self, mock_get_labels):
+        mock_get_labels.return_value = []
+
+        url = reverse('cases.inbox')
+
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # log in as administrator
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+        # log in as regular user
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+
+class InitTest(BaseCasesTest):
+    def test_safe_max(self):
+        self.assertEqual(safe_max(1, 2, 3), 3)
+        self.assertEqual(safe_max(None, 2, None), 2)
+        self.assertEqual(safe_max(None, None), None)
+        self.assertEqual(safe_max(date(2012, 3, 6), date(2012, 5, 2), None), date(2012, 5, 2))
+
+    def test_truncate(self):
+        self.assertEqual(truncate("Hello World", 8), "Hello...")
+        self.assertEqual(truncate("Hello World", 8, suffix="_"), "Hello W_")
+        self.assertEqual(truncate("Hello World", 98), "Hello World")
+
+
 class LabelTest(BaseCasesTest):
     def test_create(self):
         ebola = Label.create(self.unicef, "Ebola", "Msgs about ebola", ['ebola', 'fever'], [self.moh, self.who])
@@ -315,6 +449,39 @@ class MessageTest(BaseCasesTest):
 
         mock_archive_messages.assert_called_once_with([123, 234, 345])
 
+    def test_annotate_with_sender(self):
+        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
+        Outgoing.objects.create(org=self.unicef, activity='C', broadcast_id=201, recipient_count=1,
+                                created_by=self.user2, created_on=d1)
+        msg = TembaMessage.create(id=101, broadcast=201, text="Yo")
+        Message.annotate_with_sender(self.unicef, [msg])
+        self.assertEqual(msg.sender, self.user2)
+
+
+class OutgoingTest(BaseCasesTest):
+    @patch('dash.orgs.models.TembaClient.create_broadcast')
+    def test_create(self, mock_create_broadcast):
+        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
+        mock_create_broadcast.return_value = TembaBroadcast.create(id=1234,
+                                                                   text="That's great",
+                                                                   urns=[],
+                                                                   contacts=['C-001', 'C-002'],
+                                                                   created_on=d1)
+
+        # create bulk reply
+        outgoing = Outgoing.create(self.unicef, self.user1, Outgoing.BULK_REPLY, "That's great",
+                                   urns=[], contacts=['C-001', 'C-002'])
+
+        mock_create_broadcast.assert_called_once_with(text="That's great", urns=[], contacts=['C-001', 'C-002'])
+
+        self.assertEqual(outgoing.org, self.unicef)
+        self.assertEqual(outgoing.activity, Outgoing.BULK_REPLY)
+        self.assertEqual(outgoing.broadcast_id, 1234)
+        self.assertEqual(outgoing.recipient_count, 2)
+        self.assertEqual(outgoing.created_by, self.user1)
+        self.assertEqual(outgoing.created_on, d1)
+        self.assertEqual(outgoing.case, None)
+
 
 class PartnerTest(BaseCasesTest):
     def test_create(self):
@@ -336,29 +503,6 @@ class PartnerTest(BaseCasesTest):
         self.code.partners.add(wfp)
 
         self.assertEqual(set(wfp.get_labels()), {self.aids, self.code})
-
-
-class HomeViewsTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient.get_labels')
-    def test_inbox(self, mock_get_labels):
-        mock_get_labels.return_value = []
-
-        url = reverse('cases.inbox')
-
-        response = self.url_get('unicef', url)
-        self.assertLoginRedirect(response, 'unicef', url)
-
-        # log in as administrator
-        self.login(self.admin)
-
-        response = self.url_get('unicef', url)
-        self.assertEqual(response.status_code, 200)
-
-        # log in as regular user
-        self.login(self.user1)
-
-        response = self.url_get('unicef', url)
-        self.assertEqual(response.status_code, 200)
 
 
 class TasksTest(BaseCasesTest):

@@ -2,25 +2,18 @@ from __future__ import unicode_literals
 
 import datetime
 import pytz
-import redis
 
-from dash.utils import random_string
-from dash.orgs.models import Org
+from dash.test import DashTest
 from django.contrib.auth.models import User
-from django.test import TestCase
 from casepro.cases.models import Label, Partner
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 
 
-class BaseCasesTest(TestCase):
+class BaseCasesTest(DashTest):
     """
     Base class for all test cases
     """
     def setUp(self):
-        self.clear_cache()
-
-        self.superuser = User.objects.create_superuser(username="root", email="super@user.com", password="root")
-
         # some orgs
         self.unicef = self.create_org("UNICEF", timezone="Africa/Kampala", subdomain="unicef")
         self.nyaruka = self.create_org("Nyaruka", timezone="Africa/Kigali", subdomain="nyaruka")
@@ -48,16 +41,6 @@ class BaseCasesTest(TestCase):
         self.code = self.create_label(self.nyaruka, "Code", 'Messages about code',
                                       ['java', 'python', 'go'], [self.klab])
 
-    def clear_cache(self):
-        # we are extra paranoid here and actually hardcode redis to 'localhost' and '10'
-        # Redis 10 is our testing redis db
-        r = redis.StrictRedis(host='localhost', db=10)
-        r.flushdb()
-
-    def create_org(self, name, timezone, subdomain):
-        return Org.objects.create(name=name, timezone=timezone, subdomain=subdomain, api_token=random_string(32),
-                                  created_by=self.superuser, modified_by=self.superuser)
-
     def create_partner(self, org, name):
         return Partner.create(org, name)
 
@@ -72,28 +55,6 @@ class BaseCasesTest(TestCase):
     def create_user(self, org, partner, role, full_name, email):
         return User.create(org, partner, role, full_name, email, password=email, change_password=False)
 
-    def login(self, user):
-        result = self.client.login(username=user.username, password=user.username)
-        self.assertTrue(result, "Couldn't login as %(user)s / %(user)s" % dict(user=user.username))
-
-    def url_get(self, subdomain, url, params=None):
-        if params is None:
-            params = {}
-        extra = {}
-        if subdomain:
-            extra['HTTP_HOST'] = '%s.localhost' % subdomain
-        return self.client.get(url, params, **extra)
-
-    def url_post(self, subdomain, url, data=None):
-        if data is None:
-            data = {}
-        extra = {}
-        if subdomain:
-            extra['HTTP_HOST'] = '%s.localhost' % subdomain
-        return self.client.post(url, data, **extra)
-
     def datetime(self, year, month, day, hour=0, minute=0, second=0, microsecond=0, tz=pytz.UTC):
         return datetime.datetime(year, month, day, hour, minute, second, microsecond, tz)
 
-    def assertLoginRedirect(self, response, subdomain, next):
-        self.assertRedirects(response, 'http://%s.localhost/users/login/?next=%s' % (subdomain, next))
