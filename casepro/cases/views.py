@@ -328,6 +328,14 @@ class LabelForm(forms.ModelForm):
 
         self.fields['partners'].queryset = Partner.get_all(org)
 
+    def clean_name(self):
+        name = self.cleaned_data['name'].strip()
+        if name.lower() == 'flagged':
+            raise forms.ValidationError(_("Reserved label name"))
+        elif name.startswith('+') or name.startswith('-'):
+            raise forms.ValidationError(_("Label name cannot start with + or -"))
+        return name
+
     def clean_keywords(self):
         return ','.join(parse_csv(self.cleaned_data['keywords']))
 

@@ -477,14 +477,23 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 200)
 
         # submit with no data
-        response = self.url_post('unicef', url, dict())
+        response = self.url_post('unicef', url, {})
         self.assertEqual(response.status_code, 200)
         self.assertFormError(response, 'form', 'name', 'This field is required.')
         self.assertFormError(response, 'form', 'description', 'This field is required.')
 
+        # submit with invalid names
+        response = self.url_post('unicef', url, {'name': 'FlaGGED'})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'name', "Reserved label name")
+
+        response = self.url_post('unicef', url, {'name': '+Ebola'})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'name', "Label name cannot start with + or -")
+
         # submit again with data
-        response = self.url_post('unicef', url, dict(name="Ebola", description="Msgs about ebola",
-                                                     keywords="ebola,fever", partners=[self.moh.pk, self.who.pk]))
+        response = self.url_post('unicef', url, {'name': "Ebola", 'description': "Msgs about ebola",
+                                                 'keywords': "ebola,fever", 'partners':[self.moh.pk, self.who.pk]})
         self.assertEqual(response.status_code, 302)
 
         ebola = Label.objects.get(name="Ebola")
