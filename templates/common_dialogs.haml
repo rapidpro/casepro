@@ -13,6 +13,18 @@
       %button.btn.btn-default{ ng-click:"cancel()" }
         - trans "Cancel"
 
+%script{ type:"text/ng-template", id:"editModal.html" }
+  .modal-header
+    %h3.modal-title
+      [[ title ]]
+    .modal-body
+      %textarea.form-control{ ng-model:"text" }
+    .modal-footer
+      %button.btn.btn-primary{ ng-click:"ok()" }
+        - trans "Save"
+      %button.btn.btn-default{ ng-click:"cancel()" }
+        - trans "Cancel"
+
 %script{ type:"text/ng-template", id:"assignModal.html" }
   .modal-header
     %h3.modal-title

@@ -280,10 +280,11 @@ services.factory 'CaseService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     # Opens a new case
     #----------------------------------------------------------------------------
-    openCase: (message, assignee, callback) ->
+    openCase: (message, summary, assignee, callback) ->
       data = new FormData()
-      data.append('assignee_id', if assignee then assignee.id else null)
-      data.append('message_id', message.id)
+      data.append('message', message.id)
+      data.append('summary', summary)
+      data.append('assignee', if assignee then assignee.id else null)
       $http.post('/case/open/', data, DEFAULT_POST_OPTS)
       .success (_case) ->
         callback(_case)
@@ -354,6 +355,19 @@ services.factory 'CaseService', ['$http', ($http) ->
           callback()
 
     #----------------------------------------------------------------------------
+    # Updates a case's summary
+    #----------------------------------------------------------------------------
+    updateCaseSummary: (_case, summary, callback) ->
+      data = new FormData()
+      data.append('summary', summary)
+
+      $http.post('/case/update_summary/' + _case.id + '/', data, DEFAULT_POST_OPTS)
+      .success () ->
+        _case.summary = summary
+        if callback
+          callback()
+
+    #----------------------------------------------------------------------------
     # Fetches timeline events
     #----------------------------------------------------------------------------
     fetchTimeline: (_case, after, before, callback) ->
@@ -419,6 +433,12 @@ services.factory 'UtilsService', ['$window', '$modal', ($window, $modal) ->
       $modal.open({templateUrl: 'confirmModal.html', controller: 'ConfirmModalController', resolve: resolve})
       .result.then () ->
         callback()
+
+    editModal: (title, initial, callback) ->
+      resolve = {title: (() -> title), initial: (() -> initial)}
+      $modal.open({templateUrl: 'editModal.html', controller: 'EditModalController', resolve: resolve})
+      .result.then (text) ->
+        callback(text)
 
     assignModal: (title, prompt, partners, callback) ->
       resolve = {title: (() -> title), prompt: (() -> prompt), partners: (() -> partners)}

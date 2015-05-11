@@ -180,6 +180,27 @@
           %button.btn.btn-default{ ng-click:"cancel()" }
             - trans "Cancel"
 
+    %script{ type:"text/ng-template", id:"newCaseModal.html" }
+      .modal-header
+        %h3.modal-title
+          - trans "Open Case"
+        .modal-body
+          %p
+            - trans "Open a new case for this message?"
+          .form-group
+            %label.control-label
+              - trans "Summary"
+            %textarea.form-control{ ng-model:"summary" }
+          .form-group{ ng-if:"partners != null" }
+            %label.control-label
+              - trans "Assign to"
+            %select.form-control{ ng-model:"assignee", ng-options:"p.name for p in partners track by p.id" }
+        .modal-footer
+          %button.btn.btn-primary{ ng-click:"ok()" }
+            - trans "Open"
+          %button.btn.btn-default{ ng-click:"cancel()" }
+            - trans "Cancel"
+
     %script{ type:"text/ng-template", id:"messageHistory.html" }
       .modal-header
         %h3.modal-title

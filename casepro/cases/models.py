@@ -361,17 +361,16 @@ class Case(models.Model):
         return self.labels.filter(is_active=True)
 
     @classmethod
-    def open(cls, org, user, labels, partner, message, archive_messages=True):
+    def open(cls, org, user, labels, message, summary, assignee, archive_messages=True):
         # check for open case with this contact
         if cls.get_open_for_contact_on(org, message.contact, timezone.now()).exists():
             raise ValueError("Contact already has open case")
 
-        summary = truncate(message.text, 255)
-        case = cls.objects.create(org=org, assignee=partner, contact_uuid=message.contact,
+        case = cls.objects.create(org=org, assignee=assignee, contact_uuid=message.contact,
                                   summary=summary, message_id=message.id, message_on=message.created_on)
         case.labels.add(*labels)
 
-        CaseAction.create(case, user, CaseAction.OPEN, assignee=partner)
+        CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee)
 
         # archive messages and subsequent messages from same contact
         if archive_messages:
@@ -383,9 +382,16 @@ class Case(models.Model):
 
         return case
 
+    @case_action()
+    def update_summary(self, user, summary):
+        self.summary = summary
+        self.save(update_fields=('summary',))
+
+        CaseAction.create(self, user, CaseAction.UPDATE_SUMMARY, note=None)
+
     @case_action(require_update=False)
-    def note(self, user, note):
-        CaseAction.create(self, user, CaseAction.NOTE, note=note)
+    def add_note(self, user, note):
+        CaseAction.create(self, user, CaseAction.ADD_NOTE, note=note)
 
     @case_action()
     def close(self, user, note=None):
@@ -484,7 +490,8 @@ class CaseAction(models.Model):
     An action performed on a case
     """
     OPEN = 'O'
-    NOTE = 'N'
+    UPDATE_SUMMARY = 'S'
+    ADD_NOTE = 'N'
     REASSIGN = 'A'
     LABEL = 'L'
     UNLABEL = 'U'
@@ -492,7 +499,7 @@ class CaseAction(models.Model):
     REOPEN = 'R'
 
     ACTION_CHOICES = ((OPEN, _("Open")),
-                      (NOTE, _("Add Note")),
+                      (ADD_NOTE, _("Add Note")),
                       (REASSIGN, _("Reassign")),
                       (LABEL, _("Label")),
                       (UNLABEL, _("Remove Label")),

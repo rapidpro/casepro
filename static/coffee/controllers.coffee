@@ -301,17 +301,13 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     )
 
   $scope.onCaseFromMessage = (message) ->
-    openCase = (assignee) ->
-      CaseService.openCase message, assignee, (_case) ->
+    partners = if $scope.user.partner then null else $scope.partners
+    resolve = {message: (() -> message), partners: (() -> partners)}
+    $modal.open({templateUrl: 'newCaseModal.html', controller: 'NewCaseModalController', resolve: resolve})
+    .result.then (summary, assignee) ->
+      CaseService.openCase(message, summary, assignee, (_case) ->
           UtilsService.navigate('/case/read/' + _case.id + '/')
-
-    prompt = "Open a new case for this message?"
-    if $scope.user.partner
-      UtilsService.confirmModal prompt, null, () ->
-        openCase($scope.user.partner)
-    else
-      UtilsService.assignModal "New case", prompt, $scope.partners, (assignee) ->
-        openCase(assignee)
+      )
 
   $scope.onLabelMessage = (message) ->
     UtilsService.labelModal "Labels", "Update the labels for this message. This determines which other partner organizations can view this message.", $scope.labels, message.labels, (selectedLabels) ->
@@ -365,12 +361,13 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
     afterTime = $scope.newItemsMaxTime or $scope.startTime
     $scope.newItemsMaxTime = new Date()
 
-    CaseService.fetchNew $scope.activeSearch, afterTime, $scope.newItemsMaxTime, (cases) ->
+    CaseService.fetchNew($scope.activeSearch, afterTime, $scope.newItemsMaxTime, (cases) ->
       if timeCode == $scope.activeSearch.timeCode
         $scope.items = cases.concat($scope.items)
         $scope.newItemsCount += cases.length
 
       $timeout($scope.refreshNewItems, INTERVAL_CASES_NEW)
+    )
 
   $scope.onCloseSelection = () ->
     UtilsService.noteModal("Close", "Close the selected cases?", 'danger', (note) ->
@@ -398,13 +395,24 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
     $scope.refresh()
 
   $scope.refresh = () ->
-    CaseService.fetchCase $scope.case.id, (_case) ->
+    CaseService.fetchCase($scope.case.id, (_case) ->
       $scope.case = _case
       $timeout($scope.refresh, INTERVAL_CASE_INFO)
+    )
 
   $scope.onEditLabels = ->
-    UtilsService.labelModal "Labels", "Update the labels for this case. This determines which other partner organizations can view this case.", $scope.allLabels, $scope.case.labels, (selectedLabels) ->
-      CaseService.relabelCase $scope.case, selectedLabels, ->
+    UtilsService.labelModal("Labels", "Update the labels for this case. This determines which other partner organizations can view this case.", $scope.allLabels, $scope.case.labels, (selectedLabels) ->
+      CaseService.relabelCase($scope.case, selectedLabels, () ->
+        $scope.$broadcast('timelineChanged')
+      )
+    )
+
+  $scope.onEditSummary = ->
+    UtilsService.editModal("Edit Summary", $scope.case.summary, (text) ->
+      CaseService.updateCaseSummary($scope.case, text, () ->
+        $scope.$broadcast('timelineChanged')
+      )
+    )
 
   #----------------------------------------------------------------------------
   # Messaging
@@ -427,9 +435,11 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
   #----------------------------------------------------------------------------
 
   $scope.onAddNote = () ->
-    UtilsService.noteModal "Add Note", null, null, (note) ->
-      CaseService.noteCase $scope.case, note, () ->
+    UtilsService.noteModal("Add Note", null, null, (note) ->
+      CaseService.noteCase($scope.case, note, () ->
         $scope.$broadcast('timelineChanged')
+      )
+    )
 
   $scope.onReassign = () ->
     UtilsService.assignModal("Re-assign", null, $scope.allPartners, (assignee) ->
@@ -446,9 +456,11 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
     )
 
   $scope.onReopen = () ->
-    UtilsService.noteModal "Re-open", "Re-open this case?", null, (note) ->
-      CaseService.reopenCase $scope.case, note, () ->
+    UtilsService.noteModal("Re-open", "Re-open this case?", null, (note) ->
+      CaseService.reopenCase($scope.case, note, () ->
         $scope.$broadcast('timelineChanged')
+      )
+    )
 ]
 
 
@@ -472,11 +484,12 @@ controllers.controller 'CaseTimelineController', [ '$scope', '$timeout', 'CaseSe
     afterTime = $scope.newItemsMaxTime
     $scope.newItemsMaxTime = new Date()
 
-    CaseService.fetchTimeline $scope.case, afterTime, $scope.newItemsMaxTime, (events) ->
+    CaseService.fetchTimeline($scope.case, afterTime, $scope.newItemsMaxTime, (events) ->
       $scope.timeline = $scope.timeline.concat events
 
       if repeat
         $timeout((() -> $scope.refreshItems(true)), INTERVAL_CASE_TIMELINE)
+    )
 ]
 
 
@@ -490,6 +503,23 @@ controllers.controller 'ConfirmModalController', [ '$scope', '$modalInstance', '
   $scope.style = style or 'primary'
 
   $scope.ok = () -> $modalInstance.close(true)
+  $scope.cancel = () -> $modalInstance.dismiss('cancel')
+]
+
+controllers.controller 'EditModalController', [ '$scope', '$modalInstance', 'title', 'initial', ($scope, $modalInstance, title, initial) ->
+  $scope.title = title
+  $scope.text = initial
+
+  $scope.ok = () -> $modalInstance.close($scope.text)
+  $scope.cancel = () -> $modalInstance.dismiss('cancel')
+]
+
+controllers.controller 'NewCaseModalController', [ '$scope', '$modalInstance', 'message', 'partners', ($scope, $modalInstance, message, partners) ->
+  $scope.summary = '"' + message.text + '"'
+  $scope.partners = partners
+  $scope.assignee = if partners then partners[0] else null
+
+  $scope.ok = () -> $modalInstance.close($scope.summary, $scope.assignee)
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
 

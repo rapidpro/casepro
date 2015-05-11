@@ -60,7 +60,7 @@
     .row
       .col-md-8
         %form.sendform{ ng-if:"!case.is_closed" }
-          // TODO maxlength not working due to bug in Angular 1.2.x https://github.com/angular/angular.js/issues/1405
+          // TODO maxlength not working
           %textarea.form-control{ type:"text", autocomplete:"off", placeholder:"Enter message", ng-maxlength:"{{ maxMsgChars }}", ng-model:"$parent.newMessage", ng-disabled:"sending", ng-change:"onNewMessageChanged()", ng-trim:"false" }
           .sendform-controls.clearfix
             %button.btn.btn-default.pull-right{ type:"button", ng-click:"sendMessage()", ng-disabled:"sending" }
@@ -81,6 +81,9 @@
                 opened this case and assigned it to
                 %a{ ng-href:"/partner/read/[[ event.item.assignee.id ]]/" }
                   [[ event.item.assignee.name ]]
+
+              %span{ ng-if:'event.item.action == "S"' }
+                changed the summary
 
               %span{ ng-if:'event.item.action == "N"' }
                 added a note
@@ -113,11 +116,21 @@
               [[ event.item.text ]]
 
             .{ ng-if:"event.is_message_out" }
-              %a{ ng-href:"/user/read/[[ event.item.sender.id ]]/" }><
-                [[ event.item.sender.name ]]
-              :
+              %span{ ng-if:"event.item.sender" }
+                %a{ ng-href:"/user/read/[[ event.item.sender.id ]]/" }><
+                  [[ event.item.sender.name ]]
+                :
               [[ event.item.text ]]
       .col-md-4
+        .panel.panel-default
+          .panel-heading
+            .pull-away
+              %a{ href:"#", ng-click:"onEditSummary()", style:"color: #AAA" }
+                %span.glyphicon.glyphicon-edit
+            - trans "Summary"
+          .panel-body
+            [[ case.summary ]]
+
         .panel.panel-default
           .panel-heading
             - trans "Contact"

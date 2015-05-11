@@ -27,7 +27,7 @@ class ItemView(Enum):
 
 class CaseCRUDL(SmartCRUDL):
     model = Case
-    actions = ('read', 'open', 'fetch', 'search', 'timeline',
+    actions = ('read', 'open', 'update_summary', 'fetch', 'search', 'timeline',
                'note', 'reassign', 'close', 'reopen', 'label')
 
     class Read(OrgObjPermsMixin, SmartReadView):
@@ -64,10 +64,11 @@ class CaseCRUDL(SmartCRUDL):
         permission = 'cases.case_create'
 
         def post(self, request, *args, **kwargs):
-            message_id = int(request.POST['message_id'])
-            assignee_id = request.POST['assignee_id']
+            message_id = int(request.POST['message'])
+            summary = request.POST['summary']
 
-            assignee = Partner.get_all(request.org).get(pk=assignee_id) if assignee_id else None
+            assignee_id = request.POST.get('assignee', None)
+            assignee = Partner.get_all(request.org).get(pk=assignee_id) if assignee_id else request.user.get_partner()
 
             client = request.org.get_temba_client()
             message = client.get_message(message_id)
@@ -76,7 +77,7 @@ class CaseCRUDL(SmartCRUDL):
             label_map = {l.name: l for l in Label.get_all(request.org)}
             labels = [label_map[label_name] for label_name in message.labels if label_name in label_map]
 
-            case = Case.open(request.org, request.user, labels, assignee, message)
+            case = Case.open(request.org, request.user, labels, message, summary, assignee)
 
             return JsonResponse(case.as_json())
 
@@ -90,7 +91,7 @@ class CaseCRUDL(SmartCRUDL):
             case = self.get_object()
             note = request.POST['note']
 
-            case.note(request.user, note)
+            case.add_note(request.user, note)
             return HttpResponse(status=204)
 
     class Reassign(OrgObjPermsMixin, SmartUpdateView):
@@ -146,6 +147,18 @@ class CaseCRUDL(SmartCRUDL):
             labels = Label.get_all(request.org).filter(pk__in=label_ids)
 
             case.update_labels(request.user, labels)
+            return HttpResponse(status=204)
+
+    class UpdateSummary(OrgObjPermsMixin, SmartUpdateView):
+        """
+        JSON endpoint for updating a case summary
+        """
+        permission = 'cases.case_update'
+
+        def post(self, request, *args, **kwargs):
+            case = self.get_object()
+            summary = request.POST['summary']
+            case.update_summary(request.user, summary)
             return HttpResponse(status=204)
 
     class Fetch(OrgPermsMixin, SmartReadView):
