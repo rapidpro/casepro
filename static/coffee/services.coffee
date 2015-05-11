@@ -197,10 +197,11 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       data.append('text', text)
       data.append('urns', urns)
       data.append('contacts', contacts)
-      data.append('case', _case)
+      if _case
+        data.append('case', _case.id)
       $http.post('/message/send/', data, DEFAULT_POST_OPTS)
       .success (data) =>
-        callback(data.broadcast_id)
+        callback()
 
     #----------------------------------------------------------------------------
     # Processes incoming messages
