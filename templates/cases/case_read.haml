@@ -12,7 +12,7 @@
 
   .ng-cloak{ ng-controller:"CaseController", ng-init:"init({{ max_msg_chars }})", ng-cloak:"" }
     .page-header
-      .alert.alert-danger{ ng-if:"!contact" }
+      .alert.alert-danger{ ng-if:"!case.contact" }
         This case is for a contact who no longer exists in RapidPro
 
       .clearfix
@@ -122,8 +122,8 @@
           .panel-heading
             - trans "Contact"
           .panel-body
-            .contact-details{ ng-if:"contact" }
-              .contact-field{ ng-repeat:"(key, val) in contact.fields" }
+            .contact-details{ ng-if:"case.contact" }
+              .contact-field{ ng-repeat:"(key, val) in case.contact.fields" }
                 %strong><
                   [[ key ]]
                 : [[ val ]]

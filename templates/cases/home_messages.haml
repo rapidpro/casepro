@@ -130,7 +130,7 @@
               %span.glyphicon.glyphicon-time
 
       .loading{ ng-if:"oldItemsLoading" }
-      .none{ ng-hide:"items.length > 0" }
+      .none{ ng-hide:"oldItemsLoading || items.length > 0" }
         - trans "No messages"
 
     %script{ type:"text/ng-template", id:"replyModal.html" }

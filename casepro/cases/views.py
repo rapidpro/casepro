@@ -12,7 +12,7 @@ from enum import Enum
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView, SmartFormView
 from smartmin.users.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba.utils import parse_iso8601
-from . import parse_csv, json_encode, contact_as_json, safe_max, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
+from . import parse_csv, json_encode, safe_max, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
 from .models import Case, Group, Label, Message, MessageAction, MessageExport, Partner, Outgoing
 from .tasks import message_export
 
@@ -38,20 +38,18 @@ class CaseCRUDL(SmartCRUDL):
             return has_perm and self.get_object().accessible_by(self.request.user)
 
         def derive_queryset(self, **kwargs):
-            return Case.get_all(self.request.org)
+            return Case.get_all(self.request.org).select_related('org', 'assignee')
 
         def get_context_data(self, **kwargs):
             context = super(CaseCRUDL.Read, self).get_context_data(**kwargs)
             org = self.request.org
 
-            contact = self.object.fetch_contact()
             labels = Label.get_all(self.request.org).order_by('name')
             partners = Partner.get_all(org).order_by('name')
 
             # angular app requires context data in JSON format
             context['context_data_json'] = json_encode({
-                'case': self.object.as_json(),
-                'contact': contact_as_json(contact, org.get_contact_fields()) if contact else None,
+                'case': self.object.as_json(fetch_contact=True),
                 'all_labels': [l.as_json() for l in labels],
                 'all_partners': [p.as_json() for p in partners]
             })
@@ -357,6 +355,8 @@ class LabelCRUDL(SmartCRUDL):
             return initial
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
+        cancel_url = '@cases.label_list'
+
         def post(self, request, *args, **kwargs):
             label = self.get_object()
             label.release()
@@ -527,7 +527,6 @@ class MessageHistoryView(OrgPermsMixin, View):
     def get(self, request, *args, **kwargs):
         actions = MessageAction.get_by_message(self.request.org, int(kwargs['id'])).order_by('-pk')
         actions = [a.as_json() for a in actions]
-
         return JsonResponse({'actions': actions})
 
 
@@ -537,7 +536,6 @@ class MessageExportCRUDL(SmartCRUDL):
 
     class Create(OrgPermsMixin, MessageSearchMixin, SmartCreateView):
         def post(self, request, *args, **kwargs):
-
             search = self.derive_search()
             export = MessageExport.create(self.request.org, self.request.user, search)
 

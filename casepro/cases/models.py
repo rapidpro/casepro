@@ -19,7 +19,7 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from temba.base import TembaNoSuchObjectError
 from casepro.email import send_email
-from . import parse_csv, truncate, SYSTEM_LABEL_FLAGGED
+from . import parse_csv, truncate, contact_as_json, SYSTEM_LABEL_FLAGGED
 
 
 class Group(models.Model):
@@ -123,18 +123,13 @@ class MessageExport(models.Model):
 
         client = self.org.get_temba_client()
         search = self.get_search()
-        pager = client.pager()
-        all_messages = []
 
         # fetch all messages to be exported
-        while True:
-            all_messages += Message.search(self.org, search, pager)
-            if not pager.has_more():
-                break
+        messages = Message.search(self.org, search, None)
 
         # extract all unique contacts in those messages
         contact_uuids = set()
-        for msg in all_messages:
+        for msg in messages:
             contact_uuids.add(msg.contact)
 
         # fetch all contacts in batches of 25 and organize by UUID
@@ -151,11 +146,11 @@ class MessageExport(models.Model):
             return sheet
 
         # even if there are no messages - still add a sheet
-        if not all_messages:
+        if not messages:
             add_sheet(1)
         else:
             sheet_number = 1
-            for msg_chunk in chunks(all_messages, 65535):
+            for msg_chunk in chunks(messages, 65535):
                 current_sheet = add_sheet(sheet_number)
 
                 row = 1
@@ -442,12 +437,6 @@ class Case(models.Model):
         for label in rem_labels:
             self.unlabel(user, label)
 
-    def fetch_contact(self):
-        try:
-            return self.org.get_temba_client().get_contact(self.contact_uuid)
-        except TembaNoSuchObjectError:
-            return None  # always a chance that the contact has been deleted in RapidPro
-
     def accessible_by(self, user, update=False):
         """
         A user can view a case if one of these conditions is met:
@@ -465,9 +454,21 @@ class Case(models.Model):
 
         return not update and intersection(self.get_labels(), user.profile.partner.get_labels())
 
-    def as_json(self):
+    def _fetch_contact(self):
+        try:
+            return self.org.get_temba_client().get_contact(self.contact_uuid)
+        except TembaNoSuchObjectError:
+            return None  # always a chance that the contact has been deleted in RapidPro
+
+    def as_json(self, fetch_contact=False):
+        if fetch_contact:
+            contact = self._fetch_contact()
+            contact_json = contact_as_json(contact, self.org.get_contact_fields()) if contact else None
+        else:
+            contact_json = {'uuid': self.contact_uuid}
+
         return {'id': self.pk,
-                'contact': {'uuid': self.contact_uuid},
+                'contact': contact_json,
                 'assignee': self.assignee.as_json(),
                 'labels': [l.as_json() for l in self.get_labels()],
                 'summary': self.summary,

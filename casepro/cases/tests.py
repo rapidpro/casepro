@@ -1,17 +1,20 @@
+# coding=utf-8
 from __future__ import absolute_import, unicode_literals
 
 from datetime import date, datetime
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
+from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch, call
-from temba.types import Message as TembaMessage, Broadcast as TembaBroadcast
+from temba.base import TembaPager
+from temba.types import Contact as TembaContact, Message as TembaMessage, Broadcast as TembaBroadcast
 from temba.utils import format_iso8601
 from casepro.orgs_ext import TaskType
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
-from . import safe_max, truncate
-from .models import Case, CaseAction, CaseEvent, Label, Message, MessageAction, Partner, Outgoing
+from . import safe_max, truncate, contact_as_json
+from .models import Case, CaseAction, CaseEvent, Label, Message, MessageAction, MessageExport, Partner, Outgoing
 from .tasks import process_new_org_unsolicited
 
 
@@ -229,6 +232,24 @@ class CaseTest(BaseCasesTest):
 
 
 class CaseCRUDLTest(BaseCasesTest):
+    @patch('dash.orgs.models.TembaClient.get_contact')
+    @patch('dash.orgs.models.TembaClient.get_messages')
+    def test_read(self, mock_get_messages, mock_get_contact):
+        msg = TembaMessage.create(id=101, contact='C-001', created_on=timezone.now(), text="Hello",
+                                  direction='I', labels=[])
+        mock_get_messages.return_value = [msg]
+        mock_get_contact.return_value = TembaContact.create(uuid='C-001', name="Bob", fields={'district': "Gasabo"})
+
+        case = Case.open(self.unicef, self.user1, [self.aids], self.moh, msg, archive_messages=False)
+
+        url = reverse('cases.case_read', args=[case.pk])
+
+        # log in as non-administrator
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
     @patch('dash.orgs.models.TembaClient.get_messages')
     @patch('dash.orgs.models.TembaClient.create_broadcast')
     def test_timeline(self, mock_create_broadcast, mock_get_messages):
@@ -247,8 +268,8 @@ class CaseCRUDLTest(BaseCasesTest):
         timeline_url = reverse('cases.case_timeline', args=[case.pk])
         t0 = timezone.now()
 
-        # log in as administrator
-        self.login(self.admin)
+        # log in as non-administrator
+        self.login(self.user1)
 
         # request all of a timeline up to page start time
         response = self.url_get('unicef', '%s?before=%s' % (timeline_url, format_iso8601(t0)))
@@ -373,6 +394,11 @@ class InitTest(BaseCasesTest):
         self.assertEqual(truncate("Hello World", 8, suffix="_"), "Hello W_")
         self.assertEqual(truncate("Hello World", 98), "Hello World")
 
+    def test_contact_as_json(self):
+        contact = TembaContact.create(uuid='C-001', name="Bob", fields={'district': "Gasabo", 'age': 32, 'gender': "M"})
+        contact_json = contact_as_json(contact, ['age', 'gender'])
+        self.assertEqual(contact_json, {'uuid': 'C-001', 'fields': {'age': 32, 'gender': "M"}})
+
 
 class LabelTest(BaseCasesTest):
     def test_create(self):
@@ -436,6 +462,24 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(list(response.context['object_list']), [self.aids, self.pregnancy])
 
+    def test_delete(self):
+        url = reverse('cases.label_delete', args=[self.pregnancy.pk])
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # log in as an administrator
+        self.login(self.admin)
+
+        response = self.url_post('unicef', url)
+        self.assertEqual(response.status_code, 204)
+
+        pregnancy = Label.objects.get(pk=self.pregnancy.pk)
+        self.assertFalse(pregnancy.is_active)
+
 
 class MessageTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient.archive_messages')
@@ -458,11 +502,225 @@ class MessageTest(BaseCasesTest):
         self.assertEqual(msg.sender, self.user2)
 
 
+class MessageExportCRUDLTest(BaseCasesTest):
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @patch('dash.orgs.models.TembaClient.get_messages')
+    @patch('dash.orgs.models.TembaClient.get_contacts')
+    def test_create_and_read(self, mock_get_contacts, mock_get_messages):
+        mock_get_messages.return_value = [
+            TembaMessage.create(id=101, contact='C-001', text="What is HIV?", created_on=timezone.now(),
+                                labels=['AIDS']),
+            TembaMessage.create(id=102, contact='C-002', text="I ♡ RapidPro", created_on=timezone.now(),
+                                labels=[])
+        ]
+        mock_get_contacts.return_value = [
+            TembaContact.create(uuid='C-001', urns=[], groups=[],
+                                fields={'district': "Gasabo", 'age': 28, 'gender': "M"}),
+            TembaContact.create(uuid='C-002', urns=[], groups=[],
+                                fields={'district': "Rubavu", 'age': 32, 'gender': "F"})
+        ]
+
+        self.unicef.set_contact_fields(['age', 'gender'])
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_post('unicef', '%s?view=inbox&text=' % reverse('cases.messageexport_create'))
+        self.assertEqual(response.status_code, 200)
+
+        mock_get_messages.assert_called_once_with(_types=['I'], archived=False, labels=['AIDS', 'Pregnancy'],
+                                                  contacts=None, groups=None, text='', statuses=['H'], direction='I',
+                                                  after=None, before=None, pager=None)
+
+        mock_get_contacts.assert_called_once_with(uuids=['C-001', 'C-002'])
+
+        export = MessageExport.objects.get()
+        self.assertEqual(export.created_by, self.user1)
+
+        read_url = reverse('cases.messageexport_read', args=[export.pk])
+
+        response = self.url_get('unicef', read_url)
+        self.assertEqual(response.status_code, 200)
+
+        # user from another org can't access this download
+        self.login(self.norbert)
+
+        # TODO fix Dash so has_org_perm doesn't throw AttributeError because user doesn't have an org group
+
+        # response = self.url_get('unicef', read_url)
+        # self.assertEqual(response.status_code, 302)
+
+
+class MessageViewsTest(BaseCasesTest):
+    @patch('dash.orgs.models.TembaClient.label_messages')
+    @patch('dash.orgs.models.TembaClient.unlabel_messages')
+    @patch('dash.orgs.models.TembaClient.archive_messages')
+    @patch('dash.orgs.models.TembaClient.unarchive_messages')
+    def test_action(self, mock_unarchive_messages, mock_archive_messages, mock_unlabel_messages, mock_label_messages):
+        get_url = lambda action: reverse('cases.message_action', kwargs={'action': action})
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_post('unicef', get_url('flag'), {'messages': [101]})
+        self.assertEqual(response.status_code, 204)
+        mock_label_messages.assert_called_once_with([101], label='Flagged')
+
+        response = self.url_post('unicef', get_url('unflag'), {'messages': [101]})
+        self.assertEqual(response.status_code, 204)
+        mock_unlabel_messages.assert_called_once_with([101], label='Flagged')
+
+        response = self.url_post('unicef', get_url('archive'), {'messages': [101]})
+        self.assertEqual(response.status_code, 204)
+        mock_archive_messages.assert_called_once_with([101])
+
+        response = self.url_post('unicef', get_url('restore'), {'messages': [101]})
+        self.assertEqual(response.status_code, 204)
+        mock_unarchive_messages.assert_called_once_with([101])
+
+    @patch('dash.orgs.models.TembaClient.label_messages')
+    def test_history(self, mock_label_messages):
+        mock_label_messages.return_value = None
+        TembaMessage.create(id=101, contact='C-001', text="Is this thing on?", created_on=timezone.now())
+        TembaMessage.create(id=102, contact='C-002', text="I ♡ RapidPro", created_on=timezone.now())
+
+        url = reverse('cases.message_history', kwargs={'id': 102})
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(len(response.json['actions']), 0)
+
+        Message.bulk_flag(self.unicef, self.user1, [101, 102])
+        Message.bulk_label(self.unicef, self.user2, [102], self.aids)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(len(response.json['actions']), 2)
+        self.assertEqual(response.json['actions'][0]['action'], 'L')
+        self.assertEqual(response.json['actions'][0]['created_by']['id'], self.user2.pk)
+        self.assertEqual(response.json['actions'][1]['action'], 'F')
+        self.assertEqual(response.json['actions'][1]['created_by']['id'], self.user1.pk)
+
+    @patch('dash.orgs.models.TembaClient.get_message')
+    @patch('dash.orgs.models.TembaClient.label_messages')
+    @patch('dash.orgs.models.TembaClient.unlabel_messages')
+    def test_label(self, mock_unlabel_messages, mock_label_messages, mock_get_message):
+        msg = TembaMessage.create(id=101, contact='C-002', text="Huh?", created_on=timezone.now(), labels=['AIDS'])
+        mock_get_message.return_value = msg
+
+        url = reverse('cases.message_label', kwargs={'id': 101})
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_post('unicef', url, {'labels': [self.pregnancy.pk]})
+        self.assertEqual(response.status_code, 204)
+
+        mock_label_messages.assert_called_once_with([101], label='Pregnancy')
+        mock_unlabel_messages.assert_called_once_with([101], label='AIDS')
+
+    @patch('dash.orgs.models.TembaClient.get_messages')
+    @patch('dash.orgs.models.TembaClient.pager')
+    def test_search(self, mock_pager, mock_get_messages):
+        url = reverse('cases.message_search')
+
+        msg1 = TembaMessage.create(id=101, contact='C-001', text="What is HIV?", created_on=timezone.now(), labels=['AIDS'])
+        msg2 = TembaMessage.create(id=102, contact='C-002', text="I ♡ RapidPro", created_on=timezone.now(), labels=[])
+        msg3 = TembaMessage.create(id=103, contact='C-003', text="RapidCon 2016!", created_on=timezone.now(), labels=[])
+
+        pager = TembaPager(start_page=1)
+        mock_pager.return_value = pager
+        mock_get_messages.return_value = [msg3, msg2]
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        # page requests first page of existing inbox messages
+        t0 = timezone.now()
+        response = self.url_get('unicef', url, {'view': 'inbox', 'text': '', 'label': '', 'page': 1,
+                                                'after': '', 'before': format_iso8601(t0)})
+
+        self.assertEqual(len(response.json['results']), 2)
+
+        mock_get_messages.assert_called_once_with(_types=['I'], archived=False, labels=['AIDS', 'Pregnancy'],
+                                                  contacts=None, groups=None, text='', statuses=['H'], direction='I',
+                                                  after=None, before=t0, pager=pager)
+        mock_get_messages.reset_mock()
+        mock_get_messages.return_value = [msg1]
+
+        # page requests next (and last) page of existing inbox messages
+        response = self.url_get('unicef', url, {'view': 'inbox', 'text': '', 'label': '', 'page': 2,
+                                                'after': '', 'before': format_iso8601(t0)})
+
+        self.assertEqual(len(response.json['results']), 1)
+
+        mock_get_messages.assert_called_once_with(_types=['I'], archived=False, labels=['AIDS', 'Pregnancy'],
+                                                  contacts=None, groups=None, text='', statuses=['H'], direction='I',
+                                                  after=None, before=t0, pager=pager)
+        mock_get_messages.reset_mock()
+        mock_get_messages.return_value = []
+
+        # page requests new messages
+        t1 = timezone.now()
+        response = self.url_get('unicef', url, {'view': 'inbox', 'text': '', 'label': '',
+                                                'after': format_iso8601(t0), 'before': format_iso8601(t1)})
+
+        self.assertEqual(len(response.json['results']), 0)
+
+        # shouldn't hit the RapidPro API because we have no reason to believe there are new messages
+        self.assertEqual(mock_get_messages.call_count, 0)
+        mock_get_messages.reset_mock()
+
+        # simulate new message being recorded by labelling task
+        msg4 = TembaMessage.create(id=104, contact='C-001', text="Yolo", created_on=timezone.now(), labels=[])
+        self.unicef.record_msg_time(msg4.created_on)
+
+        mock_get_messages.return_value = [msg4]
+
+        # again page requests new messages
+        t2 = timezone.now()
+        response = self.url_get('unicef', url, {'view': 'inbox', 'text': '', 'label': '',
+                                                'after': format_iso8601(t1), 'before': format_iso8601(t2)})
+
+        self.assertEqual(len(response.json['results']), 1)
+
+        mock_get_messages.assert_called_once_with(_types=['I'], archived=False, labels=['AIDS', 'Pregnancy'],
+                                                  contacts=None, groups=None, text='', statuses=['H'], direction='I',
+                                                  after=t1, before=t2, pager=None)
+
+    @patch('dash.orgs.models.TembaClient.create_broadcast')
+    def test_send(self, mock_create_broadcast):
+        url = reverse('cases.message_send')
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
+        mock_create_broadcast.return_value = TembaBroadcast.create(id=201,
+                                                                   text="That's great",
+                                                                   urns=[],
+                                                                   contacts=['C-001', 'C-002'],
+                                                                   created_on=d1)
+
+        response = self.url_post('unicef', url, {'activity': 'B', 'text': "That's fine",
+                                                 'urns': [], 'contacts': ['C-001', 'C-002']})
+        outgoing = Outgoing.objects.get(pk=response.json['id'])
+
+        self.assertEqual(outgoing.org, self.unicef)
+        self.assertEqual(outgoing.activity, Outgoing.BULK_REPLY)
+        self.assertEqual(outgoing.broadcast_id, 201)
+        self.assertEqual(outgoing.recipient_count, 2)
+        self.assertEqual(outgoing.created_by, self.user1)
+        self.assertEqual(outgoing.created_on, d1)
+        self.assertEqual(outgoing.case, None)
+
+
 class OutgoingTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient.create_broadcast')
     def test_create(self, mock_create_broadcast):
         d1 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
-        mock_create_broadcast.return_value = TembaBroadcast.create(id=1234,
+        mock_create_broadcast.return_value = TembaBroadcast.create(id=201,
                                                                    text="That's great",
                                                                    urns=[],
                                                                    contacts=['C-001', 'C-002'],
@@ -476,7 +734,7 @@ class OutgoingTest(BaseCasesTest):
 
         self.assertEqual(outgoing.org, self.unicef)
         self.assertEqual(outgoing.activity, Outgoing.BULK_REPLY)
-        self.assertEqual(outgoing.broadcast_id, 1234)
+        self.assertEqual(outgoing.broadcast_id, 201)
         self.assertEqual(outgoing.recipient_count, 2)
         self.assertEqual(outgoing.created_by, self.user1)
         self.assertEqual(outgoing.created_on, d1)

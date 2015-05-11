@@ -386,7 +386,6 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
 controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'CaseService', 'MessageService', 'UtilsService', ($scope, $window, $timeout, CaseService, MessageService, UtilsService) ->
 
   $scope.case = $window.contextData.case
-  $scope.contact = $window.contextData.contact
   $scope.allPartners = $window.contextData.all_partners
   $scope.allLabels = $window.contextData.all_labels
 
