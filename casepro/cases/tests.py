@@ -15,7 +15,7 @@ from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
 from . import safe_max, truncate, contact_as_json
 from .models import Case, CaseAction, CaseEvent, Label, Message, MessageAction, MessageExport, Partner, Outgoing
-from .tasks import process_new_org_unsolicited
+from .tasks import process_new_unsolicited
 
 
 class CaseTest(BaseCasesTest):
@@ -838,7 +838,7 @@ class TasksTest(BaseCasesTest):
         with patch.object(timezone, 'now', return_value=d1):
             case1 = Case.objects.create(org=self.unicef, contact_uuid='C-005', assignee=self.moh, message_id=99, message_on=d1)
 
-        process_new_org_unsolicited(self.unicef)
+        process_new_unsolicited()
 
         mock_label_messages.assert_has_calls([call(messages=[101, 102], label='AIDS'),
                                               call(messages=[103], label='Pregnancy')],

@@ -595,15 +595,13 @@ class MessageExportCRUDL(SmartCRUDL):
 
 
 class PartnerForm(forms.ModelForm):
-    name = forms.CharField(label=_("Name"), max_length=128)
-
     def __init__(self, *args, **kwargs):
         org = kwargs.pop('org')
         super(PartnerForm, self).__init__(*args, **kwargs)
 
     class Meta:
         model = Partner
-        fields = ('name',)
+        fields = ('name', 'logo')
 
 
 class PartnerFormMixin(object):
@@ -628,9 +626,13 @@ class PartnerCRUDL(SmartCRUDL):
     class Update(OrgObjPermsMixin, PartnerFormMixin, SmartUpdateView):
         form_class = PartnerForm
 
+        def has_permission(self, request, *args, **kwargs):
+            return request.user.can_manage(self.get_object())
+
     class Read(OrgObjPermsMixin, SmartReadView):
         def get_context_data(self, **kwargs):
             context = super(PartnerCRUDL.Read, self).get_context_data(**kwargs)
+            context['can_manage'] = self.request.user.can_manage(self.object)
             context['labels'] = self.object.get_labels()
             context['managers'] = self.object.get_managers()
             context['analysts'] = self.object.get_analysts()

@@ -1,55 +1,80 @@
 - extends "smartmin/read.html"
-- load smartmin i18n
+- load smartmin i18n thumbnail
 
 - block pre-content
   .page-header.clearfix
-    %h2.pull-back
-      %span.glyphicon.glyphicon-home
-      &nbsp;
-      {{ title }}
-
     .page-header-buttons
-      - if org_perms.cases.partner_update
-        %a.btn.btn-default{ href:"{% url 'cases.partner_update' object.pk %}" }
-          %span.glyphicon.glyphicon-pencil
-          - trans "Edit"
+      - if can_manage
+        .btn-group
+          %a.btn.btn-default{ href:"{% url 'cases.partner_update' object.pk %}" }
+            %span.glyphicon.glyphicon-pencil
+            - trans "Edit"
+          %a.btn.btn-default{ href:"{% url 'profiles.user_create_in' object.pk %}" }
+            - trans "New User"
+
+    - if object.logo
+      .partner-logo.pull-back
+        {% thumbnail object.logo "x80" format="PNG" as im %}
+        %img.logo{ src:"{{ im.url }}", alt:"{{ partner.name }}"}
+        {% endthumbnail %}
+    %h2
+      {{ title }}
 
 - block content
 
   .row
     .col-md-8
-      %h3
-        - trans "Managers"
-      - for user in managers
-        .partner-user
-          .partner-user-name
-            %a{ href:"{% url 'profiles.user_read' user.pk %}" }
-              {{ user.profile.full_name }}
-          .partner-user-email
-            {{ user.email }}
+      - if managers
+        .partner-user-section
+          %h3
+            - trans "Managers"
+          - for user in managers
+            .partner-user.stackitem
+              .partner-user-name
+                %span.glyphicon.glyphicon-user
+                %a{ href:"{% url 'profiles.user_read' user.pk %}" }
+                  {{ user.profile.full_name }}
+              .partner-user-email
+                {{ user.email }}
 
-      %h3
-        - trans "Data Analysts"
-      - for user in analysts
-        .partner-user
-          .partner-user-name
-            %a{ href:"{% url 'profiles.user_read' user.pk %}" }
-              {{ user.profile.full_name }}
-          .partner-user-email
-            {{ user.email }}
+      - if analysts
+        .partner-user-section
+          %h3
+            - trans "Data Analysts"
+          - for user in analysts
+            .partner-user.stackitem
+              .partner-user-name
+                %span.glyphicon.glyphicon-user
+                %a{ href:"{% url 'profiles.user_read' user.pk %}" }
+                  {{ user.profile.full_name }}
+              .partner-user-email
+                {{ user.email }}
 
     .col-md-4
       %h3
         - trans "Labels"
-      - for label in labels
-        .
-          %span.glyphicon.glyphicon-tag
-          %a{ href:"{% url 'cases.inbox' %}?label={{ label.name }}" }
-            {{ label.name }}
+      - if labels
+        - for label in labels
+          .partner-label
+            %span.glyphicon.glyphicon-tag
+            %a{ href:"{% url 'cases.inbox' %}#?label={{ label.name }}" }
+              {{ label.name }}
+      - else
+        %span.none
+          - trans "None"
 
 - block extra-style
   {{ block.super }}
   :css
-    .partner-user-name {
+    .partner-logo {
+      padding: 8px 10px 0 0
+    }
+    .partner-user, .partner-label {
+      margin-left: 1em
+    }
+    .partner-user-name, .partner-label {
       font-size: 1.2em;
+    }
+    .partner-user .glyphicon, .label-name .glyphicon {
+      padding-right: 6px;
     }

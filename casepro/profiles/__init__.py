@@ -78,6 +78,31 @@ def _user_is_admin_for(user, org):
     return org.administrators.filter(pk=user.pk).exists()
 
 
+def _user_can_manage(user, partner):
+    """
+    Whether this user can manage the given partner org
+    """
+    if user.is_admin_for(partner.org):
+        return True
+
+    return user.get_partner() == partner and partner.org.editors.filter(pk=user.pk).exists()
+
+
+def _user_can_edit(user, org, other):
+    """
+    Whether or not this user can edit the other user
+    """
+    other_group = org.get_user_org_group(other)
+    if not other_group:  # other user doesn't belong to this org
+        return False
+
+    other_partner = other.get_partner()
+    if other_partner:
+        return user.can_manage(other_partner)  # manager can edit users in same partner org
+    else:
+        return user.is_admin_for(org)  # admin can edit any other user in org
+
+
 def _user_unicode(user):
     if user.has_profile():
         if user.profile.full_name:
@@ -98,5 +123,7 @@ User.has_profile = _user_has_profile
 User.get_full_name = _user_get_full_name
 User.get_partner = _user_get_partner
 User.is_admin_for = _user_is_admin_for
+User.can_manage = _user_can_manage
+User.can_edit = _user_can_edit
 User.__unicode__ = _user_unicode
 User.as_json = _user_as_json

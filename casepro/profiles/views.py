@@ -80,8 +80,14 @@ class UserFormMixin(object):
 
     def post_save(self, obj):
         obj = super(UserFormMixin, self).post_save(obj)
+        user = self.request.user
         data = self.form.cleaned_data
+
         obj.profile.full_name = data['full_name']
+
+        if user.is_admin_for(self.request.org):  # only admins can update a user's partner
+            obj.profile.partner = data['partner']
+
         obj.profile.save()
 
         password = data.get('new_password', None) or data.get('password', None)
@@ -97,7 +103,8 @@ class UserFieldsMixin(object):
         return obj.profile.full_name
 
     def get_partner(self, obj):
-        return obj.profile.partner
+        partner = obj.get_partner()
+        return partner if partner else ''
 
 
 class UserCRUDL(SmartCRUDL):
@@ -111,28 +118,48 @@ class UserCRUDL(SmartCRUDL):
         def derive_fields(self):
             fields = ['full_name']
             if self.request.org:
-                fields += ['partner', 'role']
+                if 'partner_id' not in self.kwargs and self.request.user.is_admin_for(self.request.org):
+                    fields.append('partner')
+                fields.append('role')
             return fields + ['email', 'password', 'confirm_password', 'change_password']
 
         def save(self, obj):
             data = self.form.cleaned_data
-            org = self.request.user.get_org()
+            org = self.request.org
+            user = self.request.user
+
+            if 'partner_id' in self.kwargs:
+                partner = Partner.get_all(org).get(pk=self.kwargs['partner_id'])
+            elif org and user.is_admin_for(org):
+                partner = data.get('partner', None)
+            else:
+                partner = user.get_partner()
+
             full_name = self.form.cleaned_data['full_name']
-            partner = data.get('partner', None)
             role = data.get('role', None)
             password = ['password']
             change_password = self.form.cleaned_data['change_password']
             self.object = User.create(org, partner, role, full_name, obj.email, password, change_password)
 
+        def post_save(self, obj):
+            return obj
+
     class Update(OrgPermsMixin, UserFormMixin, SmartUpdateView):
         form_class = UserForm
-        permission = 'profiles.profile_user_update'
+
+        def has_permission(self, request, *args, **kwargs):
+            return request.user.can_edit(request.org, self.get_object())
 
         def derive_fields(self):
             fields = ['full_name']
             if self.request.org:
-                fields += ['partner', 'role']
+                if self.request.user.is_admin_for(self.request.org):
+                    fields.append('partner')
+                fields.append('role')
             return fields + ['email', 'new_password', 'confirm_password', 'is_active']
+
+        def get_success_url(self):
+            return reverse('profiles.user_read', args=[self.object.pk])
 
     class Self(OrgPermsMixin, UserFormMixin, SmartUpdateView):
         """
@@ -195,12 +222,15 @@ class UserCRUDL(SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super(UserCRUDL.Read, self).get_context_data(**kwargs)
-            edit_button_url = None
+            org = self.request.org
+            user = self.request.user
 
-            if self.object == self.request.user:
+            if self.object == user:
                 edit_button_url = reverse('profiles.user_self')
-            elif self.has_org_perm('profiles.profile_user_update'):
+            elif user.can_edit(org, self.object):
                 edit_button_url = reverse('profiles.user_update', args=[self.object.pk])
+            else:
+                edit_button_url = None
 
             context['edit_button_url'] = edit_button_url
             return context
@@ -218,7 +248,8 @@ class UserCRUDL(SmartCRUDL):
 
     class List(OrgPermsMixin, UserFieldsMixin, SmartListView):
         default_order = ('profile__full_name',)
-        fields = ('full_name', 'email')
+        fields = ('full_name', 'email', 'partner')
+        link_fields = ('full_name', 'partner')
         permission = 'profiles.profile_user_list'
         select_related = ('profile',)
 
@@ -229,3 +260,10 @@ class UserCRUDL(SmartCRUDL):
                 qs = qs.filter(Q(pk__in=org.get_org_admins()) | Q(pk__in=org.get_org_editors()) | Q(pk__in=org.get_org_viewers()))
             qs = qs.filter(is_active=True, pk__gt=1)
             return qs
+
+        def lookup_field_link(self, context, field, obj):
+            if field == 'partner':
+                partner = obj.get_partner()
+                return reverse('cases.partner_read', args=[partner.pk]) if partner else None
+            else:
+                return super(UserCRUDL.List, self).lookup_field_link(context, field, obj)

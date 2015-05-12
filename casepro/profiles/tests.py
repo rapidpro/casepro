@@ -40,6 +40,44 @@ class UserPatchTest(BaseCasesTest):
         self.assertFalse(self.admin.is_admin_for(self.nyaruka))
         self.assertFalse(self.user1.is_admin_for(self.unicef))
 
+    def test_can_manage(self):
+        # admins can manage any partner in their org
+        self.assertTrue(self.admin.can_manage(self.moh))
+        self.assertTrue(self.admin.can_manage(self.who))
+        self.assertFalse(self.admin.can_manage(self.klab))
+
+        # managers can manage their partner
+        self.assertTrue(self.user1.can_manage(self.moh))
+        self.assertFalse(self.user1.can_manage(self.who))
+        self.assertFalse(self.user1.can_manage(self.klab))
+
+        # analysts can't manage anyone
+        self.assertFalse(self.user2.can_manage(self.moh))
+        self.assertFalse(self.user2.can_manage(self.who))
+        self.assertFalse(self.user2.can_manage(self.klab))
+
+    def test_can_edit(self):
+        # admins can edit any user in their org
+        self.assertTrue(self.admin.can_edit(self.unicef, self.admin))
+        self.assertTrue(self.admin.can_edit(self.unicef, self.user1))
+        self.assertTrue(self.admin.can_edit(self.unicef, self.user2))
+        self.assertTrue(self.admin.can_edit(self.unicef, self.user3))
+        self.assertFalse(self.admin.can_edit(self.unicef, self.user4))
+
+        # managers can edit any user from same partner
+        self.assertFalse(self.user1.can_edit(self.unicef, self.admin))
+        self.assertTrue(self.user1.can_edit(self.unicef, self.user1))
+        self.assertTrue(self.user1.can_edit(self.unicef, self.user2))
+        self.assertFalse(self.user1.can_edit(self.unicef, self.user3))
+        self.assertFalse(self.user1.can_edit(self.unicef, self.user4))
+
+        # analysts can't edit anyone
+        self.assertFalse(self.user2.can_edit(self.unicef, self.admin))
+        self.assertFalse(self.user2.can_edit(self.unicef, self.user1))
+        self.assertFalse(self.user2.can_edit(self.unicef, self.user2))
+        self.assertFalse(self.user2.can_edit(self.unicef, self.user3))
+        self.assertFalse(self.user2.can_edit(self.unicef, self.user3))
+
     def test_unicode(self):
         self.assertEqual(unicode(self.superuser), "root")
 
@@ -53,11 +91,34 @@ class UserCRUDLTest(BaseCasesTest):
     def test_create(self):
         url = reverse('profiles.user_create')
 
+        # log in as a superuser
+        self.login(self.superuser)
+
+        # submit with no subdomain (i.e. no org) and no fields entered
+        response = self.url_post(None, url, {})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'full_name', 'This field is required.')
+        self.assertFormError(response, 'form', 'email', 'This field is required.')
+        self.assertFormError(response, 'form', 'password', 'This field is required.')
+
+        # submit again with all required fields to create an un-attached user
+        data = {'full_name': "McAdmin", 'email': "mcadmin@casely.com",
+                'password': "Qwerty123", 'confirm_password': "Qwerty123"}
+        response = self.url_post(None, url, data)
+
+        self.assertEqual(response.status_code, 302)
+
+        user = User.objects.get(email='mcadmin@casely.com')
+        self.assertEqual(user.get_full_name(), "McAdmin")
+        self.assertEqual(user.username, "mcadmin@casely.com")
+        self.assertIsNone(user.get_partner())
+        self.assertFalse(user.is_admin_for(self.unicef))
+
         # log in as an org administrator
         self.login(self.admin)
 
         # submit with no fields entered
-        response = self.url_post('unicef', url, dict())
+        response = self.url_post('unicef', url, {})
         self.assertEqual(response.status_code, 200)
         self.assertFormError(response, 'form', 'full_name', 'This field is required.')
         self.assertFormError(response, 'form', 'partner', 'This field is required.')
@@ -66,36 +127,97 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertFormError(response, 'form', 'password', 'This field is required.')
 
         # submit again with all required fields but invalid password
-        data = dict(full_name="Mo Polls", partner=self.moh.pk, role=ROLE_ANALYST,
-                    email="mo@trac.com", password="123", confirm_password="123")
+        data = {'full_name': "Mo Cases", 'partner': self.moh.pk, 'role': ROLE_ANALYST, 'email': "mo@casely.com",
+                'password': "123", 'confirm_password': "123"}
         response = self.url_post('unicef', url, data)
         self.assertFormError(response, 'form', 'password', "Ensure this value has at least 8 characters (it has 3).")
 
         # submit again with valid password but mismatched confirmation
-        data = dict(full_name="Mo Polls", partner=self.moh.pk, role=ROLE_ANALYST,
-                    email="mo@trac.com", password="Qwerty123", confirm_password="123")
+        data = {'full_name': "Mo Cases", 'partner': self.moh.pk, 'role': ROLE_ANALYST, 'email': "mo@casely.com",
+                'password': "Qwerty123", 'confirm_password': "Azerty234"}
         response = self.url_post('unicef', url, data)
         self.assertFormError(response, 'form', 'confirm_password', "Passwords don't match.")
 
         # submit again with valid password and confirmation
-        data = dict(full_name="Mo Polls", partner=self.moh.pk, role=ROLE_ANALYST,
-                    email="mo@trac.com", password="Qwerty123", confirm_password="Qwerty123")
+        data = {'full_name': "Mo Cases", 'partner': self.moh.pk, 'role': ROLE_ANALYST, 'email': "mo@casely.com",
+                'password': "Qwerty123", 'confirm_password': "Qwerty123"}
         response = self.url_post('unicef', url, data)
 
         self.assertEqual(response.status_code, 302)
 
         # check new user and profile
-        user = User.objects.get(email="mo@trac.com")
-        self.assertEqual(user.profile.full_name, "Mo Polls")
+        user = User.objects.get(email="mo@casely.com")
+        self.assertEqual(user.profile.full_name, "Mo Cases")
         self.assertEqual(user.profile.partner, self.moh)
-        self.assertEqual(user.email, "mo@trac.com")
-        self.assertEqual(user.username, "mo@trac.com")
+        self.assertEqual(user.email, "mo@casely.com")
+        self.assertEqual(user.username, "mo@casely.com")
         self.assertTrue(user in self.unicef.viewers.all())
 
         # try again with same email address
-        data = dict(full_name="Mo Polls II", email="mo@trac.com", password="Qwerty123", confirm_password="Qwerty123")
+        data = {'full_name': "Mo Cases II", 'email': "mo@casely.com",
+                'password': "Qwerty123", 'confirm_password': "Qwerty123"}
         response = self.url_post('unicef', url, data)
         self.assertFormError(response, 'form', None, "Email address already taken.")
+
+        # log in as a partner manager
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        self.assertFalse('partner' in response.context['form'].fields)
+        self.assertTrue('role' in response.context['form'].fields)
+
+        # submit with no fields entered
+        response = self.url_post('unicef', url, {})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'full_name', 'This field is required.')
+        self.assertFormError(response, 'form', 'role', 'This field is required.')
+        self.assertFormError(response, 'form', 'email', 'This field is required.')
+        self.assertFormError(response, 'form', 'password', 'This field is required.')
+
+        # submit again with all required fields to create another manager
+        data = {'full_name': "McManage", 'email': "manager@moh.com", 'role': ROLE_MANAGER,
+                'password': "Qwerty123", 'confirm_password': "Qwerty123"}
+        response = self.url_post('unicef', url, data)
+
+        self.assertEqual(response.status_code, 302)
+
+        user = User.objects.get(email='manager@moh.com')
+        self.assertEqual(user.get_full_name(), "McManage")
+        self.assertEqual(user.username, "manager@moh.com")
+        self.assertEqual(user.profile.partner, self.moh)
+        self.assertFalse(user.is_admin_for(self.unicef))
+        self.assertTrue(user.can_manage(self.moh))
+
+        # submit again with partner - not allowed and will be ignored
+        data = {'full_name': "Bob", 'email': "bob@moh.com", 'partner': self.who, 'role': ROLE_MANAGER,
+                'password': "Qwerty123", 'confirm_password': "Qwerty123"}
+        response = self.url_post('unicef', url, data)
+
+        self.assertEqual(response.status_code, 302)
+
+        user = User.objects.get(email='bob@moh.com')
+        self.assertEqual(user.profile.partner, self.moh)  # WHO was ignored
+
+    def test_created_in(self):
+        url = reverse('profiles.user_create_in')
+
+        # log in as an org administrator
+        self.login(self.admin)
+
+        # submit with no fields entered
+        response = self.url_post('unicef', url, {})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'full_name', 'This field is required.')
+        self.assertFormError(response, 'form', 'partner', 'This field is required.')
+        self.assertFormError(response, 'form', 'role', 'This field is required.')
+        self.assertFormError(response, 'form', 'email', 'This field is required.')
+        self.assertFormError(response, 'form', 'password', 'This field is required.')
+
+        # submit again with all required fields but invalid password
+        data = {'full_name': "Mo Cases", 'partner': self.moh.pk, 'role': ROLE_ANALYST, 'email': "mo@casely.com",
+                'password': "123", 'confirm_password': "123"}
+        response = self.url_post('unicef', url, data)
+        self.assertFormError(response, 'form', 'password', "Ensure this value has at least 8 characters (it has 3).")
 
     def test_update(self):
         url = reverse('profiles.user_update', args=[self.user1.pk])
@@ -166,11 +288,34 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', reverse('profiles.user_read', args=[self.user4.pk]))
         self.assertEqual(response.status_code, 404)
 
-        # log in as a user
+        # log in as a manager user
         self.login(self.user1)
 
-        # view other user's profile
-        response = self.url_get('unicef', reverse('profiles.user_read', args=[self.admin.pk]))
+        # view ourselves (can edit)
+        response = self.url_get('unicef', reverse('profiles.user_read', args=[self.user1.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['edit_button_url'], reverse('profiles.user_self'))
+
+        # view another user in same partner org (can edit)
+        response = self.url_get('unicef', reverse('profiles.user_read', args=[self.user2.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['edit_button_url'], reverse('profiles.user_update', args=[self.user2.pk]))
+
+        # view another user in different partner org (can't edit)
+        response = self.url_get('unicef', reverse('profiles.user_read', args=[self.user3.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context['edit_button_url'])
+
+        # log in as an analyst user
+        self.login(self.user2)
+
+        # view ourselves (can edit)
+        response = self.url_get('unicef', reverse('profiles.user_read', args=[self.user2.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['edit_button_url'], reverse('profiles.user_self'))
+
+        # view another user in same partner org (can't edit)
+        response = self.url_get('unicef', reverse('profiles.user_read', args=[self.user1.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertIsNone(response.context['edit_button_url'])
 

@@ -299,10 +299,10 @@ PERMISSIONS = {
 
     'cases.label': ('create', 'update', 'list'),
 
-    'cases.partner': ('create', 'read', 'update', 'list'),
+    'cases.partner': ('create', 'read', 'list'),
 
     # can't create profiles.user.* permissions because we don't own User
-    'profiles.profile': ('user_create', 'user_read', 'user_update', 'user_list'),
+    'profiles.profile': ('user_create', 'user_read', 'user_list'),
 }
 
 # assigns the permissions that each group should have
@@ -326,6 +326,7 @@ GROUP_PERMISSIONS = {
         'cases.messageexport_create',
         'cases.messageexport_read',
         'cases.partner_read',
+        'profiles.profile_user_create',
         'profiles.profile_user_read',
     ),
     "Viewers": (

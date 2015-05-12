@@ -19,7 +19,7 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from temba.base import TembaNoSuchObjectError
 from casepro.email import send_email
-from . import parse_csv, truncate, contact_as_json, SYSTEM_LABEL_FLAGGED
+from . import parse_csv, contact_as_json, SYSTEM_LABEL_FLAGGED
 
 
 class Group(models.Model):
@@ -206,6 +206,8 @@ class Partner(models.Model):
 
     name = models.CharField(verbose_name=_("Name"), max_length=128,
                             help_text=_("Name of this partner organization"))
+
+    logo = models.ImageField(verbose_name=_("Logo"), null=True)
 
     is_active = models.BooleanField(default=True, help_text="Whether this partner is active")
 
