@@ -176,6 +176,7 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
 controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '$controller', 'MessageService', 'CaseService', 'UtilsService', ($scope, $timeout, $modal, $controller, MessageService, CaseService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
+  $scope.advancedSearch = false
   $scope.expandedMessageId = null
 
   $scope.init = () ->
@@ -206,6 +207,9 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     return search
 
   $scope.searchFieldDefaults = () -> { text: null, groups: [], after: null, before: null }
+
+  $scope.setAdvancedSearch = (state) ->
+    $scope.advancedSearch = state
 
   $scope.onExportSearch = () ->
     UtilsService.confirmModal "Export the current message search?", null, () ->

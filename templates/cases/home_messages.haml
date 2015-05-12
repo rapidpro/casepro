@@ -3,7 +3,7 @@
 
 - block home-items
   .{ ng-controller:"MessagesController", ng-init:"init()" }
-    .contact-toolbar{ ng-show:"activeContact" }
+    .contact-toolbar{ ng-if:"activeContact" }
       .row
         .col-md-12
           %span.contact-info
@@ -14,49 +14,66 @@
             %button.btn.btn-default{ type:"button", ng-click:"activateContact(null)" }
               - trans "Back"
 
-    .search-toolbar{ ng-show:"!activeContact" }
-      %form.form-inline
-        .row
-          .col-md-12{ style:"padding-bottom: 5px" }
-            %input.form-control{ ng-model:"searchFields.text", type:"text", placeholder:"Containing", style:"width: 250px" }
-            %span.date-range{ ng-controller:"DateRangeController" }
-              .form-group
-                %label{ for:"search-after" }
-                  - trans "From"
+    .search-toolbar{ ng-if:"!activeContact" }
+      .search-form-simple{ ng-if:"!advancedSearch" }
+        %form.clearfix
+          .btn-group.pull-away
+            // TODO figure out why form is double-submitted when this is moved to ng-submit on the form. jQuery conflict?
+            %button.btn.btn-default{ type:"button", ng-click:"onSearch()" }
+              %span.glyphicon.glyphicon-search
+              - trans "Search"
+            %button.btn.btn-default{ type:"button", ng-click:"setAdvancedSearch(true)" }
+              - trans "Advanced..."
+            %button.btn.btn-default{ type:"button", ng-click:"onExportSearch()", tooltip:"Save as Excel" }
+              %span.glyphicon.glyphicon-save
+          %input.form-control{ ng-model:"searchFields.text", type:"text", placeholder:"Search", style:"width: 400px" }
+
+      .search-form-advanced{ ng-if:"advancedSearch" }
+        %form.form-horizontal
+          .btn-group.pull-away
+            // TODO figure out why form is double-submitted when this is moved to ng-submit on the form. jQuery conflict?
+            %button.btn.btn-default{ type:"button", ng-click:"onSearch()" }
+              %span.glyphicon.glyphicon-search
+              - trans "Search"
+            %button.btn.btn-default{ type:"button", ng-click:"onResetSearch()" }
+              - trans "Clear"
+            %button.btn.btn-default{ type:"button", ng-click:"onExportSearch()", tooltip:"Save as Excel" }
+              %span.glyphicon.glyphicon-save
+
+          .form-group
+            %label.control-label.col-sm-2
+              - trans "Containing"
+            .col-sm-6
+              %input.form-control{ ng-model:"searchFields.text", type:"text", placeholder:"Search text", style:"width: 250px" }
+
+          .form-group
+            %label.control-label.col-sm-2
+              - trans "When"
+            .col-sm-10
+              %span.date-range{ ng-controller:"DateRangeController" }
                 .input-group.date-picker
                   %input.form-control{ type:"text", datepicker-popup:"[[ format ]]", ng-model:"searchFields.after", is-open:"afterOpen", min-date:"afterMin", max-date:"afterMax", ng-change:"onAfterChange()" }
                   %span.input-group-btn
                     %button.btn.btn-default{ type:"button", ng-click:"openAfter($event)" }
                       %i.glyphicon.glyphicon-calendar
-              .form-group
-                %label{ for:"search-before" }
+                %label.control-label
                   - trans "Until"
                 .input-group.date-picker
                   %input.form-control{ type:"text", datepicker-popup:"[[ format ]]", ng-model:"searchFields.before", is-open:"beforeOpen", min-date:"beforeMin", max-date:"beforeMax", ng-change:"onBeforeChange()" }
                   %span.input-group-btn
                     %button.btn.btn-default{ type:"button", ng-click:"openBefore($event)" }
                       %i.glyphicon.glyphicon-calendar
-        .row
-          .col-md-12
-            .pull-back
+          .form-group
+            %label.control-label.col-sm-2
+              - trans "Groups"
+            .col-sm-10
               // HAML doesn't seem to like dashes in tag names...
               <ui-select multiple ng-model="searchFields.groups" theme="bootstrap" class="group-select">
-                <ui-select-match placeholder="Select groups...">[[ $item.name ]]</ui-select-match>
+                <ui-select-match placeholder="Select groups">[[ $item.name ]]</ui-select-match>
                 <ui-select-choices repeat="group in groups">
                   [[ group.name ]]
                 </ui-select-choices>
               </ui-select>
-
-            .pull-away
-              // TODO figure out why form is double-submitted when this is moved to ng-submit on the form. jQuery conflict?
-              %button.btn.btn-default{ type:"button", ng-click:"onSearch()" }
-                %span.glyphicon.glyphicon-search
-                - trans "Search"
-              .btn-group
-                %button.btn.btn-default{ type:"button", ng-click:"onResetSearch()" }
-                  - trans "Clear"
-                %button.btn.btn-default{ type:"button", ng-click:"onExportSearch()", tooltip:"Save as Excel" }
-                  %span.glyphicon.glyphicon-save
 
     .selection-toolbar
       .row
@@ -243,9 +260,22 @@
 - block extra-style
   {{ block.super }}
   :css
+    .search-toolbar .search-form-advanced .form-group {
+      margin-bottom: 5px;
+    }
+    .search-toolbar .search-form-advanced .form-group:last-of-type {
+      margin-bottom: 0;
+    }
+    .search-toolbar .date-range .input-group, .date-range label {
+      float: left;
+    }
+    .search-toolbar .date-range label {
+      padding: 5px 1em 0 1em;
+    }
     .search-toolbar .group-select {
       width: 500px;
     }
+
     .message-actions {
       float: left;
       width: 50px;
