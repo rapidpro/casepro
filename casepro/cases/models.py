@@ -207,7 +207,7 @@ class Partner(models.Model):
     name = models.CharField(verbose_name=_("Name"), max_length=128,
                             help_text=_("Name of this partner organization"))
 
-    logo = models.ImageField(verbose_name=_("Logo"), null=True)
+    logo = models.ImageField(verbose_name=_("Logo"), upload_to='partner_logos', null=True)
 
     is_active = models.BooleanField(default=True, help_text="Whether this partner is active")
 
