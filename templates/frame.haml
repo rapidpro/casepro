@@ -111,17 +111,25 @@
             %ul.nav.navbar-nav.navbar-right
               - block login
                 - if request.user and request.user.is_authenticated
-                  %li
-                    - if request.user.profile
-                      %a{ href:"{% url 'profiles.user_read' request.user.pk %}", style:"float: left;"}
-                        {{ request.user.email }}
-                    - else
-                      %p.navbar-text{ style:"float: left;"}
-                        {{ request.user.username }}
-                  %li
-                    %a{ href:"{% url 'users.user_logout' %}?go=/", style:"float: right;"}
-                      %span.glyphicon.glyphicon-log-out
-                      - trans "Logout"
+                  %li.dropdown
+                    %a.dropdown-toggle{href:"#", data-toggle:"dropdown"}
+                      {{ request.user.email|default:request.user.username }}
+                      %b.caret
+                    %ul.dropdown-menu
+                      - if request.user.get_partner
+                        %li
+                          %a{ href:"{% url 'cases.partner_read' request.user.get_partner.pk %}" }
+                            %span.glyphicon.glyphicon-home
+                            - trans "My Organization"
+                      - if request.user.profile
+                        %li
+                          %a{ href:"{% url 'profiles.user_read' request.user.pk %}" }
+                            %span.glyphicon.glyphicon-user
+                            - trans "Profile"
+                      %li
+                        %a{ href:"{% url 'users.user_logout' %}?go=/"}
+                          %span.glyphicon.glyphicon-log-out
+                          - trans "Logout"
 
                 - else
                   %li
