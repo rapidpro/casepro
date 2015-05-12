@@ -285,7 +285,9 @@ services.factory 'CaseService', ['$http', ($http) ->
       data = new FormData()
       data.append('message', message.id)
       data.append('summary', summary)
-      data.append('assignee', if assignee then assignee.id else null)
+      if assignee
+        data.append('assignee', assignee.id)
+
       $http.post('/case/open/', data, DEFAULT_POST_OPTS)
       .success (_case) ->
         callback(_case)
