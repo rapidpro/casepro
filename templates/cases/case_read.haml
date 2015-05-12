@@ -131,11 +131,15 @@
           .panel-body
             [[ case.summary ]]
 
-        .panel.panel-default
+        .panel.panel-default{ ng-if:"case.contact" }
           .panel-heading
             - trans "Contact"
+            %strong
+              \#[[ case.contact.uuid | limitTo:6 | uppercase ]]
           .panel-body
-            .contact-details{ ng-if:"case.contact" }
+            .contact-details
+              .none{ ng-if:"!case.contact.fields" }
+                No fields configured
               .contact-field{ ng-repeat:"(key, val) in case.contact.fields" }
                 %strong><
                   [[ key ]]
