@@ -341,7 +341,7 @@ class LabelForm(forms.ModelForm):
     def clean_keywords(self):
         keywords = parse_csv(self.cleaned_data['keywords'].lower())
         for keyword in keywords:
-            if len(keyword) <= LABEL_KEYWORD_MIN_LENGTH:
+            if len(keyword) < LABEL_KEYWORD_MIN_LENGTH:
                 raise forms.ValidationError(_("Label keywords must be at least %d characters long")
                                             % LABEL_KEYWORD_MIN_LENGTH)
 
@@ -632,7 +632,7 @@ class PartnerCRUDL(SmartCRUDL):
         def save(self, obj):
             data = self.form.cleaned_data
             org = self.request.user.get_org()
-            self.object = Partner.create(org, data['name'])
+            self.object = Partner.create(org, data['name'], data['logo'])
 
     class Update(OrgObjPermsMixin, PartnerFormMixin, SmartUpdateView):
         form_class = PartnerForm

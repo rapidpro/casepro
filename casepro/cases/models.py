@@ -207,13 +207,13 @@ class Partner(models.Model):
     name = models.CharField(verbose_name=_("Name"), max_length=128,
                             help_text=_("Name of this partner organization"))
 
-    logo = models.ImageField(verbose_name=_("Logo"), upload_to='partner_logos', null=True)
+    logo = models.ImageField(verbose_name=_("Logo"), upload_to='partner_logos', null=True, blank=True)
 
     is_active = models.BooleanField(default=True, help_text="Whether this partner is active")
 
     @classmethod
-    def create(cls, org, name):
-        return cls.objects.create(org=org, name=name)
+    def create(cls, org, name, logo):
+        return cls.objects.create(org=org, name=name, logo=logo)
 
     @classmethod
     def get_all(cls, org):
