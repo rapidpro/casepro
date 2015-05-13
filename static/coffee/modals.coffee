@@ -61,7 +61,7 @@ modals.controller('ReplyModalController', [ '$scope', '$modalInstance', ($scope,
 # Open new case modal
 #=====================================================================
 modals.controller 'NewCaseModalController', [ '$scope', '$modalInstance', 'message', 'partners', ($scope, $modalInstance, message, partners) ->
-  $scope.summary = '"' + message.text + '"'
+  $scope.summary = message.text
   $scope.partners = partners
   $scope.assignee = if partners then partners[0] else null
 
