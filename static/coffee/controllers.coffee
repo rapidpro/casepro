@@ -189,8 +189,10 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
 
     $scope.$on 'activeLabelChange', () ->
       $scope.onResetSearch()
+      $scope.setAdvancedSearch(false)
     $scope.$on 'activeContactChange', () ->
       $scope.onResetSearch()
+      $scope.setAdvancedSearch(false)
 
   $scope.getItemFilter = () ->
     if $scope.itemView == 'inbox'
