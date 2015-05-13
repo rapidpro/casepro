@@ -31,13 +31,9 @@ def process_new_org_unsolicited(org):
     """
     Processes new unsolicited messages for an org in RapidPro
     """
-    from . import match_keywords
-    from .models import Case, Label
+    from .models import Message
 
     client = org.get_temba_client()
-    labels = list(Label.get_all(org))
-    label_keywords = {l: l.get_keywords() for l in labels}
-    label_matches = {l: [] for l in labels}  # message ids that match each label
 
     # when was this task last run?
     last_result = org.get_task_result(TaskType.label_messages)
@@ -49,43 +45,24 @@ def process_new_org_unsolicited(org):
 
     this_time = timezone.now()
 
-    messages = []
+    num_messages = 0
     num_labels = 0
 
     # grab all un-processed unsolicited messages
     pager = client.pager()
     while True:
-        messages += client.get_messages(direction='I', _types=['I'], statuses=['H'],
-                                        after=last_time, before=this_time, pager=pager)
+        messages = client.get_messages(direction='I', _types=['I'], statuses=['H'], archived=False,
+                                       after=last_time, before=this_time, pager=pager)
+        num_messages += len(messages)
+        num_labels += Message.process_unsolicited(org, messages)
+
         if not pager.has_more():
             break
 
-    newest_labelled = None
-    for msg in messages:
-        open_case = Case.get_open_for_contact_on(org, msg.contact, msg.created_on).first()
-
-        if open_case:
-            open_case.reply_event(msg)
-        else:
-            # only apply labels if there isn't a currently open case for this contact
-            for label in labels:
-                if match_keywords(msg.text, label_keywords[label]):
-                    label_matches[label].append(msg)
-                    if not newest_labelled:
-                        newest_labelled = msg
-
-    # record the newest/last labelled message time for this org
-    if newest_labelled:
-        org.record_msg_time(newest_labelled.created_on)
-
-    # add labels to matching messages
-    for label, matched_msgs in label_matches.iteritems():
-        if matched_msgs:
-            client.label_messages(messages=[m.id for m in matched_msgs], label=label.name)
-            num_labels += len(matched_msgs)
+    print "Processed %d new unsolicited messages and applied %d labels" % (num_messages, num_labels)
 
     org.set_task_result(TaskType.label_messages, {'time': datetime_to_ms(this_time),
-                                                  'counts': {'messages': len(messages), 'labels': num_labels}})
+                                                  'counts': {'messages': num_messages, 'labels': num_labels}})
 
 
 @task

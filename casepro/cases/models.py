@@ -19,7 +19,7 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from temba.base import TembaNoSuchObjectError
 from casepro.email import send_email
-from . import parse_csv, contact_as_json, SYSTEM_LABEL_FLAGGED
+from . import parse_csv, contact_as_json, match_keywords, SYSTEM_LABEL_FLAGGED
 
 
 class Group(models.Model):
@@ -379,7 +379,7 @@ class Case(models.Model):
             client = org.get_temba_client()
             labels = [l.name for l in Label.get_all(org)]
             messages = client.get_messages(contacts=[message.contact], labels=labels,
-                                           direction='I', statuses=['H'], _types=['I'])
+                                           direction='I', statuses=['H'], _types=['I'], archived=False)
             message_ids = [m.id for m in messages]
             client.archive_messages(messages=message_ids)
 
@@ -659,6 +659,44 @@ class Message(object):
             org.record_msg_time(messages[0].created_on)
 
         return messages
+
+    @staticmethod
+    def process_unsolicited(org, messages):
+        """
+        Processes unsolicited messages, labelling and creating case events as appropriate
+        """
+        labels = list(Label.get_all(org))
+        label_keywords = {l: l.get_keywords() for l in labels}
+        label_matches = {l: [] for l in labels}  # message ids that match each label
+
+        client = org.get_temba_client()
+        num_labels = 0
+        newest_labelled = None
+
+        for msg in messages:
+            open_case = Case.get_open_for_contact_on(org, msg.contact, msg.created_on).first()
+
+            if open_case:
+                open_case.reply_event(msg)
+            else:
+                # only apply labels if there isn't a currently open case for this contact
+                for label in labels:
+                    if match_keywords(msg.text, label_keywords[label]):
+                        label_matches[label].append(msg)
+                        if not newest_labelled:
+                            newest_labelled = msg
+
+        # record the newest/last labelled message time for this org
+        if newest_labelled:
+            org.record_msg_time(newest_labelled.created_on)
+
+        # add labels to matching messages
+        for label, matched_msgs in label_matches.iteritems():
+            if matched_msgs:
+                client.label_messages(messages=[m.id for m in matched_msgs], label=label.name)
+                num_labels += len(matched_msgs)
+
+        return num_labels
 
     @staticmethod
     def as_json(msg, label_map):
