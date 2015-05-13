@@ -492,18 +492,30 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertFormError(response, 'form', 'name', 'This field is required.')
         self.assertFormError(response, 'form', 'description', 'This field is required.')
 
-        # submit with invalid names
+        # submit with name that is reserved
         response = self.url_post('unicef', url, {'name': 'FlaGGED'})
         self.assertEqual(response.status_code, 200)
         self.assertFormError(response, 'form', 'name', "Reserved label name")
 
+        # submit with name that is invalid
         response = self.url_post('unicef', url, {'name': '+Ebola'})
         self.assertEqual(response.status_code, 200)
         self.assertFormError(response, 'form', 'name', "Label name cannot start with + or -")
 
-        # submit again with data
+        # submit with a keyword that is too short
+        response = self.url_post('unicef', url, {'name': 'Ebola', 'keywords': 'a, ebola'})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'keywords', "Label keywords must be at least 3 characters long")
+
+        # submit with a keyword that is invalid
+        response = self.url_post('unicef', url, {'name': 'Ebola', 'keywords': r'e-bo\a?, ebola'})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'keywords', "Label keywords should not contain punctuation")
+
+        # submit again with valid data
         response = self.url_post('unicef', url, {'name': "Ebola", 'description': "Msgs about ebola",
-                                                 'keywords': "ebola,fever", 'partners':[self.moh.pk, self.who.pk]})
+                                                 'keywords': "Ebola,fever", 'partners': [self.moh.pk, self.who.pk]})
+
         self.assertEqual(response.status_code, 302)
 
         ebola = Label.objects.get(name="Ebola")

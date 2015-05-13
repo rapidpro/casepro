@@ -1,5 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
+import re
+
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import get_obj_cacheable
 from django import forms
@@ -12,7 +14,7 @@ from enum import Enum
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView, SmartFormView
 from smartmin.users.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba.utils import parse_iso8601
-from . import parse_csv, json_encode, safe_max, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
+from . import parse_csv, json_encode, safe_max, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED, LABEL_KEYWORD_MIN_LENGTH
 from .models import Case, Group, Label, Message, MessageAction, MessageExport, Partner, Outgoing
 from .tasks import message_export
 
@@ -337,7 +339,16 @@ class LabelForm(forms.ModelForm):
         return name
 
     def clean_keywords(self):
-        return ','.join(parse_csv(self.cleaned_data['keywords']))
+        keywords = parse_csv(self.cleaned_data['keywords'].lower())
+        for keyword in keywords:
+            if len(keyword) <= LABEL_KEYWORD_MIN_LENGTH:
+                raise forms.ValidationError(_("Label keywords must be at least %d characters long")
+                                            % LABEL_KEYWORD_MIN_LENGTH)
+
+            if not re.match(r'^\w+$', keyword):
+                raise forms.ValidationError(_("Label keywords should not contain punctuation"))
+
+        return ','.join(keywords)
 
     class Meta:
         model = Label
