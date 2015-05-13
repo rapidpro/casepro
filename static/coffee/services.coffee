@@ -1,4 +1,8 @@
-services = angular.module('cases.services', []);
+#============================================================================
+# Application services
+#============================================================================
+
+services = angular.module('cases.services', ['cases.modals']);
 
 
 DEFAULT_POST_OPTS = {transformRequest: angular.identity, headers: {'Content-Type': undefined}}

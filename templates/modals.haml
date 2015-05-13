@@ -1,0 +1,186 @@
+- load i18n
+
+%script{ type:"text/ng-template", id:"confirmModal.html" }
+  .modal-header
+    %h3.modal-title
+      [[ title ]]
+    .modal-body
+      %p
+        %span{ ng-bind-html:"prompt" }
+    .modal-footer
+      %button.btn{ ng-click:"ok()", ng-class:'{ "btn-primary": style == "primary", "btn-danger": style == "danger" }' }
+        - trans "OK"
+      %button.btn.btn-default{ ng-click:"cancel()" }
+        - trans "Cancel"
+
+%script{ type:"text/ng-template", id:"noteModal.html" }
+  .modal-header
+    %h3.modal-title
+      [[ title ]]
+    .modal-body
+      %p
+        %span{ ng-bind-html:"prompt" }
+      %form
+        .form-group
+          %label.control-label
+            - trans "Note"
+          %textarea.form-control{ ng-model:"note" }
+    .modal-footer
+      %button.btn{ ng-click:"ok()", ng-class:'{ "btn-primary": style == "primary", "btn-danger": style == "danger" }' }
+        - trans "OK"
+      %button.btn.btn-default{ ng-click:"cancel()" }
+        - trans "Cancel"
+
+%script{ type:"text/ng-template", id:"editModal.html" }
+  .modal-header
+    %h3.modal-title
+      [[ title ]]
+    .modal-body
+      %textarea.form-control{ ng-model:"text" }
+    .modal-footer
+      %button.btn.btn-primary{ ng-click:"ok()" }
+        - trans "Save"
+      %button.btn.btn-default{ ng-click:"cancel()" }
+        - trans "Cancel"
+
+%script{ type:"text/ng-template", id:"replyModal.html" }
+  .modal-header
+    %h3.modal-title
+      - trans "Reply"
+    .modal-body
+      %p
+        - trans "Send the following reply to each contact and archive each message. This will remove the messages from your inbox."
+      %textarea.form-control{ ng-model:"text" }
+    .modal-footer
+      %button.btn.btn-primary{ ng-click:"ok()" }
+        - trans "Send & Archive"
+      %button.btn.btn-default{ ng-click:"cancel()" }
+        - trans "Cancel"
+
+%script{ type:"text/ng-template", id:"newCaseModal.html" }
+  .modal-header
+    %h3.modal-title
+      - trans "Open Case"
+    .modal-body
+      %p
+        - trans "Open a new case for this message?"
+      .form-group
+        %label.control-label
+          - trans "Summary"
+        %textarea.form-control{ ng-model:"summary" }
+      .form-group{ ng-if:"partners != null" }
+        %label.control-label
+          - trans "Assign to"
+        %select.form-control{ ng-model:"assignee", ng-options:"p.name for p in partners track by p.id" }
+    .modal-footer
+      %button.btn.btn-primary{ ng-click:"ok()" }
+        - trans "Open"
+      %button.btn.btn-default{ ng-click:"cancel()" }
+        - trans "Cancel"
+
+%script{ type:"text/ng-template", id:"assignModal.html" }
+  .modal-header
+    %h3.modal-title
+      [[ title ]]
+    .modal-body
+      %p
+        %span{ ng-bind-html:"prompt" }
+      .form-group
+        %label.control-label
+          - trans "Assign to"
+        %select.form-control{ ng-model:"assignee", ng-options:"p.name for p in partners track by p.id" }
+    .modal-footer
+      %button.btn.btn-primary{ ng-click:"ok()" }
+        - trans "Open"
+      %button.btn.btn-default{ ng-click:"cancel()" }
+        - trans "Cancel"
+
+%script{ type:"text/ng-template", id:"labelModal.html" }
+  .modal-header
+    %h3.modal-title
+      [[ title ]]
+    .modal-body
+      %p
+        %span{ ng-bind-html:"prompt" }
+      %form
+        .{ ng-repeat:"item in selection" }
+          %input{ type:"checkbox", ng-model:"item.selected" }
+          &nbsp;
+          %label.control-label
+            [[ item.label.name ]]
+    .modal-footer
+      %button.btn.btn-primary{ ng-click:"ok()" }
+        - trans "OK"
+      %button.btn.btn-default{ ng-click:"cancel()" }
+        - trans "Cancel"
+
+%script{ type:"text/ng-template", id:"composeModal.html" }
+  .modal-header
+    %h3.modal-title
+      [[ title ]]
+    .modal-body
+      %form
+        .form-group
+          %label.control-label
+            - trans "Recipient"
+          .input-group
+            .input-group-btn
+              %button.btn.btn-default.dropdown-toggle{ type:"button", data-toggle:"dropdown" }
+                [[ urn_scheme_label ]]
+                %span.caret
+              %ul.dropdown-menu
+                %li
+                  %a{ ng-click:'setScheme("tel")' }
+                    - trans "Phone"
+                %li
+                  %a{ ng-click:'setScheme("twitter")' }
+                    - trans "Twitter"
+            %input.form-control{ type:"text", ng-model:"urn_path", style:"width: 300px" }
+
+        .form-group
+          %label.control-label{ for:"forward-text" }
+            - trans "Message"
+          %textarea.form-control{ ng-model:"text", id:"forward-text" }
+    .modal-footer
+      %button.btn.btn-primary{ ng-click:"ok()" }
+        - trans "Send"
+      %button.btn.btn-default{ ng-click:"cancel()" }
+        - trans "Cancel"
+
+%script{ type:"text/ng-template", id:"messageHistory.html" }
+  .modal-header
+    %h3.modal-title
+      - trans "Message History"
+    .modal-body
+      .message-history
+        .action.stackitem{ ng-repeat:"action in actions" }
+          .action-time
+            [[ action.created_on | autodate ]]
+
+          %span{ ng-if:'action.action == "F"' }
+            Flagged
+          %span{ ng-if:'action.action == "N"' }
+            Un-flagged
+          %span{ ng-if:'action.action == "L"' }
+            Label
+            %span.label.label-success<
+              [[ action.label.name ]]
+            &nbsp;added
+          %span{ ng-if:'action.action == "U"' }
+            Label
+            %span.label.label-success<
+              [[ action.label.name ]]
+            removed
+          %span{ ng-if:'action.action == "A"' }
+            Archived
+
+          by
+          %a{ ng-href:"/user/read/[[ action.created_by.id ]]/" }
+            [[ action.created_by.name ]]
+
+      .loading{ ng-if:"loading" }
+      .none{ ng-if:"actions.length == 0" }
+        - trans "No events"
+    .modal-footer
+      %button.btn.btn-primary{ ng-click:"close()" }
+        - trans "Close"
