@@ -117,7 +117,7 @@
               %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onRestoreSelection()", type:"button" }
                 - trans "Restore"
 
-    .messages{ infinite-scroll:"loadOldMessages(false)", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
+    .messages{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
       .stackitem.clearfix{ ng-repeat:"message in items | filter: getItemFilter()", ng-class:"{ flagged: message.flagged }" }
         .message-actions
           %input{ type:"checkbox", ng-model:"message.selected", ng-change:"onChangeSelection()" }
