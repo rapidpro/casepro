@@ -199,7 +199,7 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(user.profile.partner, self.moh)  # WHO was ignored
 
     def test_created_in(self):
-        url = reverse('profiles.user_create_in')
+        url = reverse('profiles.user_create_in', args=[self.moh.pk])
 
         # log in as an org administrator
         self.login(self.admin)
@@ -208,16 +208,18 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_post('unicef', url, {})
         self.assertEqual(response.status_code, 200)
         self.assertFormError(response, 'form', 'full_name', 'This field is required.')
-        self.assertFormError(response, 'form', 'partner', 'This field is required.')
         self.assertFormError(response, 'form', 'role', 'This field is required.')
         self.assertFormError(response, 'form', 'email', 'This field is required.')
         self.assertFormError(response, 'form', 'password', 'This field is required.')
 
-        # submit again with all required fields but invalid password
-        data = {'full_name': "Mo Cases", 'partner': self.moh.pk, 'role': ROLE_ANALYST, 'email': "mo@casely.com",
-                'password': "123", 'confirm_password': "123"}
+        # submit again with all required fields
+        data = {'full_name': "Mo Cases", 'role': ROLE_ANALYST, 'email': "mo@casely.com",
+                'password': "Qwerty123", 'confirm_password': "Qwerty123"}
         response = self.url_post('unicef', url, data)
-        self.assertFormError(response, 'form', 'password', "Ensure this value has at least 8 characters (it has 3).")
+        self.assertEqual(response.status_code, 302)
+
+        user = User.objects.get(email='mo@casely.com')
+        self.assertEqual(user.profile.partner, self.moh)
 
     def test_update(self):
         url = reverse('profiles.user_update', args=[self.user1.pk])

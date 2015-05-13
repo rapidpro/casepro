@@ -31,6 +31,7 @@ def process_new_org_unsolicited(org):
     """
     Processes new unsolicited messages for an org in RapidPro
     """
+    from . import match_keywords
     from .models import Case, Label
 
     client = org.get_temba_client()

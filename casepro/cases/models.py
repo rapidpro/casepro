@@ -374,11 +374,12 @@ class Case(models.Model):
 
         CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee)
 
-        # archive messages and subsequent messages from same contact
+        # archive messages and any labelled messages from this contact
         if archive_messages:
             client = org.get_temba_client()
-            messages = client.get_messages(contacts=[message.contact], direction='I', statuses=['H'], _types=['I'],
-                                           after=message.created_on)
+            labels = [l.name for l in Label.get_all(org)]
+            messages = client.get_messages(contacts=[message.contact], labels=labels,
+                                           direction='I', statuses=['H'], _types=['I'])
             message_ids = [m.id for m in messages]
             client.archive_messages(messages=message_ids)
 
