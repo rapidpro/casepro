@@ -1,12 +1,14 @@
 from __future__ import absolute_import, unicode_literals
 
 import json
+import re
 
 from django.core.serializers.json import DjangoJSONEncoder
 
 
 MAX_MESSAGE_CHARS = 140
 SYSTEM_LABEL_FLAGGED = "Flagged"
+LABEL_KEYWORD_MIN_LENGTH = 3
 
 
 def str_to_bool(text):
@@ -51,6 +53,16 @@ def safe_max(*args, **kwargs):
         return non_nones[0]
     else:
         return max(*non_nones, **kwargs)
+
+
+def match_keywords(text, keywords):
+    """
+    Checks the given text for a keyword match
+    """
+    for keyword in keywords:
+        if re.search(r'\b' + keyword + r'\b', text, flags=re.IGNORECASE):
+            return True
+    return False
 
 
 def truncate(text, length=100, suffix='...'):

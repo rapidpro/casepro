@@ -68,11 +68,10 @@ def process_new_org_unsolicited(org):
         else:
             # only apply labels if there isn't a currently open case for this contact
             for label in labels:
-                for keyword in label_keywords[label]:
-                    if keyword in msg.text.lower():
-                        label_matches[label].append(msg)
-                        if not newest_labelled:
-                            newest_labelled = msg
+                if match_keywords(msg.text, label_keywords[label]):
+                    label_matches[label].append(msg)
+                    if not newest_labelled:
+                        newest_labelled = msg
 
     # record the newest/last labelled message time for this org
     if newest_labelled:

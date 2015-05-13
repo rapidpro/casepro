@@ -13,7 +13,7 @@ from temba.utils import format_iso8601
 from casepro.orgs_ext import TaskType
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
-from . import safe_max, truncate, contact_as_json
+from . import safe_max, match_keywords, truncate, contact_as_json
 from .models import Case, CaseAction, CaseEvent, Label, Message, MessageAction, MessageExport, Partner, Outgoing
 from .tasks import process_new_unsolicited
 
@@ -431,6 +431,16 @@ class InitTest(BaseCasesTest):
         self.assertEqual(safe_max(None, 2, None), 2)
         self.assertEqual(safe_max(None, None), None)
         self.assertEqual(safe_max(date(2012, 3, 6), date(2012, 5, 2), None), date(2012, 5, 2))
+
+    def test_match_keywords(self):
+        text = "Mary had a little lamb"
+        self.assertFalse(match_keywords(text, []))
+        self.assertFalse(match_keywords(text, ['sheep']))
+        self.assertFalse(match_keywords(text, ['lambburger']))  # complete word matches only
+
+        self.assertTrue(match_keywords(text, ['mary']))  # case-insensitive and start of string
+        self.assertTrue(match_keywords(text, ['lamb']))  # end of string
+        self.assertTrue(match_keywords(text, ['big', 'little']))  # one match, one mis-match
 
     def test_truncate(self):
         self.assertEqual(truncate("Hello World", 8), "Hello...")
