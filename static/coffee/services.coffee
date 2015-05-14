@@ -321,17 +321,16 @@ services.factory 'CaseService', ['$http', ($http) ->
           callback()
 
     #----------------------------------------------------------------------------
-    # Closes cases
+    # Closes a case
     #----------------------------------------------------------------------------
-    closeCases: (cases, note, callback) ->
+    closeCase: (_case, note, callback) ->
       data = new FormData()
-      data.append('cases', (c.id for c in cases))
+      data.append('_case', _case.id)
       data.append('note', note)
 
       $http.post('/case/close/', data, DEFAULT_POST_OPTS)
       .success () ->
-        for c in cases
-          c.is_closed = true
+        _case.is_closed = true
         if callback
           callback()
 

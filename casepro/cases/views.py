@@ -108,19 +108,16 @@ class CaseCRUDL(SmartCRUDL):
             case.reassign(request.user, assignee)
             return HttpResponse(status=204)
 
-    class Close(OrgPermsMixin, SmartListView):
+    class Close(OrgPermsMixin, SmartUpdateView):
         """
-        JSON endpoint for bulk closing cases
+        JSON endpoint for closing a case
         """
         permission = 'cases.case_update'
 
         def post(self, request, *args, **kwargs):
-            case_ids = parse_csv(request.POST.get('cases', ''), as_ints=True)
-            cases = Case.get_all(request.org).filter(pk__in=case_ids)
+            case = self.get_object()
             note = request.POST.get('note', None)
-
-            for case in cases:
-                case.close(request.user, note)
+            case.close(request.user, note)
 
             return HttpResponse(status=204)
 

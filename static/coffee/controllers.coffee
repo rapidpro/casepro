@@ -375,10 +375,8 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
       $timeout($scope.refreshNewItems, INTERVAL_CASES_NEW)
     )
 
-  $scope.onCloseSelection = () ->
-    UtilsService.noteModal("Close", "Close the selected cases?", 'danger', (note) ->
-      CaseService.closeCases($scope.selection, note)
-    )
+  $scope.onClickCase = (_case) ->
+    UtilsService.navigate('/case/read/' + _case.id + '/')
 ])
 
 
@@ -455,7 +453,7 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
 
   $scope.onClose = () ->
     UtilsService.noteModal("Close", "Close this case?", 'danger', (note) ->
-      CaseService.closeCases([$scope.case], note, () ->
+      CaseService.closeCase($scope.case, note, () ->
         UtilsService.navigate('/')
       )
     )

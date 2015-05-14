@@ -18,36 +18,8 @@
                 %span.glyphicon.glyphicon-search
                 - trans "Search"
 
-    .selection-toolbar
-      .row
-        .col-md-12
-          .selection-controls.pull-back
-            .btn-group{ dropdown:"true" }
-              %button.btn.btn-default.dropdown-toggle{ type:"button", dropdown-toggle:"true" }
-                - trans "Select"
-                %span.caret
-              %ul.dropdown-menu
-                %li
-                  %a{ href:"#", ng-click:"onSelectAll()" }
-                    - trans "All"
-                %li
-                  %a{ href:"#", ng-click:"onSelectNone()" }
-                    - trans "None"
-
-          %span.selection-info{ ng-show:"selection.length > 0" }
-            [[ selection.length ]] of [[ totalItems() ]] cases selected
-          %span.selection-info{ ng-show:"selection.length == 0" }
-            [[ totalItems() ]] cases
-
-          .selection-actions.pull-away
-            .btn-group{ ng-if:'itemView != "closed"' }
-              %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onCloseSelection()", type:"button" }
-                - trans "Close"
-
     .cases{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
-      .stackitem.clearfix{ ng-repeat:"item in items | filter: getItemFilter()" }
-        .case-actions
-          %input{ type:"checkbox", ng-model:"item.selected", ng-change:"onChangeSelection()" }
+      .stackitem.clearfix.hoverable{ ng-repeat:"item in items | filter: getItemFilter()", ng-click:"onClickCase(item)" }
         .case-time
           [[ item.opened_on | autodate ]]
         .case-assignee
@@ -57,8 +29,7 @@
             %span.label.label-success
               [[ label.name ]]
             &nbsp;
-          %a{ ng-href:"/case/read/[[ item.id ]]/" }
-            [[ item.summary ]]
+          [[ item.summary ]]
       .loading{ ng-if:"oldItemsLoading" }
       .none{ ng-hide:"items.length > 0" }
         - trans "No cases"
@@ -68,14 +39,6 @@
   :css
     .search-toolbar .assignee-select {
       width: 250px;
-    }
-    .case-actions {
-      float: left;
-      width: 25px;
-    }
-    .case-actions input[type="checkbox"] {
-      width: auto;
-      margin-right: 7px;
     }
     .case-time {
       float: right;
@@ -88,6 +51,6 @@
       width: 200px;
     }
     .case-text {
-      margin-left: 225px;
+      margin-left: 200px;
     }
 
