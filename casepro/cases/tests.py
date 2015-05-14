@@ -623,10 +623,8 @@ class MessageExportCRUDLTest(BaseCasesTest):
         # user from another org can't access this download
         self.login(self.norbert)
 
-        # TODO fix Dash so has_org_perm doesn't throw AttributeError because user doesn't have an org group
-
-        # response = self.url_get('unicef', read_url)
-        # self.assertEqual(response.status_code, 302)
+        response = self.url_get('unicef', read_url)
+        self.assertEqual(response.status_code, 302)
 
 
 class MessageViewsTest(BaseCasesTest):
@@ -857,9 +855,8 @@ class PartnerCRUDLTest(BaseCasesTest):
         # user from different org can't
         self.login(self.user4)
 
-        # TODO fix Dash so has_org_perm doesn't throw AttributeError because user doesn't have an org group
-        # response = self.url_get('unicef', url)
-        # self.assertLoginRedirect(response, 'unicef', url)
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
 
     def test_delete(self):
         url = reverse('cases.partner_delete', args=[self.moh.pk])
