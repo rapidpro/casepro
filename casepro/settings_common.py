@@ -289,7 +289,7 @@ PERMISSIONS = {
           'delete',  # can delete an object,
           'list'),   # can view a list of the objects
 
-    'orgs.org': ('create', 'update', 'list', 'edit', 'home'),
+    'orgs.org': ('create', 'update', 'list', 'edit', 'home', 'inbox'),
 
     'cases.case': ('create', 'read', 'update', 'list'),
 
@@ -310,6 +310,7 @@ GROUP_PERMISSIONS = {
     "Administrators": (
         'orgs.org_home',
         'orgs.org_edit',
+        'orgs.org_inbox',
 
         'cases.case.*',
         'cases.group.*',
@@ -319,6 +320,7 @@ GROUP_PERMISSIONS = {
         'profiles.profile.*',
     ),
     "Editors": (
+        'orgs.org_inbox',
         'cases.case_create',
         'cases.case_read',
         'cases.case_update',
@@ -331,6 +333,7 @@ GROUP_PERMISSIONS = {
         'profiles.profile_user_read',
     ),
     "Viewers": (
+        'orgs.org_inbox',
         'cases.case_create',
         'cases.case_read',
         'cases.case_update',

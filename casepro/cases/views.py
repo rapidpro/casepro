@@ -443,8 +443,7 @@ class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
     """
     JSON endpoint for fetching messages
     """
-    def has_permission(self, request, *args, **kwargs):
-        return request.user.is_authenticated()
+    permission = 'orgs.org_inbox'
 
     def get_context_data(self, **kwargs):
         context = super(MessageSearchView, self).get_context_data(**kwargs)
@@ -481,8 +480,7 @@ class MessageActionView(OrgPermsMixin, View):
     """
     AJAX endpoint for bulk message actions. Takes a list of message ids.
     """
-    def has_permission(self, request, *args, **kwargs):
-        return request.user.is_authenticated()
+    permission = 'orgs.org_inbox'
 
     def post(self, request, *args, **kwargs):
         org = self.request.org
@@ -515,8 +513,7 @@ class MessageLabelView(OrgPermsMixin, View):
     """
     AJAX endpoint for labelling a message.
     """
-    def has_permission(self, request, *args, **kwargs):
-        return request.user.is_authenticated()
+    permission = 'orgs.org_inbox'
 
     def post(self, request, *args, **kwargs):
         org = self.request.org
@@ -533,8 +530,7 @@ class MessageSendView(OrgPermsMixin, View):
     """
     JSON endpoint for message sending. Takes a list of contact UUIDs or URNs
     """
-    def has_permission(self, request, *args, **kwargs):
-        return request.user.is_authenticated()
+    permission = 'orgs.org_inbox'
 
     def post(self, request, *args, **kwargs):
         activity = request.POST['activity']
@@ -553,8 +549,7 @@ class MessageHistoryView(OrgPermsMixin, View):
     """
     JSON endpoint for fetching message history. Takes a message id
     """
-    def has_permission(self, request, *args, **kwargs):
-        return request.user.is_authenticated()
+    permission = 'orgs.org_inbox'
 
     def get(self, request, *args, **kwargs):
         actions = MessageAction.get_by_message(self.request.org, int(kwargs['id'])).order_by('-pk')
@@ -680,8 +675,7 @@ class BaseHomeView(OrgPermsMixin, SmartTemplateView):
     """
     Mixin to add site metadata to the context in JSON format which can then used
     """
-    def has_permission(self, request, *args, **kwargs):
-        return request.user.is_authenticated()
+    permission = 'orgs.org_inbox'
 
     def get_context_data(self, **kwargs):
         context = super(BaseHomeView, self).get_context_data(**kwargs)

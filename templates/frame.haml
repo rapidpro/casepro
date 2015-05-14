@@ -103,7 +103,7 @@
                         %a{ href:"{% url 'profiles.user_list' %}" }
                           - trans "Users"
 
-              - if request.user and request.user.is_authenticated
+              - if org_perms.orgs.org_inbox
                 %li
                   %a{ href:"{% url 'cases.inbox' %}" }
                     - trans "Inbox"
