@@ -14,7 +14,7 @@ from casepro.orgs_ext import TaskType
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
 from . import safe_max, match_keywords, truncate, contact_as_json
-from .models import Case, CaseAction, CaseEvent, Label, Message, MessageAction, MessageExport, Partner, Outgoing
+from .models import AccessLevel, Case, CaseAction, CaseEvent, Label, Message, MessageAction, MessageExport, Partner, Outgoing
 from .tasks import process_new_unsolicited
 
 
@@ -60,14 +60,10 @@ class CaseTest(BaseCasesTest):
         # check that opening the case fetched the messages and archived them
         mock_archive_messages.assert_called_once_with(messages=[123, 234])
 
-        self.assertTrue(case.accessible_by(self.user1, update=False))  # user who opened it can view and update
-        self.assertTrue(case.accessible_by(self.user1, update=True))
-        self.assertTrue(case.accessible_by(self.user2, update=False))  # user from same org can also view and update
-        self.assertTrue(case.accessible_by(self.user2, update=True))
-        self.assertTrue(case.accessible_by(self.user3, update=False))  # user from different partner with label access
-        self.assertFalse(case.accessible_by(self.user3, update=True))
-        self.assertFalse(case.accessible_by(self.user4, update=False))  # user from different org
-        self.assertFalse(case.accessible_by(self.user4, update=False))
+        self.assertEqual(case.access_level(self.user1), AccessLevel.update)  # user who opened it can view and update
+        self.assertEqual(case.access_level(self.user2), AccessLevel.update)  # user from same org can do likewise
+        self.assertEqual(case.access_level(self.user3), AccessLevel.read)  # user from other partner can read bc labels
+        self.assertEqual(case.access_level(self.user4), AccessLevel.none)  # user from different org
 
         # TODO test user sends a reply
 
@@ -90,7 +86,8 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(actions[1].created_on, d2)
         self.assertEqual(actions[1].note, "Interesting")
 
-        # user from other partner org can't close case
+        # user from other partner org can't re-assign or close case
+        self.assertRaises(PermissionDenied, case.reassign, self.user3)
         self.assertRaises(PermissionDenied, case.close, self.user3)
 
         with patch.object(timezone, 'now', return_value=d3):

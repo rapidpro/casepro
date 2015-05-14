@@ -25,12 +25,12 @@
           .btn-group
             %button.btn.btn-default{ type:"button", ng-if:"!case.is_closed", ng-click:"onAddNote()" }
               - trans "Add Note"
-            - if org_perms.cases.case_update
+            - if can_update
               %button.btn.btn-default{ type:"button", ng-if:"!case.is_closed", ng-click:"onReassign()" }
                 - trans "Re-assign"
               %button.btn.btn-default{ type:"button", ng-if:"!case.is_closed", ng-click:"onClose()" }
                 - trans "Close"
-              %button.btn.btn-default{ type:"button", ng-if:"case.is_closed && contact", ng-click:"onReopen()" }
+              %button.btn.btn-default{ type:"button", ng-if:"case.is_closed && case.contact", ng-click:"onReopen()" }
                 - trans "Re-open"
 
       %ul.header-details
@@ -124,9 +124,10 @@
       .col-md-4
         .panel.panel-default
           .panel-heading
-            .pull-away
-              %a{ href:"#", ng-click:"onEditSummary()", style:"color: #AAA" }
-                %span.glyphicon.glyphicon-edit
+            - if can_update
+              .pull-away
+                %a{ href:"#", ng-click:"onEditSummary()", style:"color: #AAA" }
+                  %span.glyphicon.glyphicon-edit
             - trans "Summary"
           .panel-body
             [[ case.summary ]]

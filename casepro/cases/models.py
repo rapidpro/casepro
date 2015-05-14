@@ -17,9 +17,19 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
+from enum import IntEnum
 from temba.base import TembaNoSuchObjectError
 from casepro.email import send_email
 from . import parse_csv, contact_as_json, match_keywords, SYSTEM_LABEL_FLAGGED
+
+
+class AccessLevel(IntEnum):
+    """
+    Case access level
+    """
+    none = 0
+    read = 1
+    update = 2
 
 
 class Group(models.Model):
@@ -292,16 +302,18 @@ class Label(models.Model):
 
 class case_action(object):
     """
-    Helper decorator for cae action methods that should check the user is allowed to update the case
+    Helper decorator for case action methods that should check the user is allowed to update the case
     """
     def __init__(self, require_update=True):
         self.require_update = require_update
 
     def __call__(self, func):
         def wrapped(case, user, *args, **kwargs):
-            if not case.accessible_by(user, update=self.require_update):
+            access = case.access_level(user)
+            if (access == AccessLevel.update) or (not self.require_update and access == AccessLevel.read):
+                func(case, user, *args, **kwargs)
+            else:
                 raise PermissionDenied()
-            func(case, user, *args, **kwargs)
         return wrapped
 
 
@@ -450,7 +462,7 @@ class Case(models.Model):
         for label in rem_labels:
             self.unlabel(user, label)
 
-    def accessible_by(self, user, update=False):
+    def access_level(self, user):
         """
         A user can view a case if one of these conditions is met:
             1) they are an administrator for the case org
@@ -459,13 +471,12 @@ class Case(models.Model):
 
         They can additionally update the case if 1) or 2) is true
         """
-        if user.is_admin_for(self.org):
-            return True
-
-        if user.profile.partner == self.assignee:
-            return True
-
-        return not update and intersection(self.get_labels(), user.profile.partner.get_labels())
+        if user.is_admin_for(self.org) or user.profile.partner == self.assignee:
+            return AccessLevel.update
+        elif intersection(self.get_labels(), user.profile.partner.get_labels()):
+            return AccessLevel.read
+        else:
+            return AccessLevel.none
 
     def _fetch_contact(self):
         try:

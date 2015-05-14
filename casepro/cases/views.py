@@ -15,7 +15,7 @@ from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, Sma
 from smartmin.users.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba.utils import parse_iso8601
 from . import parse_csv, json_encode, safe_max, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED, LABEL_KEYWORD_MIN_LENGTH
-from .models import Case, Group, Label, Message, MessageAction, MessageExport, Partner, Outgoing
+from .models import AccessLevel, Case, Group, Label, Message, MessageAction, MessageExport, Partner, Outgoing
 from .tasks import message_export
 
 
@@ -37,7 +37,7 @@ class CaseCRUDL(SmartCRUDL):
 
         def has_permission(self, request, *args, **kwargs):
             has_perm = super(CaseCRUDL.Read, self).has_permission(request, *args, **kwargs)
-            return has_perm and self.get_object().accessible_by(self.request.user)
+            return has_perm and self.get_object().access_level(self.request.user) >= AccessLevel.read
 
         def derive_queryset(self, **kwargs):
             return Case.get_all(self.request.org).select_related('org', 'assignee')
@@ -49,6 +49,8 @@ class CaseCRUDL(SmartCRUDL):
             labels = Label.get_all(self.request.org).order_by('name')
             partners = Partner.get_all(org).order_by('name')
 
+            can_update = self.get_object().access_level(self.request.user) == AccessLevel.update
+
             # angular app requires context data in JSON format
             context['context_data_json'] = json_encode({
                 'case': self.object.as_json(fetch_contact=True),
@@ -57,6 +59,7 @@ class CaseCRUDL(SmartCRUDL):
             })
 
             context['max_msg_chars'] = MAX_MESSAGE_CHARS
+            context['can_update'] = can_update
             return context
 
     class Open(OrgPermsMixin, SmartCreateView):
