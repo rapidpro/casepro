@@ -42,7 +42,7 @@ class BaseCasesTest(DashTest):
                                       ['java', 'python', 'go'], [self.klab])
 
     def create_partner(self, org, name):
-        return Partner.create(org, name)
+        return Partner.create(org, name, None)
 
     def create_label(self, org, name, description, words, partners):
         return Label.create(org, name, description, words, partners)

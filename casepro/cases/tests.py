@@ -469,6 +469,10 @@ class LabelTest(BaseCasesTest):
         self.assertEqual(set(Label.get_all(self.unicef, self.user1)), {self.aids, self.pregnancy})  # MOH user
         self.assertEqual(set(Label.get_all(self.unicef, self.user3)), {self.aids})  # WHO user
 
+    def test_release(self):
+        self.aids.release()
+        self.assertFalse(self.aids.is_active)
+
 
 class LabelCRUDLTest(BaseCasesTest):
     def test_create(self):
@@ -817,7 +821,7 @@ class OutgoingTest(BaseCasesTest):
 
 class PartnerTest(BaseCasesTest):
     def test_create(self):
-        wfp = Partner.create(self.unicef, "WFP")
+        wfp = Partner.create(self.unicef, "WFP", None)
         self.assertEqual(wfp.org, self.unicef)
         self.assertEqual(wfp.name, "WFP")
         self.assertEqual(unicode(wfp), "WFP")
@@ -835,6 +839,45 @@ class PartnerTest(BaseCasesTest):
         self.code.partners.add(wfp)
 
         self.assertEqual(set(wfp.get_labels()), {self.aids, self.code})
+
+    def test_release(self):
+        self.who.release()
+        self.assertFalse(self.who.is_active)
+
+
+class PartnerCRUDLTest(BaseCasesTest):
+    def test_delete(self):
+        url = reverse('cases.partner_delete', args=[self.moh.pk])
+
+        # try first as manager (not allowed)
+        self.login(self.user1)
+
+        response = self.url_post('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        self.assertTrue(Partner.objects.get(pk=self.moh.pk).is_active)
+
+        # try again as administrator
+        self.login(self.admin)
+
+        response = self.url_post('unicef', url)
+        self.assertEqual(response.status_code, 204)
+
+        self.assertFalse(Partner.objects.get(pk=self.moh.pk).is_active)
+
+    def test_list(self):
+        url = reverse('cases.partner_list')
+
+        # try again as regular user
+        self.login(self.user2)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+        partners = list(response.context['object_list'])
+        self.assertEqual(len(partners), 2)
+        self.assertEqual(partners[0].name, "MOH")
+        self.assertEqual(partners[1].name, "WHO")
 
 
 class TasksTest(BaseCasesTest):

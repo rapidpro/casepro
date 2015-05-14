@@ -299,7 +299,7 @@ PERMISSIONS = {
 
     'cases.label': ('create', 'update', 'list'),
 
-    'cases.partner': ('create', 'read', 'list'),
+    'cases.partner': ('create', 'read', 'delete', 'list'),
 
     # can't create profiles.user.* permissions because we don't own User
     'profiles.profile': ('user_create', 'user_read', 'user_list'),
@@ -325,6 +325,7 @@ GROUP_PERMISSIONS = {
         'cases.case_list',
         'cases.messageexport_create',
         'cases.messageexport_read',
+        'cases.partner_list',
         'cases.partner_read',
         'profiles.profile_user_create',
         'profiles.profile_user_read',
@@ -336,6 +337,7 @@ GROUP_PERMISSIONS = {
         'cases.case_list',
         'cases.messageexport_create',
         'cases.messageexport_read',
+        'cases.partner_list',
         'cases.partner_read',
         'profiles.profile_user_read',
     ),

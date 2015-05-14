@@ -419,9 +419,27 @@ services.factory 'CaseService', ['$http', ($http) ->
 
 
 #=====================================================================
+# Partner service
+#=====================================================================
+services.factory 'PartnerService', ['$http', ($http) ->
+  new class PartnerService
+
+    #----------------------------------------------------------------------------
+    # Delete partner
+    #----------------------------------------------------------------------------
+    deletePartner: (partner, callback) ->
+      data = new FormData()
+      data.append('partner', partner.id)
+      $http.post('/partner/delete/', data, DEFAULT_POST_OPTS)
+      .success () ->
+        if callback
+          callback()
+]
+
+
+#=====================================================================
 # Utils service
 #=====================================================================
-
 services.factory 'UtilsService', ['$window', '$modal', ($window, $modal) ->
   new class UtilsService
 

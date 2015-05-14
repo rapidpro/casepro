@@ -174,7 +174,6 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
 #============================================================================
 # Messages controller
 #============================================================================
-
 controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '$controller', 'MessageService', 'CaseService', 'UtilsService', ($scope, $timeout, $modal, $controller, MessageService, CaseService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
@@ -333,7 +332,6 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
 #============================================================================
 # Cases listing controller
 #============================================================================
-
 controllers.controller('CasesController', [ '$scope', '$timeout', '$controller', 'CaseService', 'UtilsService', ($scope, $timeout, $controller, CaseService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
@@ -387,7 +385,6 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
 #============================================================================
 # Case view controller
 #============================================================================
-
 controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'CaseService', 'MessageService', 'UtilsService', ($scope, $window, $timeout, CaseService, MessageService, UtilsService) ->
 
   $scope.case = $window.contextData.case
@@ -475,7 +472,6 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
 #============================================================================
 # Case timeline controller
 #============================================================================
-
 controllers.controller 'CaseTimelineController', [ '$scope', '$timeout', 'CaseService', ($scope, $timeout, CaseService) ->
 
   $scope.timeline = []
@@ -497,6 +493,22 @@ controllers.controller 'CaseTimelineController', [ '$scope', '$timeout', 'CaseSe
 
       if repeat
         $timeout((() -> $scope.refreshItems(true)), INTERVAL_CASE_TIMELINE)
+    )
+]
+
+
+#============================================================================
+# Partner view controller
+#============================================================================
+controllers.controller 'PartnerController', [ '$scope', '$window', 'UtilsService', 'PartnerService', ($scope, $window, UtilsService, PartnerService) ->
+
+  $scope.partner = $window.contextData.partner
+
+  $scope.onDeletePartner = () ->
+    UtilsService.confirmModal("Remove this partner organization", 'danger', () ->
+      PartnerService.deletePartner($scope.partner, () ->
+        UtilsService.navigate('/partner/')
+      )
     )
 ]
 

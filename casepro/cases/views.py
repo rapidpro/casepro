@@ -623,7 +623,7 @@ class PartnerFormMixin(object):
 
 
 class PartnerCRUDL(SmartCRUDL):
-    actions = ('create', 'read', 'update', 'list')
+    actions = ('create', 'read', 'update', 'delete', 'list')
     model = Partner
 
     class Create(OrgPermsMixin, PartnerFormMixin, SmartCreateView):
@@ -643,11 +643,25 @@ class PartnerCRUDL(SmartCRUDL):
     class Read(OrgObjPermsMixin, SmartReadView):
         def get_context_data(self, **kwargs):
             context = super(PartnerCRUDL.Read, self).get_context_data(**kwargs)
+
+            # angular app requires context data in JSON format
+            context['context_data_json'] = json_encode({
+                'partner': self.object.as_json(),
+            })
+
             context['can_manage'] = self.request.user.can_manage(self.object)
             context['labels'] = self.object.get_labels()
             context['managers'] = self.object.get_managers()
             context['analysts'] = self.object.get_analysts()
             return context
+
+    class Delete(OrgObjPermsMixin, SmartDeleteView):
+        cancel_url = '@cases.partner_list'
+
+        def post(self, request, *args, **kwargs):
+            partner = self.get_object()
+            partner.release()
+            return HttpResponse(status=204)
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'labels')

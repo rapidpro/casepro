@@ -231,6 +231,10 @@ class Partner(models.Model):
     def get_analysts(self):
         return self.get_users().filter(org_viewers=self.org_id)
 
+    def release(self):
+        self.is_active = False
+        self.save(update_fields=('is_active',))
+
     def as_json(self):
         return {'id': self.pk, 'name': self.name}
 
