@@ -502,6 +502,9 @@ controllers.controller 'PartnerController', [ '$scope', '$window', 'UtilsService
 
   $scope.partner = $window.contextData.partner
 
+  $scope.onClickUser = (userId) ->
+    UtilsService.navigate('/user/read/' + userId + '/')
+
   $scope.onDeletePartner = () ->
     UtilsService.confirmModal("Remove this partner organization?", 'danger', () ->
       PartnerService.deletePartner($scope.partner, () ->

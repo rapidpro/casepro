@@ -12,69 +12,77 @@
 
   .ng-cloak{ ng-controller:"PartnerController", ng-cloak:"" }
     .page-header.clearfix
-      .page-header-buttons
-        - if org_perms.cases.partner_delete
-          %a.btn.btn-default{ href:"{% url 'profiles.user_create_in' object.pk %}" }
-            - trans "New User"
-        - if can_manage
-          .btn-group
-            %a.btn.btn-default{ href:"{% url 'cases.partner_update' object.pk %}", tooltip:"Edit" }
-              %span.glyphicon.glyphicon-pencil
-            %a.btn.btn-default{ ng-click:"onDeletePartner()", tooltip:"Delete" }
-              %span.glyphicon.glyphicon-trash
+      .clearfix
+        .page-header-buttons
+          - if org_perms.cases.partner_delete
+            %a.btn.btn-default{ href:"{% url 'profiles.user_create_in' object.pk %}" }
+              - trans "New User"
+          - if can_manage
+            .btn-group
+              %a.btn.btn-default{ href:"{% url 'cases.partner_update' object.pk %}", tooltip:"Edit" }
+                %span.glyphicon.glyphicon-pencil
+              %a.btn.btn-default{ ng-click:"onDeletePartner()", tooltip:"Delete" }
+                %span.glyphicon.glyphicon-trash
 
-      - if object.logo
-        .partner-logo.pull-back
-          {% thumbnail object.logo "200x80" format="PNG" as im %}
-          %img.logo{ src:"{{ im.url }}", alt:"{{ partner.name }}"}
-          {% endthumbnail %}
-      %h2
-        {{ title }}
+        - if object.logo
+          .partner-logo.pull-back
+            {% thumbnail object.logo "200x80" format="PNG" as im %}
+            %img.logo{ src:"{{ im.url }}", alt:"{{ partner.name }}"}
+            {% endthumbnail %}
+        - else
+          %h2
+            {{ object.name }}
+
+      %ul.header-details
+        - if object.logo
+          %li
+            %strong><
+              - trans "Name"
+            :
+            {{ object.name }}
+        %li
+          %strong><
+            - trans "Labels"
+          :
+          - if partner.get_labels
+            - for label in partner.get_labels
+              %span.label-container
+                %span.label.label-success
+                  {{ label.name }}
+                &nbsp;
+          - else
+            %i
+              - trans "None"
 
     .row
-      .col-md-8
+      .col-md-6
         .partner-user-section
           %h3
             - trans "Managers"
           - for user in managers
-            .partner-user.stackitem
+            .partner-user.stackitem.hoverable{ ng-click:"onClickUser({{ user.pk }})" }
               .partner-user-name
                 %span.glyphicon.glyphicon-user
-                %a{ href:"{% url 'profiles.user_read' user.pk %}" }
-                  {{ user.profile.full_name }}
+                {{ user.profile.full_name }}
               .partner-user-email
                 {{ user.email }}
           - if not managers
             .none
               - trans "None"
-
+      .col-md-6
         .partner-user-section
           %h3
             - trans "Data Analysts"
           - for user in analysts
-            .partner-user.stackitem
+            .partner-user.stackitem.hoverable{ ng-click:"onClickUser({{ user.pk }})" }
               .partner-user-name
                 %span.glyphicon.glyphicon-user
-                %a{ href:"{% url 'profiles.user_read' user.pk %}" }
-                  {{ user.profile.full_name }}
+                {{ user.profile.full_name }}
               .partner-user-email
                 {{ user.email }}
           - if not analysts
             .none
               - trans "None"
-
-      .col-md-4
-        %h3
-          - trans "Labels"
-        - if labels
-          - for label in labels
-            .partner-label
-              %span.glyphicon.glyphicon-tag
-              %a{ href:"{% url 'cases.inbox' %}#?label={{ label.name }}" }
-                {{ label.name }}
-        - else
-          %span.none
-            - trans "None"
 
 - block extra-style
   {{ block.super }}
