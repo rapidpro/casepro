@@ -65,7 +65,7 @@ modals.controller 'NewCaseModalController', [ '$scope', '$modalInstance', 'messa
   $scope.partners = partners
   $scope.assignee = if partners then partners[0] else null
 
-  $scope.ok = () -> $modalInstance.close($scope.summary, $scope.assignee)
+  $scope.ok = () -> $modalInstance.close({summary: $scope.summary, assignee: $scope.assignee})
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
 

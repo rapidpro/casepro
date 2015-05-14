@@ -311,8 +311,8 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     partners = if $scope.user.partner then null else $scope.partners
     resolve = {message: (() -> message), partners: (() -> partners)}
     $modal.open({templateUrl: 'newCaseModal.html', controller: 'NewCaseModalController', resolve: resolve})
-    .result.then (summary, assignee) ->
-      CaseService.openCase(message, summary, assignee, (_case) ->
+    .result.then (result) ->
+      CaseService.openCase(message, result.summary, result.assignee, (_case) ->
           UtilsService.navigate('/case/read/' + _case.id + '/')
       )
 
