@@ -846,6 +846,21 @@ class PartnerTest(BaseCasesTest):
 
 
 class PartnerCRUDLTest(BaseCasesTest):
+    def test_read(self):
+        url = reverse('cases.partner_read', args=[self.moh.pk])
+
+        # user from different partner but same org can see it
+        self.login(self.user3)
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+        # user from different org can't
+        self.login(self.user4)
+
+        # TODO fix Dash so has_org_perm doesn't throw AttributeError because user doesn't have an org group
+        # response = self.url_get('unicef', url)
+        # self.assertLoginRedirect(response, 'unicef', url)
+
     def test_delete(self):
         url = reverse('cases.partner_delete', args=[self.moh.pk])
 

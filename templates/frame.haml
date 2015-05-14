@@ -71,13 +71,13 @@
                     %b.caret
                   %ul.dropdown-menu
                     %li
-                      %a{href:"{% url 'orgs_ext.org_list' %}"}
+                      %a{ href:"{% url 'orgs_ext.org_list' %}" }
                         - trans "Orgs"
                     %li
                       %a{ href:"{% url 'profiles.user_list' %}" }
                         - trans "Users"
 
-              -if org_perms.orgs.org_home or org_perms.cases.partner_list or org_perms.cases.label_list or org_perms.cases.group_list or org_perms.profiles.profile_user_list
+              - if org_perms.orgs.org_home or org_perms.cases.label_list or org_perms.cases.group_list or org_perms.profiles.profile_user_list
                 %li.dropdown
                   %a.dropdown-toggle{href:"#", data-toggle:"dropdown"}
                     - trans "Administration"
@@ -87,11 +87,6 @@
                       %li
                         %a{ href:"{% url 'orgs_ext.org_home' %}" }
                           - trans "Organization"
-
-                    - if org_perms.cases.partner_list
-                      %li
-                        %a{ href:"{% url 'cases.partner_list' %}" }
-                          - trans "Partners"
 
                     - if org_perms.cases.label_list
                       %li
@@ -107,6 +102,16 @@
                       %li
                         %a{ href:"{% url 'profiles.user_list' %}" }
                           - trans "Users"
+
+              - if request.user and request.user.is_authenticated
+                %li
+                  %a{ href:"{% url 'cases.inbox' %}" }
+                    - trans "Inbox"
+
+              - if org_perms.cases.partner_list
+                %li
+                  %a{ href:"{% url 'cases.partner_list' %}" }
+                    - trans "Partners"
 
             %ul.nav.navbar-nav.navbar-right
               - block login

@@ -382,7 +382,7 @@ CELERY_RESULT_BACKEND = BROKER_URL
 CELERYBEAT_SCHEDULE = {
     'process-new-unsolicited': {
         'task': 'casepro.cases.tasks.process_new_unsolicited',
-        'schedule': datetime.timedelta(minutes=3),  # TODO reduce frequency for production
+        'schedule': datetime.timedelta(minutes=10),  # TODO reduce this when we've made the messages endpoint faster
         'args': ()
     },
 }

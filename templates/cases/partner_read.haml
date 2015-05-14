@@ -25,7 +25,7 @@
 
       - if object.logo
         .partner-logo.pull-back
-          {% thumbnail object.logo "x80" format="PNG" as im %}
+          {% thumbnail object.logo "200x80" format="PNG" as im %}
           %img.logo{ src:"{{ im.url }}", alt:"{{ partner.name }}"}
           {% endthumbnail %}
       %h2
@@ -80,7 +80,7 @@
   {{ block.super }}
   :css
     .partner-logo {
-      padding: 8px 10px 0 0
+      padding: 15px 20px 0 0
     }
     .partner-user, .partner-label {
       margin-left: 1em

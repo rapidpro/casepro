@@ -1,10 +1,51 @@
 - extends "smartmin/list.html"
-- load smartmin i18n
+- load smartmin i18n thumbnail
 
-- block table-controls
-  .clearfix
-    .pull-away.buttons
+- block pre-content
+
+- block content
+
+  .page-header.clearfix
+    .page-header-buttons
       - if org_perms.cases.partner_create
         %a.btn.btn-default{ href:"{% url 'cases.partner_create' %}" }
           %span.glyphicon.glyphicon-plus
           - trans "Add"
+    %h2
+      - trans "Partners"
+
+  .partners
+    - for partner in object_list
+      .stackitem.clearfix
+        - if partner.logo
+          .partner-logo.pull-away
+            {% thumbnail partner.logo "200x80" format="PNG" as im %}
+            %img.logo{ src:"{{ im.url }}", alt:"{{ partner.name }}"}
+            {% endthumbnail %}
+
+        .partner-name
+          %a{ href:"{% url 'cases.partner_read' partner.pk %}" }
+            {{ partner.name }}
+        .
+          - for label in partner.get_labels
+            %span.label-container
+              %span.label.label-success
+                {{ label.name }}
+              &nbsp;
+
+- block extra-style
+  {{ block.super }}
+  :css
+    .partners .stackitem {
+      padding: 8px 0 8px 0;
+    }
+    .partners .stackitem:first-of-type {
+      border-top: none;
+    }
+    .partners .stackitem:last-of-type {
+      border-bottom: none;
+    }
+    .partner-name {
+      font-size: 18px;
+      padding-bottom: 4px;
+    }

@@ -641,6 +641,9 @@ class PartnerCRUDL(SmartCRUDL):
             return request.user.can_manage(self.get_object())
 
     class Read(OrgObjPermsMixin, SmartReadView):
+        def get_queryset(self):
+            return Partner.get_all(self.request.org)
+
         def get_context_data(self, **kwargs):
             context = super(PartnerCRUDL.Read, self).get_context_data(**kwargs)
 
@@ -664,16 +667,13 @@ class PartnerCRUDL(SmartCRUDL):
             return HttpResponse(status=204)
 
     class List(OrgPermsMixin, SmartListView):
-        fields = ('name', 'labels')
         default_order = ('name',)
+        paginate_by = None
 
         def derive_queryset(self, **kwargs):
             qs = super(PartnerCRUDL.List, self).derive_queryset(**kwargs)
             qs = qs.filter(org=self.request.org)
             return qs
-
-        def get_labels(self, obj):
-            return ", ".join([l.name for l in obj.get_labels()])
 
 
 class BaseHomeView(OrgPermsMixin, SmartTemplateView):
