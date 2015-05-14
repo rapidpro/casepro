@@ -16,7 +16,7 @@
 
   .partners
     - for partner in object_list
-      .stackitem.clearfix
+      .stackitem.clearfix.clickable.hoverable{ onclick:'location.href="/partner/read/{{ partner.pk }}/"' }
         - if partner.logo
           .partner-logo.pull-away
             {% thumbnail partner.logo "200x80" format="PNG" as im %}
@@ -24,8 +24,7 @@
             {% endthumbnail %}
 
         .partner-name
-          %a{ href:"{% url 'cases.partner_read' partner.pk %}" }
-            {{ partner.name }}
+          {{ partner.name }}
         .
           - for label in partner.get_labels
             %span.label-container
@@ -47,5 +46,6 @@
     }
     .partner-name {
       font-size: 18px;
+      font-weight: bold;
       padding-bottom: 4px;
     }

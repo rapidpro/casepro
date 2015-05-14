@@ -135,7 +135,7 @@
           .panel-heading
             - trans "Contact"
             %strong
-              \#[[ case.contact.uuid | limitTo:6 | uppercase ]]
+              [[ case.contact.uuid | limitTo:6 | uppercase ]]
           .panel-body
             .contact-details
               .none{ ng-if:"!case.contact.fields" }
