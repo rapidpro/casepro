@@ -503,7 +503,7 @@ controllers.controller 'PartnerController', [ '$scope', '$window', 'UtilsService
   $scope.partner = $window.contextData.partner
 
   $scope.onDeletePartner = () ->
-    UtilsService.confirmModal("Remove this partner organization", 'danger', () ->
+    UtilsService.confirmModal("Remove this partner organization?", 'danger', () ->
       PartnerService.deletePartner($scope.partner, () ->
         UtilsService.navigate('/partner/')
       )

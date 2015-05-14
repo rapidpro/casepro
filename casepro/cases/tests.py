@@ -2,6 +2,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from datetime import date, datetime
+from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
@@ -838,6 +839,8 @@ class PartnerTest(BaseCasesTest):
     def test_release(self):
         self.who.release()
         self.assertFalse(self.who.is_active)
+
+        self.assertIsNone(User.objects.get(pk=self.user3.pk).get_partner())  # user will have been detached
 
 
 class PartnerCRUDLTest(BaseCasesTest):

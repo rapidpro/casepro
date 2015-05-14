@@ -426,9 +426,7 @@ services.factory 'PartnerService', ['$http', ($http) ->
     # Delete partner
     #----------------------------------------------------------------------------
     deletePartner: (partner, callback) ->
-      data = new FormData()
-      data.append('partner', partner.id)
-      $http.post('/partner/delete/', data, DEFAULT_POST_OPTS)
+      $http.post('/partner/delete/' + partner.id + '/', {}, DEFAULT_POST_OPTS)
       .success () ->
         if callback
           callback()

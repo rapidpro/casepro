@@ -662,13 +662,10 @@ class PartnerCRUDL(SmartCRUDL):
             return HttpResponse(status=204)
 
     class List(OrgPermsMixin, SmartListView):
-        default_order = ('name',)
         paginate_by = None
 
-        def derive_queryset(self, **kwargs):
-            qs = super(PartnerCRUDL.List, self).derive_queryset(**kwargs)
-            qs = qs.filter(org=self.request.org)
-            return qs
+        def get_queryset(self, **kwargs):
+            return Partner.get_all(self.request.org).order_by('name')
 
 
 class BaseHomeView(OrgPermsMixin, SmartTemplateView):

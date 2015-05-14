@@ -10,7 +10,7 @@ from django.db.models import Q
 from django.http import Http404
 from smartmin.users.views import SmartCRUDL, SmartCreateView, SmartListView, SmartReadView, SmartUpdateView
 from casepro.cases.models import Partner
-from casepro.profiles import ROLE_ANALYST, ROLE_CHOICES
+from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER, ROLE_CHOICES
 
 
 class UserForm(forms.ModelForm):
@@ -74,8 +74,11 @@ class UserFormMixin(object):
     def derive_initial(self):
         initial = super(UserFormMixin, self).derive_initial()
         if self.object:
+            is_manager = self.object in self.request.org.get_org_editors()
+
             initial['full_name'] = self.object.profile.full_name
             initial['partner'] = self.object.profile.partner
+            initial['role'] = ROLE_MANAGER if is_manager else ROLE_ANALYST
         return initial
 
     def post_save(self, obj):
@@ -85,10 +88,13 @@ class UserFormMixin(object):
 
         obj.profile.full_name = data['full_name']
 
-        if user.is_admin_for(self.request.org):  # only admins can update a user's partner
+        if 'partner' in data and user.is_admin_for(self.request.org):  # only admins can update a user's partner
             obj.profile.partner = data['partner']
 
         obj.profile.save()
+
+        if 'role' in data:
+            obj.update_role(self.request.org, data['role'])
 
         password = data.get('new_password', None) or data.get('password', None)
         if password:

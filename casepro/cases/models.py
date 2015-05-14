@@ -242,6 +242,9 @@ class Partner(models.Model):
         return self.get_users().filter(org_viewers=self.org_id)
 
     def release(self):
+        # detach all users
+        self.user_profiles.update(partner=None)
+
         self.is_active = False
         self.save(update_fields=('is_active',))
 
@@ -473,7 +476,7 @@ class Case(models.Model):
         """
         if user.is_admin_for(self.org) or user.profile.partner == self.assignee:
             return AccessLevel.update
-        elif intersection(self.get_labels(), user.profile.partner.get_labels()):
+        elif user.profile.partner and intersection(self.get_labels(), user.profile.partner.get_labels()):
             return AccessLevel.read
         else:
             return AccessLevel.none

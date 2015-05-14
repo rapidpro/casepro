@@ -25,6 +25,17 @@ class UserPatchTest(BaseCasesTest):
         user.set_org(self.unicef)
         self.assertEqual(user.get_org_group(), Group.objects.get(name="Editors"))
 
+    def test_update_role(self):
+        self.user1.update_role(self.unicef, ROLE_ANALYST)
+        self.assertTrue(self.user1 in self.unicef.viewers.all())
+        self.assertTrue(self.user1 not in self.unicef.editors.all())
+        self.assertTrue(self.user1 not in self.unicef.administrators.all())
+
+        self.user2.update_role(self.unicef, ROLE_MANAGER)
+        self.assertTrue(self.user2 not in self.unicef.viewers.all())
+        self.assertTrue(self.user2 in self.unicef.editors.all())
+        self.assertTrue(self.user2 not in self.unicef.administrators.all())
+
     def test_has_profile(self):
         self.assertFalse(self.superuser.has_profile())
         self.assertTrue(self.admin.has_profile())

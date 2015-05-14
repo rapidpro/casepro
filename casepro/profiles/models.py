@@ -12,7 +12,7 @@ class Profile(models.Model):
     """
     user = models.OneToOneField(User)
 
-    partner = models.ForeignKey(Partner, null=True)
+    partner = models.ForeignKey(Partner, null=True, related_name='user_profiles')
 
     full_name = models.CharField(verbose_name=_("Full name"), max_length=128, null=True)
 

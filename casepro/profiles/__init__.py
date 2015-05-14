@@ -33,14 +33,20 @@ def _user_create(cls, org, partner, role, full_name, email, password, change_pas
     Profile.objects.create(user=user, partner=partner, full_name=full_name, change_password=change_password)
 
     if org:
-        if role == ROLE_ANALYST:
-            org.viewers.add(user)
-        elif role == ROLE_MANAGER:
-            org.editors.add(user)
-        else:  # pragma: no cover
-            raise ValueError("Invalid user role: %s" % role)
+        user.update_role(org, role)
 
     return user
+
+
+def _user_update_role(user, org, role):
+    if role == ROLE_ANALYST:
+        org.viewers.add(user)
+        org.editors.remove(user)
+    elif role == ROLE_MANAGER:
+        org.viewers.remove(user)
+        org.editors.add(user)
+    else:  # pragma: no cover
+        raise ValueError("Invalid user role: %s" % role)
 
 
 def _user_clean(user):
@@ -118,6 +124,7 @@ def _user_as_json(user):
 
 
 User.create = classmethod(_user_create)
+User.update_role = _user_update_role
 User.clean = _user_clean
 User.has_profile = _user_has_profile
 User.get_full_name = _user_get_full_name

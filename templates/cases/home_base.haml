@@ -48,7 +48,7 @@
             %li{ class:"{% if_url 'cases.inbox' 'active' '' %}" }
               %a{ href:"{% url 'cases.inbox' %}" }
                 - trans "Inbox"
-              %ul.label-menu
+              %ul.label-menu{ ng-if:"labels.length > 0" }
                 %li{ ng-repeat:"label in labels" }
                   %a{ ng-href:"/#?label=[[ label.name ]]", ng-class:'{ strong: label == activeLabel }' }
                     [[ label.name ]]
