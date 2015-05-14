@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('orgs', '0009_auto_20150331_1452'),
+        ('orgs', '0008_org_timezone'),
         ('cases', '0004_auto_20150421_1242'),
     ]
 
