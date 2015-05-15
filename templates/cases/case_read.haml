@@ -12,25 +12,25 @@
 
   .ng-cloak{ ng-controller:"CaseController", ng-init:"init({{ max_msg_chars }})", ng-cloak:"" }
     .page-header
-      .alert.alert-danger{ ng-if:"!case.contact" }
+      .alert.alert-danger{ ng-if:"!caseObj.contact" }
         This case is for a contact who no longer exists in RapidPro
 
       .clearfix
         %h2.pull-back
-          %span.glyphicon{ ng-class:'{ "glyphicon-folder-close": case.is_closed, "glyphicon-folder-open": !case.is_closed }' }
+          %span.glyphicon{ ng-class:'{ "glyphicon-folder-close": caseObj.is_closed, "glyphicon-folder-open": !caseObj.is_closed }' }
           &nbsp;
           Case #{{ object.pk }}
 
         .page-header-buttons
           .btn-group
-            %button.btn.btn-default{ type:"button", ng-if:"!case.is_closed", ng-click:"onAddNote()" }
+            %button.btn.btn-default{ type:"button", ng-if:"!caseObj.is_closed", ng-click:"onAddNote()" }
               - trans "Add Note"
             - if can_update
-              %button.btn.btn-default{ type:"button", ng-if:"!case.is_closed", ng-click:"onReassign()" }
+              %button.btn.btn-default{ type:"button", ng-if:"!caseObj.is_closed", ng-click:"onReassign()" }
                 - trans "Re-assign"
-              %button.btn.btn-default{ type:"button", ng-if:"!case.is_closed", ng-click:"onClose()" }
+              %button.btn.btn-default{ type:"button", ng-if:"!caseObj.is_closed", ng-click:"onClose()" }
                 - trans "Close"
-              %button.btn.btn-default{ type:"button", ng-if:"case.is_closed && case.contact", ng-click:"onReopen()" }
+              %button.btn.btn-default{ type:"button", ng-if:"caseObj.is_closed && caseObj.contact", ng-click:"onReopen()" }
                 - trans "Re-open"
 
       %ul.header-details
@@ -38,18 +38,18 @@
           %strong><
             - trans "Assignee"
           :
-          %a{ ng-href:"/partner/read/[[ case.assignee.id ]]/" }
-            [[ case.assignee.name ]]
+          %a{ ng-href:"/partner/read/[[ caseObj.assignee.id ]]/" }
+            [[ caseObj.assignee.name ]]
         %li
           %strong><
             - trans "Status"
           :
-          [[ case.is_closed ? "Closed" : "Open" ]]
+          [[ caseObj.is_closed ? "Closed" : "Open" ]]
         %li
           %strong><
             - trans "Labels"
           :
-          %span.label-container{ ng-repeat:"label in case.labels" }
+          %span.label-container{ ng-repeat:"label in caseObj.labels" }
             %span.label.label-success
               [[ label.name ]]
             &nbsp;
@@ -59,7 +59,7 @@
 
     .row
       .col-md-8
-        %form.sendform{ ng-if:"!case.is_closed" }
+        %form.sendform{ ng-if:"!caseObj.is_closed" }
           // TODO maxlength not working
           %textarea.form-control{ type:"text", autocomplete:"off", placeholder:"Enter message", ng-maxlength:"{{ maxMsgChars }}", ng-model:"$parent.newMessage", ng-disabled:"sending", ng-change:"onNewMessageChanged()", ng-trim:"false" }
           .sendform-controls.clearfix
@@ -130,18 +130,18 @@
                   %span.glyphicon.glyphicon-edit
             - trans "Summary"
           .panel-body
-            [[ case.summary ]]
+            [[ caseObj.summary ]]
 
-        .panel.panel-default{ ng-if:"case.contact" }
+        .panel.panel-default{ ng-if:"caseObj.contact" }
           .panel-heading
             - trans "Contact"
             %strong
-              [[ case.contact.uuid | limitTo:6 | uppercase ]]
+              [[ caseObj.contact.uuid | limitTo:6 | uppercase ]]
           .panel-body
             .contact-details
-              .none{ ng-if:"!case.contact.fields" }
+              .none{ ng-if:"!caseObj.contact.fields" }
                 No fields configured
-              .contact-field{ ng-repeat:"(key, val) in case.contact.fields" }
+              .contact-field{ ng-repeat:"(key, val) in caseObj.contact.fields" }
                 %strong><
                   [[ key ]]
                 : [[ val ]]
@@ -203,8 +203,8 @@
     .timeline-event .event-time {
       float: right;
       font-size: 0.7em;
-      margin-left: 3px;
-      margin-bottom: 3px;
+      margin-left: 5px;
+      margin-bottom: 5px;
     }
     .timeline-event .action-note {
       padding: 0.5em 0 0 2em;

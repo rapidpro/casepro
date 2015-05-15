@@ -156,8 +156,8 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     # Reply to a contact in a case
     #----------------------------------------------------------------------------
-    replyInCase: (text, _case, callback) ->
-      @_messagesSend('C', text, [], [_case.contact.uuid], _case, callback)
+    replyInCase: (text, caseObj, callback) ->
+      @_messagesSend('C', text, [], [caseObj.contact.uuid], caseObj, callback)
 
     #----------------------------------------------------------------------------
     # Forward a message to a URN
@@ -196,14 +196,14 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     # POSTs to the messages send endpoint and returns new broadcast id
     #----------------------------------------------------------------------------
-    _messagesSend: (activity, text, urns, contacts, _case, callback) ->
+    _messagesSend: (activity, text, urns, contacts, caseObj, callback) ->
       data = new FormData();
       data.append('activity', activity)
       data.append('text', text)
       data.append('urns', urns)
       data.append('contacts', contacts)
-      if _case
-        data.append('case', _case.id)
+      if caseObj
+        data.append('case', caseObj.id)
       $http.post('/message/send/', data, DEFAULT_POST_OPTS)
       .success (data) =>
         callback()
@@ -279,9 +279,9 @@ services.factory 'CaseService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     fetchCase: (caseId, callback) ->
       $http.get('/case/fetch/' + caseId + '/')
-      .success (_case) =>
-        @_processCases([_case])
-        callback(_case)
+      .success (caseObj) =>
+        @_processCases([caseObj])
+        callback(caseObj)
 
     #----------------------------------------------------------------------------
     # Opens a new case
@@ -294,17 +294,17 @@ services.factory 'CaseService', ['$http', ($http) ->
         data.append('assignee', assignee.id)
 
       $http.post('/case/open/', data, DEFAULT_POST_OPTS)
-      .success (_case) ->
-        callback(_case)
+      .success (caseObj) ->
+        callback(caseObj)
 
     #----------------------------------------------------------------------------
     # Adds a note to a case
     #----------------------------------------------------------------------------
-    noteCase: (_case, note, callback) ->
+    noteCase: (caseObj, note, callback) ->
       data = new FormData()
       data.append('note', note)
 
-      $http.post('/case/note/' + _case.id + '/', data, DEFAULT_POST_OPTS)
+      $http.post('/case/note/' + caseObj.id + '/', data, DEFAULT_POST_OPTS)
       .success () ->
         if callback
           callback()
@@ -312,11 +312,11 @@ services.factory 'CaseService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     # Re-assigns a case
     #----------------------------------------------------------------------------
-    reassignCase: (_case, assignee, callback) ->
+    reassignCase: (caseObj, assignee, callback) ->
       data = new FormData()
       data.append('assignee_id', assignee.id)
 
-      $http.post('/case/reassign/' + _case.id + '/', data, DEFAULT_POST_OPTS)
+      $http.post('/case/reassign/' + caseObj.id + '/', data, DEFAULT_POST_OPTS)
       .success () ->
         if callback
           callback()
@@ -324,65 +324,65 @@ services.factory 'CaseService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     # Closes a case
     #----------------------------------------------------------------------------
-    closeCase: (_case, note, callback) ->
+    closeCase: (caseObj, note, callback) ->
       data = new FormData()
       data.append('note', note)
 
-      $http.post('/case/close/' + _case.id + '/', data, DEFAULT_POST_OPTS)
+      $http.post('/case/close/' + caseObj.id + '/', data, DEFAULT_POST_OPTS)
       .success () ->
-        _case.is_closed = true
+        caseObj.is_closed = true
         if callback
           callback()
 
     #----------------------------------------------------------------------------
     # Re-opens a case
     #----------------------------------------------------------------------------
-    reopenCase: (_case, note, callback) ->
+    reopenCase: (caseObj, note, callback) ->
       data = new FormData()
       data.append('note', note)
 
-      $http.post('/case/reopen/' + _case.id + '/', data, DEFAULT_POST_OPTS)
+      $http.post('/case/reopen/' + caseObj.id + '/', data, DEFAULT_POST_OPTS)
       .success () ->
-        _case.is_closed = false
+        caseObj.is_closed = false
         if callback
           callback()
 
     #----------------------------------------------------------------------------
     # Re-labels a case
     #----------------------------------------------------------------------------
-    relabelCase: (_case, labels, callback) ->
+    relabelCase: (caseObj, labels, callback) ->
       data = new FormData()
       data.append('labels', (l.id for l in labels))
 
-      $http.post('/case/label/' + _case.id + '/', data, DEFAULT_POST_OPTS)
+      $http.post('/case/label/' + caseObj.id + '/', data, DEFAULT_POST_OPTS)
       .success () ->
-        _case.labels = labels
+        caseObj.labels = labels
         if callback
           callback()
 
     #----------------------------------------------------------------------------
     # Updates a case's summary
     #----------------------------------------------------------------------------
-    updateCaseSummary: (_case, summary, callback) ->
+    updateCaseSummary: (caseObj, summary, callback) ->
       data = new FormData()
       data.append('summary', summary)
 
-      $http.post('/case/update_summary/' + _case.id + '/', data, DEFAULT_POST_OPTS)
+      $http.post('/case/update_summary/' + caseObj.id + '/', data, DEFAULT_POST_OPTS)
       .success () ->
-        _case.summary = summary
+        caseObj.summary = summary
         if callback
           callback()
 
     #----------------------------------------------------------------------------
     # Fetches timeline events
     #----------------------------------------------------------------------------
-    fetchTimeline: (_case, after, before, callback) ->
+    fetchTimeline: (caseObj, after, before, callback) ->
       params = {
         after: formatIso8601(after),
         before: formatIso8601(before),
       }
 
-      $http.get('/case/timeline/' + _case.id + '/?' + $.param(params))
+      $http.get('/case/timeline/' + caseObj.id + '/?' + $.param(params))
       .success (data) =>
         @_processTimeline(data.results)
         callback(data.results)
