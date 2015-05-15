@@ -9,20 +9,22 @@ from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch, call
 from temba.base import TembaPager
-from temba.types import Contact as TembaContact, Message as TembaMessage, Broadcast as TembaBroadcast
+from temba.types import Contact as TembaContact, Group as TembaGroup, Message as TembaMessage
+from temba.types import Broadcast as TembaBroadcast
 from temba.utils import format_iso8601
 from casepro.orgs_ext import TaskType
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
 from . import safe_max, match_keywords, truncate, contact_as_json
-from .models import AccessLevel, Case, CaseAction, CaseEvent, Label, Message, MessageAction, MessageExport, Partner, Outgoing
+from .models import AccessLevel, Case, CaseAction, CaseEvent, Group, Label, Message, MessageAction, MessageExport
+from .models import Partner, Outgoing
 from .tasks import process_new_unsolicited
 
 
 class CaseTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient.get_messages')
     @patch('dash.orgs.models.TembaClient.archive_messages')
-    def test_lifecyle(self, mock_archive_messages, mock_get_messages):
+    def test_lifecycle(self, mock_archive_messages, mock_get_messages):
         d0 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
         d1 = datetime(2014, 1, 2, 7, 0, tzinfo=timezone.utc)
         d2 = datetime(2014, 1, 2, 8, 0, tzinfo=timezone.utc)
@@ -173,13 +175,17 @@ class CaseTest(BaseCasesTest):
     def test_get_all(self):
         d1 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
         msg1 = TembaMessage.create(id=123, contact='C-001', created_on=d1, text="Hello 1")
-        case1 = Case.get_or_open(self.unicef, self.user1, [self.aids], msg1, "Summary", self.moh, archive_messages=False)
+        case1 = Case.get_or_open(self.unicef, self.user1, [self.aids], msg1, "Summary", self.moh,
+                                 archive_messages=False)
         msg2 = TembaMessage.create(id=234, contact='C-002', created_on=d1, text="Hello 2")
-        case2 = Case.get_or_open(self.unicef, self.user2, [self.aids, self.pregnancy], msg2, "Summary", self.who, archive_messages=False)
+        case2 = Case.get_or_open(self.unicef, self.user2, [self.aids, self.pregnancy], msg2, "Summary", self.who,
+                                 archive_messages=False)
         msg3 = TembaMessage.create(id=345, contact='C-003', created_on=d1, text="Hello 3")
-        case3 = Case.get_or_open(self.unicef, self.user3, [self.pregnancy], msg3, "Summary", self.who, archive_messages=False)
+        case3 = Case.get_or_open(self.unicef, self.user3, [self.pregnancy], msg3, "Summary", self.who,
+                                 archive_messages=False)
         msg4 = TembaMessage.create(id=456, contact='C-004', created_on=d1, text="Hello 4")
-        case4 = Case.get_or_open(self.nyaruka, self.user4, [self.code], msg4, "Summary", self.klab, archive_messages=False)
+        case4 = Case.get_or_open(self.nyaruka, self.user4, [self.code], msg4, "Summary", self.klab,
+                                 archive_messages=False)
 
         self.assertEqual(set(Case.get_all(self.unicef)), {case1, case2, case3})  # org admins see all
         self.assertEqual(set(Case.get_all(self.nyaruka)), {case4})
@@ -212,14 +218,16 @@ class CaseTest(BaseCasesTest):
         # case Jan 5th -> Jan 10th
         with patch.object(timezone, 'now', return_value=d0):
             msg = TembaMessage.create(id=123, contact='C-001', created_on=d0, text="Hello")
-            case1 = Case.get_or_open(self.unicef, self.user1, [self.pregnancy], msg, "Summary", self.moh, archive_messages=False)
+            case1 = Case.get_or_open(self.unicef, self.user1, [self.pregnancy], msg, "Summary", self.moh,
+                                     archive_messages=False)
         with patch.object(timezone, 'now', return_value=d1):
             case1.close(self.user1)
 
         # case Jan 15th -> now
         with patch.object(timezone, 'now', return_value=d2):
             msg = TembaMessage.create(id=234, contact='C-001', created_on=d0, text="Hello")
-            case2 = Case.get_or_open(self.unicef, self.user1, [self.aids], msg, "Summary", self.moh, archive_messages=False)
+            case2 = Case.get_or_open(self.unicef, self.user1, [self.aids], msg, "Summary", self.moh,
+                                     archive_messages=False)
 
         # check no cases open on Jan 4th
         open_case = Case.get_open_for_contact_on(self.unicef, 'C-001', datetime(2014, 1, 4, 0, 0, tzinfo=timezone.utc))
@@ -339,7 +347,8 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # page looks for new timeline activity
         t1 = timezone.now()
-        response = self.url_get('unicef', '%s?after=%s&before=%s' % (timeline_url, format_iso8601(t0), format_iso8601(t1)))
+        response = self.url_get('unicef', '%s?after=%s&before=%s'
+                                % (timeline_url, format_iso8601(t0), format_iso8601(t1)))
         self.assertEqual(len(response.json['results']), 0)
 
         # shouldn't hit the RapidPro API
@@ -351,7 +360,8 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # page again looks for new timeline activity
         t2 = timezone.now()
-        response = self.url_get('unicef', '%s?after=%s&before=%s' % (timeline_url, format_iso8601(t1), format_iso8601(t2)))
+        response = self.url_get('unicef', '%s?after=%s&before=%s'
+                                % (timeline_url, format_iso8601(t1), format_iso8601(t2)))
 
         self.assertEqual(len(response.json['results']), 1)
         self.assertEqual(response.json['results'][0]['type'], 'A')
@@ -363,7 +373,8 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # user sends an outgoing message
         d3 = timezone.now()
-        mock_create_broadcast.return_value = TembaBroadcast.create(id=201, text="It's bad", urns=[], contacts=['C-001'], created_on=d3)
+        mock_create_broadcast.return_value = TembaBroadcast.create(id=201, text="It's bad", urns=[],
+                                                                   contacts=['C-001'], created_on=d3)
         Outgoing.create(self.unicef, self.user1, Outgoing.CASE_REPLY, "It's bad", [], ['C-001'], case)
 
         msg3 = TembaMessage.create(id=103, contact='C-001', created_on=d3, text="It's bad", labels=[], direction='O')
@@ -371,7 +382,8 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # page again looks for new timeline activity
         t3 = timezone.now()
-        response = self.url_get('unicef', '%s?after=%s&before=%s' % (timeline_url, format_iso8601(t2), format_iso8601(t3)))
+        response = self.url_get('unicef', '%s?after=%s&before=%s'
+                                % (timeline_url, format_iso8601(t2), format_iso8601(t3)))
 
         self.assertEqual(len(response.json['results']), 1)
         self.assertEqual(response.json['results'][0]['type'], 'M')
@@ -390,7 +402,8 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # page again looks for new timeline activity
         t4 = timezone.now()
-        response = self.url_get('unicef', '%s?after=%s&before=%s' % (timeline_url, format_iso8601(t3), format_iso8601(t4)))
+        response = self.url_get('unicef', '%s?after=%s&before=%s'
+                                % (timeline_url, format_iso8601(t3), format_iso8601(t4)))
 
         self.assertEqual(len(response.json['results']), 1)
         self.assertEqual(response.json['results'][0]['type'], 'M')
@@ -403,12 +416,63 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # page again looks for new timeline activity
         t5 = timezone.now()
-        response = self.url_get('unicef', '%s?after=%s&before=%s' % (timeline_url, format_iso8601(t4), format_iso8601(t5)))
+        response = self.url_get('unicef', '%s?after=%s&before=%s'
+                                % (timeline_url, format_iso8601(t4), format_iso8601(t5)))
 
         self.assertEqual(len(response.json['results']), 0)
 
         # back to having no reason to hit the RapidPro API
         self.assertEqual(mock_get_messages.call_count, 0)
+
+
+class GroupTest(BaseCasesTest):
+    def test_create(self):
+        mothers = Group.create(self.unicef, "Mothers", 'G-004')
+        self.assertEqual(mothers.name, "Mothers")
+        self.assertEqual(mothers.uuid, 'G-004')
+        self.assertEqual(unicode(mothers), "Mothers")
+        self.assertEqual(mothers.as_json(), {'id': mothers.pk, 'name': "Mothers", 'uuid': mothers.uuid})
+
+    def test_get_all(self):
+        self.assertEqual(set(Group.get_all(self.unicef)), {self.males, self.females})
+
+        # shouldn't include inactive groups
+        testers = self.create_group(self.nyaruka, 'Testers', 'G-004')
+        testers.is_active = False
+        testers.save()
+        self.assertEqual(set(Group.get_all(self.nyaruka)), {self.coders})
+
+    @patch('dash.orgs.models.TembaClient.get_groups')
+    def test_fetch_sizes(self, mock_get_groups):
+        mock_get_groups.return_value = [
+            TembaGroup.create(name="Females", uuid='G-002', size=23)
+        ]
+        # group count is zero if group not found in RapidPro
+        self.assertEqual(Group.fetch_sizes(self.unicef, [self.males, self.females]), {self.males: 0, self.females: 23})
+
+        mock_get_groups.assert_called_once_with(uuids=['G-001', 'G-002'])
+        mock_get_groups.reset_mock()
+        
+        # shouldn't call RapidPro API if there are no groups
+        Group.fetch_sizes(self.unicef, [])
+        self.assertEqual(mock_get_groups.call_count, 0)
+
+    @patch('dash.orgs.models.TembaClient.get_groups')
+    def test_update_groups(self, mock_get_groups):
+        mock_get_groups.return_value = [
+            TembaGroup.create(name="Females", uuid='G-002', size=23),
+            TembaGroup.create(name="Farmers", uuid='G-078', size=89)
+        ]
+        Group.update_groups(self.unicef, ['G-002', 'G-078'])
+
+        self.assertFalse(Group.objects.get(pk=self.males.pk).is_active)  # de-activated
+
+        farmers = Group.objects.get(uuid='G-078')  # new group created
+        self.assertEqual(farmers.org, self.unicef)
+        self.assertEqual(farmers.name, "Farmers")
+        self.assertTrue(farmers.is_active)
+
+        mock_get_groups.assert_called_once_with(uuids=['G-002', 'G-078'])
 
 
 class HomeViewsTest(BaseCasesTest):

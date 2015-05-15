@@ -4,7 +4,7 @@ import json
 import pytz
 
 from dash.orgs.models import Org
-from dash.utils import get_obj_cacheable, random_string, chunks, intersection
+from dash.utils import random_string, chunks, intersection
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
@@ -59,14 +59,11 @@ class Group(models.Model):
         group_by_uuid = {g.uuid: g for g in groups}
         if group_by_uuid:
             temba_groups = org.get_temba_client().get_groups(uuids=group_by_uuid.keys())
-            size_by_uuid = {l.uuid: l.size for l in temba_groups}
+            size_by_uuid = {g.uuid: g.size for g in temba_groups}
         else:
             size_by_uuid = {}
 
-        return {l: size_by_uuid[l.uuid] if l.uuid in size_by_uuid else 0 for l in groups}
-
-    def get_size(self):
-        return get_obj_cacheable(self, '_size', lambda: self.fetch_sizes(self.org, [self])[self])
+        return {g: size_by_uuid[g.uuid] if g.uuid in size_by_uuid else 0 for g in groups}
 
     @classmethod
     def update_groups(cls, org, group_uuids):
@@ -168,7 +165,7 @@ class MessageExport(models.Model):
                 for msg in msg_chunk:
                     created_on = msg.created_on.astimezone(pytz.utc).replace(tzinfo=None)
                     flagged = SYSTEM_LABEL_FLAGGED in msg.labels
-                    labels = ', '.join([label_map[label_name].name for label_name in msg.labels if label_name in label_map])
+                    labels = ', '.join([label_map[l_name].name for l_name in msg.labels if l_name in label_map])
                     contact = contacts_by_uuid.get(msg.contact, None)  # contact may no longer exist in RapidPro
 
                     current_sheet.write(row, 0, created_on, date_style)
@@ -827,7 +824,9 @@ class Outgoing(models.Model):
     @classmethod
     def create(cls, org, user, activity, text, urns, contacts, case=None):
         broadcast = org.get_temba_client().create_broadcast(text=text, urns=urns, contacts=contacts)
-        recipient_count = len(broadcast.urns) + len(broadcast.contacts)  # TODO update RapidPro api to expose more accurate recipient_count
+
+        # TODO update RapidPro api to expose more accurate recipient_count
+        recipient_count = len(broadcast.urns) + len(broadcast.contacts)
 
         return cls.objects.create(org=org,
                                   broadcast_id=broadcast.id,
