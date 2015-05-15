@@ -933,6 +933,28 @@ class PartnerCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertLoginRedirect(response, 'unicef', url)
 
+    def test_update(self):
+        url = reverse('cases.partner_read', args=[self.moh.pk])
+
+        # login as analyst user
+        self.login(self.user2)
+
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # login as manager user
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+        response = self.url_post('unicef', url, {'name': "MOH2"})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, 'http://unicef.localhost/partner/read/%d/' % self.moh.pk)
+
+        moh = Partner.objects.get(pk=self.moh.pk)
+        self.assertEqual(moh.name, "MOH2")
+
     def test_delete(self):
         url = reverse('cases.partner_delete', args=[self.moh.pk])
 

@@ -632,6 +632,7 @@ class PartnerCRUDL(SmartCRUDL):
 
     class Update(OrgObjPermsMixin, PartnerFormMixin, SmartUpdateView):
         form_class = PartnerForm
+        success_url = 'id@cases.partner_read'
 
         def has_permission(self, request, *args, **kwargs):
             return request.user.can_manage(self.get_object())

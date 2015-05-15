@@ -121,10 +121,19 @@ class UserCRUDL(SmartCRUDL):
         form_class = UserForm
         permission = 'profiles.profile_user_create'
 
+        def has_permission(self, request, *args, **kwargs):
+            org = self.request.org
+
+            # non-admins can't access this view without a specified partner
+            if org and 'partner_id' not in self.kwargs and not self.request.user.is_admin_for(org):
+                return False
+
+            return super(UserCRUDL.Create, self).has_permission(request, *args, **kwargs)
+
         def derive_fields(self):
             fields = ['full_name']
             if self.request.org:
-                if 'partner_id' not in self.kwargs and self.request.user.is_admin_for(self.request.org):
+                if 'partner_id' not in self.kwargs:
                     fields.append('partner')
                 fields.append('role')
             return fields + ['email', 'password', 'confirm_password', 'change_password']
@@ -132,23 +141,26 @@ class UserCRUDL(SmartCRUDL):
         def save(self, obj):
             data = self.form.cleaned_data
             org = self.request.org
-            user = self.request.user
 
             if 'partner_id' in self.kwargs:
                 partner = Partner.get_all(org).get(pk=self.kwargs['partner_id'])
-            elif org and user.is_admin_for(org):
-                partner = data.get('partner', None)
             else:
-                partner = user.get_partner()
+                partner = data.get('partner', None)
 
-            full_name = self.form.cleaned_data['full_name']
+            full_name = data['full_name']
             role = data.get('role', None)
-            password = ['password']
-            change_password = self.form.cleaned_data['change_password']
+            password = data['password']
+            change_password = data['change_password']
             self.object = User.create(org, partner, role, full_name, obj.email, password, change_password)
 
         def post_save(self, obj):
             return obj
+
+        def get_success_url(self):
+            if 'partner_id' in self.kwargs:
+                return reverse('cases.partner_read', args=[self.kwargs['partner_id']])
+            else:
+                return reverse('profiles.user_list')
 
     class Update(OrgPermsMixin, UserFormMixin, SmartUpdateView):
         form_class = UserForm

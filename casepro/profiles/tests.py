@@ -118,6 +118,7 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_post(None, url, data)
 
         self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, 'http://testserver/user/')
 
         user = User.objects.get(email='mcadmin@casely.com')
         self.assertEqual(user.get_full_name(), "McAdmin")
@@ -127,6 +128,11 @@ class UserCRUDLTest(BaseCasesTest):
 
         # log in as an org administrator
         self.login(self.admin)
+
+        # should see both partner and role options
+        response = self.url_get('unicef', url, {})
+        self.assertTrue('partner' in response.context['form'].fields)
+        self.assertTrue('role' in response.context['form'].fields)
 
         # submit with no fields entered
         response = self.url_post('unicef', url, {})
@@ -155,6 +161,7 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_post('unicef', url, data)
 
         self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, 'http://unicef.localhost/user/')
 
         # check new user and profile
         user = User.objects.get(email="mo@casely.com")
@@ -173,9 +180,37 @@ class UserCRUDLTest(BaseCasesTest):
         # log in as a partner manager
         self.login(self.user1)
 
+        # can't access this view without a specified partner
         response = self.url_get('unicef', url)
-        self.assertFalse('partner' in response.context['form'].fields)
-        self.assertTrue('role' in response.context['form'].fields)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+    def test_created_in(self):
+        url = reverse('profiles.user_create_in', args=[self.moh.pk])
+
+        # log in as an org administrator
+        self.login(self.admin)
+
+        # submit with no fields entered
+        response = self.url_post('unicef', url, {})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'full_name', 'This field is required.')
+        self.assertFormError(response, 'form', 'role', 'This field is required.')
+        self.assertFormError(response, 'form', 'email', 'This field is required.')
+        self.assertFormError(response, 'form', 'password', 'This field is required.')
+
+        # submit again with all required fields
+        data = {'full_name': "Mo Cases", 'role': ROLE_ANALYST, 'email': "mo@casely.com",
+                'password': "Qwerty123", 'confirm_password': "Qwerty123"}
+        response = self.url_post('unicef', url, data)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, 'http://unicef.localhost/partner/read/%d/' % self.moh.pk)
+
+        user = User.objects.get(email='mo@casely.com')
+        self.assertEqual(user.profile.partner, self.moh)
+
+        # log in as a partner manager
+        self.login(self.user1)
 
         # submit with no fields entered
         response = self.url_post('unicef', url, {})
@@ -208,29 +243,6 @@ class UserCRUDLTest(BaseCasesTest):
 
         user = User.objects.get(email='bob@moh.com')
         self.assertEqual(user.profile.partner, self.moh)  # WHO was ignored
-
-    def test_created_in(self):
-        url = reverse('profiles.user_create_in', args=[self.moh.pk])
-
-        # log in as an org administrator
-        self.login(self.admin)
-
-        # submit with no fields entered
-        response = self.url_post('unicef', url, {})
-        self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'full_name', 'This field is required.')
-        self.assertFormError(response, 'form', 'role', 'This field is required.')
-        self.assertFormError(response, 'form', 'email', 'This field is required.')
-        self.assertFormError(response, 'form', 'password', 'This field is required.')
-
-        # submit again with all required fields
-        data = {'full_name': "Mo Cases", 'role': ROLE_ANALYST, 'email': "mo@casely.com",
-                'password': "Qwerty123", 'confirm_password': "Qwerty123"}
-        response = self.url_post('unicef', url, data)
-        self.assertEqual(response.status_code, 302)
-
-        user = User.objects.get(email='mo@casely.com')
-        self.assertEqual(user.profile.partner, self.moh)
 
     def test_update(self):
         url = reverse('profiles.user_update', args=[self.user1.pk])
