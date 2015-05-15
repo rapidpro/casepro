@@ -18,6 +18,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from enum import IntEnum
+from redis_cache import get_redis_connection
 from temba.base import TembaNoSuchObjectError
 from casepro.email import send_email
 from . import parse_csv, contact_as_json, match_keywords, SYSTEM_LABEL_FLAGGED
@@ -376,31 +377,42 @@ class Case(models.Model):
     @classmethod
     def get_open_for_contact_on(cls, org, contact_uuid, dt):
         qs = cls.get_for_contact(org, contact_uuid)
-        return qs.filter(opened_on__lt=dt).filter(Q(closed_on=None) | Q(closed_on__gt=dt))
+        return qs.filter(opened_on__lt=dt).filter(Q(closed_on=None) | Q(closed_on__gt=dt)).first()
 
     def get_labels(self):
         return self.labels.filter(is_active=True)
 
     @classmethod
-    def open(cls, org, user, labels, message, summary, assignee, archive_messages=True):
-        # check for open case with this contact
-        if cls.get_open_for_contact_on(org, message.contact, timezone.now()).exists():
-            raise ValueError("Contact already has open case")
+    def get_or_open(cls, org, user, labels, message, summary, assignee, archive_messages=True):
+        r = get_redis_connection()
+        with r.lock('org:%d:cases_lock' % org.pk):
+            # check for open case with this contact
+            existing_open = cls.get_open_for_contact_on(org, message.contact, timezone.now())
+            if existing_open:
+                existing_open.is_new = False
+                return existing_open
 
-        case = cls.objects.create(org=org, assignee=assignee, contact_uuid=message.contact,
-                                  summary=summary, message_id=message.id, message_on=message.created_on)
-        case.labels.add(*labels)
+            # check for another case (possibly closed) connected to this message
+            existing_for_msg = cls.objects.filter(message_id=message.id).first()
+            if existing_for_msg:
+                existing_for_msg.is_new = False
+                return existing_for_msg
 
-        CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee)
+            case = cls.objects.create(org=org, assignee=assignee, contact_uuid=message.contact,
+                                      summary=summary, message_id=message.id, message_on=message.created_on)
+            case.is_new = True
+            case.labels.add(*labels)
 
-        # archive messages and any labelled messages from this contact
-        if archive_messages:
-            client = org.get_temba_client()
-            labels = [l.name for l in Label.get_all(org)]
-            messages = client.get_messages(contacts=[message.contact], labels=labels,
-                                           direction='I', statuses=['H'], _types=['I'], archived=False)
-            message_ids = [m.id for m in messages]
-            client.archive_messages(messages=message_ids)
+            CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee)
+
+            # archive messages and any labelled messages from this contact
+            if archive_messages:
+                client = org.get_temba_client()
+                labels = [l.name for l in Label.get_all(org)]
+                messages = client.get_messages(contacts=[message.contact], labels=labels,
+                                               direction='I', statuses=['H'], _types=['I'], archived=False)
+                message_ids = [m.id for m in messages]
+                client.archive_messages(messages=message_ids)
 
         return case
 
@@ -487,6 +499,10 @@ class Case(models.Model):
         except TembaNoSuchObjectError:
             return None  # always a chance that the contact has been deleted in RapidPro
 
+    @property
+    def is_closed(self):
+        return self.closed_on is not None
+
     def as_json(self, fetch_contact=False):
         if fetch_contact:
             contact = self._fetch_contact()
@@ -500,7 +516,7 @@ class Case(models.Model):
                 'labels': [l.as_json() for l in self.get_labels()],
                 'summary': self.summary,
                 'opened_on': self.opened_on,
-                'is_closed': self.closed_on is not None}
+                'is_closed': self.is_closed}
 
     def __unicode__(self):
         return '#%d' % self.pk
@@ -692,7 +708,7 @@ class Message(object):
         newest_labelled = None
 
         for msg in messages:
-            open_case = Case.get_open_for_contact_on(org, msg.contact, msg.created_on).first()
+            open_case = Case.get_open_for_contact_on(org, msg.contact, msg.created_on)
 
             if open_case:
                 open_case.reply_event(msg)

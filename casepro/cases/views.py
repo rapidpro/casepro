@@ -60,6 +60,7 @@ class CaseCRUDL(SmartCRUDL):
 
             context['max_msg_chars'] = MAX_MESSAGE_CHARS
             context['can_update'] = can_update
+            context['alert'] = self.request.GET.get('alert', None)
             return context
 
     class Open(OrgPermsMixin, SmartCreateView):
@@ -82,9 +83,9 @@ class CaseCRUDL(SmartCRUDL):
             label_map = {l.name: l for l in Label.get_all(request.org)}
             labels = [label_map[label_name] for label_name in message.labels if label_name in label_map]
 
-            case = Case.open(request.org, request.user, labels, message, summary, assignee)
+            case = Case.get_or_open(request.org, request.user, labels, message, summary, assignee)
 
-            return JsonResponse(case.as_json())
+            return JsonResponse({'case': case.as_json(), 'is_new': case.is_new})
 
     class Note(OrgObjPermsMixin, SmartUpdateView):
         """

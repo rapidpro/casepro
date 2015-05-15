@@ -312,8 +312,11 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     resolve = {message: (() -> message), partners: (() -> partners)}
     $modal.open({templateUrl: 'newCaseModal.html', controller: 'NewCaseModalController', resolve: resolve})
     .result.then (result) ->
-      CaseService.openCase(message, result.summary, result.assignee, (caseObj) ->
-          UtilsService.navigate('/case/read/' + caseObj.id + '/')
+      CaseService.openCase(message, result.summary, result.assignee, (caseObj, isNew) ->
+          caseUrl = '/case/read/' + caseObj.id + '/'
+          if !isNew
+            caseUrl += '?alert=open_found_existing'
+          UtilsService.navigate(caseUrl)
       )
 
   $scope.onLabelMessage = (message) ->

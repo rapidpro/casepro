@@ -39,8 +39,9 @@ class CaseTest(BaseCasesTest):
 
         with patch.object(timezone, 'now', return_value=d1):
             # MOH opens new case
-            case = Case.open(self.unicef, self.user1, [self.aids], msg2, "Summary", self.moh)
+            case = Case.get_or_open(self.unicef, self.user1, [self.aids], msg2, "Summary", self.moh)
 
+        self.assertTrue(case.is_new)
         self.assertEqual(case.org, self.unicef)
         self.assertEqual(set(case.labels.all()), {self.aids})
         self.assertEqual(case.assignee, self.moh)
@@ -65,6 +66,12 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(case.access_level(self.user2), AccessLevel.update)  # user from same org can do likewise
         self.assertEqual(case.access_level(self.user3), AccessLevel.read)  # user from other partner can read bc labels
         self.assertEqual(case.access_level(self.user4), AccessLevel.none)  # user from different org
+
+        # check that calling get_or_open again returns the same case (finds open case for contact)
+        with patch.object(timezone, 'now', return_value=d2):
+            case2 = Case.get_or_open(self.unicef, self.user1, [self.aids], msg2, "Summary", self.moh)
+            self.assertFalse(case2.is_new)
+            self.assertEqual(case, case2)
 
         # TODO test user sends a reply
 
@@ -158,16 +165,21 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(actions[7].created_by, self.user3)
         self.assertEqual(actions[7].created_on, d7)
 
+        # check that calling get_or_open again returns the same case (finds case for same message)
+        case3 = Case.get_or_open(self.unicef, self.user1, [self.aids], msg2, "Summary", self.moh)
+        self.assertFalse(case3.is_new)
+        self.assertEqual(case, case3)
+
     def test_get_all(self):
         d1 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
         msg1 = TembaMessage.create(id=123, contact='C-001', created_on=d1, text="Hello 1")
-        case1 = Case.open(self.unicef, self.user1, [self.aids], msg1, "Summary", self.moh, archive_messages=False)
+        case1 = Case.get_or_open(self.unicef, self.user1, [self.aids], msg1, "Summary", self.moh, archive_messages=False)
         msg2 = TembaMessage.create(id=234, contact='C-002', created_on=d1, text="Hello 2")
-        case2 = Case.open(self.unicef, self.user2, [self.aids, self.pregnancy], msg2, "Summary", self.who, archive_messages=False)
+        case2 = Case.get_or_open(self.unicef, self.user2, [self.aids, self.pregnancy], msg2, "Summary", self.who, archive_messages=False)
         msg3 = TembaMessage.create(id=345, contact='C-003', created_on=d1, text="Hello 3")
-        case3 = Case.open(self.unicef, self.user3, [self.pregnancy], msg3, "Summary", self.who, archive_messages=False)
+        case3 = Case.get_or_open(self.unicef, self.user3, [self.pregnancy], msg3, "Summary", self.who, archive_messages=False)
         msg4 = TembaMessage.create(id=456, contact='C-004', created_on=d1, text="Hello 4")
-        case4 = Case.open(self.nyaruka, self.user4, [self.code], msg4, "Summary", self.klab, archive_messages=False)
+        case4 = Case.get_or_open(self.nyaruka, self.user4, [self.code], msg4, "Summary", self.klab, archive_messages=False)
 
         self.assertEqual(set(Case.get_all(self.unicef)), {case1, case2, case3})  # org admins see all
         self.assertEqual(set(Case.get_all(self.nyaruka)), {case4})
@@ -197,36 +209,33 @@ class CaseTest(BaseCasesTest):
         d1 = datetime(2014, 1, 10, 0, 0, tzinfo=timezone.utc)
         d2 = datetime(2014, 1, 15, 0, 0, tzinfo=timezone.utc)
 
-        # case Jan 5th -> now
-        with patch.object(timezone, 'now', return_value=d0):
-            msg = TembaMessage.create(id=123, contact='C-001', created_on=d0, text="Hello")
-            case1 = Case.open(self.unicef, self.user1, [self.aids], msg, "Summary", self.moh, archive_messages=False)
-
         # case Jan 5th -> Jan 10th
         with patch.object(timezone, 'now', return_value=d0):
-            msg = TembaMessage.create(id=234, contact='C-001', created_on=d0, text="Hello")
-            case2 = Case.open(self.unicef, self.user1, [self.pregnancy], msg, "Summary", self.moh, archive_messages=False)
+            msg = TembaMessage.create(id=123, contact='C-001', created_on=d0, text="Hello")
+            case1 = Case.get_or_open(self.unicef, self.user1, [self.pregnancy], msg, "Summary", self.moh, archive_messages=False)
         with patch.object(timezone, 'now', return_value=d1):
-            case2.close(self.user1)
+            case1.close(self.user1)
 
-        # case Jan 5th -> Jan 15th
-        with patch.object(timezone, 'now', return_value=d0):
-            msg = TembaMessage.create(id=345, contact='C-001', created_on=d0, text="Hello")
-            case3 = Case.open(self.unicef, self.user1, [self.pregnancy], msg, "Summary", self.moh, archive_messages=False)
+        # case Jan 15th -> now
         with patch.object(timezone, 'now', return_value=d2):
-            case3.close(self.user1)
+            msg = TembaMessage.create(id=234, contact='C-001', created_on=d0, text="Hello")
+            case2 = Case.get_or_open(self.unicef, self.user1, [self.aids], msg, "Summary", self.moh, archive_messages=False)
 
         # check no cases open on Jan 4th
-        cases = Case.get_open_for_contact_on(self.unicef, 'C-001', datetime(2014, 1, 4, 0, 0, tzinfo=timezone.utc))
-        self.assertFalse(cases)
+        open_case = Case.get_open_for_contact_on(self.unicef, 'C-001', datetime(2014, 1, 4, 0, 0, tzinfo=timezone.utc))
+        self.assertIsNone(open_case)
 
-        # check two cases open on Jan 12th
-        cases = Case.get_open_for_contact_on(self.unicef, 'C-001', datetime(2014, 1, 12, 0, 0, tzinfo=timezone.utc))
-        self.assertEqual(set(cases), {case1, case3})
+        # check case open on Jan 7th
+        open_case = Case.get_open_for_contact_on(self.unicef, 'C-001', datetime(2014, 1, 7, 0, 0, tzinfo=timezone.utc))
+        self.assertEqual(open_case, case1)
 
-        # check one case open on Jan 16th
-        cases = Case.get_open_for_contact_on(self.unicef, 'C-001', datetime(2014, 1, 16, 0, 0, tzinfo=timezone.utc))
-        self.assertEqual(set(cases), {case1})
+        # check no cases open on Jan 13th
+        open_case = Case.get_open_for_contact_on(self.unicef, 'C-001', datetime(2014, 1, 13, 0, 0, tzinfo=timezone.utc))
+        self.assertIsNone(open_case)
+
+        # check case open on 20th
+        open_case = Case.get_open_for_contact_on(self.unicef, 'C-001', datetime(2014, 1, 16, 0, 0, tzinfo=timezone.utc))
+        self.assertEqual(open_case, case2)
 
 
 class CaseCRUDLTest(BaseCasesTest):
@@ -248,7 +257,10 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_post('unicef', url, {'message': 101, 'summary': "Summary", 'assignee': self.moh.pk})
         self.assertEqual(response.status_code, 200)
 
-        case1 = Case.objects.get(pk=response.json['id'])
+        self.assertTrue(response.json['is_new'])
+        self.assertEqual(response.json['case']['summary'], "Summary")
+
+        case1 = Case.objects.get(pk=response.json['case']['id'])
         self.assertEqual(case1.message_id, 101)
         self.assertEqual(case1.summary, "Summary")
         self.assertEqual(case1.assignee, self.moh)
@@ -266,12 +278,11 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_post('unicef', url, {'message': 101, 'summary': "Summary"})
         self.assertEqual(response.status_code, 200)
 
-        case2 = Case.objects.get(pk=response.json['id'])
+        case2 = Case.objects.get(pk=response.json['case']['id'])
         self.assertEqual(case2.message_id, 102)
         self.assertEqual(case2.summary, "Summary")
         self.assertEqual(case2.assignee, self.moh)
         self.assertEqual(set(case2.labels.all()), {self.aids})
-
 
     @patch('dash.orgs.models.TembaClient.get_contact')
     @patch('dash.orgs.models.TembaClient.get_messages')
@@ -281,7 +292,7 @@ class CaseCRUDLTest(BaseCasesTest):
         mock_get_messages.return_value = [msg]
         mock_get_contact.return_value = TembaContact.create(uuid='C-001', name="Bob", fields={'district': "Gasabo"})
 
-        case = Case.open(self.unicef, self.user1, [self.aids], msg, "Summary", self.moh, archive_messages=False)
+        case = Case.get_or_open(self.unicef, self.user1, [self.aids], msg, "Summary", self.moh, archive_messages=False)
 
         url = reverse('cases.case_read', args=[case.pk])
 
@@ -304,7 +315,7 @@ class CaseCRUDLTest(BaseCasesTest):
                                    labels=[self.aids])
         mock_get_messages.return_value = [msg2]
 
-        case = Case.open(self.unicef, self.user1, [self.aids], msg2, "Summary", self.moh, archive_messages=False)
+        case = Case.get_or_open(self.unicef, self.user1, [self.aids], msg2, "Summary", self.moh, archive_messages=False)
 
         timeline_url = reverse('cases.case_timeline', args=[case.pk])
         t0 = timezone.now()

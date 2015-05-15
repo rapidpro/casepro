@@ -294,8 +294,8 @@ services.factory 'CaseService', ['$http', ($http) ->
         data.append('assignee', assignee.id)
 
       $http.post('/case/open/', data, DEFAULT_POST_OPTS)
-      .success (caseObj) ->
-        callback(caseObj)
+      .success (data) ->
+        callback(data['case'], data['is_new'])
 
     #----------------------------------------------------------------------------
     # Adds a note to a case
