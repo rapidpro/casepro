@@ -539,9 +539,9 @@ controllers.controller 'DateRangeController', [ '$scope', ($scope) ->
 
   $scope.onAfterChange = () ->
     # don't allow before to be less than after
-    $scope.beforeMin = $scope.search.after
+    $scope.beforeMin = $scope.searchFields.after
 
   $scope.onBeforeChange = () ->
     # don't allow after to be more than before
-    $scope.afterMax = $scope.search.before
+    $scope.afterMax = $scope.searchFields.before
 ]

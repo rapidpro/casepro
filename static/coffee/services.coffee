@@ -30,7 +30,8 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     fetchOld: (search, before, page, callback) ->
       params = @_searchToParams(search)
-      params.before = formatIso8601(before)
+      if !search.before
+        params.before = formatIso8601(before)
       params.page = page
 
       $http.get('/message/?' + $.param(params))
