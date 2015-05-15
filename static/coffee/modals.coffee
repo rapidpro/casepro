@@ -27,9 +27,9 @@ modals.controller 'NoteModalController', [ '$scope', '$modalInstance', 'title', 
   $scope.title = title
   $scope.prompt = prompt
   $scope.style = style or 'primary'
-  $scope.note = ''
+  $scope.fields = { note: '' }
 
-  $scope.ok = () -> $modalInstance.close($scope.note)
+  $scope.ok = () -> $modalInstance.close($scope.fields.note)
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
 
@@ -39,9 +39,9 @@ modals.controller 'NoteModalController', [ '$scope', '$modalInstance', 'title', 
 #=====================================================================
 modals.controller 'EditModalController', [ '$scope', '$modalInstance', 'title', 'initial', ($scope, $modalInstance, title, initial) ->
   $scope.title = title
-  $scope.text = initial
+  $scope.fields = { text: initial }
 
-  $scope.ok = () -> $modalInstance.close($scope.text)
+  $scope.ok = () -> $modalInstance.close($scope.fields.text)
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
 
@@ -50,9 +50,9 @@ modals.controller 'EditModalController', [ '$scope', '$modalInstance', 'title', 
 # Reply to contact modal
 #=====================================================================
 modals.controller('ReplyModalController', [ '$scope', '$modalInstance', ($scope, $modalInstance) ->
-  $scope.text = ''
+  $scope.fields = { text: '' }
 
-  $scope.ok = () -> $modalInstance.close($scope.text)
+  $scope.ok = () -> $modalInstance.close($scope.fields.text)
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ])
 
@@ -61,11 +61,14 @@ modals.controller('ReplyModalController', [ '$scope', '$modalInstance', ($scope,
 # Open new case modal
 #=====================================================================
 modals.controller 'NewCaseModalController', [ '$scope', '$modalInstance', 'message', 'partners', ($scope, $modalInstance, message, partners) ->
-  $scope.summary = message.text
   $scope.partners = partners
-  $scope.assignee = if partners then partners[0] else null
+  $scope.fields = {
+    summary: message.text,
+    assignee: if partners then partners[0] else null
+  }
 
-  $scope.ok = () -> $modalInstance.close({summary: $scope.summary, assignee: $scope.assignee})
+  $scope.ok = () ->
+    $modalInstance.close({summary: $scope.fields.summary, assignee: $scope.fields.assignee})
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
 
@@ -77,9 +80,9 @@ modals.controller 'AssignModalController', [ '$scope', '$modalInstance', 'title'
   $scope.title = title
   $scope.prompt = prompt
   $scope.partners = partners
-  $scope.assignee = partners[0]
+  $scope.fields = { assignee: partners[0] }
 
-  $scope.ok = () -> $modalInstance.close($scope.assignee)
+  $scope.ok = () -> $modalInstance.close($scope.fields.assignee)
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
 
@@ -105,17 +108,18 @@ modals.controller('LabelModalController', ['$scope', '$modalInstance', 'title', 
 #=====================================================================
 modals.controller('ComposeModalController', ['$scope', '$modalInstance', 'title', 'initialText', ($scope, $modalInstance, title, initialText) ->
   $scope.title = title
-  $scope.urn_scheme = null
-  $scope.urn_path = ''
-  $scope.text = initialText
+  $scope.fields = {
+    urn: { scheme: null, path: '' },
+    text: initialText
+  }
 
   $scope.setScheme = (scheme) ->
-    $scope.urn_scheme = scheme
+    $scope.fields.urn.scheme = scheme
     $scope.urn_scheme_label = URN_SCHEMES[scheme]
 
   $scope.ok = () ->
-    urn = {scheme: $scope.urn_scheme, path: $scope.urn_path, urn: ($scope.urn_scheme + ':' + $scope.urn_path)}
-    $modalInstance.close({text: $scope.text, urn: urn})
+    urn = {scheme: $scope.fields.urn.scheme, path: $scope.fields.urn.path, urn: ($scope.fields.urn.scheme + ':' + $scope.fields.urn.path)}
+    $modalInstance.close({text: $scope.fields.text, urn: urn})
 
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 

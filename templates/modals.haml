@@ -24,7 +24,7 @@
         .form-group
           %label.control-label
             - trans "Note"
-          %textarea.form-control{ ng-model:"note" }
+          %textarea.form-control{ ng-model:"fields.note" }
     .modal-footer
       %button.btn{ ng-click:"ok()", ng-class:'{ "btn-primary": style == "primary", "btn-danger": style == "danger" }' }
         - trans "OK"
@@ -36,7 +36,7 @@
     %h3.modal-title
       [[ title ]]
     .modal-body
-      %textarea.form-control{ ng-model:"text" }
+      %textarea.form-control{ ng-model:"fields.text" }
     .modal-footer
       %button.btn.btn-primary{ ng-click:"ok()" }
         - trans "Save"
@@ -50,7 +50,7 @@
     .modal-body
       %p
         - trans "Send the following reply to each contact and archive each message. This will remove the messages from your inbox."
-      %textarea.form-control{ ng-model:"text" }
+      %textarea.form-control{ ng-model:"fields.text" }
     .modal-footer
       %button.btn.btn-primary{ ng-click:"ok()" }
         - trans "Send & Archive"
@@ -67,11 +67,11 @@
       .form-group
         %label.control-label
           - trans "Summary"
-        %textarea.form-control{ ng-model:"summary" }
+        %textarea.form-control{ ng-model:"fields.summary" }
       .form-group{ ng-if:"partners != null" }
         %label.control-label
           - trans "Assign to"
-        %select.form-control{ ng-model:"assignee", ng-options:"p.name for p in partners track by p.id" }
+        %select.form-control{ ng-model:"fields.assignee", ng-options:"p.name for p in partners track by p.id" }
     .modal-footer
       %button.btn.btn-primary{ ng-click:"ok()" }
         - trans "Open"
@@ -88,7 +88,7 @@
       .form-group
         %label.control-label
           - trans "Assign to"
-        %select.form-control{ ng-model:"assignee", ng-options:"p.name for p in partners track by p.id" }
+        %select.form-control{ ng-model:"fields.assignee", ng-options:"p.name for p in partners track by p.id" }
     .modal-footer
       %button.btn.btn-primary{ ng-click:"ok()" }
         - trans "Open"
@@ -135,12 +135,12 @@
                 %li
                   %a{ ng-click:'setScheme("twitter")' }
                     - trans "Twitter"
-            %input.form-control{ type:"text", ng-model:"urn_path", style:"width: 300px" }
+            %input.form-control{ type:"text", ng-model:"fields.urn.path", style:"width: 300px" }
 
         .form-group
           %label.control-label{ for:"forward-text" }
             - trans "Message"
-          %textarea.form-control{ ng-model:"text", id:"forward-text" }
+          %textarea.form-control{ ng-model:"fields.text", id:"forward-text" }
     .modal-footer
       %button.btn.btn-primary{ ng-click:"ok()" }
         - trans "Send"
