@@ -278,7 +278,7 @@ class Label(models.Model):
 
     @classmethod
     def get_all(cls, org, user=None):
-        if not user or user.is_admin_for(org):
+        if not user or user.can_administer(org):
             return cls.objects.filter(org=org, is_active=True)
 
         partner = user.get_partner()
@@ -347,7 +347,7 @@ class Case(models.Model):
         qs = cls.objects.filter(org=org)
 
         # if user is not an org admin, we should only return cases with partner labels or assignment
-        if user and not user.is_admin_for(org):
+        if user and not user.can_administer(org):
             partner = user.get_partner()
             if partner:
                 qs = qs.filter(Q(labels__in=partner.get_labels()) | Q(assignee=partner))
@@ -483,7 +483,7 @@ class Case(models.Model):
 
         They can additionally update the case if 1) or 2) is true
         """
-        if user.is_admin_for(self.org) or user.profile.partner == self.assignee:
+        if user.can_administer(self.org) or user.profile.partner == self.assignee:
             return AccessLevel.update
         elif user.profile.partner and intersection(self.get_labels(), user.profile.partner.get_labels()):
             return AccessLevel.read

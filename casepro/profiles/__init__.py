@@ -77,18 +77,18 @@ def _user_get_partner(user):
     return user.profile.partner if user.has_profile() else None
 
 
-def _user_is_admin_for(user, org):
+def _user_can_administer(user, org):
     """
-    Whether this user is an administrator for the given org
+    Whether this user can administer the given org
     """
-    return org.administrators.filter(pk=user.pk).exists()
+    return user.is_superuser or org.administrators.filter(pk=user.pk).exists()
 
 
 def _user_can_manage(user, partner):
     """
     Whether this user can manage the given partner org
     """
-    if user.is_admin_for(partner.org):
+    if user.can_administer(partner.org):
         return True
 
     return user.get_partner() == partner and partner.org.editors.filter(pk=user.pk).exists()
@@ -98,15 +98,18 @@ def _user_can_edit(user, org, other):
     """
     Whether or not this user can edit the other user
     """
+    if user.is_superuser:
+        return True
+
     other_group = org.get_user_org_group(other)
     if not other_group:  # other user doesn't belong to this org
         return False
 
+    if user.can_administer(org):
+        return True
+
     other_partner = other.get_partner()
-    if other_partner:
-        return user.can_manage(other_partner)  # manager can edit users in same partner org
-    else:
-        return user.is_admin_for(org)  # admin can edit any other user in org
+    return other_partner and user.can_manage(other_partner)  # manager can edit users in same partner org
 
 
 def _user_release(user):
@@ -134,7 +137,7 @@ User.clean = _user_clean
 User.has_profile = _user_has_profile
 User.get_full_name = _user_get_full_name
 User.get_partner = _user_get_partner
-User.is_admin_for = _user_is_admin_for
+User.can_administer = _user_can_administer
 User.can_manage = _user_can_manage
 User.can_edit = _user_can_edit
 User.release = _user_release

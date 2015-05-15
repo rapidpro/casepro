@@ -8,7 +8,7 @@
         Each filter group is a contact group in RapidPro.
 
     .pull-away.buttons
-      - if org_perms.cases.group_select
+      - if perms.cases.group_select or org_perms.cases.group_select
         %a.btn.btn-default.pull-right{ href:"{% url 'cases.group_select' %}" }
           %span.glyphicon.glyphicon-check
           - trans "Select Groups"

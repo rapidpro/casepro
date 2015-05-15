@@ -158,7 +158,6 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'dash.orgs.context_processors.user_group_perms_processor',
     'dash.orgs.context_processors.set_org_processor',
     'dash.context_processors.lang_direction',
-    'casepro.orgs_ext.views.org_ext_context_processor'
 )
 
 ROOT_URLCONF = 'casepro.urls'

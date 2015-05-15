@@ -77,38 +77,38 @@
                       %a{ href:"{% url 'profiles.user_list' %}" }
                         - trans "Users"
 
-              - if org_perms.orgs.org_home or org_perms.cases.label_list or org_perms.cases.group_list or org_perms.profiles.profile_user_list
+              - if request.user.is_superuser or org_perms.orgs.org_home or org_perms.cases.label_list or org_perms.cases.group_list or org_perms.profiles.profile_user_list
                 %li.dropdown
                   %a.dropdown-toggle{href:"#", data-toggle:"dropdown"}
                     - trans "Administration"
                     %b.caret
                   %ul.dropdown-menu
-                    - if org_perms.orgs.org_home
+                    - if perms.orgs.org_home or org_perms.orgs.org_home
                       %li
                         %a{ href:"{% url 'orgs_ext.org_home' %}" }
                           - trans "Organization"
 
-                    - if org_perms.cases.label_list
+                    - if perms.cases.label_list or org_perms.cases.label_list
                       %li
                         %a{ href:"{% url 'cases.label_list' %}" }
                           - trans "Labels"
 
-                    - if org_perms.cases.group_list
+                    - if perms.cases.group_list or org_perms.cases.group_list
                       %li
                         %a{ href:"{% url 'cases.group_list' %}" }
                           - trans "Groups"
 
-                    - if org_perms.profiles.profile_user_list
+                    - if perms.profiles.profile_user_list or org_perms.profiles.profile_user_list
                       %li
                         %a{ href:"{% url 'profiles.user_list' %}" }
                           - trans "Users"
 
-              - if org_perms.orgs.org_inbox
+              - if perms.orgs.org_inbox or org_perms.orgs.org_inbox
                 %li
                   %a{ href:"{% url 'cases.inbox' %}" }
                     - trans "Inbox"
 
-              - if org_perms.cases.partner_list
+              - if perms.cases.partner_list or org_perms.cases.partner_list
                 %li
                   %a{ href:"{% url 'cases.partner_list' %}" }
                     - trans "Partners"

@@ -72,7 +72,7 @@ class UserFormMixin(object):
     def derive_initial(self):
         initial = super(UserFormMixin, self).derive_initial()
         if self.object:
-            is_manager = self.object in self.request.org.get_org_editors()
+            is_manager = self.request.org and self.object in self.request.org.get_org_editors()
 
             initial['full_name'] = self.object.profile.full_name
             initial['partner'] = self.object.profile.partner
@@ -86,7 +86,7 @@ class UserFormMixin(object):
 
         obj.profile.full_name = data['full_name']
 
-        if 'partner' in data and user.is_admin_for(self.request.org):  # only admins can update a user's partner
+        if 'partner' in data and user.can_administer(self.request.org):  # only admins can update a user's partner
             obj.profile.partner = data['partner']
 
         obj.profile.save()
@@ -123,7 +123,7 @@ class UserCRUDL(SmartCRUDL):
             org = self.request.org
 
             # non-admins can't access this view without a specified partner
-            if org and 'partner_id' not in self.kwargs and not self.request.user.is_admin_for(org):
+            if org and 'partner_id' not in self.kwargs and not self.request.user.can_administer(org):
                 return False
 
             return super(UserCRUDL.Create, self).has_permission(request, *args, **kwargs)
@@ -169,7 +169,7 @@ class UserCRUDL(SmartCRUDL):
         def derive_fields(self):
             fields = ['full_name']
             if self.request.org:
-                if self.request.user.is_admin_for(self.request.org):
+                if self.request.user.can_administer(self.request.org):
                     fields.append('partner')
                 fields.append('role')
             return fields + ['email', 'new_password', 'confirm_password']
@@ -232,9 +232,12 @@ class UserCRUDL(SmartCRUDL):
         def get_queryset(self):
             queryset = super(UserCRUDL.Read, self).get_queryset()
 
-            # only allow access to active users attached to this org
             org = self.request.org
-            return queryset.filter(Q(org_admins=org) | Q(org_editors=org) | Q(org_viewers=org)).filter(is_active=True)
+            if org:
+                # only allow access to active users attached to this org
+                queryset = queryset.filter(Q(org_admins=org) | Q(org_editors=org) | Q(org_viewers=org))
+
+            return queryset.filter(is_active=True)
 
         def get_context_data(self, **kwargs):
             context = super(UserCRUDL.Read, self).get_context_data(**kwargs)
@@ -257,14 +260,14 @@ class UserCRUDL(SmartCRUDL):
 
         def get_role(self, obj):
             org = self.request.org
-            if obj.is_admin_for(org):
-                return _("Administrator")
-            elif org.editors.filter(pk=obj.pk).exists():
-                return _("Manager")
-            elif org.viewers.filter(pk=obj.pk).exists():
-                return _("Data Analyst")
-            else:
-                return None
+            if org:
+                if obj.can_administer(org):
+                    return _("Administrator")
+                elif org.editors.filter(pk=obj.pk).exists():
+                    return _("Manager")
+                elif org.viewers.filter(pk=obj.pk).exists():
+                    return _("Data Analyst")
+            return None
 
     class Delete(OrgPermsMixin, SmartDeleteView):
         cancel_url = '@profiles.user_list'

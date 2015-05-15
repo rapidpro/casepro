@@ -11,11 +11,6 @@ from timezones.forms import TimeZoneField
 from . import TaskType
 
 
-def org_ext_context_processor(request):
-    is_admin = request.org and not request.user.is_anonymous() and request.user.is_admin_for(request.org)
-    return dict(user_is_admin=is_admin)
-
-
 class OrgExtCRUDL(SmartCRUDL):
     actions = ('create', 'update', 'list', 'home', 'edit', 'chooser', 'choose')
     model = Org

@@ -4,7 +4,7 @@
 - block table-controls
   .clearfix
     .pull-away.buttons
-      - if org_perms.cases.label_create
+      - if perms.cases.label_create or org_perms.cases.label_create
         %a.btn.btn-default.pull-right{ href:"{% url 'cases.label_create' %}" }
           %span.glyphicon.glyphicon-plus
           - trans "Add"

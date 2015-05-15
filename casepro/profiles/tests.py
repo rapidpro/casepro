@@ -46,12 +46,24 @@ class UserPatchTest(BaseCasesTest):
         self.assertEqual(self.admin.get_full_name(), "Kidus")
         self.assertEqual(self.user1.get_full_name(), "Evan")
 
-    def test_is_admin_for(self):
-        self.assertTrue(self.admin.is_admin_for(self.unicef))
-        self.assertFalse(self.admin.is_admin_for(self.nyaruka))
-        self.assertFalse(self.user1.is_admin_for(self.unicef))
+    def test_can_administer(self):
+        # superusers can administer any org
+        self.assertTrue(self.superuser.can_administer(self.unicef))
+        self.assertTrue(self.superuser.can_administer(self.nyaruka))
+
+        # admins can administer their org
+        self.assertTrue(self.admin.can_administer(self.unicef))
+        self.assertFalse(self.admin.can_administer(self.nyaruka))
+
+        # managers and analysts can administer any org
+        self.assertFalse(self.user1.can_administer(self.unicef))
 
     def test_can_manage(self):
+        # superusers can manage any partner
+        self.assertTrue(self.superuser.can_manage(self.moh))
+        self.assertTrue(self.superuser.can_manage(self.who))
+        self.assertTrue(self.superuser.can_manage(self.klab))
+
         # admins can manage any partner in their org
         self.assertTrue(self.admin.can_manage(self.moh))
         self.assertTrue(self.admin.can_manage(self.who))
@@ -68,6 +80,11 @@ class UserPatchTest(BaseCasesTest):
         self.assertFalse(self.user2.can_manage(self.klab))
 
     def test_can_edit(self):
+        # superusers can edit anyone
+        self.assertTrue(self.superuser.can_edit(self.unicef, self.admin))
+        self.assertTrue(self.superuser.can_edit(self.unicef, self.user1))
+        self.assertTrue(self.superuser.can_edit(self.nyaruka, self.user4))
+
         # admins can edit any user in their org
         self.assertTrue(self.admin.can_edit(self.unicef, self.admin))
         self.assertTrue(self.admin.can_edit(self.unicef, self.user1))
@@ -128,7 +145,7 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(user.get_full_name(), "McAdmin")
         self.assertEqual(user.username, "mcadmin@casely.com")
         self.assertIsNone(user.get_partner())
-        self.assertFalse(user.is_admin_for(self.unicef))
+        self.assertFalse(user.can_administer(self.unicef))
 
         # log in as an org administrator
         self.login(self.admin)
@@ -235,7 +252,7 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(user.get_full_name(), "McManage")
         self.assertEqual(user.username, "manager@moh.com")
         self.assertEqual(user.profile.partner, self.moh)
-        self.assertFalse(user.is_admin_for(self.unicef))
+        self.assertFalse(user.can_administer(self.unicef))
         self.assertTrue(user.can_manage(self.moh))
 
         # submit again with partner - not allowed and will be ignored
