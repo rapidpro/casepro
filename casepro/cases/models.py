@@ -190,20 +190,20 @@ class MessageExport(models.Model):
         book.save(temp)
         temp.flush()
 
-        filename = 'orgs/%d/message_exports/%s.xls' % (self.org_id, random_string(20))
+        filename = 'orgs/%d/message_exports/%s.xls' % (self.org.id, random_string(20))
         default_storage.save(filename, File(temp))
 
         self.filename = filename
         self.save(update_fields=('filename',))
 
         subject = "Your messages export is ready"
-        download_url = 'https://%s%s' % (settings.HOSTNAME, reverse('cases.messageexport_read', args=[self.pk]))
+        download_url = settings.SITE_HOST_PATTERN % self.org.subdomain + reverse('cases.messageexport_read', args=[self.pk])
+
+        send_email(self.created_by.username, subject, 'cases/email/message_export', dict(link=download_url))
 
         # force a gc
         import gc
         gc.collect()
-
-        send_email(self.created_by.username, subject, 'cases/email/message_export', dict(link=download_url))
 
 
 class Partner(models.Model):
