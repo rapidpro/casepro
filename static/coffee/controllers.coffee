@@ -520,9 +520,25 @@ controllers.controller 'PartnerController', [ '$scope', '$window', 'UtilsService
 
 
 #============================================================================
+# User view controller
+#============================================================================
+controllers.controller 'UserController', [ '$scope', '$window', 'UtilsService', 'UserService', ($scope, $window, UtilsService, UserService) ->
+
+  $scope.init = (userId) ->
+    $scope.userId = userId
+
+  $scope.onDeleteUser = () ->
+    UtilsService.confirmModal("Delete this user?", 'danger', () ->
+      UserService.deleteUser($scope.userId, () ->
+        UtilsService.navigateBack()
+      )
+    )
+]
+
+
+#============================================================================
 # Date range controller
 #============================================================================
-
 controllers.controller 'DateRangeController', [ '$scope', ($scope) ->
   $scope.afterOpen = false
   $scope.afterMin = null

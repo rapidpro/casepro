@@ -109,6 +109,11 @@ def _user_can_edit(user, org, other):
         return user.is_admin_for(org)  # admin can edit any other user in org
 
 
+def _user_release(user):
+    user.is_active = False
+    user.save(update_fields=('is_active',))
+
+
 def _user_unicode(user):
     if user.has_profile():
         if user.profile.full_name:
@@ -132,5 +137,6 @@ User.get_partner = _user_get_partner
 User.is_admin_for = _user_is_admin_for
 User.can_manage = _user_can_manage
 User.can_edit = _user_can_edit
+User.release = _user_release
 User.__unicode__ = _user_unicode
 User.as_json = _user_as_json

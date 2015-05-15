@@ -424,10 +424,27 @@ services.factory 'PartnerService', ['$http', ($http) ->
   new class PartnerService
 
     #----------------------------------------------------------------------------
-    # Delete partner
+    # Delete the given partner
     #----------------------------------------------------------------------------
     deletePartner: (partner, callback) ->
       $http.post('/partner/delete/' + partner.id + '/', {}, DEFAULT_POST_OPTS)
+      .success () ->
+        if callback
+          callback()
+]
+
+
+#=====================================================================
+# User service
+#=====================================================================
+services.factory 'UserService', ['$http', ($http) ->
+  new class UserService
+
+    #----------------------------------------------------------------------------
+    # Delete the given user
+    #----------------------------------------------------------------------------
+    deleteUser: (userId, callback) ->
+      $http.post('/user/delete/' + userId + '/', {}, DEFAULT_POST_OPTS)
       .success () ->
         if callback
           callback()
@@ -446,6 +463,9 @@ services.factory 'UtilsService', ['$window', '$modal', ($window, $modal) ->
 
     navigate: (url) ->
       $window.location.href = url
+
+    navigateBack: () ->
+      $window.history.back();
 
     refresh: () ->
       @navigate($window.location.href)

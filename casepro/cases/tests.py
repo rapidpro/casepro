@@ -934,7 +934,7 @@ class PartnerCRUDLTest(BaseCasesTest):
         self.assertLoginRedirect(response, 'unicef', url)
 
     def test_update(self):
-        url = reverse('cases.partner_read', args=[self.moh.pk])
+        url = reverse('cases.partner_update', args=[self.moh.pk])
 
         # login as analyst user
         self.login(self.user2)

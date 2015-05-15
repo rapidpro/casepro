@@ -89,6 +89,10 @@ class UserPatchTest(BaseCasesTest):
         self.assertFalse(self.user2.can_edit(self.unicef, self.user3))
         self.assertFalse(self.user2.can_edit(self.unicef, self.user3))
 
+    def test_release(self):
+        self.user1.release()
+        self.assertFalse(self.user1.is_active)
+
     def test_unicode(self):
         self.assertEqual(unicode(self.superuser), "root")
 
@@ -262,8 +266,7 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertFormError(response, 'form', 'email', 'This field is required.')
 
         # submit with all fields entered
-        data = dict(full_name="Morris", partner=self.moh.pk, role=ROLE_ANALYST,
-                    email="mo2@chat.com", is_active=True)
+        data = {'full_name': "Morris", 'partner': self.moh.pk, 'role': ROLE_ANALYST, 'email': "mo2@chat.com"}
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
 
@@ -274,26 +277,15 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(user.username, "mo2@chat.com")
 
         # submit again for good measure
-        data = dict(full_name="Morris", partner=self.moh.pk, role=ROLE_ANALYST,
-                    email="mo2@chat.com", is_active=True)
+        data = {'full_name': "Morris", 'partner': self.moh.pk, 'role': ROLE_ANALYST, 'email': "mo2@chat.com"}
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
 
         # try giving user someone else's email address
-        data = dict(full_name="Morris", partner=self.moh.pk, role=ROLE_ANALYST,
-                    email="bob@unicef.org", password="Qwerty123", confirm_password="Qwerty123")
+        data = {'full_name': "Morris", 'partner': self.moh.pk, 'role': ROLE_ANALYST,
+                'email': "bob@unicef.org", 'password': "Qwerty123", 'confirm_password': "Qwerty123"}
         response = self.url_post('unicef', url, data)
         self.assertFormError(response, 'form', None, "Email address already taken.")
-
-        # check de-activating user
-        data = dict(full_name="Morris", partner=self.moh.pk, role=ROLE_ANALYST,
-                    email="mo2@chat.com", is_active=False)
-        response = self.url_post('unicef', url, data)
-        self.assertEqual(response.status_code, 302)
-
-        # check user object is inactive
-        user = User.objects.get(pk=self.user1.pk)
-        self.assertFalse(user.is_active)
 
     def test_read(self):
         # log in as an org administrator
@@ -303,11 +295,13 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', reverse('profiles.user_read', args=[self.admin.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['edit_button_url'], reverse('profiles.user_self'))
+        self.assertFalse(response.context['can_delete'])
 
         # view other user's profile
         response = self.url_get('unicef', reverse('profiles.user_read', args=[self.user1.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['edit_button_url'], reverse('profiles.user_update', args=[self.user1.pk]))
+        self.assertTrue(response.context['can_delete'])
 
         # try to view user from other org
         response = self.url_get('unicef', reverse('profiles.user_read', args=[self.user4.pk]))
@@ -320,16 +314,19 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', reverse('profiles.user_read', args=[self.user1.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['edit_button_url'], reverse('profiles.user_self'))
+        self.assertFalse(response.context['can_delete'])
 
         # view another user in same partner org (can edit)
         response = self.url_get('unicef', reverse('profiles.user_read', args=[self.user2.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['edit_button_url'], reverse('profiles.user_update', args=[self.user2.pk]))
+        self.assertTrue(response.context['can_delete'])
 
         # view another user in different partner org (can't edit)
         response = self.url_get('unicef', reverse('profiles.user_read', args=[self.user3.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertIsNone(response.context['edit_button_url'])
+        self.assertFalse(response.context['can_delete'])
 
         # log in as an analyst user
         self.login(self.user2)
@@ -338,11 +335,13 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', reverse('profiles.user_read', args=[self.user2.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['edit_button_url'], reverse('profiles.user_self'))
+        self.assertFalse(response.context['can_delete'])
 
         # view another user in same partner org (can't edit)
         response = self.url_get('unicef', reverse('profiles.user_read', args=[self.user1.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertIsNone(response.context['edit_button_url'])
+        self.assertFalse(response.context['can_delete'])
 
     def test_list(self):
         url = reverse('profiles.user_list')

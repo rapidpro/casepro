@@ -7,8 +7,9 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.core.validators import MinLengthValidator
 from django.db.models import Q
-from django.http import Http404
-from smartmin.users.views import SmartCRUDL, SmartCreateView, SmartListView, SmartReadView, SmartUpdateView
+from django.http import Http404, HttpResponse
+from smartmin.users.views import SmartCreateView, SmartListView, SmartDeleteView, SmartReadView, SmartUpdateView
+from smartmin.users.views import SmartCRUDL
 from casepro.cases.models import Partner
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER, ROLE_CHOICES
 
@@ -37,9 +38,6 @@ class UserForm(forms.ModelForm):
 
     change_password = forms.BooleanField(label=_("Require change"), required=False,
                                          help_text=_("Whether user must change password on next login."))
-
-    is_active = forms.BooleanField(label=_("Active"), required=False,
-                                   help_text=_("Whether this user is active, disable to remove access."))
 
     def __init__(self, *args, **kwargs):
         self.org = kwargs.pop('org')
@@ -115,7 +113,7 @@ class UserFieldsMixin(object):
 
 class UserCRUDL(SmartCRUDL):
     model = User
-    actions = ('create', 'update', 'read', 'self', 'list')
+    actions = ('create', 'update', 'read', 'self', 'delete', 'list')
 
     class Create(OrgPermsMixin, UserFormMixin, SmartCreateView):
         form_class = UserForm
@@ -174,7 +172,7 @@ class UserCRUDL(SmartCRUDL):
                 if self.request.user.is_admin_for(self.request.org):
                     fields.append('partner')
                 fields.append('role')
-            return fields + ['email', 'new_password', 'confirm_password', 'is_active']
+            return fields + ['email', 'new_password', 'confirm_password']
 
         def get_success_url(self):
             return reverse('profiles.user_read', args=[self.object.pk])
@@ -245,12 +243,16 @@ class UserCRUDL(SmartCRUDL):
 
             if self.object == user:
                 edit_button_url = reverse('profiles.user_self')
+                can_delete = False  # can't delete yourself
             elif user.can_edit(org, self.object):
                 edit_button_url = reverse('profiles.user_update', args=[self.object.pk])
+                can_delete = True
             else:
                 edit_button_url = None
+                can_delete = False
 
             context['edit_button_url'] = edit_button_url
+            context['can_delete'] = can_delete
             return context
 
         def get_role(self, obj):
@@ -263,6 +265,17 @@ class UserCRUDL(SmartCRUDL):
                 return _("Data Analyst")
             else:
                 return None
+
+    class Delete(OrgPermsMixin, SmartDeleteView):
+        cancel_url = '@profiles.user_list'
+
+        def has_permission(self, request, *args, **kwargs):
+            return request.user.can_edit(request.org, self.get_object())
+
+        def post(self, request, *args, **kwargs):
+            user = self.get_object()
+            user.release()
+            return HttpResponse(status=204)
 
     class List(OrgPermsMixin, UserFieldsMixin, SmartListView):
         default_order = ('profile__full_name',)
