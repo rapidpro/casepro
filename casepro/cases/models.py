@@ -669,7 +669,7 @@ class Message(object):
     @staticmethod
     def search(org, search, pager):
         """
-        Search for unsolicited messages in RapidPro
+        Search for labelled messages in RapidPro
         """
         if not search['labels']:  # no access to un-labelled messages
             return []
@@ -683,7 +683,7 @@ class Message(object):
         client = org.get_temba_client()
         messages = client.get_messages(pager=pager, text=search['text'], labels=search['labels'],
                                        contacts=search['contacts'], groups=search['groups'],
-                                       direction='I', _types=['I'], statuses=['H'], archived=search['archived'],
+                                       direction='I', statuses=['H'], archived=search['archived'],
                                        after=search['after'], before=search['before'])
 
         if messages:
