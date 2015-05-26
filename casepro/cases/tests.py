@@ -15,9 +15,9 @@ from temba.utils import format_iso8601
 from casepro.orgs_ext import TaskType
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
-from . import safe_max, match_keywords, truncate, contact_as_json
-from .models import AccessLevel, Case, CaseAction, CaseEvent, Group, Label, Message, MessageAction, MessageExport
-from .models import Partner, Outgoing
+from . import safe_max, match_keywords, truncate
+from .models import AccessLevel, Case, CaseAction, CaseEvent, Contact, Group, Label, Message, MessageAction
+from .models import MessageExport, Partner, Outgoing
 from .tasks import process_new_unsolicited
 
 
@@ -63,6 +63,7 @@ class CaseTest(BaseCasesTest):
 
         # check that opening the case fetched the messages and archived them
         mock_archive_messages.assert_called_once_with(messages=[123, 234])
+        mock_archive_messages.reset_mock()
 
         self.assertEqual(case.access_level(self.user1), AccessLevel.update)  # user who opened it can view and update
         self.assertEqual(case.access_level(self.user2), AccessLevel.update)  # user from same org can do likewise
@@ -113,6 +114,10 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(actions[2].created_by, self.user1)
         self.assertEqual(actions[2].created_on, d3)
 
+        # contact sends a message after case was closed
+        msg3 = TembaMessage.create(id=345, contact='C-001', created_on=d4, text="No more case")
+        mock_get_messages.return_value = [msg3]
+
         with patch.object(timezone, 'now', return_value=d4):
             # but second user re-opens it
             case.reopen(self.user2)
@@ -125,6 +130,9 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(actions[3].action, CaseAction.REOPEN)
         self.assertEqual(actions[3].created_by, self.user2)
         self.assertEqual(actions[3].created_on, d4)
+
+        # check that re-opening the case fetched new message and archived it
+        mock_archive_messages.assert_called_once_with(messages=[345])
 
         with patch.object(timezone, 'now', return_value=d5):
             # and re-assigns it to different partner
@@ -425,6 +433,13 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(mock_get_messages.call_count, 0)
 
 
+class ContactTest(BaseCasesTest):
+    def test_as_json(self):
+        contact = TembaContact.create(uuid='C-001', name="Bob", fields={'district': "Gasabo", 'age': 32, 'gender': "M"})
+        contact_json = Contact.as_json(contact, ['age', 'gender'])
+        self.assertEqual(contact_json, {'uuid': 'C-001', 'fields': {'age': 32, 'gender': "M"}})
+
+
 class GroupTest(BaseCasesTest):
     def test_create(self):
         mothers = Group.create(self.unicef, "Mothers", 'G-004')
@@ -519,11 +534,6 @@ class InitTest(BaseCasesTest):
         self.assertEqual(truncate("Hello World", 8), "Hello...")
         self.assertEqual(truncate("Hello World", 8, suffix="_"), "Hello W_")
         self.assertEqual(truncate("Hello World", 98), "Hello World")
-
-    def test_contact_as_json(self):
-        contact = TembaContact.create(uuid='C-001', name="Bob", fields={'district': "Gasabo", 'age': 32, 'gender': "M"})
-        contact_json = contact_as_json(contact, ['age', 'gender'])
-        self.assertEqual(contact_json, {'uuid': 'C-001', 'fields': {'age': 32, 'gender': "M"}})
 
 
 class LabelTest(BaseCasesTest):
@@ -679,7 +689,7 @@ class MessageExportCRUDLTest(BaseCasesTest):
         response = self.url_post('unicef', '%s?view=inbox&text=' % reverse('cases.messageexport_create'))
         self.assertEqual(response.status_code, 200)
 
-        mock_get_messages.assert_called_once_with(_types=['I'], archived=False, labels=['AIDS', 'Pregnancy'],
+        mock_get_messages.assert_called_once_with(archived=False, labels=['AIDS', 'Pregnancy'],
                                                   contacts=None, groups=None, text='', statuses=['H'], direction='I',
                                                   after=None, before=None, pager=None)
 
@@ -792,7 +802,7 @@ class MessageViewsTest(BaseCasesTest):
 
         self.assertEqual(len(response.json['results']), 2)
 
-        mock_get_messages.assert_called_once_with(_types=['I'], archived=False, labels=['AIDS', 'Pregnancy'],
+        mock_get_messages.assert_called_once_with(archived=False, labels=['AIDS', 'Pregnancy'],
                                                   contacts=None, groups=None, text='', statuses=['H'], direction='I',
                                                   after=None, before=t0, pager=pager)
         mock_get_messages.reset_mock()
@@ -804,7 +814,7 @@ class MessageViewsTest(BaseCasesTest):
 
         self.assertEqual(len(response.json['results']), 1)
 
-        mock_get_messages.assert_called_once_with(_types=['I'], archived=False, labels=['AIDS', 'Pregnancy'],
+        mock_get_messages.assert_called_once_with(archived=False, labels=['AIDS', 'Pregnancy'],
                                                   contacts=None, groups=None, text='', statuses=['H'], direction='I',
                                                   after=None, before=t0, pager=pager)
         mock_get_messages.reset_mock()
@@ -834,7 +844,7 @@ class MessageViewsTest(BaseCasesTest):
 
         self.assertEqual(len(response.json['results']), 1)
 
-        mock_get_messages.assert_called_once_with(_types=['I'], archived=False, labels=['AIDS', 'Pregnancy'],
+        mock_get_messages.assert_called_once_with(archived=False, labels=['AIDS', 'Pregnancy'],
                                                   contacts=None, groups=None, text='', statuses=['H'], direction='I',
                                                   after=t1, before=t2, pager=None)
 

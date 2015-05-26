@@ -21,7 +21,7 @@ from enum import IntEnum
 from redis_cache import get_redis_connection
 from temba.base import TembaNoSuchObjectError
 from casepro.email import send_email
-from . import parse_csv, contact_as_json, match_keywords, SYSTEM_LABEL_FLAGGED
+from . import parse_csv, match_keywords, SYSTEM_LABEL_FLAGGED
 
 
 class AccessLevel(IntEnum):
@@ -402,14 +402,9 @@ class Case(models.Model):
 
             CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee)
 
-            # archive messages and any labelled messages from this contact
+            # archive messages any labelled messages from this contact
             if archive_messages:
-                client = org.get_temba_client()
-                labels = [l.name for l in Label.get_all(org)]
-                messages = client.get_messages(contacts=[message.contact], labels=labels,
-                                               direction='I', statuses=['H'], _types=['I'], archived=False)
-                message_ids = [m.id for m in messages]
-                client.archive_messages(messages=message_ids)
+                Contact.archive_messages(org, message.contact)
 
         return case
 
@@ -432,11 +427,15 @@ class Case(models.Model):
         CaseAction.create(self, user, CaseAction.CLOSE, note=note)
 
     @case_action()
-    def reopen(self, user, note=None):
+    def reopen(self, user, note=None, archive_messages=True):
         self.closed_on = None
         self.save(update_fields=('closed_on',))
 
         CaseAction.create(self, user, CaseAction.REOPEN, note=note)
+
+        # labelling task may have picked up messages whilst case was closed. Those now need to be archived.
+        if archive_messages:
+            Contact.archive_messages(self.org, self.contact_uuid)
 
     @case_action()
     def reassign(self, user, partner, note=None):
@@ -490,20 +489,14 @@ class Case(models.Model):
         else:
             return AccessLevel.none
 
-    def _fetch_contact(self):
-        try:
-            return self.org.get_temba_client().get_contact(self.contact_uuid)
-        except TembaNoSuchObjectError:
-            return None  # always a chance that the contact has been deleted in RapidPro
-
     @property
     def is_closed(self):
         return self.closed_on is not None
 
     def as_json(self, fetch_contact=False):
         if fetch_contact:
-            contact = self._fetch_contact()
-            contact_json = contact_as_json(contact, self.org.get_contact_fields()) if contact else None
+            contact = Contact.fetch(self.org, self.contact_uuid)
+            contact_json = Contact.as_json(contact, self.org.get_contact_fields()) if contact else None
         else:
             contact_json = {'uuid': self.contact_uuid}
 
@@ -590,6 +583,35 @@ class CaseEvent(models.Model):
         return {'id': self.pk,
                 'event': self.event,
                 'created_on': self.created_on}
+
+
+class Contact(object):
+    """
+    A pseudo-model for contacts which are always fetched from RapidPro.
+    """
+    @staticmethod
+    def archive_messages(org, contact_uuid):
+        client = org.get_temba_client()
+        labels = [l.name for l in Label.get_all(org)]
+        messages = client.get_messages(contacts=[contact_uuid], labels=labels,
+                                       direction='I', statuses=['H'], _types=['I'], archived=False)
+        message_ids = [m.id for m in messages]
+        client.archive_messages(messages=message_ids)
+
+    @staticmethod
+    def fetch(org, uuid):
+        try:
+            return org.get_temba_client().get_contact(uuid)
+        except TembaNoSuchObjectError:
+            return None  # always a chance that the contact has been deleted in RapidPro
+
+    @staticmethod
+    def as_json(contact, field_keys):
+        """
+        Prepares a contact (fetched from RapidPro) for JSON serialization
+        """
+        return {'uuid': contact.uuid,
+                'fields': {key: contact.fields.get(key, None) for key in field_keys}}
 
 
 class Message(object):

@@ -27,14 +27,6 @@ def json_encode(data):
     return json.dumps(data, cls=DjangoJSONEncoder)
 
 
-def contact_as_json(contact, field_keys):
-    """
-    Prepares a contact (fetched from RapidPro) for JSON serialization
-    """
-    return {'uuid': contact.uuid,
-            'fields': {key: contact.fields.get(key, None) for key in field_keys}}
-
-
 def safe_max(*args, **kwargs):
     """
     Regular max won't compare dates with NoneType and raises exception for no args
