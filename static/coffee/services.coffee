@@ -189,7 +189,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       if label
         data.append('label', label.id)
 
-      $http.post '/message/action/' + action + '/', data, DEFAULT_POST_OPTS
+      $http.post('/message/action/' + action + '/', data, DEFAULT_POST_OPTS)
       .success () =>
         if callback
           callback()
