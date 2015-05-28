@@ -80,6 +80,11 @@
                   [[ group.name ]]
                 </ui-select-choices>
               </ui-select>
+          .form-group{ ng-if:'itemView == "flagged"' }
+            %label.control-label.col-sm-2
+              - trans "Include archived"
+            .col-sm-10{ style:"padding-top: 4px" }
+              %input{ type:"checkbox", ng-model:"searchFields.archived" }
 
     .selection-toolbar
       .row

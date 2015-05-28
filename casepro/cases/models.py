@@ -702,8 +702,6 @@ class Message(object):
             if not last_msg_time or search['after'] >= last_msg_time:
                 return []
 
-        print '*** archived: %s' % unicode(search['archived'])
-
         client = org.get_temba_client()
         messages = client.get_messages(pager=pager, text=search['text'], labels=search['labels'],
                                        contacts=search['contacts'], groups=search['groups'],
