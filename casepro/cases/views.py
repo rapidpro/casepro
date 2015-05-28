@@ -14,7 +14,8 @@ from enum import Enum
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView, SmartFormView
 from smartmin.users.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba.utils import parse_iso8601
-from . import parse_csv, json_encode, safe_max, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED, LABEL_KEYWORD_MIN_LENGTH
+from . import parse_csv, json_encode, safe_max, str_to_bool
+from . import MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED, LABEL_KEYWORD_MIN_LENGTH
 from .models import AccessLevel, Case, Group, Label, Message, MessageAction, MessageExport, Partner, Outgoing
 from .tasks import message_export
 
@@ -431,13 +432,20 @@ class MessageSearchMixin(object):
         groups = request.GET.get('groups', None)
         groups = parse_csv(groups) if groups else None
 
+        if view == 'archived':
+            archived = True  # only archived
+        elif str_to_bool(request.GET.get('archived', '')):
+            archived = None  # both archived and non-archived
+        else:
+            archived = False  # only non-archived
+
         return {'labels': labels,
                 'contacts': contacts,
                 'groups': groups,
                 'after': parse_iso8601(request.GET.get('after', None)),
                 'before': parse_iso8601(request.GET.get('before', None)),
                 'text': request.GET.get('text', None),
-                'archived': view == 'archived'}
+                'archived': archived}
 
 
 class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):

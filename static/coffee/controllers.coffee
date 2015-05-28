@@ -197,7 +197,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     if $scope.itemView == 'inbox'
       return (item) -> !item.archived
     else if $scope.itemView == 'flagged'
-      return (item) -> !item.archived and item.flagged
+      return (item) -> (!item.archived or $scope.searchFields.archived) and item.flagged
     else if $scope.itemView == 'archived'
       return (item) -> item.archived
 
@@ -209,7 +209,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     search.timeCode = Date.now()
     return search
 
-  $scope.searchFieldDefaults = () -> { text: null, groups: [], after: null, before: null }
+  $scope.searchFieldDefaults = () -> { text: null, groups: [], after: null, before: null, archived: false }
 
   $scope.setAdvancedSearch = (state) ->
     $scope.advancedSearch = state

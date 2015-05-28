@@ -177,6 +177,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       params.groups = (g.uuid for g in search.groups).join(',')
       params.contact = search.contact
       params.label = if search.label then search.label.id else null
+      params.archived = if search.archived then 1 else 0
       return params
 
     #----------------------------------------------------------------------------

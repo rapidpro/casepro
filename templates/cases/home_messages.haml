@@ -26,7 +26,13 @@
               - trans "Advanced..."
             %button.btn.btn-default{ type:"button", ng-click:"onExportSearch()", tooltip:"Save as Excel" }
               %span.glyphicon.glyphicon-save
-          %input.form-control{ ng-model:"searchFields.text", type:"text", placeholder:"Search", style:"width: 400px" }
+
+          %span{ ng-if:'itemView != "flagged"' }
+            %input.form-control{ ng-model:"searchFields.text", type:"text", placeholder:"Search", style:"width: 400px" }
+          %span{ ng-if:'itemView == "flagged"' }
+            %input.form-control{ ng-model:"searchFields.text", type:"text", placeholder:"Search", style:"width: 300px; display: inline-block" }
+            %input{ type:"checkbox", ng-model:"searchFields.archived" }
+            - trans "include archived"
 
       .search-form-advanced{ ng-if:"advancedSearch" }
         %form.form-horizontal
@@ -107,7 +113,7 @@
                   %li{ ng-repeat:"label in inactiveLabels" }
                     %a{ ng-click:"onLabelSelection(label)" }
                       [[ label.name ]]
-              %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onFlagSelection()", type:"button", tooltip:"Flag" }
+              %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-if:'itemView != "flagged"', ng-click:"onFlagSelection()", type:"button", tooltip:"Flag" }
                 %span.glyphicon.glyphicon-flag
               %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onReplyToSelection()", type:"button" }
                 - trans "Reply"
@@ -118,7 +124,7 @@
                 - trans "Restore"
 
     .messages{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
-      .stackitem.clearfix.hoverable{ ng-repeat:"message in items | filter: getItemFilter()", ng-class:"{ flagged: message.flagged, selected: message.selected }" }
+      .stackitem.clearfix.hoverable{ ng-repeat:"message in items | filter: getItemFilter()", ng-class:"{ flagged: message.flagged, selected: message.selected, archived: message.archived }" }
         .message-actions
           %input{ type:"checkbox", ng-model:"message.selected", ng-change:"onChangeSelection()" }
           %a.flag{ ng-click:"onToggleMessageFlag(message)" }
@@ -205,4 +211,7 @@
     }
     .stackitem.selected {
       background-color: #FFFFE0
+    }
+    .stackitem.archived .message-text {
+      color: #999;
     }

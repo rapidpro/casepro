@@ -23,6 +23,13 @@ def parse_csv(csv, as_ints=False):
     return items
 
 
+def str_to_bool(text):
+    """
+    Parses a boolean value from the given text
+    """
+    return text and text.lower() in ['true', 'y', 'yes', '1']
+
+
 def json_encode(data):
     return json.dumps(data, cls=DjangoJSONEncoder)
 
