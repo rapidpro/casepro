@@ -3,7 +3,7 @@ config = dict(
     app_dir='casepro',
     friendly_name='CasePro',
     repository='ssh://git@github.com/rapidpro/casepro.git',
-    domain='casepro.io',
+    domain='partners.ureport.in',
     name='casepro',
     repo='casepro',
     user='casepro',
@@ -11,10 +11,16 @@ config = dict(
     settings='settings.py.dev',
     dbms='psql',
     db='casepro',
-    custom_domains='*.casepro.io casepro.io upartners.staging.nyaruka.com *.upartners.staging.nyaruka.com',
-    prod_host='case1',
+    custom_domains='*.partners.ureport.in partners.ureport.in upartners.staging.nyaruka.com *.upartners.staging.nyaruka.com',
+    prod_host='report1',
     sqldump=False,
     celery=True,
     processes=('celery',),
     compress=True,
+
+    elb = dict(name='UReport',
+               region='eu-west-1',
+               primary='report1',
+               instances=[dict(name='report1', host='report1.ureport.in', id='i-5ccaec1f'),
+                          dict(name='report2', host='report2.ureport.in', id='i-e89fd8aa')])
 )
