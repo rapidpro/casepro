@@ -9,7 +9,7 @@ TEMPLATE_DEBUG = DEBUG
 COMPRESS_ENABLED = True
 
 SITE_API_HOST = 'rapidpro.io'
-SITE_HOST_PATTERN = 'https://%s.partners.ureport.in'
+SITE_HOST_PATTERN = 'http://%s.partners.ureport.in'
 
 HOSTNAME = 'partners.ureport.in'
 ALLOWED_HOSTS = ['partners.ureport.in', '.partners.ureport.in']
