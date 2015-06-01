@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 import json
 import pytz
+import re
 
 from dash.orgs.models import Org
 from dash.utils import random_string, chunks, intersection
@@ -21,7 +22,7 @@ from enum import IntEnum
 from redis_cache import get_redis_connection
 from temba.base import TembaNoSuchObjectError
 from casepro.email import send_email
-from . import parse_csv, match_keywords, SYSTEM_LABEL_FLAGGED
+from . import parse_csv, normalize, match_keywords, SYSTEM_LABEL_FLAGGED
 
 
 class AccessLevel(IntEnum):
@@ -257,6 +258,8 @@ class Label(models.Model):
     """
     Corresponds to a message label in RapidPro. Used for determining visibility of messages to different partners.
     """
+    KEYWORD_MIN_LENGTH = 3
+
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='labels')
 
     name = models.CharField(verbose_name=_("Name"), max_length=32, help_text=_("Name of this label"))
@@ -296,6 +299,10 @@ class Label(models.Model):
 
     def as_json(self):
         return {'id': self.pk, 'name': self.name, 'count': getattr(self, 'count', None)}
+
+    @classmethod
+    def is_valid_keyword(cls, keyword):
+        return len(keyword) >= cls.KEYWORD_MIN_LENGTH and re.match(r'^\w[\w\- ]*\w$', keyword)
 
     def __unicode__(self):
         return self.name
@@ -733,8 +740,10 @@ class Message(object):
                 open_case.reply_event(msg)
             else:
                 # only apply labels if there isn't a currently open case for this contact
+                norm_text = normalize(msg.text)
+
                 for label in labels:
-                    if match_keywords(msg.text, label_keywords[label]):
+                    if match_keywords(norm_text, label_keywords[label]):
                         label_matches[label].append(msg)
                         if not newest_labelled:
                             newest_labelled = msg

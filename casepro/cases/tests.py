@@ -15,7 +15,7 @@ from temba.utils import format_iso8601
 from casepro.orgs_ext import TaskType
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
-from . import safe_max, match_keywords, truncate
+from . import safe_max, normalize, match_keywords, truncate
 from .models import AccessLevel, Case, CaseAction, CaseEvent, Contact, Group, Label, Message, MessageAction
 from .models import MessageExport, Partner, Outgoing
 from .tasks import process_new_unsolicited
@@ -520,6 +520,10 @@ class InitTest(BaseCasesTest):
         self.assertEqual(safe_max(None, None), None)
         self.assertEqual(safe_max(date(2012, 3, 6), date(2012, 5, 2), None), date(2012, 5, 2))
 
+    def test_normalize(self):
+        self.assertEqual(normalize("Mary  had\ta little lamb"), "mary had a little lamb")  # remove multiple spaces
+        self.assertEqual(normalize("Gar\u00e7on"), "garc\u0327on")  # decomposed combined unicode chars (U+E7 = ç)
+
     def test_match_keywords(self):
         text = "Mary had a little lamb"
         self.assertFalse(match_keywords(text, []))
@@ -529,6 +533,7 @@ class InitTest(BaseCasesTest):
         self.assertTrue(match_keywords(text, ['mary']))  # case-insensitive and start of string
         self.assertTrue(match_keywords(text, ['lamb']))  # end of string
         self.assertTrue(match_keywords(text, ['big', 'little']))  # one match, one mis-match
+        self.assertTrue(match_keywords(text, ['little lamb']))  # spaces ok
 
     def test_truncate(self):
         self.assertEqual(truncate("Hello World", 8), "Hello...")
@@ -555,6 +560,18 @@ class LabelTest(BaseCasesTest):
     def test_release(self):
         self.aids.release()
         self.assertFalse(self.aids.is_active)
+
+    def test_is_valid_keyword(self):
+        self.assertTrue(Label.is_valid_keyword('kit'))
+        self.assertTrue(Label.is_valid_keyword('kit-kat'))
+        self.assertTrue(Label.is_valid_keyword('kit kat'))
+        self.assertTrue(Label.is_valid_keyword('kit-kat wrapper'))
+
+        self.assertFalse(Label.is_valid_keyword('it'))  # too short
+        self.assertFalse(Label.is_valid_keyword(' kitkat'))  # can't start with a space
+        self.assertFalse(Label.is_valid_keyword('-kit'))  # can't start with a dash
+        self.assertFalse(Label.is_valid_keyword('kat '))  # can't end with a space
+        self.assertFalse(Label.is_valid_keyword('kat-'))  # can't end with a dash
 
 
 class LabelCRUDLTest(BaseCasesTest):
@@ -592,12 +609,12 @@ class LabelCRUDLTest(BaseCasesTest):
         # submit with a keyword that is too short
         response = self.url_post('unicef', url, {'name': 'Ebola', 'keywords': 'a, ebola'})
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'keywords', "Label keywords must be at least 3 characters long")
+        self.assertFormError(response, 'form', 'keywords', "Keywords must be at least 3 characters long")
 
         # submit with a keyword that is invalid
-        response = self.url_post('unicef', url, {'name': 'Ebola', 'keywords': r'e-bo\a?, ebola'})
+        response = self.url_post('unicef', url, {'name': 'Ebola', 'keywords': r'ebol@?, ebola'})
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'keywords', "Label keywords should not contain punctuation")
+        self.assertFormError(response, 'form', 'keywords', "Invalid keyword: ebol@?")
 
         # submit again with valid data
         response = self.url_post('unicef', url, {'name': "Ebola", 'description': "Msgs about ebola",

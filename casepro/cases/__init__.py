@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import json
+import unicodedata
 import re
 
 from django.core.serializers.json import DjangoJSONEncoder
@@ -8,7 +9,6 @@ from django.core.serializers.json import DjangoJSONEncoder
 
 MAX_MESSAGE_CHARS = 140
 SYSTEM_LABEL_FLAGGED = "Flagged"
-LABEL_KEYWORD_MIN_LENGTH = 3
 
 
 def parse_csv(csv, as_ints=False):
@@ -45,6 +45,14 @@ def safe_max(*args, **kwargs):
         return non_nones[0]
     else:
         return max(*non_nones, **kwargs)
+
+
+def normalize(text):
+    """
+    Normalizes text before keyword matching. Converts to lowercase, performs KC unicode normalization and replaces
+    multiple whitespace characters with single spaces.
+    """
+    return unicodedata.normalize('NFKD', re.sub(r'\s+', ' ', text.lower()))
 
 
 def match_keywords(text, keywords):
