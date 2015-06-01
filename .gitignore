@@ -11,6 +11,7 @@ dash
 deploy
 celerybeat-schedule.db
 src/
+casepro/settings.py
 
 .idea/
 .DS_Store
