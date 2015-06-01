@@ -12,7 +12,7 @@ from enum import Enum
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView, SmartFormView
 from smartmin.users.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba.utils import parse_iso8601
-from . import parse_csv, json_encode, safe_max, str_to_bool, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
+from . import parse_csv, json_encode, normalize, safe_max, str_to_bool, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
 from .models import AccessLevel, Case, Group, Label, Message, MessageAction, MessageExport, Partner, Outgoing
 from .tasks import message_export
 
@@ -338,8 +338,11 @@ class LabelForm(forms.ModelForm):
         return name
 
     def clean_keywords(self):
-        keywords = parse_csv(self.cleaned_data['keywords'].lower())
+        keywords = parse_csv(self.cleaned_data['keywords'])
+        clean_keywords = []
         for keyword in keywords:
+            clean_keyword = normalize(keyword)
+
             if len(keyword) < Label.KEYWORD_MIN_LENGTH:
                 raise forms.ValidationError(_("Keywords must be at least %d characters long")
                                             % Label.KEYWORD_MIN_LENGTH)
@@ -347,7 +350,9 @@ class LabelForm(forms.ModelForm):
             if not Label.is_valid_keyword(keyword):
                 raise forms.ValidationError(_("Invalid keyword: %s") % keyword)
 
-        return ','.join(keywords)
+            clean_keywords.append(clean_keyword)
+
+        return ','.join(clean_keywords)
 
     class Meta:
         model = Label
