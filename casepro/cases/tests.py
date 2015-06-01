@@ -543,9 +543,9 @@ class InitTest(BaseCasesTest):
     def test_str_to_bool(self):
         self.assertFalse(str_to_bool("0"))
         self.assertFalse(str_to_bool("fALSe"))
-        self.assertTrue(str_to_bool("N"))
-        self.assertTrue(str_to_bool("No"))
-        self.assertTrue(str_to_bool("x"))
+        self.assertFalse(str_to_bool("N"))
+        self.assertFalse(str_to_bool("No"))
+        self.assertFalse(str_to_bool("x"))
 
         self.assertTrue(str_to_bool("1"))
         self.assertTrue(str_to_bool("TrUE"))
