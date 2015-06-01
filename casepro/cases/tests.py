@@ -15,7 +15,7 @@ from temba.utils import format_iso8601
 from casepro.orgs_ext import TaskType
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
-from . import safe_max, normalize, match_keywords, truncate
+from . import safe_max, normalize, match_keywords, truncate, str_to_bool
 from .models import AccessLevel, Case, CaseAction, CaseEvent, Contact, Group, Label, Message, MessageAction
 from .models import MessageExport, Partner, Outgoing
 from .tasks import process_new_unsolicited
@@ -539,6 +539,18 @@ class InitTest(BaseCasesTest):
         self.assertEqual(truncate("Hello World", 8), "Hello...")
         self.assertEqual(truncate("Hello World", 8, suffix="_"), "Hello W_")
         self.assertEqual(truncate("Hello World", 98), "Hello World")
+
+    def test_str_to_bool(self):
+        self.assertFalse(str_to_bool("0"))
+        self.assertFalse(str_to_bool("fALSe"))
+        self.assertTrue(str_to_bool("N"))
+        self.assertTrue(str_to_bool("No"))
+        self.assertTrue(str_to_bool("x"))
+
+        self.assertTrue(str_to_bool("1"))
+        self.assertTrue(str_to_bool("TrUE"))
+        self.assertTrue(str_to_bool("Y"))
+        self.assertTrue(str_to_bool("YeS"))
 
 
 class LabelTest(BaseCasesTest):

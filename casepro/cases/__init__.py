@@ -31,6 +31,9 @@ def str_to_bool(text):
 
 
 def json_encode(data):
+    """
+    Encodes the given primitives as JSON using Django's encoder which can handle dates
+    """
     return json.dumps(data, cls=DjangoJSONEncoder)
 
 
@@ -49,7 +52,7 @@ def safe_max(*args, **kwargs):
 
 def normalize(text):
     """
-    Normalizes text before keyword matching. Converts to lowercase, performs KC unicode normalization and replaces
+    Normalizes text before keyword matching. Converts to lowercase, performs KD unicode normalization and replaces
     multiple whitespace characters with single spaces.
     """
     return unicodedata.normalize('NFKD', re.sub(r'\s+', ' ', text.lower()))
@@ -66,6 +69,9 @@ def match_keywords(text, keywords):
 
 
 def truncate(text, length=100, suffix='...'):
+    """
+    Truncates the given text to be no longer than the given length
+    """
     if len(text) > length:
         return text[:length-len(suffix)] + suffix
     else:
