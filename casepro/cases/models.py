@@ -729,6 +729,8 @@ class Message(object):
         label_keywords = {l: l.get_keywords() for l in labels}
         label_matches = {l: [] for l in labels}  # message ids that match each label
 
+        case_replies = []
+
         client = org.get_temba_client()
         num_labels = 0
         newest_labelled = None
@@ -738,6 +740,7 @@ class Message(object):
 
             if open_case:
                 open_case.reply_event(msg)
+                case_replies.append(msg)
             else:
                 # only apply labels if there isn't a currently open case for this contact
                 norm_text = normalize(msg.text)
@@ -755,8 +758,12 @@ class Message(object):
         # add labels to matching messages
         for label, matched_msgs in label_matches.iteritems():
             if matched_msgs:
-                client.label_messages(messages=[m.id for m in matched_msgs], label=label.name)
+                client.label_messages(messages=matched_msgs, label=label.name)
                 num_labels += len(matched_msgs)
+
+        # archive messages which are case replies
+        if case_replies:
+            client.archive_messages(messages=case_replies)
 
         return num_labels
 
