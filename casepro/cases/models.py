@@ -602,8 +602,8 @@ class Contact(object):
         labels = [l.name for l in Label.get_all(org)]
         messages = client.get_messages(contacts=[contact_uuid], labels=labels,
                                        direction='I', statuses=['H'], _types=['I'], archived=False)
-        message_ids = [m.id for m in messages]
-        client.archive_messages(messages=message_ids)
+        if messages:
+            client.archive_messages(messages=[m.id for m in messages])
 
     @staticmethod
     def fetch(org, uuid):
