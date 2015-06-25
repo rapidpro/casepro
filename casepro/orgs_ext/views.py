@@ -39,8 +39,9 @@ class OrgExtCRUDL(SmartCRUDL):
             result = obj.get_task_result(TaskType.label_messages)
             if result:
                 when = format_datetime(ms_to_datetime(result['time']))
-                stats = result['counts']
-                return "%s (%d new messages, %d new labels)" % (when, stats['messages'], stats['labels'])
+                num_messages = int(result['counts'].get('messages', 0))
+                num_labelled = int(result['counts'].get('labelled', 0))
+                return "%s (%d new messages, %d new labels)" % (when, num_messages, num_labelled)
             else:
                 return None
 

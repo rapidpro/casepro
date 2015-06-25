@@ -296,7 +296,7 @@ PERMISSIONS = {
 
     'cases.messageexport': ('create', 'read'),
 
-    'cases.label': ('create', 'update', 'list'),
+    'cases.label': ('create', 'update', 'list', 'unlabelled'),
 
     'cases.partner': ('create', 'read', 'delete', 'list'),
 

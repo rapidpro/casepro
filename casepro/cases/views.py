@@ -2,10 +2,12 @@ from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import get_obj_cacheable
+from datetime import timedelta
 from django import forms
 from django.core.files.storage import default_storage
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest, JsonResponse
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
 from enum import Enum
@@ -17,12 +19,17 @@ from .models import AccessLevel, Case, Group, Label, Message, MessageAction, Mes
 from .tasks import message_export
 
 
+# only show unlabelled messages newer than 21 days
+UNLABELLED_LIMIT_DAYS = 21
+
+
 class ItemView(Enum):
     inbox = 1
     flagged = 2
-    open = 3
-    closed = 4
-    archived = 5
+    archived = 3
+    unlabelled = 4
+    open = 5
+    closed = 6
 
 
 class CaseCRUDL(SmartCRUDL):
@@ -417,15 +424,26 @@ class MessageSearchMixin(object):
         Collects and prepares message search parameters into JSON serializable dict
         """
         request = self.request
-        view = request.GET['view']
+        view = ItemView[request.GET['view']]
+        after = parse_iso8601(request.GET.get('after', None))
+        before = parse_iso8601(request.GET.get('before', None))
 
-        labels = Label.get_all(request.org, request.user)
-        label_id = request.GET.get('label', None)
-        if label_id:
-            labels = labels.filter(pk=label_id)
-        labels = [l.name for l in labels]
+        label_objs = Label.get_all(request.org, request.user)
 
-        if view == 'flagged':
+        if view == ItemView.unlabelled:
+            labels = [('-%s' % l.name) for l in label_objs]
+            msg_types = ['I']
+            # put limit on how far back we fetch
+            if not after:
+                after = timezone.now() - timedelta(days=UNLABELLED_LIMIT_DAYS)
+        else:
+            label_id = request.GET.get('label', None)
+            if label_id:
+                label_objs = label_objs.filter(pk=label_id)
+            labels = [l.name for l in label_objs]
+            msg_types = None
+
+        if view == ItemView.flagged:
             labels.append('+%s' % SYSTEM_LABEL_FLAGGED)
 
         contact = request.GET.get('contact', None)
@@ -434,7 +452,7 @@ class MessageSearchMixin(object):
         groups = request.GET.get('groups', None)
         groups = parse_csv(groups) if groups else None
 
-        if view == 'archived':
+        if view == ItemView.archived:
             archived = True  # only archived
         elif str_to_bool(request.GET.get('archived', '')):
             archived = None  # both archived and non-archived
@@ -444,9 +462,10 @@ class MessageSearchMixin(object):
         return {'labels': labels,
                 'contacts': contacts,
                 'groups': groups,
-                'after': parse_iso8601(request.GET.get('after', None)),
-                'before': parse_iso8601(request.GET.get('before', None)),
+                'after': after,
+                'before': before,
                 'text': request.GET.get('text', None),
+                'types': msg_types,
                 'archived': archived}
 
 
@@ -732,6 +751,26 @@ class FlaggedView(BaseHomeView):
     item_view = ItemView.flagged
 
 
+class ArchivedView(BaseHomeView):
+    """
+    Archived messages view
+    """
+    template_name = 'cases/home_messages.haml'
+    title = _("Archived")
+    folder_icon = 'glyphicon-trash'
+    item_view = ItemView.archived
+
+
+class UnlabelledView(BaseHomeView):
+    """
+    Unlabelled messages view
+    """
+    template_name = 'cases/home_messages.haml'
+    title = _("Unlabelled")
+    folder_icon = 'glyphicon-random'
+    item_view = ItemView.unlabelled
+
+
 class OpenCasesView(BaseHomeView):
     """
     Open cases view
@@ -751,12 +790,3 @@ class ClosedCasesView(BaseHomeView):
     folder_icon = 'glyphicon-folder-close'
     item_view = ItemView.closed
 
-
-class ArchivedView(BaseHomeView):
-    """
-    Archived messages view
-    """
-    template_name = 'cases/home_messages.haml'
-    title = _("Archived")
-    folder_icon = 'glyphicon-trash'
-    item_view = ItemView.archived

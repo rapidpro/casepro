@@ -12,14 +12,13 @@ class TaskType(Enum):
     label_messages = 1
 
 
-LAST_TASK_CACHE_KEY = 'org:%d:task_result:%s'
-LAST_TASK_CACHE_TTL = 60 * 60 * 24 * 7  # 1 week
-LAST_MSG_TIME_CACHE_KEY = 'org:%d:last_msg_time'
-LAST_MSG_TIME_CACHE_TTL = 60 * 60 * 24 * 7  # 1 week
-
-
+ORG_CACHE_TTL = 60 * 60 * 24 * 7  # 1 week
 ORG_CONFIG_CONTACT_FIELDS = 'contact_fields'
 ORG_CONFIG_BANNER_TEXT = 'banner_text'
+
+LAST_TASK_CACHE_KEY = 'org:%d:task_result:%s'
+LAST_LABELLED_TIME_CACHE_KEY = 'org:%d:last_labelled_time'
+LAST_UNLABELLED_TIME_CACHE_KEY = 'org:%d:last_unlabelled_time'
 
 
 def _org_get_contact_fields(org):
@@ -45,18 +44,20 @@ def _org_get_task_result(org, task_type):
 
 
 def _org_set_task_result(org, task_type, result):
-    cache.set(LAST_TASK_CACHE_KEY % (org.pk, task_type.name), json.dumps(result), LAST_TASK_CACHE_TTL)
+    cache.set(LAST_TASK_CACHE_KEY % (org.pk, task_type.name), json.dumps(result), ORG_CACHE_TTL)
 
 
-def _org_get_last_msg_time(org):
-    time = cache.get(LAST_MSG_TIME_CACHE_KEY % org.pk)
+def _org_get_last_message_time(org, labelled):
+    key = LAST_LABELLED_TIME_CACHE_KEY if labelled else LAST_UNLABELLED_TIME_CACHE_KEY
+    time = cache.get(key % org.pk)
     return parse_iso8601(time) if time else None
 
 
-def _org_record_msg_time(org, time):
-    current_last = org.get_last_msg_time()
+def _org_record_message_time(org, time, labelled):
+    key = LAST_LABELLED_TIME_CACHE_KEY if labelled else LAST_UNLABELLED_TIME_CACHE_KEY
+    current_last = org.get_last_message_time(labelled)
     if not current_last or current_last < time:
-        cache.set(LAST_MSG_TIME_CACHE_KEY % org.pk, format_iso8601(time), LAST_MSG_TIME_CACHE_TTL)
+        cache.set(key % org.pk, format_iso8601(time), ORG_CACHE_TTL)
 
 
 Org.get_contact_fields = _org_get_contact_fields
@@ -65,5 +66,5 @@ Org.get_banner_text = _org_get_banner_text
 Org.set_banner_text = _org_set_banner_text
 Org.get_task_result = _org_get_task_result
 Org.set_task_result = _org_set_task_result
-Org.get_last_msg_time = _org_get_last_msg_time
-Org.record_msg_time = _org_record_msg_time
+Org.get_last_message_time = _org_get_last_message_time
+Org.record_message_time = _org_record_message_time

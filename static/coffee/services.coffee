@@ -26,7 +26,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
   new class MessageService
 
     #----------------------------------------------------------------------------
-    # Fetches old messages for the given label
+    # Fetches old messages for the given search
     #----------------------------------------------------------------------------
     fetchOld: (search, before, page, callback) ->
       params = @_searchToParams(search)
@@ -40,7 +40,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
         callback(data.results, data.total, data.has_more)
 
     #----------------------------------------------------------------------------
-    # Fetches new messages for the given label
+    # Fetches new messages for the given search
     #----------------------------------------------------------------------------
     fetchNew: (search, after, before, callback) ->
       params = @_searchToParams(search)

@@ -46,23 +46,23 @@ def process_new_org_unsolicited(org):
     this_time = timezone.now()
 
     num_messages = 0
-    num_labels = 0
+    num_labelled = 0
 
     # grab all un-processed unsolicited messages
     pager = client.pager()
     while True:
-        messages = client.get_messages(direction='I', _types=['I'], statuses=['H'], archived=False,
+        messages = client.get_messages(direction='I', _types=['I'], archived=False,
                                        after=last_time, before=this_time, pager=pager)
         num_messages += len(messages)
-        num_labels += Message.process_unsolicited(org, messages)
+        num_labelled += Message.process_unsolicited(org, messages)
 
         if not pager.has_more():
             break
 
-    print "Processed %d new unsolicited messages and applied %d labels" % (num_messages, num_labels)
+    print "Processed %d new unsolicited messages and labelled %d" % (num_messages, num_labelled)
 
     org.set_task_result(TaskType.label_messages, {'time': datetime_to_ms(this_time),
-                                                  'counts': {'messages': num_messages, 'labels': num_labels}})
+                                                  'counts': {'messages': num_messages, 'labelled': num_labelled}})
 
 
 @task

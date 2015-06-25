@@ -703,20 +703,24 @@ class Message(object):
         if not search['labels']:  # no access to un-labelled messages
             return []
 
-        # don't hit the RapidPro API unless labelling task found new messages
+        # all queries either filter by at least one label, or exclude all labels using - prefix
+        labelled_search = bool([l for l in search['labels'] if not l.startswith('-')])
+
+        # try to limit actual hits to the RapidPro API
         if search['after']:
-            last_msg_time = org.get_last_msg_time()
-            if not last_msg_time or search['after'] >= last_msg_time:
+            # don't hit the RapidPro API unless labelling task found new messages
+            latest_time = org.get_last_message_time(labelled=labelled_search)
+            if not latest_time or search['after'] >= latest_time:
                 return []
 
         client = org.get_temba_client()
         messages = client.get_messages(pager=pager, text=search['text'], labels=search['labels'],
                                        contacts=search['contacts'], groups=search['groups'],
-                                       direction='I', statuses=['H'], archived=search['archived'],
+                                       direction='I', _types=search['types'], archived=search['archived'],
                                        after=search['after'], before=search['before'])
 
         if messages:
-            org.record_msg_time(messages[0].created_on)
+            org.record_message_time(messages[0].created_on, labelled_search)
 
         return messages
 
@@ -732,8 +736,7 @@ class Message(object):
         case_replies = []
 
         client = org.get_temba_client()
-        num_labels = 0
-        newest_labelled = None
+        labelled, unlabelled = [], []
 
         for msg in messages:
             open_case = Case.get_open_for_contact_on(org, msg.contact, msg.created_on)
@@ -747,25 +750,25 @@ class Message(object):
 
                 for label in labels:
                     if match_keywords(norm_text, label_keywords[label]):
+                        labelled.append(msg)
                         label_matches[label].append(msg)
-                        if not newest_labelled:
-                            newest_labelled = msg
-
-        # record the newest/last labelled message time for this org
-        if newest_labelled:
-            org.record_msg_time(newest_labelled.created_on)
 
         # add labels to matching messages
         for label, matched_msgs in label_matches.iteritems():
             if matched_msgs:
                 client.label_messages(messages=matched_msgs, label=label.name)
-                num_labels += len(matched_msgs)
 
         # archive messages which are case replies
         if case_replies:
             client.archive_messages(messages=case_replies)
 
-        return num_labels
+        # record the last labelled/unlabelled message times for this org
+        if labelled:
+            org.record_message_time(labelled[0].created_on, labelled=True)
+        if unlabelled:
+            org.record_message_time(unlabelled[0].created_on, labelled=False)
+
+        return len(labelled)
 
     @staticmethod
     def as_json(msg, label_map):

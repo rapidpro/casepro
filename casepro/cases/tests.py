@@ -719,7 +719,7 @@ class MessageExportCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 200)
 
         mock_get_messages.assert_called_once_with(archived=False, labels=['AIDS', 'Pregnancy'],
-                                                  contacts=None, groups=None, text='', statuses=['H'], direction='I',
+                                                  contacts=None, groups=None, text='', _types=None, direction='I',
                                                   after=None, before=None, pager=None)
 
         mock_get_contacts.assert_called_once_with(uuids=['C-001', 'C-002'])
@@ -832,7 +832,7 @@ class MessageViewsTest(BaseCasesTest):
         self.assertEqual(len(response.json['results']), 2)
 
         mock_get_messages.assert_called_once_with(archived=False, labels=['AIDS', 'Pregnancy'],
-                                                  contacts=None, groups=None, text='', statuses=['H'], direction='I',
+                                                  contacts=None, groups=None, text='', _types=None, direction='I',
                                                   after=None, before=t0, pager=pager)
         mock_get_messages.reset_mock()
         mock_get_messages.return_value = [msg1]
@@ -844,7 +844,7 @@ class MessageViewsTest(BaseCasesTest):
         self.assertEqual(len(response.json['results']), 1)
 
         mock_get_messages.assert_called_once_with(archived=False, labels=['AIDS', 'Pregnancy'],
-                                                  contacts=None, groups=None, text='', statuses=['H'], direction='I',
+                                                  contacts=None, groups=None, text='', _types=None, direction='I',
                                                   after=None, before=t0, pager=pager)
         mock_get_messages.reset_mock()
         mock_get_messages.return_value = []
@@ -860,9 +860,9 @@ class MessageViewsTest(BaseCasesTest):
         self.assertEqual(mock_get_messages.call_count, 0)
         mock_get_messages.reset_mock()
 
-        # simulate new message being recorded by labelling task
+        # simulate new message being labelled and recorded by the labelling task
         msg4 = TembaMessage.create(id=104, contact='C-001', text="Yolo", created_on=timezone.now(), labels=[])
-        self.unicef.record_msg_time(msg4.created_on)
+        self.unicef.record_message_time(msg4.created_on, labelled=True)
 
         mock_get_messages.return_value = [msg4]
 
@@ -874,7 +874,7 @@ class MessageViewsTest(BaseCasesTest):
         self.assertEqual(len(response.json['results']), 1)
 
         mock_get_messages.assert_called_once_with(archived=False, labels=['AIDS', 'Pregnancy'],
-                                                  contacts=None, groups=None, text='', statuses=['H'], direction='I',
+                                                  contacts=None, groups=None, text='', _types=None, direction='I',
                                                   after=t1, before=t2, pager=None)
 
     @patch('dash.orgs.models.TembaClient.create_broadcast')
@@ -1050,7 +1050,8 @@ class TasksTest(BaseCasesTest):
         # contact 5 has a case open that day
         d1 = datetime(2014, 1, 1, 5, 0, tzinfo=timezone.utc)
         with patch.object(timezone, 'now', return_value=d1):
-            case1 = Case.objects.create(org=self.unicef, contact_uuid='C-005', assignee=self.moh, message_id=99, message_on=d1)
+            case1 = Case.objects.create(org=self.unicef, contact_uuid='C-005',
+                                        assignee=self.moh, message_id=99, message_on=d1)
 
         process_new_unsolicited()  # will process messages for both orgs
 
@@ -1069,4 +1070,4 @@ class TasksTest(BaseCasesTest):
         # check task result in redis
         result = self.unicef.get_task_result(TaskType.label_messages)
         self.assertEqual(result['counts']['messages'], 5)
-        self.assertEqual(result['counts']['labels'], 3)
+        self.assertEqual(result['counts']['labelled'], 3)
