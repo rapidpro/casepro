@@ -1,7 +1,6 @@
--e git+https://github.com/lukaszb/django-guardian@devel#egg=django-guardian
--e git+https://github.com/nyaruka/smartmin.git@django18#egg=smartmin
--e git+https://github.com/rapidpro/dash.git@django18#egg=dash
--e git+https://github.com/rapidpro/rapidpro-python#egg=rapidpro-python
+-e git+https://github.com/nyaruka/smartmin.git@master#egg=smartmin
+-e git+https://github.com/rapidpro/dash.git@master#egg=dash
+-e git+https://github.com/rapidpro/rapidpro-python#egg=rapidpro_python
 boto
 celery
 celery-with-redis
