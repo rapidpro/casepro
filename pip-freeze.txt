@@ -9,7 +9,7 @@ boto==2.38.0
 celery==3.1.18
 celery-with-redis==3.0
 coverage==3.7.1
--e git+https://github.com/rapidpro/dash.git@8f1939de927148019fd499a40c95dd89b247f26c#egg=dash
+-e git+https://github.com/rapidpro/dash.git@8264a9c42e1c3717d1a3eed4e72c3c75d7270743#egg=dash
 dj-database-url==0.3.0
 django-appconf==1.0.1
 django-celery==3.1.16
