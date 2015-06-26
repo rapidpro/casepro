@@ -37,8 +37,8 @@ polib==1.0.6
 psycopg2==2.6
 pycountry==1.10
 python-dateutil==2.4.2
-pytz==2015.2
--e git+https://github.com/rapidpro/rapidpro-python@4fddbd9c395e538442e3da714475e60c23b38d43#egg=rapidpro-python
+pytz==2015.4
+-e git+https://github.com/rapidpro/rapidpro-python@1a646e2b3344a1f1f23c85c0af6ca6327c2804e3#egg=rapidpro-python
 raven==5.3.1
 redis==2.10.3
 requests==2.7.0
