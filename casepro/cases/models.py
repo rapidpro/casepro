@@ -6,6 +6,7 @@ import re
 
 from dash.orgs.models import Org
 from dash.utils import random_string, chunks, intersection
+from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
@@ -23,6 +24,10 @@ from redis_cache import get_redis_connection
 from temba.base import TembaNoSuchObjectError
 from casepro.email import send_email
 from . import parse_csv, normalize, match_keywords, SYSTEM_LABEL_FLAGGED
+
+
+# only show unlabelled messages newer than 21 days
+UNLABELLED_LIMIT_DAYS = 21
 
 
 class AccessLevel(IntEnum):
@@ -712,6 +717,10 @@ class Message(object):
             latest_time = org.get_last_message_time(labelled=labelled_search)
             if not latest_time or search['after'] >= latest_time:
                 return []
+
+        # put limit on how far back we fetch unlabelled messages because there are lots of those
+        if not labelled_search and not search['after']:
+            search['after'] = timezone.now() - timedelta(days=UNLABELLED_LIMIT_DAYS)
 
         client = org.get_temba_client()
         messages = client.get_messages(pager=pager, text=search['text'], labels=search['labels'],

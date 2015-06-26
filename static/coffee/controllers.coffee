@@ -200,6 +200,8 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
       return (item) -> (!item.archived or $scope.searchFields.archived) and item.flagged
     else if $scope.itemView == 'archived'
       return (item) -> item.archived
+    else if $scope.itemView == 'unlabelled'
+      return (item) -> !item.archived and item.labels.length == 0
 
   $scope.buildSearch = () ->
     search = angular.copy($scope.searchFields)

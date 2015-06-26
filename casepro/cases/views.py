@@ -2,12 +2,10 @@ from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import get_obj_cacheable
-from datetime import timedelta
 from django import forms
 from django.core.files.storage import default_storage
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest, JsonResponse
-from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
 from enum import Enum
@@ -17,10 +15,6 @@ from temba.utils import parse_iso8601
 from . import parse_csv, json_encode, normalize, safe_max, str_to_bool, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
 from .models import AccessLevel, Case, Group, Label, Message, MessageAction, MessageExport, Partner, Outgoing
 from .tasks import message_export
-
-
-# only show unlabelled messages newer than 21 days
-UNLABELLED_LIMIT_DAYS = 21
 
 
 class ItemView(Enum):
@@ -433,9 +427,6 @@ class MessageSearchMixin(object):
         if view == ItemView.unlabelled:
             labels = [('-%s' % l.name) for l in label_objs]
             msg_types = ['I']
-            # put limit on how far back we fetch
-            if not after:
-                after = timezone.now() - timedelta(days=UNLABELLED_LIMIT_DAYS)
         else:
             label_id = request.GET.get('label', None)
             if label_id:
@@ -767,7 +758,7 @@ class UnlabelledView(BaseHomeView):
     """
     template_name = 'cases/home_messages.haml'
     title = _("Unlabelled")
-    folder_icon = 'glyphicon-random'
+    folder_icon = 'glyphicon-bullhorn'
     item_view = ItemView.unlabelled
 
 

@@ -89,7 +89,7 @@
     .selection-toolbar
       .row
         .col-md-12
-          .selection-controls.pull-back
+          .selection-controls.pull-back{ ng-if:'itemView != "unlabelled"' }
             .btn-group{ dropdown:"true" }
               %button.btn.btn-default.dropdown-toggle{ type:"button", dropdown-toggle:"true" }
                 - trans "Select"
