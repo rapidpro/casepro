@@ -9,7 +9,7 @@ boto==2.38.0
 celery==3.1.18
 celery-with-redis==3.0
 coverage==3.7.1
--e git+https://github.com/rapidpro/dash.git@8264a9c42e1c3717d1a3eed4e72c3c75d7270743#egg=dash
+-e git+https://github.com/rapidpro/dash.git@cbf2bf57107eae8bcb443cbe771b78d6a64ec4b6#egg=dash
 dj-database-url==0.3.0
 django-appconf==1.0.1
 django-celery==3.1.16
@@ -25,21 +25,17 @@ django-rosetta==0.7.6
 django-storages==1.1.8
 django-timezones==0.2
 enum34==1.0.4
-flake8==2.4.1
 gunicorn==19.3.0
 hamlpy==0.82.2
 kombu==3.0.26
-mccabe==0.3.1
 microsofttranslator==0.5
 mock==1.0.1
 nose==1.3.7
-pep8==1.5.7
 phonenumbers==7.0.6
 pisa==3.0.33
 polib==1.0.6
 psycopg2==2.6.1
 pycountry==1.12
-pyflakes==0.8.1
 python-dateutil==2.4.2
 pytz==2015.4
 -e git+https://github.com/rapidpro/rapidpro-python.git@ce4f8706a84f6082bd186e8fa88b2a6ba1ee6a57#egg=rapidpro-python-1.0
@@ -47,7 +43,7 @@ raven==5.3.1
 redis==2.10.3
 requests==2.7.0
 six==1.9.0
--e git+https://github.com/nyaruka/smartmin.git@0d677e2a777d446acb2454765dce4bb0023fe51d#egg=smartmin-1.7.0
+-e git+https://github.com/nyaruka/smartmin.git@c818133503b58ba137b25ad7de9efac9fe785e38#egg=smartmin-1.7.0
 sorl-thumbnail==11.12.1b
 sqlparse==0.1.15
 wsgiref==0.1.2
