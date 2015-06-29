@@ -16,6 +16,7 @@ from casepro.orgs_ext import TaskType
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
 from . import safe_max, normalize, match_keywords, truncate, str_to_bool
+from .context_processors import contact_ext_url
 from .models import AccessLevel, Case, CaseAction, CaseEvent, Contact, Group, Label, Message, MessageAction
 from .models import MessageExport, Partner, Outgoing
 from .tasks import process_new_unsolicited
@@ -506,11 +507,17 @@ class HomeViewsTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
 
+        # should provide external contact links
+        self.assertContains(response, "http://localhost:8001/contact/read/{}/")
+
         # log in as regular user
         self.login(self.user1)
 
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
+
+        # should not provide external contact links
+        self.assertNotContains(response, "http://localhost:8001/contact/read/{}/")
 
 
 class InitTest(BaseCasesTest):
@@ -1071,3 +1078,12 @@ class TasksTest(BaseCasesTest):
         result = self.unicef.get_task_result(TaskType.label_messages)
         self.assertEqual(result['counts']['messages'], 5)
         self.assertEqual(result['counts']['labelled'], 3)
+
+
+class ContextProcessorsTest(BaseCasesTest):
+    def test_contact_ext_url(self):
+        with self.settings(SITE_API_HOST='http://localhost:8001/api/v1'):
+            self.assertEqual(contact_ext_url(None), {'contact_ext_url': 'http://localhost:8001/contact/read/{}/'})
+        with self.settings(SITE_API_HOST='rapidpro.io'):
+            self.assertEqual(contact_ext_url(None), {'contact_ext_url': 'https://rapidpro.io/contact/read/{}/'})
+

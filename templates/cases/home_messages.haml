@@ -10,6 +10,12 @@
             Messages for contact
             %strong
               [[ activeContact | limitTo:6 | uppercase ]]
+
+            - if user_is_admin
+              &nbsp;
+              %a{ ng-href:'[[ "{{ contact_ext_url }}" | replace:"{}":activeContact ]]', target:"_blank" }
+                %span.glyphicon.glyphicon-new-window
+                - trans "View"
           .pull-away
             %button.btn.btn-default{ type:"button", ng-click:"activateContact(null)" }
               - trans "Back"
@@ -103,10 +109,7 @@
                     - trans "None"
 
           %span.selection-info{ ng-show:"selection.length > 0" }
-            [[ selection.length ]] of
-            <ng-pluralize count="totalItems()" when="{'one': '1 message selected', 'other': '{} messages selected'}" />
-          %span.selection-info{ ng-show:"selection.length == 0" }
-            <ng-pluralize count="totalItems()" when="{'0': 'No messages', 'one': '1 message', 'other': '{} messages'}" />
+            <ng-pluralize count="selection.length" when="{'one': '1 message selected', 'other': '{} messages selected'}" />
 
           .selection-actions.pull-away
             .btn-group{ ng-if:'itemView != "archived"' }
@@ -137,7 +140,7 @@
         .message-time
           [[ message.time | autodate ]]
         .message-contact
-          %a{ ng-click:"activateContact(message.contact)", title:"[[ message.contact ]]" }><
+          %a{ ng-click:"activateContact(message.contact)", title:"View all from contact" }><
             %span.glyphicon.glyphicon-phone>
             [[ message.contact | limitTo:6 | uppercase ]]
         .message-text{ ng-click:"onExpandMessage(message)" }
