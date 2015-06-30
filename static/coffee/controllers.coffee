@@ -240,12 +240,13 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     afterTime = $scope.newItemsMaxTime or $scope.startTime
     $scope.newItemsMaxTime = new Date()
 
-    MessageService.fetchNew $scope.activeSearch, afterTime, $scope.newItemsMaxTime, (cases) ->
+    MessageService.fetchNew $scope.activeSearch, afterTime, $scope.newItemsMaxTime, (items) ->
       if timeCode == $scope.activeSearch.timeCode
-        $scope.items = cases.concat($scope.items)
+        $scope.items = items.concat($scope.items)
         $scope.newItemsCount += cases.length
 
-      $timeout($scope.refreshNewItems, INTERVAL_MESSAGES_NEW)
+      if items.length < INFINITE_SCROLL_MAX_ITEMS
+        $timeout($scope.refreshNewItems, INTERVAL_MESSAGES_NEW)
 
   $scope.onExpandMessage = (message) ->
     $scope.expandedMessageId = message.id
