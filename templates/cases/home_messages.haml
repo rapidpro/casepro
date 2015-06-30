@@ -95,7 +95,7 @@
     .selection-toolbar
       .row
         .col-md-12
-          .selection-controls.pull-back{ ng-if:'itemView != "unlabelled"' }
+          .selection-controls.pull-back
             .btn-group{ dropdown:"true" }
               %button.btn.btn-default.dropdown-toggle{ type:"button", dropdown-toggle:"true" }
                 - trans "Select"
@@ -131,7 +131,7 @@
               %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onRestoreSelection()", type:"button" }
                 - trans "Restore"
 
-    .messages{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
+    .messages{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"!isInfiniteScrollEnabled()" }
       .stackitem.clearfix.hoverable{ ng-repeat:"message in items | filter: getItemFilter()", ng-class:"{ flagged: message.flagged, selected: message.selected, archived: message.archived }" }
         .message-actions
           %input{ type:"checkbox", ng-model:"message.selected", ng-change:"onChangeSelection()" }
@@ -164,6 +164,8 @@
       .loading{ ng-if:"oldItemsLoading" }
       .none{ ng-hide:"oldItemsLoading || items.length > 0" }
         - trans "No messages"
+      .none{ ng-hide:"oldItemsLoading || !hasTooManyItemsToDisplay()" }
+        - trans "Search returned more items than can be displayed"
 
 
 - block extra-style

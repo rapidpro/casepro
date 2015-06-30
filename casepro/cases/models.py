@@ -27,7 +27,7 @@ from . import parse_csv, normalize, match_keywords, SYSTEM_LABEL_FLAGGED
 
 
 # only show unlabelled messages newer than 2 weeks
-UNLABELLED_LIMIT_DAYS = 14
+UNLABELLED_LIMIT_DAYS = 34
 
 
 class AccessLevel(IntEnum):

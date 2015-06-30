@@ -18,7 +18,7 @@
                 %span.glyphicon.glyphicon-search
                 - trans "Search"
 
-    .cases{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"oldItemsLoading || !oldItemsMore" }
+    .cases{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"!isInfiniteScrollEnabled()" }
       .stackitem.clearfix.hoverable{ ng-repeat:"item in items | filter: getItemFilter()", ng-click:"onClickCase(item)" }
         .case-time
           [[ item.opened_on | autodate ]]
@@ -31,8 +31,10 @@
             &nbsp;
           [[ item.summary ]]
       .loading{ ng-if:"oldItemsLoading" }
-      .none{ ng-hide:"items.length > 0" }
+      .none{ ng-hide:"oldItemsLoading || items.length > 0" }
         - trans "No cases"
+      .none{ ng-hide:"oldItemsLoading || !hasTooManyItemsToDisplay()" }
+        - trans "Search returned more items than can be displayed"
 
 - block extra-style
   {{ block.super }}
