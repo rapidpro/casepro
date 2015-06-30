@@ -83,7 +83,6 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
   $scope.oldItemsPage = 0
   $scope.oldItemsMore = false
   $scope.newItemsMaxTime = null
-  $scope.newItemsCount = 0
   $scope.selection = []
 
   #----------------------------------------------------------------------------
@@ -243,7 +242,6 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     MessageService.fetchNew $scope.activeSearch, afterTime, $scope.newItemsMaxTime, (items) ->
       if timeCode == $scope.activeSearch.timeCode
         $scope.items = items.concat($scope.items)
-        $scope.newItemsCount += cases.length
 
       if items.length < INFINITE_SCROLL_MAX_ITEMS
         $timeout($scope.refreshNewItems, INTERVAL_MESSAGES_NEW)
@@ -384,10 +382,9 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
     afterTime = $scope.newItemsMaxTime or $scope.startTime
     $scope.newItemsMaxTime = new Date()
 
-    CaseService.fetchNew($scope.activeSearch, afterTime, $scope.newItemsMaxTime, (cases) ->
+    CaseService.fetchNew($scope.activeSearch, afterTime, $scope.newItemsMaxTime, (items) ->
       if timeCode == $scope.activeSearch.timeCode
-        $scope.items = cases.concat($scope.items)
-        $scope.newItemsCount += cases.length
+        $scope.items = items.concat($scope.items)
 
       $timeout($scope.refreshNewItems, INTERVAL_CASES_NEW)
     )
