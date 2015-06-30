@@ -21,7 +21,7 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from enum import IntEnum
 from redis_cache import get_redis_connection
-from temba.base import TembaNoSuchObjectError
+from temba.base import TembaNoSuchObjectError, TembaException
 from casepro.email import send_email
 from . import parse_csv, normalize, match_keywords, SYSTEM_LABEL_FLAGGED
 
@@ -265,6 +265,8 @@ class Label(models.Model):
     """
     KEYWORD_MIN_LENGTH = 3
 
+    uuid = models.CharField(max_length=36, unique=True)
+
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='labels')
 
     name = models.CharField(verbose_name=_("Name"), max_length=32, help_text=_("Name of this label"))
@@ -279,10 +281,27 @@ class Label(models.Model):
     is_active = models.BooleanField(default=True, help_text="Whether this label is active")
 
     @classmethod
-    def create(cls, org, name, description, keywords, partners):
-        label = cls.objects.create(org=org, name=name, description=description, keywords=','.join(keywords))
+    def create(cls, org, name, description, keywords, partners, uuid=None):
+        if not uuid:
+            remote = cls.get_or_create_remote(org, name)
+            uuid = remote.uuid
+
+        label = cls.objects.create(uuid=uuid, org=org, name=name, description=description,
+                                   keywords=','.join(keywords))
         label.partners.add(*partners)
+
         return label
+
+    @classmethod
+    def get_or_create_remote(cls, org, name):
+        client = org.get_temba_client()
+        temba_labels = client.get_labels(name=name)  # gets all partial name matches
+        temba_labels = [l for l in temba_labels if l.name.lower() == name.lower()]
+
+        if temba_labels:
+            return temba_labels[0]
+        else:
+            return client.create_label(name)
 
     @classmethod
     def get_all(cls, org, user=None):
@@ -291,6 +310,18 @@ class Label(models.Model):
 
         partner = user.get_partner()
         return partner.get_labels() if partner else cls.objects.none()
+
+    def update_name(self, name):
+        # try to update remote label
+        try:
+            client = self.org.get_temba_client()
+            client.update_label(uuid=self.uuid, name=name)
+        except TembaException:
+            # rename may fail if remote label no longer exists or new name conflicts with other remote label
+            pass
+
+        self.name = name
+        self.save()
 
     def get_keywords(self):
         return parse_csv(self.keywords)
@@ -647,14 +678,14 @@ class Message(object):
     @staticmethod
     def bulk_label(org, user, message_ids, label):
         client = org.get_temba_client()
-        client.label_messages(message_ids, label=label.name)
+        client.label_messages(message_ids, label_uuid=label.uuid)
 
         MessageAction.create(org, user, message_ids, MessageAction.LABEL, label)
 
     @staticmethod
     def bulk_unlabel(org, user, message_ids, label):
         client = org.get_temba_client()
-        client.unlabel_messages(message_ids, label=label.name)
+        client.unlabel_messages(message_ids, label_uuid=label.uuid)
 
         MessageAction.create(org, user, message_ids, MessageAction.UNLABEL, label)
 
@@ -765,7 +796,7 @@ class Message(object):
         # add labels to matching messages
         for label, matched_msgs in label_matches.iteritems():
             if matched_msgs:
-                client.label_messages(messages=matched_msgs, label=label.name)
+                client.label_messages(messages=matched_msgs, label_uuid=label.uuid)
 
         # archive messages which are case replies
         if case_replies:

@@ -391,6 +391,10 @@ class LabelCRUDL(SmartCRUDL):
             initial['keywords'] = ', '.join(self.object.get_keywords())
             return initial
 
+        def post_save(self, obj):
+            obj.update_name(obj.name)
+            return obj
+
     class Delete(OrgObjPermsMixin, SmartDeleteView):
         cancel_url = '@cases.label_list'
 

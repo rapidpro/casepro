@@ -9,7 +9,7 @@ from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch, call
 from temba.base import TembaPager
-from temba.types import Contact as TembaContact, Group as TembaGroup, Message as TembaMessage
+from temba.types import Contact as TembaContact, Group as TembaGroup, Label as TembaLabel, Message as TembaMessage
 from temba.types import Broadcast as TembaBroadcast
 from temba.utils import format_iso8601
 from casepro.orgs_ext import TaskType
@@ -561,8 +561,17 @@ class InitTest(BaseCasesTest):
 
 
 class LabelTest(BaseCasesTest):
-    def test_create(self):
+    @patch('dash.orgs.models.TembaClient.create_label')
+    @patch('dash.orgs.models.TembaClient.get_labels')
+    def test_create(self, mock_get_labels, mock_create_label):
+        mock_get_labels.return_value = [
+            TembaLabel.create(name='Not Ebola', uuid='L-011'),
+            TembaLabel.create(name='ebola', uuid='L-012')
+        ]
+
+        # create label that exists in RapidPro
         ebola = Label.create(self.unicef, "Ebola", "Msgs about ebola", ['ebola', 'fever'], [self.moh, self.who])
+        self.assertEqual(ebola.uuid, 'L-012')
         self.assertEqual(ebola.org, self.unicef)
         self.assertEqual(ebola.name, "Ebola")
         self.assertEqual(ebola.description, "Msgs about ebola")
@@ -570,6 +579,13 @@ class LabelTest(BaseCasesTest):
         self.assertEqual(ebola.get_keywords(), ['ebola', 'fever'])
         self.assertEqual(set(ebola.get_partners()), {self.moh, self.who})
         self.assertEqual(unicode(ebola), "Ebola")
+
+        mock_get_labels.return_value = []
+        mock_create_label.return_value = TembaLabel.create(name='HIV', uuid='L-013')
+
+        # create label that does not exist in RapidPro
+        ebola = Label.create(self.unicef, "HIV", "Msgs about HIV", ['hiv', 'aids'], [self.moh])
+        self.assertEqual(ebola.uuid, 'L-013')
 
     def test_get_all(self):
         self.assertEqual(set(Label.get_all(self.unicef)), {self.aids, self.pregnancy})
@@ -594,7 +610,13 @@ class LabelTest(BaseCasesTest):
 
 
 class LabelCRUDLTest(BaseCasesTest):
-    def test_create(self):
+    @patch('dash.orgs.models.TembaClient.get_labels')
+    def test_create(self, mock_get_labels):
+        mock_get_labels.return_value = [
+            TembaLabel.create(name='Not Ebola', uuid='L-011'),
+            TembaLabel.create(name='ebola', uuid='L-012')
+        ]
+
         url = reverse('cases.label_create')
 
         # log in as a non-administrator
@@ -642,12 +664,54 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 302)
 
         ebola = Label.objects.get(name="Ebola")
+        self.assertEqual(ebola.uuid, 'L-012')
         self.assertEqual(ebola.org, self.unicef)
         self.assertEqual(ebola.name, "Ebola")
         self.assertEqual(ebola.description, "Msgs about ebola")
         self.assertEqual(ebola.keywords, 'ebola,fever')
         self.assertEqual(ebola.get_keywords(), ['ebola', 'fever'])
         self.assertEqual(set(ebola.get_partners()), {self.moh, self.who})
+
+    @patch('dash.orgs.models.TembaClient.update_label')
+    def test_update(self, mock_update_label):
+        mock_update_label.return_value = TembaLabel.create(name="Maternity", uuid='L-002')
+
+        url = reverse('cases.label_update', args=[self.pregnancy.pk])
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # log in as an administrator
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+        # submit with no data
+        response = self.url_post('unicef', url, {})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'name', 'This field is required.')
+        self.assertFormError(response, 'form', 'description', 'This field is required.')
+
+        # submit again with valid data
+        response = self.url_post('unicef', url, {'name': "Maternity", 'description': "Msgs about maternity",
+                                                 'keywords': "pregnancy, maternity", 'partners': [self.moh.pk]})
+
+        self.assertEqual(response.status_code, 302)
+
+        label = Label.objects.get(pk=self.pregnancy.pk)
+        self.assertEqual(label.uuid, 'L-002')
+        self.assertEqual(label.org, self.unicef)
+        self.assertEqual(label.name, "Maternity")
+        self.assertEqual(label.description, "Msgs about maternity")
+        self.assertEqual(label.keywords, 'pregnancy,maternity')
+        self.assertEqual(label.get_keywords(), ['pregnancy', 'maternity'])
+        self.assertEqual(set(label.get_partners()), {self.moh})
+
+        mock_update_label.assert_called_once_with(uuid='L-002', name="Maternity")
 
     def test_list(self):
         url = reverse('cases.label_list')
@@ -812,8 +876,8 @@ class MessageViewsTest(BaseCasesTest):
         response = self.url_post('unicef', url, {'labels': [self.pregnancy.pk]})
         self.assertEqual(response.status_code, 204)
 
-        mock_label_messages.assert_called_once_with([101], label='Pregnancy')
-        mock_unlabel_messages.assert_called_once_with([101], label='AIDS')
+        mock_label_messages.assert_called_once_with([101], label_uuid='L-002')
+        mock_unlabel_messages.assert_called_once_with([101], label_uuid='L-001')
 
     @patch('dash.orgs.models.TembaClient.get_messages')
     @patch('dash.orgs.models.TembaClient.pager')
@@ -1062,8 +1126,8 @@ class TasksTest(BaseCasesTest):
 
         process_new_unsolicited()  # will process messages for both orgs
 
-        mock_label_messages.assert_has_calls([call(messages=[msg1, msg2], label='AIDS'),
-                                              call(messages=[msg3], label='Pregnancy')],
+        mock_label_messages.assert_has_calls([call(messages=[msg1, msg2], label_uuid='L-001'),
+                                              call(messages=[msg3], label_uuid='L-002')],
                                              any_order=True)
 
         mock_archive_messages.assert_called_once_with(messages=[msg5])  # because contact has open case

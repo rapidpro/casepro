@@ -35,11 +35,11 @@ class BaseCasesTest(DashTest):
 
         # some message labels
         self.aids = self.create_label(self.unicef, "AIDS", 'Messages about AIDS',
-                                      ['aids', 'hiv'], [self.moh, self.who])
+                                      ['aids', 'hiv'], [self.moh, self.who], 'L-001')
         self.pregnancy = self.create_label(self.unicef, "Pregnancy", 'Messages about pregnancy',
-                                           ['pregnant', 'pregnancy'], [self.moh])
+                                           ['pregnant', 'pregnancy'], [self.moh], 'L-002')
         self.code = self.create_label(self.nyaruka, "Code", 'Messages about code',
-                                      ['java', 'python', 'go'], [self.klab])
+                                      ['java', 'python', 'go'], [self.klab], 'L-003')
 
         # some filter groups
         self.males = self.create_group(self.unicef, 'Males', 'G-001')
@@ -57,8 +57,8 @@ class BaseCasesTest(DashTest):
     def create_user(self, org, partner, role, full_name, email):
         return User.create(org, partner, role, full_name, email, password=email, change_password=False)
 
-    def create_label(self, org, name, description, words, partners):
-        return Label.create(org, name, description, words, partners)
+    def create_label(self, org, name, description, words, partners, uuid):
+        return Label.create(org, name, description, words, partners, uuid)
 
     def create_group(self, org, name, uuid):
         return Group.create(org, name, uuid)
