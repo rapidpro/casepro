@@ -290,9 +290,8 @@ class GroupCRUDL(SmartCRUDL):
                 del kwargs['org']
                 super(GroupCRUDL.Select.GroupsForm, self).__init__(*args, **kwargs)
 
-                choices = []
-                for group in org.get_temba_client().get_groups():
-                    choices.append((group.uuid, "%s (%d)" % (group.name, group.size)))
+                groups = sorted(org.get_temba_client().get_groups(), key=lambda g: g.name.lower())
+                choices = [(group.uuid, "%s (%d)" % (group.name, group.size)) for group in groups]
 
                 self.fields['groups'].choices = choices
                 self.fields['groups'].initial = [group.uuid for group in Group.get_all(org)]

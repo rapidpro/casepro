@@ -42,7 +42,7 @@ class Command(BaseCommand):
         client = org.get_temba_client()
 
         num_messages = 0
-        num_labels = 0
+        num_labelled = 0
 
         # grab all un-processed unsolicited messages
         pager = client.pager()
@@ -50,9 +50,9 @@ class Command(BaseCommand):
             messages = client.get_messages(direction='I', _types=['I'], statuses=['H'], archived=False,
                                            after=since, before=now, pager=pager)
             num_messages += len(messages)
-            num_labels += Message.process_unsolicited(org, messages)
+            num_labelled += Message.process_unsolicited(org, messages)
 
             if not pager.has_more():
                 break
 
-        self.stdout.write("Processed %d new unsolicited messages and applied %d labels" % (num_messages, num_labels))
+        self.stdout.write("Processed %d new unsolicited messages and labelled %d" % (num_messages, num_labelled))
