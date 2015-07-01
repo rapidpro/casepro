@@ -27,7 +27,7 @@ from . import parse_csv, normalize, match_keywords, SYSTEM_LABEL_FLAGGED
 
 
 # only show unlabelled messages newer than 2 weeks
-UNLABELLED_LIMIT_DAYS = 34
+DEFAULT_UNLABELLED_LIMIT_DAYS = 14
 
 
 class AccessLevel(IntEnum):
@@ -751,7 +751,8 @@ class Message(object):
 
         # put limit on how far back we fetch unlabelled messages because there are lots of those
         if not labelled_search and not search['after']:
-            search['after'] = timezone.now() - timedelta(days=UNLABELLED_LIMIT_DAYS)
+            limit_days = getattr(settings, 'UNLABELLED_LIMIT_DAYS', DEFAULT_UNLABELLED_LIMIT_DAYS)
+            search['after'] = timezone.now() - timedelta(days=limit_days)
 
         client = org.get_temba_client()
         try:
