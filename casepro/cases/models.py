@@ -755,13 +755,10 @@ class Message(object):
             search['after'] = timezone.now() - timedelta(days=limit_days)
 
         client = org.get_temba_client()
-        try:
-            messages = client.get_messages(pager=pager, text=search['text'], labels=search['labels'],
-                                           contacts=search['contacts'], groups=search['groups'],
-                                           direction='I', _types=search['types'], archived=search['archived'],
-                                           after=search['after'], before=search['before'])
-        except TembaException:
-            messages = []
+        messages = client.get_messages(pager=pager, text=search['text'], labels=search['labels'],
+                                       contacts=search['contacts'], groups=search['groups'],
+                                       direction='I', _types=search['types'], archived=search['archived'],
+                                       after=search['after'], before=search['before'])
 
         if messages:
             org.record_message_time(messages[0].created_on, labelled_search)

@@ -7,6 +7,9 @@ services = angular.module('cases.services', ['cases.modals']);
 
 DEFAULT_POST_OPTS = {transformRequest: angular.identity, headers: {'Content-Type': undefined}}
 
+DEFAULT_ERR_HANDLER = (data, status, headers, config) =>
+  console.error("Request error (status = " + status + ")")
+
 #=====================================================================
 # Date utilities
 #=====================================================================
@@ -35,9 +38,10 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       params.page = page
 
       $http.get('/message/?' + $.param(params))
-      .success (data) =>
+      .success((data) =>
         @_processMessages(data.results)
         callback(data.results, data.total, data.has_more)
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Fetches new messages for the given search
@@ -48,7 +52,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       params.before = formatIso8601(before)
 
       $http.get('/message/?' + $.param(params))
-      .success (data) =>
+      .success((data) =>
         @_processMessages(data.results)
 
         if data.results.length > 0
@@ -59,15 +63,17 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
           maxId = null
 
         callback(data.results, maxTime, maxId)
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Fetches history for a single message
     #----------------------------------------------------------------------------
     fetchHistory: (message, callback) ->
       $http.get('/message/history/' + message.id + '/')
-      .success (data) =>
+      .success((data) =>
         @_processMessageActions(data.actions)
         callback(data.actions)
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Starts a message export
@@ -75,8 +81,9 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     startExport: (search, callback) ->
       params = @_searchToParams(search)
       $http.post('/messageexport/create/?' + $.param(params))
-      .success () =>
+      .success(() =>
         callback()
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Reply-to messages
@@ -148,10 +155,11 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       data.append('labels', (l.id for l in labels))
 
       $http.post('/message/label/' + message.id + '/', data, DEFAULT_POST_OPTS)
-      .success () ->
+      .success(() ->
         message.labels = labels
         if callback
           callback()
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Reply to a contact in a case
@@ -190,9 +198,10 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
         data.append('label', label.id)
 
       $http.post('/message/action/' + action + '/', data, DEFAULT_POST_OPTS)
-      .success () =>
+      .success(() =>
         if callback
           callback()
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # POSTs to the messages send endpoint and returns new broadcast id
@@ -205,9 +214,11 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       data.append('contacts', contacts)
       if caseObj
         data.append('case', caseObj.id)
+
       $http.post('/message/send/', data, DEFAULT_POST_OPTS)
-      .success (data) =>
+      .success((data) =>
         callback()
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Processes incoming messages
@@ -237,8 +248,9 @@ services.factory 'LabelService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     deleteLabel: (label, callback) ->
       $http.post('/label/delete/' + label.id + '/')
-      .success () ->
+      .success(() ->
         callback()
+      ).error(DEFAULT_ERR_HANDLER)
 ]
 
 
@@ -258,9 +270,10 @@ services.factory 'CaseService', ['$http', ($http) ->
       params.page = page
 
       $http.get('/case/search/?' + $.param(params))
-      .success (data) =>
+      .success((data) =>
         @_processCases(data.results)
         callback(data.results, data.total, data.has_more)
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Fetches new cases
@@ -271,18 +284,20 @@ services.factory 'CaseService', ['$http', ($http) ->
       params.before = formatIso8601(before)
 
       $http.get('/case/search/?' + $.param(params))
-      .success (data) =>
+      .success((data) =>
         @_processCases(data.results)
         callback(data.results)
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Fetches an existing case by it's id
     #----------------------------------------------------------------------------
     fetchCase: (caseId, callback) ->
       $http.get('/case/fetch/' + caseId + '/')
-      .success (caseObj) =>
+      .success((caseObj) =>
         @_processCases([caseObj])
         callback(caseObj)
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Opens a new case
@@ -295,8 +310,9 @@ services.factory 'CaseService', ['$http', ($http) ->
         data.append('assignee', assignee.id)
 
       $http.post('/case/open/', data, DEFAULT_POST_OPTS)
-      .success (data) ->
+      .success((data) ->
         callback(data['case'], data['is_new'])
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Adds a note to a case
@@ -306,9 +322,10 @@ services.factory 'CaseService', ['$http', ($http) ->
       data.append('note', note)
 
       $http.post('/case/note/' + caseObj.id + '/', data, DEFAULT_POST_OPTS)
-      .success () ->
+      .success(() ->
         if callback
           callback()
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Re-assigns a case
@@ -318,9 +335,10 @@ services.factory 'CaseService', ['$http', ($http) ->
       data.append('assignee_id', assignee.id)
 
       $http.post('/case/reassign/' + caseObj.id + '/', data, DEFAULT_POST_OPTS)
-      .success () ->
+      .success(() ->
         if callback
           callback()
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Closes a case
@@ -330,10 +348,11 @@ services.factory 'CaseService', ['$http', ($http) ->
       data.append('note', note)
 
       $http.post('/case/close/' + caseObj.id + '/', data, DEFAULT_POST_OPTS)
-      .success () ->
+      .success(() ->
         caseObj.is_closed = true
         if callback
           callback()
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Re-opens a case
@@ -343,10 +362,11 @@ services.factory 'CaseService', ['$http', ($http) ->
       data.append('note', note)
 
       $http.post('/case/reopen/' + caseObj.id + '/', data, DEFAULT_POST_OPTS)
-      .success () ->
+      .success(() ->
         caseObj.is_closed = false
         if callback
           callback()
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Re-labels a case
@@ -356,10 +376,11 @@ services.factory 'CaseService', ['$http', ($http) ->
       data.append('labels', (l.id for l in labels))
 
       $http.post('/case/label/' + caseObj.id + '/', data, DEFAULT_POST_OPTS)
-      .success () ->
+      .success(() ->
         caseObj.labels = labels
         if callback
           callback()
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Updates a case's summary
@@ -369,10 +390,11 @@ services.factory 'CaseService', ['$http', ($http) ->
       data.append('summary', summary)
 
       $http.post('/case/update_summary/' + caseObj.id + '/', data, DEFAULT_POST_OPTS)
-      .success () ->
+      .success(() ->
         caseObj.summary = summary
         if callback
           callback()
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Fetches timeline events
@@ -384,9 +406,10 @@ services.factory 'CaseService', ['$http', ($http) ->
       }
 
       $http.get('/case/timeline/' + caseObj.id + '/?' + $.param(params))
-      .success (data) =>
+      .success((data) =>
         @_processTimeline(data.results)
         callback(data.results)
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Convert search object to URL params
@@ -429,9 +452,10 @@ services.factory 'PartnerService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     deletePartner: (partner, callback) ->
       $http.post('/partner/delete/' + partner.id + '/', {}, DEFAULT_POST_OPTS)
-      .success () ->
+      .success(() ->
         if callback
           callback()
+      ).error(DEFAULT_ERR_HANDLER)
 ]
 
 
@@ -446,9 +470,10 @@ services.factory 'UserService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     deleteUser: (userId, callback) ->
       $http.post('/user/delete/' + userId + '/', {}, DEFAULT_POST_OPTS)
-      .success () ->
+      .success(() ->
         if callback
           callback()
+      ).error(DEFAULT_ERR_HANDLER)
 ]
 
 
