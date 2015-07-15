@@ -67,3 +67,5 @@ docs/_build/
 
 # PyBuilder
 target/
+
+celerybeat-schedule
