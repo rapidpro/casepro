@@ -152,9 +152,9 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
     $scope.oldItemsLoading = true
     $scope.oldItemsPage += 1
 
-    $scope.fetchOldItems (items) ->
+    $scope.fetchOldItems((items, hasMore) ->
       $scope.items = $scope.items.concat(items)
-      $scope.oldItemsMore = (items.length > 0)
+      $scope.oldItemsMore = hasMore
       $scope.oldItemsLoading = false
 
       if forSelectAll
@@ -163,6 +163,7 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
         $scope.updateItems(false)
         if $scope.oldItemsMore and $scope.items.length < INFINITE_SCROLL_MAX_ITEMS
           $scope.loadOldItems(true)
+    )
 
   $scope.isInfiniteScrollEnabled = () ->
     not $scope.oldItemsLoading and $scope.oldItemsMore and $scope.items.length < INFINITE_SCROLL_MAX_ITEMS

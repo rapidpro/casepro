@@ -40,7 +40,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       $http.get('/message/?' + $.param(params))
       .success((data) =>
         @_processMessages(data.results)
-        callback(data.results, data.total, data.has_more)
+        callback(data.results, data.has_more)
       ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
