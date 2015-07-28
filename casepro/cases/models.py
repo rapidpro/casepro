@@ -92,6 +92,10 @@ class Group(models.Model):
             else:
                 cls.create(org, group_names[group_uuid], group_uuid)
 
+    @classmethod
+    def get_for_contact(cls, org, contact_uuid):
+        return cls.filter(uuid__in=org.get_temba_client().get_contact(contact_uuid).groups)
+
     def as_json(self):
         return {'id': self.pk, 'name': self.name, 'uuid': self.uuid}
 
@@ -125,6 +129,7 @@ class MessageExport(models.Model):
         Does actual export. Called from a celery task as it may require a lot of API calls to grab all messages.
         """
         from xlwt import Workbook, XFStyle
+
         book = Workbook()
 
         date_style = XFStyle()
@@ -203,12 +208,14 @@ class MessageExport(models.Model):
         self.save(update_fields=('filename',))
 
         subject = "Your messages export is ready"
-        download_url = settings.SITE_HOST_PATTERN % self.org.subdomain + reverse('cases.messageexport_read', args=[self.pk])
+        download_url = settings.SITE_HOST_PATTERN % self.org.subdomain + reverse('cases.messageexport_read',
+                                                                                 args=[self.pk])
 
         send_email(self.created_by.username, subject, 'cases/email/message_export', dict(link=download_url))
 
         # force a gc
         import gc
+
         gc.collect()
 
 
@@ -224,6 +231,9 @@ class Partner(models.Model):
     logo = models.ImageField(verbose_name=_("Logo"), upload_to='partner_logos', null=True, blank=True)
 
     is_active = models.BooleanField(default=True, help_text="Whether this partner is active")
+
+    confined_groups = models.ManyToManyField(Group, related_name="restricted_partners",
+                                             help_text=_("Groups this partner is restricted to"))
 
     @classmethod
     def create(cls, org, name, logo):
@@ -254,6 +264,12 @@ class Partner(models.Model):
 
     def as_json(self):
         return {'id': self.pk, 'name': self.name}
+
+    def is_restricted(self):
+        return self.confined_groups.exists()
+
+    def get_confined_groups(self):
+        return self.confined_groups.filter(is_active=True)
 
     def __unicode__(self):
         return self.name
@@ -348,6 +364,7 @@ class case_action(object):
     """
     Helper decorator for case action methods that should check the user is allowed to update the case
     """
+
     def __init__(self, require_update=True):
         self.require_update = require_update
 
@@ -358,6 +375,7 @@ class case_action(object):
                 func(case, user, *args, **kwargs)
             else:
                 raise PermissionDenied()
+
         return wrapped
 
 
@@ -516,18 +534,27 @@ class Case(models.Model):
         for label in rem_labels:
             self.unlabel(user, label)
 
+    def get_contact_groups(self):
+        return Group.get_for_contact(self.org, self.contact_uuid)
+
     def access_level(self, user):
         """
         A user can view a case if one of these conditions is met:
             1) they are an administrator for the case org
             2) their partner org is assigned to the case
-            3) their partner org can view a label assigned to the case
+            3) their partner org can view a label assigned to the case if they don't have group restrictions
+            4) their partner org can view a label assigned to the case if restricted to any of the contact groups
 
         They can additionally update the case if 1) or 2) is true
         """
         if user.can_administer(self.org) or user.profile.partner == self.assignee:
             return AccessLevel.update
-        elif user.profile.partner and intersection(self.get_labels(), user.profile.partner.get_labels()):
+        elif user.profile.partner and not user.profile.partner.is_restricted() and intersection(
+                self.get_labels(), user.profile.partner.get_labels()):
+            return AccessLevel.read
+        elif user.profile.partner and user.profile.partner.is_restricted() and intersection(
+                self.get_contact_groups(), user.profile.partner.get_confined_groups()) and intersection(
+                self.get_labels(), user.profile.partner.get_labels()):
             return AccessLevel.read
         else:
             return AccessLevel.none
@@ -632,6 +659,7 @@ class Contact(object):
     """
     A pseudo-model for contacts which are always fetched from RapidPro.
     """
+
     @staticmethod
     def archive_messages(org, contact_uuid):
         client = org.get_temba_client()
@@ -661,6 +689,7 @@ class Message(object):
     """
     A pseudo-model for messages which are always fetched from RapidPro.
     """
+
     @staticmethod
     def bulk_flag(org, user, message_ids):
         client = org.get_temba_client()
