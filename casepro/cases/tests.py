@@ -25,7 +25,11 @@ from .tasks import process_new_unsolicited
 class CaseTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient.get_messages')
     @patch('dash.orgs.models.TembaClient.archive_messages')
-    def test_lifecycle(self, mock_archive_messages, mock_get_messages):
+    @patch('dash.orgs.models.TembaClient.get_contact')
+    @patch('dash.orgs.models.TembaClient.remove_contacts')
+    @patch('dash.orgs.models.TembaClient.add_contacts')
+    def test_lifecycle(self, mock_add_contacts, mock_remove_contacts, mock_get_contact, mock_archive_messages,
+                       mock_get_messages):
         d0 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
         d1 = datetime(2014, 1, 2, 7, 0, tzinfo=timezone.utc)
         d2 = datetime(2014, 1, 2, 8, 0, tzinfo=timezone.utc)
@@ -35,20 +39,26 @@ class CaseTest(BaseCasesTest):
         d6 = datetime(2014, 1, 2, 12, 0, tzinfo=timezone.utc)
         d7 = datetime(2014, 1, 2, 13, 0, tzinfo=timezone.utc)
 
+        self.unicef.set_suspend_groups(['G-021', 'G-022'])
+
         msg1 = TembaMessage.create(id=123, contact='C-001', created_on=d0, text="Hello")
         msg2 = TembaMessage.create(id=234, contact='C-001', created_on=d1, text="Hello again")
         mock_get_messages.return_value = [msg1, msg2]
-        mock_archive_messages.return_value = None
+        mock_get_contact.return_value = TembaContact.create(uuid='C-001', groups=['G-021', 'G-022', 'G-023'])
 
         with patch.object(timezone, 'now', return_value=d1):
             # MOH opens new case
             case = Case.get_or_open(self.unicef, self.user1, [self.aids], msg2, "Summary", self.moh)
 
+        contact = Contact.objects.get()  # should have a new contact now
+        self.assertEqual(contact.org, self.unicef)
+        self.assertEqual(contact.uuid, 'C-001')
+
         self.assertTrue(case.is_new)
         self.assertEqual(case.org, self.unicef)
         self.assertEqual(set(case.labels.all()), {self.aids})
         self.assertEqual(case.assignee, self.moh)
-        self.assertEqual(case.contact_uuid, 'C-001')
+        self.assertEqual(case.contact, contact)
         self.assertEqual(case.message_id, 234)
         self.assertEqual(case.message_on, d1)
         self.assertEqual(case.summary, "Summary")
@@ -66,6 +76,12 @@ class CaseTest(BaseCasesTest):
         mock_archive_messages.assert_called_once_with(messages=[123, 234])
         mock_archive_messages.reset_mock()
 
+        # check that opening the case removed contact from specified suspend groups
+        mock_remove_contacts.assert_calls(call(contacts=['C-001'], group_uuid='G-021'),
+                                          call(contacts=['C-001'], group_uuid='G-022'))
+        mock_remove_contacts.reset_mock()
+
+        # check access to this case
         self.assertEqual(case.access_level(self.user1), AccessLevel.update)  # user who opened it can view and update
         self.assertEqual(case.access_level(self.user2), AccessLevel.update)  # user from same org can do likewise
         self.assertEqual(case.access_level(self.user3), AccessLevel.read)  # user from other partner can read bc labels
@@ -114,6 +130,13 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(actions[2].action, CaseAction.CLOSE)
         self.assertEqual(actions[2].created_by, self.user1)
         self.assertEqual(actions[2].created_on, d3)
+
+        # check that contacts groups were restored
+        self.assertEqual(Contact.objects.get(pk=contact.pk).suspended_groups, [])
+
+        mock_add_contacts.assert_calls(call(contacts=['C-001'], group_uuid='G-021'),
+                                       call(contacts=['C-001'], group_uuid='G-022'))
+        mock_add_contacts.reset_mock()
 
         # contact sends a message after case was closed
         msg3 = TembaMessage.create(id=345, contact='C-001', created_on=d4, text="No more case")
@@ -185,16 +208,16 @@ class CaseTest(BaseCasesTest):
         d1 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
         msg1 = TembaMessage.create(id=123, contact='C-001', created_on=d1, text="Hello 1")
         case1 = Case.get_or_open(self.unicef, self.user1, [self.aids], msg1, "Summary", self.moh,
-                                 archive_messages=False)
+                                 update_contact=False)
         msg2 = TembaMessage.create(id=234, contact='C-002', created_on=d1, text="Hello 2")
         case2 = Case.get_or_open(self.unicef, self.user2, [self.aids, self.pregnancy], msg2, "Summary", self.who,
-                                 archive_messages=False)
+                                 update_contact=False)
         msg3 = TembaMessage.create(id=345, contact='C-003', created_on=d1, text="Hello 3")
         case3 = Case.get_or_open(self.unicef, self.user3, [self.pregnancy], msg3, "Summary", self.who,
-                                 archive_messages=False)
+                                 update_contact=False)
         msg4 = TembaMessage.create(id=456, contact='C-004', created_on=d1, text="Hello 4")
         case4 = Case.get_or_open(self.nyaruka, self.user4, [self.code], msg4, "Summary", self.klab,
-                                 archive_messages=False)
+                                 update_contact=False)
 
         self.assertEqual(set(Case.get_all(self.unicef)), {case1, case2, case3})  # org admins see all
         self.assertEqual(set(Case.get_all(self.nyaruka)), {case4})
@@ -228,7 +251,7 @@ class CaseTest(BaseCasesTest):
         with patch.object(timezone, 'now', return_value=d0):
             msg = TembaMessage.create(id=123, contact='C-001', created_on=d0, text="Hello")
             case1 = Case.get_or_open(self.unicef, self.user1, [self.pregnancy], msg, "Summary", self.moh,
-                                     archive_messages=False)
+                                     update_contact=False)
         with patch.object(timezone, 'now', return_value=d1):
             case1.close(self.user1)
 
@@ -236,7 +259,7 @@ class CaseTest(BaseCasesTest):
         with patch.object(timezone, 'now', return_value=d2):
             msg = TembaMessage.create(id=234, contact='C-001', created_on=d0, text="Hello")
             case2 = Case.get_or_open(self.unicef, self.user1, [self.aids], msg, "Summary", self.moh,
-                                     archive_messages=False)
+                                     update_contact=False)
 
         # check no cases open on Jan 4th
         open_case = Case.get_open_for_contact_on(self.unicef, 'C-001', datetime(2014, 1, 4, 0, 0, tzinfo=timezone.utc))
@@ -259,14 +282,18 @@ class CaseCRUDLTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient.get_message')
     @patch('dash.orgs.models.TembaClient.get_messages')
     @patch('dash.orgs.models.TembaClient.archive_messages')
-    def test_open(self, mock_archive_messages, mock_get_messages, mock_get_message):
+    @patch('dash.orgs.models.TembaClient.get_contact')
+    @patch('dash.orgs.models.TembaClient.remove_contacts')
+    @patch('dash.orgs.models.TembaClient.add_contacts')
+    def test_open(self, mock_add_contacts, mock_remove_contacts, mock_get_contact, mock_archive_messages,
+                  mock_get_messages, mock_get_message):
         url = reverse('cases.case_open')
 
         msg1 = TembaMessage.create(id=101, contact='C-001', created_on=timezone.now(), text="Hello",
                                    direction='I', labels=['AIDS'])
         mock_get_message.return_value = msg1
         mock_get_messages.return_value = [msg1]
-        mock_archive_messages.return_value = None
+        mock_get_contact.return_value = TembaContact.create(uuid='C-001', groups=['G-021', 'G-022', 'G-023'])
 
         # log in as an administrator
         self.login(self.admin)
@@ -288,6 +315,7 @@ class CaseCRUDLTest(BaseCasesTest):
                                    direction='I', labels=['AIDS'])
         mock_get_message.return_value = msg2
         mock_get_messages.return_value = [msg2]
+        mock_get_contact.return_value = TembaContact.create(uuid='C-001', groups=['G-021', 'G-022', 'G-023'])
 
         # log in as a non-administrator
         self.login(self.user1)
@@ -309,7 +337,7 @@ class CaseCRUDLTest(BaseCasesTest):
         mock_get_messages.return_value = [msg]
         mock_get_contact.return_value = TembaContact.create(uuid='C-001', name="Bob", fields={'district': "Gasabo"})
 
-        case = Case.get_or_open(self.unicef, self.user1, [self.aids], msg, "Summary", self.moh, archive_messages=False)
+        case = Case.get_or_open(self.unicef, self.user1, [self.aids], msg, "Summary", self.moh, update_contact=False)
 
         url = reverse('cases.case_read', args=[case.pk])
 
@@ -332,7 +360,7 @@ class CaseCRUDLTest(BaseCasesTest):
                                    labels=[self.aids])
         mock_get_messages.return_value = [msg2]
 
-        case = Case.get_or_open(self.unicef, self.user1, [self.aids], msg2, "Summary", self.moh, archive_messages=False)
+        case = Case.get_or_open(self.unicef, self.user1, [self.aids], msg2, "Summary", self.moh, update_contact=False)
 
         timeline_url = reverse('cases.case_timeline', args=[case.pk])
         t0 = timezone.now()
@@ -435,10 +463,18 @@ class CaseCRUDLTest(BaseCasesTest):
 
 
 class ContactTest(BaseCasesTest):
-    def test_as_json(self):
-        contact = TembaContact.create(uuid='C-001', name="Bob", fields={'district': "Gasabo", 'age': 32, 'gender': "M"})
-        contact_json = Contact.as_json(contact, ['age', 'gender'])
-        self.assertEqual(contact_json, {'uuid': 'C-001', 'fields': {'age': 32, 'gender': "M"}})
+    @patch('dash.orgs.models.TembaClient.get_contact')
+    def test_as_json(self, mock_get_contact):
+        # without field fetching
+        contact = Contact.get_or_create(self.unicef, 'C-001')
+        self.assertEqual(contact.as_json(fetch_fields=False), {'uuid': 'C-001', 'fields': {}})
+
+        self.unicef.set_contact_fields(['age', 'gender'])
+        mock_get_contact.return_value = TembaContact.create(uuid='C-001', name="Bob",
+                                                            fields={'district': "Gasabo", 'age': 32, 'gender': "M"})
+
+        # with field fetching
+        self.assertEqual(contact.as_json(fetch_fields=True), {'uuid': 'C-001', 'fields': {'age': 32, 'gender': "M"}})
 
 
 class GroupTest(BaseCasesTest):
@@ -1115,13 +1151,12 @@ class TasksTest(BaseCasesTest):
         msg4 = TembaMessage.create(id=104, contact='C-004', text="Php is amaze", created_on=d4)
         msg5 = TembaMessage.create(id=105, contact='C-005', text="Thanks for the pregnancy/HIV info", created_on=d5)
         mock_get_messages.return_value = [msg1, msg2, msg3, msg4, msg5]
-        mock_label_messages.return_value = None
-        mock_archive_messages.return_value = None
 
         # contact 5 has a case open that day
         d1 = datetime(2014, 1, 1, 5, 0, tzinfo=timezone.utc)
         with patch.object(timezone, 'now', return_value=d1):
-            case1 = Case.objects.create(org=self.unicef, contact_uuid='C-005',
+            contact5 = Contact.get_or_create(self.unicef, 'C-005')
+            case1 = Case.objects.create(org=self.unicef, contact=contact5,
                                         assignee=self.moh, message_id=99, message_on=d1)
 
         process_new_unsolicited()  # will process messages for both orgs

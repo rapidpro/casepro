@@ -241,7 +241,7 @@ class CaseCRUDL(SmartCRUDL):
 
             if do_api_fetch:
                 # fetch messages in chronological order
-                messages = org.get_temba_client().get_messages(contacts=[self.object.contact_uuid],
+                messages = org.get_temba_client().get_messages(contacts=[self.object.contact.uuid],
                                                                after=after, before=before, reverse=True)
                 Message.annotate_with_sender(org, messages)
             else:

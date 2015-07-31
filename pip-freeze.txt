@@ -9,7 +9,7 @@ boto==2.38.0
 celery==3.1.18
 celery-with-redis==3.0
 coverage==3.7.1
--e git+https://github.com/rapidpro/dash.git@cbf2bf57107eae8bcb443cbe771b78d6a64ec4b6#egg=dash
+-e git+https://github.com/rapidpro/dash.git@cbf2bf57107eae8bcb443cbe771b78d6a64ec4b6#egg=dash-master
 dj-database-url==0.3.0
 django-appconf==1.0.1
 django-celery==3.1.16
@@ -38,7 +38,7 @@ psycopg2==2.6.1
 pycountry==1.12
 python-dateutil==2.4.2
 pytz==2015.4
--e git+https://github.com/rapidpro/rapidpro-python.git@ce4f8706a84f6082bd186e8fa88b2a6ba1ee6a57#egg=rapidpro-python-1.0
+rapidpro-python==1.1
 raven==5.3.1
 redis==2.10.3
 requests==2.7.0

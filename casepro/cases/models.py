@@ -344,6 +344,85 @@ class Label(models.Model):
         return self.name
 
 
+class Contact(models.Model):
+    """
+    Maintains some state for a contact whilst they are in a case
+    """
+    uuid = models.CharField(max_length=36, unique=True)
+
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='contacts')
+
+    suspended_groups = ArrayField(models.CharField(max_length=36), help_text=_("UUIDs of suspended contact groups"))
+
+    @classmethod
+    def get_or_create(cls, org, uuid):
+        existing = cls.objects.filter(org=org, uuid=uuid).first()
+        if existing:
+            return existing
+
+        return cls.objects.create(org=org, uuid=uuid, suspended_groups=[])
+
+    def suspend_groups(self):
+        if self.suspended_groups:
+            raise ValueError("Can't suspend from groups as contact is already suspended from groups")
+
+        # get current groups from RapidPro
+        temba_contact = self.fetch()
+        temba_groups = temba_contact.groups if temba_contact else []
+
+        suspend_groups = self.org.get_suspend_groups()
+        remove_groups = intersection(temba_groups, suspend_groups)
+
+        # remove contact from groups
+        client = self.org.get_temba_client()
+        for remove_group in remove_groups:
+            client.remove_contacts([self.uuid], group_uuid=remove_group)
+
+        self.suspended_groups = remove_groups
+        self.save(update_fields=('suspended_groups',))
+
+    def restore_groups(self):
+        # add contact back into suspended groups
+        client = self.org.get_temba_client()
+        for suspended_group in self.suspended_groups:
+            client.remove_contacts([self.uuid], group_uuid=suspended_group)
+
+        self.suspended_groups = []
+        self.save(update_fields=('suspended_groups',))
+
+    def archive_messages(self):
+        client = self.org.get_temba_client()
+        labels = [l.name for l in Label.get_all(self.org)]
+        messages = client.get_messages(contacts=[self.uuid], labels=labels,
+                                       direction='I', statuses=['H'], _types=['I'], archived=False)
+        if messages:
+            client.archive_messages(messages=[m.id for m in messages])
+
+    def fetch(self):
+        """
+        Fetches this contact from RapidPro
+        """
+        try:
+            return self.org.get_temba_client().get_contact(self.uuid)
+        except TembaNoSuchObjectError:
+            return None  # always a chance that the contact has been deleted in RapidPro
+
+    def as_json(self, fetch_fields=False):
+        """
+        Prepares a contact for JSON serialization
+        """
+        if fetch_fields:
+            temba_contact = self.fetch()
+            temba_fields = temba_contact.fields if temba_contact else {}
+
+            allowed_keys = self.org.get_contact_fields()
+            fields = {key: temba_fields.get(key, None) for key in allowed_keys}
+        else:
+            fields = {}
+
+        return {'uuid': self.uuid, 'fields': fields}
+
+
 class case_action(object):
     """
     Helper decorator for case action methods that should check the user is allowed to update the case
@@ -371,7 +450,7 @@ class Case(models.Model):
 
     assignee = models.ForeignKey(Partner, related_name="cases")
 
-    contact_uuid = models.CharField(max_length=36, db_index=True)
+    contact = models.ForeignKey(Contact, related_name="cases")
 
     message_id = models.IntegerField(unique=True)
 
@@ -412,7 +491,7 @@ class Case(models.Model):
 
     @classmethod
     def get_for_contact(cls, org, contact_uuid):
-        return cls.get_all(org).filter(contact_uuid=contact_uuid)
+        return cls.get_all(org).filter(contact__uuid=contact_uuid)
 
     @classmethod
     def get_open_for_contact_on(cls, org, contact_uuid, dt):
@@ -423,7 +502,7 @@ class Case(models.Model):
         return self.labels.filter(is_active=True)
 
     @classmethod
-    def get_or_open(cls, org, user, labels, message, summary, assignee, archive_messages=True):
+    def get_or_open(cls, org, user, labels, message, summary, assignee, update_contact=True):
         r = get_redis_connection()
         with r.lock('org:%d:cases_lock' % org.pk):
             # check for open case with this contact
@@ -438,16 +517,21 @@ class Case(models.Model):
                 existing_for_msg.is_new = False
                 return existing_for_msg
 
-            case = cls.objects.create(org=org, assignee=assignee, contact_uuid=message.contact,
+            contact = Contact.get_or_create(org, message.contact)
+
+            if update_contact:
+                # suspend contact from groups while case is open
+                contact.suspend_groups()
+
+                # archive messages any labelled messages from this contact
+                contact.archive_messages()
+
+            case = cls.objects.create(org=org, assignee=assignee, contact=contact,
                                       summary=summary, message_id=message.id, message_on=message.created_on)
             case.is_new = True
             case.labels.add(*labels)
 
             CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee)
-
-            # archive messages any labelled messages from this contact
-            if archive_messages:
-                Contact.archive_messages(org, message.contact)
 
         return case
 
@@ -464,21 +548,26 @@ class Case(models.Model):
 
     @case_action()
     def close(self, user, note=None):
+        self.contact.restore_groups()
+
         self.closed_on = timezone.now()
         self.save(update_fields=('closed_on',))
 
         CaseAction.create(self, user, CaseAction.CLOSE, note=note)
 
     @case_action()
-    def reopen(self, user, note=None, archive_messages=True):
+    def reopen(self, user, note=None, update_contact=True):
         self.closed_on = None
         self.save(update_fields=('closed_on',))
 
         CaseAction.create(self, user, CaseAction.REOPEN, note=note)
 
-        # labelling task may have picked up messages whilst case was closed. Those now need to be archived.
-        if archive_messages:
-            Contact.archive_messages(self.org, self.contact_uuid)
+        if update_contact:
+            # suspend contact from groups while case is open
+            self.contact.suspend_groups()
+
+            # labelling task may have picked up messages whilst case was closed. Those now need to be archived.
+            self.contact.archive_messages()
 
     @case_action()
     def reassign(self, user, partner, note=None):
@@ -537,14 +626,8 @@ class Case(models.Model):
         return self.closed_on is not None
 
     def as_json(self, fetch_contact=False):
-        if fetch_contact:
-            contact = Contact.fetch(self.org, self.contact_uuid)
-            contact_json = Contact.as_json(contact, self.org.get_contact_fields()) if contact else None
-        else:
-            contact_json = {'uuid': self.contact_uuid}
-
         return {'id': self.pk,
-                'contact': contact_json,
+                'contact': self.contact.as_json(fetch_contact),
                 'assignee': self.assignee.as_json(),
                 'labels': [l.as_json() for l in self.get_labels()],
                 'summary': self.summary,
@@ -626,35 +709,6 @@ class CaseEvent(models.Model):
         return {'id': self.pk,
                 'event': self.event,
                 'created_on': self.created_on}
-
-
-class Contact(object):
-    """
-    A pseudo-model for contacts which are always fetched from RapidPro.
-    """
-    @staticmethod
-    def archive_messages(org, contact_uuid):
-        client = org.get_temba_client()
-        labels = [l.name for l in Label.get_all(org)]
-        messages = client.get_messages(contacts=[contact_uuid], labels=labels,
-                                       direction='I', statuses=['H'], _types=['I'], archived=False)
-        if messages:
-            client.archive_messages(messages=[m.id for m in messages])
-
-    @staticmethod
-    def fetch(org, uuid):
-        try:
-            return org.get_temba_client().get_contact(uuid)
-        except TembaNoSuchObjectError:
-            return None  # always a chance that the contact has been deleted in RapidPro
-
-    @staticmethod
-    def as_json(contact, field_keys):
-        """
-        Prepares a contact (fetched from RapidPro) for JSON serialization
-        """
-        return {'uuid': contact.uuid,
-                'fields': {key: contact.fields.get(key, None) for key in field_keys}}
 
 
 class Message(object):
