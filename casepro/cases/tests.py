@@ -77,8 +77,8 @@ class CaseTest(BaseCasesTest):
         mock_archive_messages.reset_mock()
 
         # check that opening the case removed contact from specified suspend groups
-        mock_remove_contacts.assert_calls(call(contacts=['C-001'], group_uuid='G-021'),
-                                          call(contacts=['C-001'], group_uuid='G-022'))
+        mock_remove_contacts.assert_has_calls([call(['C-001'], group_uuid='G-021'),
+                                               call(['C-001'], group_uuid='G-022')])
         mock_remove_contacts.reset_mock()
 
         # check access to this case
@@ -134,8 +134,8 @@ class CaseTest(BaseCasesTest):
         # check that contacts groups were restored
         self.assertEqual(Contact.objects.get(pk=contact.pk).suspended_groups, [])
 
-        mock_add_contacts.assert_calls(call(contacts=['C-001'], group_uuid='G-021'),
-                                       call(contacts=['C-001'], group_uuid='G-022'))
+        mock_add_contacts.assert_has_calls([call(['C-001'], group_uuid='G-021'),
+                                            call(['C-001'], group_uuid='G-022')])
         mock_add_contacts.reset_mock()
 
         # contact sends a message after case was closed

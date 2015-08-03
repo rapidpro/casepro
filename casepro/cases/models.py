@@ -385,7 +385,7 @@ class Contact(models.Model):
         # add contact back into suspended groups
         client = self.org.get_temba_client()
         for suspended_group in self.suspended_groups:
-            client.remove_contacts([self.uuid], group_uuid=suspended_group)
+            client.add_contacts([self.uuid], group_uuid=suspended_group)
 
         self.suspended_groups = []
         self.save(update_fields=('suspended_groups',))
