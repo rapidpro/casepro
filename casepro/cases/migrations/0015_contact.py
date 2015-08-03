@@ -8,7 +8,6 @@ import django.contrib.postgres.fields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('orgs', '0011_auto_20150731_1415'),
         ('cases', '0014_label_uuid_not_null'),
     ]
 

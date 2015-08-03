@@ -20,6 +20,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('cases', '0012_label_uuid'),
+        ('orgs', '0014_auto_20150722_1419'),
     ]
 
     operations = [
