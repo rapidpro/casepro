@@ -362,6 +362,19 @@ class Contact(models.Model):
 
         return cls.objects.create(org=org, uuid=uuid, suspended_groups=[])
 
+    def prepare_for_case(self):
+        """
+        Prepares this contact to be put in a case
+        """
+        # suspend contact from groups while case is open
+        self.suspend_groups()
+
+        # expire any active flow runs they have
+        self.expire_flows()
+
+        # labelling task may have picked up messages whilst case was closed. Those now need to be archived.
+        self.archive_messages()
+
     def suspend_groups(self):
         if self.suspended_groups:
             raise ValueError("Can't suspend from groups as contact is already suspended from groups")
@@ -389,6 +402,10 @@ class Contact(models.Model):
 
         self.suspended_groups = []
         self.save(update_fields=('suspended_groups',))
+
+    def expire_flows(self):
+        client = self.org.get_temba_client()
+        client.expire_contacts([self.uuid])
 
     def archive_messages(self):
         client = self.org.get_temba_client()
@@ -520,11 +537,8 @@ class Case(models.Model):
             contact = Contact.get_or_create(org, message.contact)
 
             if update_contact:
-                # suspend contact from groups while case is open
-                contact.suspend_groups()
-
-                # archive messages any labelled messages from this contact
-                contact.archive_messages()
+                # suspend from groups, expire flows and archive messages
+                contact.prepare_for_case()
 
             case = cls.objects.create(org=org, assignee=assignee, contact=contact,
                                       summary=summary, message_id=message.id, message_on=message.created_on)
@@ -563,11 +577,8 @@ class Case(models.Model):
         CaseAction.create(self, user, CaseAction.REOPEN, note=note)
 
         if update_contact:
-            # suspend contact from groups while case is open
-            self.contact.suspend_groups()
-
-            # labelling task may have picked up messages whilst case was closed. Those now need to be archived.
-            self.contact.archive_messages()
+            # suspend from groups, expire flows and archive messages
+            self.contact.prepare_for_case()
 
     @case_action()
     def reassign(self, user, partner, note=None):

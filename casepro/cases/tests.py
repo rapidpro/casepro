@@ -28,8 +28,9 @@ class CaseTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient.get_contact')
     @patch('dash.orgs.models.TembaClient.remove_contacts')
     @patch('dash.orgs.models.TembaClient.add_contacts')
-    def test_lifecycle(self, mock_add_contacts, mock_remove_contacts, mock_get_contact, mock_archive_messages,
-                       mock_get_messages):
+    @patch('dash.orgs.models.TembaClient.expire_contacts')
+    def test_lifecycle(self, mock_expire_contacts, mock_add_contacts, mock_remove_contacts, mock_get_contact,
+                       mock_archive_messages, mock_get_messages):
         d0 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
         d1 = datetime(2014, 1, 2, 7, 0, tzinfo=timezone.utc)
         d2 = datetime(2014, 1, 2, 8, 0, tzinfo=timezone.utc)
@@ -80,6 +81,10 @@ class CaseTest(BaseCasesTest):
         mock_remove_contacts.assert_has_calls([call(['C-001'], group_uuid='G-021'),
                                                call(['C-001'], group_uuid='G-022')])
         mock_remove_contacts.reset_mock()
+
+        # check that contact's runs were expired
+        mock_expire_contacts.assert_called_once_with(['C-001'])
+        mock_expire_contacts.reset_mock()
 
         # check access to this case
         self.assertEqual(case.access_level(self.user1), AccessLevel.update)  # user who opened it can view and update
@@ -285,7 +290,8 @@ class CaseCRUDLTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient.get_contact')
     @patch('dash.orgs.models.TembaClient.remove_contacts')
     @patch('dash.orgs.models.TembaClient.add_contacts')
-    def test_open(self, mock_add_contacts, mock_remove_contacts, mock_get_contact, mock_archive_messages,
+    @patch('dash.orgs.models.TembaClient.expire_contacts')
+    def test_open(self, mock_expire_contacts, mock_add_contacts, mock_remove_contacts, mock_get_contact, mock_archive_messages,
                   mock_get_messages, mock_get_message):
         url = reverse('cases.case_open')
 
