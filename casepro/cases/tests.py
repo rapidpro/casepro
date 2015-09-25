@@ -385,7 +385,7 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'][1]['type'], 'A')
         self.assertEqual(response.json['results'][1]['item']['action'], 'O')
 
-        mock_get_messages.assert_called_once_with(contacts=['C-001'], after=d2, before=t0, reverse=True)
+        mock_get_messages.assert_called_once_with(contacts=['C-001'], after=d2, before=t0)
         mock_get_messages.reset_mock()
 
         # page looks for new timeline activity
@@ -434,7 +434,7 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'][0]['item']['direction'], 'O')
 
         # this time we will have hit the RapidPro API because we know there's a new outgoing message
-        mock_get_messages.assert_called_once_with(contacts=['C-001'], after=t2, before=t3, reverse=True)
+        mock_get_messages.assert_called_once_with(contacts=['C-001'], after=t2, before=t3)
         mock_get_messages.reset_mock()
 
         # contact sends a reply
@@ -454,7 +454,7 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'][0]['item']['direction'], 'I')
 
         # again we will have hit the RapidPro API - this time we know there's a new incoming message
-        mock_get_messages.assert_called_once_with(contacts=['C-001'], after=t3, before=t4, reverse=True)
+        mock_get_messages.assert_called_once_with(contacts=['C-001'], after=t3, before=t4)
         mock_get_messages.reset_mock()
 
         # page again looks for new timeline activity
