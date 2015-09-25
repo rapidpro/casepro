@@ -272,7 +272,7 @@ services.factory 'CaseService', ['$http', ($http) ->
       $http.get('/case/search/?' + $.param(params))
       .success((data) =>
         @_processCases(data.results)
-        callback(data.results, data.total, data.has_more)
+        callback(data.results, data.has_more)
       ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
