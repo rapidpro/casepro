@@ -228,6 +228,8 @@ class CaseCRUDL(SmartCRUDL):
             after = parse_iso8601(self.request.GET.get('after', None)) or self.object.message_on
             before = parse_iso8601(self.request.GET.get('before', None)) or self.object.closed_on
 
+            label_map = {l.name: l for l in Label.get_all(self.request.org)}
+
             # if this isn't a first request for the existing items, we check on our side to see if there will be new
             # items before hitting the RapidPro API
             do_api_fetch = True
@@ -241,9 +243,24 @@ class CaseCRUDL(SmartCRUDL):
 
             if do_api_fetch:
                 # fetch messages
-                messages = org.get_temba_client().get_messages(contacts=[self.object.contact.uuid],
-                                                               after=after, before=before)
-                Message.annotate_with_sender(org, messages)
+                remote = org.get_temba_client().get_messages(contacts=[self.object.contact.uuid],
+                                                             after=after, before=before)
+
+                local_outgoing = Outgoing.objects.filter(case=self.object,
+                                                         created_on__gte=after, created_on__lte=before)
+                local_by_broadcast = {o.broadcast_id: o for o in local_outgoing}
+
+                # merge remotely fetched and local outgoing messages
+                messages = []
+                for m in remote:
+                    local = local_by_broadcast.pop(m.broadcast, None)
+                    if local:
+                        m.sender = local.created_by
+                    messages.append({'time': m.created_on, 'type': 'M', 'item': Message.as_json(m, label_map)})
+
+                for m in local_by_broadcast.values():
+                    messages.append({'time': m.created_on, 'type': 'M', 'item': m.as_json()})
+
             else:
                 messages = []
 
@@ -252,8 +269,7 @@ class CaseCRUDL(SmartCRUDL):
             actions = actions.select_related('assignee', 'created_by').order_by('pk')
 
             # merge actions and messages and JSON-ify both
-            label_map = {l.name: l for l in Label.get_all(self.request.org)}
-            timeline = [{'time': m.created_on, 'type': 'M', 'item': Message.as_json(m, label_map)} for m in messages]
+            timeline = messages
             timeline += [{'time': a.created_on, 'type': 'A', 'item': a.as_json()} for a in actions]
             timeline = sorted(timeline, key=lambda event: event['time'])
 

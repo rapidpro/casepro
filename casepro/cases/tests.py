@@ -420,7 +420,8 @@ class CaseCRUDLTest(BaseCasesTest):
                                                                    contacts=['C-001'], created_on=d3)
         Outgoing.create(self.unicef, self.user1, Outgoing.CASE_REPLY, "It's bad", [], ['C-001'], case)
 
-        msg3 = TembaMessage.create(id=103, contact='C-001', created_on=d3, text="It's bad", labels=[], direction='O')
+        msg3 = TembaMessage.create(id=103, contact='C-001', created_on=d3, text="It's bad",
+                                   labels=[], direction='O', broadcast=201)
         mock_get_messages.return_value = [msg3]
 
         # page again looks for new timeline activity

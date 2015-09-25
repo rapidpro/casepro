@@ -958,6 +958,8 @@ class Outgoing(models.Model):
 
     activity = models.CharField(max_length=1, choices=ACTIVITY_CHOICES)
 
+    text = models.TextField(max_length=640, null=True)
+
     broadcast_id = models.IntegerField()
 
     recipient_count = models.PositiveIntegerField()
@@ -979,5 +981,18 @@ class Outgoing(models.Model):
                                   broadcast_id=broadcast.id,
                                   recipient_count=recipient_count,
                                   activity=activity, case=case,
+                                  text=text,
                                   created_by=user,
                                   created_on=broadcast.created_on)
+
+    def as_json(self):
+        return {'id': self.pk,
+                'text': self.text,
+                'contact': self.case.contact.pk,
+                'urn': None,
+                'time': self.created_on,
+                'labels': [],
+                'flagged': False,
+                'direction': 'O',
+                'archived': False,
+                'sender': self.created_by.as_json()}
