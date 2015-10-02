@@ -171,6 +171,7 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/ui-bootstrap-tpls-0.12.1.min.js"></script>
     <script type='text/javascript' src='{{ STATIC_URL }}js/ng-infinite-scroll.min.js'></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/select.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/raven.min.js"></script>
 
     {% compress js %}
     %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/cases.coffee" }
@@ -179,6 +180,12 @@
     %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/modals.coffee" }
     %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/filters.coffee" }
     {% endcompress %}
+
+    {% if RAVEN_DSN %}
+    <script type="text/javascript">
+      Raven.config('{{ RAVEN_DSN }}', {}).install();
+    </script>
+    {% endif %}
 
     :javascript
       $(function(){

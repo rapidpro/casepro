@@ -441,11 +441,14 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
   $scope.sendMessage = ->
     $scope.sending = true
 
-    MessageService.replyInCase($scope.newMessage, $scope.caseObj, () ->
-      $scope.newMessage = ''
-      $scope.sending = false
-      $scope.$broadcast('timelineChanged')
-    )
+    try
+      MessageService.replyInCase($scope.newMessage, $scope.caseObj, () ->
+        $scope.newMessage = ''
+        $scope.sending = false
+        $scope.$broadcast('timelineChanged')
+      )
+    catch e
+      $window.Raven.captureException(e)
 
   $scope.onNewMessageChanged = ->
     $scope.msgCharsRemaining = $scope.maxMsgChars - $scope.newMessage.length

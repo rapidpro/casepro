@@ -19,3 +19,10 @@ def contact_ext_url(request):
         contact_ext_url_base = 'https://%s/contact/read/{}/' % settings.SITE_API_HOST
 
     return {'contact_ext_url': contact_ext_url_base}
+
+
+def include_settings(request):
+    """
+    Includes a few settings that we always want in our context
+    """
+    return {'RAVEN_DSN': getattr(settings, 'RAVEN_DSN', None)}

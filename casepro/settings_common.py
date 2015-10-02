@@ -160,6 +160,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'dash.orgs.context_processors.set_org_processor',
     'dash.context_processors.lang_direction',
     'casepro.cases.context_processors.contact_ext_url',
+    'casepro.cases.context_processors.include_settings',
     'casepro.profiles.context_processors.user_is_admin',
 )
 
