@@ -5,7 +5,7 @@ import json
 from dash.orgs.models import Org
 from django.core.cache import cache
 from enum import Enum
-from temba.utils import format_iso8601, parse_iso8601
+from temba_client.utils import format_iso8601, parse_iso8601
 
 
 class TaskType(Enum):

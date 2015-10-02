@@ -8,10 +8,10 @@ from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch, call
-from temba.base import TembaPager
-from temba.types import Contact as TembaContact, Group as TembaGroup, Label as TembaLabel, Message as TembaMessage
-from temba.types import Broadcast as TembaBroadcast
-from temba.utils import format_iso8601
+from temba_client.base import TembaPager
+from temba_client.types import Contact as TembaContact, Group as TembaGroup, Label as TembaLabel, Message as TembaMessage
+from temba_client.types import Broadcast as TembaBroadcast
+from temba_client.utils import format_iso8601
 from casepro.orgs_ext import TaskType
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest

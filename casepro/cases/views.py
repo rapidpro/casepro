@@ -11,7 +11,7 @@ from django.views.generic import View
 from enum import Enum
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView, SmartFormView
 from smartmin.users.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
-from temba.utils import parse_iso8601
+from temba_client.utils import parse_iso8601
 from . import parse_csv, json_encode, normalize, safe_max, str_to_bool, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
 from .models import AccessLevel, Case, Group, Label, Message, MessageAction, MessageExport, Partner, Outgoing
 from .tasks import message_export

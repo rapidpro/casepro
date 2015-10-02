@@ -21,7 +21,7 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from enum import IntEnum
 from redis_cache import get_redis_connection
-from temba.base import TembaNoSuchObjectError, TembaException
+from temba_client.base import TembaNoSuchObjectError, TembaException
 from casepro.email import send_email
 from . import parse_csv, normalize, match_keywords, SYSTEM_LABEL_FLAGGED
 
@@ -728,45 +728,51 @@ class Message(object):
     """
     @staticmethod
     def bulk_flag(org, user, message_ids):
-        client = org.get_temba_client()
-        client.label_messages(message_ids, label=SYSTEM_LABEL_FLAGGED)
+        if message_ids:
+            client = org.get_temba_client()
+            client.label_messages(message_ids, label=SYSTEM_LABEL_FLAGGED)
 
-        MessageAction.create(org, user, message_ids, MessageAction.FLAG)
+            MessageAction.create(org, user, message_ids, MessageAction.FLAG)
 
     @staticmethod
     def bulk_unflag(org, user, message_ids):
-        client = org.get_temba_client()
-        client.unlabel_messages(message_ids, label=SYSTEM_LABEL_FLAGGED)
+        if message_ids:
+            client = org.get_temba_client()
+            client.unlabel_messages(message_ids, label=SYSTEM_LABEL_FLAGGED)
 
-        MessageAction.create(org, user, message_ids, MessageAction.UNFLAG)
+            MessageAction.create(org, user, message_ids, MessageAction.UNFLAG)
 
     @staticmethod
     def bulk_label(org, user, message_ids, label):
-        client = org.get_temba_client()
-        client.label_messages(message_ids, label_uuid=label.uuid)
+        if message_ids:
+            client = org.get_temba_client()
+            client.label_messages(message_ids, label_uuid=label.uuid)
 
-        MessageAction.create(org, user, message_ids, MessageAction.LABEL, label)
+            MessageAction.create(org, user, message_ids, MessageAction.LABEL, label)
 
     @staticmethod
     def bulk_unlabel(org, user, message_ids, label):
-        client = org.get_temba_client()
-        client.unlabel_messages(message_ids, label_uuid=label.uuid)
+        if message_ids:
+            client = org.get_temba_client()
+            client.unlabel_messages(message_ids, label_uuid=label.uuid)
 
-        MessageAction.create(org, user, message_ids, MessageAction.UNLABEL, label)
+            MessageAction.create(org, user, message_ids, MessageAction.UNLABEL, label)
 
     @staticmethod
     def bulk_archive(org, user, message_ids):
-        client = org.get_temba_client()
-        client.archive_messages(message_ids)
+        if message_ids:
+            client = org.get_temba_client()
+            client.archive_messages(message_ids)
 
-        MessageAction.create(org, user, message_ids, MessageAction.ARCHIVE)
+            MessageAction.create(org, user, message_ids, MessageAction.ARCHIVE)
 
     @staticmethod
     def bulk_restore(org, user, message_ids):
-        client = org.get_temba_client()
-        client.unarchive_messages(message_ids)
+        if message_ids:
+            client = org.get_temba_client()
+            client.unarchive_messages(message_ids)
 
-        MessageAction.create(org, user, message_ids, MessageAction.RESTORE)
+            MessageAction.create(org, user, message_ids, MessageAction.RESTORE)
 
     @classmethod
     def update_labels(cls, msg, org, user, labels):
@@ -972,6 +978,9 @@ class Outgoing(models.Model):
 
     @classmethod
     def create(cls, org, user, activity, text, urns, contacts, case=None):
+        if not text:
+            raise ValueError("Message text cannot be empty")
+
         broadcast = org.get_temba_client().create_broadcast(text=text, urns=urns, contacts=contacts)
 
         # TODO update RapidPro api to expose more accurate recipient_count
