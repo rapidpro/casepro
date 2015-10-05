@@ -16,7 +16,7 @@ from casepro.orgs_ext import TaskType
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
 from . import safe_max, normalize, match_keywords, truncate, str_to_bool
-from .context_processors import contact_ext_url
+from .context_processors import contact_ext_url, sentry_dsn
 from .models import AccessLevel, Case, CaseAction, CaseEvent, Contact, Group, Label, Message, MessageAction
 from .models import MessageExport, Partner, Outgoing
 from .tasks import process_new_unsolicited
@@ -1192,4 +1192,10 @@ class ContextProcessorsTest(BaseCasesTest):
             self.assertEqual(contact_ext_url(None), {'contact_ext_url': 'http://localhost:8001/contact/read/{}/'})
         with self.settings(SITE_API_HOST='rapidpro.io'):
             self.assertEqual(contact_ext_url(None), {'contact_ext_url': 'https://rapidpro.io/contact/read/{}/'})
+
+    def test_sentry_dsn(self):
+        dsn = 'https://ir78h8v3mhz91lzgd2icxzaiwtmpsx10:58l883tax2o5cae05bj517f9xmq16a2h@app.getsentry.com/44864'
+        with self.settings(SENTRY_DSN=dsn):
+            self.assertEqual(sentry_dsn(None),
+                             {'sentry_public_dsn': 'https://ir78h8v3mhz91lzgd2icxzaiwtmpsx10@app.getsentry.com/44864'})
 

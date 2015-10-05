@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+import regex
 
 from django.conf import settings
 from urlparse import urlparse
@@ -21,8 +22,17 @@ def contact_ext_url(request):
     return {'contact_ext_url': contact_ext_url_base}
 
 
-def include_settings(request):
+def sentry_dsn(request):
     """
-    Includes a few settings that we always want in our context
+    Includes the public part of our Sentry DSN which is required for the Raven JS library
     """
-    return {'RAVEN_DSN': getattr(settings, 'RAVEN_DSN', None)}
+    dsn = getattr(settings, 'SENTRY_DSN', None)
+    public_dsn = None
+    if dsn:
+        match = regex.match('^https:\/\/(\w+):\w+@([\w\.\/]+)$', dsn)
+        if match:
+            public_key = match.group(1)
+            path = match.group(2)
+            public_dsn = 'https://%s@%s' % (public_key, path)
+
+    return {'sentry_public_dsn': public_dsn}

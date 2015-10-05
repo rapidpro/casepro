@@ -181,9 +181,9 @@
     %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/filters.coffee" }
     {% endcompress %}
 
-    {% if RAVEN_DSN %}
+    {% if sentry_public_dsn %}
     <script type="text/javascript">
-      Raven.config('{{ RAVEN_DSN }}', {}).install();
+      Raven.config('{{ sentry_public_dsn }}', {}).install();
     </script>
     {% endif %}
 

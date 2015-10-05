@@ -28,5 +28,6 @@ pycountry
 python-dateutil
 rapidpro-python==1.1
 raven
+regex
 sorl-thumbnail==11.12.1b
 xlutils

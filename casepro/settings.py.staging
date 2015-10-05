@@ -32,9 +32,8 @@ MANAGERS = ADMINS
 # add gunicorn
 INSTALLED_APPS = INSTALLED_APPS + ('gunicorn', 'raven.contrib.django.raven_compat',)
 
-RAVEN_CONFIG = {
-    'dsn': os.environ.get('RAVEN_DSN', 'MISSING_RAVEN_DSN')
-}
+SENTRY_DSN = os.environ.get('RAVEN_DSN', 'MISSING_RAVEN_DSN')
+RAVEN_CONFIG = {'dsn': SENTRY_DSN}
 
 # static dir is different for staging
 STATIC_URL = '/sitestatic/'
