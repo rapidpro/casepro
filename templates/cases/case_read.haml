@@ -68,7 +68,7 @@
           // TODO maxlength not working
           %textarea.form-control{ type:"text", autocomplete:"off", placeholder:"Enter message", ng-maxlength:"{{ maxMsgChars }}", ng-model:"$parent.newMessage", ng-disabled:"sending", ng-change:"onNewMessageChanged()", ng-trim:"false" }
           .sendform-controls.clearfix
-            %button.btn.btn-default.pull-right{ type:"button", ng-click:"sendMessage()", ng-disabled:"sending || $parent.newMessage.length == 0" }
+            %button.btn.btn-default.pull-right{ type:"button", ng-click:"sendMessage()", ng-disabled:"sending || $parent.newMessage.length == 0 || msgCharsRemaining < 0" }
               - trans "Send"
             %span.pull-right.chars-left
               [[ msgCharsRemaining ]]
