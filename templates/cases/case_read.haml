@@ -142,6 +142,12 @@
             - trans "Contact"
             %strong
               [[ caseObj.contact.uuid | limitTo:6 | uppercase ]]
+
+            - if user_is_admin
+              &nbsp;
+              %a{ ng-href:'[[ "{{ contact_ext_url }}" | replace:"{}":caseObj.contact.uuid ]]', target:"_blank" }
+                %span.glyphicon.glyphicon-new-window
+                - trans "View"
           .panel-body
             .contact-details
               .none{ ng-if:"!caseObj.contact.fields" }
