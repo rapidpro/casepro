@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import regex
+import time
 
 from django.conf import settings
 from urlparse import urlparse
@@ -36,3 +37,10 @@ def sentry_dsn(request):
             public_dsn = 'https://%s@%s' % (public_key, path)
 
     return {'sentry_public_dsn': public_dsn}
+
+
+def server_time(request):
+    """
+    Includes the server time as a millisecond accuracy timestamp
+    """
+    return {'server_time': int(round(time.time() * 1000))}

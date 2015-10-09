@@ -399,16 +399,15 @@ services.factory 'CaseService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     # Fetches timeline events
     #----------------------------------------------------------------------------
-    fetchTimeline: (caseObj, after, before, callback) ->
+    fetchTimeline: (caseObj, after, callback) ->
       params = {
-        after: formatIso8601(after),
-        before: formatIso8601(before),
+        after: formatIso8601(after)
       }
 
       $http.get('/case/timeline/' + caseObj.id + '/?' + $.param(params))
       .success((data) =>
         @_processTimeline(data.results)
-        callback(data.results)
+        callback(data.results, parseIso8601(data.max_time))
       ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------

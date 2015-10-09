@@ -181,11 +181,11 @@
     %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/filters.coffee" }
     {% endcompress %}
 
-    {% if sentry_public_dsn %}
     <script type="text/javascript">
-      Raven.config('{{ sentry_public_dsn }}', {}).install();
+      {% if sentry_public_dsn %}Raven.config('{{ sentry_public_dsn }}', {}).install();{% endif %}
+
+      var serverTime = new Date({{ server_time }});
     </script>
-    {% endif %}
 
     :javascript
       $(function(){

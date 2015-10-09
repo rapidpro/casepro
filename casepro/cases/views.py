@@ -6,6 +6,7 @@ from django import forms
 from django.core.files.storage import default_storage
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest, JsonResponse
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
 from enum import Enum
@@ -226,7 +227,7 @@ class CaseCRUDL(SmartCRUDL):
             org = self.request.org
 
             after = parse_iso8601(self.request.GET.get('after', None)) or self.object.message_on
-            before = parse_iso8601(self.request.GET.get('before', None)) or self.object.closed_on
+            before = self.object.closed_on if self.object.closed_on else timezone.now()
 
             label_map = {l.name: l for l in Label.get_all(self.request.org)}
 
@@ -274,10 +275,11 @@ class CaseCRUDL(SmartCRUDL):
             timeline = sorted(timeline, key=lambda event: event['time'])
 
             context['timeline'] = timeline
+            context['max_time'] = before
             return context
 
         def render_to_response(self, context, **response_kwargs):
-            return JsonResponse({'results': context['timeline']})
+            return JsonResponse({'results': context['timeline'], 'max_time': context['max_time']})
 
 
 class GroupCRUDL(SmartCRUDL):

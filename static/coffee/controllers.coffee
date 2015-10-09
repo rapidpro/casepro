@@ -8,7 +8,7 @@ controllers = angular.module('cases.controllers', ['cases.services', 'cases.moda
 # Component refresh intervals
 INTERVAL_MESSAGES_NEW = 15000
 INTERVAL_CASES_NEW = 5000
-INTERVAL_CASE_INFO = 5000
+INTERVAL_CASE_INFO = 10000
 INTERVAL_CASE_TIMELINE = 10000
 
 INFINITE_SCROLL_MAX_ITEMS = 1000
@@ -493,8 +493,7 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
 controllers.controller 'CaseTimelineController', [ '$scope', '$timeout', 'CaseService', ($scope, $timeout, CaseService) ->
 
   $scope.timeline = []
-  $scope.startTime = new Date()
-  $scope.newItemsMaxTime = null
+  $scope.itemsMaxTime = null
 
   $scope.init = () ->
     $scope.$on('timelineChanged', () ->
@@ -504,11 +503,10 @@ controllers.controller 'CaseTimelineController', [ '$scope', '$timeout', 'CaseSe
     $scope.refreshItems(true)
 
   $scope.refreshItems = (repeat) ->
-    afterTime = $scope.newItemsMaxTime
-    $scope.newItemsMaxTime = new Date()
 
-    CaseService.fetchTimeline($scope.caseObj, afterTime, $scope.newItemsMaxTime, (events) ->
+    CaseService.fetchTimeline($scope.caseObj, $scope.itemsMaxTime, (events, maxTime) ->
       $scope.timeline = $scope.timeline.concat events
+      $scope.itemsMaxTime = maxTime
 
       if repeat
         $timeout((() -> $scope.refreshItems(true)), INTERVAL_CASE_TIMELINE)
