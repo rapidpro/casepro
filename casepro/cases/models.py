@@ -564,10 +564,10 @@ class Case(models.Model):
     def close(self, user, note=None):
         self.contact.restore_groups()
 
-        self.closed_on = timezone.now()
-        self.save(update_fields=('closed_on',))
+        close_action = CaseAction.create(self, user, CaseAction.CLOSE, note=note)
 
-        CaseAction.create(self, user, CaseAction.CLOSE, note=note)
+        self.closed_on = close_action.created_on
+        self.save(update_fields=('closed_on',))
 
     @case_action()
     def reopen(self, user, note=None, update_contact=True):
@@ -686,7 +686,8 @@ class CaseAction(models.Model):
 
     @classmethod
     def create(cls, case, user, action, assignee=None, label=None, note=None):
-        CaseAction.objects.create(case=case, action=action, created_by=user, assignee=assignee, label=label, note=note)
+        return CaseAction.objects.create(case=case, action=action,
+                                         created_by=user, assignee=assignee, label=label, note=note)
 
     def as_json(self):
         return {'id': self.pk,

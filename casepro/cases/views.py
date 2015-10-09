@@ -16,6 +16,7 @@ from temba_client.utils import parse_iso8601
 from . import parse_csv, json_encode, normalize, safe_max, str_to_bool, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
 from .models import AccessLevel, Case, Group, Label, Message, MessageAction, MessageExport, Partner, Outgoing
 from .tasks import message_export
+from .utils import datetime_to_microseconds, microseconds_to_datetime
 
 
 class ItemView(Enum):
@@ -226,7 +227,12 @@ class CaseCRUDL(SmartCRUDL):
             context = super(CaseCRUDL.Timeline, self).get_context_data(**kwargs)
             org = self.request.org
 
-            after = parse_iso8601(self.request.GET.get('after', None)) or self.object.message_on
+            after = self.request.GET.get('after', None)
+            if after:
+                after = microseconds_to_datetime(int(after))
+            else:
+                after = self.object.message_on
+
             before = self.object.closed_on if self.object.closed_on else timezone.now()
 
             label_map = {l.name: l for l in Label.get_all(self.request.org)}
@@ -275,7 +281,7 @@ class CaseCRUDL(SmartCRUDL):
             timeline = sorted(timeline, key=lambda event: event['time'])
 
             context['timeline'] = timeline
-            context['max_time'] = before
+            context['max_time'] = datetime_to_microseconds(before)
             return context
 
         def render_to_response(self, context, **response_kwargs):

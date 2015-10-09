@@ -1,6 +1,8 @@
 # coding=utf-8
 from __future__ import absolute_import, unicode_literals
 
+import pytz
+
 from datetime import date, datetime
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
@@ -11,7 +13,7 @@ from mock import patch, call
 from temba_client.base import TembaPager
 from temba_client.types import Contact as TembaContact, Group as TembaGroup, Label as TembaLabel, Message as TembaMessage
 from temba_client.types import Broadcast as TembaBroadcast
-from temba_client.utils import format_iso8601
+from temba_client.utils import format_iso8601, parse_iso8601
 from casepro.orgs_ext import TaskType
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
@@ -20,6 +22,7 @@ from .context_processors import contact_ext_url, sentry_dsn
 from .models import AccessLevel, Case, CaseAction, CaseEvent, Contact, Group, Label, Message, MessageAction
 from .models import MessageExport, Partner, Outgoing
 from .tasks import process_new_unsolicited
+from .utils import datetime_to_microseconds, microseconds_to_datetime
 
 
 class CaseTest(BaseCasesTest):
@@ -369,13 +372,13 @@ class CaseCRUDLTest(BaseCasesTest):
         case = Case.get_or_open(self.unicef, self.user1, [self.aids], msg2, "Summary", self.moh, update_contact=False)
 
         timeline_url = reverse('cases.case_timeline', args=[case.pk])
-        t0 = timezone.now()
 
         # log in as non-administrator
         self.login(self.user1)
 
-        # request all of a timeline up to page start time
-        response = self.url_get('unicef', '%s?before=%s' % (timeline_url, format_iso8601(t0)))
+        # request all of a timeline up to now
+        response = self.url_get('unicef', '%s?after=' % timeline_url)
+        t0 = microseconds_to_datetime(response.json['max_time'])
 
         self.assertEqual(len(response.json['results']), 2)
         self.assertEqual(response.json['results'][0]['type'], 'M')
@@ -389,9 +392,9 @@ class CaseCRUDLTest(BaseCasesTest):
         mock_get_messages.reset_mock()
 
         # page looks for new timeline activity
-        t1 = timezone.now()
-        response = self.url_get('unicef', '%s?after=%s&before=%s'
-                                % (timeline_url, format_iso8601(t0), format_iso8601(t1)))
+
+        response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t0)))
+        t1 = microseconds_to_datetime(response.json['max_time'])
         self.assertEqual(len(response.json['results']), 0)
 
         # shouldn't hit the RapidPro API
@@ -402,9 +405,8 @@ class CaseCRUDLTest(BaseCasesTest):
         case.add_note(self.user2, "Looks interesting")
 
         # page again looks for new timeline activity
-        t2 = timezone.now()
-        response = self.url_get('unicef', '%s?after=%s&before=%s'
-                                % (timeline_url, format_iso8601(t1), format_iso8601(t2)))
+        response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t1)))
+        t2 = microseconds_to_datetime(response.json['max_time'])
 
         self.assertEqual(len(response.json['results']), 1)
         self.assertEqual(response.json['results'][0]['type'], 'A')
@@ -425,9 +427,8 @@ class CaseCRUDLTest(BaseCasesTest):
         mock_get_messages.return_value = [msg3]
 
         # page again looks for new timeline activity
-        t3 = timezone.now()
-        response = self.url_get('unicef', '%s?after=%s&before=%s'
-                                % (timeline_url, format_iso8601(t2), format_iso8601(t3)))
+        response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t2)))
+        t3 = microseconds_to_datetime(response.json['max_time'])
 
         self.assertEqual(len(response.json['results']), 1)
         self.assertEqual(response.json['results'][0]['type'], 'M')
@@ -445,9 +446,8 @@ class CaseCRUDLTest(BaseCasesTest):
         mock_get_messages.return_value = [msg4]
 
         # page again looks for new timeline activity
-        t4 = timezone.now()
-        response = self.url_get('unicef', '%s?after=%s&before=%s'
-                                % (timeline_url, format_iso8601(t3), format_iso8601(t4)))
+        response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t3)))
+        t4 = microseconds_to_datetime(response.json['max_time'])
 
         self.assertEqual(len(response.json['results']), 1)
         self.assertEqual(response.json['results'][0]['type'], 'M')
@@ -459,9 +459,8 @@ class CaseCRUDLTest(BaseCasesTest):
         mock_get_messages.reset_mock()
 
         # page again looks for new timeline activity
-        t5 = timezone.now()
-        response = self.url_get('unicef', '%s?after=%s&before=%s'
-                                % (timeline_url, format_iso8601(t4), format_iso8601(t5)))
+        response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t4)))
+        t5 = microseconds_to_datetime(response.json['max_time'])
 
         self.assertEqual(len(response.json['results']), 0)
 
@@ -1199,3 +1198,11 @@ class ContextProcessorsTest(BaseCasesTest):
             self.assertEqual(sentry_dsn(None),
                              {'sentry_public_dsn': 'https://ir78h8v3mhz91lzgd2icxzaiwtmpsx10@app.getsentry.com/44864'})
 
+
+class UtilsTest(BaseCasesTest):
+
+    def test_microseconds_to_datetime(self):
+        d1 = datetime(2015, 10, 9, 14, 48, 30, 123456, tzinfo=pytz.utc).astimezone(pytz.timezone("Africa/Kigali"))
+        ms = datetime_to_microseconds(d1)
+        d2 = microseconds_to_datetime(ms)
+        self.assertEqual(d2, datetime(2015, 10, 9, 14, 48, 30, 123456, tzinfo=pytz.utc))
