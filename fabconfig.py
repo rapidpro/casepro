@@ -23,7 +23,7 @@ config = {
         'primary': 'partner1',
         'instances': [
             {'name': 'partner1', 'host': 'partner1.upartners.org', 'id': 'i-5ccaec1f'},
-            {'name': 'partner2', 'host': 'partner1.upartners.org', 'id': 'i-e89fd8aa'}
+            {'name': 'partner2', 'host': 'partner2.upartners.org', 'id': 'i-e89fd8aa'}
         ]
     }
 }
