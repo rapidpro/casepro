@@ -9,11 +9,11 @@ TEMPLATE_DEBUG = DEBUG
 COMPRESS_ENABLED = True
 
 SITE_API_HOST = 'app.rapidpro.io'
-SITE_HOST_PATTERN = 'http://%s.partners.ureport.in'
+SITE_HOST_PATTERN = 'http://%s.upartners.org'
 
-HOSTNAME = 'partners.ureport.in'
-ALLOWED_HOSTS = ['partners.ureport.in', '.partners.ureport.in']
-SESSION_COOKIE_DOMAIN = 'partners.ureport.in'
+HOSTNAME = 'upartners.org'
+ALLOWED_HOSTS = ['upartners.org', '.upartners.org']
+SESSION_COOKIE_DOMAIN = 'upartners.org'
 SESSION_COOKIE_SECURE = False
 
 # these guys will get email from sentry
