@@ -116,7 +116,7 @@ class UserPatchTest(BaseCasesTest):
         self.assertEqual(unicode(self.user1), "Evan")
         self.user1.profile.full_name = None
         self.user1.profile.save()
-        self.assertEqual(unicode(self.user1), "evan@unicef.org")
+        self.assertEqual(unicode(self.user1), "Evan (evan@unicef.org)")
 
 
 class UserCRUDLTest(BaseCasesTest):
