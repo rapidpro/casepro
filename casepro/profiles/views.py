@@ -292,7 +292,7 @@ class UserCRUDL(SmartCRUDL):
             org = self.request.org
             if org:
                 qs = qs.filter(Q(pk__in=org.get_org_admins()) | Q(pk__in=org.get_org_editors()) | Q(pk__in=org.get_org_viewers()))
-            qs = qs.filter(is_active=True, pk__gt=1)
+            qs = qs.filter(is_active=True).exclude(profile=None)
             return qs
 
         def lookup_field_link(self, context, field, obj):

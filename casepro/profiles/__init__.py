@@ -120,7 +120,7 @@ def _user_release(user):
 def _user_unicode(user):
     if user.has_profile():
         if user.profile.full_name:
-            return user.profile.full_name
+            return '%s (%s)' % (user.profile.full_name, user.email)
     else:
         return user.username  # superuser
 

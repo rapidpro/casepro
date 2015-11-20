@@ -4,6 +4,8 @@ from dash.orgs.models import Org
 from dash.orgs.views import OrgCRUDL, InferOrgMixin, OrgPermsMixin, SmartUpdateView
 from dash.utils import ms_to_datetime
 from django import forms
+from django.conf import settings
+from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
 from smartmin.templatetags.smartmin import format_datetime
 from smartmin.users.views import SmartCRUDL
@@ -11,15 +13,32 @@ from timezones.forms import TimeZoneField
 from . import TaskType
 
 
+class OrgForm(forms.ModelForm):
+    language = forms.ChoiceField(required=False, choices=[('', '')] + list(settings.LANGUAGES))
+    timezone = TimeZoneField()
+
+    def __init__(self, *args, **kwargs):
+        super(OrgForm, self).__init__(*args, **kwargs)
+        administrators = User.objects.exclude(profile=None).order_by('profile__full_name')
+
+        self.fields['administrators'].queryset = administrators
+
+    class Meta:
+        model = Org
+        fields = forms.ALL_FIELDS
+
+
 class OrgExtCRUDL(SmartCRUDL):
     actions = ('create', 'update', 'list', 'home', 'edit', 'chooser', 'choose')
     model = Org
 
     class Create(OrgCRUDL.Create):
-        pass
+        form_class = OrgForm
+        fields = ('name', 'language', 'timezone', 'subdomain', 'api_token', 'logo', 'administrators')
 
     class Update(OrgCRUDL.Update):
-        pass
+        form_class = OrgForm
+        fields = ('name', 'language', 'timezone', 'subdomain', 'api_token', 'logo', 'administrators', 'is_active')
 
     class List(OrgCRUDL.List):
         pass
