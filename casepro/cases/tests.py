@@ -1199,6 +1199,14 @@ class ContextProcessorsTest(BaseCasesTest):
                              {'sentry_public_dsn': 'https://ir78h8v3mhz91lzgd2icxzaiwtmpsx10@app.getsentry.com/44864'})
 
 
+class StatusViewTest(BaseCasesTest):
+    def test_status(self):
+        url = reverse('cases.status')
+        response = self.url_get('unicef', url)
+
+        self.assertEqual(response.json, {"cache": "OK", "db": "OK"})
+
+
 class UtilsTest(BaseCasesTest):
 
     def test_microseconds_to_datetime(self):

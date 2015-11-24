@@ -1,8 +1,10 @@
 from __future__ import absolute_import, unicode_literals
 
+from dash.orgs.models import Org
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import get_obj_cacheable
 from django import forms
+from django.core.cache import cache
 from django.core.files.storage import default_storage
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest, JsonResponse
@@ -808,3 +810,21 @@ class ClosedCasesView(BaseHomeView):
     folder_icon = 'glyphicon-folder-close'
     item_view = ItemView.closed
 
+
+class StatusView(View):
+    """
+    Status endpoint for server health checks
+    """
+    def get(self, request, *args, **kwargs):
+        def status_check(callback):
+            try:
+                callback()
+                return 'OK'
+            except Exception:
+                return 'ERROR'
+
+        # hit the db and Redis
+        db_status = status_check(lambda: Org.objects.count())
+        cache_status = status_check(lambda: cache.get('xxxxxx'))
+
+        return JsonResponse({'db': db_status, 'cache': cache_status})
