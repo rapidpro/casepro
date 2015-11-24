@@ -4,7 +4,8 @@ boto
 celery
 celery-with-redis
 coverage
-django==1.8
+django
+django-celery
 django-celery-transactions
 django-compressor
 django-debug-toolbar

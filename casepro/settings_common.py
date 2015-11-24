@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import datetime
+import djcelery
 import sys
 
 from django.utils.translation import ugettext_lazy as _
@@ -215,6 +216,9 @@ INSTALLED_APPS = (
     # users
     'smartmin.users',
 
+    # async tasks,
+    'djcelery',
+
     # dash apps
     'dash.orgs',
     'dash.utils',
@@ -376,8 +380,9 @@ SOUTH_TESTS_MIGRATE = False
 INTERNAL_IPS = ('127.0.0.1',)
 
 #-----------------------------------------------------------------------------------
-# Celery
+# Django-celery
 #-----------------------------------------------------------------------------------
+djcelery.setup_loader()
 
 BROKER_URL = 'redis://localhost:6379/%d' % (10 if TESTING else 15)
 CELERY_RESULT_BACKEND = BROKER_URL
