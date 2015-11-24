@@ -4,7 +4,7 @@ from django.conf.urls import patterns, url
 from .views import CaseCRUDL, GroupCRUDL, LabelCRUDL, MessageExportCRUDL, PartnerCRUDL
 from .views import InboxView, FlaggedView, OpenCasesView, ClosedCasesView, ArchivedView, UnlabelledView
 from .views import MessageSearchView, MessageActionView, MessageHistoryView, MessageSendView, MessageLabelView
-from .views import StatusView
+from .views import StatusView, PingView
 
 
 urlpatterns = CaseCRUDL().as_urlpatterns()
@@ -25,6 +25,5 @@ urlpatterns += patterns('',
                         url(r'^message/action/(?P<action>\w+)/$', MessageActionView.as_view(), name='cases.message_action'),
                         url(r'^message/history/(?P<id>\d+)/$', MessageHistoryView.as_view(), name='cases.message_history'),
                         url(r'^message/send/$', MessageSendView.as_view(), name='cases.message_send'),
-                        url(r'^status$', StatusView.as_view(), name='cases.status'))
-
-
+                        url(r'^status$', StatusView.as_view(), name='internal.status'),
+                        url(r'^ping$', PingView.as_view(), name='internal.ping'))

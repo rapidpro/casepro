@@ -1199,12 +1199,17 @@ class ContextProcessorsTest(BaseCasesTest):
                              {'sentry_public_dsn': 'https://ir78h8v3mhz91lzgd2icxzaiwtmpsx10@app.getsentry.com/44864'})
 
 
-class StatusViewTest(BaseCasesTest):
+class InternalViewsTest(BaseCasesTest):
     def test_status(self):
-        url = reverse('cases.status')
+        url = reverse('internal.status')
         response = self.url_get('unicef', url)
 
         self.assertEqual(response.json, {"cache": "OK", "db": "OK"})
+
+    def test_ping(self):
+        url = reverse('internal.ping')
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
 
 
 class UtilsTest(BaseCasesTest):

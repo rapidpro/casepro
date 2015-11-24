@@ -813,7 +813,7 @@ class ClosedCasesView(BaseHomeView):
 
 class StatusView(View):
     """
-    Status endpoint for server health checks
+    Status endpoint for keyword-based up-time monitoring checks
     """
     def get(self, request, *args, **kwargs):
         def status_check(callback):
@@ -824,7 +824,22 @@ class StatusView(View):
                 return 'ERROR'
 
         # hit the db and Redis
-        db_status = status_check(lambda: Org.objects.count())
+        db_status = status_check(lambda: Org.objects.first())
         cache_status = status_check(lambda: cache.get('xxxxxx'))
 
         return JsonResponse({'db': db_status, 'cache': cache_status})
+
+
+class PingView(View):
+    """
+    Ping endpoint for ELB health check pings
+    """
+    def get(self, request, *args, **kwargs):
+        try:
+            # hit the db and Redis
+            Org.objects.first()
+            cache.get('xxxxxx')
+        except Exception:
+            return HttpResponse("ERROR", status=500)
+
+        return HttpResponse("OK", status=200)
