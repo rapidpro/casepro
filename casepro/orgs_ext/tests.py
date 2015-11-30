@@ -12,3 +12,5 @@ class OrgExtCRUDLTest(BaseCasesTest):
 
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
+
+        self.assertContains(response, "Kidus (kidus@unicef.org)")

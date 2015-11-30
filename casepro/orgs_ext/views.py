@@ -44,7 +44,7 @@ class OrgExtCRUDL(SmartCRUDL):
         pass
 
     class Home(OrgCRUDL.Home):
-        fields = ('name', 'timezone', 'api_token', 'contact_fields', 'last_label_task')
+        fields = ('name', 'timezone', 'api_token', 'contact_fields', 'last_label_task', 'administrators')
         field_config = {'api_token': {'label': _("RapidPro API Token")}}
         permission = 'orgs.org_home'
 
@@ -63,6 +63,10 @@ class OrgExtCRUDL(SmartCRUDL):
                 return "%s (%d new messages, %d labelled)" % (when, num_messages, num_labelled)
             else:
                 return None
+
+        def get_administrators(self, obj):
+            admins = obj.administrators.exclude(profile=None).order_by('profile__full_name').select_related('profile')
+            return '<br/>'.join([unicode(u) for u in admins])
 
     class Edit(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
         class OrgExtForm(forms.ModelForm):
