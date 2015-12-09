@@ -26,8 +26,8 @@ pisa
 psycopg2
 pycountry
 python-dateutil
-rapidpro-python==1.1
+rapidpro-python
 raven
 regex
-sorl-thumbnail==11.12.1b
+sorl-thumbnail
 xlutils
