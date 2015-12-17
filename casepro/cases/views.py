@@ -15,7 +15,7 @@ from enum import Enum
 from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView, SmartFormView
 from smartmin.users.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
-from . import parse_csv, json_encode, normalize, safe_max, str_to_bool, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
+from . import parse_csv, json_encode, normalize, str_to_bool, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
 from .models import AccessLevel, Case, Group, Label, Message, MessageAction, MessageExport, Partner, Outgoing
 from .tasks import message_export
 from .utils import datetime_to_microseconds, microseconds_to_datetime
@@ -227,7 +227,8 @@ class CaseCRUDL(SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super(CaseCRUDL.Timeline, self).get_context_data(**kwargs)
-            org = self.request.org
+            now = timezone.now()
+            empty = False
 
             after = self.request.GET.get('after', None)
             if after:
@@ -235,55 +236,19 @@ class CaseCRUDL(SmartCRUDL):
             else:
                 after = self.object.message_on
 
-            before = self.object.closed_on if self.object.closed_on else timezone.now()
+            if self.object.closed_on:
+                if after > self.object.closed_on:
+                    empty = True
 
-            label_map = {l.name: l for l in Label.get_all(self.request.org)}
-
-            # if this isn't a first request for the existing items, we check on our side to see if there will be new
-            # items before hitting the RapidPro API
-            do_api_fetch = True
-            if after != self.object.message_on:
-                last_event = self.object.events.order_by('-pk').first()
-                last_outgoing = self.object.outgoing_messages.order_by('-pk').first()
-                last_event_time = last_event.created_on if last_event else None
-                last_outgoing_time = last_outgoing.created_on if last_outgoing else None
-                last_message_time = safe_max(last_event_time, last_outgoing_time)
-                do_api_fetch = last_message_time and after <= last_message_time
-
-            if do_api_fetch:
-                # fetch messages
-                remote = org.get_temba_client().get_messages(contacts=[self.object.contact.uuid],
-                                                             after=after, before=before)
-
-                local_outgoing = Outgoing.objects.filter(case=self.object,
-                                                         created_on__gte=after, created_on__lte=before)
-                local_by_broadcast = {o.broadcast_id: o for o in local_outgoing}
-
-                # merge remotely fetched and local outgoing messages
-                messages = []
-                for m in remote:
-                    local = local_by_broadcast.pop(m.broadcast, None)
-                    if local:
-                        m.sender = local.created_by
-                    messages.append({'time': m.created_on, 'type': 'M', 'item': Message.as_json(m, label_map)})
-
-                for m in local_by_broadcast.values():
-                    messages.append({'time': m.created_on, 'type': 'M', 'item': m.as_json()})
-
+                # don't return anything after a case close event
+                before = self.object.closed_on
             else:
-                messages = []
+                before = now
 
-            # fetch actions in chronological order
-            actions = self.object.actions.filter(created_on__gte=after, created_on__lte=before)
-            actions = actions.select_related('assignee', 'created_by').order_by('pk')
-
-            # merge actions and messages and JSON-ify both
-            timeline = messages
-            timeline += [{'time': a.created_on, 'type': 'A', 'item': a.as_json()} for a in actions]
-            timeline = sorted(timeline, key=lambda event: event['time'])
+            timeline = self.object.get_timeline(after, before) if not empty else []
 
             context['timeline'] = timeline
-            context['max_time'] = datetime_to_microseconds(before)
+            context['max_time'] = datetime_to_microseconds(now)
             return context
 
         def render_to_response(self, context, **response_kwargs):

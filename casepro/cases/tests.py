@@ -467,6 +467,39 @@ class CaseCRUDLTest(BaseCasesTest):
         # back to having no reason to hit the RapidPro API
         self.assertEqual(mock_get_messages.call_count, 0)
 
+        # user closes case
+        case.close(self.user1)
+
+        # contact sends new message after that
+        d5 = timezone.now()
+        msg5 = TembaMessage.create(id=105, contact='C-001', created_on=d5, text="But wait", labels=[], direction='I')
+        mock_get_messages.return_value = [msg5]
+
+        # page again looks for new timeline activity
+        response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t5)))
+        t6 = microseconds_to_datetime(response.json['max_time'])
+
+        # should show the close event but not the message after it
+        self.assertEqual(len(response.json['results']), 1)
+        self.assertEqual(response.json['results'][0]['type'], 'A')
+        self.assertEqual(response.json['results'][0]['item']['action'], 'C')
+
+        # no reason to hit the API
+        self.assertEqual(mock_get_messages.call_count, 0)
+
+        # another look for new timeline activity
+        response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t6)))
+        t7 = microseconds_to_datetime(response.json['max_time'])
+
+        # nothing to see
+        self.assertEqual(len(response.json['results']), 0)
+
+        # and one last look for new timeline activity
+        response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t7)))
+
+        # nothing to see
+        self.assertEqual(len(response.json['results']), 0)
+
 
 class ContactTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient.get_contact')

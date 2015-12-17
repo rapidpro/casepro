@@ -23,7 +23,7 @@ from enum import IntEnum
 from redis_cache import get_redis_connection
 from temba_client.base import TembaNoSuchObjectError, TembaException
 from casepro.email import send_email
-from . import parse_csv, normalize, match_keywords, SYSTEM_LABEL_FLAGGED
+from . import parse_csv, normalize, match_keywords, safe_max, SYSTEM_LABEL_FLAGGED
 
 
 # only show unlabelled messages newer than 2 weeks
@@ -548,6 +548,53 @@ class Case(models.Model):
             CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee)
 
         return case
+
+    def get_timeline(self, after, before):
+        label_map = {l.name: l for l in Label.get_all(self.org)}
+
+        # if this isn't a first request for the existing items, we check on our side to see if there will be new
+        # items before hitting the RapidPro API
+        do_api_fetch = True
+        if after != self.message_on:
+            last_event = self.events.order_by('-pk').first()
+            last_outgoing = self.outgoing_messages.order_by('-pk').first()
+            last_event_time = last_event.created_on if last_event else None
+            last_outgoing_time = last_outgoing.created_on if last_outgoing else None
+            last_message_time = safe_max(last_event_time, last_outgoing_time)
+            do_api_fetch = last_message_time and after <= last_message_time
+
+        if do_api_fetch:
+            # fetch messages
+            remote = self.org.get_temba_client().get_messages(contacts=[self.contact.uuid],
+                                                              after=after,
+                                                              before=before)
+
+            local_outgoing = self.outgoing_messages.filter(created_on__gte=after, created_on__lte=before)
+            local_by_broadcast = {o.broadcast_id: o for o in local_outgoing}
+
+            # merge remotely fetched and local outgoing messages
+            messages = []
+            for m in remote:
+                local = local_by_broadcast.pop(m.broadcast, None)
+                if local:
+                    m.sender = local.created_by
+                messages.append({'time': m.created_on, 'type': 'M', 'item': Message.as_json(m, label_map)})
+
+            for m in local_by_broadcast.values():
+                messages.append({'time': m.created_on, 'type': 'M', 'item': m.as_json()})
+
+        else:
+            messages = []
+
+        # fetch actions in chronological order
+        actions = self.actions.filter(created_on__gte=after, created_on__lte=before)
+        actions = actions.select_related('assignee', 'created_by').order_by('pk')
+
+        # merge actions and messages and JSON-ify both
+        timeline = messages
+        timeline += [{'time': a.created_on, 'type': 'A', 'item': a.as_json()} for a in actions]
+        timeline = sorted(timeline, key=lambda event: event['time'])
+        return timeline
 
     @case_action()
     def update_summary(self, user, summary):
