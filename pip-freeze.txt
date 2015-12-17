@@ -18,7 +18,6 @@ django-compressor==1.6
 django-debug-toolbar==1.3.2
 django-digest==1.13
 django-guardian==1.3.2
-django-nose==1.4.1
 django-redis==3.8.4
 django-reversion==1.8.7
 django-rosetta==0.7.6
@@ -30,7 +29,6 @@ hamlpy==0.82.2
 kombu==3.0.29
 microsofttranslator==0.5
 mock==1.0.1
-nose==1.3.7
 phonenumbers==7.0.8
 pisa==3.0.33
 polib==1.0.6

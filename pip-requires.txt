@@ -10,7 +10,6 @@ django-celery-transactions
 django-compressor
 django-debug-toolbar
 django-digest
-django-nose
 django-redis==3.8.4
 django-reversion
 django-rosetta
@@ -20,7 +19,6 @@ enum34
 gunicorn
 hamlpy
 mock
-nose
 pillow
 pisa
 psycopg2
