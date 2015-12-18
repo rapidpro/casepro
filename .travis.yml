@@ -24,3 +24,6 @@ script:
 - coverage run --source="." manage.py test casepro/cases casepro/orgs_ext casepro/profiles --verbosity=2 --noinput
 after_success:
 - coveralls
+notifications:
+  slack:
+    secure: EmQGwxkgzSU5y7dcT7B6TF4yIq/V9hBnSoysTv+D5nyQjSL99QVKK1psJ5gH0H7zvnHRTJ88Qip5G7SvbF0L1ReUEWwHGMYj8yd64mU75Vnx1SmXzvfzCejDyvS01QuYo22Ei15EYYfQWm5bz0soYMkgd1ySt1VoZ+0qd1ANNb8=
