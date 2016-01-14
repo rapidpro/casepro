@@ -10,13 +10,13 @@ from casepro.test import BaseCasesTest
 
 class UserPatchTest(BaseCasesTest):
     def test_create_user(self):
-        user = User.create(self.unicef, self.moh, ROLE_MANAGER, "Mo Polls", "mo@moh.com", "Qwerty123", False)
-        self.assertEqual(user.profile.full_name, "Mo Polls")
+        user = User.create(self.unicef, self.moh, ROLE_MANAGER, "Mo Cases", "mo@moh.com", "Qwerty123", False)
+        self.assertEqual(user.profile.full_name, "Mo Cases")
 
         self.assertEqual(user.first_name, "")
         self.assertEqual(user.last_name, "")
         self.assertEqual(user.email, "mo@moh.com")
-        self.assertEqual(user.get_full_name(), "Mo Polls")
+        self.assertEqual(user.get_full_name(), "Mo Cases")
         self.assertIsNotNone(user.password)
 
         self.assertFalse(user.profile.change_password)
@@ -24,6 +24,9 @@ class UserPatchTest(BaseCasesTest):
 
         user.set_org(self.unicef)
         self.assertEqual(user.get_org_group(), Group.objects.get(name="Editors"))
+
+        # test creating user with long email
+        User.create(self.unicef, self.moh, ROLE_MANAGER, "Mo Cases", "mo123456789012345678901234567890@moh.com", "Qwerty123", False)
 
     def test_update_role(self):
         self.user1.update_role(self.unicef, ROLE_ANALYST)

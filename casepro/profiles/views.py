@@ -24,7 +24,7 @@ class UserForm(forms.ModelForm):
 
     role = forms.ChoiceField(label=_("Role"), choices=ROLE_CHOICES, required=True, initial=ROLE_ANALYST)
 
-    email = forms.CharField(label=_("Email"), max_length=256,
+    email = forms.CharField(label=_("Email"), max_length=254,
                             help_text=_("Email address and login."))
 
     password = forms.CharField(label=_("Password"), widget=forms.PasswordInput, validators=[MinLengthValidator(8)],
