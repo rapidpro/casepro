@@ -856,17 +856,19 @@ class MessageExportCRUDLTest(BaseCasesTest):
                                 fields={'district': "Rubavu", 'age': 32, 'gender': "F"})
         ]
 
+        self.unicef.record_message_time(timezone.now(), True)
         self.unicef.set_contact_fields(['age', 'gender'])
 
         # log in as a non-administrator
         self.login(self.user1)
 
-        response = self.url_post('unicef', '%s?view=inbox&text=' % reverse('cases.messageexport_create'))
+        response = self.url_post('unicef', '%s?view=inbox&text=&after=2015-04-01T22:00:00.000Z' % reverse('cases.messageexport_create'))
         self.assertEqual(response.status_code, 200)
 
         mock_get_messages.assert_called_once_with(archived=False, labels=['AIDS', 'Pregnancy'],
                                                   contacts=None, groups=None, text='', _types=None, direction='I',
-                                                  after=None, before=None, pager=None)
+                                                  after=datetime(2015, 4, 1, 22, 0, 0, 0, pytz.UTC), before=None,
+                                                  pager=None)
 
         mock_get_contacts.assert_called_once_with(uuids=['C-001', 'C-002'])
 

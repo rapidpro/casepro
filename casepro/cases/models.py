@@ -22,8 +22,10 @@ from django.utils.translation import ugettext_lazy as _
 from enum import IntEnum
 from redis_cache import get_redis_connection
 from temba_client.base import TembaNoSuchObjectError, TembaException
+from temba_client.utils import parse_iso8601
 from casepro.email import send_email
 from . import parse_csv, normalize, match_keywords, safe_max, SYSTEM_LABEL_FLAGGED
+from .utils import JSONEncoder
 
 
 # only show unlabelled messages newer than 2 weeks
@@ -115,10 +117,15 @@ class MessageExport(models.Model):
 
     @classmethod
     def create(cls, org, user, search):
-        return MessageExport.objects.create(org=org, created_by=user, search=json.dumps(search))
+        return MessageExport.objects.create(org=org, created_by=user, search=json.dumps(search, cls=JSONEncoder))
 
     def get_search(self):
-        return json.loads(self.search)
+        search = json.loads(self.search)
+        if 'after' in search:
+            search['after'] = parse_iso8601(search['after'])
+        if 'before' in search:
+            search['before'] = parse_iso8601(search['before'])
+        return search
 
     def do_export(self):
         """
