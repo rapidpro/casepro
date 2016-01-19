@@ -8,8 +8,8 @@ from django.core.urlresolvers import reverse
 from django.core.validators import MinLengthValidator
 from django.db.models import Q
 from django.http import Http404, HttpResponse
-from smartmin.users.views import SmartCreateView, SmartListView, SmartDeleteView, SmartReadView, SmartUpdateView
-from smartmin.users.views import SmartCRUDL
+from smartmin.views import SmartCreateView, SmartListView, SmartDeleteView, SmartReadView, SmartUpdateView
+from smartmin.views import SmartCRUDL
 from casepro.cases.models import Partner
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER, ROLE_CHOICES
 

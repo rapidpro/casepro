@@ -42,7 +42,7 @@ redis==2.10.3
 regex==2015.10.01
 requests==2.7.0
 six==1.10.0
--e git+https://github.com/nyaruka/smartmin.git@049eeb2677ba01f83685c190aa63d014511b50e4#egg=smartmin-dev
+-e git+https://github.com/nyaruka/smartmin.git@d62b207e2f756fd38af88e9948418b3dba1a2925#egg=smartmin-dev
 sorl-thumbnail==12.3
 sqlparse==0.1.15
 wsgiref==0.1.2

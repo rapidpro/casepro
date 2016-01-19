@@ -8,7 +8,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
 from smartmin.templatetags.smartmin import format_datetime
-from smartmin.users.views import SmartCRUDL
+from smartmin.views import SmartCRUDL
 from timezones.forms import TimeZoneField
 from . import TaskType
 

@@ -12,8 +12,8 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
 from enum import Enum
-from smartmin.users.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView, SmartFormView
-from smartmin.users.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
+from smartmin.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView, SmartFormView
+from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
 from . import parse_csv, json_encode, normalize, str_to_bool, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
 from .models import AccessLevel, Case, Group, Label, Message, MessageAction, MessageExport, Partner, Outgoing
