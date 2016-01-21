@@ -8,7 +8,7 @@ DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 COMPRESS_ENABLED = True
 
-SITE_API_HOST = 'http://textit.staging.nyaruka.com/api/v1'
+SITE_API_HOST = 'http://textit.staging.nyaruka.com'
 SITE_HOST_PATTERN = 'http://%s.upartners.staging.nyaruka.com'
 
 HOSTNAME = 'upartners.staging.nyaruka.com'
