@@ -463,7 +463,7 @@ class UserCRUDLTest(BaseCasesTest):
 
 class ForcePasswordChangeMiddlewareTest(BaseCasesTest):
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
-    @patch('dash.orgs.models.TembaClient.get_labels')
+    @patch('dash.orgs.models.TembaClient1.get_labels')
     def test_process_view(self, mock_get_labels):
         mock_get_labels.return_value = []
 

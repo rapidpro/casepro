@@ -21,7 +21,7 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from enum import IntEnum
 from redis_cache import get_redis_connection
-from temba_client.base import TembaNoSuchObjectError, TembaException
+from temba_client.exceptions import TembaNoSuchObjectError, TembaException
 from temba_client.utils import parse_iso8601
 from casepro.email import send_email
 from . import parse_csv, normalize, match_keywords, safe_max, SYSTEM_LABEL_FLAGGED

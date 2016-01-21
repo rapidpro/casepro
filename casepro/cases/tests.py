@@ -10,10 +10,10 @@ from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch, call
-from temba_client.base import TembaPager
-from temba_client.types import Contact as TembaContact, Group as TembaGroup, Label as TembaLabel, Message as TembaMessage
-from temba_client.types import Broadcast as TembaBroadcast
-from temba_client.utils import format_iso8601, parse_iso8601
+from temba_client.v1.types import Contact as TembaContact, Group as TembaGroup, Label as TembaLabel, Message as TembaMessage
+from temba_client.v1.types import Broadcast as TembaBroadcast
+from temba_client.clients import Pager
+from temba_client.utils import format_iso8601
 from casepro.orgs_ext import TaskType
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
@@ -26,12 +26,12 @@ from .utils import datetime_to_microseconds, microseconds_to_datetime
 
 
 class CaseTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient.get_messages')
-    @patch('dash.orgs.models.TembaClient.archive_messages')
-    @patch('dash.orgs.models.TembaClient.get_contact')
-    @patch('dash.orgs.models.TembaClient.remove_contacts')
-    @patch('dash.orgs.models.TembaClient.add_contacts')
-    @patch('dash.orgs.models.TembaClient.expire_contacts')
+    @patch('dash.orgs.models.TembaClient1.get_messages')
+    @patch('dash.orgs.models.TembaClient1.archive_messages')
+    @patch('dash.orgs.models.TembaClient1.get_contact')
+    @patch('dash.orgs.models.TembaClient1.remove_contacts')
+    @patch('dash.orgs.models.TembaClient1.add_contacts')
+    @patch('dash.orgs.models.TembaClient1.expire_contacts')
     def test_lifecycle(self, mock_expire_contacts, mock_add_contacts, mock_remove_contacts, mock_get_contact,
                        mock_archive_messages, mock_get_messages):
         d0 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
@@ -287,13 +287,13 @@ class CaseTest(BaseCasesTest):
 
 
 class CaseCRUDLTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient.get_message')
-    @patch('dash.orgs.models.TembaClient.get_messages')
-    @patch('dash.orgs.models.TembaClient.archive_messages')
-    @patch('dash.orgs.models.TembaClient.get_contact')
-    @patch('dash.orgs.models.TembaClient.remove_contacts')
-    @patch('dash.orgs.models.TembaClient.add_contacts')
-    @patch('dash.orgs.models.TembaClient.expire_contacts')
+    @patch('dash.orgs.models.TembaClient1.get_message')
+    @patch('dash.orgs.models.TembaClient1.get_messages')
+    @patch('dash.orgs.models.TembaClient1.archive_messages')
+    @patch('dash.orgs.models.TembaClient1.get_contact')
+    @patch('dash.orgs.models.TembaClient1.remove_contacts')
+    @patch('dash.orgs.models.TembaClient1.add_contacts')
+    @patch('dash.orgs.models.TembaClient1.expire_contacts')
     def test_open(self, mock_expire_contacts, mock_add_contacts, mock_remove_contacts, mock_get_contact, mock_archive_messages,
                   mock_get_messages, mock_get_message):
         url = reverse('cases.case_open')
@@ -338,8 +338,8 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(case2.assignee, self.moh)
         self.assertEqual(set(case2.labels.all()), {self.aids})
 
-    @patch('dash.orgs.models.TembaClient.get_contact')
-    @patch('dash.orgs.models.TembaClient.get_messages')
+    @patch('dash.orgs.models.TembaClient1.get_contact')
+    @patch('dash.orgs.models.TembaClient1.get_messages')
     def test_read(self, mock_get_messages, mock_get_contact):
         msg = TembaMessage.create(id=101, contact='C-001', created_on=timezone.now(), text="Hello",
                                   direction='I', labels=[])
@@ -356,8 +356,8 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
 
-    @patch('dash.orgs.models.TembaClient.get_messages')
-    @patch('dash.orgs.models.TembaClient.create_broadcast')
+    @patch('dash.orgs.models.TembaClient1.get_messages')
+    @patch('dash.orgs.models.TembaClient1.create_broadcast')
     def test_timeline(self, mock_create_broadcast, mock_get_messages):
         d1 = datetime(2014, 1, 1, 13, 0, tzinfo=timezone.utc)
         d2 = datetime(2014, 1, 2, 13, 0, tzinfo=timezone.utc)
@@ -502,7 +502,7 @@ class CaseCRUDLTest(BaseCasesTest):
 
 
 class ContactTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient.get_contact')
+    @patch('dash.orgs.models.TembaClient1.get_contact')
     def test_as_json(self, mock_get_contact):
         # without field fetching
         contact = Contact.get_or_create(self.unicef, 'C-001')
@@ -533,7 +533,7 @@ class GroupTest(BaseCasesTest):
         testers.save()
         self.assertEqual(set(Group.get_all(self.nyaruka)), {self.coders})
 
-    @patch('dash.orgs.models.TembaClient.get_groups')
+    @patch('dash.orgs.models.TembaClient1.get_groups')
     def test_fetch_sizes(self, mock_get_groups):
         mock_get_groups.return_value = [
             TembaGroup.create(name="Females", uuid='G-002', size=23)
@@ -548,7 +548,7 @@ class GroupTest(BaseCasesTest):
         Group.fetch_sizes(self.unicef, [])
         self.assertEqual(mock_get_groups.call_count, 0)
 
-    @patch('dash.orgs.models.TembaClient.get_groups')
+    @patch('dash.orgs.models.TembaClient1.get_groups')
     def test_update_groups(self, mock_get_groups):
         mock_get_groups.return_value = [
             TembaGroup.create(name="Females", uuid='G-002', size=23),
@@ -567,7 +567,7 @@ class GroupTest(BaseCasesTest):
 
 
 class HomeViewsTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient.get_labels')
+    @patch('dash.orgs.models.TembaClient1.get_labels')
     def test_inbox(self, mock_get_labels):
         mock_get_labels.return_value = []
 
@@ -636,8 +636,8 @@ class InitTest(BaseCasesTest):
 
 
 class LabelTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient.create_label')
-    @patch('dash.orgs.models.TembaClient.get_labels')
+    @patch('dash.orgs.models.TembaClient1.create_label')
+    @patch('dash.orgs.models.TembaClient1.get_labels')
     def test_create(self, mock_get_labels, mock_create_label):
         mock_get_labels.return_value = [
             TembaLabel.create(name='Not Ebola', uuid='L-011'),
@@ -685,7 +685,7 @@ class LabelTest(BaseCasesTest):
 
 
 class LabelCRUDLTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient.get_labels')
+    @patch('dash.orgs.models.TembaClient1.get_labels')
     def test_create(self, mock_get_labels):
         mock_get_labels.return_value = [
             TembaLabel.create(name='Not Ebola', uuid='L-011'),
@@ -747,7 +747,7 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(ebola.get_keywords(), ['ebola', 'fever'])
         self.assertEqual(set(ebola.get_partners()), {self.moh, self.who})
 
-    @patch('dash.orgs.models.TembaClient.update_label')
+    @patch('dash.orgs.models.TembaClient1.update_label')
     def test_update(self, mock_update_label):
         mock_update_label.return_value = TembaLabel.create(name="Maternity", uuid='L-002')
 
@@ -818,7 +818,7 @@ class LabelCRUDLTest(BaseCasesTest):
 
 
 class MessageTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient.archive_messages')
+    @patch('dash.orgs.models.TembaClient1.archive_messages')
     def test_bulk_archive(self, mock_archive_messages):
         Message.bulk_archive(self.unicef, self.user1, [123, 234, 345])
 
@@ -840,8 +840,8 @@ class MessageTest(BaseCasesTest):
 
 class MessageExportCRUDLTest(BaseCasesTest):
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
-    @patch('dash.orgs.models.TembaClient.get_messages')
-    @patch('dash.orgs.models.TembaClient.get_contacts')
+    @patch('dash.orgs.models.TembaClient1.get_messages')
+    @patch('dash.orgs.models.TembaClient1.get_contacts')
     def test_create_and_read(self, mock_get_contacts, mock_get_messages):
         mock_get_messages.return_value = [
             TembaMessage.create(id=101, contact='C-001', text="What is HIV?", created_on=timezone.now(),
@@ -888,10 +888,10 @@ class MessageExportCRUDLTest(BaseCasesTest):
 
 
 class MessageViewsTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient.label_messages')
-    @patch('dash.orgs.models.TembaClient.unlabel_messages')
-    @patch('dash.orgs.models.TembaClient.archive_messages')
-    @patch('dash.orgs.models.TembaClient.unarchive_messages')
+    @patch('dash.orgs.models.TembaClient1.label_messages')
+    @patch('dash.orgs.models.TembaClient1.unlabel_messages')
+    @patch('dash.orgs.models.TembaClient1.archive_messages')
+    @patch('dash.orgs.models.TembaClient1.unarchive_messages')
     def test_action(self, mock_unarchive_messages, mock_archive_messages, mock_unlabel_messages, mock_label_messages):
         get_url = lambda action: reverse('cases.message_action', kwargs={'action': action})
 
@@ -914,7 +914,7 @@ class MessageViewsTest(BaseCasesTest):
         self.assertEqual(response.status_code, 204)
         mock_unarchive_messages.assert_called_once_with([101])
 
-    @patch('dash.orgs.models.TembaClient.label_messages')
+    @patch('dash.orgs.models.TembaClient1.label_messages')
     def test_history(self, mock_label_messages):
         mock_label_messages.return_value = None
         TembaMessage.create(id=101, contact='C-001', text="Is this thing on?", created_on=timezone.now())
@@ -938,9 +938,9 @@ class MessageViewsTest(BaseCasesTest):
         self.assertEqual(response.json['actions'][1]['action'], 'F')
         self.assertEqual(response.json['actions'][1]['created_by']['id'], self.user1.pk)
 
-    @patch('dash.orgs.models.TembaClient.get_message')
-    @patch('dash.orgs.models.TembaClient.label_messages')
-    @patch('dash.orgs.models.TembaClient.unlabel_messages')
+    @patch('dash.orgs.models.TembaClient1.get_message')
+    @patch('dash.orgs.models.TembaClient1.label_messages')
+    @patch('dash.orgs.models.TembaClient1.unlabel_messages')
     def test_label(self, mock_unlabel_messages, mock_label_messages, mock_get_message):
         msg = TembaMessage.create(id=101, contact='C-002', text="Huh?", created_on=timezone.now(), labels=['AIDS'])
         mock_get_message.return_value = msg
@@ -956,8 +956,8 @@ class MessageViewsTest(BaseCasesTest):
         mock_label_messages.assert_called_once_with([101], label_uuid='L-002')
         mock_unlabel_messages.assert_called_once_with([101], label_uuid='L-001')
 
-    @patch('dash.orgs.models.TembaClient.get_messages')
-    @patch('dash.orgs.models.TembaClient.pager')
+    @patch('dash.orgs.models.TembaClient1.get_messages')
+    @patch('dash.orgs.models.TembaClient1.pager')
     def test_search(self, mock_pager, mock_get_messages):
         url = reverse('cases.message_search')
 
@@ -965,7 +965,7 @@ class MessageViewsTest(BaseCasesTest):
         msg2 = TembaMessage.create(id=102, contact='C-002', text="I ♡ RapidPro", created_on=timezone.now(), labels=[])
         msg3 = TembaMessage.create(id=103, contact='C-003', text="RapidCon 2016!", created_on=timezone.now(), labels=[])
 
-        pager = TembaPager(start_page=1)
+        pager = Pager(start_page=1)
         mock_pager.return_value = pager
         mock_get_messages.return_value = [msg3, msg2]
 
@@ -1025,7 +1025,7 @@ class MessageViewsTest(BaseCasesTest):
                                                   contacts=None, groups=None, text='', _types=None, direction='I',
                                                   after=t1, before=t2, pager=None)
 
-    @patch('dash.orgs.models.TembaClient.create_broadcast')
+    @patch('dash.orgs.models.TembaClient1.create_broadcast')
     def test_send(self, mock_create_broadcast):
         url = reverse('cases.message_send')
 
@@ -1053,7 +1053,7 @@ class MessageViewsTest(BaseCasesTest):
 
 
 class OutgoingTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient.create_broadcast')
+    @patch('dash.orgs.models.TembaClient1.create_broadcast')
     def test_create(self, mock_create_broadcast):
         d1 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
         mock_create_broadcast.return_value = TembaBroadcast.create(id=201,
@@ -1177,9 +1177,9 @@ class PartnerCRUDLTest(BaseCasesTest):
 
 
 class TasksTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient.get_messages')
-    @patch('dash.orgs.models.TembaClient.label_messages')
-    @patch('dash.orgs.models.TembaClient.archive_messages')
+    @patch('dash.orgs.models.TembaClient1.get_messages')
+    @patch('dash.orgs.models.TembaClient1.label_messages')
+    @patch('dash.orgs.models.TembaClient1.archive_messages')
     def test_process_new_unsolicited_task(self, mock_archive_messages, mock_label_messages, mock_get_messages):
         d1 = datetime(2014, 1, 1, 7, 0, tzinfo=timezone.utc)
         d2 = datetime(2014, 1, 1, 8, 0, tzinfo=timezone.utc)
