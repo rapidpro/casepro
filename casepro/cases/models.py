@@ -880,6 +880,10 @@ class Message(object):
             limit_days = getattr(settings, 'UNLABELLED_LIMIT_DAYS', DEFAULT_UNLABELLED_LIMIT_DAYS)
             search['after'] = timezone.now() - timedelta(days=limit_days)
 
+        # *** TEMPORARY *** fix to disable the Unlabelled view which is increasingly not performant, until the larger
+        # message store refactor is complete. This removes any label exclusions from the search.
+        search['labels'] = [l for l in search['labels'] if not l.startswith('-')]
+
         client = org.get_temba_client()
         messages = client.get_messages(pager=pager, text=search['text'], labels=search['labels'],
                                        contacts=search['contacts'], groups=search['groups'],
