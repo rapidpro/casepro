@@ -191,6 +191,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'django.contrib.postgres',
 
     # mo-betta permission management
     'guardian',
@@ -199,7 +200,7 @@ INSTALLED_APPS = (
     'reversion',
 
     # the django admin
-    'django.contrib.admin',
+    # 'django.contrib.admin',
 
     # compress our CSS and js
     'compressor',
@@ -225,6 +226,7 @@ INSTALLED_APPS = (
 
     # custom
     'casepro.cases',
+    'casepro.contacts',
     'casepro.orgs_ext',
     'casepro.profiles'
 )
