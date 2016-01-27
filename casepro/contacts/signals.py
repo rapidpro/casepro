@@ -9,7 +9,7 @@ from .models import Contact, Group, SAVE_GROUPS_ATTR
 
 
 @receiver(post_save, sender=Contact)
-def update_contact_groups(sender, instance, **kwargs):
+def update_contact_groups(sender, instance, created, **kwargs):
     """
     Save signal handler to update the contact groups when groups are specified as attribute on contact object
     """
@@ -17,7 +17,7 @@ def update_contact_groups(sender, instance, **kwargs):
         return
 
     new_groups_by_uuid = {g[0]: g[1] for g in getattr(instance, SAVE_GROUPS_ATTR)}
-    cur_groups_by_uuid = {g.uuid: g for g in instance.groups.all()}
+    cur_groups_by_uuid = {} if created else {g.uuid: g for g in instance.groups.all()}
 
     # remove this contact from any groups not in the new set
     remove_from = [g for g in cur_groups_by_uuid.values() if g.uuid not in six.viewkeys(new_groups_by_uuid)]

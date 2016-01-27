@@ -58,7 +58,8 @@ class Contact(models.Model):
     created_on = models.DateTimeField(auto_now_add=True, help_text=_("When this contact was created"))
 
     def __init__(self, *args, **kwargs):
-        setattr(self, SAVE_GROUPS_ATTR, kwargs.pop(SAVE_GROUPS_ATTR, None))
+        if SAVE_GROUPS_ATTR in kwargs:
+            setattr(self, SAVE_GROUPS_ATTR, kwargs.pop(SAVE_GROUPS_ATTR))
         super(Contact, self).__init__(*args, **kwargs)
 
     @classmethod

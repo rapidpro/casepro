@@ -4,8 +4,8 @@ from __future__ import unicode_literals
 import itertools
 import six
 
-from mock import patch
 from casepro.test import BaseCasesTest
+from mock import patch
 from temba_client.v2.types import Contact as TembaContact, ObjectRef as TembaObjectRef
 from .models import Contact, Group
 from .sync import sync_pull_contacts
@@ -71,9 +71,21 @@ class ContactTest(BaseCasesTest):
 
         self.assertEqual(set(contact.groups.all()), {customers})
 
+        # check there are no extra db hits when saving without group change, assuming org and groups pre-fetched
+        contact = Contact.objects.select_related('org').prefetch_related('groups').get(uuid='C-001')
+
+        with self.assertNumQueries(1):
+            setattr(contact, '__data__groups', [("G-001", "Customers")])
+            contact.save()
+
+        contact = Contact.objects.select_related('org').prefetch_related('groups').get(uuid='C-001')
+
         # check removing a group and adding new ones
-        setattr(contact, '__data__groups', [("G-002", "Spammers"), ("G-003", "Boffins")])
-        contact.save()
+        with self.assertNumQueries(7):
+            setattr(contact, '__data__groups', [("G-002", "Spammers"), ("G-003", "Boffins")])
+            contact.save()
+
+        contact = Contact.objects.get(uuid='C-001')
 
         spammers = Group.objects.get(org=self.unicef, uuid="G-002", name="Spammers")
         boffins = Group.objects.get(org=self.unicef, uuid="G-003", name="Boffins")
@@ -116,7 +128,9 @@ class ContactTest(BaseCasesTest):
             )
         ]
 
-        num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact)
+        with self.assertNumQueries(14):
+            num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact,
+                                                                       prefetch_related=('groups',))
 
         self.assertEqual(num_created, 3)
         self.assertEqual(num_updated, 0)
@@ -135,7 +149,7 @@ class ContactTest(BaseCasesTest):
         self.assertEqual(bob.fields, {'age': "34"})
 
         mock_get_contacts.side_effect = [
-            # first call to get active contacts will return two fetches of 2 and 1 contacts
+            # first call to get active contacts will just one updated contact
             MockClientQuery(
                 [
                     TembaContact.create(
@@ -156,7 +170,9 @@ class ContactTest(BaseCasesTest):
             )
         ]
 
-        num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact)
+        with self.assertNumQueries(8):
+            num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact,
+                                                                       prefetch_related=('groups',))
 
         self.assertEqual(num_created, 0)
         self.assertEqual(num_updated, 1)

@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 def sync_pull_contacts(org, contact_class, inc_urns=True, groups=None, fields=None,
-                       last_time=None, delete_blocked=False, prefetch_related=()):
+                       last_time=None, delete_blocked=False,
+                       select_related=(), prefetch_related=()):
     """
     Pulls updated contacts or all contacts from RapidPro and syncs with local contacts.
     Contact class must define a class method called kwargs_from_temba which generates
@@ -28,7 +29,8 @@ def sync_pull_contacts(org, contact_class, inc_urns=True, groups=None, fields=No
     :param [str] fields: the contact field keys used - used to determine if local contact differs
     :param * last_time: the last time we pulled contacts, if None, sync all contacts
     :param bool delete_blocked: if True, delete the blocked contacts
-    :param [str] prefetch_related: prefetch field when fetching local contacts
+    :param [str] select_related: select related fields when fetching local contacts
+    :param [str] prefetch_related: prefetch related fields when fetching local contacts
     :return: tuple containing counts of created, updated, deleted and failed contacts
     """
     client = org.get_temba_client(api_version=2)
@@ -43,8 +45,10 @@ def sync_pull_contacts(org, contact_class, inc_urns=True, groups=None, fields=No
         # get all existing contacts with these UUIDs
         existing_contacts = contact_class.objects.filter(org=org, uuid__in=incoming_uuids)
 
+        if select_related:
+            existing_contacts = existing_contacts.select_related(*select_related)
         if prefetch_related:
-            existing_contacts.prefetch_related(*prefetch_related)
+            existing_contacts = existing_contacts.prefetch_related(*prefetch_related)
 
         # organize by UUID
         existing_by_uuid = {c.uuid: c for c in existing_contacts}
@@ -57,6 +61,7 @@ def sync_pull_contacts(org, contact_class, inc_urns=True, groups=None, fields=No
             # contact exists locally
             elif incoming.uuid in existing_by_uuid:
                 existing = existing_by_uuid[incoming.uuid]
+                existing.org = org  # saves pre-fetching since we already have the org
 
                 diff = temba_compare_contacts(incoming, existing.as_temba(), inc_urns, fields, groups)
 
@@ -100,6 +105,9 @@ def temba_compare_contacts(first, second, inc_urns=True, fields=None, groups=Non
     Compares two Temba contacts to determine if there are differences. Returns
     first difference found.
     """
+    def uuids(refs):
+        return [o.uuid for o in refs]
+
     if first.uuid != second.uuid:  # pragma: no cover
         raise ValueError("Can't compare contacts with different UUIDs")
 
@@ -109,11 +117,11 @@ def temba_compare_contacts(first, second, inc_urns=True, fields=None, groups=Non
     if inc_urns and sorted(first.urns) != sorted(second.urns):
         return 'urns'
 
-    if groups is None and (sorted(first.groups) != sorted(second.groups)):
+    if groups is None and (sorted(uuids(first.groups)) != sorted(uuids(second.groups))):
         return 'groups'
     if groups:
-        a = sorted(intersection(first.groups, groups))
-        b = sorted(intersection(second.groups, groups))
+        a = sorted(intersection(uuids(first.groups), groups))
+        b = sorted(intersection(uuids(second.groups), groups))
         if a != b:
             return 'groups'
 
@@ -127,7 +135,13 @@ def temba_compare_contacts(first, second, inc_urns=True, fields=None, groups=Non
 
 def temba_merge_contacts(first, second, mutex_group_sets):
     """
-    Merges two Temba contacts, with priority given to the first contact
+    Merges two Temba contacts, with priority given to the first contact.
+    :param first: the first contact (has priority)
+    :param second: the second contact
+    :param mutex_group_sets: a list of lists of group UUIDs whose membership is mutually exclusive. For example, if a
+            groups A and B describe the contact's state, and groups C and D describe their gender, one can pass
+            [(A, B), (C, D)] as this parameter's value to ensure that the merged contact is only in group A or B and
+            C or D.
     """
     if first.uuid != second.uuid:  # pragma: no cover
         raise ValueError("Can't merge contacts with different UUIDs")
@@ -147,19 +161,21 @@ def temba_merge_contacts(first, second, mutex_group_sets):
     second_groups = list(second.groups)
     merged_mutex_groups = []
     for group_set in mutex_group_sets:
-        from_first = intersection(first_groups, group_set)
+        from_first = [g for g in first_groups if g.uuid in group_set]
         if from_first:
             merged_mutex_groups.append(from_first[0])
         else:
-            from_second = intersection(second_groups, group_set)
+            from_second = [g for g in second_groups if g.uuid in group_set]
             if from_second:
                 merged_mutex_groups.append(from_second[0])
 
-        for group in group_set:
-            if group in first_groups:
-                first_groups.remove(group)
-            if group in second_groups:
-                second_groups.remove(group)
+        # remove any remaining groups in this set from both contacts
+        for g in first_groups:
+            if g.uuid in group_set:
+                first_groups.remove(g)
+        for g in second_groups:
+            if g.uuid in group_set:
+                second_groups.remove(g)
 
     # then merge the remaining groups
     merged_groups = merged_mutex_groups + union(first_groups, second_groups)
