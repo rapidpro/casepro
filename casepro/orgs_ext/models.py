@@ -6,7 +6,6 @@ import time
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from dash.orgs.models import Org
-from django.contrib.postgres.fields import HStoreField
 from django.db import models
 from django.utils import timezone
 from functools import wraps
@@ -67,7 +66,7 @@ def run_for_org(org, task_func, task_key):
         time_taken = int((time.time() - start_time) * 1000)
 
         state.last_run_on = running_on
-        state.last_results = results
+        state.last_results = json.dumps(results)
         state.last_time_taken = time_taken
         state.failing = False
         state.save()
@@ -90,7 +89,7 @@ class OrgTaskState(models.Model):
 
     last_run_on = models.DateTimeField(null=True)
 
-    last_results = HStoreField(null=True)
+    last_results = models.TextField()
 
     last_time_taken = models.IntegerField(null=True)
 
@@ -110,6 +109,9 @@ class OrgTaskState(models.Model):
 
     def has_run(self):
         return self.last_run_on is not None
+
+    def get_last_results(self):
+        return json.loads(self.last_results) if self.last_results else None
 
     class Meta:
         unique_together = ('org', 'task_key')

@@ -18,9 +18,9 @@ class OrgTaskTest(BaseCasesTest):
         org1_state = OrgTaskState.objects.get(org=self.unicef, task_key='test-task')
         org2_state = OrgTaskState.objects.get(org=self.nyaruka, task_key='test-task')
 
-        self.assertEqual(org1_state.last_results, {'foo': "bar", 'zed': "UNICEF"})
+        self.assertEqual(org1_state.get_last_results(), {'foo': "bar", 'zed': "UNICEF"})
         self.assertIsNotNone(org1_state.last_run_on)
-        self.assertEqual(org2_state.last_results, {'foo': "bar", 'zed': "Nyaruka"})
+        self.assertEqual(org2_state.get_last_results(), {'foo': "bar", 'zed': "Nyaruka"})
         self.assertIsNotNone(org2_state.last_run_on)
 
         test_org_task()

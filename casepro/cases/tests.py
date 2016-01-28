@@ -1239,7 +1239,7 @@ class InternalViewsTest(BaseCasesTest):
         url = reverse('internal.status')
         response = self.url_get('unicef', url)
 
-        self.assertEqual(response.json, {"cache": "OK", "db": "OK"})
+        self.assertEqual(response.json, {'cache': "OK", 'db': "OK", 'org_tasks': 'OK'})
 
     def test_ping(self):
         url = reverse('internal.ping')
