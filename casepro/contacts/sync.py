@@ -14,8 +14,10 @@ from dash.utils import union, intersection, filter_dict
 logger = logging.getLogger(__name__)
 
 
-def sync_pull_contacts(org, contact_class, inc_urns=True, groups=None, fields=None,
-                       last_time=None, delete_blocked=False,
+def sync_pull_contacts(org, contact_class,
+                       modified_after=None, modified_before=None,
+                       inc_urns=True, groups=None, fields=None,
+                       delete_blocked=False,
                        select_related=(), prefetch_related=()):
     """
     Pulls updated contacts or all contacts from RapidPro and syncs with local contacts.
@@ -24,10 +26,11 @@ def sync_pull_contacts(org, contact_class, inc_urns=True, groups=None, fields=No
 
     :param * org: the org
     :param type contact_class: the contact class type
+    :param * modified_after: the last time we pulled contacts, if None, sync all contacts
+    :param * modified_before: the last time we pulled contacts, if None, sync all contacts
     :param bool inc_urns: whether to compare URNs to determine if local contact differs
     :param [str] groups: the contact group UUIDs used - used to determine if local contact differs
     :param [str] fields: the contact field keys used - used to determine if local contact differs
-    :param * last_time: the last time we pulled contacts, if None, sync all contacts
     :param bool delete_blocked: if True, delete the blocked contacts
     :param [str] select_related: select related fields when fetching local contacts
     :param [str] prefetch_related: prefetch related fields when fetching local contacts
@@ -39,7 +42,9 @@ def sync_pull_contacts(org, contact_class, inc_urns=True, groups=None, fields=No
     num_updated = 0
     deleted_uuids = []
 
-    for incoming_batch in client.get_contacts(after=last_time).iterfetches(retry_on_rate_exceed=True):
+    active_query = client.get_contacts(after=modified_after, before=modified_before)
+
+    for incoming_batch in active_query.iterfetches(retry_on_rate_exceed=True):
         incoming_uuids = [c.uuid for c in incoming_batch]
 
         # get all existing contacts with these UUIDs
@@ -89,9 +94,11 @@ def sync_pull_contacts(org, contact_class, inc_urns=True, groups=None, fields=No
                 contact_class.objects.create(**kwargs)
                 num_created += 1
 
-    # any contact that has been deleted should also be deleted locally
-    deleted_incoming = client.get_contacts(deleted=True, after=last_time).all(retry_on_rate_exceed=True)
+    # now get all contacts deleted in the same time window
+    deleted_query = client.get_contacts(deleted=True, after=modified_after, before=modified_before)
+    deleted_incoming = deleted_query.all(retry_on_rate_exceed=True)
 
+    # any contact that has been deleted should also be deleted locally
     for contact in deleted_incoming:
         deleted_uuids.append(contact.uuid)
 
@@ -157,28 +164,34 @@ def temba_merge_contacts(first, second, mutex_group_sets):
     merged_fields.update(first.fields)
 
     # first merge mutually exclusive group sets
-    first_groups = list(first.groups)
-    second_groups = list(second.groups)
-    merged_mutex_groups = []
-    for group_set in mutex_group_sets:
-        from_first = [g for g in first_groups if g.uuid in group_set]
-        if from_first:
-            merged_mutex_groups.append(from_first[0])
-        else:
-            from_second = [g for g in second_groups if g.uuid in group_set]
-            if from_second:
-                merged_mutex_groups.append(from_second[0])
+    merged_groups = []
+    ignore_uuids = set()
 
-        # remove any remaining groups in this set from both contacts
-        for g in first_groups:
+    for group_set in mutex_group_sets:
+        # find first possible in set from first contact
+        for g in first.groups:
             if g.uuid in group_set:
-                first_groups.remove(g)
-        for g in second_groups:
-            if g.uuid in group_set:
-                second_groups.remove(g)
+                merged_groups.append(g)
+                break
+        # if we didn't find one, look at second contact
+        else:
+            for g in second.groups:
+                if g.uuid in group_set:
+                    merged_groups.append(g)
+                    break
+
+        # ignore all groups in this set from now on
+        ignore_uuids.update(group_set)
 
     # then merge the remaining groups
-    merged_groups = merged_mutex_groups + union(first_groups, second_groups)
+    for g in first.groups:
+        if g.uuid not in ignore_uuids:
+            merged_groups.append(g)
+            ignore_uuids.add(g.uuid)
+    for g in second.groups:
+        if g.uuid not in ignore_uuids:
+            merged_groups.append(g)
+            ignore_uuids.add(g.uuid)
 
     return TembaContact.create(uuid=first.uuid, name=first.name,
                                urns=merged_urns, fields=merged_fields, groups=merged_groups)

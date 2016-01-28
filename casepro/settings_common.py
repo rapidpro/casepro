@@ -388,6 +388,11 @@ CELERYBEAT_SCHEDULE = {
         'schedule': datetime.timedelta(minutes=10),  # TODO reduce this when we've made the messages endpoint faster
         'args': ()
     },
+    'contact-pull': {
+        'task': 'casepro.contacts.tasks.pull_contacts',
+        'schedule': datetime.timedelta(seconds=30),
+        'args': ()
+    },
 }
 
 CELERY_TIMEZONE = 'UTC'

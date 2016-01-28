@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+from casepro.orgs_ext.models import OrgTaskState
 from dash.orgs.models import Org
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from dash.utils import get_obj_cacheable
@@ -792,7 +793,9 @@ class StatusView(View):
         db_status = status_check(lambda: Org.objects.first())
         cache_status = status_check(lambda: cache.get('xxxxxx'))
 
-        return JsonResponse({'db': db_status, 'cache': cache_status})
+        org_tasks = "ERROR" if OrgTaskState.get_failing().exists() else "OK"
+
+        return JsonResponse({'db': db_status, 'cache': cache_status, 'org_tasks': org_tasks})
 
 
 class PingView(View):

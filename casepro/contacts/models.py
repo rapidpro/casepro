@@ -6,7 +6,7 @@ from django.contrib.postgres.fields import HStoreField
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from temba_client.v2.types import Contact as TembaContact
+from temba_client.v2.types import Contact as TembaContact, ObjectRef as TembaObjectRef
 
 SAVE_GROUPS_ATTR = '__data__groups'
 
@@ -80,7 +80,7 @@ class Contact(models.Model):
         """
         Return a Temba version of this contact
         """
-        groups = [g.uuid for g in self.groups.all()]
+        groups = [TembaObjectRef.create(uuid=g.uuid, name=g.name) for g in self.groups.all()]
 
         return TembaContact.create(uuid=self.uuid, name=self.name, urns=[], groups=groups, fields=self.fields,
                                    language=self.language)
