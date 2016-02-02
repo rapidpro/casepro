@@ -15,35 +15,25 @@ ORG_TASK_LOCK_KEY = 'org-task-lock:%s:%s'
 logger = get_task_logger(__name__)
 
 
-def scheduled_org_task(task_key):
+def org_task(task_key):
     """
-    Decorator to create a schedule-able org task
+    Decorator to create an org task
     """
     def _scheduled_org_task(task_func):
-        def _decorator():
-            run_for_all_orgs(task_func, task_key)
+        def _decorator(org_id):
+            org = Org.objects.get(pk=org_id)
+            run_for_org(org, task_func, task_key)
 
         return shared_task(wraps(task_func)(_decorator))
     return _scheduled_org_task
 
 
-def run_for_all_orgs(task_func, task_key):
-    """
-    Runs the give task function for all active orgs
-    :param task_func: the task function
-    :param task_key: the task key
-    """
-    for org in Org.objects.filter(is_active=True):
-        run_for_org(org, task_func, task_key)
-
-
 def run_for_org(org, task_func, task_key):
     """
-    Runs the given task for the specified org
+    Runs the given task function for the specified org
     :param org: the org
     :param task_func: the task function
     :param task_key: the task key
-    :return: whether the task was run (may have been skipped)
     """
     r = get_redis_connection()
     key = ORG_TASK_LOCK_KEY % (org.pk, task_key)
@@ -77,11 +67,8 @@ def run_for_org(org, task_func, task_key):
                 state.save(update_fields=('ended_on', 'results', 'failing'))
 
                 logger.exception("Task %s failed for org #%d" % (task_key, org.pk))
-
-        return True
     else:
         logger.warn("Skipping task %s for org #%d as it is still running" % (task_key, org.pk))
-        return False
 
 
 class OrgTaskState(models.Model):
