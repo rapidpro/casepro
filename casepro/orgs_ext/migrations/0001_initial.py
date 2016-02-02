@@ -16,9 +16,9 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('task_key', models.CharField(max_length=32)),
-                ('last_run_on', models.DateTimeField(null=True)),
-                ('last_results', models.TextField()),
-                ('last_time_taken', models.IntegerField(null=True)),
+                ('started_on', models.DateTimeField(null=True)),
+                ('ended_on', models.DateTimeField(null=True)),
+                ('results', models.TextField()),
                 ('failing', models.BooleanField(default=False)),
                 ('org', models.ForeignKey(related_name='task_states', to='orgs.Org')),
             ],
