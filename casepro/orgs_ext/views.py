@@ -1,16 +1,18 @@
 from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.models import Org
-from dash.orgs.views import OrgCRUDL, InferOrgMixin, OrgPermsMixin, SmartUpdateView
+from dash.orgs.views import OrgCRUDL, InferOrgMixin, OrgPermsMixin, SmartUpdateView, SmartListView
 from dash.utils import ms_to_datetime
 from django import forms
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 from smartmin.templatetags.smartmin import format_datetime
 from smartmin.views import SmartCRUDL
 from timezones.forms import TimeZoneField
 from . import TaskType
+from .models import OrgTaskState
 
 
 class OrgForm(forms.ModelForm):
@@ -132,3 +134,21 @@ class OrgExtCRUDL(SmartCRUDL):
 
     class Choose(OrgCRUDL.Choose):
         pass
+
+
+class OrgTaskCRUDL(SmartCRUDL):
+    actions = ('list',)
+    model = OrgTaskState
+    model_name = _("Task")
+    path = 'task'
+
+    class List(SmartListView):
+        title = _("Tasks")
+        link_fields = ('org',)
+        default_order = ('org__name', 'task_key')
+
+        def lookup_field_link(self, context, field, obj):
+            if field == 'org':
+                return reverse('orgs_ext.org_update', args=[obj.org_id])
+            else:
+                return super(OrgTaskCRUDL.List, self).lookup_field_link(context, field, obj)

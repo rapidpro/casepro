@@ -9,7 +9,6 @@ from django.db import models
 from django.utils import timezone
 from functools import wraps
 from redis_cache import get_redis_connection
-from temba_client.utils import format_iso8601
 
 ORG_TASK_LOCK_KEY = 'org-task-lock:%s:%s'
 
@@ -48,12 +47,10 @@ def run_for_org(org, task_func, task_key):
     """
     r = get_redis_connection()
     key = ORG_TASK_LOCK_KEY % (org.pk, task_key)
-    with r.lock(key, timeout=60):
-        state = OrgTaskState.get_or_create(org, task_key)  # get a state object for this org and task
-        if state.is_running():
-            logger.warn("Skipping task %s for org #%d as it is still running" % (task_key, org.pk))
-            return False
-        else:
+    if not r.get(key):
+        with r.lock(key):
+            state = OrgTaskState.get_or_create(org, task_key)
+
             logger.info("Started task %s for org #%d..." % (task_key, org.pk))
 
             prev_started_on = state.started_on
@@ -63,24 +60,28 @@ def run_for_org(org, task_func, task_key):
             state.ended_on = None
             state.save(update_fields=('started_on', 'ended_on'))
 
-    try:
-        results = task_func(org, prev_started_on, this_started_on)
+            try:
+                results = task_func(org, prev_started_on, this_started_on)
 
-        state.ended_on = timezone.now()
-        state.results = json.dumps(results)
-        state.failing = False
-        state.save(update_fields=('ended_on', 'results', 'failing'))
+                state.ended_on = timezone.now()
+                state.results = json.dumps(results)
+                state.failing = False
+                state.save(update_fields=('ended_on', 'results', 'failing'))
 
-        logger.info("Task %s succeeded for org #%d with result: %s" % (task_key, org.pk, json.dumps(results)))
-    except Exception:
-        state.ended_on = timezone.now()
-        state.results = None
-        state.failing = True
-        state.save(update_fields=('ended_on', 'results', 'failing'))
+                logger.info("Task %s succeeded for org #%d with result: %s" % (task_key, org.pk, json.dumps(results)))
 
-        logger.exception("Task %s failed for org #%d" % (task_key, org.pk))
+            except Exception:
+                state.ended_on = timezone.now()
+                state.results = None
+                state.failing = True
+                state.save(update_fields=('ended_on', 'results', 'failing'))
 
-    return True
+                logger.exception("Task %s failed for org #%d" % (task_key, org.pk))
+
+        return True
+    else:
+        logger.warn("Skipping task %s for org #%d as it is still running" % (task_key, org.pk))
+        return False
 
 
 class OrgTaskState(models.Model):

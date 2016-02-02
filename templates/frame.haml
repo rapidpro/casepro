@@ -77,6 +77,9 @@
                       %li
                         %a{ href:"{% url 'profiles.user_list' %}" }
                           - trans "Users"
+                      %li
+                        %a{ href:"{% url 'orgs_ext.task_list' %}" }
+                          - trans "Tasks"
 
               - else
                 - if request.user.is_superuser or org_perms.orgs.org_home or org_perms.cases.label_list or org_perms.cases.group_list or org_perms.profiles.profile_user_list

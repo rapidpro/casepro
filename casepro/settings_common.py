@@ -48,6 +48,7 @@ SITE_CHOOSER_URL_NAME = 'orgs_ext.org_chooser'
 SITE_CHOOSER_TEMPLATE = 'org_chooser.haml'
 SITE_USER_HOME = '/'
 SITE_ALLOW_NO_ORG = ('orgs_ext.org_create', 'orgs_ext.org_update', 'orgs_ext.org_list',
+                     'orgs_ext.task_list',
                      'profiles.user_create', 'profiles.user_update', 'profiles.user_read', 'profiles.user_list',
                      'internal.status', 'internal.ping')
 
