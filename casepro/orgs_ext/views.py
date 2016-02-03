@@ -2,16 +2,13 @@ from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.models import Org
 from dash.orgs.views import OrgCRUDL, InferOrgMixin, OrgPermsMixin, SmartUpdateView, SmartListView
-from dash.utils import ms_to_datetime
 from django import forms
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
-from smartmin.templatetags.smartmin import format_datetime
 from smartmin.views import SmartCRUDL
 from timezones.forms import TimeZoneField
-from . import TaskType
 from .models import OrgTaskState
 
 
@@ -46,7 +43,7 @@ class OrgExtCRUDL(SmartCRUDL):
         pass
 
     class Home(OrgCRUDL.Home):
-        fields = ('name', 'timezone', 'api_token', 'contact_fields', 'last_label_task', 'administrators')
+        fields = ('name', 'timezone', 'api_token', 'contact_fields', 'administrators')
         field_config = {'api_token': {'label': _("RapidPro API Token")}}
         permission = 'orgs.org_home'
 
@@ -55,16 +52,6 @@ class OrgExtCRUDL(SmartCRUDL):
 
         def get_contact_fields(self, obj):
             return ', '.join(obj.get_contact_fields())
-
-        def get_last_label_task(self, obj):
-            result = obj.get_task_result(TaskType.label_messages)
-            if result:
-                when = format_datetime(ms_to_datetime(result['time']))
-                num_messages = int(result['counts'].get('messages', 0))
-                num_labelled = int(result['counts'].get('labelled', 0))
-                return "%s (%d new messages, %d labelled)" % (when, num_messages, num_labelled)
-            else:
-                return None
 
         def get_administrators(self, obj):
             admins = obj.administrators.exclude(profile=None).order_by('profile__full_name').select_related('profile')

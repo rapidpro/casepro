@@ -14,7 +14,6 @@ from temba_client.v1.types import Contact as TembaContact, Group as TembaGroup, 
 from temba_client.v1.types import Broadcast as TembaBroadcast
 from temba_client.clients import Pager
 from temba_client.utils import format_iso8601
-from casepro.orgs_ext import TaskType
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
 from . import safe_max, normalize, match_keywords, truncate, str_to_bool
@@ -1214,10 +1213,9 @@ class TasksTest(BaseCasesTest):
         self.assertEqual(events[0].event, CaseEvent.REPLY)
         self.assertEqual(events[0].created_on, d5)
 
-        # check task result in redis
-        result = self.unicef.get_task_result(TaskType.label_messages)
-        self.assertEqual(result['counts']['messages'], 5)
-        self.assertEqual(result['counts']['labelled'], 3)
+        # check task result
+        task_state = self.unicef.get_task_state('message-pull')
+        self.assertEqual(task_state.get_last_results(), {'messages': 5, 'labelled': 3})
 
 
 class ContextProcessorsTest(BaseCasesTest):

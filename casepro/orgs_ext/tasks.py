@@ -22,24 +22,15 @@ def trigger_org_task(task_name):
     :param task_name: the full task name, e.g. 'myproj.myapp.tasks.do_stuff'
     """
     if task_name not in celery_app.tasks:
-        logger.error("No task named '%s' is registered" % task_name)
+        logger.error("No task named '%s' is registered with Celery" % task_name)
         return
 
-    num_requested = 0
-    num_skipped = 0
-    for org in apps.get_model('orgs', 'Org').objects.all():
-        if not org.is_active:
-            logger.info("Skipping for org #%d because it is not active" % org.pk)
-            num_skipped += 1
-        elif not org.api_token:
-            logger.info("Skipping for org #%d because it has no API token" % org.pk)
-            num_skipped += 1
-        else:
-            sig = signature(task_name, args=[org.pk])
-            sig.apply_async()
-            num_requested += 1
+    active_orgs = apps.get_model('orgs', 'Org').objects.filter(is_active=True)
+    for org in active_orgs:
+        sig = signature(task_name, args=[org.pk])
+        sig.apply_async()
 
-    logger.info("Requested task '%s' for %d active orgs (%d skipped)" % (task_name, num_requested, num_skipped))
+    logger.info("Requested task '%s' for %d active orgs" % (task_name, len(active_orgs)))
 
 
 def org_task(task_key):
@@ -69,7 +60,7 @@ def maybe_run_for_org(org, task_func, task_key):
         logger.warn("Skipping for org #%d as it is still running" % org.pk)
     else:
         with r.lock(key):
-            state = apps.get_model('orgs_ext', 'OrgTaskState').get_or_create(org, task_key)
+            state = org.get_task_state(task_key)
 
             logger.info("Started for org #%d..." % org.pk)
 
