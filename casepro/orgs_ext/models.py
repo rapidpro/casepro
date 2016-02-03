@@ -2,73 +2,9 @@ from __future__ import unicode_literals
 
 import json
 
-from celery import shared_task
-from celery.utils.log import get_task_logger
 from dash.orgs.models import Org
 from django.db import models
 from django.utils import timezone
-from functools import wraps
-from redis_cache import get_redis_connection
-
-ORG_TASK_LOCK_KEY = 'org-task-lock:%s:%s'
-
-logger = get_task_logger(__name__)
-
-
-def org_task(task_key):
-    """
-    Decorator to create an org task
-    """
-    def _scheduled_org_task(task_func):
-        def _decorator(org_id):
-            org = Org.objects.get(pk=org_id)
-            run_for_org(org, task_func, task_key)
-
-        return shared_task(wraps(task_func)(_decorator))
-    return _scheduled_org_task
-
-
-def run_for_org(org, task_func, task_key):
-    """
-    Runs the given task function for the specified org
-    :param org: the org
-    :param task_func: the task function
-    :param task_key: the task key
-    """
-    r = get_redis_connection()
-    key = ORG_TASK_LOCK_KEY % (org.pk, task_key)
-    if not r.get(key):
-        with r.lock(key):
-            state = OrgTaskState.get_or_create(org, task_key)
-
-            logger.info("Started task %s for org #%d..." % (task_key, org.pk))
-
-            prev_started_on = state.started_on
-            this_started_on = timezone.now()
-
-            state.started_on = this_started_on
-            state.ended_on = None
-            state.save(update_fields=('started_on', 'ended_on'))
-
-            try:
-                results = task_func(org, prev_started_on, this_started_on)
-
-                state.ended_on = timezone.now()
-                state.results = json.dumps(results)
-                state.failing = False
-                state.save(update_fields=('ended_on', 'results', 'failing'))
-
-                logger.info("Task %s succeeded for org #%d with result: %s" % (task_key, org.pk, json.dumps(results)))
-
-            except Exception:
-                state.ended_on = timezone.now()
-                state.results = None
-                state.failing = True
-                state.save(update_fields=('ended_on', 'results', 'failing'))
-
-                logger.exception("Task %s failed for org #%d" % (task_key, org.pk))
-    else:
-        logger.warn("Skipping task %s for org #%d as it is still running" % (task_key, org.pk))
 
 
 class OrgTaskState(models.Model):
@@ -83,9 +19,9 @@ class OrgTaskState(models.Model):
 
     ended_on = models.DateTimeField(null=True)
 
-    results = models.TextField()
+    results = models.TextField(null=True)
 
-    failing = models.BooleanField(default=False)
+    is_failing = models.BooleanField(default=False)
 
     @classmethod
     def get_or_create(cls, org, task_key):
@@ -97,7 +33,7 @@ class OrgTaskState(models.Model):
 
     @classmethod
     def get_failing(cls):
-        return cls.objects.filter(org__is_active=True, failing=True)
+        return cls.objects.filter(org__is_active=True, is_failing=True)
 
     def is_running(self):
         return self.started_on and not self.ended_on
@@ -106,7 +42,7 @@ class OrgTaskState(models.Model):
         return self.started_on is not None
 
     def get_last_results(self):
-        return json.loads(self.last_results) if self.last_results else None
+        return json.loads(self.results) if self.results else None
 
     def get_time_taken(self):
         until = self.ended_on if self.ended_on else timezone.now()

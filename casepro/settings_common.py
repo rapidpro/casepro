@@ -390,9 +390,9 @@ CELERYBEAT_SCHEDULE = {
         'args': ()
     },
     'contact-pull': {
-        'task': 'casepro.contacts.tasks.pull_contacts',
-        'schedule': datetime.timedelta(seconds=30),
-        'args': (1,)   # TODO launch for all orgs from a parent task
+        'task': 'casepro.orgs_ext.tasks.trigger_org_task',
+        'schedule': datetime.timedelta(minutes=10),
+        'args': ('casepro.contacts.tasks.pull_contacts',)
     },
 }
 

@@ -2,29 +2,62 @@ from __future__ import absolute_import, unicode_literals
 
 from django.core.urlresolvers import reverse
 from casepro.test import BaseCasesTest
-from .models import scheduled_org_task, OrgTaskState
+from .models import OrgTaskState
+from .tasks import org_task
 
 
-@scheduled_org_task('test-task')
-def test_org_task(org, running_on, last_run_on):
-    return {'foo': "bar", 'zed': org.name}
+ERROR_ON_TEST_TASK = False
+
+
+@org_task('test-task')
+def test_org_task(org, started_on, prev_started_on):
+    if ERROR_ON_TEST_TASK:
+        raise ValueError("Doh!")
+    else:
+        return {'foo': "bar", 'zed': org.name}
 
 
 class OrgTaskTest(BaseCasesTest):
     def test_decorator(self):
-        test_org_task()
+        global ERROR_ON_TEST_TASK
+        ERROR_ON_TEST_TASK = False
 
-        # should now have task states for both orgs
-        org1_state = OrgTaskState.objects.get(org=self.unicef, task_key='test-task')
-        org2_state = OrgTaskState.objects.get(org=self.nyaruka, task_key='test-task')
+        # org tasks are invoked with a single org id
+        test_org_task(self.unicef.pk)
 
-        self.assertEqual(org1_state.get_last_results(), {'foo': "bar", 'zed': "UNICEF"})
-        self.assertIsNotNone(org1_state.last_run_on)
-        self.assertEqual(org2_state.get_last_results(), {'foo': "bar", 'zed': "Nyaruka"})
-        self.assertIsNotNone(org2_state.last_run_on)
+        # should now have task state for that org
+        org_state = OrgTaskState.objects.get(org=self.unicef, task_key='test-task')
 
-        test_org_task()
-        test_org_task()
+        self.assertIsNotNone(org_state.started_on)
+        self.assertIsNotNone(org_state.ended_on)
+        self.assertFalse(org_state.is_running())
+        self.assertEqual(org_state.get_last_results(), {'foo': "bar", 'zed': "UNICEF"})
+        self.assertEqual(org_state.get_time_taken(), (org_state.ended_on - org_state.started_on).total_seconds())
+        self.assertFalse(org_state.is_failing)
+
+        old_started_on = org_state.started_on
+
+        # running again will update state
+        test_org_task(self.unicef.pk)
+        org_state = OrgTaskState.objects.get(org=self.unicef, task_key='test-task')
+
+        self.assertGreater(org_state.started_on, old_started_on)
+
+        self.assertEqual(list(OrgTaskState.get_failing()), [])
+
+        ERROR_ON_TEST_TASK = True
+
+        # test when task fails
+        test_org_task(self.unicef.pk)
+        org_state = OrgTaskState.objects.get(org=self.unicef, task_key='test-task')
+
+        self.assertIsNotNone(org_state.started_on)
+        self.assertIsNotNone(org_state.ended_on)
+        self.assertFalse(org_state.is_running())
+        self.assertEqual(org_state.get_last_results(), None)
+        self.assertTrue(org_state.is_failing)
+
+        self.assertEqual(list(OrgTaskState.get_failing()), [org_state])
 
 
 class OrgExtCRUDLTest(BaseCasesTest):
