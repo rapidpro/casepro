@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from casepro.orgs_ext.tasks import org_task
 from celery.utils.log import get_task_logger
 from datetime import timedelta
+from django.utils import timezone
 
 logger = get_task_logger(__name__)
 
@@ -17,7 +18,7 @@ def pull_contacts(org, started_on, prev_started_on):
 
     # if we're running for the first time, don't try to grab all contacts
     if not prev_started_on:
-        prev_started_on = timedelta(minutes=30)
+        prev_started_on = timezone.now() - timedelta(minutes=30)
 
     num_created, num_updated, num_deleted = sync_pull_contacts(
             org, Contact,

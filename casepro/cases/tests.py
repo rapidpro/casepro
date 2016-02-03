@@ -21,7 +21,7 @@ from . import safe_max, normalize, match_keywords, truncate, str_to_bool
 from .context_processors import contact_ext_url, sentry_dsn
 from .models import AccessLevel, Case, CaseAction, CaseEvent, Contact, Group, Label, Message, MessageAction
 from .models import MessageExport, Partner, Outgoing
-from .tasks import process_new_unsolicited
+from .tasks import pull_messages
 from .utils import datetime_to_microseconds, microseconds_to_datetime
 
 
@@ -1180,7 +1180,7 @@ class TasksTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient1.get_messages')
     @patch('dash.orgs.models.TembaClient1.label_messages')
     @patch('dash.orgs.models.TembaClient1.archive_messages')
-    def test_process_new_unsolicited_task(self, mock_archive_messages, mock_label_messages, mock_get_messages):
+    def test_pull_messages_task(self, mock_archive_messages, mock_label_messages, mock_get_messages):
         d1 = datetime(2014, 1, 1, 7, 0, tzinfo=timezone.utc)
         d2 = datetime(2014, 1, 1, 8, 0, tzinfo=timezone.utc)
         d3 = datetime(2014, 1, 1, 9, 0, tzinfo=timezone.utc)
@@ -1200,7 +1200,7 @@ class TasksTest(BaseCasesTest):
             case1 = Case.objects.create(org=self.unicef, contact=contact5,
                                         assignee=self.moh, message_id=99, message_on=d1)
 
-        process_new_unsolicited()  # will process messages for both orgs
+        pull_messages(self.unicef.pk)
 
         mock_label_messages.assert_has_calls([call(messages=[msg1, msg2], label_uuid='L-001'),
                                               call(messages=[msg3], label_uuid='L-002')],

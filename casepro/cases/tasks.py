@@ -1,49 +1,26 @@
 from __future__ import absolute_import, unicode_literals
 
+from casepro.orgs_ext.tasks import org_task
 from celery.utils.log import get_task_logger
-from dash.orgs.models import Org
 from datetime import timedelta
-from dash.utils import datetime_to_ms, ms_to_datetime
 from django.utils import timezone
 from djcelery_transactions import task
-from redis_cache import get_redis_connection
-from casepro.orgs_ext import TaskType
 
 logger = get_task_logger(__name__)
 
 
-@task
-def process_new_unsolicited():
+@org_task('message-pull')
+def pull_messages(org, started_on, prev_started_on):
     """
-    Processes new unsolicited messages for all orgs in RapidPro
-    """
-    r = get_redis_connection()
-
-    # only do this if we aren't already running so we don't get backed up
-    key = 'process_new_unsolicited'
-    if not r.get(key):
-        with r.lock(key, timeout=600):
-            for org in Org.objects.filter(is_active=True):
-                process_new_org_unsolicited(org)
-
-
-def process_new_org_unsolicited(org):
-    """
-    Processes new unsolicited messages for an org in RapidPro
+    Pulls new unsolicited messages for an org
     """
     from .models import Message
 
-    client = org.get_temba_client()
+    # if we're running for the first time, then we'll fetch back to 1 hour ago
+    if not prev_started_on:
+        prev_started_on = timezone.now() - timedelta(hours=1)
 
-    # when was this task last run?
-    last_result = org.get_task_result(TaskType.label_messages)
-    if last_result:
-        last_time = ms_to_datetime(last_result['time'])
-    else:
-        # if first time (or Redis bombed...) then we'll fetch back to 3 hours ago
-        last_time = timezone.now() - timedelta(hours=3)
-
-    this_time = timezone.now()
+    client = org.get_temba_client(api_version=1)
 
     num_messages = 0
     num_labelled = 0
@@ -52,17 +29,14 @@ def process_new_org_unsolicited(org):
     pager = client.pager()
     while True:
         messages = client.get_messages(direction='I', _types=['I'], archived=False,
-                                       after=last_time, before=this_time, pager=pager)
+                                       after=prev_started_on, before=started_on, pager=pager)
         num_messages += len(messages)
         num_labelled += Message.process_unsolicited(org, messages)
 
         if not pager.has_more():
             break
 
-    print "Processed %d new unsolicited messages and labelled %d" % (num_messages, num_labelled)
-
-    org.set_task_result(TaskType.label_messages, {'time': datetime_to_ms(this_time),
-                                                  'counts': {'messages': num_messages, 'labelled': num_labelled}})
+    return {'messages': num_messages, 'labelled': num_labelled}
 
 
 @task

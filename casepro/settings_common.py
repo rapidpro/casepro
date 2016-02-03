@@ -385,9 +385,9 @@ CELERY_RESULT_BACKEND = BROKER_URL
 
 CELERYBEAT_SCHEDULE = {
     'process-new-unsolicited': {
-        'task': 'casepro.cases.tasks.process_new_unsolicited',
+        'task': 'casepro.orgs_ext.tasks.trigger_org_task',
         'schedule': datetime.timedelta(minutes=10),
-        'args': ()
+        'args': ('casepro.cases.tasks.pull_messages',)
     },
     'contact-pull': {
         'task': 'casepro.orgs_ext.tasks.trigger_org_task',
