@@ -1,9 +1,9 @@
 from __future__ import absolute_import, unicode_literals
 
-import datetime
 import djcelery
 import sys
 
+from celery.schedules import crontab
 from django.utils.translation import ugettext_lazy as _
 
 # -----------------------------------------------------------------------------------
@@ -386,12 +386,12 @@ CELERY_RESULT_BACKEND = BROKER_URL
 CELERYBEAT_SCHEDULE = {
     'message-pull': {
         'task': 'casepro.orgs_ext.tasks.trigger_org_task',
-        'schedule': datetime.timedelta(minutes=10),
+        'schedule': crontab(minute=[0, 10, 20, 30, 40, 50]),
         'args': ('casepro.cases.tasks.pull_messages',)
     },
     'contact-pull': {
         'task': 'casepro.orgs_ext.tasks.trigger_org_task',
-        'schedule': datetime.timedelta(minutes=10),
+        'schedule': crontab(minute=[5, 15, 25, 35, 45, 55]),
         'args': ('casepro.contacts.tasks.pull_contacts',)
     },
 }
