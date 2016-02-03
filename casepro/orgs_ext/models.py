@@ -7,9 +7,9 @@ from django.db import models
 from django.utils import timezone
 
 
-class OrgTaskState(models.Model):
+class TaskState(models.Model):
     """
-    Holds org specific state for a scheduled org task
+    Holds org specific state for a scheduled task
     """
     org = models.ForeignKey(Org, related_name='task_states')
 
@@ -50,3 +50,4 @@ class OrgTaskState(models.Model):
 
     class Meta:
         unique_together = ('org', 'task_key')
+        db_table = 'orgs_taskstate'

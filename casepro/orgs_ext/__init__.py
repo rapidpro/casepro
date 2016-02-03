@@ -55,8 +55,8 @@ def _org_record_message_time(org, time, labelled):
 
 
 def _org_get_task_state(org, task_key):
-    from .models import OrgTaskState
-    return OrgTaskState.get_or_create(org, task_key)
+    from .models import TaskState
+    return TaskState.get_or_create(org, task_key)
 
 
 Org.get_banner_text = _org_get_banner_text

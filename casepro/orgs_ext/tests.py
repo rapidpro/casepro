@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from django.core.urlresolvers import reverse
 from casepro.test import BaseCasesTest
-from .models import OrgTaskState
+from .models import TaskState
 from .tasks import org_task
 
 
@@ -26,7 +26,7 @@ class OrgTaskTest(BaseCasesTest):
         test_org_task(self.unicef.pk)
 
         # should now have task state for that org
-        org_state = OrgTaskState.objects.get(org=self.unicef, task_key='test-task')
+        org_state = TaskState.objects.get(org=self.unicef, task_key='test-task')
 
         self.assertIsNotNone(org_state.started_on)
         self.assertIsNotNone(org_state.ended_on)
@@ -39,17 +39,17 @@ class OrgTaskTest(BaseCasesTest):
 
         # running again will update state
         test_org_task(self.unicef.pk)
-        org_state = OrgTaskState.objects.get(org=self.unicef, task_key='test-task')
+        org_state = TaskState.objects.get(org=self.unicef, task_key='test-task')
 
         self.assertGreater(org_state.started_on, old_started_on)
 
-        self.assertEqual(list(OrgTaskState.get_failing()), [])
+        self.assertEqual(list(TaskState.get_failing()), [])
 
         ERROR_ON_TEST_TASK = True
 
         # test when task fails
         test_org_task(self.unicef.pk)
-        org_state = OrgTaskState.objects.get(org=self.unicef, task_key='test-task')
+        org_state = TaskState.objects.get(org=self.unicef, task_key='test-task')
 
         self.assertIsNotNone(org_state.started_on)
         self.assertIsNotNone(org_state.ended_on)
@@ -57,7 +57,7 @@ class OrgTaskTest(BaseCasesTest):
         self.assertEqual(org_state.get_last_results(), None)
         self.assertTrue(org_state.is_failing)
 
-        self.assertEqual(list(OrgTaskState.get_failing()), [org_state])
+        self.assertEqual(list(TaskState.get_failing()), [org_state])
 
 
 class OrgExtCRUDLTest(BaseCasesTest):

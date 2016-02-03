@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='OrgTaskState',
+            name='TaskState',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('task_key', models.CharField(max_length=32)),
@@ -22,9 +22,12 @@ class Migration(migrations.Migration):
                 ('is_failing', models.BooleanField(default=False)),
                 ('org', models.ForeignKey(related_name='task_states', to='orgs.Org')),
             ],
+            options={
+                'db_table': 'orgs_taskstate',
+            },
         ),
         migrations.AlterUniqueTogether(
-            name='orgtaskstate',
+            name='taskstate',
             unique_together=set([('org', 'task_key')]),
         ),
     ]

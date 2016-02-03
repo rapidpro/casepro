@@ -384,7 +384,7 @@ BROKER_URL = 'redis://localhost:6379/%d' % (10 if TESTING else 15)
 CELERY_RESULT_BACKEND = BROKER_URL
 
 CELERYBEAT_SCHEDULE = {
-    'process-new-unsolicited': {
+    'message-pull': {
         'task': 'casepro.orgs_ext.tasks.trigger_org_task',
         'schedule': datetime.timedelta(minutes=10),
         'args': ('casepro.cases.tasks.pull_messages',)

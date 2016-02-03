@@ -9,7 +9,7 @@ from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCRUDL
 from timezones.forms import TimeZoneField
-from .models import OrgTaskState
+from .models import TaskState
 
 
 class OrgForm(forms.ModelForm):
@@ -123,9 +123,9 @@ class OrgExtCRUDL(SmartCRUDL):
         pass
 
 
-class OrgTaskCRUDL(SmartCRUDL):
+class TaskCRUDL(SmartCRUDL):
     actions = ('list',)
-    model = OrgTaskState
+    model = TaskState
     model_name = _("Task")
     path = 'task'
 
@@ -138,4 +138,4 @@ class OrgTaskCRUDL(SmartCRUDL):
             if field == 'org':
                 return reverse('orgs_ext.org_update', args=[obj.org_id])
             else:
-                return super(OrgTaskCRUDL.List, self).lookup_field_link(context, field, obj)
+                return super(TaskCRUDL.List, self).lookup_field_link(context, field, obj)
