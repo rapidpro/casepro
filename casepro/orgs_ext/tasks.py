@@ -64,7 +64,7 @@ def maybe_run_for_org(org, task_func, task_key):
 
             logger.info("Started for org #%d..." % org.pk)
 
-            prev_started_on = state.started_on
+            prev_started_on = state.last_successfully_started_on
             this_started_on = timezone.now()
 
             state.started_on = this_started_on
@@ -75,16 +75,17 @@ def maybe_run_for_org(org, task_func, task_key):
                 results = task_func(org, prev_started_on, this_started_on)
 
                 state.ended_on = timezone.now()
-                state.results = json.dumps(results)
+                state.last_successfully_started_on = this_started_on
+                state.last_results = json.dumps(results)
                 state.is_failing = False
-                state.save(update_fields=('ended_on', 'results', 'is_failing'))
+                state.save(update_fields=('ended_on', 'last_successfully_started_on', 'last_results', 'is_failing'))
 
                 logger.info("Succeeded for org #%d with result: %s" % (org.pk, json.dumps(results)))
 
-            except Exception:
+            except Exception as ex:
                 state.ended_on = timezone.now()
-                state.results = None
+                state.last_results = None
                 state.is_failing = True
-                state.save(update_fields=('ended_on', 'results', 'is_failing'))
+                state.save(update_fields=('ended_on', 'last_results', 'is_failing'))
 
-                logger.exception("Task failed for org #%d" % org.pk)
+                raise ex

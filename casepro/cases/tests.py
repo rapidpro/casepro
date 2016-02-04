@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals
 
 import pytz
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
@@ -1179,7 +1179,7 @@ class TasksTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient1.get_messages')
     @patch('dash.orgs.models.TembaClient1.label_messages')
     @patch('dash.orgs.models.TembaClient1.archive_messages')
-    def test_pull_messages_task(self, mock_archive_messages, mock_label_messages, mock_get_messages):
+    def test_pull_messages(self, mock_archive_messages, mock_label_messages, mock_get_messages):
         d1 = datetime(2014, 1, 1, 7, 0, tzinfo=timezone.utc)
         d2 = datetime(2014, 1, 1, 8, 0, tzinfo=timezone.utc)
         d3 = datetime(2014, 1, 1, 9, 0, tzinfo=timezone.utc)
@@ -1201,9 +1201,16 @@ class TasksTest(BaseCasesTest):
 
         pull_messages(self.unicef.pk)
 
-        mock_label_messages.assert_has_calls([call(messages=[msg1, msg2], label_uuid='L-001'),
-                                              call(messages=[msg3], label_uuid='L-002')],
-                                             any_order=True)
+        task_state = self.unicef.get_task_state('message-pull')
+
+        call_kwargs = mock_get_messages.call_args[1]
+        self.assertEqual(call_kwargs['after'], task_state.started_on - timedelta(hours=1))
+        self.assertEqual(call_kwargs['before'], task_state.started_on)
+
+        mock_label_messages.assert_has_calls([
+            call(messages=[msg1, msg2], label_uuid='L-001'),
+            call(messages=[msg3], label_uuid='L-002')
+        ], any_order=True)
 
         mock_archive_messages.assert_called_once_with(messages=[msg5])  # because contact has open case
 

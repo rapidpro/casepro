@@ -3,22 +3,21 @@ from __future__ import absolute_import, unicode_literals
 from casepro.orgs_ext.tasks import org_task
 from celery.utils.log import get_task_logger
 from datetime import timedelta
-from django.utils import timezone
 from djcelery_transactions import task
 
 logger = get_task_logger(__name__)
 
 
 @org_task('message-pull')
-def pull_messages(org, started_on, prev_started_on):
+def pull_messages(org, since, until):
     """
     Pulls new unsolicited messages for an org
     """
     from .models import Message
 
     # if we're running for the first time, then we'll fetch back to 1 hour ago
-    if not prev_started_on:
-        prev_started_on = timezone.now() - timedelta(hours=1)
+    if not since:
+        since = until - timedelta(hours=1)
 
     client = org.get_temba_client(api_version=1)
 
@@ -29,7 +28,7 @@ def pull_messages(org, started_on, prev_started_on):
     pager = client.pager()
     while True:
         messages = client.get_messages(direction='I', _types=['I'], archived=False,
-                                       after=prev_started_on, before=started_on, pager=pager)
+                                       after=since, before=until, pager=pager)
         num_messages += len(messages)
         num_labelled += Message.process_unsolicited(org, messages)
 

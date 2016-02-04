@@ -19,7 +19,9 @@ class TaskState(models.Model):
 
     ended_on = models.DateTimeField(null=True)
 
-    results = models.TextField(null=True)
+    last_successfully_started_on = models.DateTimeField(null=True)
+
+    last_results = models.TextField(null=True)
 
     is_failing = models.BooleanField(default=False)
 
@@ -42,7 +44,7 @@ class TaskState(models.Model):
         return self.started_on is not None
 
     def get_last_results(self):
-        return json.loads(self.results) if self.results else None
+        return json.loads(self.last_results) if self.last_results else None
 
     def get_time_taken(self):
         until = self.ended_on if self.ended_on else timezone.now()
