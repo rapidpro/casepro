@@ -40,7 +40,6 @@ class MockClientQuery(six.Iterator):
 
 class ContactTest(BaseCasesTest):
     def test_save(self):
-        # check saving by result of kwargs_from_temba
         kwargs = Contact.kwargs_from_temba(self.unicef, TembaContact.create(
                 uuid="C-001",
                 name="Bob McFlow",
@@ -61,6 +60,7 @@ class ContactTest(BaseCasesTest):
             '__data__fields': {'age': "34"},
         })
 
+        # check saving by result of kwargs_from_temba
         contact = Contact.objects.create(**kwargs)
 
         self.assertEqual(contact.uuid, "C-001")
@@ -72,21 +72,37 @@ class ContactTest(BaseCasesTest):
 
         self.assertEqual(set(contact.groups.all()), {customers})
 
-        # check there are no extra db hits when saving without group change, assuming org and groups pre-fetched
-        contact = Contact.objects.select_related('org').prefetch_related('groups').get(uuid='C-001')
+        contact = Contact.objects.select_related('org').prefetch_related('groups', 'values__field').get(uuid='C-001')
 
+        # check there are no extra db hits when saving without change, assuming appropriate pre-fetches (as above)
         with self.assertNumQueries(1):
             setattr(contact, '__data__groups', [("G-001", "Customers")])
+            setattr(contact, '__data__fields', {"age": "34"})
             contact.save()
-
-        contact = Contact.objects.select_related('org').prefetch_related('groups').get(uuid='C-001')
 
         # check removing a group and adding new ones
         with self.assertNumQueries(7):
             setattr(contact, '__data__groups', [("G-002", "Spammers"), ("G-003", "Boffins")])
             contact.save()
 
+        # check updating a field
+        with self.assertNumQueries(2):
+            setattr(contact, '__data__fields', {"age": "35"})
+            contact.save()
+
+        # check adding a new field
+        with self.assertNumQueries(4):
+            setattr(contact, '__data__fields', {"age": "35", "state": "WA"})
+            contact.save()
+
+        # check deleting a field
+        with self.assertNumQueries(4):
+            setattr(contact, '__data__fields', {"state": "WA"})
+            contact.save()
+
         contact = Contact.objects.get(uuid='C-001')
+
+        self.assertEqual(contact.get_fields(), {"state": "WA"})
 
         spammers = Group.objects.get(org=self.unicef, uuid="G-002", name="Spammers")
         boffins = Group.objects.get(org=self.unicef, uuid="G-003", name="Boffins")
@@ -129,8 +145,8 @@ class ContactTest(BaseCasesTest):
             )
         ]
 
-        # with self.assertNumQueries(14):
-        num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
+        with self.assertNumQueries(24):
+            num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
                                                                        prefetch_related=('groups',))
 
         self.assertEqual(num_created, 3)
@@ -175,8 +191,8 @@ class ContactTest(BaseCasesTest):
             )
         ]
 
-        # with self.assertNumQueries(8):
-        num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
+        with self.assertNumQueries(13):
+            num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
                                                                        prefetch_related=('groups',))
 
         self.assertEqual(num_created, 0)
@@ -206,8 +222,8 @@ class ContactTest(BaseCasesTest):
             MockClientQuery([])
         ]
 
-        # with self.assertNumQueries(2):
-        num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
+        with self.assertNumQueries(4):
+            num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
                                                                        prefetch_related=('groups',))
         self.assertEqual(num_created, 0)
         self.assertEqual(num_updated, 0)
@@ -230,8 +246,8 @@ class ContactTest(BaseCasesTest):
             MockClientQuery([])
         ]
 
-        # with self.assertNumQueries(3):
-        num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact,
+        with self.assertNumQueries(3):
+            num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact,
                                                                        prefetch_related=('groups',))
         self.assertEqual(num_created, 0)
         self.assertEqual(num_updated, 0)

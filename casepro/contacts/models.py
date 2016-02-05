@@ -105,7 +105,7 @@ class Contact(models.Model):
         }
 
     def get_fields(self):
-        return {v.field.key: v.string_value for v in self.values.all()}
+        return {v.field.key: v.get_value() for v in self.values.all()}
 
     def as_temba(self):
         """
@@ -131,6 +131,9 @@ class Value(models.Model):
 
     string_value = models.TextField(max_length=640, null=True,
                                     help_text="The string value or string representation of this value")
+
+    def get_value(self):
+        return self.string_value
 
     def __str__(self):
         return self.string_value
