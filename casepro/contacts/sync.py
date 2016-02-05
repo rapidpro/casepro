@@ -40,6 +40,7 @@ def sync_pull_contacts(org, contact_class,
     """
     client = org.get_temba_client(api_version=2)
 
+    num_synced = 0
     num_created = 0
     num_updated = 0
     deleted_uuids = []
@@ -96,8 +97,9 @@ def sync_pull_contacts(org, contact_class,
                 contact_class.objects.create(**kwargs)
                 num_created += 1
 
+        num_synced += len(incoming_batch)
         if progress_callback:
-            progress_callback(len(incoming_batch))
+            progress_callback(num_synced)
 
     # now get all contacts deleted in the same time window
     deleted_query = client.get_contacts(deleted=True, after=modified_after, before=modified_before)

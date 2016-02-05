@@ -12,17 +12,12 @@ def pull_contacts(org, since, until):
     """
     Fetches updated contacts from RapidPro and updates local contacts accordingly
     """
-    from .models import Contact
-    from .sync import sync_pull_contacts
+    from casepro.backend import get_backend
 
     # if we're running for the first time, don't try to grab all contacts
     if not since:
         since = until - timedelta(minutes=30)
 
-    num_created, num_updated, num_deleted = sync_pull_contacts(
-            org, Contact,
-            modified_after=since, modified_before=until,
-            inc_urns=False, delete_blocked=True, prefetch_related=('groups',)
-    )
+    num_created, num_updated, num_deleted = get_backend().pull_contacts(org, since, until)
 
     return {'created': num_created, 'updated': num_updated, 'deleted': num_deleted}
