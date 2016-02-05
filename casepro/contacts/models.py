@@ -1,14 +1,12 @@
 from __future__ import unicode_literals
 
-import six
-
-from django.contrib.postgres.fields import HStoreField
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from temba_client.v2.types import Contact as TembaContact, ObjectRef as TembaObjectRef
 
 SAVE_GROUPS_ATTR = '__data__groups'
+SAVE_FIELDS_ATTR = '__data__fields'
 
 
 @python_2_unicode_compatible
@@ -35,6 +33,32 @@ class Group(models.Model):
 
 
 @python_2_unicode_compatible
+class Field(models.Model):
+    """
+    A custom contact field in RapidPro
+    """
+    org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name="fields")
+
+    key = models.CharField(verbose_name=_("Key"), max_length=36)
+
+    label = models.CharField(verbose_name=_("Label"), max_length=36, null=True)
+
+    @classmethod
+    def get_or_create(cls, org, key, label=None):
+        existing = cls.objects.filter(org=org, key=key).first()
+        if existing:
+            return existing
+
+        return cls.objects.create(org=org, key=key, label=label)
+
+    def __str__(self):
+        return self.key
+
+    class Meta:
+        unique_together = ('org', 'key')
+
+
+@python_2_unicode_compatible
 class Contact(models.Model):
     """
     A contact in RapidPro
@@ -43,13 +67,11 @@ class Contact(models.Model):
 
     uuid = models.CharField(max_length=36, unique=True)
 
-    name = models.CharField(verbose_name=_("Full name"), max_length=128, blank=True,
+    name = models.CharField(verbose_name=_("Full name"), max_length=128, null=True, blank=True,
                             help_text=_("The name of this contact"))
 
     groups = models.ManyToManyField(Group, related_name="contacts")
 
-    fields = HStoreField(verbose_name=_("Fields"),
-                         help_text=_("Custom contact field values"))
     language = models.CharField(max_length=3, verbose_name=_("Language"), null=True, blank=True,
                                 help_text=_("Language for this contact"))
 
@@ -60,6 +82,9 @@ class Contact(models.Model):
     def __init__(self, *args, **kwargs):
         if SAVE_GROUPS_ATTR in kwargs:
             setattr(self, SAVE_GROUPS_ATTR, kwargs.pop(SAVE_GROUPS_ATTR))
+        if SAVE_FIELDS_ATTR in kwargs:
+            setattr(self, SAVE_FIELDS_ATTR, kwargs.pop(SAVE_FIELDS_ATTR))
+
         super(Contact, self).__init__(*args, **kwargs)
 
     @classmethod
@@ -73,11 +98,14 @@ class Contact(models.Model):
         return {
             'org': org,
             'uuid': temba_instance.uuid,
-            'name': temba_instance.name or "",
-            'fields': {k: six.text_type(v) for k, v in six.iteritems(temba_instance.fields)},
+            'name': temba_instance.name,
             'language': temba_instance.language,
-            SAVE_GROUPS_ATTR: [(g.uuid, g.name) for g in temba_instance.groups]  # updated by post-save signal handler
+            SAVE_GROUPS_ATTR: [(g.uuid, g.name) for g in temba_instance.groups],  # updated by post-save signal handler
+            SAVE_FIELDS_ATTR: temba_instance.fields
         }
+
+    def get_fields(self):
+        return {v.field.key: v.string_value for v in self.values.all()}
 
     def as_temba(self):
         """
@@ -85,8 +113,24 @@ class Contact(models.Model):
         """
         groups = [TembaObjectRef.create(uuid=g.uuid, name=g.name) for g in self.groups.all()]
 
-        return TembaContact.create(uuid=self.uuid, name=self.name, urns=[], groups=groups, fields=self.fields,
+        return TembaContact.create(uuid=self.uuid, name=self.name, urns=[], groups=groups, fields=self.get_fields(),
                                    language=self.language)
 
     def __str__(self):
         return self.name
+
+
+@python_2_unicode_compatible
+class Value(models.Model):
+    """
+    A custom contact field in RapidPro
+    """
+    contact = models.ForeignKey(Contact, related_name='values')
+
+    field = models.ForeignKey(Field)
+
+    string_value = models.TextField(max_length=640, null=True,
+                                    help_text="The string value or string representation of this value")
+
+    def __str__(self):
+        return self.string_value

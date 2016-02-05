@@ -5,7 +5,7 @@ import six
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from .models import Contact, Group, SAVE_GROUPS_ATTR
+from .models import Contact, Group, Field, Value, SAVE_GROUPS_ATTR, SAVE_FIELDS_ATTR
 
 
 @receiver(post_save, sender=Contact)
@@ -41,4 +41,24 @@ def update_contact_groups(sender, instance, created, **kwargs):
 
         instance.groups.add(*add_to_groups)
 
-    del instance.__data__groups
+    delattr(instance, SAVE_GROUPS_ATTR)
+
+
+@receiver(post_save, sender=Contact)
+def update_contact_fields(sender, instance, created, **kwargs):
+    """
+    Save signal handler to update the contact fields when fields are specified as attribute on contact object
+    """
+    if not hasattr(instance, SAVE_FIELDS_ATTR):
+        return
+
+    # TODO optimize !!!!
+
+    instance.values.all().delete()
+
+    for key, val in six.iteritems(getattr(instance, SAVE_FIELDS_ATTR)):
+        field = Field.get_or_create(instance.org, key)
+
+        Value.objects.create(contact=instance, field=field, string_value=val)
+
+    delattr(instance, SAVE_FIELDS_ATTR)
