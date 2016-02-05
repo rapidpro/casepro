@@ -18,7 +18,8 @@ def sync_pull_contacts(org, contact_class,
                        modified_after=None, modified_before=None,
                        inc_urns=True, groups=None, fields=None,
                        delete_blocked=False,
-                       select_related=(), prefetch_related=()):
+                       select_related=(), prefetch_related=(),
+                       progress_callback=None):
     """
     Pulls updated contacts or all contacts from RapidPro and syncs with local contacts.
     Contact class must define a class method called kwargs_from_temba which generates
@@ -34,6 +35,7 @@ def sync_pull_contacts(org, contact_class,
     :param bool delete_blocked: if True, delete the blocked contacts
     :param [str] select_related: select related fields when fetching local contacts
     :param [str] prefetch_related: prefetch related fields when fetching local contacts
+    :param * progress_callback: callable for tracking progress - called for each fetch with number of contacts fetched
     :return: tuple containing counts of created, updated, deleted and failed contacts
     """
     client = org.get_temba_client(api_version=2)
@@ -93,6 +95,9 @@ def sync_pull_contacts(org, contact_class,
 
                 contact_class.objects.create(**kwargs)
                 num_created += 1
+
+        if progress_callback:
+            progress_callback(len(incoming_batch))
 
     # now get all contacts deleted in the same time window
     deleted_query = client.get_contacts(deleted=True, after=modified_after, before=modified_before)
