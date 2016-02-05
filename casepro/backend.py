@@ -42,7 +42,6 @@ class RapidProBackend(BaseBackend):
                 modified_after=modified_after,
                 modified_before=modified_before,
                 inc_urns=False,
-                delete_blocked=True,
                 prefetch_related=('groups',),
                 progress_callback=progress_callback
         )

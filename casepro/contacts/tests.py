@@ -130,20 +130,24 @@ class ContactTest(BaseCasesTest):
         ]
 
         with self.assertNumQueries(14):
-            num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact,
+            num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
                                                                        prefetch_related=('groups',))
 
         self.assertEqual(num_created, 3)
         self.assertEqual(num_updated, 0)
         self.assertEqual(num_deleted, 0)
-        self.assertEqual(Contact.objects.count(), 3)
-        self.assertEqual(Contact.objects.filter(is_active=True).count(), 3)
+
+        bob = Contact.objects.get(uuid="C-001")
+        jim = Contact.objects.get(uuid="C-002")
+        ann = Contact.objects.get(uuid="C-003")
+
+        self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, jim, ann})
+        self.assertEqual(set(Contact.objects.filter(is_active=False)), set())
 
         # contact groups will have been created too
         customers = Group.objects.get(org=self.unicef, uuid="G-001", name="Customers", is_active=True)
         spammers = Group.objects.get(org=self.unicef, uuid="G-002", name="Spammers", is_active=True)
 
-        bob = Contact.objects.get(uuid="C-001")
         self.assertEqual(bob.name, "Bob McFlow")
         self.assertEqual(bob.language, "eng")
         self.assertEqual(set(bob.groups.all()), {customers})
@@ -156,7 +160,7 @@ class ContactTest(BaseCasesTest):
                     TembaContact.create(
                         uuid="C-001", name="Bob McFlough", language="fre", urns=["twitter:bobflow"],
                         groups=[TembaObjectRef.create(uuid="G-002", name="Spammers")],
-                        fields={'age': 35}, failed=True, blocked=False
+                        fields={'age': "35"}, failed=True, blocked=False
                     )
                 ]
             ),
@@ -172,20 +176,69 @@ class ContactTest(BaseCasesTest):
         ]
 
         with self.assertNumQueries(8):
-            num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact,
+            num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
                                                                        prefetch_related=('groups',))
 
         self.assertEqual(num_created, 0)
         self.assertEqual(num_updated, 1)
         self.assertEqual(num_deleted, 1)
-        self.assertEqual(Contact.objects.count(), 3)
-        self.assertEqual(Contact.objects.filter(is_active=True).count(), 2)
+
+        self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, ann})
+        self.assertEqual(set(Contact.objects.filter(is_active=False)), {jim})
 
         bob.refresh_from_db()
         self.assertEqual(bob.name, "Bob McFlough")
         self.assertEqual(bob.language, "fre")
         self.assertEqual(set(bob.groups.all()), {spammers})
         self.assertEqual(bob.fields, {'age': "35"})
+
+        mock_get_contacts.side_effect = [
+            # first call to get active contacts will return a contact with only a change to URNs.. which we don't track
+            MockClientQuery(
+                [
+                    TembaContact.create(
+                        uuid="C-001", name="Bob McFlough", language="fre", urns=["twitter:bobflow22"],
+                        groups=[TembaObjectRef.create(uuid="G-002", name="Spammers")],
+                        fields={'age': "35"}, failed=True, blocked=False
+                    )
+                ]
+            ),
+            MockClientQuery([])
+        ]
+
+        with self.assertNumQueries(2):
+            num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
+                                                                       prefetch_related=('groups',))
+        self.assertEqual(num_created, 0)
+        self.assertEqual(num_updated, 0)
+        self.assertEqual(num_deleted, 0)
+
+        self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, ann})
+        self.assertEqual(set(Contact.objects.filter(is_active=False)), {jim})
+
+        mock_get_contacts.side_effect = [
+            # first call to get active contacts will show one contact is now blocked
+            MockClientQuery(
+                [
+                    TembaContact.create(
+                        uuid="C-001", name="Bob McFlough", language="fre", urns=["twitter:bobflow"],
+                        groups=[TembaObjectRef.create(uuid="G-002", name="Spammers")],
+                        fields={'age': 35}, failed=True, blocked=True
+                    )
+                ]
+            ),
+            MockClientQuery([])
+        ]
+
+        with self.assertNumQueries(3):
+            num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact,
+                                                                       prefetch_related=('groups',))
+        self.assertEqual(num_created, 0)
+        self.assertEqual(num_updated, 0)
+        self.assertEqual(num_deleted, 1)  # blocked = deleted for us
+
+        self.assertEqual(set(Contact.objects.filter(is_active=True)), {ann})
+        self.assertEqual(set(Contact.objects.filter(is_active=False)), {bob, jim})
 
 
 class SyncTest(BaseCasesTest):

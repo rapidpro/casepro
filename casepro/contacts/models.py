@@ -67,6 +67,9 @@ class Contact(models.Model):
         """
         Derives kwargs from a Temba contact to either create a new contact instance or update and existing one.
         """
+        if temba_instance.blocked:  # we don't keep blocked contacts
+            return None
+
         return {
             'org': org,
             'uuid': temba_instance.uuid,

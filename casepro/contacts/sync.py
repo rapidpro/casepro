@@ -8,7 +8,7 @@ import logging
 import six
 
 from temba_client.v1.types import Contact as TembaContact
-from dash.utils import union, intersection, filter_dict
+from dash.utils import intersection, filter_dict
 
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 def sync_pull_contacts(org, contact_class,
                        modified_after=None, modified_before=None,
                        inc_urns=True, groups=None, fields=None,
-                       delete_blocked=False,
                        select_related=(), prefetch_related=(),
                        progress_callback=None):
     """
@@ -32,7 +31,6 @@ def sync_pull_contacts(org, contact_class,
     :param bool inc_urns: whether to compare URNs to determine if local contact differs
     :param [str] groups: the contact group UUIDs used - used to determine if local contact differs
     :param [str] fields: the contact field keys used - used to determine if local contact differs
-    :param bool delete_blocked: if True, delete the blocked contacts
     :param [str] select_related: select related fields when fetching local contacts
     :param [str] prefetch_related: prefetch related fields when fetching local contacts
     :param * progress_callback: callable for tracking progress - called for each fetch with number of contacts fetched
@@ -43,7 +41,7 @@ def sync_pull_contacts(org, contact_class,
     num_synced = 0
     num_created = 0
     num_updated = 0
-    deleted_uuids = []
+    num_deleted = 0
 
     active_query = client.get_contacts(after=modified_after, before=modified_before)
 
@@ -61,55 +59,60 @@ def sync_pull_contacts(org, contact_class,
         # organize by UUID
         existing_by_uuid = {c.uuid: c for c in existing_contacts}
 
+        # any from this batch that exist locally but now don't belong here due to model changes, e.g. blocked
+        invalid_existing_ids = []
+
         for incoming in incoming_batch:
-            # if blocked and we might consider it deleted locally
-            if incoming.blocked and delete_blocked:
-                deleted_uuids.append(incoming.uuid)
+            existing = existing_by_uuid.get(incoming.uuid)
+
+            # derive kwargs for the local contact model (none return here means don't keep)
+            incoming_kwargs = contact_class.kwargs_from_temba(org, incoming)
 
             # contact exists locally
-            elif incoming.uuid in existing_by_uuid:
-                existing = existing_by_uuid[incoming.uuid]
+            if existing:
                 existing.org = org  # saves pre-fetching since we already have the org
 
-                diff = temba_compare_contacts(incoming, existing.as_temba(), inc_urns, fields, groups)
+                if incoming_kwargs:
+                    diff = temba_compare_contacts(incoming, existing.as_temba(), inc_urns, fields, groups)
 
-                if diff or not existing.is_active:
-                    try:
-                        kwargs = contact_class.kwargs_from_temba(org, incoming)
-                    except ValueError:
-                        logger.warn("Unable to sync contact %s" % incoming.uuid)
-                        continue
+                    if diff or not existing.is_active:
+                        for field, value in six.iteritems(incoming_kwargs):
+                            setattr(existing, field, value)
 
-                    for field, value in six.iteritems(kwargs):
-                        setattr(existing, field, value)
+                        existing.is_active = True
+                        existing.save()
+                        num_updated += 1
 
-                    existing.is_active = True
-                    existing.save()
+                elif existing.is_active:
+                    invalid_existing_ids.append(existing.pk)
+                    num_deleted += 1
 
-                    num_updated += 1
-            else:
-                try:
-                    kwargs = contact_class.kwargs_from_temba(org, incoming)
-                except ValueError:
-                    logger.warn("Unable to sync contact %s" % incoming.uuid)
-                    continue
-
-                contact_class.objects.create(**kwargs)
+            elif incoming_kwargs:
+                contact_class.objects.create(**incoming_kwargs)
                 num_created += 1
+
+        # deactivate existing contacts who no longer belong here
+        contact_class.objects.filter(org=org, pk__in=invalid_existing_ids).update(is_active=False)
 
         num_synced += len(incoming_batch)
         if progress_callback:
             progress_callback(num_synced)
 
-    # now get all contacts deleted in the same time window
+    # now get all contacts deleted in RapidPro in the same time window
     deleted_query = client.get_contacts(deleted=True, after=modified_after, before=modified_before)
-    deleted_incoming = deleted_query.all(retry_on_rate_exceed=True)
 
     # any contact that has been deleted should also be deleted locally
-    for contact in deleted_incoming:
-        deleted_uuids.append(contact.uuid)
+    for deleted_batch in deleted_query.iterfetches(retry_on_rate_exceed=True):
+        deleted_uuids = [c.uuid for c in deleted_batch]
 
-    num_deleted = contact_class.objects.filter(org=org, uuid__in=deleted_uuids).update(is_active=False)
+        # which of these exist locally and are still active
+        existing_contacts = contact_class.objects.filter(org=org, uuid__in=deleted_uuids, is_active=True)
+
+        num_deleted += existing_contacts.update(is_active=False)
+
+        num_synced += len(deleted_batch)
+        if progress_callback:
+            progress_callback(num_synced)
 
     return num_created, num_updated, num_deleted
 
