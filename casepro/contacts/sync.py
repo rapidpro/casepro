@@ -14,18 +14,141 @@ from dash.utils import intersection, filter_dict
 logger = logging.getLogger(__name__)
 
 
-def sync_pull_contacts(org, contact_class,
+def sync_pull_groups(org, model):
+    """
+    Pull all contact groups from RapidPro and syncs with local groups.
+
+    :param * org:
+    :param type model: the local group model
+    :return: tuple containing counts of created, updated and deleted groups
+    """
+    client = org.get_temba_client(api_version=1)  # TODO switch to API v2
+
+    num_created = 0
+    num_updated = 0
+    num_deleted = 0
+
+    existing_by_uuid = {g.uuid: g for g in org.new_groups.all()}
+    synced_uuids = set()
+
+    # any that exist locally but shouldn't
+    invalid_existing_ids = []
+
+    for incoming in client.get_groups():
+        existing = existing_by_uuid.get(incoming.uuid)
+
+        # derive kwargs for the local group model (none return here means don't keep)
+        incoming_kwargs = model.kwargs_from_temba(org, incoming)
+
+        # group exists locally
+        if existing:
+            existing.org = org  # saves pre-fetching since we already have the org
+
+            if incoming_kwargs:
+                if existing.name != incoming.name or not existing.is_active:
+                    for field, value in six.iteritems(incoming_kwargs):
+                        setattr(existing, field, value)
+
+                    existing.is_active = True
+                    existing.save()
+                    num_updated += 1
+
+            elif existing.is_active:
+                invalid_existing_ids.append(existing.pk)
+                num_deleted += 1
+
+        elif incoming_kwargs:
+            model.objects.create(**incoming_kwargs)
+            num_created += 1
+
+        synced_uuids.add(incoming.uuid)
+
+    # existing groups which don't exist remotely need to be deleted
+    for existing in existing_by_uuid.values():
+        if existing.uuid not in synced_uuids:
+            invalid_existing_ids.append(existing.pk)
+            num_deleted += 1
+
+    # deactivate existing groups who no longer belong here
+    if invalid_existing_ids:
+        model.objects.filter(org=org, pk__in=invalid_existing_ids).update(is_active=False)
+
+    return num_created, num_updated, num_deleted
+
+
+def sync_pull_fields(org, model):
+    """
+    Pull all contact fields from RapidPro and syncs with local fields.
+
+    :param * org:
+    :param type model: the local field model
+    :return: tuple containing counts of created, updated and deleted fields
+    """
+    client = org.get_temba_client(api_version=1)  # TODO switch to API v2
+
+    num_created = 0
+    num_updated = 0
+    num_deleted = 0
+
+    existing_by_key = {f.key: f for f in org.fields.all()}
+    synced_keys = set()
+
+    # any that exist locally but shouldn't
+    invalid_existing_ids = []
+
+    for incoming in client.get_fields():
+        existing = existing_by_key.get(incoming.key)
+
+        # derive kwargs for the local field model (none return here means don't keep)
+        incoming_kwargs = model.kwargs_from_temba(org, incoming)
+
+        # field exists locally
+        if existing:
+            existing.org = org  # saves pre-fetching since we already have the org
+
+            if incoming_kwargs:
+                if existing.label != incoming.label or existing.value_type != incoming.value_type or not existing.is_active:
+                    for field, value in six.iteritems(incoming_kwargs):
+                        setattr(existing, field, value)
+
+                    existing.is_active = True
+                    existing.save()
+                    num_updated += 1
+
+            elif existing.is_active:
+                invalid_existing_ids.append(existing.pk)
+                num_deleted += 1
+
+        elif incoming_kwargs:
+            model.objects.create(**incoming_kwargs)
+            num_created += 1
+
+        synced_keys.add(incoming.key)
+
+    # existing fields which don't exist remotely need to be deleted
+    for existing in existing_by_key.values():
+        if existing.key not in synced_keys:
+            invalid_existing_ids.append(existing.pk)
+            num_deleted += 1
+
+    # deactivate existing fields who no longer belong here
+    if invalid_existing_ids:
+        model.objects.filter(org=org, pk__in=invalid_existing_ids).update(is_active=False)
+
+    return num_created, num_updated, num_deleted
+
+
+def sync_pull_contacts(org, model,
                        modified_after=None, modified_before=None,
                        inc_urns=True, groups=None, fields=None,
                        select_related=(), prefetch_related=(),
                        progress_callback=None):
     """
-    Pulls updated contacts or all contacts from RapidPro and syncs with local contacts.
-    Contact class must define a class method called kwargs_from_temba which generates
-    field kwargs from a fetched temba contact.
+    Pull modified contacts from RapidPro and syncs with local contacts. Contact class must define a class method called
+    `kwargs_from_temba` which generates field kwargs from a fetched temba contact.
 
     :param * org: the org
-    :param type contact_class: the contact class type
+    :param type model: the local contact model
     :param * modified_after: the last time we pulled contacts, if None, sync all contacts
     :param * modified_before: the last time we pulled contacts, if None, sync all contacts
     :param bool inc_urns: whether to compare URNs to determine if local contact differs
@@ -34,7 +157,7 @@ def sync_pull_contacts(org, contact_class,
     :param [str] select_related: select related fields when fetching local contacts
     :param [str] prefetch_related: prefetch related fields when fetching local contacts
     :param * progress_callback: callable for tracking progress - called for each fetch with number of contacts fetched
-    :return: tuple containing counts of created, updated, deleted and failed contacts
+    :return: tuple containing counts of created, updated and deleted contacts
     """
     client = org.get_temba_client(api_version=2)
 
@@ -49,7 +172,7 @@ def sync_pull_contacts(org, contact_class,
         incoming_uuids = [c.uuid for c in incoming_batch]
 
         # get all existing contacts with these UUIDs
-        existing_contacts = contact_class.objects.filter(org=org, uuid__in=incoming_uuids)
+        existing_contacts = model.objects.filter(org=org, uuid__in=incoming_uuids)
 
         if select_related:
             existing_contacts = existing_contacts.select_related(*select_related)
@@ -66,7 +189,7 @@ def sync_pull_contacts(org, contact_class,
             existing = existing_by_uuid.get(incoming.uuid)
 
             # derive kwargs for the local contact model (none return here means don't keep)
-            incoming_kwargs = contact_class.kwargs_from_temba(org, incoming)
+            incoming_kwargs = model.kwargs_from_temba(org, incoming)
 
             # contact exists locally
             if existing:
@@ -88,11 +211,11 @@ def sync_pull_contacts(org, contact_class,
                     num_deleted += 1
 
             elif incoming_kwargs:
-                contact_class.objects.create(**incoming_kwargs)
+                model.objects.create(**incoming_kwargs)
                 num_created += 1
 
         # deactivate existing contacts who no longer belong here
-        contact_class.objects.filter(org=org, pk__in=invalid_existing_ids).update(is_active=False)
+        model.objects.filter(org=org, pk__in=invalid_existing_ids).update(is_active=False)
 
         num_synced += len(incoming_batch)
         if progress_callback:
@@ -106,7 +229,7 @@ def sync_pull_contacts(org, contact_class,
         deleted_uuids = [c.uuid for c in deleted_batch]
 
         # which of these exist locally and are still active
-        existing_contacts = contact_class.objects.filter(org=org, uuid__in=deleted_uuids, is_active=True)
+        existing_contacts = model.objects.filter(org=org, uuid__in=deleted_uuids, is_active=True)
 
         num_deleted += existing_contacts.update(is_active=False)
 

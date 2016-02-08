@@ -28,6 +28,17 @@ class Group(models.Model):
     def create(cls, org, uuid, name):
         return cls.objects.create(org=org, uuid=uuid, name=name)
 
+    @classmethod
+    def kwargs_from_temba(cls, org, temba_instance):
+        """
+        Derives kwargs from a Temba group to either create a new group instance or update and existing one.
+        """
+        return {
+            'org': org,
+            'uuid': temba_instance.uuid,
+            'name': temba_instance.name,
+        }
+
     def __str__(self):
         return self.name
 
@@ -37,11 +48,21 @@ class Field(models.Model):
     """
     A custom contact field in RapidPro
     """
+    TYPE_TEXT = 'T'
+    TYPE_DECIMAL = 'N'
+    TYPE_DATETIME = 'D'
+    TYPE_STATE = 'S'
+    TYPE_DISTRICT = 'I'
+
     org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name="fields")
 
     key = models.CharField(verbose_name=_("Key"), max_length=36)
 
     label = models.CharField(verbose_name=_("Label"), max_length=36, null=True)
+
+    value_type = models.CharField(verbose_name=_("Value data type"), max_length=1)
+
+    is_active = models.BooleanField(default=True, help_text="Whether this field is active")
 
     @classmethod
     def get_or_create(cls, org, key, label=None):
@@ -50,6 +71,18 @@ class Field(models.Model):
             return existing
 
         return cls.objects.create(org=org, key=key, label=label)
+
+    @classmethod
+    def kwargs_from_temba(cls, org, temba_instance):
+        """
+        Derives kwargs from a Temba field to either create a new field instance or update and existing one.
+        """
+        return {
+            'org': org,
+            'key': temba_instance.key,
+            'label': temba_instance.label,
+            'value_type': temba_instance.value_type,  # TODO add mapping when switching to API v2
+        }
 
     def __str__(self):
         return self.key

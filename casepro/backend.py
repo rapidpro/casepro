@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from abc import ABCMeta, abstractmethod
-from casepro.contacts.models import Contact
 from django.conf import settings
 from pydoc import locate
 
@@ -31,10 +30,29 @@ class BaseBackend(object):
         """
         pass
 
+    @abstractmethod
+    def pull_groups(self, org):
+        """
+        Pulls all contact groups
+        :param org: the org
+        :return: tuple of the number of groups created, updated and deleted
+        """
+        pass
+
+    @abstractmethod
+    def pull_fields(self, org):
+        """
+        Pulls all contact fields
+        :param org: the org
+        :return: tuple of the number of fields created, updated and deleted
+        """
+        pass
+
 
 class RapidProBackend(BaseBackend):
 
     def pull_contacts(self, org, modified_after, modified_before, progress_callback=None):
+        from casepro.contacts.models import Contact
         from casepro.contacts.sync import sync_pull_contacts  # will move to Dash
 
         return sync_pull_contacts(
@@ -45,3 +63,15 @@ class RapidProBackend(BaseBackend):
                 prefetch_related=('groups', 'values__field'),
                 progress_callback=progress_callback
         )
+
+    def pull_groups(self, org):
+        from casepro.contacts.models import Group
+        from casepro.contacts.sync import sync_pull_groups  # will move to Dash
+
+        return sync_pull_groups(org, Group)
+
+    def pull_fields(self, org):
+        from casepro.contacts.models import Field
+        from casepro.contacts.sync import sync_pull_fields  # will move to Dash
+
+        return sync_pull_fields(org, Field)

@@ -7,9 +7,10 @@ import six
 from casepro.test import BaseCasesTest
 from django.utils import timezone
 from mock import patch
+from temba_client.v1.types import Group as TembaGroup, Field as TembaField
 from temba_client.v2.types import Contact as TembaContact, ObjectRef as TembaObjectRef
-from .models import Contact, Group
-from .sync import sync_pull_contacts, temba_compare_contacts, temba_merge_contacts
+from .models import Contact, Group, Field
+from .sync import sync_pull_groups, sync_pull_fields, sync_pull_contacts, temba_compare_contacts, temba_merge_contacts
 
 
 class MockClientQuery(six.Iterator):
@@ -109,8 +110,69 @@ class ContactTest(BaseCasesTest):
 
         self.assertEqual(set(contact.groups.all()), {spammers, boffins})
 
+
+class SyncTest(BaseCasesTest):
+
+    @patch('dash.orgs.models.TembaClient1.get_groups')
+    def test_sync_pull_groups(self, mock_get_groups):
+        mock_get_groups.return_value = [
+            TembaGroup.create(uuid="G-001", name="Customers", size=45),
+            TembaGroup.create(uuid="G-002", name="Developers", size=32),
+        ]
+
+        with self.assertNumQueries(3):
+            num_created, num_updated, num_deleted = sync_pull_groups(self.unicef, Group)
+
+        self.assertEqual((num_created, num_updated, num_deleted), (2, 0, 0))
+
+        Group.objects.get(uuid="G-001", name="Customers", is_active=True)
+        Group.objects.get(uuid="G-002", name="Developers", is_active=True)
+
+        mock_get_groups.return_value = [
+            TembaGroup.create(uuid="G-002", name="Devs", size=32),
+            TembaGroup.create(uuid="G-003", name="Spammers", size=13),
+        ]
+
+        with self.assertNumQueries(4):
+            num_created, num_updated, num_deleted = sync_pull_groups(self.unicef, Group)
+
+        self.assertEqual((num_created, num_updated, num_deleted), (1, 1, 1))
+
+        Group.objects.get(uuid="G-001", name="Customers", is_active=False)
+        Group.objects.get(uuid="G-002", name="Devs", is_active=True)
+        Group.objects.get(uuid="G-003", name="Spammers", is_active=True)
+
+    @patch('dash.orgs.models.TembaClient1.get_fields')
+    def test_sync_pull_fields(self, mock_get_fields):
+        mock_get_fields.return_value = [
+            TembaField.create(key="nick_name", label="Nickname", value_type="T"),
+            TembaField.create(key="age", label="Age", value_type="N"),
+        ]
+
+        with self.assertNumQueries(3):
+            num_created, num_updated, num_deleted = sync_pull_fields(self.unicef, Field)
+
+        self.assertEqual((num_created, num_updated, num_deleted), (2, 0, 0))
+
+        Field.objects.get(key="nick_name", label="Nickname", value_type="T", is_active=True)
+        Field.objects.get(key="age", label="Age", value_type="N", is_active=True)
+
+        mock_get_fields.return_value = [
+            TembaField.create(key="age", label="Age (Years)", value_type="N"),
+            TembaField.create(key="homestate", label="Homestate", value_type="S"),
+        ]
+
+        with self.assertNumQueries(4):
+            num_created, num_updated, num_deleted = sync_pull_fields(self.unicef, Field)
+
+        self.assertEqual((num_created, num_updated, num_deleted), (1, 1, 1))
+
+        Field.objects.get(key="nick_name", label="Nickname", value_type="T", is_active=False)
+        Field.objects.get(key="age", label="Age (Years)", value_type="N", is_active=True)
+        Field.objects.get(key="homestate", label="Homestate", value_type="S", is_active=True)
+
     @patch('dash.orgs.models.TembaClient2.get_contacts')
-    def test_sync_pull(self, mock_get_contacts):
+    def test_sync_pull_contacts(self, mock_get_contacts):
         mock_get_contacts.side_effect = [
             # first call to get active contacts will return two fetches of 2 and 1 contacts
             MockClientQuery(
@@ -149,9 +211,7 @@ class ContactTest(BaseCasesTest):
             num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
                                                                        prefetch_related=('groups',))
 
-        self.assertEqual(num_created, 3)
-        self.assertEqual(num_updated, 0)
-        self.assertEqual(num_deleted, 0)
+        self.assertEqual((num_created, num_updated, num_deleted), (3, 0, 0))
 
         bob = Contact.objects.get(uuid="C-001")
         jim = Contact.objects.get(uuid="C-002")
@@ -195,9 +255,7 @@ class ContactTest(BaseCasesTest):
             num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
                                                                        prefetch_related=('groups',))
 
-        self.assertEqual(num_created, 0)
-        self.assertEqual(num_updated, 1)
-        self.assertEqual(num_deleted, 1)
+        self.assertEqual((num_created, num_updated, num_deleted), (0, 1, 1))
 
         self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, ann})
         self.assertEqual(set(Contact.objects.filter(is_active=False)), {jim})
@@ -225,9 +283,7 @@ class ContactTest(BaseCasesTest):
         with self.assertNumQueries(4):
             num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
                                                                        prefetch_related=('groups',))
-        self.assertEqual(num_created, 0)
-        self.assertEqual(num_updated, 0)
-        self.assertEqual(num_deleted, 0)
+        self.assertEqual((num_created, num_updated, num_deleted), (0, 0, 0))
 
         self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, ann})
         self.assertEqual(set(Contact.objects.filter(is_active=False)), {jim})
@@ -249,15 +305,12 @@ class ContactTest(BaseCasesTest):
         with self.assertNumQueries(3):
             num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact,
                                                                        prefetch_related=('groups',))
-        self.assertEqual(num_created, 0)
-        self.assertEqual(num_updated, 0)
-        self.assertEqual(num_deleted, 1)  # blocked = deleted for us
+
+        self.assertEqual((num_created, num_updated, num_deleted), (0, 0, 1))  # blocked = deleted for us
 
         self.assertEqual(set(Contact.objects.filter(is_active=True)), {ann})
         self.assertEqual(set(Contact.objects.filter(is_active=False)), {bob, jim})
 
-
-class SyncTest(BaseCasesTest):
     def test_temba_compare_contacts(self):
         group1 = TembaObjectRef.create(uuid='000-001', name="Customers")
         group2 = TembaObjectRef.create(uuid='000-002', name="Spammers")
