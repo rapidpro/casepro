@@ -53,7 +53,7 @@ class RapidProBackend(BaseBackend):
 
     def pull_contacts(self, org, modified_after, modified_before, progress_callback=None):
         from casepro.contacts.models import Contact
-        from casepro.contacts.sync import sync_pull_contacts  # will move to Dash
+        from casepro.dash_ext.sync import sync_pull_contacts
 
         return sync_pull_contacts(
                 org, Contact,
@@ -66,12 +66,12 @@ class RapidProBackend(BaseBackend):
 
     def pull_groups(self, org):
         from casepro.contacts.models import Group
-        from casepro.contacts.sync import sync_pull_groups  # will move to Dash
+        from casepro.dash_ext.sync import sync_pull_groups
 
         return sync_pull_groups(org, Group)
 
     def pull_fields(self, org):
         from casepro.contacts.models import Field
-        from casepro.contacts.sync import sync_pull_fields  # will move to Dash
+        from casepro.dash_ext.sync import sync_pull_fields
 
         return sync_pull_fields(org, Field)

@@ -1,14 +1,14 @@
 from __future__ import unicode_literals
 
 """
-Contact sync support. This will eventually replace the sync stuff in Dash when API v2 is stable.
+Sync support for contacts, groups and fields
 """
 
 import logging
 import six
 
-from temba_client.v1.types import Contact as TembaContact
 from dash.utils import intersection, filter_dict
+from temba_client.v1.types import Contact as TembaContact
 
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ def sync_pull_groups(org, model):
     num_updated = 0
     num_deleted = 0
 
-    existing_by_uuid = {g.uuid: g for g in org.new_groups.all()}
+    existing_by_uuid = {g.uuid: g for g in model.objects.filter(org=org)}
     synced_uuids = set()
 
     # any that exist locally but shouldn't
@@ -90,7 +90,7 @@ def sync_pull_fields(org, model):
     num_updated = 0
     num_deleted = 0
 
-    existing_by_key = {f.key: f for f in org.fields.all()}
+    existing_by_key = {f.key: f for f in model.objects.filter(org=org)}
     synced_keys = set()
 
     # any that exist locally but shouldn't
