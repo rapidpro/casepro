@@ -1,23 +1,23 @@
 from __future__ import absolute_import, unicode_literals
 
+from casepro.contacts.models import Group
 from casepro.orgs_ext.models import TaskState
 from dash.orgs.models import Org
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
-from dash.utils import get_obj_cacheable
 from django import forms
 from django.core.cache import cache
 from django.core.files.storage import default_storage
 from django.core.urlresolvers import reverse
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest, JsonResponse
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
 from enum import Enum
-from smartmin.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView, SmartFormView
+from smartmin.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView
 from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
 from . import parse_csv, json_encode, normalize, str_to_bool, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
-from .models import AccessLevel, Case, Group, Label, RemoteMessage, MessageAction, MessageExport, Partner, Outgoing
+from .models import AccessLevel, Case, Label, RemoteMessage, MessageAction, MessageExport, Partner, Outgoing
 from .tasks import message_export
 from .utils import datetime_to_microseconds, microseconds_to_datetime
 
@@ -254,54 +254,6 @@ class CaseCRUDL(SmartCRUDL):
 
         def render_to_response(self, context, **response_kwargs):
             return JsonResponse({'results': context['timeline'], 'max_time': context['max_time']})
-
-
-class GroupCRUDL(SmartCRUDL):
-    model = Group
-    actions = ('list', 'select')
-
-    class List(OrgPermsMixin, SmartListView):
-        fields = ('name', 'contacts')
-        default_order = ('name',)
-
-        def derive_queryset(self, **kwargs):
-            return Group.get_all(self.request.org)
-
-        def get_contacts(self, obj):
-            group_sizes = get_obj_cacheable(self, '_group_sizes',
-                                            lambda: Group.fetch_sizes(self.request.org, self.derive_queryset()))
-            return group_sizes[obj]
-
-    class Select(OrgPermsMixin, SmartFormView):
-        class GroupsForm(forms.Form):
-            groups = forms.MultipleChoiceField(choices=(), label=_("Groups"),
-                                               help_text=_("Contact groups to be used as filter groups."))
-
-            def __init__(self, *args, **kwargs):
-                org = kwargs['org']
-                del kwargs['org']
-                super(GroupCRUDL.Select.GroupsForm, self).__init__(*args, **kwargs)
-
-                groups = sorted(org.get_temba_client().get_groups(), key=lambda g: g.name.lower())
-                choices = [(group.uuid, "%s (%d)" % (group.name, group.size)) for group in groups]
-
-                self.fields['groups'].choices = choices
-                self.fields['groups'].initial = [group.uuid for group in Group.get_all(org)]
-
-        title = _("Filter Groups")
-        form_class = GroupsForm
-        success_url = '@cases.group_list'
-        submit_button_name = _("Update")
-        success_message = _("Updated contact groups to use as filter groups")
-
-        def get_form_kwargs(self):
-            kwargs = super(GroupCRUDL.Select, self).get_form_kwargs()
-            kwargs['org'] = self.request.user.get_org()
-            return kwargs
-
-        def form_valid(self, form):
-            Group.update_groups(self.request.org, form.cleaned_data['groups'])
-            return HttpResponseRedirect(self.get_success_url())
 
 
 class LabelForm(forms.ModelForm):
@@ -699,7 +651,7 @@ class BaseHomeView(OrgPermsMixin, SmartTemplateView):
 
         labels = Label.get_all(org, user).order_by('name')
         partners = Partner.get_all(org).order_by('name')
-        groups = Group.get_all(org).order_by('name')
+        groups = Group.get_all(org, visible=True).order_by('name')
 
         # angular app requires context data in JSON format
         context['context_data_json'] = json_encode({

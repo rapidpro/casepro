@@ -26,9 +26,18 @@ class Group(models.Model):
 
     is_active = models.BooleanField(default=True, help_text=_("Whether this group is active"))
 
+    is_visible = models.BooleanField(default=False, help_text=_("Whether this group is visible to partner users"))
+
     @classmethod
     def create(cls, org, uuid, name):
         return cls.objects.create(org=org, uuid=uuid, name=name)
+
+    @classmethod
+    def get_all(cls, org, visible=None):
+        qs = cls.objects.filter(org=org, is_active=True)
+        if visible is not None:
+            qs = qs.filter(is_visible=visible)
+        return qs
 
     @classmethod
     def sync_get_kwargs(cls, org, temba_instance):
@@ -45,6 +54,9 @@ class Group(models.Model):
 
     def sync_update_required(self, temba_instance):
         return not self.is_active or self.name != temba_instance.name or self.count != temba_instance.size
+
+    def as_json(self):
+        return {'id': self.pk, 'uuid': self.uuid, 'name': self.name, 'count': self.count}
 
     def __str__(self):
         return self.name

@@ -514,56 +514,6 @@ class ContactTest(BaseCasesTest):
         self.assertEqual(contact.as_json(fetch_fields=True), {'uuid': 'C-001', 'fields': {'age': 32, 'gender': "M"}})
 
 
-class GroupTest(BaseCasesTest):
-    def test_create(self):
-        mothers = Group.create(self.unicef, "Mothers", 'G-004')
-        self.assertEqual(mothers.name, "Mothers")
-        self.assertEqual(mothers.uuid, 'G-004')
-        self.assertEqual(unicode(mothers), "Mothers")
-        self.assertEqual(mothers.as_json(), {'id': mothers.pk, 'name': "Mothers", 'uuid': mothers.uuid})
-
-    def test_get_all(self):
-        self.assertEqual(set(Group.get_all(self.unicef)), {self.males, self.females})
-
-        # shouldn't include inactive groups
-        testers = self.create_group(self.nyaruka, 'Testers', 'G-004')
-        testers.is_active = False
-        testers.save()
-        self.assertEqual(set(Group.get_all(self.nyaruka)), {self.coders})
-
-    @patch('dash.orgs.models.TembaClient1.get_groups')
-    def test_fetch_sizes(self, mock_get_groups):
-        mock_get_groups.return_value = [
-            TembaGroup.create(name="Females", uuid='G-002', size=23)
-        ]
-        # group count is zero if group not found in RapidPro
-        self.assertEqual(Group.fetch_sizes(self.unicef, [self.males, self.females]), {self.males: 0, self.females: 23})
-
-        mock_get_groups.assert_called_once_with(uuids=['G-001', 'G-002'])
-        mock_get_groups.reset_mock()
-        
-        # shouldn't call RapidPro API if there are no groups
-        Group.fetch_sizes(self.unicef, [])
-        self.assertEqual(mock_get_groups.call_count, 0)
-
-    @patch('dash.orgs.models.TembaClient1.get_groups')
-    def test_update_groups(self, mock_get_groups):
-        mock_get_groups.return_value = [
-            TembaGroup.create(name="Females", uuid='G-002', size=23),
-            TembaGroup.create(name="Farmers", uuid='G-078', size=89)
-        ]
-        Group.update_groups(self.unicef, ['G-002', 'G-078'])
-
-        self.assertFalse(Group.objects.get(pk=self.males.pk).is_active)  # de-activated
-
-        farmers = Group.objects.get(uuid='G-078')  # new group created
-        self.assertEqual(farmers.org, self.unicef)
-        self.assertEqual(farmers.name, "Farmers")
-        self.assertTrue(farmers.is_active)
-
-        mock_get_groups.assert_called_once_with(uuids=['G-002', 'G-078'])
-
-
 class HomeViewsTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient1.get_labels')
     def test_inbox(self, mock_get_labels):

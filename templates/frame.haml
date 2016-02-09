@@ -98,9 +98,9 @@
                           %a{ href:"{% url 'cases.label_list' %}" }
                             - trans "Labels"
 
-                      - if perms.cases.group_list or org_perms.cases.group_list
+                      - if perms.contacts.group_list or org_perms.contacts.group_list
                         %li
-                          %a{ href:"{% url 'cases.group_list' %}" }
+                          %a{ href:"{% url 'contacts.group_list' %}" }
                             - trans "Groups"
 
                       - if perms.profiles.profile_user_list or org_perms.profiles.profile_user_list

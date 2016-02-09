@@ -5,10 +5,10 @@
   .clearfix
     .pull-back
       - blocktrans
-        Each filter group is a contact group in RapidPro.
+        These are the groups visible to partner organizations.
 
     .pull-away.buttons
-      - if perms.cases.group_select or org_perms.cases.group_select
-        %a.btn.btn-default.pull-right{ href:"{% url 'cases.group_select' %}" }
+      - if perms.contacts.group_select or org_perms.contacts.group_select
+        %a.btn.btn-default.pull-right{ href:"{% url 'contacts.group_select' %}" }
           %span.glyphicon.glyphicon-check
           - trans "Select Groups"

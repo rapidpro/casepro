@@ -304,13 +304,13 @@ PERMISSIONS = {
 
     'cases.case': ('create', 'read', 'update', 'list'),
 
-    'cases.group': ('select', 'list'),
-
     'cases.messageexport': ('create', 'read'),
 
     'cases.label': ('create', 'update', 'list', 'unlabelled'),
 
     'cases.partner': ('create', 'read', 'delete', 'list'),
+
+    'contacts.group': ('select', 'list'),
 
     # can't create profiles.user.* permissions because we don't own User
     'profiles.profile': ('user_create', 'user_read', 'user_list'),
@@ -324,10 +324,10 @@ GROUP_PERMISSIONS = {
         'orgs.org_inbox',
 
         'cases.case.*',
-        'cases.group.*',
         'cases.messageexport.*',
         'cases.label.*',
         'cases.partner.*',
+        'contacts.group.*',
         'profiles.profile.*',
     ),
     "Editors": (
