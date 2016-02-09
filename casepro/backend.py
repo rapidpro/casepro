@@ -63,7 +63,7 @@ class BaseBackend(object):
 
 class RapidProBackend(BaseBackend):
     """
-    RapidPro instance backend
+    RapidPro instance as a backend
     """
     def pull_contacts(self, org, modified_after, modified_before, progress_callback=None):
         from casepro.contacts.models import Contact
@@ -93,20 +93,15 @@ class RapidProBackend(BaseBackend):
     def pull_and_label_messages(self, org, received_after, received_before, progress_callback=None):
         from casepro.cases.models import RemoteMessage
 
-        client = org.get_temba_client(api_version=1)
+        client = org.get_temba_client(api_version=2)
 
         num_messages = 0
         num_labelled = 0
 
-        # grab all un-processed unsolicited messages
-        pager = client.pager()
-        while True:
-            messages = client.get_messages(direction='I', _types=['I'], archived=False,
-                                           after=received_after, before=received_before, pager=pager)
-            num_messages += len(messages)
-            num_labelled += RemoteMessage.process_unsolicited(org, messages)
+        inbox_query = client.get_messages(folder='inbox', after=received_after, before=received_before)
 
-            if not pager.has_more():
-                break
+        for incoming_batch in inbox_query.iterfetches(retry_on_rate_exceed=True):
+            num_messages += len(incoming_batch)
+            num_labelled += RemoteMessage.process_unsolicited(org, incoming_batch)
 
         return num_messages, num_labelled

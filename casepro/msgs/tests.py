@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from casepro.cases.models import Case, CaseEvent, Contact
+from casepro.dash_ext.tests import MockClientQuery
 from casepro.test import BaseCasesTest
 from datetime import datetime, timedelta
 from django.utils import timezone
@@ -10,7 +11,7 @@ from .tasks import pull_messages
 
 
 class TasksTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient1.get_messages')
+    @patch('dash.orgs.models.TembaClient2.get_messages')
     @patch('dash.orgs.models.TembaClient1.label_messages')
     @patch('dash.orgs.models.TembaClient1.archive_messages')
     def test_pull_messages(self, mock_archive_messages, mock_label_messages, mock_get_messages):
@@ -24,7 +25,9 @@ class TasksTest(BaseCasesTest):
         msg3 = TembaMessage.create(id=103, contact='C-003', text="I think I'm pregnant", created_on=d3)
         msg4 = TembaMessage.create(id=104, contact='C-004', text="Php is amaze", created_on=d4)
         msg5 = TembaMessage.create(id=105, contact='C-005', text="Thanks for the pregnancy/HIV info", created_on=d5)
-        mock_get_messages.return_value = [msg1, msg2, msg3, msg4, msg5]
+        mock_get_messages.side_effect = [
+            MockClientQuery([msg1, msg2, msg3, msg4, msg5])
+        ]
 
         # contact 5 has a case open that day
         d1 = datetime(2014, 1, 1, 5, 0, tzinfo=timezone.utc)
