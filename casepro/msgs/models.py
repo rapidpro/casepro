@@ -15,7 +15,7 @@ class Message(models.Model):
 
     TYPE_CHOICES = ((TYPE_INBOX, _("Inbox")), (TYPE_FLOW, _("Flow")))
 
-    org = models.ForeignKey(Org, related_name='messages', verbose_name=_("Org"))
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='incoming_messages')
 
     contact = models.ForeignKey('contacts.Contact')
 
@@ -26,6 +26,8 @@ class Message(models.Model):
     is_archived = models.BooleanField(default=False)
 
     created_on = models.DateTimeField()
+
+    case = models.ForeignKey('cases.Case', null=True, related_name="incoming_messages")
 
 
 class Outgoing(models.Model):

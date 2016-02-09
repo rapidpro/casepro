@@ -397,6 +397,10 @@ CELERYBEAT_SCHEDULE = {
         'schedule': crontab(minute=[5, 15, 25, 35, 45, 55]),
         'args': ('casepro.contacts.tasks.pull_contacts', 'sync')
     },
+    'delete-old-incoming': {
+        'task': 'casepro.msgs.tasks.delete_old_messages',
+        'schedule': crontab(minute=0, hour=0)  # every midnight
+    },
 }
 
 CELERY_TIMEZONE = 'UTC'
