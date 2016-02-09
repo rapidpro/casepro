@@ -20,16 +20,18 @@ class Group(models.Model):
 
     name = models.CharField(max_length=64)
 
-    is_active = models.BooleanField(default=True, help_text="Whether this group is active")
+    count = models.IntegerField(null=True)
 
     created_on = models.DateTimeField(auto_now_add=True, help_text=_("When this group was created"))
+
+    is_active = models.BooleanField(default=True, help_text=_("Whether this group is active"))
 
     @classmethod
     def create(cls, org, uuid, name):
         return cls.objects.create(org=org, uuid=uuid, name=name)
 
     @classmethod
-    def kwargs_from_temba(cls, org, temba_instance):
+    def sync_get_kwargs(cls, org, temba_instance):
         """
         Derives kwargs from a Temba group to either create a new group instance or update and existing one.
         """
@@ -37,7 +39,12 @@ class Group(models.Model):
             'org': org,
             'uuid': temba_instance.uuid,
             'name': temba_instance.name,
+            'count': temba_instance.size,  # TODO change to count for API v2
+            'is_active': True
         }
+
+    def sync_update_required(self, temba_instance):
+        return not self.is_active or self.name != temba_instance.name or self.count != temba_instance.size
 
     def __str__(self):
         return self.name

@@ -131,8 +131,8 @@ class SyncTest(BaseCasesTest):
 
         self.assertEqual((num_created, num_updated, num_deleted), (2, 0, 0))
 
-        Group.objects.get(uuid="G-001", name="Customers", is_active=True)
-        Group.objects.get(uuid="G-002", name="Developers", is_active=True)
+        Group.objects.get(uuid="G-001", name="Customers", count=45, is_active=True)
+        Group.objects.get(uuid="G-002", name="Developers", count=32, is_active=True)
 
         mock_get_groups.return_value = [
             TembaGroup.create(uuid="G-002", name="Devs", size=32),
@@ -144,9 +144,9 @@ class SyncTest(BaseCasesTest):
 
         self.assertEqual((num_created, num_updated, num_deleted), (1, 1, 1))
 
-        Group.objects.get(uuid="G-001", name="Customers", is_active=False)
-        Group.objects.get(uuid="G-002", name="Devs", is_active=True)
-        Group.objects.get(uuid="G-003", name="Spammers", is_active=True)
+        Group.objects.get(uuid="G-001", name="Customers", count=45, is_active=False)
+        Group.objects.get(uuid="G-002", name="Devs", count=32, is_active=True)
+        Group.objects.get(uuid="G-003", name="Spammers", count=13, is_active=True)
 
     @patch('dash.orgs.models.TembaClient1.get_fields')
     def test_sync_pull_fields(self, mock_get_fields):

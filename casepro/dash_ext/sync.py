@@ -38,18 +38,17 @@ def sync_pull_groups(org, model):
         existing = existing_by_uuid.get(incoming.uuid)
 
         # derive kwargs for the local group model (none return here means don't keep)
-        incoming_kwargs = model.kwargs_from_temba(org, incoming)
+        incoming_kwargs = model.sync_get_kwargs(org, incoming)
 
         # group exists locally
         if existing:
             existing.org = org  # saves pre-fetching since we already have the org
 
             if incoming_kwargs:
-                if existing.name != incoming.name or not existing.is_active:
+                if existing.sync_update_required(incoming):
                     for field, value in six.iteritems(incoming_kwargs):
                         setattr(existing, field, value)
 
-                    existing.is_active = True
                     existing.save()
                     num_updated += 1
 
