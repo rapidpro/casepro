@@ -1,6 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
-from casepro.orgs_ext.tasks import org_task
+from casepro.dash_ext.tasks import org_task
 from celery.utils.log import get_task_logger
 from datetime import timedelta
 from djcelery_transactions import task

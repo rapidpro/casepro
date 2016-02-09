@@ -60,7 +60,7 @@ class Field(models.Model):
 
     label = models.CharField(verbose_name=_("Label"), max_length=36, null=True)
 
-    value_type = models.CharField(verbose_name=_("Value data type"), max_length=1)
+    value_type = models.CharField(verbose_name=_("Value data type"), max_length=1, default=TYPE_TEXT)
 
     is_active = models.BooleanField(default=True, help_text="Whether this field is active")
 

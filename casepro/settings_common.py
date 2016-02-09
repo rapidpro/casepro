@@ -387,12 +387,12 @@ CELERY_RESULT_BACKEND = BROKER_URL
 
 CELERYBEAT_SCHEDULE = {
     'message-pull': {
-        'task': 'casepro.orgs_ext.tasks.trigger_org_task',
+        'task': 'casepro.dash_ext.tasks.trigger_org_task',
         'schedule': crontab(minute=[0, 10, 20, 30, 40, 50]),
         'args': ('casepro.cases.tasks.pull_messages', 'sync')
     },
     'contact-pull': {
-        'task': 'casepro.orgs_ext.tasks.trigger_org_task',
+        'task': 'casepro.dash_ext.tasks.trigger_org_task',
         'schedule': crontab(minute=[5, 15, 25, 35, 45, 55]),
         'args': ('casepro.contacts.tasks.pull_contacts', 'sync')
     },

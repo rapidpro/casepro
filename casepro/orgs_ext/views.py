@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+from casepro.contacts.models import Field, Group
 from dash.orgs.models import Org
 from dash.orgs.views import OrgCRUDL, InferOrgMixin, OrgPermsMixin, SmartUpdateView, SmartListView
 from django import forms
@@ -77,23 +78,22 @@ class OrgExtCRUDL(SmartCRUDL):
             def __init__(self, *args, **kwargs):
                 org = kwargs.pop('org')
                 super(OrgExtCRUDL.Edit.OrgExtForm, self).__init__(*args, **kwargs)
-                client = org.get_temba_client()
 
                 self.fields['banner_text'].initial = org.get_banner_text()
 
                 field_choices = []
-                for field in sorted(client.get_fields(), key=lambda f: f.key.lower()):
+                for field in Field.objects.filter(org=org, is_active=True).order_by('label'):
                     field_choices.append((field.key, "%s (%s)" % (field.label, field.key)))
 
                 self.fields['contact_fields'].choices = field_choices
-                self.fields['contact_fields'].initial = org.get_contact_fields()
+                self.fields['contact_fields'].initial = org.get_contact_fields()  # TODO these can be stored as pk
 
                 group_choices = []
-                for group in sorted(client.get_groups(), key=lambda g: g.name.lower()):
-                    group_choices.append((group.uuid, "%s (%s)" % (group.name, group.size)))
+                for group in Group.objects.filter(org=org, is_active=True).order_by('name'):
+                    group_choices.append((group.uuid, group.name))
 
                 self.fields['suspend_groups'].choices = group_choices
-                self.fields['suspend_groups'].initial = org.get_suspend_groups()
+                self.fields['suspend_groups'].initial = org.get_suspend_groups()  # TODO these can be stored as pk
 
             class Meta:
                 model = Org
