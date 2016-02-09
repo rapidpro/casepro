@@ -7,7 +7,7 @@ from django.utils import timezone
 
 
 class Command(BaseCommand):
-    help = 'Pulls all contacts, groups and fields from RapidPro for the specified org'
+    help = 'Pulls all contacts, groups and fields from the backend for the specified org'
 
     def add_arguments(self, parser):
         parser.add_argument('org_id', type=int)
