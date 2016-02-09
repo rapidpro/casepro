@@ -1050,31 +1050,6 @@ class MessageViewsTest(BaseCasesTest):
         self.assertEqual(outgoing.case, None)
 
 
-class OutgoingTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient1.create_broadcast')
-    def test_create(self, mock_create_broadcast):
-        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
-        mock_create_broadcast.return_value = TembaBroadcast.create(id=201,
-                                                                   text="That's great",
-                                                                   urns=[],
-                                                                   contacts=['C-001', 'C-002'],
-                                                                   created_on=d1)
-
-        # create bulk reply
-        outgoing = Outgoing.create(self.unicef, self.user1, Outgoing.BULK_REPLY, "That's great",
-                                   urns=[], contacts=['C-001', 'C-002'])
-
-        mock_create_broadcast.assert_called_once_with(text="That's great", urns=[], contacts=['C-001', 'C-002'])
-
-        self.assertEqual(outgoing.org, self.unicef)
-        self.assertEqual(outgoing.activity, Outgoing.BULK_REPLY)
-        self.assertEqual(outgoing.broadcast_id, 201)
-        self.assertEqual(outgoing.recipient_count, 2)
-        self.assertEqual(outgoing.created_by, self.user1)
-        self.assertEqual(outgoing.created_on, d1)
-        self.assertEqual(outgoing.case, None)
-
-
 class PartnerTest(BaseCasesTest):
     def test_create(self):
         wfp = Partner.create(self.unicef, "WFP", None)

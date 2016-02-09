@@ -1,3 +1,4 @@
+# coding=utf-8
 from __future__ import unicode_literals
 
 from casepro.cases.models import Case, CaseEvent, Contact
@@ -6,8 +7,34 @@ from casepro.test import BaseCasesTest
 from datetime import datetime, timedelta
 from django.utils import timezone
 from mock import patch, call
-from temba_client.v1.types import Message as TembaMessage
+from temba_client.v1.types import Message as TembaMessage, Broadcast as TembaBroadcast
+from .models import Outgoing
 from .tasks import pull_messages
+
+
+class OutgoingTest(BaseCasesTest):
+    @patch('dash.orgs.models.TembaClient1.create_broadcast')
+    def test_create(self, mock_create_broadcast):
+        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
+        mock_create_broadcast.return_value = TembaBroadcast.create(id=201,
+                                                                   text="That's great",
+                                                                   urns=[],
+                                                                   contacts=['C-001', 'C-002'],
+                                                                   created_on=d1)
+
+        # create bulk reply
+        outgoing = Outgoing.create(self.unicef, self.user1, Outgoing.BULK_REPLY, "That's great",
+                                   urns=[], contacts=['C-001', 'C-002'])
+
+        mock_create_broadcast.assert_called_once_with(text="That's great", urns=[], contacts=['C-001', 'C-002'])
+
+        self.assertEqual(outgoing.org, self.unicef)
+        self.assertEqual(outgoing.activity, Outgoing.BULK_REPLY)
+        self.assertEqual(outgoing.broadcast_id, 201)
+        self.assertEqual(outgoing.recipient_count, 2)
+        self.assertEqual(outgoing.created_by, self.user1)
+        self.assertEqual(outgoing.created_on, d1)
+        self.assertEqual(outgoing.case, None)
 
 
 class TasksTest(BaseCasesTest):
