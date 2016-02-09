@@ -18,7 +18,7 @@ from temba_client.clients import Pager
 from temba_client.utils import format_iso8601
 from . import safe_max, normalize, match_keywords, truncate, str_to_bool
 from .context_processors import contact_ext_url, sentry_dsn
-from .models import AccessLevel, Case, CaseAction, CaseEvent, Contact, Group, Label, Message, MessageAction
+from .models import AccessLevel, Case, CaseAction, CaseEvent, Contact, Group, Label, RemoteMessage, MessageAction
 from .models import MessageExport, Partner, Outgoing
 from .utils import datetime_to_microseconds, microseconds_to_datetime
 
@@ -815,10 +815,10 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertFalse(pregnancy.is_active)
 
 
-class MessageTest(BaseCasesTest):
+class RemoteMessageTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient1.archive_messages')
     def test_bulk_archive(self, mock_archive_messages):
-        Message.bulk_archive(self.unicef, self.user1, [123, 234, 345])
+        RemoteMessage.bulk_archive(self.unicef, self.user1, [123, 234, 345])
 
         action = MessageAction.objects.get()
         self.assertEqual(action.action, MessageAction.ARCHIVE)
@@ -832,7 +832,7 @@ class MessageTest(BaseCasesTest):
         Outgoing.objects.create(org=self.unicef, activity='C', broadcast_id=201, recipient_count=1,
                                 created_by=self.user2, created_on=d1)
         msg = TembaMessage.create(id=101, broadcast=201, text="Yo")
-        Message.annotate_with_sender(self.unicef, [msg])
+        RemoteMessage.annotate_with_sender(self.unicef, [msg])
         self.assertEqual(msg.sender, self.user2)
 
 
@@ -926,8 +926,8 @@ class MessageViewsTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(len(response.json['actions']), 0)
 
-        Message.bulk_flag(self.unicef, self.user1, [101, 102])
-        Message.bulk_label(self.unicef, self.user2, [102], self.aids)
+        RemoteMessage.bulk_flag(self.unicef, self.user1, [101, 102])
+        RemoteMessage.bulk_label(self.unicef, self.user2, [102], self.aids)
 
         response = self.url_get('unicef', url)
         self.assertEqual(len(response.json['actions']), 2)

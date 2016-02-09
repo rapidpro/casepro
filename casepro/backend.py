@@ -48,9 +48,23 @@ class BaseBackend(object):
         """
         pass
 
+    @abstractmethod
+    def pull_and_label_messages(self, org, received_after, received_before, progress_callback=None):
+        """
+        Pulls and labels messages received in the given time window
+        :param org: the org
+        :param datetime received_after: pull messages received after this
+        :param datetime received_before: pull messages received before this
+        :param progress_callback: callable that will be called from time to time with number of messages pulled
+        :return: tuple of the the number of messages created, and the number of labels applied
+        """
+        pass
+
 
 class RapidProBackend(BaseBackend):
-
+    """
+    RapidPro instance backend
+    """
     def pull_contacts(self, org, modified_after, modified_before, progress_callback=None):
         from casepro.contacts.models import Contact
         from casepro.dash_ext.sync import sync_pull_contacts
@@ -75,3 +89,24 @@ class RapidProBackend(BaseBackend):
         from casepro.dash_ext.sync import sync_pull_fields
 
         return sync_pull_fields(org, Field)
+
+    def pull_and_label_messages(self, org, received_after, received_before, progress_callback=None):
+        from casepro.cases.models import RemoteMessage
+
+        client = org.get_temba_client(api_version=1)
+
+        num_messages = 0
+        num_labelled = 0
+
+        # grab all un-processed unsolicited messages
+        pager = client.pager()
+        while True:
+            messages = client.get_messages(direction='I', _types=['I'], archived=False,
+                                           after=received_after, before=received_before, pager=pager)
+            num_messages += len(messages)
+            num_labelled += RemoteMessage.process_unsolicited(org, messages)
+
+            if not pager.has_more():
+                break
+
+        return num_messages, num_labelled

@@ -17,7 +17,7 @@ from smartmin.views import SmartCRUDL, SmartListView, SmartCreateView, SmartRead
 from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
 from . import parse_csv, json_encode, normalize, str_to_bool, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
-from .models import AccessLevel, Case, Group, Label, Message, MessageAction, MessageExport, Partner, Outgoing
+from .models import AccessLevel, Case, Group, Label, RemoteMessage, MessageAction, MessageExport, Partner, Outgoing
 from .tasks import message_export
 from .utils import datetime_to_microseconds, microseconds_to_datetime
 
@@ -469,7 +469,7 @@ class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
 
         client = self.request.org.get_temba_client()
         pager = client.pager(start_page=page) if page else None
-        messages = Message.search(self.request.org, search, pager)
+        messages = RemoteMessage.search(self.request.org, search, pager)
 
         context['messages'] = messages
 
@@ -487,7 +487,7 @@ class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
     def render_to_response(self, context, **response_kwargs):
         label_map = {l.name: l for l in Label.get_all(self.request.org)}
 
-        results = [Message.as_json(m, label_map) for m in context['messages']]
+        results = [RemoteMessage.as_json(m, label_map) for m in context['messages']]
 
         return JsonResponse({'results': results, 'has_more': context['has_more'], 'total': context['total']})
 
@@ -508,17 +508,17 @@ class MessageActionView(OrgPermsMixin, View):
         label = Label.get_all(org, user).get(pk=label_id) if label_id else None
 
         if action == 'flag':
-            Message.bulk_flag(org, user, message_ids)
+            RemoteMessage.bulk_flag(org, user, message_ids)
         elif action == 'unflag':
-            Message.bulk_unflag(org, user, message_ids)
+            RemoteMessage.bulk_unflag(org, user, message_ids)
         elif action == 'label':
-            Message.bulk_label(org, user, message_ids, label)
+            RemoteMessage.bulk_label(org, user, message_ids, label)
         elif action == 'unlabel':
-            Message.bulk_unlabel(org, user, message_ids, label)
+            RemoteMessage.bulk_unlabel(org, user, message_ids, label)
         elif action == 'archive':
-            Message.bulk_archive(org, user, message_ids)
+            RemoteMessage.bulk_archive(org, user, message_ids)
         elif action == 'restore':
-            Message.bulk_restore(org, user, message_ids)
+            RemoteMessage.bulk_restore(org, user, message_ids)
         else:
             return HttpResponseBadRequest("Invalid action: %s", action)
 
@@ -538,7 +538,7 @@ class MessageLabelView(OrgPermsMixin, View):
         label_ids = parse_csv(self.request.POST.get('labels', ''), as_ints=True)
         labels = Label.get_all(org, user).filter(pk__in=label_ids)
 
-        Message.update_labels(message, org, user, labels)
+        RemoteMessage.update_labels(message, org, user, labels)
         return HttpResponse(status=204)
 
 

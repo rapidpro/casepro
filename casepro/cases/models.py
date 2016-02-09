@@ -146,7 +146,7 @@ class MessageExport(models.Model):
         search = self.get_search()
 
         # fetch all messages to be exported
-        messages = Message.search(self.org, search, None)
+        messages = RemoteMessage.search(self.org, search, None)
 
         # extract all unique contacts in those messages
         contact_uuids = set()
@@ -585,7 +585,7 @@ class Case(models.Model):
                 local = local_by_broadcast.pop(m.broadcast, None)
                 if local:
                     m.sender = local.created_by
-                messages.append({'time': m.created_on, 'type': 'M', 'item': Message.as_json(m, label_map)})
+                messages.append({'time': m.created_on, 'type': 'M', 'item': RemoteMessage.as_json(m, label_map)})
 
             for m in local_by_broadcast.values():
                 messages.append({'time': m.created_on, 'type': 'M', 'item': m.as_json()})
@@ -777,7 +777,7 @@ class CaseEvent(models.Model):
                 'created_on': self.created_on}
 
 
-class Message(object):
+class RemoteMessage(object):
     """
     A pseudo-model for messages which are always fetched from RapidPro.
     """

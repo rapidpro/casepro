@@ -5,7 +5,7 @@ from dateutil.relativedelta import relativedelta
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 from optparse import make_option
-from casepro.cases.models import Message
+from casepro.cases.models import RemoteMessage
 
 
 class Command(BaseCommand):
@@ -50,7 +50,7 @@ class Command(BaseCommand):
             messages = client.get_messages(direction='I', _types=['I'], statuses=['H'], archived=False,
                                            after=since, before=now, pager=pager)
             num_messages += len(messages)
-            num_labelled += Message.process_unsolicited(org, messages)
+            num_labelled += RemoteMessage.process_unsolicited(org, messages)
 
             if not pager.has_more():
                 break
