@@ -21,6 +21,8 @@ class Command(BaseCommand):
 
         prompt = """You have requested to pull all contacts, groups and fields for org '%s' (#%d). Are you sure you want to do this?
 
+DO NOT RUN THIS COMMAND WHILST BACKGROUND SYNCING IS RUNNING
+
 Type 'yes' to continue, or 'no' to cancel: """ % (org.name, org.pk)
 
         if raw_input(prompt).lower() != 'yes':

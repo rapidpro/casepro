@@ -52,6 +52,8 @@ def update_contact_fields(sender, instance, created, **kwargs):
     if not hasattr(instance, SAVE_FIELDS_ATTR):
         return
 
+    org = instance.org
+
     new_values_by_key = getattr(instance, SAVE_FIELDS_ATTR)
     cur_values_by_key = {v.field.key: v for v in instance.values.all()}
 
@@ -67,7 +69,12 @@ def update_contact_fields(sender, instance, created, **kwargs):
                 existing_value.string_value = val
                 existing_value.save(update_fields=('string_value',))
         else:
-            field = Field.get_or_create(instance.org, key)
+            # TODO ideally these would come from cached org.fields.. but haven't yet found a good way to update a
+            # cached field without reloading the entire object
+            field = Field.objects.filter(org=org, key=key).first()
+            if not field:
+                field = Field.create(org, key)
+
             Value.objects.create(contact=instance, field=field, string_value=val)
 
     # delete any values whose keys don't exist in the new set

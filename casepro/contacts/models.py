@@ -65,11 +65,7 @@ class Field(models.Model):
     is_active = models.BooleanField(default=True, help_text="Whether this field is active")
 
     @classmethod
-    def get_or_create(cls, org, key, label=None):
-        existing = cls.objects.filter(org=org, key=key).first()
-        if existing:
-            return existing
-
+    def create(cls, org, key, label=None):
         return cls.objects.create(org=org, key=key, label=label)
 
     @classmethod
