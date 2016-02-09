@@ -1,3 +1,3 @@
 from __future__ import unicode_literals
 
-default_app_config = 'casepro.contacts.apps.ContactConfig'
+default_app_config = 'casepro.contacts.apps.Config'

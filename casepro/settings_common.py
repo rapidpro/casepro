@@ -230,6 +230,7 @@ INSTALLED_APPS = (
     # custom
     'casepro.cases',
     'casepro.contacts',
+    'casepro.msgs',
     'casepro.orgs_ext',
     'casepro.profiles'
 )
@@ -389,7 +390,7 @@ CELERYBEAT_SCHEDULE = {
     'message-pull': {
         'task': 'casepro.dash_ext.tasks.trigger_org_task',
         'schedule': crontab(minute=[0, 10, 20, 30, 40, 50]),
-        'args': ('casepro.cases.tasks.pull_messages', 'sync')
+        'args': ('casepro.msgs.tasks.pull_messages', 'sync')
     },
     'contact-pull': {
         'task': 'casepro.dash_ext.tasks.trigger_org_task',
