@@ -12,7 +12,7 @@ class ContactTest(BaseCasesTest):
         Group.objects.all().delete()
         Field.objects.all().delete()
 
-        kwargs = Contact.kwargs_from_temba(self.unicef, TembaContact.create(
+        kwargs = Contact.sync_get_kwargs(self.unicef, TembaContact.create(
                 uuid="C-001",
                 name="Bob McFlow",
                 language="eng",
@@ -32,7 +32,7 @@ class ContactTest(BaseCasesTest):
             '__data__fields': {'age': "34"},
         })
 
-        # check saving by result of kwargs_from_temba
+        # check saving by result of sync_get_kwargs
         contact = Contact.objects.create(**kwargs)
 
         self.assertEqual(contact.uuid, "C-001")

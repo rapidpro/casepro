@@ -14,7 +14,6 @@ class OrgExtCRUDLTest(BaseCasesTest):
 
         self.unicef.set_banner_text("Howdy (U)Partner!")
         self.unicef.set_contact_fields([self.age.key])
-        self.unicef.set_suspend_groups([self.males.uuid])
 
     def test_home(self):
         url = reverse('orgs_ext.org_home')
@@ -34,13 +33,34 @@ class OrgExtCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
 
-        form_fields = response.context['form'].fields
+        form = response.context['form']
 
-        self.assertEqual(form_fields['banner_text'].initial, "Howdy (U)Partner!")
-        self.assertEqual(form_fields['contact_fields'].choices,
+        self.assertEqual(form.initial['name'], "UNICEF")
+        self.assertEqual(form.initial['timezone'], "Africa/Kampala")
+
+        self.assertEqual(form.fields['banner_text'].initial, "Howdy (U)Partner!")
+        self.assertEqual(form.fields['contact_fields'].choices,
                          [('age', "Age (age)"), ('state', "State (state)")])
-        self.assertEqual(form_fields['contact_fields'].initial, ['age'])
-        self.assertEqual(form_fields['suspend_groups'].choices, [(self.females.uuid, "Females"),
-                                                                 (self.males.uuid, "Males")])
-        self.assertEqual(form_fields['suspend_groups'].initial, [self.males.uuid])
+        self.assertEqual(form.fields['contact_fields'].initial, ['age'])
+        self.assertEqual(form.fields['suspend_groups'].choices, [(self.females.pk, "Females"),
+                                                                 (self.males.pk, "Males"),
+                                                                 (self.reporters.pk, "Reporters")])
+        self.assertEqual(form.fields['suspend_groups'].initial, [self.reporters.pk])
 
+        # test updating
+        response = self.url_post('unicef', url, {
+            'name': "UNIZEFF", 'timezone': "Africa/Kigali", 'banner_text': "Chill",
+            'contact_fields': ['state'], 'suspend_groups': [self.males.pk]
+        })
+
+        self.assertEqual(response.status_code, 302)
+
+        self.unicef.refresh_from_db()
+        self.unicef._config = None
+
+        self.assertEqual(self.unicef.name, "UNIZEFF")
+        self.assertEqual(self.unicef.timezone, "Africa/Kigali")
+        self.assertEqual(self.unicef.get_banner_text(), "Chill")
+        self.assertEqual(self.unicef.get_contact_fields(), ['state'])
+
+        self.assertEqual(set(Group.get_suspend_from(self.unicef)), {self.males})

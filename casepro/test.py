@@ -45,7 +45,11 @@ class BaseCasesTest(DashTest):
         # some groups
         self.males = self.create_group(self.unicef, 'G-001', 'Males')
         self.females = self.create_group(self.unicef, 'G-002', 'Females')
-        self.coders = self.create_group(self.nyaruka, 'G-003', 'Coders')
+        self.reporters = self.create_group(self.unicef, 'G-003', 'Reporters')
+        self.coders = self.create_group(self.nyaruka, 'G-004', 'Coders')
+
+        self.reporters.suspend_from = True
+        self.reporters.save()
 
     def create_partner(self, org, name):
         return Partner.create(org, name, None)

@@ -31,6 +31,9 @@ class Group(models.Model):
 
     is_visible = models.BooleanField(default=False, help_text=_("Whether this group is visible to partner users"))
 
+    suspend_from = models.BooleanField(default=False,
+                                       help_text=_("Whether contacts should be suspended from this group during a case"))
+
     @classmethod
     def create(cls, org, uuid, name):
         return cls.objects.create(org=org, uuid=uuid, name=name)
@@ -41,6 +44,10 @@ class Group(models.Model):
         if visible is not None:
             qs = qs.filter(is_visible=visible)
         return qs
+
+    @classmethod
+    def get_suspend_from(cls, org):
+        return cls.get_all(org).filter(suspend_from=True)
 
     @classmethod
     def sync_identity(cls, instance):

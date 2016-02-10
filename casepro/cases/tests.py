@@ -41,12 +41,10 @@ class CaseTest(BaseCasesTest):
         d6 = datetime(2014, 1, 2, 12, 0, tzinfo=timezone.utc)
         d7 = datetime(2014, 1, 2, 13, 0, tzinfo=timezone.utc)
 
-        self.unicef.set_suspend_groups(['G-021', 'G-022'])
-
         msg1 = TembaMessage.create(id=123, contact='C-001', created_on=d0, text="Hello")
         msg2 = TembaMessage.create(id=234, contact='C-001', created_on=d1, text="Hello again")
         mock_get_messages.return_value = [msg1, msg2]
-        mock_get_contact.return_value = TembaContact.create(uuid='C-001', groups=['G-021', 'G-022', 'G-023'])
+        mock_get_contact.return_value = TembaContact.create(uuid='C-001', groups=['G-001', 'G-003'])
 
         with patch.object(timezone, 'now', return_value=d1):
             # MOH opens new case
@@ -79,8 +77,7 @@ class CaseTest(BaseCasesTest):
         mock_archive_messages.reset_mock()
 
         # check that opening the case removed contact from specified suspend groups
-        mock_remove_contacts.assert_has_calls([call(['C-001'], group_uuid='G-021'),
-                                               call(['C-001'], group_uuid='G-022')])
+        mock_remove_contacts.assert_called_once_with(['C-001'], group_uuid='G-003')
         mock_remove_contacts.reset_mock()
 
         # check that contact's runs were expired
@@ -140,8 +137,7 @@ class CaseTest(BaseCasesTest):
         # check that contacts groups were restored
         self.assertEqual(Contact.objects.get(pk=contact.pk).suspended_groups, [])
 
-        mock_add_contacts.assert_has_calls([call(['C-001'], group_uuid='G-021'),
-                                            call(['C-001'], group_uuid='G-022')])
+        mock_add_contacts.assert_called_once_with(['C-001'], group_uuid='G-003')
         mock_add_contacts.reset_mock()
 
         # contact sends a message after case was closed

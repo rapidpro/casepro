@@ -8,7 +8,6 @@ from temba_client.utils import format_iso8601, parse_iso8601
 ORG_CACHE_TTL = 60 * 60 * 24 * 7  # 1 week
 ORG_CONFIG_BANNER_TEXT = 'banner_text'
 ORG_CONFIG_CONTACT_FIELDS = 'contact_fields'
-ORG_CONFIG_SUSPEND_GROUPS = 'suspend_groups'
 
 
 LAST_LABELLED_TIME_CACHE_KEY = 'org:%d:last_labelled_time'
@@ -32,15 +31,6 @@ def _org_set_contact_fields(org, fields):
     org.set_config(ORG_CONFIG_CONTACT_FIELDS, fields)
 
 
-def _org_get_suspend_groups(org):
-    groups = org.get_config(ORG_CONFIG_SUSPEND_GROUPS)
-    return groups if groups else []
-
-
-def _org_set_suspend_groups(org, groups):
-    org.set_config(ORG_CONFIG_SUSPEND_GROUPS, groups)
-
-
 def _org_get_last_message_time(org, labelled):
     key = LAST_LABELLED_TIME_CACHE_KEY if labelled else LAST_UNLABELLED_TIME_CACHE_KEY
     time = cache.get(key % org.pk)
@@ -58,7 +48,5 @@ Org.get_banner_text = _org_get_banner_text
 Org.set_banner_text = _org_set_banner_text
 Org.get_contact_fields = _org_get_contact_fields
 Org.set_contact_fields = _org_set_contact_fields
-Org.get_suspend_groups = _org_get_suspend_groups
-Org.set_suspend_groups = _org_set_suspend_groups
 Org.get_last_message_time = _org_get_last_message_time
 Org.record_message_time = _org_record_message_time

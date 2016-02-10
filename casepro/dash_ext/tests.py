@@ -145,7 +145,7 @@ class SyncTest(BaseCasesTest):
             )
         ]
 
-        with self.assertNumQueries(24):
+        with self.assertNumQueries(25):
             num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
                                                                        prefetch_related=('groups',))
 

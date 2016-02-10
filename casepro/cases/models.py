@@ -4,6 +4,7 @@ import json
 import pytz
 import re
 
+from casepro.contacts.models import Group
 from casepro.msgs.models import Outgoing
 from dash.orgs.models import Org
 from dash.utils import random_string, chunks, intersection
@@ -331,7 +332,7 @@ class Contact(models.Model):
         temba_contact = self.fetch()
         temba_groups = temba_contact.groups if temba_contact else []
 
-        suspend_groups = self.org.get_suspend_groups()
+        suspend_groups = [g.uuid for g in Group.get_suspend_from(self.org)]
         remove_groups = intersection(temba_groups, suspend_groups)
 
         # remove contact from groups

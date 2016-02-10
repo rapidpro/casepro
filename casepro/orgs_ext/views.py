@@ -88,11 +88,11 @@ class OrgExtCRUDL(SmartCRUDL):
                 self.fields['contact_fields'].initial = org.get_contact_fields()  # TODO these can be stored as pk
 
                 group_choices = []
-                for group in Group.objects.filter(org=org, is_active=True).order_by('name'):
-                    group_choices.append((group.uuid, group.name))
+                for group in Group.get_all(org).order_by('name'):
+                    group_choices.append((group.pk, group.name))
 
                 self.fields['suspend_groups'].choices = group_choices
-                self.fields['suspend_groups'].initial = org.get_suspend_groups()  # TODO these can be stored as pk
+                self.fields['suspend_groups'].initial = [g.pk for g in Group.get_all(org).filter(suspend_from=True)]
 
             class Meta:
                 model = Org
@@ -112,7 +112,13 @@ class OrgExtCRUDL(SmartCRUDL):
             obj = super(OrgExtCRUDL.Edit, self).pre_save(obj)
             obj.set_banner_text(self.form.cleaned_data['banner_text'])
             obj.set_contact_fields(self.form.cleaned_data['contact_fields'])
-            obj.set_suspend_groups(self.form.cleaned_data['suspend_groups'])
+
+            group_ids = self.form.cleaned_data['suspend_groups']
+            org_groups = Group.objects.filter(org=self.request.org)
+
+            org_groups.filter(pk__in=group_ids).update(suspend_from=True)
+            org_groups.exclude(pk__in=group_ids).update(suspend_from=False)
+
             return obj
 
     class Chooser(OrgCRUDL.Chooser):
