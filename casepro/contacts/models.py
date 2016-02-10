@@ -142,6 +142,8 @@ class Contact(models.Model):
 
     is_stub = models.BooleanField(default=False, help_text="Whether this contact is just a stub")
 
+    suspended_groups = models.ManyToManyField(Group, help_text=_("Groups this contact has been suspended from"))
+
     created_on = models.DateTimeField(auto_now_add=True, help_text=_("When this contact was created"))
 
     def __init__(self, *args, **kwargs):
