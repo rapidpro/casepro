@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 
 def sync_pull_groups(org, model):
     """
-    Pull all contact groups from RapidPro and syncs with local groups.
+    Pull all contact groups from RapidPro and syncs with local groups. Assumes no other process is creating groups at
+    the same time.
 
     :param * org:
     :param type model: the local group model
@@ -30,7 +31,8 @@ def sync_pull_groups(org, model):
 
 def sync_pull_fields(org, model):
     """
-    Pull all contact fields from RapidPro and syncs with local fields.
+    Pull all contact fields from RapidPro and syncs with local fields. Assumes no other process is creating fields at
+    the same time.
 
     :param * org:
     :param type model: the local field model
@@ -138,24 +140,21 @@ def sync_pull_contacts(org, model,
     active_query = client.get_contacts(after=modified_after, before=modified_before)
 
     for incoming_batch in active_query.iterfetches(retry_on_rate_exceed=True):
-        incoming_uuids = [c.uuid for c in incoming_batch]
-
-        # get all existing contacts with these UUIDs
-        existing_contacts = model.objects.filter(org=org, uuid__in=incoming_uuids)
-
-        if select_related:
-            existing_contacts = existing_contacts.select_related(*select_related)
-        if prefetch_related:
-            existing_contacts = existing_contacts.prefetch_related(*prefetch_related)
-
-        # organize by UUID
-        existing_by_uuid = {c.uuid: c for c in existing_contacts}
-
         # any from this batch that exist locally but now don't belong here due to model changes, e.g. blocked
         invalid_existing_ids = []
 
+        # TODO figure out it is still worth fetching the whole batch of contacts here to optimise for the update case,
+        # even tho we have to potentially re-fetch below in case contacts were created by the message pulling process
+
         for incoming in incoming_batch:
-            existing = existing_by_uuid.get(incoming.uuid)
+            with model.sync_lock(incoming.uuid):
+                existing_qs = model.objects.filter(org=org, uuid=incoming.uuid)
+                if select_related:
+                    existing_qs = existing_qs.select_related(*select_related)
+                if prefetch_related:
+                    existing_qs = existing_qs.prefetch_related(*prefetch_related)
+
+                existing = existing_qs.first()
 
             # derive kwargs for the local contact model (none return here means don't keep)
             local_kwargs = model.sync_get_kwargs(org, incoming)

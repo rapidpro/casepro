@@ -3,10 +3,13 @@ from __future__ import unicode_literals
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
+from redis_cache import get_redis_connection
 from temba_client.v2.types import Contact as TembaContact, ObjectRef as TembaObjectRef
 
 SAVE_GROUPS_ATTR = '__data__groups'
 SAVE_FIELDS_ATTR = '__data__fields'
+
+CONTACT_LOCK_KEY = 'contact-lock:%s'
 
 
 @python_2_unicode_compatible
@@ -137,6 +140,8 @@ class Contact(models.Model):
 
     is_active = models.BooleanField(default=True, help_text="Whether this contact is active")
 
+    is_stub = models.BooleanField(default=False, help_text="Whether this contact is just a stub")
+
     created_on = models.DateTimeField(auto_now_add=True, help_text=_("When this contact was created"))
 
     def __init__(self, *args, **kwargs):
@@ -146,6 +151,21 @@ class Contact(models.Model):
             setattr(self, SAVE_FIELDS_ATTR, kwargs.pop(SAVE_FIELDS_ATTR))
 
         super(Contact, self).__init__(*args, **kwargs)
+
+    @classmethod
+    def get_or_create(cls, org, uuid, name):
+        with cls.sync_lock(uuid):
+            existing = cls.objects.filter(org=org, uuid=uuid)
+            if existing:
+                return existing
+
+            return cls.objects.create(org=org, uuid=uuid, name=name, is_stub=True)
+
+    @classmethod
+    def sync_lock(cls, uuid):
+        r = get_redis_connection()
+        key = CONTACT_LOCK_KEY % uuid
+        return r.lock(key, timeout=60)
 
     @classmethod
     def sync_get_kwargs(cls, org, temba_instance):
