@@ -40,20 +40,21 @@ class Group(models.Model):
         return qs
 
     @classmethod
-    def sync_get_kwargs(cls, org, temba_instance):
-        """
-        Derives kwargs from a Temba group to either create a new group instance or update and existing one.
-        """
+    def sync_identity(cls, instance):
+        return instance.uuid
+
+    @classmethod
+    def sync_get_kwargs(cls, org, incoming):
         return {
             'org': org,
-            'uuid': temba_instance.uuid,
-            'name': temba_instance.name,
-            'count': temba_instance.size,  # TODO change to count for API v2
-            'is_active': True
+            'uuid': incoming.uuid,
+            'name': incoming.name,
+            'count': incoming.count,
         }
 
-    def sync_update_required(self, temba_instance):
-        return not self.is_active or self.name != temba_instance.name or self.count != temba_instance.size
+    @classmethod
+    def sync_update_required(cls, local, incoming):
+        return local.name != incoming.name or local.count != incoming.count
 
     def as_json(self):
         return {'id': self.pk, 'uuid': self.uuid, 'name': self.name, 'count': self.count}
@@ -73,6 +74,12 @@ class Field(models.Model):
     TYPE_STATE = 'S'
     TYPE_DISTRICT = 'I'
 
+    TEMBA_TYPES = {'text': TYPE_TEXT,
+                   'decimal': TYPE_DECIMAL,
+                   'datetime': TYPE_DATETIME,
+                   'state': TYPE_STATE,
+                   'district': TYPE_DISTRICT}
+
     org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name="fields")
 
     key = models.CharField(verbose_name=_("Key"), max_length=36)
@@ -88,16 +95,21 @@ class Field(models.Model):
         return cls.objects.create(org=org, key=key, label=label)
 
     @classmethod
-    def kwargs_from_temba(cls, org, temba_instance):
-        """
-        Derives kwargs from a Temba field to either create a new field instance or update and existing one.
-        """
+    def sync_identity(cls, instance):
+        return instance.key
+
+    @classmethod
+    def sync_get_kwargs(cls, org, incoming):
         return {
             'org': org,
-            'key': temba_instance.key,
-            'label': temba_instance.label,
-            'value_type': temba_instance.value_type,  # TODO add mapping when switching to API v2
+            'key': incoming.key,
+            'label': incoming.label,
+            'value_type': cls.TEMBA_TYPES.get(incoming.value_type, cls.TYPE_TEXT)
         }
+
+    @classmethod
+    def sync_update_required(cls, local, incoming):
+        return local.label != incoming.label or local.value_type != incoming.value_type
 
     def __str__(self):
         return self.key
@@ -136,10 +148,7 @@ class Contact(models.Model):
         super(Contact, self).__init__(*args, **kwargs)
 
     @classmethod
-    def kwargs_from_temba(cls, org, temba_instance):
-        """
-        Derives kwargs from a Temba contact to either create a new contact instance or update and existing one.
-        """
+    def sync_get_kwargs(cls, org, temba_instance):
         if temba_instance.blocked:  # we don't keep blocked contacts
             return None
 
@@ -152,10 +161,7 @@ class Contact(models.Model):
             SAVE_FIELDS_ATTR: temba_instance.fields
         }
 
-    def get_fields(self):
-        return {v.field.key: v.get_value() for v in self.values.all()}
-
-    def as_temba(self):
+    def sync_as_temba(self):
         """
         Return a Temba version of this contact
         """
@@ -163,6 +169,9 @@ class Contact(models.Model):
 
         return TembaContact.create(uuid=self.uuid, name=self.name, urns=[], groups=groups, fields=self.get_fields(),
                                    language=self.language)
+
+    def get_fields(self):
+        return {v.field.key: v.get_value() for v in self.values.all()}
 
     def __str__(self):
         return self.name

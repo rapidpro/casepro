@@ -8,7 +8,7 @@ from casepro.contacts.models import Contact, Group, Field
 from casepro.test import BaseCasesTest
 from django.utils import timezone
 from mock import patch
-from temba_client.v1.types import Group as TembaGroup, Field as TembaField
+from temba_client.v2.types import Group as TembaGroup, Field as TembaField
 from temba_client.v2.types import Contact as TembaContact, ObjectRef as TembaObjectRef
 from .sync import sync_pull_groups, sync_pull_fields, sync_pull_contacts, temba_compare_contacts, temba_merge_contacts
 
@@ -41,15 +41,15 @@ class MockClientQuery(six.Iterator):
 
 class SyncTest(BaseCasesTest):
 
-    @patch('dash.orgs.models.TembaClient1.get_groups')
+    @patch('dash.orgs.models.TembaClient2.get_groups')
     def test_sync_pull_groups(self, mock_get_groups):
         # start with no groups
         Group.objects.all().delete()
 
-        mock_get_groups.return_value = [
-            TembaGroup.create(uuid="G-001", name="Customers", size=45),
-            TembaGroup.create(uuid="G-002", name="Developers", size=32),
-        ]
+        mock_get_groups.return_value = MockClientQuery([
+            TembaGroup.create(uuid="G-001", name="Customers", count=45),
+            TembaGroup.create(uuid="G-002", name="Developers", count=32),
+        ])
 
         with self.assertNumQueries(3):
             num_created, num_updated, num_deleted = sync_pull_groups(self.unicef, Group)
@@ -59,10 +59,10 @@ class SyncTest(BaseCasesTest):
         Group.objects.get(uuid="G-001", name="Customers", count=45, is_active=True)
         Group.objects.get(uuid="G-002", name="Developers", count=32, is_active=True)
 
-        mock_get_groups.return_value = [
-            TembaGroup.create(uuid="G-002", name="Devs", size=32),
-            TembaGroup.create(uuid="G-003", name="Spammers", size=13),
-        ]
+        mock_get_groups.return_value = MockClientQuery([
+            TembaGroup.create(uuid="G-002", name="Devs", count=32),
+            TembaGroup.create(uuid="G-003", name="Spammers", count=13),
+        ])
 
         with self.assertNumQueries(4):
             num_created, num_updated, num_deleted = sync_pull_groups(self.unicef, Group)
@@ -73,15 +73,15 @@ class SyncTest(BaseCasesTest):
         Group.objects.get(uuid="G-002", name="Devs", count=32, is_active=True)
         Group.objects.get(uuid="G-003", name="Spammers", count=13, is_active=True)
 
-    @patch('dash.orgs.models.TembaClient1.get_fields')
+    @patch('dash.orgs.models.TembaClient2.get_fields')
     def test_sync_pull_fields(self, mock_get_fields):
         # start with no fields
         Field.objects.all().delete()
 
-        mock_get_fields.return_value = [
-            TembaField.create(key="nick_name", label="Nickname", value_type="T"),
-            TembaField.create(key="age", label="Age", value_type="N"),
-        ]
+        mock_get_fields.return_value = MockClientQuery([
+            TembaField.create(key="nick_name", label="Nickname", value_type="text"),
+            TembaField.create(key="age", label="Age", value_type="decimal"),
+        ])
 
         with self.assertNumQueries(3):
             num_created, num_updated, num_deleted = sync_pull_fields(self.unicef, Field)
@@ -91,10 +91,10 @@ class SyncTest(BaseCasesTest):
         Field.objects.get(key="nick_name", label="Nickname", value_type="T", is_active=True)
         Field.objects.get(key="age", label="Age", value_type="N", is_active=True)
 
-        mock_get_fields.return_value = [
-            TembaField.create(key="age", label="Age (Years)", value_type="N"),
-            TembaField.create(key="homestate", label="Homestate", value_type="S"),
-        ]
+        mock_get_fields.return_value = MockClientQuery([
+            TembaField.create(key="age", label="Age (Years)", value_type="decimal"),
+            TembaField.create(key="homestate", label="Homestate", value_type="state"),
+        ])
 
         with self.assertNumQueries(4):
             num_created, num_updated, num_deleted = sync_pull_fields(self.unicef, Field)

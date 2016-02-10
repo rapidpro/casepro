@@ -22,57 +22,10 @@ def sync_pull_groups(org, model):
     :param type model: the local group model
     :return: tuple containing counts of created, updated and deleted groups
     """
-    client = org.get_temba_client(api_version=1)  # TODO switch to API v2
+    client = org.get_temba_client(api_version=2)
+    incoming_objects = client.get_groups().all(retry_on_rate_exceed=True)
 
-    num_created = 0
-    num_updated = 0
-    num_deleted = 0
-
-    existing_by_uuid = {g.uuid: g for g in model.objects.filter(org=org)}
-    synced_uuids = set()
-
-    # any that exist locally but shouldn't
-    invalid_existing_ids = []
-
-    for incoming in client.get_groups():
-        existing = existing_by_uuid.get(incoming.uuid)
-
-        # derive kwargs for the local group model (none return here means don't keep)
-        incoming_kwargs = model.sync_get_kwargs(org, incoming)
-
-        # group exists locally
-        if existing:
-            existing.org = org  # saves pre-fetching since we already have the org
-
-            if incoming_kwargs:
-                if existing.sync_update_required(incoming):
-                    for field, value in six.iteritems(incoming_kwargs):
-                        setattr(existing, field, value)
-
-                    existing.save()
-                    num_updated += 1
-
-            elif existing.is_active:
-                invalid_existing_ids.append(existing.pk)
-                num_deleted += 1
-
-        elif incoming_kwargs:
-            model.objects.create(**incoming_kwargs)
-            num_created += 1
-
-        synced_uuids.add(incoming.uuid)
-
-    # existing groups which don't exist remotely need to be deleted
-    for existing in existing_by_uuid.values():
-        if existing.uuid not in synced_uuids:
-            invalid_existing_ids.append(existing.pk)
-            num_deleted += 1
-
-    # deactivate existing groups who no longer belong here
-    if invalid_existing_ids:
-        model.objects.filter(org=org, pk__in=invalid_existing_ids).update(is_active=False)
-
-    return num_created, num_updated, num_deleted
+    return _sync_local_to_incoming(org, model, incoming_objects)
 
 
 def sync_pull_fields(org, model):
@@ -83,31 +36,49 @@ def sync_pull_fields(org, model):
     :param type model: the local field model
     :return: tuple containing counts of created, updated and deleted fields
     """
-    client = org.get_temba_client(api_version=1)  # TODO switch to API v2
+    client = org.get_temba_client(api_version=2)
+    incoming_objects = client.get_fields().all(retry_on_rate_exceed=True)
 
+    return _sync_local_to_incoming(org, model, incoming_objects)
+
+
+def _sync_local_to_incoming(org, model, incoming_objects):
+    """
+    Syncs an org's entire set of local instances of a model to match the set of incoming objects. Requires that the
+    local model define the following class methods:
+
+        def sync_identity(cls, instance) - returns the unique identifier of the given local or incoming object
+        def sync_get_kwargs(org, incoming) - returns kwargs used to create new local instance or update existing
+        def sync_update_required(cls, local, incoming) - returns whether the local instance differs from the incoming
+
+    :param org: the org
+    :param model: the local model
+    :param incoming_objects: the set of incoming objects
+    :return: tuple of number of local objects created, updated and deleted
+    """
     num_created = 0
     num_updated = 0
     num_deleted = 0
 
-    existing_by_key = {f.key: f for f in model.objects.filter(org=org)}
-    synced_keys = set()
+    existing_by_identity = {model.sync_identity(g): g for g in model.objects.filter(org=org)}
+    synced_identifiers = set()
 
-    # any that exist locally but shouldn't
+    # any local active objects that need deactivated
     invalid_existing_ids = []
 
-    for incoming in client.get_fields():
-        existing = existing_by_key.get(incoming.key)
+    for incoming in incoming_objects:
+        existing = existing_by_identity.get(model.sync_identity(incoming))
 
-        # derive kwargs for the local field model (none return here means don't keep)
-        incoming_kwargs = model.kwargs_from_temba(org, incoming)
+        # derive kwargs for the local model (none returned here means don't keep)
+        local_kwargs = model.sync_get_kwargs(org, incoming)
 
-        # field exists locally
+        # item exists locally
         if existing:
             existing.org = org  # saves pre-fetching since we already have the org
 
-            if incoming_kwargs:
-                if existing.label != incoming.label or existing.value_type != incoming.value_type or not existing.is_active:
-                    for field, value in six.iteritems(incoming_kwargs):
+            if local_kwargs:
+                if model.sync_update_required(existing, incoming) or not existing.is_active:
+                    for field, value in six.iteritems(local_kwargs):
                         setattr(existing, field, value)
 
                     existing.is_active = True
@@ -118,19 +89,18 @@ def sync_pull_fields(org, model):
                 invalid_existing_ids.append(existing.pk)
                 num_deleted += 1
 
-        elif incoming_kwargs:
-            model.objects.create(**incoming_kwargs)
+        elif local_kwargs:
+            model.objects.create(**local_kwargs)
             num_created += 1
 
-        synced_keys.add(incoming.key)
+        synced_identifiers.add(model.sync_identity(incoming))
 
-    # existing fields which don't exist remotely need to be deleted
-    for existing in existing_by_key.values():
-        if existing.key not in synced_keys:
+    # local objects which weren't in the remote set need to be deleted
+    for existing in existing_by_identity.values():
+        if model.sync_identity(existing) not in synced_identifiers:
             invalid_existing_ids.append(existing.pk)
             num_deleted += 1
 
-    # deactivate existing fields who no longer belong here
     if invalid_existing_ids:
         model.objects.filter(org=org, pk__in=invalid_existing_ids).update(is_active=False)
 
@@ -144,7 +114,7 @@ def sync_pull_contacts(org, model,
                        progress_callback=None):
     """
     Pull modified contacts from RapidPro and syncs with local contacts. Contact class must define a class method called
-    `kwargs_from_temba` which generates field kwargs from a fetched temba contact.
+    `sync_get_kwargs` which generates field kwargs from a fetched temba contact.
 
     :param * org: the org
     :param type model: the local contact model
@@ -188,17 +158,17 @@ def sync_pull_contacts(org, model,
             existing = existing_by_uuid.get(incoming.uuid)
 
             # derive kwargs for the local contact model (none return here means don't keep)
-            incoming_kwargs = model.kwargs_from_temba(org, incoming)
+            local_kwargs = model.sync_get_kwargs(org, incoming)
 
             # contact exists locally
             if existing:
                 existing.org = org  # saves pre-fetching since we already have the org
 
-                if incoming_kwargs:
-                    diff = temba_compare_contacts(incoming, existing.as_temba(), inc_urns, fields, groups)
+                if local_kwargs:
+                    diff = temba_compare_contacts(incoming, existing.sync_as_temba(), inc_urns, fields, groups)
 
                     if diff or not existing.is_active:
-                        for field, value in six.iteritems(incoming_kwargs):
+                        for field, value in six.iteritems(local_kwargs):
                             setattr(existing, field, value)
 
                         existing.is_active = True
@@ -209,8 +179,8 @@ def sync_pull_contacts(org, model,
                     invalid_existing_ids.append(existing.pk)
                     num_deleted += 1
 
-            elif incoming_kwargs:
-                model.objects.create(**incoming_kwargs)
+            elif local_kwargs:
+                model.objects.create(**local_kwargs)
                 num_created += 1
 
         # deactivate existing contacts who no longer belong here
