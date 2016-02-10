@@ -54,11 +54,6 @@ def _org_record_message_time(org, time, labelled):
         cache.set(key % org.pk, format_iso8601(time), ORG_CACHE_TTL)
 
 
-def _org_get_task_state(org, task_key):
-    from .models import TaskState
-    return TaskState.get_or_create(org, task_key)
-
-
 Org.get_banner_text = _org_get_banner_text
 Org.set_banner_text = _org_set_banner_text
 Org.get_contact_fields = _org_get_contact_fields
@@ -67,4 +62,3 @@ Org.get_suspend_groups = _org_get_suspend_groups
 Org.set_suspend_groups = _org_set_suspend_groups
 Org.get_last_message_time = _org_get_last_message_time
 Org.record_message_time = _org_record_message_time
-Org.get_task_state = _org_get_task_state

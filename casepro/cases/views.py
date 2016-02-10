@@ -1,8 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from casepro.contacts.models import Group
-from casepro.orgs_ext.models import TaskState
-from dash.orgs.models import Org
+from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django import forms
 from django.core.cache import cache

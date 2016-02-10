@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from casepro.contacts.models import Field, Group
-from dash.orgs.models import Org
+from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgCRUDL, InferOrgMixin, OrgPermsMixin, SmartUpdateView, SmartListView
 from django import forms
 from django.conf import settings
@@ -10,7 +10,6 @@ from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCRUDL
 from timezones.forms import TimeZoneField
-from .models import TaskState
 
 
 class OrgForm(forms.ModelForm):

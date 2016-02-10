@@ -12,13 +12,13 @@ from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch, call
-from temba_client.v1.types import Contact as TembaContact, Group as TembaGroup, Label as TembaLabel, Message as TembaMessage
+from temba_client.v1.types import Contact as TembaContact, Label as TembaLabel, Message as TembaMessage
 from temba_client.v1.types import Broadcast as TembaBroadcast
 from temba_client.clients import Pager
 from temba_client.utils import format_iso8601
 from . import safe_max, normalize, match_keywords, truncate, str_to_bool
 from .context_processors import contact_ext_url, sentry_dsn
-from .models import AccessLevel, Case, CaseAction, CaseEvent, Contact, Group, Label, RemoteMessage, MessageAction
+from .models import AccessLevel, Case, CaseAction, CaseEvent, Contact, Label, RemoteMessage, MessageAction
 from .models import MessageExport, Partner, Outgoing
 from .utils import datetime_to_microseconds, microseconds_to_datetime
 

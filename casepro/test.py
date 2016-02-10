@@ -5,7 +5,8 @@ import pytz
 
 from dash.test import DashTest
 from django.contrib.auth.models import User
-from casepro.cases.models import Group, Label, Partner
+from casepro.cases.models import Label, Partner
+from casepro.contacts.models import Group
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 
 
@@ -41,10 +42,10 @@ class BaseCasesTest(DashTest):
         self.code = self.create_label(self.nyaruka, "Code", 'Messages about code',
                                       ['java', 'python', 'go'], [self.klab], 'L-003')
 
-        # some filter groups
-        self.males = self.create_group(self.unicef, 'Males', 'G-001')
-        self.females = self.create_group(self.unicef, 'Females', 'G-002')
-        self.coders = self.create_group(self.nyaruka, 'Coders', 'G-003')
+        # some groups
+        self.males = self.create_group(self.unicef, 'G-001', 'Males')
+        self.females = self.create_group(self.unicef, 'G-002', 'Females')
+        self.coders = self.create_group(self.nyaruka, 'G-003', 'Coders')
 
     def create_partner(self, org, name):
         return Partner.create(org, name, None)
@@ -60,8 +61,8 @@ class BaseCasesTest(DashTest):
     def create_label(self, org, name, description, words, partners, uuid):
         return Label.create(org, name, description, words, partners, uuid)
 
-    def create_group(self, org, name, uuid):
-        return Group.create(org, name, uuid)
+    def create_group(self, org, uuid, name):
+        return Group.create(org, uuid, name)
 
     def datetime(self, year, month, day, hour=0, minute=0, second=0, microsecond=0, tz=pytz.UTC):
         return datetime.datetime(year, month, day, hour, minute, second, microsecond, tz)

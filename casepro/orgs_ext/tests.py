@@ -11,12 +11,10 @@ class OrgExtCRUDLTest(BaseCasesTest):
 
         self.state = Field.create(self.unicef, 'state', "State")
         self.age = Field.create(self.unicef, 'age', "Age")
-        self.reporters = Group.create(self.unicef, 'G-001', "U-Reporters")
-        self.optedout = Group.create(self.unicef, 'G-002', "Opted Out")
 
         self.unicef.set_banner_text("Howdy (U)Partner!")
         self.unicef.set_contact_fields([self.age.key])
-        self.unicef.set_suspend_groups([self.reporters.uuid])
+        self.unicef.set_suspend_groups([self.males.uuid])
 
     def test_home(self):
         url = reverse('orgs_ext.org_home')
@@ -42,7 +40,7 @@ class OrgExtCRUDLTest(BaseCasesTest):
         self.assertEqual(form_fields['contact_fields'].choices,
                          [('age', "Age (age)"), ('state', "State (state)")])
         self.assertEqual(form_fields['contact_fields'].initial, ['age'])
-        self.assertEqual(form_fields['suspend_groups'].choices,
-                         [(self.optedout.uuid, "Opted Out"), (self.reporters.uuid, "U-Reporters")])
-        self.assertEqual(form_fields['suspend_groups'].initial, [self.reporters.uuid])
+        self.assertEqual(form_fields['suspend_groups'].choices, [(self.females.uuid, "Females"),
+                                                                 (self.males.uuid, "Males")])
+        self.assertEqual(form_fields['suspend_groups'].initial, [self.males.uuid])
 

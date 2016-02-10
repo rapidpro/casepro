@@ -3,11 +3,15 @@ from __future__ import unicode_literals
 
 from casepro.test import BaseCasesTest
 from temba_client.v2.types import Contact as TembaContact, ObjectRef as TembaObjectRef
-from .models import Contact, Group
+from .models import Contact, Group, Field
 
 
 class ContactTest(BaseCasesTest):
     def test_save(self):
+        # start with no groups or fields
+        Group.objects.all().delete()
+        Field.objects.all().delete()
+
         kwargs = Contact.kwargs_from_temba(self.unicef, TembaContact.create(
                 uuid="C-001",
                 name="Bob McFlow",
