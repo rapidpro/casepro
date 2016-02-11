@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 from casepro.contacts.models import Contact, Group, Field
 from casepro.test import BaseCasesTest
-from casepro.dash_ext import MockClientQuery
+from dash.test import MockClientQuery
 from django.utils import timezone
 from mock import patch
 from temba_client.v2.types import Group as TembaGroup, Field as TembaField
