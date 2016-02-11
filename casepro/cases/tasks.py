@@ -6,9 +6,4 @@ from djcelery_transactions import task
 logger = get_task_logger(__name__)
 
 
-@task
-def message_export(export_id):
-    from .models import MessageExport
 
-    export = MessageExport.objects.get(pk=export_id)
-    export.do_export()

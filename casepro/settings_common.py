@@ -301,9 +301,9 @@ PERMISSIONS = {
 
     'orgs.org': ('create', 'update', 'list', 'edit', 'home', 'inbox'),
 
-    'cases.case': ('create', 'read', 'update', 'list'),
+    'msgs.messageexport': ('create', 'read'),
 
-    'cases.messageexport': ('create', 'read'),
+    'cases.case': ('create', 'read', 'update', 'list'),
 
     'cases.label': ('create', 'update', 'list', 'unlabelled'),
 
@@ -322,38 +322,47 @@ GROUP_PERMISSIONS = {
         'orgs.org_edit',
         'orgs.org_inbox',
 
+        'msgs.messageexport.*',
+
         'cases.case.*',
-        'cases.messageexport.*',
         'cases.label.*',
         'cases.partner.*',
+
         'contacts.contact.*',
         'contacts.group.*',
         'contacts.field.*',
+
         'profiles.profile.*',
     ),
     "Editors": (
         'orgs.org_inbox',
+
+        'msgs.messageexport_create',
+        'msgs.messageexport_read',
+
         'cases.case_create',
         'cases.case_read',
         'cases.case_update',
         'cases.case_list',
-        'cases.messageexport_create',
-        'cases.messageexport_read',
         'cases.partner_list',
         'cases.partner_read',
+
         'profiles.profile_user_create',
         'profiles.profile_user_read',
     ),
     "Viewers": (
         'orgs.org_inbox',
+
+        'msgs.messageexport_create',
+        'msgs.messageexport_read',
+
         'cases.case_create',
         'cases.case_read',
         'cases.case_update',
         'cases.case_list',
-        'cases.messageexport_create',
-        'cases.messageexport_read',
         'cases.partner_list',
         'cases.partner_read',
+
         'profiles.profile_user_read',
     ),
 }

@@ -1,8 +1,6 @@
 # coding=utf-8
 from __future__ import absolute_import, unicode_literals
 
-import pytz
-
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
 from casepro.utils import datetime_to_microseconds, microseconds_to_datetime
@@ -10,7 +8,6 @@ from datetime import datetime
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
-from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch
 from temba_client.v1.types import Contact as TembaContact, Label as TembaLabel, Message as TembaMessage
@@ -19,7 +16,7 @@ from temba_client.clients import Pager
 from temba_client.utils import format_iso8601
 from .context_processors import contact_ext_url, sentry_dsn
 from .models import AccessLevel, Case, CaseAction, CaseEvent, Contact, Label, RemoteMessage, MessageAction
-from .models import MessageExport, Partner, Outgoing
+from .models import Partner, Outgoing
 
 
 class CaseTest(BaseCasesTest):
@@ -740,54 +737,6 @@ class RemoteMessageTest(BaseCasesTest):
         msg = TembaMessage.create(id=101, broadcast=201, text="Yo")
         RemoteMessage.annotate_with_sender(self.unicef, [msg])
         self.assertEqual(msg.sender, self.user2)
-
-
-class MessageExportCRUDLTest(BaseCasesTest):
-    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
-    @patch('dash.orgs.models.TembaClient1.get_messages')
-    @patch('dash.orgs.models.TembaClient1.get_contacts')
-    def test_create_and_read(self, mock_get_contacts, mock_get_messages):
-        mock_get_messages.return_value = [
-            TembaMessage.create(id=101, contact='C-001', text="What is HIV?", created_on=timezone.now(),
-                                labels=['AIDS']),
-            TembaMessage.create(id=102, contact='C-002', text="I ♡ RapidPro", created_on=timezone.now(),
-                                labels=[])
-        ]
-        mock_get_contacts.return_value = [
-            TembaContact.create(uuid='C-001', urns=[], groups=[],
-                                fields={'nickname': "Bob", 'age': 28, 'state': "WA"}),
-            TembaContact.create(uuid='C-002', urns=[], groups=[],
-                                fields={'nickname': "Ann", 'age': 32, 'state': "IN"})
-        ]
-
-        self.unicef.record_message_time(timezone.now(), True)
-
-        # log in as a non-administrator
-        self.login(self.user1)
-
-        response = self.url_post('unicef', '%s?view=inbox&text=&after=2015-04-01T22:00:00.000Z' % reverse('cases.messageexport_create'))
-        self.assertEqual(response.status_code, 200)
-
-        mock_get_messages.assert_called_once_with(archived=False, labels=['AIDS', 'Pregnancy'],
-                                                  contacts=None, groups=None, text='', _types=None, direction='I',
-                                                  after=datetime(2015, 4, 1, 22, 0, 0, 0, pytz.UTC), before=None,
-                                                  pager=None)
-
-        mock_get_contacts.assert_called_once_with(uuids=['C-001', 'C-002'])
-
-        export = MessageExport.objects.get()
-        self.assertEqual(export.created_by, self.user1)
-
-        read_url = reverse('cases.messageexport_read', args=[export.pk])
-
-        response = self.url_get('unicef', read_url)
-        self.assertEqual(response.status_code, 200)
-
-        # user from another org can't access this download
-        self.login(self.norbert)
-
-        response = self.url_get('unicef', read_url)
-        self.assertEqual(response.status_code, 302)
 
 
 class MessageViewsTest(BaseCasesTest):

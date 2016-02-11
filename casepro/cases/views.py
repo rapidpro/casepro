@@ -1,13 +1,12 @@
 from __future__ import absolute_import, unicode_literals
 
 from casepro.contacts.models import Group
-from casepro.utils import parse_csv, json_encode, normalize, str_to_bool, datetime_to_microseconds, microseconds_to_datetime
+from casepro.msgs.views import MessageView, MessageSearchMixin
+from casepro.utils import parse_csv, json_encode, normalize, datetime_to_microseconds, microseconds_to_datetime
 from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django import forms
 from django.core.cache import cache
-from django.core.files.storage import default_storage
-from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
@@ -16,18 +15,13 @@ from enum import Enum
 from smartmin.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView
 from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
-from . import MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
-from .models import AccessLevel, Case, Label, RemoteMessage, MessageAction, MessageExport, Partner, Outgoing
-from .tasks import message_export
+from . import MAX_MESSAGE_CHARS
+from .models import AccessLevel, Case, Label, RemoteMessage, MessageAction, Partner, Outgoing
 
 
-class ItemView(Enum):
-    inbox = 1
-    flagged = 2
-    archived = 3
-    unlabelled = 4
-    open = 5
-    closed = 6
+class CaseView(Enum):
+    open = 1
+    closed = 2
 
 
 class CaseCRUDL(SmartCRUDL):
@@ -185,7 +179,7 @@ class CaseCRUDL(SmartCRUDL):
 
         def derive_queryset(self, **kwargs):
             label_id = self.request.GET.get('label', None)
-            view = ItemView[self.request.GET['view']]
+            view = CaseView[self.request.GET['view']]
             assignee_id = self.request.GET.get('assignee', None)
 
             before = self.request.REQUEST.get('before', None)
@@ -195,9 +189,9 @@ class CaseCRUDL(SmartCRUDL):
 
             assignee = Partner.get_all(self.request.org).get(pk=assignee_id) if assignee_id else None
 
-            if view == ItemView.open:
+            if view == CaseView.open:
                 qs = Case.get_open(self.request.org, user=self.request.user, label=label)
-            elif view == ItemView.closed:
+            elif view == CaseView.closed:
                 qs = Case.get_closed(self.request.org, user=self.request.user, label=label)
             else:
                 raise ValueError('Invalid item view for cases')
@@ -358,54 +352,6 @@ class LabelCRUDL(SmartCRUDL):
             return ', '.join([p.name for p in obj.get_partners()])
 
 
-class MessageSearchMixin(object):
-    def derive_search(self):
-        """
-        Collects and prepares message search parameters into JSON serializable dict
-        """
-        request = self.request
-        view = ItemView[request.GET['view']]
-        after = parse_iso8601(request.GET.get('after', None))
-        before = parse_iso8601(request.GET.get('before', None))
-
-        label_objs = Label.get_all(request.org, request.user)
-
-        if view == ItemView.unlabelled:
-            labels = [('-%s' % l.name) for l in label_objs]
-            msg_types = ['I']
-        else:
-            label_id = request.GET.get('label', None)
-            if label_id:
-                label_objs = label_objs.filter(pk=label_id)
-            labels = [l.name for l in label_objs]
-            msg_types = None
-
-        if view == ItemView.flagged:
-            labels.append('+%s' % SYSTEM_LABEL_FLAGGED)
-
-        contact = request.GET.get('contact', None)
-        contacts = [contact] if contact else None
-
-        groups = request.GET.get('groups', None)
-        groups = parse_csv(groups) if groups else None
-
-        if view == ItemView.archived:
-            archived = True  # only archived
-        elif str_to_bool(request.GET.get('archived', '')):
-            archived = None  # both archived and non-archived
-        else:
-            archived = False  # only non-archived
-
-        return {'labels': labels,
-                'contacts': contacts,
-                'groups': groups,
-                'after': after,
-                'before': before,
-                'text': request.GET.get('text', None),
-                'types': msg_types,
-                'archived': archived}
-
-
 class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
     """
     JSON endpoint for fetching messages
@@ -524,49 +470,6 @@ class MessageHistoryView(OrgPermsMixin, View):
         return JsonResponse({'actions': actions})
 
 
-class MessageExportCRUDL(SmartCRUDL):
-    model = MessageExport
-    actions = ('create', 'read')
-
-    class Create(OrgPermsMixin, MessageSearchMixin, SmartCreateView):
-        def post(self, request, *args, **kwargs):
-            search = self.derive_search()
-            export = MessageExport.create(self.request.org, self.request.user, search)
-
-            message_export.delay(export.pk)
-
-            return JsonResponse({'export_id': export.pk})
-
-    class Read(OrgObjPermsMixin, SmartReadView):
-        """
-        Download view for message exports
-        """
-        title = _("Download Messages")
-
-        @classmethod
-        def derive_url_pattern(cls, path, action):
-            return r'%s/download/(?P<pk>\d+)/' % path
-
-        def get(self, request, *args, **kwargs):
-            if 'download' in request.GET:
-                export = self.get_object()
-
-                export_file = default_storage.open(export.filename, 'rb')
-                user_filename = 'message_export.xls'
-
-                response = HttpResponse(export_file, content_type='application/vnd.ms-excel')
-                response['Content-Disposition'] = 'attachment; filename=%s' % user_filename
-
-                return response
-            else:
-                return super(MessageExportCRUDL.Read, self).get(request, *args, **kwargs)
-
-        def get_context_data(self, **kwargs):
-            context = super(MessageExportCRUDL.Read, self).get_context_data(**kwargs)
-            context['download_url'] = '%s?download=1' % reverse('cases.messageexport_read', args=[self.object.pk])
-            return context
-
-
 class PartnerForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         org = kwargs.pop('org')
@@ -675,7 +578,7 @@ class InboxView(BaseHomeView):
     template_name = 'cases/home_messages.haml'
     title = _("Inbox")
     folder_icon = 'glyphicon-inbox'
-    item_view = ItemView.inbox
+    item_view = MessageView.inbox
 
 
 class FlaggedView(BaseHomeView):
@@ -685,7 +588,7 @@ class FlaggedView(BaseHomeView):
     template_name = 'cases/home_messages.haml'
     title = _("Flagged")
     folder_icon = 'glyphicon-flag'
-    item_view = ItemView.flagged
+    item_view = MessageView.flagged
 
 
 class ArchivedView(BaseHomeView):
@@ -695,7 +598,7 @@ class ArchivedView(BaseHomeView):
     template_name = 'cases/home_messages.haml'
     title = _("Archived")
     folder_icon = 'glyphicon-trash'
-    item_view = ItemView.archived
+    item_view = MessageView.archived
 
 
 class UnlabelledView(BaseHomeView):
@@ -705,7 +608,7 @@ class UnlabelledView(BaseHomeView):
     template_name = 'cases/home_messages.haml'
     title = _("Unlabelled")
     folder_icon = 'glyphicon-bullhorn'
-    item_view = ItemView.unlabelled
+    item_view = MessageView.unlabelled
 
 
 class OpenCasesView(BaseHomeView):
@@ -715,7 +618,7 @@ class OpenCasesView(BaseHomeView):
     template_name = 'cases/home_cases.haml'
     title = _("Open Cases")
     folder_icon = 'glyphicon-folder-open'
-    item_view = ItemView.open
+    item_view = CaseView.open
 
 
 class ClosedCasesView(BaseHomeView):
@@ -725,7 +628,7 @@ class ClosedCasesView(BaseHomeView):
     template_name = 'cases/home_cases.haml'
     title = _("Closed Cases")
     folder_icon = 'glyphicon-folder-close'
-    item_view = ItemView.closed
+    item_view = CaseView.closed
 
 
 class StatusView(View):
