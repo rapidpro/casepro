@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import djcelery
+import os
 import sys
 
 from celery.schedules import crontab
@@ -270,11 +271,9 @@ LOGGING = {
     }
 }
 
-#-----------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------
 # Directory Configuration
-#-----------------------------------------------------------------------------------
-import os
-
+# -----------------------------------------------------------------------------------
 PROJECT_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)))
 RESOURCES_DIR = os.path.join(PROJECT_DIR, '../resources')
 
@@ -288,9 +287,9 @@ STATIC_ROOT = os.path.join(PROJECT_DIR, '../sitestatic')
 MEDIA_ROOT = os.path.join(PROJECT_DIR, '../media')
 MEDIA_URL = "/media/"
 
-#-----------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------
 # Permission Management
-#-----------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------
 
 # this lets us easily create new permissions across our objects
 PERMISSIONS = {
@@ -357,9 +356,9 @@ GROUP_PERMISSIONS = {
     ),
 }
 
-#-----------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------
 # Login / Logout
-#-----------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------
 LOGIN_URL = "/users/login/"
 LOGOUT_URL = "/users/logout/"
 LOGIN_REDIRECT_URL = "/"
@@ -372,15 +371,15 @@ AUTHENTICATION_BACKENDS = (
 
 ANONYMOUS_USER_ID = -1
 
-#-----------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------
 # Debug Toolbar
-#-----------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------
 
 INTERNAL_IPS = ('127.0.0.1',)
 
-#-----------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------
 # Django-celery
-#-----------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------
 djcelery.setup_loader()
 
 BROKER_URL = 'redis://localhost:6379/%d' % (10 if TESTING else 15)
@@ -388,12 +387,12 @@ CELERY_RESULT_BACKEND = BROKER_URL
 
 CELERYBEAT_SCHEDULE = {
     'message-pull': {
-        'task': 'casepro.dash_ext.tasks.trigger_org_task',
+        'task': 'dash.orgs.tasks.trigger_org_task',
         'schedule': crontab(minute=[0, 10, 20, 30, 40, 50]),
         'args': ('casepro.msgs.tasks.pull_messages', 'sync')
     },
     'contact-pull': {
-        'task': 'casepro.dash_ext.tasks.trigger_org_task',
+        'task': 'dash.orgs.tasks.trigger_org_task',
         'schedule': crontab(minute=[5, 15, 25, 35, 45, 55]),
         'args': ('casepro.contacts.tasks.pull_contacts', 'sync')
     },
