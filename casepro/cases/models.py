@@ -6,6 +6,8 @@ import re
 
 from casepro.contacts.models import Group, Field
 from casepro.msgs.models import Outgoing
+from casepro.utils import parse_csv, normalize, match_keywords, safe_max, JSONEncoder
+from casepro.utils.email import send_email
 from dash.orgs.models import Org
 from dash.utils import random_string, chunks, intersection
 from datetime import timedelta
@@ -25,9 +27,7 @@ from enum import IntEnum
 from redis_cache import get_redis_connection
 from temba_client.exceptions import TembaNoSuchObjectError, TembaException
 from temba_client.utils import parse_iso8601
-from casepro.email import send_email
-from . import parse_csv, normalize, match_keywords, safe_max, SYSTEM_LABEL_FLAGGED
-from .utils import JSONEncoder
+from . import SYSTEM_LABEL_FLAGGED
 
 
 # only show unlabelled messages newer than 2 weeks

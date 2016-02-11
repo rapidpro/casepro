@@ -5,22 +5,21 @@ import pytz
 
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
-from datetime import date, datetime
+from casepro.utils import datetime_to_microseconds, microseconds_to_datetime
+from datetime import datetime
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
 from django.utils import timezone
-from mock import patch, call
+from mock import patch
 from temba_client.v1.types import Contact as TembaContact, Label as TembaLabel, Message as TembaMessage
 from temba_client.v1.types import Broadcast as TembaBroadcast
 from temba_client.clients import Pager
 from temba_client.utils import format_iso8601
-from . import safe_max, normalize, match_keywords, truncate, str_to_bool
 from .context_processors import contact_ext_url, sentry_dsn
 from .models import AccessLevel, Case, CaseAction, CaseEvent, Contact, Label, RemoteMessage, MessageAction
 from .models import MessageExport, Partner, Outgoing
-from .utils import datetime_to_microseconds, microseconds_to_datetime
 
 
 class CaseTest(BaseCasesTest):
@@ -538,46 +537,6 @@ class HomeViewsTest(BaseCasesTest):
 
         # should not provide external contact links
         self.assertNotContains(response, "http://localhost:8001/contact/read/{}/")
-
-
-class InitTest(BaseCasesTest):
-    def test_safe_max(self):
-        self.assertEqual(safe_max(1, 2, 3), 3)
-        self.assertEqual(safe_max(None, 2, None), 2)
-        self.assertEqual(safe_max(None, None), None)
-        self.assertEqual(safe_max(date(2012, 3, 6), date(2012, 5, 2), None), date(2012, 5, 2))
-
-    def test_normalize(self):
-        self.assertEqual(normalize("Mary  had\ta little lamb"), "mary had a little lamb")  # remove multiple spaces
-        self.assertEqual(normalize("Gar\u00e7on"), "garc\u0327on")  # decomposed combined unicode chars (U+E7 = ç)
-
-    def test_match_keywords(self):
-        text = "Mary had a little lamb"
-        self.assertFalse(match_keywords(text, []))
-        self.assertFalse(match_keywords(text, ['sheep']))
-        self.assertFalse(match_keywords(text, ['lambburger']))  # complete word matches only
-
-        self.assertTrue(match_keywords(text, ['mary']))  # case-insensitive and start of string
-        self.assertTrue(match_keywords(text, ['lamb']))  # end of string
-        self.assertTrue(match_keywords(text, ['big', 'little']))  # one match, one mis-match
-        self.assertTrue(match_keywords(text, ['little lamb']))  # spaces ok
-
-    def test_truncate(self):
-        self.assertEqual(truncate("Hello World", 8), "Hello...")
-        self.assertEqual(truncate("Hello World", 8, suffix="_"), "Hello W_")
-        self.assertEqual(truncate("Hello World", 98), "Hello World")
-
-    def test_str_to_bool(self):
-        self.assertFalse(str_to_bool("0"))
-        self.assertFalse(str_to_bool("fALSe"))
-        self.assertFalse(str_to_bool("N"))
-        self.assertFalse(str_to_bool("No"))
-        self.assertFalse(str_to_bool("x"))
-
-        self.assertTrue(str_to_bool("1"))
-        self.assertTrue(str_to_bool("TrUE"))
-        self.assertTrue(str_to_bool("Y"))
-        self.assertTrue(str_to_bool("YeS"))
 
 
 class LabelTest(BaseCasesTest):
@@ -1120,12 +1079,3 @@ class InternalViewsTest(BaseCasesTest):
         url = reverse('internal.ping')
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
-
-
-class UtilsTest(BaseCasesTest):
-
-    def test_microseconds_to_datetime(self):
-        d1 = datetime(2015, 10, 9, 14, 48, 30, 123456, tzinfo=pytz.utc).astimezone(pytz.timezone("Africa/Kigali"))
-        ms = datetime_to_microseconds(d1)
-        d2 = microseconds_to_datetime(ms)
-        self.assertEqual(d2, datetime(2015, 10, 9, 14, 48, 30, 123456, tzinfo=pytz.utc))

@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from casepro.contacts.models import Group
+from casepro.utils import parse_csv, json_encode, normalize, str_to_bool, datetime_to_microseconds, microseconds_to_datetime
 from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django import forms
@@ -15,10 +16,9 @@ from enum import Enum
 from smartmin.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView
 from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
-from . import parse_csv, json_encode, normalize, str_to_bool, MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
+from . import MAX_MESSAGE_CHARS, SYSTEM_LABEL_FLAGGED
 from .models import AccessLevel, Case, Label, RemoteMessage, MessageAction, MessageExport, Partner, Outgoing
 from .tasks import message_export
-from .utils import datetime_to_microseconds, microseconds_to_datetime
 
 
 class ItemView(Enum):
