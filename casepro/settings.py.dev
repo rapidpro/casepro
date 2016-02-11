@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-from datetime import timedelta
-
 # import our default settings
 from settings_common import *
 

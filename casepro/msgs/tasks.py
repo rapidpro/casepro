@@ -29,6 +29,8 @@ def pull_messages(org, since, until):
 def message_export(export_id):
     from .models import MessageExport
 
+    logger.info("Starting message export #%d..." % export_id)
+
     export = MessageExport.objects.get(pk=export_id)
     export.do_export()
 

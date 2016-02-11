@@ -221,9 +221,6 @@ INSTALLED_APPS = (
     # users
     'smartmin.users',
 
-    # async tasks,
-    'djcelery',
-
     # dash apps
     'dash.orgs',
     'dash.utils',

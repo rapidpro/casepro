@@ -4,6 +4,7 @@ from casepro.utils import parse_csv, str_to_bool
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django.core.files.storage import default_storage
 from django.core.urlresolvers import reverse
+from django.db.transaction import non_atomic_requests
 from django.http import HttpResponse, JsonResponse
 from django.utils.translation import ugettext_lazy as _
 from enum import Enum
@@ -75,6 +76,7 @@ class MessageExportCRUDL(SmartCRUDL):
     actions = ('create', 'read')
 
     class Create(OrgPermsMixin, MessageSearchMixin, SmartCreateView):
+        @non_atomic_requests
         def post(self, request, *args, **kwargs):
             search = self.derive_search()
             export = MessageExport.create(self.request.org, self.request.user, search)

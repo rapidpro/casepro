@@ -5,7 +5,6 @@ celery[redis]
 coverage
 django
 django-celery
-django-celery-transactions
 django-compressor
 django-debug-toolbar
 django-digest
