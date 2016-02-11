@@ -51,7 +51,7 @@ class OrgExtCRUDL(SmartCRUDL):
             return _("My Organization")
 
         def get_contact_fields(self, obj):
-            return ', '.join(obj.get_contact_fields())
+            return ', '.join([f.key for f in Field.get_all(obj, visible=True)])
 
         def get_administrators(self, obj):
             admins = obj.administrators.exclude(profile=None).order_by('profile__full_name').select_related('profile')
@@ -82,10 +82,10 @@ class OrgExtCRUDL(SmartCRUDL):
 
                 field_choices = []
                 for field in Field.objects.filter(org=org, is_active=True).order_by('label'):
-                    field_choices.append((field.key, "%s (%s)" % (field.label, field.key)))
+                    field_choices.append((field.pk, "%s (%s)" % (field.label, field.key)))
 
                 self.fields['contact_fields'].choices = field_choices
-                self.fields['contact_fields'].initial = org.get_contact_fields()  # TODO these can be stored as pk
+                self.fields['contact_fields'].initial = [f.pk for f in Field.get_all(org, visible=True)]
 
                 group_choices = []
                 for group in Group.get_all(org).order_by('name'):
@@ -111,13 +111,16 @@ class OrgExtCRUDL(SmartCRUDL):
         def pre_save(self, obj):
             obj = super(OrgExtCRUDL.Edit, self).pre_save(obj)
             obj.set_banner_text(self.form.cleaned_data['banner_text'])
-            obj.set_contact_fields(self.form.cleaned_data['contact_fields'])
+
+            field_ids = self.form.cleaned_data['contact_fields']
+
+            Field.get_all(self.request.org).filter(pk__in=field_ids).update(is_visible=True)
+            Field.get_all(self.request.org).exclude(pk__in=field_ids).update(is_visible=False)
 
             group_ids = self.form.cleaned_data['suspend_groups']
-            org_groups = Group.objects.filter(org=self.request.org)
 
-            org_groups.filter(pk__in=group_ids).update(suspend_from=True)
-            org_groups.exclude(pk__in=group_ids).update(suspend_from=False)
+            Group.get_all(self.request.org).filter(pk__in=group_ids).update(suspend_from=True)
+            Group.get_all(self.request.org).exclude(pk__in=group_ids).update(suspend_from=False)
 
             return obj
 

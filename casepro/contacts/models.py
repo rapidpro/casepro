@@ -35,10 +35,6 @@ class Group(models.Model):
                                        help_text=_("Whether contacts should be suspended from this group during a case"))
 
     @classmethod
-    def create(cls, org, uuid, name):
-        return cls.objects.create(org=org, uuid=uuid, name=name)
-
-    @classmethod
     def get_all(cls, org, visible=None):
         qs = cls.objects.filter(org=org, is_active=True)
         if visible is not None:
@@ -100,9 +96,14 @@ class Field(models.Model):
 
     is_active = models.BooleanField(default=True, help_text="Whether this field is active")
 
+    is_visible = models.BooleanField(default=False, help_text=_("Whether this field is visible to partner users"))
+
     @classmethod
-    def create(cls, org, key, label=None):
-        return cls.objects.create(org=org, key=key, label=label)
+    def get_all(cls, org, visible=None):
+        qs = cls.objects.filter(org=org, is_active=True)
+        if visible is not None:
+            qs = qs.filter(is_visible=visible)
+        return qs
 
     @classmethod
     def sync_identity(cls, instance):
@@ -163,6 +164,10 @@ class Contact(models.Model):
 
     @classmethod
     def get_or_create(cls, org, uuid, name):
+        """
+        Gets an existing contact or creates a stub contact. Used when receiving messages where the contact might not
+        have been synced yet
+        """
         with cls.sync_lock(uuid):
             existing = cls.objects.filter(org=org, uuid=uuid)
             if existing:
@@ -186,6 +191,7 @@ class Contact(models.Model):
             'uuid': temba_instance.uuid,
             'name': temba_instance.name,
             'language': temba_instance.language,
+            'is_stub': False,
             SAVE_GROUPS_ATTR: [(g.uuid, g.name) for g in temba_instance.groups],  # updated by post-save signal handler
             SAVE_FIELDS_ATTR: temba_instance.fields
         }

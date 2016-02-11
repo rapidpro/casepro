@@ -9,11 +9,7 @@ class OrgExtCRUDLTest(BaseCasesTest):
     def setUp(self):
         super(OrgExtCRUDLTest, self).setUp()
 
-        self.state = Field.create(self.unicef, 'state', "State")
-        self.age = Field.create(self.unicef, 'age', "Age")
-
         self.unicef.set_banner_text("Howdy (U)Partner!")
-        self.unicef.set_contact_fields([self.age.key])
 
     def test_home(self):
         url = reverse('orgs_ext.org_home')
@@ -39,9 +35,10 @@ class OrgExtCRUDLTest(BaseCasesTest):
         self.assertEqual(form.initial['timezone'], "Africa/Kampala")
 
         self.assertEqual(form.fields['banner_text'].initial, "Howdy (U)Partner!")
-        self.assertEqual(form.fields['contact_fields'].choices,
-                         [('age', "Age (age)"), ('state', "State (state)")])
-        self.assertEqual(form.fields['contact_fields'].initial, ['age'])
+        self.assertEqual(form.fields['contact_fields'].choices, [(self.age.pk, "Age (age)"),
+                                                                 (self.nickname.pk, "Nickname (nickname)"),
+                                                                 (self.state.pk, "State (state)")])
+        self.assertEqual(set(form.fields['contact_fields'].initial), {self.age.pk, self.nickname.pk})
         self.assertEqual(form.fields['suspend_groups'].choices, [(self.females.pk, "Females"),
                                                                  (self.males.pk, "Males"),
                                                                  (self.reporters.pk, "Reporters")])
@@ -50,7 +47,7 @@ class OrgExtCRUDLTest(BaseCasesTest):
         # test updating
         response = self.url_post('unicef', url, {
             'name': "UNIZEFF", 'timezone': "Africa/Kigali", 'banner_text': "Chill",
-            'contact_fields': ['state'], 'suspend_groups': [self.males.pk]
+            'contact_fields': [self.state.pk], 'suspend_groups': [self.males.pk]
         })
 
         self.assertEqual(response.status_code, 302)
@@ -61,6 +58,6 @@ class OrgExtCRUDLTest(BaseCasesTest):
         self.assertEqual(self.unicef.name, "UNIZEFF")
         self.assertEqual(self.unicef.timezone, "Africa/Kigali")
         self.assertEqual(self.unicef.get_banner_text(), "Chill")
-        self.assertEqual(self.unicef.get_contact_fields(), ['state'])
 
         self.assertEqual(set(Group.get_suspend_from(self.unicef)), {self.males})
+        self.assertEqual(set(Field.get_all(self.unicef, visible=True)), {self.state})

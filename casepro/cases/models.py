@@ -4,7 +4,7 @@ import json
 import pytz
 import re
 
-from casepro.contacts.models import Group
+from casepro.contacts.models import Group, Field
 from casepro.msgs.models import Outgoing
 from dash.orgs.models import Org
 from dash.utils import random_string, chunks, intersection
@@ -80,7 +80,7 @@ class MessageExport(models.Model):
         date_style.num_format_str = 'DD-MM-YYYY HH:MM:SS'
 
         base_fields = ["Time", "Message ID", "Flagged", "Labels", "Text", "Contact"]
-        contact_fields = self.org.get_contact_fields()
+        contact_fields = [f.key for f in Field.get_all(self.org, visible=True)]
         all_fields = base_fields + contact_fields
         label_map = {l.name: l for l in Label.get_all(self.org)}
 
@@ -381,7 +381,7 @@ class Contact(models.Model):
             temba_contact = self.fetch()
             temba_fields = temba_contact.fields if temba_contact else {}
 
-            allowed_keys = self.org.get_contact_fields()
+            allowed_keys = [f.key for f in Field.get_all(self.org, visible=True)]
             fields = {key: temba_fields.get(key, None) for key in allowed_keys}
         else:
             fields = {}

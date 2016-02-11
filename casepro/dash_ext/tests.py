@@ -142,9 +142,9 @@ class SyncTest(BaseCasesTest):
         self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, jim, ann})
         self.assertEqual(set(Contact.objects.filter(is_active=False)), set())
 
-        # contact groups will have been created too
-        customers = Group.objects.get(org=self.unicef, uuid="G-001", name="Customers", is_active=True)
-        spammers = Group.objects.get(org=self.unicef, uuid="G-002", name="Spammers", is_active=True)
+        # stub contact groups will have been created too
+        customers = Group.objects.get(org=self.unicef, uuid="G-001", name="Customers", is_active=False)
+        spammers = Group.objects.get(org=self.unicef, uuid="G-002", name="Spammers", is_active=False)
 
         self.assertEqual(bob.name, "Bob McFlow")
         self.assertEqual(bob.language, "eng")

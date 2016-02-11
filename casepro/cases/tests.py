@@ -338,7 +338,7 @@ class CaseCRUDLTest(BaseCasesTest):
         msg = TembaMessage.create(id=101, contact='C-001', created_on=timezone.now(), text="Hello",
                                   direction='I', labels=[])
         mock_get_messages.return_value = [msg]
-        mock_get_contact.return_value = TembaContact.create(uuid='C-001', name="Bob", fields={'district': "Gasabo"})
+        mock_get_contact.return_value = TembaContact.create(uuid='C-001', name="Bob", fields={'age': "34"})
 
         case = Case.get_or_open(self.unicef, self.user1, [self.aids], msg, "Summary", self.moh, update_contact=False)
 
@@ -502,12 +502,13 @@ class ContactTest(BaseCasesTest):
         contact = Contact.get_or_create(self.unicef, 'C-001')
         self.assertEqual(contact.as_json(fetch_fields=False), {'uuid': 'C-001', 'fields': {}})
 
-        self.unicef.set_contact_fields(['age', 'gender'])
         mock_get_contact.return_value = TembaContact.create(uuid='C-001', name="Bob",
-                                                            fields={'district': "Gasabo", 'age': 32, 'gender': "M"})
+                                                            fields={'nickname': "Bobby", 'age': "32", 'state': "WA"})
 
         # with field fetching
-        self.assertEqual(contact.as_json(fetch_fields=True), {'uuid': 'C-001', 'fields': {'age': 32, 'gender': "M"}})
+        self.assertEqual(contact.as_json(fetch_fields=True), {
+            'uuid': 'C-001', 'fields': {'nickname': "Bobby", 'age': "32"}
+        })
 
 
 class HomeViewsTest(BaseCasesTest):
@@ -795,13 +796,12 @@ class MessageExportCRUDLTest(BaseCasesTest):
         ]
         mock_get_contacts.return_value = [
             TembaContact.create(uuid='C-001', urns=[], groups=[],
-                                fields={'district': "Gasabo", 'age': 28, 'gender': "M"}),
+                                fields={'nickname': "Bob", 'age': 28, 'state': "WA"}),
             TembaContact.create(uuid='C-002', urns=[], groups=[],
-                                fields={'district': "Rubavu", 'age': 32, 'gender': "F"})
+                                fields={'nickname': "Ann", 'age': 32, 'state': "IN"})
         ]
 
         self.unicef.record_message_time(timezone.now(), True)
-        self.unicef.set_contact_fields(['age', 'gender'])
 
         # log in as a non-administrator
         self.login(self.user1)

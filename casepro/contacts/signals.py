@@ -35,7 +35,8 @@ def update_contact_groups(sender, instance, created, **kwargs):
         for uuid, name in six.iteritems(add_to_by_uuid):
             existing = existing_by_uuid.get(uuid)
             if not existing:
-                existing = Group.create(instance.org, uuid, name)
+                # create stub
+                existing = Group.objects.create(org=instance.org, uuid=uuid, name=name, is_active=False)
 
             add_to_groups.append(existing)
 
@@ -69,11 +70,10 @@ def update_contact_fields(sender, instance, created, **kwargs):
                 existing_value.string_value = val
                 existing_value.save(update_fields=('string_value',))
         else:
-            # TODO ideally these would come from cached org.fields.. but haven't yet found a good way to update a
-            # cached field without reloading the entire object
             field = Field.objects.filter(org=org, key=key).first()
             if not field:
-                field = Field.create(org, key)
+                # create stub
+                field = Field.objects.create(org=org, key=key, is_active=False)
 
             Value.objects.create(contact=instance, field=field, string_value=val)
 

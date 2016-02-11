@@ -6,7 +6,7 @@ import pytz
 from dash.test import DashTest
 from django.contrib.auth.models import User
 from casepro.cases.models import Label, Partner
-from casepro.contacts.models import Group
+from casepro.contacts.models import Group, Field
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 
 
@@ -45,11 +45,14 @@ class BaseCasesTest(DashTest):
         # some groups
         self.males = self.create_group(self.unicef, 'G-001', 'Males')
         self.females = self.create_group(self.unicef, 'G-002', 'Females')
-        self.reporters = self.create_group(self.unicef, 'G-003', 'Reporters')
+        self.reporters = self.create_group(self.unicef, 'G-003', 'Reporters', suspend_from=True)
         self.coders = self.create_group(self.nyaruka, 'G-004', 'Coders')
 
-        self.reporters.suspend_from = True
-        self.reporters.save()
+        # some fields
+        self.nickname = self.create_field(self.unicef, 'nickname', "Nickname", value_type='T')
+        self.age = self.create_field(self.unicef, 'age', "Age", value_type='N')
+        self.state = self.create_field(self.unicef, 'state', "State", value_type='S', is_visible=False)
+        self.motorbike = self.create_field(self.nyaruka, 'motorbike', "Moto", value_type='T')
 
     def create_partner(self, org, name):
         return Partner.create(org, name, None)
@@ -65,8 +68,11 @@ class BaseCasesTest(DashTest):
     def create_label(self, org, name, description, words, partners, uuid):
         return Label.create(org, name, description, words, partners, uuid)
 
-    def create_group(self, org, uuid, name):
-        return Group.create(org, uuid, name)
+    def create_group(self, org, uuid, name, is_visible=True, suspend_from=False):
+        return Group.objects.create(org=org, uuid=uuid, name=name, is_visible=is_visible, suspend_from=suspend_from)
+
+    def create_field(self, org, key, label, value_type='T', is_visible=True):
+        return Field.objects.create(org=org, key=key, label=label, value_type=value_type, is_visible=is_visible)
 
     def datetime(self, year, month, day, hour=0, minute=0, second=0, microsecond=0, tz=pytz.UTC):
         return datetime.datetime(year, month, day, hour, minute, second, microsecond, tz)

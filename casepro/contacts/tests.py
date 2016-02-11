@@ -28,6 +28,7 @@ class ContactTest(BaseCasesTest):
             'uuid': "C-001",
             'name': "Bob McFlow",
             'language': "eng",
+            'is_stub': False,
             '__data__groups': [("G-001", "Customers")],
             '__data__fields': {'age': "34"},
         })
