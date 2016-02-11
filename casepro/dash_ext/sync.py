@@ -97,9 +97,9 @@ def _sync_local_to_incoming(org, model, incoming_objects):
 
         synced_identifiers.add(model.sync_identity(incoming))
 
-    # local objects which weren't in the remote set need to be deleted
+    # active local objects which weren't in the remote set need to be deleted
     for existing in existing_by_identity.values():
-        if model.sync_identity(existing) not in synced_identifiers:
+        if existing.is_active and model.sync_identity(existing) not in synced_identifiers:
             invalid_existing_ids.append(existing.pk)
             num_deleted += 1
 

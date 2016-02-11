@@ -119,7 +119,7 @@ class Field(models.Model):
 
     @classmethod
     def sync_update_required(cls, local, incoming):
-        return local.label != incoming.label or local.value_type != incoming.value_type
+        return local.label != incoming.label or local.value_type != cls.TEMBA_TYPES.get(incoming.value_type)
 
     def __str__(self):
         return self.key

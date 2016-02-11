@@ -73,6 +73,12 @@ class SyncTest(BaseCasesTest):
         Group.objects.get(uuid="G-002", name="Devs", count=32, is_active=True)
         Group.objects.get(uuid="G-003", name="Spammers", count=13, is_active=True)
 
+        # check that no changes means no updates
+        with self.assertNumQueries(1):
+            num_created, num_updated, num_deleted = sync_pull_groups(self.unicef, Group)
+
+        self.assertEqual((num_created, num_updated, num_deleted), (0, 0, 0))
+
     @patch('dash.orgs.models.TembaClient2.get_fields')
     def test_sync_pull_fields(self, mock_get_fields):
         # start with no fields
@@ -104,6 +110,12 @@ class SyncTest(BaseCasesTest):
         Field.objects.get(key="nick_name", label="Nickname", value_type="T", is_active=False)
         Field.objects.get(key="age", label="Age (Years)", value_type="N", is_active=True)
         Field.objects.get(key="homestate", label="Homestate", value_type="S", is_active=True)
+
+        # check that no changes means no updates
+        with self.assertNumQueries(1):
+            num_created, num_updated, num_deleted = sync_pull_fields(self.unicef, Field)
+
+        self.assertEqual((num_created, num_updated, num_deleted), (0, 0, 0))
 
     @patch('dash.orgs.models.TembaClient2.get_contacts')
     def test_sync_pull_contacts(self, mock_get_contacts):
