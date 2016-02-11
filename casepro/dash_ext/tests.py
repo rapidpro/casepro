@@ -86,7 +86,7 @@ class SyncTest(BaseCasesTest):
 
         mock_get_fields.return_value = MockClientQuery([
             TembaField.create(key="nick_name", label="Nickname", value_type="text"),
-            TembaField.create(key="age", label="Age", value_type="decimal"),
+            TembaField.create(key="age", label="Age", value_type="numeric"),
         ])
 
         with self.assertNumQueries(3):
@@ -98,7 +98,7 @@ class SyncTest(BaseCasesTest):
         Field.objects.get(key="age", label="Age", value_type="N", is_active=True)
 
         mock_get_fields.return_value = MockClientQuery([
-            TembaField.create(key="age", label="Age (Years)", value_type="decimal"),
+            TembaField.create(key="age", label="Age (Years)", value_type="numeric"),
             TembaField.create(key="homestate", label="Homestate", value_type="state"),
         ])
 

@@ -5,11 +5,12 @@ from django import forms
 from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCRUDL, SmartListView, SmartFormView
-from .models import Contact, Group
+from .models import Contact, Group, Field
 
 
 class ContactCRUDL(SmartCRUDL):
     model = Contact
+    actions = ('list',)
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('uuid', 'name', 'language', 'created_on')
@@ -66,3 +67,14 @@ class GroupCRUDL(SmartCRUDL):
             org_groups.exclude(pk__in=selected_ids).update(is_visible=False)
 
             return HttpResponseRedirect(self.get_success_url())
+
+
+class FieldCRUDL(SmartCRUDL):
+    model = Field
+    actions = ('list',)
+
+    class List(OrgPermsMixin, SmartListView):
+        fields = ('key', 'label', 'value_type')
+
+        def get_queryset(self, **kwargs):
+            return self.model.objects.filter(org=self.request.org)

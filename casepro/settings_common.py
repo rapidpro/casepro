@@ -326,7 +326,9 @@ GROUP_PERMISSIONS = {
         'cases.messageexport.*',
         'cases.label.*',
         'cases.partner.*',
+        'contacts.contact.*',
         'contacts.group.*',
+        'contacts.field.*',
         'profiles.profile.*',
     ),
     "Editors": (
