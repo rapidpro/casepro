@@ -85,7 +85,7 @@ class Field(models.Model):
     TYPE_DISTRICT = 'I'
 
     TEMBA_TYPES = {'text': TYPE_TEXT,
-                   'decimal': TYPE_DECIMAL,
+                   'numeric': TYPE_DECIMAL,
                    'datetime': TYPE_DATETIME,
                    'state': TYPE_STATE,
                    'district': TYPE_DISTRICT}
