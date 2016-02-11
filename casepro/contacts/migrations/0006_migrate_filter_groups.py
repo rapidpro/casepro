@@ -15,7 +15,7 @@ def migrate_filter_groups(apps, schema_editor):
 
     # old filter groups are now just a visibility flag on the new group model
     for old in old_groups:
-        new = Group.objects.filter(uuid=old.uuid)
+        new = Group.objects.filter(uuid=old.uuid).first()
         if new:
             new.is_visible = True
             new.save(update_fields=('is_visible',))
