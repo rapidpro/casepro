@@ -1,42 +1,14 @@
 # coding=utf-8
 from __future__ import unicode_literals
 
-import itertools
-import six
-
 from casepro.contacts.models import Contact, Group, Field
 from casepro.test import BaseCasesTest
+from casepro.dash_ext import MockClientQuery
 from django.utils import timezone
 from mock import patch
 from temba_client.v2.types import Group as TembaGroup, Field as TembaField
 from temba_client.v2.types import Contact as TembaContact, ObjectRef as TembaObjectRef
 from .sync import sync_pull_groups, sync_pull_fields, sync_pull_contacts, temba_compare_contacts, temba_merge_contacts
-
-
-class MockClientQuery(six.Iterator):
-    """
-    Mock for APIv2 client get method return values (TODO move to Dash)
-    """
-    def __init__(self, *fetches):
-        self.fetches = list(fetches)
-
-    def iterfetches(self, retry_on_rate_exceed=False):
-        return self
-
-    def all(self, retry_on_rate_exceed=False):
-        return list(itertools.chain.from_iterable(self.fetches))
-
-    def first(self, retry_on_rate_exceed=False):
-        return self.fetches[0][0] if self.fetches[0] else None
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        if not self.fetches:
-            raise StopIteration()
-
-        return self.fetches.pop(0)
 
 
 class SyncTest(BaseCasesTest):
