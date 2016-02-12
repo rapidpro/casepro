@@ -197,6 +197,8 @@ INSTALLED_APPS = (
     'django.contrib.humanize',
     'django.contrib.postgres',
 
+    'djcelery',
+
     # mo-betta permission management
     'guardian',
 
