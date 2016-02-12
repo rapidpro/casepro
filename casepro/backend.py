@@ -89,6 +89,14 @@ class BaseBackend(object):
         """
         pass
 
+    def archive_contact_messages(self, contact):
+        """
+        Archives messages for the given contact
+
+        :param contact: the contact
+        """
+        pass
+
 
 class RapidProBackend(BaseBackend):
     """
@@ -150,3 +158,11 @@ class RapidProBackend(BaseBackend):
     def stop_runs(self, contact):
         client = contact.org.get_temba_client(api_version=1)
         client.expire_contacts([contact.uuid])
+
+    def archive_contact_messages(self, contact):
+        client = contact.org.get_temba_client(api_version=1)
+
+        # TODO switch to API v2 (downside is this will return all outgoing messages which could be a lot)
+        messages = client.get_messages(contacts=[contact.uuid], direction='I', statuses=['H'], _types=['I'], archived=False)
+        if messages:
+            client.archive_messages(messages=[m.id for m in messages])

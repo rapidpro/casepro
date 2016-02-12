@@ -262,14 +262,9 @@ class Contact(models.Model):
         get_backend().stop_runs(self)
 
     def archive_messages(self):
-        from casepro.cases.models import Label
+        # TODO archive local messages
 
-        client = self.org.get_temba_client()
-        labels = [l.name for l in Label.get_all(self.org)]
-        messages = client.get_messages(contacts=[self.uuid], labels=labels,
-                                       direction='I', statuses=['H'], _types=['I'], archived=False)
-        if messages:
-            client.archive_messages(messages=[m.id for m in messages])
+        get_backend().archive_contact_messages(self)
 
     def as_json(self, full=False):
         """
