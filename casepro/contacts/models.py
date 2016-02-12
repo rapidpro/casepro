@@ -10,7 +10,8 @@ from temba_client.v2.types import Contact as TembaContact, ObjectRef as TembaObj
 SAVE_GROUPS_ATTR = '__data__groups'
 SAVE_FIELDS_ATTR = '__data__fields'
 
-CONTACT_LOCK_KEY = 'contact-lock:%s'
+CONTACT_LOCK_KEY = 'contact-lock:%s:%s'
+CONTACT_LOCK_GROUPS = 'groups'
 
 
 @python_2_unicode_compatible
@@ -179,10 +180,17 @@ class Contact(models.Model):
 
             return contact
 
+    def lock(self, qualifier):
+        return self._lock(self.uuid, qualifier)
+
     @classmethod
     def sync_lock(cls, uuid):
+        return cls._lock(uuid, 'row')
+
+    @classmethod
+    def _lock(cls, uuid, qualifier):
         r = get_redis_connection()
-        key = CONTACT_LOCK_KEY % uuid
+        key = CONTACT_LOCK_KEY % (uuid, qualifier)
         return r.lock(key, timeout=60)
 
     @classmethod
@@ -240,23 +248,21 @@ class Contact(models.Model):
         cur_groups = list(self.groups.all())
         suspend_group_pks = {g.pk for g in Group.get_suspend_from(self.org)}
 
-        # TODO lock around contact's groups
+        with self.lock(CONTACT_LOCK_GROUPS):
+            for group in cur_groups:
+                if group.pk in suspend_group_pks:
+                    self.groups.remove(group)
+                    self.suspended_groups.add(group)
 
-        for group in cur_groups:
-            if group.pk in suspend_group_pks:
-                self.groups.remove(group)
-                self.suspended_groups.add(group)
-
-                get_backend().remove_from_group(self, group)
+                    get_backend().remove_from_group(self, group)
 
     def restore_groups(self):
-        # TODO lock around contact's groups
+        with self.lock(CONTACT_LOCK_GROUPS):
+            for group in list(self.suspended_groups.all()):
+                self.groups.add(group)
+                self.suspended_groups.remove(group)
 
-        for group in list(self.suspended_groups.all()):
-            self.groups.add(group)
-            self.suspended_groups.remove(group)
-
-            get_backend().add_to_group(self, group)
+                get_backend().add_to_group(self, group)
 
     def expire_flows(self):
         get_backend().stop_runs(self)
