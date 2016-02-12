@@ -42,6 +42,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('cases', '0020_delete_messageexport'),
+        ('contacts', '0013_migrate_org_fields')
     ]
 
     operations = [
