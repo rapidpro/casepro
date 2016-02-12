@@ -155,7 +155,7 @@ class MessageExport(models.Model):
         # extract all unique contacts in those messages
         contact_uuids = set()
         for msg in messages:
-            contact_uuids.add(msg.contact)
+            contact_uuids.add(msg.contact['uuid'])
 
         # fetch all contacts in batches of 25 and organize by UUID
         contacts_by_uuid = {}
@@ -183,14 +183,14 @@ class MessageExport(models.Model):
                     created_on = msg.created_on.astimezone(pytz.utc).replace(tzinfo=None)
                     flagged = SYSTEM_LABEL_FLAGGED in msg.labels
                     labels = ', '.join([label_map[l_name].name for l_name in msg.labels if l_name in label_map])
-                    contact = contacts_by_uuid.get(msg.contact, None)  # contact may no longer exist in RapidPro
+                    contact = contacts_by_uuid.get(msg.contact['uuid'])  # contact may no longer exist in RapidPro
 
                     current_sheet.write(row, 0, created_on, date_style)
                     current_sheet.write(row, 1, msg.id)
                     current_sheet.write(row, 2, 'Yes' if flagged else 'No')
                     current_sheet.write(row, 3, labels)
                     current_sheet.write(row, 4, msg.text)
-                    current_sheet.write(row, 5, msg.contact)
+                    current_sheet.write(row, 5, contact.uuid)
 
                     for cf in range(len(contact_fields)):
                         if contact:
