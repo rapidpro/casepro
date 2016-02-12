@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from casepro.backend import get_backend
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -236,8 +237,6 @@ class Contact(models.Model):
         if self.suspended_groups.all():
             raise ValueError("Can't suspend from groups as contact is already suspended from groups")
 
-        client = self.org.get_temba_client()
-
         cur_groups = list(self.groups.all())
         suspend_group_pks = {g.pk for g in Group.get_suspend_from(self.org)}
 
@@ -248,21 +247,19 @@ class Contact(models.Model):
                 self.groups.remove(group)
                 self.suspended_groups.add(group)
 
-                client.remove_contacts([self.uuid], group_uuid=group.uuid)
+                get_backend().remove_from_group(self, group)
 
     def restore_groups(self):
-        client = self.org.get_temba_client()
-
         # TODO lock around contact's groups
 
         for group in list(self.suspended_groups.all()):
             self.groups.add(group)
             self.suspended_groups.remove(group)
 
-            client.add_contacts([self.uuid], group_uuid=group.uuid)
+            get_backend().add_to_group(self, group)
 
     def expire_flows(self):
-        self.org.get_temba_client().expire_contacts([self.uuid])
+        get_backend().stop_runs(self)
 
     def archive_messages(self):
         from casepro.cases.models import Label
@@ -273,12 +270,6 @@ class Contact(models.Model):
                                        direction='I', statuses=['H'], _types=['I'], archived=False)
         if messages:
             client.archive_messages(messages=[m.id for m in messages])
-
-    def fetch(self):
-        """
-        Fetches this contact from RapidPro
-        """
-        return self.org.get_temba_client(api_version=2).get_contacts(uuid=self.uuid).first()
 
     def as_json(self, full=False):
         """

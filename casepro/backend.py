@@ -60,6 +60,35 @@ class BaseBackend(object):
         """
         pass
 
+    @abstractmethod
+    def add_to_group(self, contact, group):
+        """
+        Adds the given contact to a group
+
+        :param contact: the contact
+        :param group: the group
+        """
+        pass
+
+    @abstractmethod
+    def remove_from_group(self, contact, group):
+        """
+        Removes the given contact from a group
+
+        :param contact: the contact
+        :param group: the group
+        """
+        pass
+
+    @abstractmethod
+    def stop_runs(self, contact):
+        """
+        Stops any ongoing flow runs for the given contact
+
+        :param contact: the contact
+        """
+        pass
+
 
 class RapidProBackend(BaseBackend):
     """
@@ -109,3 +138,15 @@ class RapidProBackend(BaseBackend):
             total_contacts_created += num_contacts_created
 
         return total_messages, total_labelled, total_contacts_created
+
+    def add_to_group(self, contact, group):
+        client = contact.org.get_temba_client(api_version=1)
+        client.add_contacts([contact.uuid], group_uuid=group.uuid)
+
+    def remove_from_group(self, contact, group):
+        client = contact.org.get_temba_client(api_version=1)
+        client.remove_contacts([contact.uuid], group_uuid=group.uuid)
+
+    def stop_runs(self, contact):
+        client = contact.org.get_temba_client(api_version=1)
+        client.expire_contacts([contact.uuid])
