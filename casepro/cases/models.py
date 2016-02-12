@@ -610,6 +610,17 @@ class RemoteMessage(object):
                                        contacts=search['contacts'], groups=search['groups'],
                                        direction='I', _types=search['types'], archived=search['archived'],
                                        after=search['after'], before=search['before'])
+        
+        # annotate messages with contacts (if they exist). This becomes a lot easier with local messages.
+        contact_uuids = [m.contact for m in messages]
+        contacts = Contact.objects.filter(org=org, uuid__in=contact_uuids)
+        contacts_by_uuid = {c.uuid: c for c in contacts}
+        for message in messages:
+            contact = contacts_by_uuid.get(message.contact)
+            if contact:
+                message.contact = {'uuid': contact.uuid, 'is_stub': contact.is_stub}
+            else:
+                message.contact = {'uuid': message.contact, 'is_stub': True}
 
         if messages:
             org.record_message_time(messages[0].created_on, labelled_search)

@@ -211,7 +211,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     search = angular.copy($scope.searchFields)
     search.view = $scope.itemView
     search.label = $scope.activeLabel
-    search.contact = $scope.activeContact
+    search.contact = if $scope.activeContact then $scope.activeContact.uuid else null
     search.timeCode = Date.now()
     return search
 

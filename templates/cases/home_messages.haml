@@ -9,7 +9,7 @@
           %span.contact-info
             Messages for contact
             %strong
-              [[ activeContact | limitTo:6 | uppercase ]]
+              [[ activeContact.uuid | limitTo:6 | uppercase ]]
 
             - if user_is_admin
               &nbsp;
@@ -142,7 +142,7 @@
         .message-contact
           %a{ ng-click:"activateContact(message.contact)", title:"View all from contact" }><
             %span.glyphicon.glyphicon-phone>
-            [[ message.contact | limitTo:6 | uppercase ]]
+            [[ message.contact.uuid | limitTo:6 | uppercase ]]
         .message-text{ ng-click:"onExpandMessage(message)" }
           %span.label-container{ ng-repeat:"label in filterDisplayLabels(message.labels)" }
             %span.label.label-success
@@ -151,7 +151,7 @@
           [[ message.text ]]
         .message-extra{ collapse:"expandedMessageId != message.id" }
           .btn-group.pull-away
-            %button.btn.btn-default{ type:"button", ng-click:"onCaseFromMessage(message)", ng-if:"partners.length > 0" }
+            %button.btn.btn-default{ type:"button", ng-click:"onCaseFromMessage(message)", ng-if:"partners.length > 0 && !message.contact.is_stub" }
               - trans "Open Case"
             %button.btn.btn-default{ type:"button", ng-click:"onForwardMessage(message)" }
               %span.glyphicon.glyphicon-share-alt
