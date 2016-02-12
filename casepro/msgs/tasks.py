@@ -20,9 +20,9 @@ def pull_messages(org, since, until):
     if not since:
         since = until - timedelta(hours=1)
 
-    num_messages, num_labelled = backend.pull_and_label_messages(org, since, until)
+    num_messages, num_labelled, num_contacts_created = backend.pull_and_label_messages(org, since, until)
 
-    return {'messages': num_messages, 'labelled': num_labelled}
+    return {'messages': num_messages, 'labelled': num_labelled, 'contacts_created': num_contacts_created}
 
 
 @shared_task

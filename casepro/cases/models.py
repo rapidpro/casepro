@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 import re
 
-from casepro.contacts.models import Group, Field
+from casepro.contacts.models import Contact
 from casepro.msgs.models import Outgoing, SYSTEM_LABEL_FLAGGED
 from casepro.utils import parse_csv, normalize, match_keywords, safe_max
 from dash.orgs.models import Org
@@ -18,7 +18,7 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from enum import IntEnum
 from redis_cache import get_redis_connection
-from temba_client.exceptions import TembaNoSuchObjectError, TembaException
+from temba_client.exceptions import TembaException
 
 
 # only show unlabelled messages newer than 2 weeks
@@ -166,102 +166,6 @@ class Label(models.Model):
         return self.name
 
 
-class Contact(models.Model):
-    """
-    Maintains some state for a contact whilst they are in a case
-    """
-    uuid = models.CharField(max_length=36, unique=True)
-
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='contacts')
-
-    suspended_groups = ArrayField(models.CharField(max_length=36), help_text=_("UUIDs of suspended contact groups"))
-
-    @classmethod
-    def get_or_create(cls, org, uuid):
-        existing = cls.objects.filter(org=org, uuid=uuid).first()
-        if existing:
-            return existing
-
-        return cls.objects.create(org=org, uuid=uuid, suspended_groups=[])
-
-    def prepare_for_case(self):
-        """
-        Prepares this contact to be put in a case
-        """
-        # suspend contact from groups while case is open
-        self.suspend_groups()
-
-        # expire any active flow runs they have
-        self.expire_flows()
-
-        # labelling task may have picked up messages whilst case was closed. Those now need to be archived.
-        self.archive_messages()
-
-    def suspend_groups(self):
-        if self.suspended_groups:
-            raise ValueError("Can't suspend from groups as contact is already suspended from groups")
-
-        # get current groups from RapidPro
-        temba_contact = self.fetch()
-        temba_groups = temba_contact.groups if temba_contact else []
-
-        suspend_groups = [g.uuid for g in Group.get_suspend_from(self.org)]
-        remove_groups = intersection(temba_groups, suspend_groups)
-
-        # remove contact from groups
-        client = self.org.get_temba_client()
-        for remove_group in remove_groups:
-            client.remove_contacts([self.uuid], group_uuid=remove_group)
-
-        self.suspended_groups = remove_groups
-        self.save(update_fields=('suspended_groups',))
-
-    def restore_groups(self):
-        # add contact back into suspended groups
-        client = self.org.get_temba_client()
-        for suspended_group in self.suspended_groups:
-            client.add_contacts([self.uuid], group_uuid=suspended_group)
-
-        self.suspended_groups = []
-        self.save(update_fields=('suspended_groups',))
-
-    def expire_flows(self):
-        client = self.org.get_temba_client()
-        client.expire_contacts([self.uuid])
-
-    def archive_messages(self):
-        client = self.org.get_temba_client()
-        labels = [l.name for l in Label.get_all(self.org)]
-        messages = client.get_messages(contacts=[self.uuid], labels=labels,
-                                       direction='I', statuses=['H'], _types=['I'], archived=False)
-        if messages:
-            client.archive_messages(messages=[m.id for m in messages])
-
-    def fetch(self):
-        """
-        Fetches this contact from RapidPro
-        """
-        try:
-            return self.org.get_temba_client().get_contact(self.uuid)
-        except TembaNoSuchObjectError:
-            return None  # always a chance that the contact has been deleted in RapidPro
-
-    def as_json(self, fetch_fields=False):
-        """
-        Prepares a contact for JSON serialization
-        """
-        if fetch_fields:
-            temba_contact = self.fetch()
-            temba_fields = temba_contact.fields if temba_contact else {}
-
-            allowed_keys = [f.key for f in Field.get_all(self.org, visible=True)]
-            fields = {key: temba_fields.get(key, None) for key in allowed_keys}
-        else:
-            fields = {}
-
-        return {'uuid': self.uuid, 'fields': fields}
-
-
 class case_action(object):
     """
     Helper decorator for case action methods that should check the user is allowed to update the case
@@ -289,7 +193,7 @@ class Case(models.Model):
 
     assignee = models.ForeignKey(Partner, related_name="cases")
 
-    contact = models.ForeignKey(Contact, related_name="cases")
+    contact = models.ForeignKey(Contact, related_name="cases", null=True)
 
     message_id = models.IntegerField(unique=True)
 
@@ -329,12 +233,12 @@ class Case(models.Model):
         return cls.get_all(org, user, label).exclude(closed_on=None)
 
     @classmethod
-    def get_for_contact(cls, org, contact_uuid):
-        return cls.get_all(org).filter(contact__uuid=contact_uuid)
+    def get_for_contact(cls, org, contact):
+        return cls.get_all(org).filter(contact=contact)
 
     @classmethod
-    def get_open_for_contact_on(cls, org, contact_uuid, dt):
-        qs = cls.get_for_contact(org, contact_uuid)
+    def get_open_for_contact_on(cls, org, contact, dt):
+        qs = cls.get_for_contact(org, contact)
         return qs.filter(opened_on__lt=dt).filter(Q(closed_on=None) | Q(closed_on__gt=dt)).first()
 
     def get_labels(self):
@@ -342,10 +246,14 @@ class Case(models.Model):
 
     @classmethod
     def get_or_open(cls, org, user, labels, message, summary, assignee, update_contact=True):
+        contact = Contact.objects.filter(org=org, uuid=message.contact, is_stub=False, is_active=True).first()
+        if not contact:
+            raise ValueError("Contact does not exist or is a stub")
+
         r = get_redis_connection()
         with r.lock('org:%d:cases_lock' % org.pk):
             # check for open case with this contact
-            existing_open = cls.get_open_for_contact_on(org, message.contact, timezone.now())
+            existing_open = cls.get_open_for_contact_on(org, contact, timezone.now())
             if existing_open:
                 existing_open.is_new = False
                 return existing_open
@@ -355,8 +263,6 @@ class Case(models.Model):
             if existing_for_msg:
                 existing_for_msg.is_new = False
                 return existing_for_msg
-
-            contact = Contact.get_or_create(org, message.contact)
 
             if update_contact:
                 # suspend from groups, expire flows and archive messages
@@ -505,9 +411,9 @@ class Case(models.Model):
     def is_closed(self):
         return self.closed_on is not None
 
-    def as_json(self, fetch_contact=False):
+    def as_json(self, full_contact=False):
         return {'id': self.pk,
-                'contact': self.contact.as_json(fetch_contact),
+                'contact': self.contact.as_json(full_contact),
                 'assignee': self.assignee.as_json(),
                 'labels': [l.as_json() for l in self.get_labels()],
                 'summary': self.summary,
@@ -724,8 +630,14 @@ class RemoteMessage(object):
         client = org.get_temba_client()
         labelled, unlabelled = [], []
 
+        num_contacts_created = 0
+
         for msg in messages:
-            open_case = Case.get_open_for_contact_on(org, msg.contact, msg.created_on)
+            contact = Contact.get_or_create(org, msg.contact)
+            if contact.is_new:
+                num_contacts_created += 1
+
+            open_case = Case.get_open_for_contact_on(org, contact, msg.created_on)
 
             if open_case:
                 open_case.reply_event(msg)
@@ -754,7 +666,7 @@ class RemoteMessage(object):
         if unlabelled:
             org.record_message_time(unlabelled[0].created_on, labelled=False)
 
-        return len(labelled)
+        return len(labelled), num_contacts_created
 
     @staticmethod
     def as_json(msg, label_map):

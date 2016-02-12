@@ -20,14 +20,20 @@ from .models import Partner, Outgoing
 
 
 class CaseTest(BaseCasesTest):
+    def setUp(self):
+        super(CaseTest, self).setUp()
+
+        self.bob = self.create_contact(self.unicef, 'C-001', "Bob",
+                                       fields={'age': "34"}, groups=[self.males, self.reporters])
+
     @patch('dash.orgs.models.TembaClient1.get_messages')
     @patch('dash.orgs.models.TembaClient1.archive_messages')
-    @patch('dash.orgs.models.TembaClient1.get_contact')
     @patch('dash.orgs.models.TembaClient1.remove_contacts')
     @patch('dash.orgs.models.TembaClient1.add_contacts')
     @patch('dash.orgs.models.TembaClient1.expire_contacts')
-    def test_lifecycle(self, mock_expire_contacts, mock_add_contacts, mock_remove_contacts, mock_get_contact,
+    def test_lifecycle(self, mock_expire_contacts, mock_add_contacts, mock_remove_contacts,
                        mock_archive_messages, mock_get_messages):
+
         d0 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
         d1 = datetime(2014, 1, 2, 7, 0, tzinfo=timezone.utc)
         d2 = datetime(2014, 1, 2, 8, 0, tzinfo=timezone.utc)
@@ -40,21 +46,16 @@ class CaseTest(BaseCasesTest):
         msg1 = TembaMessage.create(id=123, contact='C-001', created_on=d0, text="Hello")
         msg2 = TembaMessage.create(id=234, contact='C-001', created_on=d1, text="Hello again")
         mock_get_messages.return_value = [msg1, msg2]
-        mock_get_contact.return_value = TembaContact.create(uuid='C-001', groups=['G-001', 'G-003'])
 
         with patch.object(timezone, 'now', return_value=d1):
             # MOH opens new case
             case = Case.get_or_open(self.unicef, self.user1, [self.aids], msg2, "Summary", self.moh)
 
-        contact = Contact.objects.get()  # should have a new contact now
-        self.assertEqual(contact.org, self.unicef)
-        self.assertEqual(contact.uuid, 'C-001')
-
         self.assertTrue(case.is_new)
         self.assertEqual(case.org, self.unicef)
         self.assertEqual(set(case.labels.all()), {self.aids})
         self.assertEqual(case.assignee, self.moh)
-        self.assertEqual(case.contact, contact)
+        self.assertEqual(case.contact, self.bob)
         self.assertEqual(case.message_id, 234)
         self.assertEqual(case.message_on, d1)
         self.assertEqual(case.summary, "Summary")
@@ -76,6 +77,10 @@ class CaseTest(BaseCasesTest):
         mock_remove_contacts.assert_called_once_with(['C-001'], group_uuid='G-003')
         mock_remove_contacts.reset_mock()
 
+        # check that contacts groups were restored
+        self.assertEqual(set(Contact.objects.get(pk=self.bob.pk).groups.all()), {self.males})
+        self.assertEqual(set(Contact.objects.get(pk=self.bob.pk).suspended_groups.all()), {self.reporters})
+
         # check that contact's runs were expired
         mock_expire_contacts.assert_called_once_with(['C-001'])
         mock_expire_contacts.reset_mock()
@@ -91,8 +96,6 @@ class CaseTest(BaseCasesTest):
             case2 = Case.get_or_open(self.unicef, self.user1, [self.aids], msg2, "Summary", self.moh)
             self.assertFalse(case2.is_new)
             self.assertEqual(case, case2)
-
-        # TODO test user sends a reply
 
         # contact sends a reply
         case.reply_event(TembaMessage.create(created_on=d0))
@@ -131,7 +134,8 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(actions[2].created_on, d3)
 
         # check that contacts groups were restored
-        self.assertEqual(Contact.objects.get(pk=contact.pk).suspended_groups, [])
+        self.assertEqual(set(Contact.objects.get(pk=self.bob.pk).groups.all()), {self.males, self.reporters})
+        self.assertEqual(set(Contact.objects.get(pk=self.bob.pk).suspended_groups.all()), set())
 
         mock_add_contacts.assert_called_once_with(['C-001'], group_uuid='G-003')
         mock_add_contacts.reset_mock()
@@ -203,6 +207,10 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(case, case3)
 
     def test_get_all(self):
+        self.create_contact(self.unicef, 'C-002', "Richard")
+        self.create_contact(self.unicef, 'C-003', "Kidus")
+        self.create_contact(self.nyaruka, 'C-004', "Norbert")
+
         d1 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
         msg1 = TembaMessage.create(id=123, contact='C-001', created_on=d1, text="Hello 1")
         case1 = Case.get_or_open(self.unicef, self.user1, [self.aids], msg1, "Summary", self.moh,
@@ -260,23 +268,29 @@ class CaseTest(BaseCasesTest):
                                      update_contact=False)
 
         # check no cases open on Jan 4th
-        open_case = Case.get_open_for_contact_on(self.unicef, 'C-001', datetime(2014, 1, 4, 0, 0, tzinfo=timezone.utc))
+        open_case = Case.get_open_for_contact_on(self.unicef, self.bob, datetime(2014, 1, 4, 0, 0, tzinfo=timezone.utc))
         self.assertIsNone(open_case)
 
         # check case open on Jan 7th
-        open_case = Case.get_open_for_contact_on(self.unicef, 'C-001', datetime(2014, 1, 7, 0, 0, tzinfo=timezone.utc))
+        open_case = Case.get_open_for_contact_on(self.unicef, self.bob, datetime(2014, 1, 7, 0, 0, tzinfo=timezone.utc))
         self.assertEqual(open_case, case1)
 
         # check no cases open on Jan 13th
-        open_case = Case.get_open_for_contact_on(self.unicef, 'C-001', datetime(2014, 1, 13, 0, 0, tzinfo=timezone.utc))
+        open_case = Case.get_open_for_contact_on(self.unicef, self.bob, datetime(2014, 1, 13, 0, 0, tzinfo=timezone.utc))
         self.assertIsNone(open_case)
 
         # check case open on 20th
-        open_case = Case.get_open_for_contact_on(self.unicef, 'C-001', datetime(2014, 1, 16, 0, 0, tzinfo=timezone.utc))
+        open_case = Case.get_open_for_contact_on(self.unicef, self.bob, datetime(2014, 1, 16, 0, 0, tzinfo=timezone.utc))
         self.assertEqual(open_case, case2)
 
 
 class CaseCRUDLTest(BaseCasesTest):
+    def setUp(self):
+        super(CaseCRUDLTest, self).setUp()
+
+        self.bob = self.create_contact(self.unicef, 'C-001', "Bob",
+                                       fields={'age': "34"}, groups=[self.males, self.reporters])
+
     @patch('dash.orgs.models.TembaClient1.get_message')
     @patch('dash.orgs.models.TembaClient1.get_messages')
     @patch('dash.orgs.models.TembaClient1.archive_messages')
@@ -286,6 +300,8 @@ class CaseCRUDLTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient1.expire_contacts')
     def test_open(self, mock_expire_contacts, mock_add_contacts, mock_remove_contacts, mock_get_contact, mock_archive_messages,
                   mock_get_messages, mock_get_message):
+        self.create_contact(self.unicef, 'C-002', "Richard")
+
         url = reverse('cases.case_open')
 
         msg1 = TembaMessage.create(id=101, contact='C-001', created_on=timezone.now(), text="Hello",
@@ -328,13 +344,11 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(case2.assignee, self.moh)
         self.assertEqual(set(case2.labels.all()), {self.aids})
 
-    @patch('dash.orgs.models.TembaClient1.get_contact')
     @patch('dash.orgs.models.TembaClient1.get_messages')
-    def test_read(self, mock_get_messages, mock_get_contact):
+    def test_read(self, mock_get_messages):
         msg = TembaMessage.create(id=101, contact='C-001', created_on=timezone.now(), text="Hello",
                                   direction='I', labels=[])
         mock_get_messages.return_value = [msg]
-        mock_get_contact.return_value = TembaContact.create(uuid='C-001', name="Bob", fields={'age': "34"})
 
         case = Case.get_or_open(self.unicef, self.user1, [self.aids], msg, "Summary", self.moh, update_contact=False)
 
@@ -489,22 +503,6 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # nothing to see
         self.assertEqual(len(response.json['results']), 0)
-
-
-class ContactTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient1.get_contact')
-    def test_as_json(self, mock_get_contact):
-        # without field fetching
-        contact = Contact.get_or_create(self.unicef, 'C-001')
-        self.assertEqual(contact.as_json(fetch_fields=False), {'uuid': 'C-001', 'fields': {}})
-
-        mock_get_contact.return_value = TembaContact.create(uuid='C-001', name="Bob",
-                                                            fields={'nickname': "Bobby", 'age': "32", 'state': "WA"})
-
-        # with field fetching
-        self.assertEqual(contact.as_json(fetch_fields=True), {
-            'uuid': 'C-001', 'fields': {'nickname': "Bobby", 'age': "32"}
-        })
 
 
 class HomeViewsTest(BaseCasesTest):

@@ -81,3 +81,11 @@ class ContactTest(BaseCasesTest):
         boffins = Group.objects.get(org=self.unicef, uuid="G-003", name="Boffins")
 
         self.assertEqual(set(contact.groups.all()), {spammers, boffins})
+
+    def test_as_json(self):
+        contact = self.create_contact(self.unicef, 'C-001', "Richard", fields={'age': "32", 'state': "WA"})
+
+        self.assertEqual(contact.as_json(full=False), {'uuid': 'C-001', 'is_stub': False})
+
+        # full=True means include visible contact fields
+        self.assertEqual(contact.as_json(full=True), {'uuid': 'C-001', 'is_stub': False, 'fields': {'age': "32"}})

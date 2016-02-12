@@ -50,7 +50,7 @@ class CaseCRUDL(SmartCRUDL):
 
             # angular app requires context data in JSON format
             context['context_data_json'] = json_encode({
-                'case_obj': self.object.as_json(fetch_contact=True),
+                'case_obj': self.object.as_json(full_contact=True),
                 'all_labels': [l.as_json() for l in labels],
                 'all_partners': [p.as_json() for p in partners]
             })

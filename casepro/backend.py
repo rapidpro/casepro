@@ -95,13 +95,17 @@ class RapidProBackend(BaseBackend):
 
         client = org.get_temba_client(api_version=2)
 
-        num_messages = 0
-        num_labelled = 0
+        total_messages = 0
+        total_labelled = 0
+        total_contacts_created = 0
 
         inbox_query = client.get_messages(folder='inbox', after=received_after, before=received_before)
 
         for incoming_batch in inbox_query.iterfetches(retry_on_rate_exceed=True):
-            num_messages += len(incoming_batch)
-            num_labelled += RemoteMessage.process_unsolicited(org, incoming_batch)
+            num_labelled, num_contacts_created = RemoteMessage.process_unsolicited(org, incoming_batch)
 
-        return num_messages, num_labelled
+            total_messages += len(incoming_batch)
+            total_labelled += num_labelled
+            total_contacts_created += num_contacts_created
+
+        return total_messages, total_labelled, total_contacts_created

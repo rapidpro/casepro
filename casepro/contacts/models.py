@@ -17,7 +17,7 @@ class Group(models.Model):
     """
     A contact group in RapidPro
     """
-    org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name="new_groups")
+    org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name="groups")
 
     uuid = models.CharField(max_length=36, unique=True)
 
@@ -134,7 +134,7 @@ class Contact(models.Model):
     """
     A contact in RapidPro
     """
-    org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name="new_contacts")
+    org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name="contacts")
 
     uuid = models.CharField(max_length=36, unique=True)
 
@@ -163,17 +163,20 @@ class Contact(models.Model):
         super(Contact, self).__init__(*args, **kwargs)
 
     @classmethod
-    def get_or_create(cls, org, uuid, name):
+    def get_or_create(cls, org, uuid, name=None):
         """
         Gets an existing contact or creates a stub contact. Used when receiving messages where the contact might not
         have been synced yet
         """
         with cls.sync_lock(uuid):
-            existing = cls.objects.filter(org=org, uuid=uuid)
-            if existing:
-                return existing
+            contact = cls.objects.filter(org=org, uuid=uuid).first()
+            if contact:
+                contact.is_new = False
+            else:
+                contact = cls.objects.create(org=org, uuid=uuid, name=name, is_stub=True)
+                contact.is_new = True
 
-            return cls.objects.create(org=org, uuid=uuid, name=name, is_stub=True)
+            return contact
 
     @classmethod
     def sync_lock(cls, uuid):
@@ -205,8 +208,88 @@ class Contact(models.Model):
         return TembaContact.create(uuid=self.uuid, name=self.name, urns=[], groups=groups, fields=self.get_fields(),
                                    language=self.language)
 
-    def get_fields(self):
-        return {v.field.key: v.get_value() for v in self.values.all()}
+    def get_fields(self, visible=None):
+        if visible is not None:
+            values = self.values.filter(field__is_visible=visible)
+        else:
+            values = self.values.all()
+
+        return {v.field.key: v.get_value() for v in values}
+
+    def prepare_for_case(self):
+        """
+        Prepares this contact to be put in a case
+        """
+        if self.is_stub:
+            raise ValueError("Can't create a case for a stub contact")
+
+        # suspend contact from groups while case is open
+        self.suspend_groups()
+
+        # expire any active flow runs they have
+        self.expire_flows()
+
+        # labelling task may have picked up messages whilst case was closed. Those now need to be archived.
+        self.archive_messages()
+
+    def suspend_groups(self):
+        if self.suspended_groups.all():
+            raise ValueError("Can't suspend from groups as contact is already suspended from groups")
+
+        client = self.org.get_temba_client()
+
+        cur_groups = list(self.groups.all())
+        suspend_group_pks = {g.pk for g in Group.get_suspend_from(self.org)}
+
+        # TODO lock around contact's groups
+
+        for group in cur_groups:
+            if group.pk in suspend_group_pks:
+                self.groups.remove(group)
+                self.suspended_groups.add(group)
+
+                client.remove_contacts([self.uuid], group_uuid=group.uuid)
+
+    def restore_groups(self):
+        client = self.org.get_temba_client()
+
+        # TODO lock around contact's groups
+
+        for group in list(self.suspended_groups.all()):
+            self.groups.add(group)
+            self.suspended_groups.remove(group)
+
+            client.add_contacts([self.uuid], group_uuid=group.uuid)
+
+    def expire_flows(self):
+        self.org.get_temba_client().expire_contacts([self.uuid])
+
+    def archive_messages(self):
+        from casepro.cases.models import Label
+
+        client = self.org.get_temba_client()
+        labels = [l.name for l in Label.get_all(self.org)]
+        messages = client.get_messages(contacts=[self.uuid], labels=labels,
+                                       direction='I', statuses=['H'], _types=['I'], archived=False)
+        if messages:
+            client.archive_messages(messages=[m.id for m in messages])
+
+    def fetch(self):
+        """
+        Fetches this contact from RapidPro
+        """
+        return self.org.get_temba_client(api_version=2).get_contacts(uuid=self.uuid).first()
+
+    def as_json(self, full=False):
+        """
+        Prepares a contact for JSON serialization
+        """
+        result = {'uuid': self.uuid, 'is_stub': self.is_stub}
+
+        if full:
+            result['fields'] = self.get_fields(visible=True)
+
+        return result
 
     def __str__(self):
         return self.name

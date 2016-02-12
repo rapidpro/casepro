@@ -3,11 +3,11 @@ from __future__ import unicode_literals
 import datetime
 import pytz
 
+from casepro.cases.models import Label, Partner
+from casepro.contacts.models import Contact, Group, Field, SAVE_FIELDS_ATTR
+from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from dash.test import DashTest
 from django.contrib.auth.models import User
-from casepro.cases.models import Label, Partner
-from casepro.contacts.models import Group, Field
-from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 
 
 class BaseCasesTest(DashTest):
@@ -67,6 +67,19 @@ class BaseCasesTest(DashTest):
 
     def create_label(self, org, name, description, words, partners, uuid):
         return Label.create(org, name, description, words, partners, uuid)
+
+    def create_contact(self, org, uuid, name, groups=(), fields=None):
+        kwargs = {'org': org, 'uuid': uuid, 'name': name, 'is_stub': False}
+
+        if fields is not None:
+            kwargs[SAVE_FIELDS_ATTR] = fields
+
+        contact = Contact.objects.create(**kwargs)
+
+        for group in groups:
+            contact.groups.add(group)
+
+        return contact
 
     def create_group(self, org, uuid, name, is_visible=True, suspend_from=False):
         return Group.objects.create(org=org, uuid=uuid, name=name, is_visible=is_visible, suspend_from=suspend_from)

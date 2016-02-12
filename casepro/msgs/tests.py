@@ -109,10 +109,10 @@ class TasksTest(BaseCasesTest):
             MockClientQuery([msg1, msg2, msg3, msg4, msg5])
         ]
 
-        # contact 5 has a case open that day
+        # contact #5 exists and has a case open that day
         d1 = datetime(2014, 1, 1, 5, 0, tzinfo=timezone.utc)
         with patch.object(timezone, 'now', return_value=d1):
-            contact5 = Contact.get_or_create(self.unicef, 'C-005')
+            contact5 = self.create_contact(self.unicef, 'C-005', "James")
             case1 = Case.objects.create(org=self.unicef, contact=contact5,
                                         assignee=self.moh, message_id=99, message_on=d1)
 
@@ -139,4 +139,4 @@ class TasksTest(BaseCasesTest):
 
         # check task result
         task_state = self.unicef.get_task_state('message-pull')
-        self.assertEqual(task_state.get_last_results(), {'messages': 5, 'labelled': 3})
+        self.assertEqual(task_state.get_last_results(), {'messages': 5, 'labelled': 3, 'contacts_created': 4})
