@@ -3,9 +3,9 @@ from __future__ import unicode_literals
 
 import pytz
 
-from casepro.cases.models import Case, CaseEvent, Contact
-from casepro.dash_ext.tests import MockClientQuery
+from casepro.cases.models import Case, CaseEvent
 from casepro.test import BaseCasesTest
+from dash.test import MockClientQuery
 from datetime import datetime, timedelta
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
@@ -13,6 +13,7 @@ from django.utils import timezone
 from mock import patch, call
 from temba_client.v1.types import Contact as TembaContact
 from temba_client.v1.types import Message as TembaMessage, Broadcast as TembaBroadcast
+from temba_client.v2.types import Message as TembaMessage2, ObjectRef
 from .models import Outgoing, MessageExport
 from .tasks import pull_messages
 
@@ -100,11 +101,16 @@ class TasksTest(BaseCasesTest):
         d3 = datetime(2014, 1, 1, 9, 0, tzinfo=timezone.utc)
         d4 = datetime(2014, 1, 1, 10, 0, tzinfo=timezone.utc)
         d5 = datetime(2014, 1, 1, 11, 0, tzinfo=timezone.utc)
-        msg1 = TembaMessage.create(id=101, contact='C-001', text="What is aids?", created_on=d1)
-        msg2 = TembaMessage.create(id=102, contact='C-002', text="Can I catch Hiv?", created_on=d2)
-        msg3 = TembaMessage.create(id=103, contact='C-003', text="I think I'm pregnant", created_on=d3)
-        msg4 = TembaMessage.create(id=104, contact='C-004', text="Php is amaze", created_on=d4)
-        msg5 = TembaMessage.create(id=105, contact='C-005', text="Thanks for the pregnancy/HIV info", created_on=d5)
+        msg1 = TembaMessage2.create(id=101, contact=ObjectRef.create(uuid='C-001', name="Ann"),
+                                    text="What is aids?", created_on=d1)
+        msg2 = TembaMessage2.create(id=102, contact=ObjectRef.create(uuid='C-002', name="Bob"),
+                                    text="Can I catch Hiv?", created_on=d2)
+        msg3 = TembaMessage2.create(id=103, contact=ObjectRef.create(uuid='C-003', name="Cat"),
+                                    text="I think I'm pregnant", created_on=d3)
+        msg4 = TembaMessage2.create(id=104, contact=ObjectRef.create(uuid='C-004', name="Don"),
+                                    text="Php is amaze", created_on=d4)
+        msg5 = TembaMessage2.create(id=105, contact=ObjectRef.create(uuid='C-005', name="Eve"),
+                                    text="Thanks for the pregnancy/HIV info", created_on=d5)
         mock_get_messages.side_effect = [
             MockClientQuery([msg1, msg2, msg3, msg4, msg5])
         ]

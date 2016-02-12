@@ -644,7 +644,7 @@ class RemoteMessage(object):
         num_contacts_created = 0
 
         for msg in messages:
-            contact = Contact.get_or_create(org, msg.contact)
+            contact = Contact.get_or_create(org, msg.contact.uuid)
             if contact.is_new:
                 num_contacts_created += 1
 
