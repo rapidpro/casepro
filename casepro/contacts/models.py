@@ -284,7 +284,7 @@ class Contact(models.Model):
         return result
 
     def __str__(self):
-        return self.name
+        return self.name if self.name else self.uuid
 
 
 @python_2_unicode_compatible
