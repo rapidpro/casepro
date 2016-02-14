@@ -4,14 +4,16 @@ from __future__ import absolute_import, unicode_literals
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
 from casepro.utils import datetime_to_microseconds, microseconds_to_datetime
+from dash.test import MockClientQuery
 from datetime import datetime
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.utils import timezone
 from mock import patch
-from temba_client.v1.types import Contact as TembaContact, Label as TembaLabel, Message as TembaMessage
+from temba_client.v1.types import Label as TembaLabel, Message as TembaMessage
 from temba_client.v1.types import Broadcast as TembaBroadcast
+from temba_client.v2.types import Contact as TembaContact, ObjectRef
 from temba_client.clients import Pager
 from temba_client.utils import format_iso8601
 from .context_processors import contact_ext_url, sentry_dsn
@@ -31,7 +33,8 @@ class CaseTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient1.remove_contacts')
     @patch('dash.orgs.models.TembaClient1.add_contacts')
     @patch('dash.orgs.models.TembaClient1.expire_contacts')
-    def test_lifecycle(self, mock_expire_contacts, mock_add_contacts, mock_remove_contacts,
+    @patch('dash.orgs.models.TembaClient2.get_contacts')
+    def test_lifecycle(self, mock_get_contacts, mock_expire_contacts, mock_add_contacts, mock_remove_contacts,
                        mock_archive_messages, mock_get_messages):
 
         d0 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
@@ -46,6 +49,12 @@ class CaseTest(BaseCasesTest):
         msg1 = TembaMessage.create(id=123, contact='C-001', created_on=d0, text="Hello")
         msg2 = TembaMessage.create(id=234, contact='C-001', created_on=d1, text="Hello again")
         mock_get_messages.return_value = [msg1, msg2]
+        mock_get_contacts.return_value = MockClientQuery([
+            TembaContact.create(uuid='C-001', name="Bob", blocked=False, fields={'age': "34"}, groups=[
+                ObjectRef.create(uuid='G-001', name="Males"),
+                ObjectRef.create(uuid='G-003', name="Reporters"),
+            ])
+        ])
 
         with patch.object(timezone, 'now', return_value=d1):
             # MOH opens new case
@@ -206,10 +215,18 @@ class CaseTest(BaseCasesTest):
         self.assertFalse(case3.is_new)
         self.assertEqual(case, case3)
 
-    def test_get_all(self):
+    @patch('dash.orgs.models.TembaClient2.get_contacts')
+    def test_get_all(self, mock_get_contacts):
         self.create_contact(self.unicef, 'C-002', "Richard")
         self.create_contact(self.unicef, 'C-003', "Kidus")
         self.create_contact(self.nyaruka, 'C-004', "Norbert")
+
+        mock_get_contacts.side_effect = [
+            MockClientQuery([TembaContact.create(uuid='C-001', name="Ann", blocked=False, fields={}, groups=[])]),
+            MockClientQuery([TembaContact.create(uuid='C-002', name="Bob", blocked=False, fields={}, groups=[])]),
+            MockClientQuery([TembaContact.create(uuid='C-003', name="Cat", blocked=False, fields={}, groups=[])]),
+            MockClientQuery([TembaContact.create(uuid='C-004', name="Don", blocked=False, fields={}, groups=[])]),
+        ]
 
         d1 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
         msg1 = TembaMessage.create(id=123, contact='C-001', created_on=d1, text="Hello 1")
@@ -248,10 +265,15 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(set(Case.get_closed(self.unicef)), {case2})
         self.assertEqual(set(Case.get_closed(self.unicef, user=self.user1, label=self.pregnancy)), {case2})
 
-    def test_get_open_for_contact_on(self):
+    @patch('dash.orgs.models.TembaClient2.get_contacts')
+    def test_get_open_for_contact_on(self, mock_get_contacts):
         d0 = datetime(2014, 1, 5, 0, 0, tzinfo=timezone.utc)
         d1 = datetime(2014, 1, 10, 0, 0, tzinfo=timezone.utc)
         d2 = datetime(2014, 1, 15, 0, 0, tzinfo=timezone.utc)
+
+        mock_get_contacts.return_value = MockClientQuery([
+            TembaContact.create(uuid='C-001', name="Bob", blocked=False, fields={}, groups=[])
+        ])
 
         # case Jan 5th -> Jan 10th
         with patch.object(timezone, 'now', return_value=d0):
@@ -294,11 +316,11 @@ class CaseCRUDLTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient1.get_message')
     @patch('dash.orgs.models.TembaClient1.get_messages')
     @patch('dash.orgs.models.TembaClient1.archive_messages')
-    @patch('dash.orgs.models.TembaClient1.get_contact')
+    @patch('dash.orgs.models.TembaClient2.get_contacts')
     @patch('dash.orgs.models.TembaClient1.remove_contacts')
     @patch('dash.orgs.models.TembaClient1.add_contacts')
     @patch('dash.orgs.models.TembaClient1.expire_contacts')
-    def test_open(self, mock_expire_contacts, mock_add_contacts, mock_remove_contacts, mock_get_contact, mock_archive_messages,
+    def test_open(self, mock_expire_contacts, mock_add_contacts, mock_remove_contacts, mock_get_contacts, mock_archive_messages,
                   mock_get_messages, mock_get_message):
         self.create_contact(self.unicef, 'C-002', "Richard")
 
@@ -308,7 +330,13 @@ class CaseCRUDLTest(BaseCasesTest):
                                    direction='I', labels=['AIDS'])
         mock_get_message.return_value = msg1
         mock_get_messages.return_value = [msg1]
-        mock_get_contact.return_value = TembaContact.create(uuid='C-001', groups=['G-021', 'G-022', 'G-023'])
+        mock_get_contacts.return_value = MockClientQuery([
+            TembaContact.create(uuid='C-001', name="Bob", blocked=False, fields={}, groups=[
+                ObjectRef.create(uuid='G-021', name="A"),
+                ObjectRef.create(uuid='G-022', name="B"),
+                ObjectRef.create(uuid='G-023', name="C")
+            ])
+        ])
 
         # log in as an administrator
         self.login(self.admin)
@@ -330,7 +358,13 @@ class CaseCRUDLTest(BaseCasesTest):
                                    direction='I', labels=['AIDS'])
         mock_get_message.return_value = msg2
         mock_get_messages.return_value = [msg2]
-        mock_get_contact.return_value = TembaContact.create(uuid='C-001', groups=['G-021', 'G-022', 'G-023'])
+        mock_get_contacts.return_value = MockClientQuery([
+            TembaContact.create(uuid='C-002', name="Guy", blocked=False, fields={}, groups=[
+                ObjectRef.create(uuid='G-021', name="A"),
+                ObjectRef.create(uuid='G-022', name="B"),
+                ObjectRef.create(uuid='G-023', name="C")
+            ])
+        ])
 
         # log in as a non-administrator
         self.login(self.user1)
@@ -345,10 +379,14 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(set(case2.labels.all()), {self.aids})
 
     @patch('dash.orgs.models.TembaClient1.get_messages')
-    def test_read(self, mock_get_messages):
+    @patch('dash.orgs.models.TembaClient2.get_contacts')
+    def test_read(self, mock_get_contacts, mock_get_messages):
         msg = TembaMessage.create(id=101, contact='C-001', created_on=timezone.now(), text="Hello",
                                   direction='I', labels=[])
         mock_get_messages.return_value = [msg]
+        mock_get_contacts.return_value = MockClientQuery([
+            TembaContact.create(uuid='C-001', name="Bob", blocked=False, fields={}, groups=[])
+        ])
 
         case = Case.get_or_open(self.unicef, self.user1, [self.aids], msg, "Summary", self.moh, update_contact=False)
 
@@ -362,7 +400,8 @@ class CaseCRUDLTest(BaseCasesTest):
 
     @patch('dash.orgs.models.TembaClient1.get_messages')
     @patch('dash.orgs.models.TembaClient1.create_broadcast')
-    def test_timeline(self, mock_create_broadcast, mock_get_messages):
+    @patch('dash.orgs.models.TembaClient2.get_contacts')
+    def test_timeline(self, mock_get_contacts, mock_create_broadcast, mock_get_messages):
         d1 = datetime(2014, 1, 1, 13, 0, tzinfo=timezone.utc)
         d2 = datetime(2014, 1, 2, 13, 0, tzinfo=timezone.utc)
 
@@ -372,6 +411,9 @@ class CaseCRUDLTest(BaseCasesTest):
         msg2 = TembaMessage.create(id=102, contact='C-001', created_on=d2, text="What is AIDS?", direction='I',
                                    labels=[self.aids])
         mock_get_messages.return_value = [msg2]
+        mock_get_contacts.return_value = MockClientQuery([
+            TembaContact.create(uuid='C-001', name="Bob", blocked=False, fields={}, groups=[])
+        ])
 
         case = Case.get_or_open(self.unicef, self.user1, [self.aids], msg2, "Summary", self.moh, update_contact=False)
 

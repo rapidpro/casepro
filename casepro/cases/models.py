@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import re
+import six
 
 from casepro.contacts.models import Contact
 from casepro.msgs.models import Outgoing, SYSTEM_LABEL_FLAGGED
@@ -246,9 +247,29 @@ class Case(models.Model):
 
     @classmethod
     def get_or_open(cls, org, user, labels, message, summary, assignee, update_contact=True):
-        contact = Contact.objects.filter(org=org, uuid=message.contact, is_stub=False, is_active=True).first()
-        if not contact:
-            raise ValueError("Contact does not exist or is a stub")
+        # TODO: until contacts are all pulled in locally, we need to create/update them as cases are opened
+        contact_uuid = message.contact
+
+        with Contact.sync_lock(contact_uuid):
+            contact = Contact.objects.filter(org=org, uuid=contact_uuid).first()
+            temba_contact = org.get_temba_client(api_version=2).get_contacts(uuid=contact_uuid).first()
+
+            if not temba_contact:
+                raise ValueError("Can't create case for contact which has been deleted")
+
+            local_kwargs = Contact.sync_get_kwargs(org, temba_contact)
+
+            if contact:
+                for field, value in six.iteritems(local_kwargs):
+                    setattr(contact, field, value)
+                contact.is_active = True
+                contact.save()
+            else:
+                contact = Contact.objects.create(**local_kwargs)
+
+        #contact = Contact.objects.filter(org=org, uuid=message.contact, is_stub=False, is_active=True).first()
+        #if not contact:
+        #    raise ValueError("Contact does not exist or is a stub")
 
         r = get_redis_connection()
         with r.lock('org:%d:cases_lock' % org.pk):

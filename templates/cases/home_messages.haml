@@ -151,7 +151,7 @@
           [[ message.text ]]
         .message-extra{ collapse:"expandedMessageId != message.id" }
           .btn-group.pull-away
-            %button.btn.btn-default{ type:"button", ng-click:"onCaseFromMessage(message)", ng-if:"partners.length > 0 && !message.contact.is_stub" }
+            %button.btn.btn-default{ type:"button", ng-click:"onCaseFromMessage(message)", ng-if:"partners.length > 0" }
               - trans "Open Case"
             %button.btn.btn-default{ type:"button", ng-click:"onForwardMessage(message)" }
               %span.glyphicon.glyphicon-share-alt
