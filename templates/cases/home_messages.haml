@@ -13,7 +13,7 @@
 
             - if user_is_admin
               &nbsp;
-              %a{ ng-href:'[[ "{{ contact_ext_url }}" | replace:"{}":activeContact ]]', target:"_blank" }
+              %a{ ng-href:'[[ "{{ contact_ext_url }}" | replace:"{}":activeContact.uuid ]]', target:"_blank" }
                 %span.glyphicon.glyphicon-new-window
                 - trans "View"
           .pull-away
