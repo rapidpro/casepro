@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import six
+
 from casepro.backend import get_backend
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
@@ -198,14 +200,18 @@ class Contact(models.Model):
         if temba_instance.blocked:  # we don't keep blocked contacts
             return None
 
+        # groups and fields are updated via a post save signal handler
+        groups = [(g.uuid, g.name) for g in temba_instance.groups]
+        fields = {k: v for k, v in six.iteritems(temba_instance.fields) if v is not None}  # don't include none values
+
         return {
             'org': org,
             'uuid': temba_instance.uuid,
             'name': temba_instance.name,
             'language': temba_instance.language,
             'is_stub': False,
-            SAVE_GROUPS_ATTR: [(g.uuid, g.name) for g in temba_instance.groups],  # updated by post-save signal handler
-            SAVE_FIELDS_ATTR: temba_instance.fields
+            SAVE_GROUPS_ATTR: groups,
+            SAVE_FIELDS_ATTR: fields
         }
 
     def sync_as_temba(self):

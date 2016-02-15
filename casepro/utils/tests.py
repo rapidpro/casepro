@@ -5,7 +5,7 @@ import pytz
 
 from casepro.test import BaseCasesTest
 from datetime import date, datetime
-from . import safe_max, normalize, match_keywords, truncate, str_to_bool
+from . import safe_max, normalize, match_keywords, truncate, str_to_bool, is_dict_equal
 from . import datetime_to_microseconds, microseconds_to_datetime
 
 
@@ -54,3 +54,14 @@ class UtilsTest(BaseCasesTest):
         ms = datetime_to_microseconds(d1)
         d2 = microseconds_to_datetime(ms)
         self.assertEqual(d2, datetime(2015, 10, 9, 14, 48, 30, 123456, tzinfo=pytz.utc))
+
+    def test_is_dict_equal(self):
+        self.assertTrue(is_dict_equal({'a': 1, 'b': 2}, {'b': 2, 'a': 1}))
+        self.assertFalse(is_dict_equal({'a': 1, 'b': 2}, {'a': 1, 'b': 3}))
+        self.assertFalse(is_dict_equal({'a': 1, 'b': 2}, {'a': 1, 'c': 2}))
+        self.assertFalse(is_dict_equal({'a': 1, 'b': 2}, {'a': 1, 'b': 2, 'c': 3}))
+
+        self.assertTrue(is_dict_equal({'a': 1, 'b': 2, 'c': 3}, {'a': 1, 'b': 2, 'c': 4}, keys=('a', 'b')))
+
+        self.assertTrue(is_dict_equal({'a': 1, 'b': 2}, {'a': 1, 'b': 2, 'c': None}, ignore_none_values=True))
+        self.assertFalse(is_dict_equal({'a': 1, 'b': 2}, {'a': 1, 'b': 2, 'c': None}, ignore_none_values=False))

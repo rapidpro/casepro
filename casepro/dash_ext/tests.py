@@ -237,14 +237,14 @@ class SyncTest(BaseCasesTest):
         group1 = TembaObjectRef.create(uuid='000-001', name="Customers")
         group2 = TembaObjectRef.create(uuid='000-002', name="Spammers")
 
-        # no differences
+        # no differences (besides null field value which is ignored)
         first = TembaContact.create(
             uuid='000-001', name="Ann", urns=['tel:1234'], groups=[group1],
             fields={'chat_name': "ann"}, language='eng', modified_on=timezone.now()
         )
         second = TembaContact.create(
             uuid='000-001', name="Ann", urns=['tel:1234'], groups=[group1],
-            fields={'chat_name': "ann"}, language='eng', modified_on=timezone.now()
+            fields={'chat_name': "ann", 'age': None}, language='eng', modified_on=timezone.now()
         )
         self.assertIsNone(temba_compare_contacts(first, second))
         self.assertIsNone(temba_compare_contacts(second, first))

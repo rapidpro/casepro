@@ -7,7 +7,8 @@ Sync support for contacts, groups and fields
 import logging
 import six
 
-from dash.utils import intersection, filter_dict
+from casepro.utils import is_dict_equal
+from dash.utils import intersection
 from temba_client.v1.types import Contact as TembaContact
 
 
@@ -233,9 +234,7 @@ def temba_compare_contacts(first, second, inc_urns=True, fields=None, groups=Non
         if a != b:
             return 'groups'
 
-    if fields is None and (first.fields != second.fields):
-        return 'fields'
-    if fields and (filter_dict(first.fields, fields) != filter_dict(second.fields, fields)):
+    if not is_dict_equal(first.fields, second.fields, keys=fields, ignore_none_values=True):
         return 'fields'
 
     return None
