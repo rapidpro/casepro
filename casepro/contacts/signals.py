@@ -57,6 +57,8 @@ def update_contact_fields(sender, instance, created, **kwargs):
 
     org = instance.org
 
+    org_fields = {f.key: f for f in org.fields.all()}
+
     new_values_by_key = getattr(instance, SAVE_FIELDS_ATTR)
     cur_values_by_key = {v.field.key: v for v in instance.values.all()}
 
@@ -72,10 +74,10 @@ def update_contact_fields(sender, instance, created, **kwargs):
                 existing_value.string_value = val
                 existing_value.save(update_fields=('string_value',))
         else:
-            field = Field.objects.filter(org=org, key=key).first()
+            field = org_fields.get(key)
             if not field:
                 # create stub
-                field = Field.objects.create(org=org, key=key, is_active=False)
+                field = org.fields.create(key=key, is_active=False)
 
             Value.objects.create(contact=instance, field=field, string_value=val)
 

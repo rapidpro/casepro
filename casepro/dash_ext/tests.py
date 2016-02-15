@@ -1,13 +1,18 @@
 # coding=utf-8
 from __future__ import unicode_literals
 
+import time
+
 from casepro.contacts.models import Contact, Group, Field
 from casepro.test import BaseCasesTest
 from dash.test import MockClientQuery
+from django.db import connection
+from django.test import override_settings
 from django.utils import timezone
 from mock import patch
 from temba_client.v2.types import Group as TembaGroup, Field as TembaField
 from temba_client.v2.types import Contact as TembaContact, ObjectRef as TembaObjectRef
+from unittest import skip
 from .sync import sync_pull_groups, sync_pull_fields, sync_pull_contacts, temba_compare_contacts, temba_merge_contacts
 
 
@@ -102,19 +107,19 @@ class SyncTest(BaseCasesTest):
                     TembaContact.create(
                         uuid="C-001", name="Bob McFlow", language="eng", urns=["twitter:bobflow"],
                         groups=[TembaObjectRef.create(uuid="G-001", name="Customers")],
-                        fields={'age': 34}, failed=False, blocked=False
+                        fields={'age': "34"}, failed=False, blocked=False
                     ),
                     TembaContact.create(
                         uuid="C-002", name="Jim McMsg", language="fre", urns=["tel:+250783835665"],
                         groups=[TembaObjectRef.create(uuid="G-002", name="Spammers")],
-                        fields={'age': 67}, failed=False, blocked=False
+                        fields={'age': "67"}, failed=False, blocked=False
                     ),
                 ],
                 [
                     TembaContact.create(
                         uuid="C-003", name="Ann McPoll", language="eng", urns=["tel:+250783835664"],
                         groups=[],
-                        fields={'age': 35}, failed=True, blocked=False
+                        fields={'age': "35"}, failed=True, blocked=False
                     ),
                 ]
             ),
@@ -131,7 +136,7 @@ class SyncTest(BaseCasesTest):
 
         with self.assertNumQueries(25):
             num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
-                                                                       prefetch_related=('groups',))
+                                                                       prefetch_related=('groups', 'values__field'))
 
         self.assertEqual((num_created, num_updated, num_deleted), (3, 0, 0))
 
@@ -173,9 +178,9 @@ class SyncTest(BaseCasesTest):
             )
         ]
 
-        with self.assertNumQueries(13):
+        with self.assertNumQueries(12):
             num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
-                                                                       prefetch_related=('groups',))
+                                                                       prefetch_related=('groups', 'values__field'))
 
         self.assertEqual((num_created, num_updated, num_deleted), (0, 1, 1))
 
@@ -204,7 +209,7 @@ class SyncTest(BaseCasesTest):
 
         with self.assertNumQueries(4):
             num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
-                                                                       prefetch_related=('groups',))
+                                                                       prefetch_related=('groups', 'values__field'))
         self.assertEqual((num_created, num_updated, num_deleted), (0, 0, 0))
 
         self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, ann})
@@ -224,9 +229,9 @@ class SyncTest(BaseCasesTest):
             MockClientQuery([])
         ]
 
-        with self.assertNumQueries(3):
+        with self.assertNumQueries(5):
             num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact,
-                                                                       prefetch_related=('groups',))
+                                                                       prefetch_related=('groups', 'values__field'))
 
         self.assertEqual((num_created, num_updated, num_deleted), (0, 0, 1))  # blocked = deleted for us
 
@@ -327,3 +332,78 @@ class SyncTest(BaseCasesTest):
         merged_groups = sorted(merged.groups, key=lambda g: g.uuid)
         self.assertEqual([g.uuid for g in merged_groups], ['000-001', '000-009', '000-010', '000-011'])
         self.assertEqual([g.name for g in merged_groups], ["Lusaka", "Females", "Customers", "Spammers"])
+
+
+@skip
+class PerfTest(BaseCasesTest):
+
+    @patch('dash.orgs.models.TembaClient2.get_contacts')
+    @patch('dash.orgs.models.TembaClient2.get_fields')
+    @patch('dash.orgs.models.TembaClient2.get_groups')
+    @override_settings(DEBUG=True)
+    def test_sync(self, mock_get_groups, mock_get_fields, mock_get_contacts):
+        # start with no groups or fields
+        Group.objects.all().delete()
+        Field.objects.all().delete()
+
+        fetch_size = 250
+        num_fetches = 4
+        num_groups = 5
+        num_fields = 64
+        names = ["Ann", "Bob", "Cat"]
+        field_values = ["12345", None]
+
+        # setup get_fields
+        fields = [TembaField.create(key='field_%d' % f, label='Field #%d' % f, value_type='text')
+                  for f in range(0, num_fields)]
+        mock_get_fields.return_value = MockClientQuery(fields)
+
+        # sync fields
+        self.assertEqual((num_fields, 0, 0), sync_pull_fields(self.unicef, Field))
+
+        # setup get_groups
+        groups = [TembaGroup.create(uuid="G0000000-0000-0000-0000-00000000%04d" % g, name="Group #%d" % g, count=0)
+                  for g in range(0, num_groups)]
+        mock_get_groups.return_value = MockClientQuery(groups)
+
+        # sync groups
+        self.assertEqual((num_groups, 0, 0), sync_pull_groups(self.unicef, Group))
+
+        # setup get_contacts to return multiple fetches of contacts
+        active_fetches = []
+        for b in range(0, num_fetches):
+            batch = []
+            for c in range(0, fetch_size):
+                num = b * fetch_size + c
+                batch.append(TembaContact.create(
+                    uuid="C0000000-0000-0000-0000-00000000%04d" % num,
+                    name=names[num % len(names)],
+                    language="eng",
+                    urns=["tel:+26096415%04d" % num],
+                    groups=[
+                        TembaObjectRef.create(uuid="G0000000-0000-0000-0000-00000000%04d" % g, name="Group #%d" % g)
+                        for g in range(0, num_groups)
+                    ],
+                    fields={'field_%d' % f: field_values[f % len(field_values)] for f in range(0, num_fields)},
+                    failed=False,
+                    blocked=False
+                ))
+            active_fetches.append(batch)
+
+        mock_get_contacts.side_effect = [
+            MockClientQuery(*active_fetches),
+            MockClientQuery([])  # no deleted contacts
+        ]
+
+        start = time.time()
+        num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
+                                                                   prefetch_related=('groups', 'values__field'))
+
+        print "Contact sync: %f secs" % (time.time() - start)
+
+        self.assertEqual((num_created, num_updated, num_deleted), (num_fetches * fetch_size, 0, 0))
+
+        slowest_queries = sorted(connection.queries, key=lambda q: q['time'], reverse=True)[:10]
+
+        for q in slowest_queries:
+            print "%s -- %s" % (q['time'], q['sql'])
