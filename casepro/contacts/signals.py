@@ -16,6 +16,8 @@ def update_contact_groups(sender, instance, created, **kwargs):
     if not hasattr(instance, SAVE_GROUPS_ATTR):
         return
 
+    org = instance.org
+
     new_groups_by_uuid = {g[0]: g[1] for g in getattr(instance, SAVE_GROUPS_ATTR)}
 
     with instance.lock(CONTACT_LOCK_GROUPS):
@@ -29,16 +31,15 @@ def update_contact_groups(sender, instance, created, **kwargs):
         # add this contact to any groups not in the current set
         add_to_by_uuid = {uuid: name for uuid, name in six.iteritems(new_groups_by_uuid) if uuid not in six.viewkeys(cur_groups_by_uuid)}
         if add_to_by_uuid:
-            add_to_existing = Group.objects.filter(org=instance.org, uuid__in=six.viewkeys(add_to_by_uuid))
-            existing_by_uuid = {g.uuid: g for g in add_to_existing}
+            org_groups = {g.uuid: g for g in org.groups.all()}
 
             # create any groups that don't exist
             add_to_groups = []
             for uuid, name in six.iteritems(add_to_by_uuid):
-                existing = existing_by_uuid.get(uuid)
+                existing = org_groups.get(uuid)
                 if not existing:
                     # create stub
-                    existing = Group.objects.create(org=instance.org, uuid=uuid, name=name, is_active=False)
+                    existing = org.groups.create(uuid=uuid, name=name, is_active=False)
 
                 add_to_groups.append(existing)
 

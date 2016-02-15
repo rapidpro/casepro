@@ -348,10 +348,11 @@ class PerfTest(BaseCasesTest):
 
         fetch_size = 250
         num_fetches = 4
-        num_groups = 5
-        num_fields = 64
+        num_groups = 50
+        num_fields = 50
         names = ["Ann", "Bob", "Cat"]
         field_values = ["12345", None]
+        groups_in = 5
 
         # setup get_fields
         fields = [TembaField.create(key='field_%d' % f, label='Field #%d' % f, value_type='text')
@@ -382,7 +383,7 @@ class PerfTest(BaseCasesTest):
                     urns=["tel:+26096415%04d" % num],
                     groups=[
                         TembaObjectRef.create(uuid="G0000000-0000-0000-0000-00000000%04d" % g, name="Group #%d" % g)
-                        for g in range(0, num_groups)
+                        for g in range(0, groups_in)
                     ],
                     fields={'field_%d' % f: field_values[f % len(field_values)] for f in range(0, num_fields)},
                     failed=False,
