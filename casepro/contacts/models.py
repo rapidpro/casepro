@@ -302,7 +302,7 @@ class Value(models.Model):
 
     field = models.ForeignKey(Field)
 
-    string_value = models.TextField(max_length=640, null=True,
+    string_value = models.TextField(max_length=640,
                                     help_text="The string value or string representation of this value")
 
     def get_value(self):
