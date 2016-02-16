@@ -111,7 +111,7 @@ class RapidProBackend(BaseBackend):
                 modified_after=modified_after,
                 modified_before=modified_before,
                 inc_urns=False,
-                prefetch_related=('groups', 'values__field'),
+                prefetch_related=('groups',),
                 progress_callback=progress_callback
         )
 
