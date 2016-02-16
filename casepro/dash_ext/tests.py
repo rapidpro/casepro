@@ -340,7 +340,7 @@ class PerfTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient2.get_contacts')
     @patch('dash.orgs.models.TembaClient2.get_fields')
     @patch('dash.orgs.models.TembaClient2.get_groups')
-    @override_settings(DEBUG=True)
+    # @override_settings(DEBUG=True)
     def test_sync(self, mock_get_groups, mock_get_fields, mock_get_contacts):
         # start with no groups or fields
         Group.objects.all().delete()
@@ -391,20 +391,41 @@ class PerfTest(BaseCasesTest):
                 ))
             active_fetches.append(batch)
 
-        mock_get_contacts.side_effect = [
-            MockClientQuery(*active_fetches),
-            MockClientQuery([])  # no deleted contacts
-        ]
+        mock_get_contacts.side_effect = [MockClientQuery(*active_fetches), MockClientQuery([])]  # no deleted contacts
 
         start = time.time()
         num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
                                                                    prefetch_related=('groups', 'values__field'))
 
-        print "Contact sync: %f secs" % (time.time() - start)
+        print "Initial contact sync: %f secs" % (time.time() - start)
 
         self.assertEqual((num_created, num_updated, num_deleted), (num_fetches * fetch_size, 0, 0))
 
-        slowest_queries = sorted(connection.queries, key=lambda q: q['time'], reverse=True)[:10]
+        # slowest_queries = sorted(connection.queries, key=lambda q: q['time'], reverse=True)[:10]
 
-        for q in slowest_queries:
-            print "%s -- %s" % (q['time'], q['sql'])
+        # for q in slowest_queries:
+        #    print "%s -- %s" % (q['time'], q['sql'])
+
+        # simulate a subsequent sync with no changes
+        mock_get_contacts.side_effect = [MockClientQuery(*active_fetches), MockClientQuery([])]
+        start = time.time()
+        num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
+                                                                   prefetch_related=('groups', 'values__field'))
+        self.assertEqual((num_created, num_updated, num_deleted), (0, 0, 0))
+
+        print "Contact sync with no changes: %f secs" % (time.time() - start)
+
+        # simulate an update of some fields
+        for batch in active_fetches:
+            for c in batch:
+                c.fields['field_3'] = "ABCD"
+                c.fields['field_5'] = "EFGH"
+                c.fields['field_7'] = "IJKL"
+
+        mock_get_contacts.side_effect = [MockClientQuery(*active_fetches), MockClientQuery([])]
+        start = time.time()
+        num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
+                                                                   prefetch_related=('groups', 'values__field'))
+        self.assertEqual((num_created, num_updated, num_deleted), (0, num_fetches * fetch_size, 0))
+
+        print "Contact sync with field value changes: %f secs" % (time.time() - start)
