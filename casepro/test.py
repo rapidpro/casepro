@@ -4,7 +4,7 @@ import datetime
 import pytz
 
 from casepro.cases.models import Label, Partner
-from casepro.contacts.models import Contact, Group, Field, SAVE_FIELDS_ATTR
+from casepro.contacts.models import Contact, Group, Field
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from dash.test import DashTest
 from django.contrib.auth.models import User
@@ -69,12 +69,7 @@ class BaseCasesTest(DashTest):
         return Label.create(org, name, description, words, partners, uuid)
 
     def create_contact(self, org, uuid, name, groups=(), fields=None):
-        kwargs = {'org': org, 'uuid': uuid, 'name': name, 'is_stub': False}
-
-        if fields is not None:
-            kwargs[SAVE_FIELDS_ATTR] = fields
-
-        contact = Contact.objects.create(**kwargs)
+        contact = Contact.objects.create(org=org, uuid=uuid, name=name, is_stub=False, fields=fields)
 
         for group in groups:
             contact.groups.add(group)

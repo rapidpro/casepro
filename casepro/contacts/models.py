@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import six
 
 from casepro.backend import get_backend
+from django.contrib.postgres.fields import HStoreField
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -10,7 +11,6 @@ from redis_cache import get_redis_connection
 from temba_client.v2.types import Contact as TembaContact, ObjectRef as TembaObjectRef
 
 SAVE_GROUPS_ATTR = '__data__groups'
-SAVE_FIELDS_ATTR = '__data__fields'
 
 CONTACT_LOCK_KEY = 'contact-lock:%s:%s'
 CONTACT_LOCK_GROUPS = 'groups'
@@ -147,6 +147,8 @@ class Contact(models.Model):
 
     groups = models.ManyToManyField(Group, related_name="contacts")
 
+    fields = HStoreField(null=True)
+
     language = models.CharField(max_length=3, verbose_name=_("Language"), null=True, blank=True,
                                 help_text=_("Language for this contact"))
 
@@ -161,8 +163,6 @@ class Contact(models.Model):
     def __init__(self, *args, **kwargs):
         if SAVE_GROUPS_ATTR in kwargs:
             setattr(self, SAVE_GROUPS_ATTR, kwargs.pop(SAVE_GROUPS_ATTR))
-        if SAVE_FIELDS_ATTR in kwargs:
-            setattr(self, SAVE_FIELDS_ATTR, kwargs.pop(SAVE_FIELDS_ATTR))
 
         super(Contact, self).__init__(*args, **kwargs)
 
@@ -210,8 +210,8 @@ class Contact(models.Model):
             'name': temba_instance.name,
             'language': temba_instance.language,
             'is_stub': False,
+            'fields': fields,
             SAVE_GROUPS_ATTR: groups,
-            SAVE_FIELDS_ATTR: fields
         }
 
     def sync_as_temba(self):
@@ -224,12 +224,13 @@ class Contact(models.Model):
                                    language=self.language)
 
     def get_fields(self, visible=None):
-        if visible is not None:
-            values = self.values.filter(field__is_visible=visible)
-        else:
-            values = self.values.all()
+        fields = self.fields if self.fields else {}
 
-        return {v.field.key: v.get_value() for v in values}
+        if visible:
+            keys = Field.get_all(self.org, visible=True).values_list('key', flat=True)
+            return {k: fields.get(k) for k in keys}
+        else:
+            return fields
 
     def prepare_for_case(self):
         """
@@ -291,22 +292,3 @@ class Contact(models.Model):
 
     def __str__(self):
         return self.name if self.name else self.uuid
-
-
-@python_2_unicode_compatible
-class Value(models.Model):
-    """
-    A custom contact field in RapidPro
-    """
-    contact = models.ForeignKey(Contact, related_name='values')
-
-    field = models.ForeignKey(Field)
-
-    string_value = models.TextField(max_length=640,
-                                    help_text="The string value or string representation of this value")
-
-    def get_value(self):
-        return self.string_value
-
-    def __str__(self):
-        return self.string_value

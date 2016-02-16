@@ -29,8 +29,8 @@ class ContactTest(BaseCasesTest):
             'name': "Bob McFlow",
             'language': "eng",
             'is_stub': False,
+            'fields': {'age': "34"},
             '__data__groups': [("G-001", "Customers")],
-            '__data__fields': {'age': "34"},
         })
 
         # check saving by result of sync_get_kwargs
@@ -45,12 +45,11 @@ class ContactTest(BaseCasesTest):
 
         self.assertEqual(set(contact.groups.all()), {customers})
 
-        contact = Contact.objects.select_related('org').prefetch_related('groups', 'values__field').get(uuid='C-001')
+        contact = Contact.objects.select_related('org').prefetch_related('groups').get(uuid='C-001')
 
         # check there are no extra db hits when saving without change, assuming appropriate pre-fetches (as above)
         with self.assertNumQueries(1):
             setattr(contact, '__data__groups', [("G-001", "Customers")])
-            setattr(contact, '__data__fields', {"age": "34"})
             contact.save()
 
         # check removing a group and adding new ones
@@ -58,29 +57,18 @@ class ContactTest(BaseCasesTest):
             setattr(contact, '__data__groups', [("G-002", "Spammers"), ("G-003", "Boffins")])
             contact.save()
 
-        # check updating a field
-        with self.assertNumQueries(2):
-            setattr(contact, '__data__fields', {"age": "35"})
-            contact.save()
-
-        # check adding a new field
-        with self.assertNumQueries(4):
-            setattr(contact, '__data__fields', {"age": "35", "state": "WA"})
-            contact.save()
-
-        # check deleting a field
-        with self.assertNumQueries(4):
-            setattr(contact, '__data__fields', {"state": "WA"})
-            contact.save()
-
         contact = Contact.objects.get(uuid='C-001')
-
-        self.assertEqual(contact.get_fields(), {"state": "WA"})
 
         spammers = Group.objects.get(org=self.unicef, uuid="G-002", name="Spammers")
         boffins = Group.objects.get(org=self.unicef, uuid="G-003", name="Boffins")
 
         self.assertEqual(set(contact.groups.all()), {spammers, boffins})
+
+    def test_get_fields(self):
+        contact = self.create_contact(self.unicef, 'C-001', "Jean", fields={'age': "32", 'state': "WA"})
+
+        self.assertEqual(contact.get_fields(), {'age': "32", 'state': "WA"})  # what is stored on the contact
+        self.assertEqual(contact.get_fields(visible=True), {'nickname': None, 'age': "32"})  # visible fields
 
     def test_as_json(self):
         contact = self.create_contact(self.unicef, 'C-001', "Richard", fields={'age': "32", 'state': "WA"})
@@ -88,4 +76,6 @@ class ContactTest(BaseCasesTest):
         self.assertEqual(contact.as_json(full=False), {'uuid': 'C-001', 'is_stub': False})
 
         # full=True means include visible contact fields
-        self.assertEqual(contact.as_json(full=True), {'uuid': 'C-001', 'is_stub': False, 'fields': {'age': "32"}})
+        self.assertEqual(contact.as_json(full=True), {'uuid': 'C-001',
+                                                      'is_stub': False,
+                                                      'fields': {'nickname': None, 'age': "32"}})

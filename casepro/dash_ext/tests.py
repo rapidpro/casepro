@@ -6,8 +6,6 @@ import time
 from casepro.contacts.models import Contact, Group, Field
 from casepro.test import BaseCasesTest
 from dash.test import MockClientQuery
-from django.db import connection
-from django.test import override_settings
 from django.utils import timezone
 from mock import patch
 from temba_client.v2.types import Group as TembaGroup, Field as TembaField
@@ -134,9 +132,9 @@ class SyncTest(BaseCasesTest):
             )
         ]
 
-        with self.assertNumQueries(25):
+        with self.assertNumQueries(15):
             num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
-                                                                       prefetch_related=('groups', 'values__field'))
+                                                                       prefetch_related=('groups',))
 
         self.assertEqual((num_created, num_updated, num_deleted), (3, 0, 0))
 
@@ -178,9 +176,9 @@ class SyncTest(BaseCasesTest):
             )
         ]
 
-        with self.assertNumQueries(12):
+        with self.assertNumQueries(8):
             num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
-                                                                       prefetch_related=('groups', 'values__field'))
+                                                                       prefetch_related=('groups',))
 
         self.assertEqual((num_created, num_updated, num_deleted), (0, 1, 1))
 
@@ -207,9 +205,9 @@ class SyncTest(BaseCasesTest):
             MockClientQuery([])
         ]
 
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(2):
             num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
-                                                                       prefetch_related=('groups', 'values__field'))
+                                                                       prefetch_related=('groups',))
         self.assertEqual((num_created, num_updated, num_deleted), (0, 0, 0))
 
         self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, ann})
@@ -229,9 +227,9 @@ class SyncTest(BaseCasesTest):
             MockClientQuery([])
         ]
 
-        with self.assertNumQueries(5):
+        with self.assertNumQueries(3):
             num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact,
-                                                                       prefetch_related=('groups', 'values__field'))
+                                                                       prefetch_related=('groups',))
 
         self.assertEqual((num_created, num_updated, num_deleted), (0, 0, 1))  # blocked = deleted for us
 
@@ -385,7 +383,7 @@ class PerfTest(BaseCasesTest):
                         TembaObjectRef.create(uuid="G0000000-0000-0000-0000-00000000%04d" % g, name="Group #%d" % g)
                         for g in range(0, groups_in)
                     ],
-                    fields={'field_%d' % f: field_values[f % len(field_values)] for f in range(0, num_fields)},
+                    fields={'custom_field_%d' % f: field_values[f % len(field_values)] for f in range(0, num_fields)},
                     failed=False,
                     blocked=False
                 ))
@@ -395,7 +393,7 @@ class PerfTest(BaseCasesTest):
 
         start = time.time()
         num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
-                                                                   prefetch_related=('groups', 'values__field'))
+                                                                   prefetch_related=('groups',))
 
         print "Initial contact sync: %f secs" % (time.time() - start)
 
@@ -410,22 +408,34 @@ class PerfTest(BaseCasesTest):
         mock_get_contacts.side_effect = [MockClientQuery(*active_fetches), MockClientQuery([])]
         start = time.time()
         num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
-                                                                   prefetch_related=('groups', 'values__field'))
+                                                                   prefetch_related=('groups',))
         self.assertEqual((num_created, num_updated, num_deleted), (0, 0, 0))
 
         print "Contact sync with no changes: %f secs" % (time.time() - start)
 
-        # simulate an update of some fields
+        # simulate an update of 1 field value
         for batch in active_fetches:
             for c in batch:
-                c.fields['field_3'] = "ABCD"
-                c.fields['field_5'] = "EFGH"
-                c.fields['field_7'] = "IJKL"
+                c.fields['custom_field_1'] = "UPDATED"
 
         mock_get_contacts.side_effect = [MockClientQuery(*active_fetches), MockClientQuery([])]
         start = time.time()
         num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
-                                                                   prefetch_related=('groups', 'values__field'))
+                                                                   prefetch_related=('groups',))
         self.assertEqual((num_created, num_updated, num_deleted), (0, num_fetches * fetch_size, 0))
 
-        print "Contact sync with field value changes: %f secs" % (time.time() - start)
+        print "Contact sync with 1 field value changes: %f secs" % (time.time() - start)
+
+        # simulate an update of 10 field values
+        for batch in active_fetches:
+            for c in batch:
+                for f in (10, 11, 12, 13, 14, 15, 16, 17, 18, 19):
+                    c.fields['custom_field_%d' % f] = "UPDATED"
+
+        mock_get_contacts.side_effect = [MockClientQuery(*active_fetches), MockClientQuery([])]
+        start = time.time()
+        num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
+                                                                   prefetch_related=('groups',))
+        self.assertEqual((num_created, num_updated, num_deleted), (0, num_fetches * fetch_size, 0))
+
+        print "Contact sync with 10 field value changes: %f secs" % (time.time() - start)
