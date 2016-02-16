@@ -131,11 +131,11 @@ class TasksTest(BaseCasesTest):
         self.assertEqual(call_kwargs['before'], task_state.started_on)
 
         mock_label_messages.assert_has_calls([
-            call(messages=[msg1, msg2], label_uuid='L-001'),
-            call(messages=[msg3], label_uuid='L-002')
+            call(messages=[msg1.id, msg2.id], label_uuid='L-001'),
+            call(messages=[msg3.id], label_uuid='L-002')
         ], any_order=True)
 
-        mock_archive_messages.assert_called_once_with(messages=[msg5])  # because contact has open case
+        mock_archive_messages.assert_called_once_with(messages=[msg5.id])  # because contact has open case
 
         # check reply event was created for message 5
         events = case1.events.all()

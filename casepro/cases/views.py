@@ -73,8 +73,8 @@ class CaseCRUDL(SmartCRUDL):
             assignee_id = request.POST.get('assignee', None)
             assignee = Partner.get_all(request.org).get(pk=assignee_id) if assignee_id else request.user.get_partner()
 
-            client = request.org.get_temba_client()
-            message = client.get_message(message_id)
+            client = request.org.get_temba_client(api_version=2)
+            message = client.get_messages(id=message_id).first()
 
             # map from label names to label objects
             label_map = {l.name: l for l in Label.get_all(request.org)}

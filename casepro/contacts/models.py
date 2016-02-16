@@ -261,7 +261,7 @@ class Contact(models.Model):
                     self.groups.remove(group)
                     self.suspended_groups.add(group)
 
-                    get_backend().remove_from_group(self, group)
+                    get_backend().remove_from_group(self.org, self, group)
 
     def restore_groups(self):
         with self.lock(CONTACT_LOCK_GROUPS):
@@ -269,15 +269,15 @@ class Contact(models.Model):
                 self.groups.add(group)
                 self.suspended_groups.remove(group)
 
-                get_backend().add_to_group(self, group)
+                get_backend().add_to_group(self.org, self, group)
 
     def expire_flows(self):
-        get_backend().stop_runs(self)
+        get_backend().stop_runs(self.org, self)
 
     def archive_messages(self):
         # TODO archive local messages
 
-        get_backend().archive_contact_messages(self)
+        get_backend().archive_contact_messages(self.org, self)
 
     def as_json(self, full=False):
         """

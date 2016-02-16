@@ -134,6 +134,19 @@ class Label(models.Model):
         partner = user.get_partner()
         return partner.get_labels() if partner else cls.objects.none()
 
+    @classmethod
+    def get_keyword_map(cls, org):
+        """
+        Gets a map of all keywords to their corresponding labels
+        :param org: the org
+        :return: map of keywords to labels
+        """
+        labels_by_keyword = {}
+        for label in Label.get_all(org):
+            for keyword in label.get_keywords():
+                labels_by_keyword[keyword] = label
+        return labels_by_keyword
+
     def update_name(self, name):
         # try to update remote label
         try:
@@ -248,7 +261,7 @@ class Case(models.Model):
     @classmethod
     def get_or_open(cls, org, user, labels, message, summary, assignee, update_contact=True):
         # TODO: until contacts are all pulled in locally, we need to create/update them as cases are opened
-        contact_uuid = message.contact
+        contact_uuid = message.contact.uuid
 
         with Contact.sync_lock(contact_uuid):
             contact = Contact.objects.filter(org=org, uuid=contact_uuid).first()
@@ -313,10 +326,9 @@ class Case(models.Model):
             do_api_fetch = last_message_time and after <= last_message_time
 
         if do_api_fetch:
-            # fetch messages
-            remote = self.org.get_temba_client().get_messages(contacts=[self.contact.uuid],
-                                                              after=after,
-                                                              before=before)
+            # fetch remote messages for contact
+            client = self.org.get_temba_client(api_version=2)
+            remote = client.get_messages(contact=self.contact.uuid, after=after, before=before).all()
 
             local_outgoing = self.outgoing_messages.filter(created_on__gte=after, created_on__lte=before)
             local_by_broadcast = {o.broadcast_id: o for o in local_outgoing}
@@ -324,6 +336,8 @@ class Case(models.Model):
             # merge remotely fetched and local outgoing messages
             messages = []
             for m in remote:
+                m.contact = {'uuid': m.contact.uuid}
+
                 local = local_by_broadcast.pop(m.broadcast, None)
                 if local:
                     m.sender = local.created_by
@@ -396,6 +410,8 @@ class Case(models.Model):
         CaseAction.create(self, user, CaseAction.UNLABEL, label=label)
 
     def reply_event(self, msg):
+        self.incoming_messages.add(msg)
+
         CaseEvent.create_reply(self, msg)
 
     def update_labels(self, user, labels):
@@ -649,58 +665,6 @@ class RemoteMessage(object):
         return messages
 
     @staticmethod
-    def process_unsolicited(org, messages):
-        """
-        Processes unsolicited messages, labelling and creating case events as appropriate
-        """
-        labels = list(Label.get_all(org))
-        label_keywords = {l: l.get_keywords() for l in labels}
-        label_matches = {l: [] for l in labels}  # message ids that match each label
-
-        case_replies = []
-
-        client = org.get_temba_client()
-        labelled, unlabelled = [], []
-
-        num_contacts_created = 0
-
-        for msg in messages:
-            contact = Contact.get_or_create(org, msg.contact.uuid)
-            if contact.is_new:
-                num_contacts_created += 1
-
-            open_case = Case.get_open_for_contact_on(org, contact, msg.created_on)
-
-            if open_case:
-                open_case.reply_event(msg)
-                case_replies.append(msg)
-            else:
-                # only apply labels if there isn't a currently open case for this contact
-                norm_text = normalize(msg.text)
-
-                for label in labels:
-                    if match_keywords(norm_text, label_keywords[label]):
-                        labelled.append(msg)
-                        label_matches[label].append(msg)
-
-        # add labels to matching messages
-        for label, matched_msgs in label_matches.iteritems():
-            if matched_msgs:
-                client.label_messages(messages=matched_msgs, label_uuid=label.uuid)
-
-        # archive messages which are case replies
-        if case_replies:
-            client.archive_messages(messages=case_replies)
-
-        # record the last labelled/unlabelled message times for this org
-        if labelled:
-            org.record_message_time(labelled[0].created_on, labelled=True)
-        if unlabelled:
-            org.record_message_time(unlabelled[0].created_on, labelled=False)
-
-        return len(labelled), num_contacts_created
-
-    @staticmethod
     def as_json(msg, label_map):
         """
         Prepares a message (fetched from RapidPro) for JSON serialization
@@ -717,7 +681,7 @@ class RemoteMessage(object):
                 'time': msg.created_on,
                 'labels': labels,
                 'flagged': flagged,
-                'direction': msg.direction,
+                'direction': 'I' if msg.direction in ('I', 'in') else 'O',
                 'archived': msg.archived,
                 'sender': msg.sender.as_json() if getattr(msg, 'sender', None) else None}
 

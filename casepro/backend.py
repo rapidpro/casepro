@@ -9,6 +9,9 @@ _ACTIVE_BACKEND = None
 
 
 def get_backend():
+    """
+    Gets the active backend for this casepro instance
+    """
     global _ACTIVE_BACKEND
     if not _ACTIVE_BACKEND:
         _ACTIVE_BACKEND = locate(settings.SITE_BACKEND)()
@@ -61,38 +64,64 @@ class BaseBackend(object):
         pass
 
     @abstractmethod
-    def add_to_group(self, contact, group):
+    def add_to_group(self, org, contact, group):
         """
         Adds the given contact to a group
 
+        :param org: the org
         :param contact: the contact
         :param group: the group
         """
         pass
 
     @abstractmethod
-    def remove_from_group(self, contact, group):
+    def remove_from_group(self, org, contact, group):
         """
         Removes the given contact from a group
 
+        :param org: the org
         :param contact: the contact
         :param group: the group
         """
         pass
 
     @abstractmethod
-    def stop_runs(self, contact):
+    def stop_runs(self, org, contact):
         """
         Stops any ongoing flow runs for the given contact
 
+        :param org: the org
         :param contact: the contact
         """
         pass
 
-    def archive_contact_messages(self, contact):
+    @abstractmethod
+    def label_messages(self, org, messages, label):
         """
-        Archives messages for the given contact
+        Adds a label to the given messages
 
+        :param org: the org
+        :param messages: the messages
+        :param label: the label
+        """
+        pass
+
+    @abstractmethod
+    def archive_messages(self, org, messages):
+        """
+        Archives the given messages
+
+        :param org: the org
+        :param messages: the messages
+        """
+        pass
+
+    @abstractmethod
+    def archive_contact_messages(self, org, contact):
+        """
+        Archives all messages for the given contact
+
+        :param org: the org
         :param contact: the contact
         """
         pass
@@ -128,7 +157,7 @@ class RapidProBackend(BaseBackend):
         return sync_pull_fields(org, Field)
 
     def pull_and_label_messages(self, org, received_after, received_before, progress_callback=None):
-        from casepro.cases.models import RemoteMessage
+        from casepro.msgs.models import Message
 
         client = org.get_temba_client(api_version=2)
 
@@ -139,7 +168,7 @@ class RapidProBackend(BaseBackend):
         inbox_query = client.get_messages(folder='inbox', after=received_after, before=received_before)
 
         for incoming_batch in inbox_query.iterfetches(retry_on_rate_exceed=True):
-            num_labelled, num_contacts_created = RemoteMessage.process_unsolicited(org, incoming_batch)
+            num_labelled, num_contacts_created = Message.process_incoming(org, incoming_batch)
 
             total_messages += len(incoming_batch)
             total_labelled += num_labelled
@@ -147,20 +176,30 @@ class RapidProBackend(BaseBackend):
 
         return total_messages, total_labelled, total_contacts_created
 
-    def add_to_group(self, contact, group):
-        client = contact.org.get_temba_client(api_version=1)
+    def add_to_group(self, org, contact, group):
+        client = org.get_temba_client(api_version=1)
         client.add_contacts([contact.uuid], group_uuid=group.uuid)
 
-    def remove_from_group(self, contact, group):
-        client = contact.org.get_temba_client(api_version=1)
+    def remove_from_group(self, org, contact, group):
+        client = org.get_temba_client(api_version=1)
         client.remove_contacts([contact.uuid], group_uuid=group.uuid)
 
-    def stop_runs(self, contact):
-        client = contact.org.get_temba_client(api_version=1)
+    def stop_runs(self, org, contact):
+        client = org.get_temba_client(api_version=1)
         client.expire_contacts([contact.uuid])
 
-    def archive_contact_messages(self, contact):
-        client = contact.org.get_temba_client(api_version=1)
+    def label_messages(self, org, messages, label):
+        if messages:
+            client = org.get_temba_client(api_version=1)
+            client.label_messages(messages=[m.backend_id for m in messages], label_uuid=label.uuid)
+
+    def archive_messages(self, org, messages):
+        if messages:
+            client = org.get_temba_client(api_version=1)
+            client.archive_messages(messages=[m.backend_id for m in messages])
+
+    def archive_contact_messages(self, org, contact):
+        client = org.get_temba_client(api_version=1)
 
         # TODO switch to API v2 (downside is this will return all outgoing messages which could be a lot)
         messages = client.get_messages(contacts=[contact.uuid], direction='I', statuses=['H'], _types=['I'], archived=False)

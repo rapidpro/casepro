@@ -1,6 +1,7 @@
 # coding=utf-8
 from __future__ import absolute_import, unicode_literals
 
+from casepro.msgs.models import Message
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
 from casepro.utils import datetime_to_microseconds, microseconds_to_datetime
@@ -29,13 +30,13 @@ class CaseTest(BaseCasesTest):
                                        fields={'age': "34"}, groups=[self.males, self.reporters])
 
     @patch('dash.orgs.models.TembaClient1.get_messages')
+    @patch('dash.orgs.models.TembaClient2.get_contacts')
     @patch('dash.orgs.models.TembaClient1.archive_messages')
     @patch('dash.orgs.models.TembaClient1.remove_contacts')
     @patch('dash.orgs.models.TembaClient1.add_contacts')
     @patch('dash.orgs.models.TembaClient1.expire_contacts')
-    @patch('dash.orgs.models.TembaClient2.get_contacts')
-    def test_lifecycle(self, mock_get_contacts, mock_expire_contacts, mock_add_contacts, mock_remove_contacts,
-                       mock_archive_messages, mock_get_messages):
+    def test_lifecycle(self, mock_expire_contacts, mock_add_contacts, mock_remove_contacts,
+                       mock_archive_messages, mock_get_contacts, mock_get_messages):
 
         d0 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
         d1 = datetime(2014, 1, 2, 7, 0, tzinfo=timezone.utc)
@@ -46,8 +47,9 @@ class CaseTest(BaseCasesTest):
         d6 = datetime(2014, 1, 2, 12, 0, tzinfo=timezone.utc)
         d7 = datetime(2014, 1, 2, 13, 0, tzinfo=timezone.utc)
 
-        msg1 = TembaMessage.create(id=123, contact='C-001', created_on=d0, text="Hello")
-        msg2 = TembaMessage.create(id=234, contact='C-001', created_on=d1, text="Hello again")
+        msg1 = TembaMessage.create(id=123, contact=ObjectRef.create(uuid='C-001', name="Bob"), created_on=d0, text="Hello")
+        msg2 = TembaMessage.create(id=234, contact=ObjectRef.create(uuid='C-001', name="Bob"), created_on=d1, text="Hello again")
+
         mock_get_messages.return_value = [msg1, msg2]
         mock_get_contacts.return_value = MockClientQuery([
             TembaContact.create(uuid='C-001', name="Bob", blocked=False, fields={'age': "34"}, groups=[
@@ -107,12 +109,17 @@ class CaseTest(BaseCasesTest):
             self.assertEqual(case, case2)
 
         # contact sends a reply
-        case.reply_event(TembaMessage.create(created_on=d0))
+        reply = TembaMessage.create(id=432, text="OK", contact=ObjectRef.create(uuid='C-001', name="Bob"), created_on=d2)
+        Message.process_incoming(self.unicef, [reply])
 
         events = case.events.order_by('pk')
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].event, CaseEvent.REPLY)
-        self.assertEqual(events[0].created_on, d0)
+        self.assertEqual(events[0].created_on, d2)
+
+        # which will have been archived
+        mock_archive_messages.assert_called_once_with(messages=[432])
+        mock_archive_messages.reset_mock()
 
         with patch.object(timezone, 'now', return_value=d2):
             # other user in MOH adds a note
@@ -229,16 +236,16 @@ class CaseTest(BaseCasesTest):
         ]
 
         d1 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
-        msg1 = TembaMessage.create(id=123, contact='C-001', created_on=d1, text="Hello 1")
+        msg1 = TembaMessage.create(id=123, contact=ObjectRef.create(uuid='C-001', name="Ann"), created_on=d1, text="Hello 1")
         case1 = Case.get_or_open(self.unicef, self.user1, [self.aids], msg1, "Summary", self.moh,
                                  update_contact=False)
-        msg2 = TembaMessage.create(id=234, contact='C-002', created_on=d1, text="Hello 2")
+        msg2 = TembaMessage.create(id=234, contact=ObjectRef.create(uuid='C-002', name="Bob"), created_on=d1, text="Hello 2")
         case2 = Case.get_or_open(self.unicef, self.user2, [self.aids, self.pregnancy], msg2, "Summary", self.who,
                                  update_contact=False)
-        msg3 = TembaMessage.create(id=345, contact='C-003', created_on=d1, text="Hello 3")
+        msg3 = TembaMessage.create(id=345, contact=ObjectRef.create(uuid='C-003', name="Cat"), created_on=d1, text="Hello 3")
         case3 = Case.get_or_open(self.unicef, self.user3, [self.pregnancy], msg3, "Summary", self.who,
                                  update_contact=False)
-        msg4 = TembaMessage.create(id=456, contact='C-004', created_on=d1, text="Hello 4")
+        msg4 = TembaMessage.create(id=456, contact=ObjectRef.create(uuid='C-004', name="Don"), created_on=d1, text="Hello 4")
         case4 = Case.get_or_open(self.nyaruka, self.user4, [self.code], msg4, "Summary", self.klab,
                                  update_contact=False)
 
@@ -277,7 +284,7 @@ class CaseTest(BaseCasesTest):
 
         # case Jan 5th -> Jan 10th
         with patch.object(timezone, 'now', return_value=d0):
-            msg = TembaMessage.create(id=123, contact='C-001', created_on=d0, text="Hello")
+            msg = TembaMessage.create(id=123, contact=ObjectRef.create(uuid='C-001', name="Bob"), created_on=d0, text="Hello")
             case1 = Case.get_or_open(self.unicef, self.user1, [self.pregnancy], msg, "Summary", self.moh,
                                      update_contact=False)
         with patch.object(timezone, 'now', return_value=d1):
@@ -285,7 +292,7 @@ class CaseTest(BaseCasesTest):
 
         # case Jan 15th -> now
         with patch.object(timezone, 'now', return_value=d2):
-            msg = TembaMessage.create(id=234, contact='C-001', created_on=d0, text="Hello")
+            msg = TembaMessage.create(id=234, contact=ObjectRef.create(uuid='C-001', name="Bob"), created_on=d0, text="Hello")
             case2 = Case.get_or_open(self.unicef, self.user1, [self.aids], msg, "Summary", self.moh,
                                      update_contact=False)
 
@@ -313,23 +320,28 @@ class CaseCRUDLTest(BaseCasesTest):
         self.bob = self.create_contact(self.unicef, 'C-001', "Bob",
                                        fields={'age': "34"}, groups=[self.males, self.reporters])
 
-    @patch('dash.orgs.models.TembaClient1.get_message')
+    @patch('dash.orgs.models.TembaClient2.get_messages')
+    @patch('dash.orgs.models.TembaClient2.get_contacts')
     @patch('dash.orgs.models.TembaClient1.get_messages')
     @patch('dash.orgs.models.TembaClient1.archive_messages')
-    @patch('dash.orgs.models.TembaClient2.get_contacts')
     @patch('dash.orgs.models.TembaClient1.remove_contacts')
     @patch('dash.orgs.models.TembaClient1.add_contacts')
     @patch('dash.orgs.models.TembaClient1.expire_contacts')
-    def test_open(self, mock_expire_contacts, mock_add_contacts, mock_remove_contacts, mock_get_contacts, mock_archive_messages,
-                  mock_get_messages, mock_get_message):
+    def test_open(self, mock_expire_contacts, mock_add_contacts, mock_remove_contacts, mock_archive_messages, mock_get_messages1,
+                  mock_get_contacts, mock_get_messages2):
         self.create_contact(self.unicef, 'C-002', "Richard")
 
         url = reverse('cases.case_open')
 
-        msg1 = TembaMessage.create(id=101, contact='C-001', created_on=timezone.now(), text="Hello",
-                                   direction='I', labels=['AIDS'])
-        mock_get_message.return_value = msg1
-        mock_get_messages.return_value = [msg1]
+        msg1 = TembaMessage.create(id=101,
+                                   contact=ObjectRef.create(uuid='C-001', name="Bob"),
+                                   created_on=timezone.now(),
+                                   text="Hello",
+                                   direction='I',
+                                   labels=['AIDS'])
+
+        mock_get_messages1.return_value = [msg1]  # used by the call to archive the contact's messages
+        mock_get_messages2.return_value = MockClientQuery([msg1])
         mock_get_contacts.return_value = MockClientQuery([
             TembaContact.create(uuid='C-001', name="Bob", blocked=False, fields={}, groups=[
                 ObjectRef.create(uuid='G-021', name="A"),
@@ -354,10 +366,15 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(set(case1.labels.all()), {self.aids})
 
         # try again as a non-administrator who can't create cases for other partner orgs
-        msg2 = TembaMessage.create(id=102, contact='C-002', created_on=timezone.now(), text="Hello",
-                                   direction='I', labels=['AIDS'])
-        mock_get_message.return_value = msg2
-        mock_get_messages.return_value = [msg2]
+        msg2 = TembaMessage.create(id=102,
+                                   contact=ObjectRef.create(uuid='C-002', name="Guy"),
+                                   created_on=timezone.now(),
+                                   text="Hello",
+                                   direction='I',
+                                   labels=['AIDS'])
+
+        mock_get_messages1.return_value = [msg2]  # used by the call to archive the contact's messages
+        mock_get_messages2.return_value = MockClientQuery([msg2])
         mock_get_contacts.return_value = MockClientQuery([
             TembaContact.create(uuid='C-002', name="Guy", blocked=False, fields={}, groups=[
                 ObjectRef.create(uuid='G-021', name="A"),
@@ -378,12 +395,11 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(case2.assignee, self.moh)
         self.assertEqual(set(case2.labels.all()), {self.aids})
 
-    @patch('dash.orgs.models.TembaClient1.get_messages')
     @patch('dash.orgs.models.TembaClient2.get_contacts')
-    def test_read(self, mock_get_contacts, mock_get_messages):
-        msg = TembaMessage.create(id=101, contact='C-001', created_on=timezone.now(), text="Hello",
+    def test_read(self, mock_get_contacts):
+        msg = TembaMessage.create(id=101, contact=ObjectRef.create(uuid='C-001', name="Bob"),
+                                  created_on=timezone.now(), text="Hello",
                                   direction='I', labels=[])
-        mock_get_messages.return_value = [msg]
         mock_get_contacts.return_value = MockClientQuery([
             TembaContact.create(uuid='C-001', name="Bob", blocked=False, fields={}, groups=[])
         ])
@@ -398,19 +414,22 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
 
-    @patch('dash.orgs.models.TembaClient1.get_messages')
+    @patch('dash.orgs.models.TembaClient2.get_messages')
     @patch('dash.orgs.models.TembaClient1.create_broadcast')
     @patch('dash.orgs.models.TembaClient2.get_contacts')
-    def test_timeline(self, mock_get_contacts, mock_create_broadcast, mock_get_messages):
+    @patch('dash.orgs.models.TembaClient1.archive_messages')
+    def test_timeline(self, mock_archive_messages, mock_get_contacts, mock_create_broadcast, mock_get_messages):
         d1 = datetime(2014, 1, 1, 13, 0, tzinfo=timezone.utc)
         d2 = datetime(2014, 1, 2, 13, 0, tzinfo=timezone.utc)
 
         # contact has sent 2 messages, user creates case from the second
-        msg1 = TembaMessage.create(id=101, contact='C-001', created_on=d1, text="Hello", direction='I',
+        msg1 = TembaMessage.create(id=101, contact=ObjectRef.create(uuid='C-001', name="Bob"),
+                                   created_on=d1, text="Hello", type='inbox', direction='in',
                                    labels=[])
-        msg2 = TembaMessage.create(id=102, contact='C-001', created_on=d2, text="What is AIDS?", direction='I',
+        msg2 = TembaMessage.create(id=102, contact=ObjectRef.create(uuid='C-001', name="Bob"),
+                                   created_on=d2, text="What is AIDS?", type='inbox', direction='in',
                                    labels=[self.aids])
-        mock_get_messages.return_value = [msg2]
+        mock_get_messages.return_value = MockClientQuery([msg2])
         mock_get_contacts.return_value = MockClientQuery([
             TembaContact.create(uuid='C-001', name="Bob", blocked=False, fields={}, groups=[])
         ])
@@ -429,12 +448,12 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(len(response.json['results']), 2)
         self.assertEqual(response.json['results'][0]['type'], 'M')
         self.assertEqual(response.json['results'][0]['item']['text'], "What is AIDS?")
-        self.assertEqual(response.json['results'][0]['item']['contact'], 'C-001')
+        self.assertEqual(response.json['results'][0]['item']['contact']['uuid'], 'C-001')
         self.assertEqual(response.json['results'][0]['item']['direction'], 'I')
         self.assertEqual(response.json['results'][1]['type'], 'A')
         self.assertEqual(response.json['results'][1]['item']['action'], 'O')
 
-        mock_get_messages.assert_called_once_with(contacts=['C-001'], after=d2, before=t0)
+        mock_get_messages.assert_called_once_with(contact='C-001', after=d2, before=t0)
         mock_get_messages.reset_mock()
 
         # page looks for new timeline activity
@@ -468,9 +487,10 @@ class CaseCRUDLTest(BaseCasesTest):
                                                                    contacts=['C-001'], created_on=d3)
         Outgoing.create(self.unicef, self.user1, Outgoing.CASE_REPLY, "It's bad", [], ['C-001'], case)
 
-        msg3 = TembaMessage.create(id=103, contact='C-001', created_on=d3, text="It's bad",
+        msg3 = TembaMessage.create(id=103, contact=ObjectRef.create(uuid='C-001', name="Bob"),
+                                   created_on=d3, text="It's bad", type='inbox',
                                    labels=[], direction='O', broadcast=201)
-        mock_get_messages.return_value = [msg3]
+        mock_get_messages.return_value = MockClientQuery([msg3])
 
         # page again looks for new timeline activity
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t2)))
@@ -482,14 +502,18 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'][0]['item']['direction'], 'O')
 
         # this time we will have hit the RapidPro API because we know there's a new outgoing message
-        mock_get_messages.assert_called_once_with(contacts=['C-001'], after=t2, before=t3)
+        mock_get_messages.assert_called_once_with(contact='C-001', after=t2, before=t3)
         mock_get_messages.reset_mock()
 
         # contact sends a reply
         d4 = timezone.now()
-        msg4 = TembaMessage.create(id=104, contact='C-001', created_on=d4, text="OK thanks", labels=[], direction='I')
-        case.reply_event(msg4)
-        mock_get_messages.return_value = [msg4]
+
+        msg4 = TembaMessage.create(id=104, contact=ObjectRef.create(uuid='C-001', name="Bob"),
+                                   created_on=d4, text="OK thanks", type='inbox',
+                                   labels=[], direction='I')
+        Message.process_incoming(self.unicef, [msg4])
+
+        mock_get_messages.return_value = MockClientQuery([msg4])
 
         # page again looks for new timeline activity
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t3)))
@@ -501,7 +525,7 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'][0]['item']['direction'], 'I')
 
         # again we will have hit the RapidPro API - this time we know there's a new incoming message
-        mock_get_messages.assert_called_once_with(contacts=['C-001'], after=t3, before=t4)
+        mock_get_messages.assert_called_once_with(contact='C-001', after=t3, before=t4)
         mock_get_messages.reset_mock()
 
         # page again looks for new timeline activity
@@ -518,8 +542,12 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # contact sends new message after that
         d5 = timezone.now()
-        msg5 = TembaMessage.create(id=105, contact='C-001', created_on=d5, text="But wait", labels=[], direction='I')
-        mock_get_messages.return_value = [msg5]
+        msg5 = TembaMessage.create(id=105, contact=ObjectRef.create(uuid='C-001', name="Bob"),
+                                   created_on=d5, text="But wait", type='inbox',
+                                   labels=[], direction='I')
+        Message.process_incoming(self.unicef, [msg5])
+
+        mock_get_messages.return_value = MockClientQuery([msg5])
 
         # page again looks for new timeline activity
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t5)))
