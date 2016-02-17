@@ -23,11 +23,10 @@ def pull_contacts(org, since, until):
 
     groups_created, groups_updated, groups_deleted = backend.pull_groups(org)
 
-    # TODO temporarily disabled until most contacts have been manually pulled over
-    #contacts_created, contacts_updated, contacts_deleted = backend.pull_contacts(org, since, until)
+    contacts_created, contacts_updated, contacts_deleted = backend.pull_contacts(org, since, until)
 
     return {
         'fields': {'created': fields_created, 'updated': fields_updated, 'deleted': fields_deleted},
         'groups': {'created': groups_created, 'updated': groups_updated, 'deleted': groups_deleted},
-        #'contacts': {'created': contacts_created, 'updated': contacts_updated, 'deleted': contacts_deleted}
+        'contacts': {'created': contacts_created, 'updated': contacts_updated, 'deleted': contacts_deleted}
     }
