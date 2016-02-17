@@ -32,10 +32,10 @@ class CaseTest(BaseCasesTest):
     @patch('casepro.test.TestBackend.archive_contact_messages')
     @patch('casepro.test.TestBackend.archive_messages')
     @patch('casepro.test.TestBackend.stop_runs')
+    @patch('casepro.test.TestBackend.add_to_group')
+    @patch('casepro.test.TestBackend.remove_from_group')
     @patch('dash.orgs.models.TembaClient2.get_contacts')
-    @patch('dash.orgs.models.TembaClient1.remove_contacts')
-    @patch('dash.orgs.models.TembaClient1.add_contacts')
-    def test_lifecycle(self, mock_add_contacts, mock_remove_contacts, mock_get_contacts,
+    def test_lifecycle(self, mock_get_contacts, mock_remove_from_group, mock_add_to_group,
                        mock_stop_runs, mock_archive_messages, mock_archive_contact_messages):
 
         d0 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
@@ -84,8 +84,8 @@ class CaseTest(BaseCasesTest):
         mock_archive_contact_messages.reset_mock()
 
         # check that opening the case removed contact from specified suspend groups
-        mock_remove_contacts.assert_called_once_with(['C-001'], group_uuid='G-003')
-        mock_remove_contacts.reset_mock()
+        mock_remove_from_group.assert_called_once_with(self.unicef, self.bob, self.reporters)
+        mock_remove_from_group.reset_mock()
 
         # check that contacts groups were restored
         self.assertEqual(set(Contact.objects.get(pk=self.bob.pk).groups.all()), {self.males})
@@ -152,8 +152,8 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(set(Contact.objects.get(pk=self.bob.pk).groups.all()), {self.males, self.reporters})
         self.assertEqual(set(Contact.objects.get(pk=self.bob.pk).suspended_groups.all()), set())
 
-        mock_add_contacts.assert_called_once_with(['C-001'], group_uuid='G-003')
-        mock_add_contacts.reset_mock()
+        mock_add_to_group.assert_called_once_with(self.unicef, self.bob, self.reporters)
+        mock_add_to_group.reset_mock()
 
         # contact sends a message after case was closed
         msg3 = TembaMessage.create(id=345, contact=ObjectRef.create(uuid='C-001', name="Bob"), created_on=d4, text="No more case")
@@ -322,15 +322,14 @@ class CaseCRUDLTest(BaseCasesTest):
         self.bob = self.create_contact(self.unicef, 'C-001', "Bob",
                                        fields={'age': "34"}, groups=[self.males, self.reporters])
 
+    @patch('casepro.test.TestBackend.archive_contact_messages')
+    @patch('casepro.test.TestBackend.stop_runs')
+    @patch('casepro.test.TestBackend.add_to_group')
+    @patch('casepro.test.TestBackend.remove_from_group')
     @patch('dash.orgs.models.TembaClient2.get_messages')
     @patch('dash.orgs.models.TembaClient2.get_contacts')
-    @patch('dash.orgs.models.TembaClient1.get_messages')
-    @patch('dash.orgs.models.TembaClient1.archive_messages')
-    @patch('dash.orgs.models.TembaClient1.remove_contacts')
-    @patch('dash.orgs.models.TembaClient1.add_contacts')
-    @patch('dash.orgs.models.TembaClient1.expire_contacts')
-    def test_open(self, mock_expire_contacts, mock_add_contacts, mock_remove_contacts, mock_archive_messages, mock_get_messages1,
-                  mock_get_contacts, mock_get_messages2):
+    def test_open(self, mock_get_contacts, mock_get_messages,
+                  mock_remove_contacts, mock_add_contacts, mock_stop_runs, mock_archive_contact_messages):
         self.create_contact(self.unicef, 'C-002', "Richard")
 
         url = reverse('cases.case_open')
@@ -342,8 +341,7 @@ class CaseCRUDLTest(BaseCasesTest):
                                    direction='I',
                                    labels=['AIDS'])
 
-        mock_get_messages1.return_value = [msg1]  # used by the call to archive the contact's messages
-        mock_get_messages2.return_value = MockClientQuery([msg1])
+        mock_get_messages.return_value = MockClientQuery([msg1])
         mock_get_contacts.return_value = MockClientQuery([
             TembaContact.create(uuid='C-001', name="Bob", blocked=False, fields={}, groups=[
                 ObjectRef.create(uuid='G-021', name="A"),
@@ -375,8 +373,7 @@ class CaseCRUDLTest(BaseCasesTest):
                                    direction='I',
                                    labels=['AIDS'])
 
-        mock_get_messages1.return_value = [msg2]  # used by the call to archive the contact's messages
-        mock_get_messages2.return_value = MockClientQuery([msg2])
+        mock_get_messages.return_value = MockClientQuery([msg2])
         mock_get_contacts.return_value = MockClientQuery([
             TembaContact.create(uuid='C-002', name="Guy", blocked=False, fields={}, groups=[
                 ObjectRef.create(uuid='G-021', name="A"),
@@ -416,11 +413,11 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
 
+    @patch('casepro.test.TestBackend.archive_messages')
     @patch('dash.orgs.models.TembaClient2.get_messages')
     @patch('dash.orgs.models.TembaClient1.create_broadcast')
     @patch('dash.orgs.models.TembaClient2.get_contacts')
-    @patch('dash.orgs.models.TembaClient1.archive_messages')
-    def test_timeline(self, mock_archive_messages, mock_get_contacts, mock_create_broadcast, mock_get_messages):
+    def test_timeline(self, mock_get_contacts, mock_create_broadcast, mock_get_messages, mock_archive_messages):
         d1 = datetime(2014, 1, 1, 13, 0, tzinfo=timezone.utc)
         d2 = datetime(2014, 1, 2, 13, 0, tzinfo=timezone.utc)
 
