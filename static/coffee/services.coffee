@@ -96,7 +96,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
         if msg.urn
           urns.push(msg.urn)
         else
-          contacts.push(msg.contact)
+          contacts.push(msg.contact.uuid)
 
       @_messagesSend('B', text, urns, contacts, null, callback)
 
