@@ -9,6 +9,9 @@ _ACTIVE_BACKEND = None
 
 
 def get_backend():
+    """
+    Gets the active backend for this casepro instance
+    """
     global _ACTIVE_BACKEND
     if not _ACTIVE_BACKEND:
         _ACTIVE_BACKEND = locate(settings.SITE_BACKEND)()
@@ -61,38 +64,64 @@ class BaseBackend(object):
         pass
 
     @abstractmethod
-    def add_to_group(self, contact, group):
+    def add_to_group(self, org, contact, group):
         """
         Adds the given contact to a group
 
+        :param org: the org
         :param contact: the contact
         :param group: the group
         """
         pass
 
     @abstractmethod
-    def remove_from_group(self, contact, group):
+    def remove_from_group(self, org, contact, group):
         """
         Removes the given contact from a group
 
+        :param org: the org
         :param contact: the contact
         :param group: the group
         """
         pass
 
     @abstractmethod
-    def stop_runs(self, contact):
+    def stop_runs(self, org, contact):
         """
         Stops any ongoing flow runs for the given contact
 
+        :param org: the org
         :param contact: the contact
         """
         pass
 
-    def archive_contact_messages(self, contact):
+    @abstractmethod
+    def label_messages(self, org, messages, label):
         """
-        Archives messages for the given contact
+        Adds a label to the given messages
 
+        :param org: the org
+        :param messages: the messages
+        :param label: the label
+        """
+        pass
+
+    @abstractmethod
+    def archive_messages(self, org, messages):
+        """
+        Archives the given messages
+
+        :param org: the org
+        :param messages: the messages
+        """
+        pass
+
+    @abstractmethod
+    def archive_contact_messages(self, org, contact):
+        """
+        Archives all messages for the given contact
+
+        :param org: the org
         :param contact: the contact
         """
         pass

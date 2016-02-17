@@ -21,7 +21,7 @@ class RapidProBackendTest(BaseCasesTest):
 
         bob = self.create_contact(self.unicef, 'C-001', "Bob")
 
-        self.backend.archive_contact_messages(bob)
+        self.backend.archive_contact_messages(self.unicef, bob)
 
         mock_get_messages.assert_called_once_with(contacts=['C-001'], direction='I', statuses=['H'], _types=['I'], archived=False)
         mock_archive_messages.assert_called_once_with(messages=[123, 234])
