@@ -29,14 +29,14 @@ class CaseTest(BaseCasesTest):
         self.bob = self.create_contact(self.unicef, 'C-001', "Bob",
                                        fields={'age': "34"}, groups=[self.males, self.reporters])
 
-    @patch('dash.orgs.models.TembaClient1.get_messages')
+    @patch('casepro.test.TestBackend.archive_contact_messages')
+    @patch('casepro.test.TestBackend.archive_messages')
+    @patch('casepro.test.TestBackend.stop_runs')
     @patch('dash.orgs.models.TembaClient2.get_contacts')
-    @patch('dash.orgs.models.TembaClient1.archive_messages')
     @patch('dash.orgs.models.TembaClient1.remove_contacts')
     @patch('dash.orgs.models.TembaClient1.add_contacts')
-    @patch('dash.orgs.models.TembaClient1.expire_contacts')
-    def test_lifecycle(self, mock_expire_contacts, mock_add_contacts, mock_remove_contacts,
-                       mock_archive_messages, mock_get_contacts, mock_get_messages):
+    def test_lifecycle(self, mock_add_contacts, mock_remove_contacts, mock_get_contacts,
+                       mock_stop_runs, mock_archive_messages, mock_archive_contact_messages):
 
         d0 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
         d1 = datetime(2014, 1, 2, 7, 0, tzinfo=timezone.utc)
@@ -50,7 +50,6 @@ class CaseTest(BaseCasesTest):
         msg1 = TembaMessage.create(id=123, contact=ObjectRef.create(uuid='C-001', name="Bob"), created_on=d0, text="Hello")
         msg2 = TembaMessage.create(id=234, contact=ObjectRef.create(uuid='C-001', name="Bob"), created_on=d1, text="Hello again")
 
-        mock_get_messages.return_value = [msg1, msg2]
         mock_get_contacts.return_value = MockClientQuery([
             TembaContact.create(uuid='C-001', name="Bob", blocked=False, fields={'age': "34"}, groups=[
                 ObjectRef.create(uuid='G-001', name="Males"),
@@ -80,9 +79,9 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(actions[0].created_on, d1)
         self.assertEqual(actions[0].assignee, self.moh)
 
-        # check that opening the case fetched the messages and archived them
-        mock_archive_messages.assert_called_once_with(messages=[123, 234])
-        mock_archive_messages.reset_mock()
+        # check that opening the case archived the contact's messages
+        mock_archive_contact_messages.assert_called_once_with(self.unicef, self.bob)
+        mock_archive_contact_messages.reset_mock()
 
         # check that opening the case removed contact from specified suspend groups
         mock_remove_contacts.assert_called_once_with(['C-001'], group_uuid='G-003')
@@ -93,8 +92,8 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(set(Contact.objects.get(pk=self.bob.pk).suspended_groups.all()), {self.reporters})
 
         # check that contact's runs were expired
-        mock_expire_contacts.assert_called_once_with(['C-001'])
-        mock_expire_contacts.reset_mock()
+        mock_stop_runs.assert_called_once_with(self.unicef, self.bob)
+        mock_stop_runs.reset_mock()
 
         # check access to this case
         self.assertEqual(case.access_level(self.user1), AccessLevel.update)  # user who opened it can view and update
@@ -118,7 +117,7 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(events[0].created_on, d2)
 
         # which will have been archived
-        mock_archive_messages.assert_called_once_with(messages=[432])
+        mock_archive_messages.assert_called_once_with(self.unicef, list(Message.objects.filter(backend_id=432)))
         mock_archive_messages.reset_mock()
 
         with patch.object(timezone, 'now', return_value=d2):
@@ -157,8 +156,11 @@ class CaseTest(BaseCasesTest):
         mock_add_contacts.reset_mock()
 
         # contact sends a message after case was closed
-        msg3 = TembaMessage.create(id=345, contact='C-001', created_on=d4, text="No more case")
-        mock_get_messages.return_value = [msg3]
+        msg3 = TembaMessage.create(id=345, contact=ObjectRef.create(uuid='C-001', name="Bob"), created_on=d4, text="No more case")
+        Message.process_incoming(self.unicef, [msg3])
+
+        # message is not in an open case, so won't have been archived
+        mock_archive_messages.assert_not_called()
 
         with patch.object(timezone, 'now', return_value=d4):
             # but second user re-opens it
@@ -173,8 +175,8 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(actions[3].created_by, self.user2)
         self.assertEqual(actions[3].created_on, d4)
 
-        # check that re-opening the case fetched new message and archived it
-        mock_archive_messages.assert_called_once_with(messages=[345])
+        # check that re-opening the case archived the contact's messages again
+        mock_archive_contact_messages.assert_called_once_with(self.unicef, self.bob)
 
         with patch.object(timezone, 'now', return_value=d5):
             # and re-assigns it to different partner

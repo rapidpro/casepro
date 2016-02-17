@@ -3,13 +3,23 @@ from __future__ import unicode_literals
 import datetime
 import pytz
 
+from casepro.backend.rapidpro import RapidProBackend
 from casepro.cases.models import Label, Partner
 from casepro.contacts.models import Contact, Group, Field
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from dash.test import DashTest
 from django.contrib.auth.models import User
+from django.test import override_settings
 
 
+class TestBackend(RapidProBackend):
+    """
+    TODO once all backend functionality actually goes through get_backend() this can become a stub
+    """
+    pass
+
+
+@override_settings(SITE_BACKEND='casepro.test.TestBackend')
 class BaseCasesTest(DashTest):
     """
     Base class for all test cases
