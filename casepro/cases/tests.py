@@ -336,10 +336,10 @@ class CaseCRUDLTest(BaseCasesTest):
 
         msg1 = TembaMessage.create(id=101,
                                    contact=ObjectRef.create(uuid='C-001', name="Bob"),
-                                   created_on=timezone.now(),
                                    text="Hello",
-                                   direction='I',
-                                   labels=['AIDS'])
+                                   direction='in',
+                                   labels=[ObjectRef.create(uuid='L-001', name="AIDS")],
+                                   created_on=timezone.now())
 
         mock_get_messages.return_value = MockClientQuery([msg1])
         mock_get_contacts.return_value = MockClientQuery([
@@ -368,10 +368,10 @@ class CaseCRUDLTest(BaseCasesTest):
         # try again as a non-administrator who can't create cases for other partner orgs
         msg2 = TembaMessage.create(id=102,
                                    contact=ObjectRef.create(uuid='C-002', name="Guy"),
-                                   created_on=timezone.now(),
                                    text="Hello",
-                                   direction='I',
-                                   labels=['AIDS'])
+                                   direction='in',
+                                   labels=[ObjectRef.create(uuid='L-001', name="AIDS")],
+                                   created_on=timezone.now())
 
         mock_get_messages.return_value = MockClientQuery([msg2])
         mock_get_contacts.return_value = MockClientQuery([
@@ -420,9 +420,10 @@ class CaseCRUDLTest(BaseCasesTest):
     def test_timeline(self, mock_get_contacts, mock_create_broadcast, mock_get_messages, mock_archive_messages):
         d1 = datetime(2014, 1, 2, 13, 0, tzinfo=timezone.utc)
 
-        msg1 = TembaMessage.create(id=102, contact=ObjectRef.create(uuid='C-001', name="Bob"),
+        msg1 = TembaMessage.create(id=102,
+                                   contact=ObjectRef.create(uuid='C-001', name="Bob"),
                                    created_on=d1, text="What is AIDS?", type='inbox', direction='in',
-                                   labels=[self.aids])
+                                   labels=[ObjectRef.create(uuid='L-001', name="AIDS")])
         mock_get_messages.return_value = MockClientQuery([msg1])
         mock_get_contacts.return_value = MockClientQuery([
             TembaContact.create(uuid='C-001', name="Bob", blocked=False, fields={}, groups=[])

@@ -73,12 +73,12 @@ class CaseCRUDL(SmartCRUDL):
             assignee_id = request.POST.get('assignee', None)
             assignee = Partner.get_all(request.org).get(pk=assignee_id) if assignee_id else request.user.get_partner()
 
+            # TODO this should lookup a local message once they exist
+
+            # fetch message from RapidPro to get its current labels
             client = request.org.get_temba_client(api_version=2)
             message = client.get_messages(id=message_id).first()
-
-            # map from label names to label objects
-            label_map = {l.name: l for l in Label.get_all(request.org)}
-            labels = [label_map[label_name] for label_name in message.labels if label_name in label_map]
+            labels = Label.get_all(request.org).filter(uuid__in=[l.uuid for l in message.labels])
 
             case = Case.get_or_open(request.org, request.user, labels, message, summary, assignee)
 
