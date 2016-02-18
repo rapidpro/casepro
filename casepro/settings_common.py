@@ -5,6 +5,7 @@ import os
 import sys
 
 from celery.schedules import crontab
+from datetime import timedelta
 from django.utils.translation import ugettext_lazy as _
 
 # -----------------------------------------------------------------------------------
@@ -405,6 +406,11 @@ CELERYBEAT_SCHEDULE = {
         'task': 'dash.orgs.tasks.trigger_org_task',
         'schedule': crontab(minute=[5, 15, 25, 35, 45, 55]),
         'args': ('casepro.contacts.tasks.pull_contacts', 'sync')
+    },
+    'message-handle': {
+        'task': 'dash.orgs.tasks.trigger_org_task',
+        'schedule': timedelta(minutes=3),
+        'args': ('casepro.msgs.tasks.handle_messages', 'sync')
     },
     'delete-old-incoming': {
         'task': 'casepro.msgs.tasks.delete_old_messages',

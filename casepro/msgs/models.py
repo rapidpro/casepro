@@ -5,10 +5,8 @@ import pytz
 import regex
 import six
 
-from casepro.backend import get_backend
 from casepro.utils import JSONEncoder, normalize
 from casepro.utils.email import send_email
-from collections import defaultdict
 from dash.orgs.models import Org
 from dash.utils import chunks, random_string
 from django.conf import settings
@@ -18,6 +16,7 @@ from django.core.files.storage import default_storage
 from django.core.files.temp import NamedTemporaryFile
 from django.core.urlresolvers import reverse
 from django.db import models
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from temba_client.utils import parse_iso8601
 
@@ -25,6 +24,7 @@ from temba_client.utils import parse_iso8601
 SYSTEM_LABEL_FLAGGED = "Flagged"
 
 
+@python_2_unicode_compatible
 class Message(models.Model):
     """
     A incoming message from the backend
@@ -44,86 +44,13 @@ class Message(models.Model):
 
     text = models.TextField(max_length=640, verbose_name=_("Text"))
 
+    is_handled = models.BooleanField(default=False)
+
     is_archived = models.BooleanField(default=False)
 
     created_on = models.DateTimeField()
 
     case = models.ForeignKey('cases.Case', null=True, related_name="incoming_messages")
-
-    @classmethod
-    def process_incoming(cls, org, incoming_batch):
-        """
-        Processes an incoming batch of messages from the backend, labelling and creating case events as necessary
-        :param org: the org
-        :param incoming_batch: the incoming batch of messages
-        :return: tuple of the number of messages labelled, and the number of contact stubs created
-        """
-        from casepro.contacts.models import Contact
-        from casepro.cases.models import Case, Label
-        backend = get_backend()
-
-        incoming_batch_ids = [m.id for m in incoming_batch]
-        existing_by_backend_id = {m.backend_id for m in cls.objects.filter(backend_id__in=incoming_batch_ids)}
-
-        new_messages = []
-        case_replies = []
-
-        labels_by_keyword = Label.get_keyword_map(org)
-        label_matches = defaultdict(list)  # messages that match each label
-
-        labelled, unlabelled = [], []
-        num_contacts_created = 0
-
-        for incoming in incoming_batch:
-            # check if message already exists
-            if incoming.id in existing_by_backend_id:
-                continue
-
-            contact = Contact.get_or_create(org, incoming.contact.uuid)
-            if contact.is_new:
-                num_contacts_created += 1
-
-            open_case = Case.get_open_for_contact_on(org, contact, incoming.created_on)
-
-            message = cls.objects.create(org=org,
-                                         backend_id=incoming.id,
-                                         contact=contact,
-                                         type='I' if incoming.type == 'inbox' else 'F',
-                                         text=incoming.text,
-                                         is_archived=bool(open_case),
-                                         created_on=incoming.created_on)
-            new_messages.append(message)
-
-            if open_case:
-                open_case.reply_event(message)
-
-                case_replies.append(message)
-            else:
-                # only apply labels if there isn't a currently open case for this contact
-                matched_labels = message.auto_label(labels_by_keyword)
-                if matched_labels:
-                    labelled.append(message)
-                    for label in matched_labels:
-                        label_matches[label].append(message)
-                else:
-                    unlabelled.append(message)
-
-        # add labels to matching messages
-        for label, matched_msgs in six.iteritems(label_matches):
-            if matched_msgs:
-                backend.label_messages(org, matched_msgs, label)
-
-        # archive messages which are case replies
-        if case_replies:
-            backend.archive_messages(org, case_replies)
-
-        # record the last labelled/unlabelled message times for this org
-        if labelled:
-            org.record_message_time(labelled[0].created_on, labelled=True)
-        if unlabelled:
-            org.record_message_time(unlabelled[0].created_on, labelled=False)
-
-        return len(labelled), num_contacts_created
 
     def auto_label(self, labels_by_keyword):
         """
@@ -139,6 +66,9 @@ class Message(models.Model):
                 matches.add(label)
 
         return matches
+
+    def __str__(self):
+        return self.text if self.text else self.pk
 
 
 class Outgoing(models.Model):

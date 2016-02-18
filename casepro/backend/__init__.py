@@ -52,14 +52,14 @@ class BaseBackend(object):
         pass
 
     @abstractmethod
-    def pull_and_label_messages(self, org, received_after, received_before, progress_callback=None):
+    def pull_messages(self, org, modified_after, modified_before, progress_callback=None):
         """
-        Pulls and labels messages received in the given time window
+        Pulls messages modified in the given time window
         :param org: the org
-        :param datetime received_after: pull messages received after this
-        :param datetime received_before: pull messages received before this
+        :param datetime modified_after: pull messages modified after this
+        :param datetime modified_before: pull messages modified before this
         :param progress_callback: callable that will be called from time to time with number of messages pulled
-        :return: tuple of the the number of messages created, and the number of labels applied
+        :return: tuple of the number of messages created, updated and deleted
         """
         pass
 

@@ -110,14 +110,57 @@ def _sync_local_to_incoming(org, model, incoming_objects):
     return num_created, num_updated, num_deleted
 
 
+def sync_pull_messages(org, model, modified_after, modified_before, progress_callback=None):
+    """
+    Pull modified messages from RapidPro and syncs with local messages.
+    """
+    # TODO this needs to become a proper sync routine once the RapidPro API exposes modified messages
+
+    from casepro.contacts.models import Contact
+
+    client = org.get_temba_client(api_version=2)
+
+    num_synced = 0
+    num_created = 0
+    num_updated = 0
+    num_deleted = 0
+
+    inbox_query = client.get_messages(folder='inbox', after=modified_after, before=modified_before)
+
+    for incoming_batch in inbox_query.iterfetches(retry_on_rate_exceed=True):
+        incoming_batch_ids = [m.id for m in incoming_batch]
+        existing_by_backend_id = {m.backend_id for m in model.objects.filter(backend_id__in=incoming_batch_ids)}
+
+        for incoming in incoming_batch:
+            # check if message already exists
+            if incoming.id in existing_by_backend_id:
+                continue
+
+            contact = Contact.get_or_create(org, incoming.contact.uuid)
+
+            model.objects.create(org=org,
+                                 backend_id=incoming.id,
+                                 contact=contact,
+                                 type='I' if incoming.type == 'inbox' else 'F',
+                                 text=incoming.text,
+                                 created_on=incoming.created_on)
+
+            num_created += 1
+
+        num_synced += len(incoming_batch)
+        if progress_callback:
+            progress_callback(num_synced)
+
+    return num_created, num_updated, num_deleted
+
+
 def sync_pull_contacts(org, model,
                        modified_after=None, modified_before=None,
                        inc_urns=True, groups=None, fields=None,
                        select_related=(), prefetch_related=(),
                        progress_callback=None):
     """
-    Pull modified contacts from RapidPro and syncs with local contacts. Contact class must define a class method called
-    `sync_get_kwargs` which generates field kwargs from a fetched temba contact.
+    Pull modified contacts from RapidPro and syncs with local contacts.
 
     :param * org: the org
     :param type model: the local contact model

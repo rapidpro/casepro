@@ -6,6 +6,7 @@ import pytz
 from casepro.backend.rapidpro import RapidProBackend
 from casepro.cases.models import Label, Partner
 from casepro.contacts.models import Contact, Group, Field
+from casepro.msgs.models import Message
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from dash.test import DashTest
 from django.contrib.auth.models import User
@@ -91,6 +92,9 @@ class BaseCasesTest(DashTest):
 
     def create_field(self, org, key, label, value_type='T', is_visible=True):
         return Field.objects.create(org=org, key=key, label=label, value_type=value_type, is_visible=is_visible)
+
+    def create_message(self, org, backend_id, contact, text, created_on):
+        return Message.objects.create(org=org, backend_id=backend_id, contact=contact, text=text, created_on=created_on)
 
     def datetime(self, year, month, day, hour=0, minute=0, second=0, microsecond=0, tz=pytz.UTC):
         return datetime.datetime(year, month, day, hour, minute, second, microsecond, tz)

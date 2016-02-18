@@ -2,6 +2,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from casepro.msgs.models import Message
+from casepro.msgs.tasks import handle_messages
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
 from casepro.utils import datetime_to_microseconds, microseconds_to_datetime
@@ -108,8 +109,8 @@ class CaseTest(BaseCasesTest):
             self.assertEqual(case, case2)
 
         # contact sends a reply
-        reply = TembaMessage.create(id=432, text="OK", contact=ObjectRef.create(uuid='C-001', name="Bob"), created_on=d2)
-        Message.process_incoming(self.unicef, [reply])
+        self.create_message(self.unicef, 432, self.bob, "OK", d2)
+        handle_messages(self.unicef.pk)
 
         events = case.events.order_by('pk')
         self.assertEqual(len(events), 1)
@@ -156,8 +157,8 @@ class CaseTest(BaseCasesTest):
         mock_add_to_group.reset_mock()
 
         # contact sends a message after case was closed
-        msg3 = TembaMessage.create(id=345, contact=ObjectRef.create(uuid='C-001', name="Bob"), created_on=d4, text="No more case")
-        Message.process_incoming(self.unicef, [msg3])
+        self.create_message(self.unicef, 345, self.bob, "No more case", d4)
+        handle_messages(self.unicef.pk)
 
         # message is not in an open case, so won't have been archived
         mock_archive_messages.assert_not_called()
@@ -506,13 +507,14 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # contact sends a reply
         d4 = timezone.now()
+        self.create_message(self.unicef, 104, self.bob, "OK thanks", d4)
+        handle_messages(self.unicef.pk)
 
-        msg4 = TembaMessage.create(id=104, contact=ObjectRef.create(uuid='C-001', name="Bob"),
-                                   created_on=d4, text="OK thanks", type='inbox',
-                                   labels=[], direction='I')
-        Message.process_incoming(self.unicef, [msg4])
-
-        mock_get_messages.return_value = MockClientQuery([msg4])
+        mock_get_messages.return_value = MockClientQuery([
+            TembaMessage.create(id=104, contact=ObjectRef.create(uuid='C-001', name="Bob"),
+                                created_on=d4, text="OK thanks", type='inbox',
+                                labels=[], direction='I')
+        ])
 
         # page again looks for new timeline activity
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t3)))
@@ -541,12 +543,14 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # contact sends new message after that
         d5 = timezone.now()
-        msg5 = TembaMessage.create(id=105, contact=ObjectRef.create(uuid='C-001', name="Bob"),
-                                   created_on=d5, text="But wait", type='inbox',
-                                   labels=[], direction='I')
-        Message.process_incoming(self.unicef, [msg5])
+        self.create_message(self.unicef, 105, self.bob, "But wait", d5)
+        handle_messages(self.unicef.pk)
 
-        mock_get_messages.return_value = MockClientQuery([msg5])
+        mock_get_messages.return_value = MockClientQuery([
+            TembaMessage.create(id=105, contact=ObjectRef.create(uuid='C-001', name="Bob"),
+                                created_on=d5, text="But wait", type='inbox',
+                                labels=[], direction='I')
+        ])
 
         # page again looks for new timeline activity
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t5)))

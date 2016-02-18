@@ -174,11 +174,8 @@ class Contact(models.Model):
         """
         with cls.sync_lock(uuid):
             contact = cls.objects.filter(org=org, uuid=uuid).first()
-            if contact:
-                contact.is_new = False
-            else:
+            if not contact:
                 contact = cls.objects.create(org=org, uuid=uuid, name=name, is_stub=True)
-                contact.is_new = True
 
             return contact
 

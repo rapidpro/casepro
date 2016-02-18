@@ -32,25 +32,16 @@ class RapidProBackend(BaseBackend):
 
         return sync_pull_fields(org, Field)
 
-    def pull_and_label_messages(self, org, received_after, received_before, progress_callback=None):
+    def pull_messages(self, org, modified_after, modified_before, progress_callback=None):
         from casepro.msgs.models import Message
+        from casepro.dash_ext.sync import sync_pull_messages
 
-        client = org.get_temba_client(api_version=2)
-
-        total_messages = 0
-        total_labelled = 0
-        total_contacts_created = 0
-
-        inbox_query = client.get_messages(folder='inbox', after=received_after, before=received_before)
-
-        for incoming_batch in inbox_query.iterfetches(retry_on_rate_exceed=True):
-            num_labelled, num_contacts_created = Message.process_incoming(org, incoming_batch)
-
-            total_messages += len(incoming_batch)
-            total_labelled += num_labelled
-            total_contacts_created += num_contacts_created
-
-        return total_messages, total_labelled, total_contacts_created
+        return sync_pull_messages(
+                org, Message,
+                modified_after=modified_after,
+                modified_before=modified_before,
+                progress_callback=progress_callback
+        )
 
     def add_to_group(self, org, contact, group):
         client = org.get_temba_client(api_version=1)
