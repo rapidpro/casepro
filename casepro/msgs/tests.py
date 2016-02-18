@@ -63,8 +63,6 @@ class MessageExportCRUDLTest(BaseCasesTest):
                                 fields={'nickname': "Ann", 'age': 32, 'state': "IN"})
         ]
 
-        self.unicef.record_message_time(timezone.now(), True)
-
         # log in as a non-administrator
         self.login(self.user1)
 
@@ -182,9 +180,9 @@ class TasksTest(BaseCasesTest):
 
         # check task result
         task_state = self.unicef.get_task_state('message-handle')
-        self.assertEqual(task_state.get_last_results(), {'messages': 5, 'labelled': 3})
+        self.assertEqual(task_state.get_last_results(), {'messages': 5, 'labelled': 3, 'case_replies': 1})
 
         # check calling again...
         handle_messages(self.unicef.pk)
         task_state = self.unicef.get_task_state('message-handle')
-        self.assertEqual(task_state.get_last_results(), {'messages': 0, 'labelled': 0})
+        self.assertEqual(task_state.get_last_results(), {'messages': 0, 'labelled': 0, 'case_replies': 0})

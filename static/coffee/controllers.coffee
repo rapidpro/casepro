@@ -186,7 +186,8 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     $scope.searchFields = $scope.searchFieldDefaults()
     $scope.activeSearch = $scope.buildSearch()
 
-    $scope.refreshNewItems()
+    # TODO temporarily disable auto-refresh of new items until refactor is complete
+    # $scope.refreshNewItems()
 
     $scope.$on('activeLabelChange', () ->
       $scope.onResetSearch()

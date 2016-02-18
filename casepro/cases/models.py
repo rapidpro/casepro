@@ -314,40 +314,25 @@ class Case(models.Model):
     def get_timeline(self, after, before):
         label_map = {l.name: l for l in Label.get_all(self.org)}
 
-        # if this isn't a first request for the existing items, we check on our side to see if there will be new
-        # items before hitting the RapidPro API
-        do_api_fetch = True
-        if after != self.message_on:
-            last_event = self.events.order_by('-pk').first()
-            last_outgoing = self.outgoing_messages.order_by('-pk').first()
-            last_event_time = last_event.created_on if last_event else None
-            last_outgoing_time = last_outgoing.created_on if last_outgoing else None
-            last_message_time = safe_max(last_event_time, last_outgoing_time)
-            do_api_fetch = last_message_time and after <= last_message_time
+        # fetch remote messages for contact
+        client = self.org.get_temba_client(api_version=2)
+        remote = client.get_messages(contact=self.contact.uuid, after=after, before=before).all()
 
-        if do_api_fetch:
-            # fetch remote messages for contact
-            client = self.org.get_temba_client(api_version=2)
-            remote = client.get_messages(contact=self.contact.uuid, after=after, before=before).all()
+        local_outgoing = self.outgoing_messages.filter(created_on__gte=after, created_on__lte=before)
+        local_by_broadcast = {o.broadcast_id: o for o in local_outgoing}
 
-            local_outgoing = self.outgoing_messages.filter(created_on__gte=after, created_on__lte=before)
-            local_by_broadcast = {o.broadcast_id: o for o in local_outgoing}
+        # merge remotely fetched and local outgoing messages
+        messages = []
+        for m in remote:
+            m.contact = {'uuid': m.contact.uuid}
 
-            # merge remotely fetched and local outgoing messages
-            messages = []
-            for m in remote:
-                m.contact = {'uuid': m.contact.uuid}
+            local = local_by_broadcast.pop(m.broadcast, None)
+            if local:
+                m.sender = local.created_by
+            messages.append({'time': m.created_on, 'type': 'M', 'item': RemoteMessage.as_json(m, label_map)})
 
-                local = local_by_broadcast.pop(m.broadcast, None)
-                if local:
-                    m.sender = local.created_by
-                messages.append({'time': m.created_on, 'type': 'M', 'item': RemoteMessage.as_json(m, label_map)})
-
-            for m in local_by_broadcast.values():
-                messages.append({'time': m.created_on, 'type': 'M', 'item': m.as_json()})
-
-        else:
-            messages = []
+        for m in local_by_broadcast.values():
+            messages.append({'time': m.created_on, 'type': 'M', 'item': m.as_json()})
 
         # fetch actions in chronological order
         actions = self.actions.filter(created_on__gte=after, created_on__lte=before)
@@ -626,13 +611,6 @@ class RemoteMessage(object):
         # all queries either filter by at least one label, or exclude all labels using - prefix
         labelled_search = bool([l for l in search['labels'] if not l.startswith('-')])
 
-        # try to limit actual hits to the RapidPro API
-        if search['after']:
-            # don't hit the RapidPro API unless labelling task found new messages
-            latest_time = org.get_last_message_time(labelled=labelled_search)
-            if not latest_time or search['after'] >= latest_time:
-                return []
-
         # put limit on how far back we fetch unlabelled messages because there are lots of those
         if not labelled_search and not search['after']:
             limit_days = getattr(settings, 'UNLABELLED_LIMIT_DAYS', DEFAULT_UNLABELLED_LIMIT_DAYS)
@@ -658,9 +636,6 @@ class RemoteMessage(object):
                 message.contact = {'uuid': contact.uuid, 'is_stub': contact.is_stub}
             else:
                 message.contact = {'uuid': message.contact, 'is_stub': True}
-
-        if messages:
-            org.record_message_time(messages[0].created_on, labelled_search)
 
         return messages
 

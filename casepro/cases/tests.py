@@ -13,9 +13,8 @@ from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.utils import timezone
 from mock import patch
-from temba_client.v1.types import Label as TembaLabel, Message as TembaMessage
-from temba_client.v1.types import Broadcast as TembaBroadcast
-from temba_client.v2.types import Contact as TembaContact, ObjectRef
+from temba_client.v1.types import Label as TembaLabel, Broadcast as TembaBroadcast
+from temba_client.v2.types import Contact as TembaContact, ObjectRef, Message as TembaMessage
 from temba_client.clients import Pager
 from temba_client.utils import format_iso8601
 from .context_processors import contact_ext_url, sentry_dsn
@@ -419,22 +418,17 @@ class CaseCRUDLTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient1.create_broadcast')
     @patch('dash.orgs.models.TembaClient2.get_contacts')
     def test_timeline(self, mock_get_contacts, mock_create_broadcast, mock_get_messages, mock_archive_messages):
-        d1 = datetime(2014, 1, 1, 13, 0, tzinfo=timezone.utc)
-        d2 = datetime(2014, 1, 2, 13, 0, tzinfo=timezone.utc)
+        d1 = datetime(2014, 1, 2, 13, 0, tzinfo=timezone.utc)
 
-        # contact has sent 2 messages, user creates case from the second
-        msg1 = TembaMessage.create(id=101, contact=ObjectRef.create(uuid='C-001', name="Bob"),
-                                   created_on=d1, text="Hello", type='inbox', direction='in',
-                                   labels=[])
-        msg2 = TembaMessage.create(id=102, contact=ObjectRef.create(uuid='C-001', name="Bob"),
-                                   created_on=d2, text="What is AIDS?", type='inbox', direction='in',
+        msg1 = TembaMessage.create(id=102, contact=ObjectRef.create(uuid='C-001', name="Bob"),
+                                   created_on=d1, text="What is AIDS?", type='inbox', direction='in',
                                    labels=[self.aids])
-        mock_get_messages.return_value = MockClientQuery([msg2])
+        mock_get_messages.return_value = MockClientQuery([msg1])
         mock_get_contacts.return_value = MockClientQuery([
             TembaContact.create(uuid='C-001', name="Bob", blocked=False, fields={}, groups=[])
         ])
 
-        case = Case.get_or_open(self.unicef, self.user1, [self.aids], msg2, "Summary", self.moh, update_contact=False)
+        case = Case.get_or_open(self.unicef, self.user1, [self.aids], msg1, "Summary", self.moh, update_contact=False)
 
         timeline_url = reverse('cases.case_timeline', args=[case.pk])
 
@@ -453,17 +447,17 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'][1]['type'], 'A')
         self.assertEqual(response.json['results'][1]['item']['action'], 'O')
 
-        mock_get_messages.assert_called_once_with(contact='C-001', after=d2, before=t0)
+        mock_get_messages.assert_called_once_with(contact='C-001', after=d1, before=t0)
         mock_get_messages.reset_mock()
 
-        # page looks for new timeline activity
+        mock_get_messages.return_value = MockClientQuery([])
 
+        # page looks for new timeline activity
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t0)))
         t1 = microseconds_to_datetime(response.json['max_time'])
         self.assertEqual(len(response.json['results']), 0)
 
-        # shouldn't hit the RapidPro API
-        self.assertEqual(mock_get_messages.call_count, 0)
+        mock_get_messages.assert_called_once_with(contact='C-001', after=t0, before=t1)
         mock_get_messages.reset_mock()
 
         # another user adds a note
@@ -473,13 +467,12 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t1)))
         t2 = microseconds_to_datetime(response.json['max_time'])
 
+        mock_get_messages.assert_called_once_with(contact='C-001', after=t1, before=t2)
+        mock_get_messages.reset_mock()
+
         self.assertEqual(len(response.json['results']), 1)
         self.assertEqual(response.json['results'][0]['type'], 'A')
         self.assertEqual(response.json['results'][0]['item']['note'], "Looks interesting")
-
-        # still no reason to hit the RapidPro API
-        self.assertEqual(mock_get_messages.call_count, 0)
-        mock_get_messages.reset_mock()
 
         # user sends an outgoing message
         d3 = timezone.now()
@@ -501,7 +494,6 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'][0]['item']['text'], "It's bad")
         self.assertEqual(response.json['results'][0]['item']['direction'], 'O')
 
-        # this time we will have hit the RapidPro API because we know there's a new outgoing message
         mock_get_messages.assert_called_once_with(contact='C-001', after=t2, before=t3)
         mock_get_messages.reset_mock()
 
@@ -525,18 +517,20 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'][0]['item']['text'], "OK thanks")
         self.assertEqual(response.json['results'][0]['item']['direction'], 'I')
 
-        # again we will have hit the RapidPro API - this time we know there's a new incoming message
         mock_get_messages.assert_called_once_with(contact='C-001', after=t3, before=t4)
         mock_get_messages.reset_mock()
+
+        mock_get_messages.return_value = MockClientQuery([])
 
         # page again looks for new timeline activity
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t4)))
         t5 = microseconds_to_datetime(response.json['max_time'])
-
         self.assertEqual(len(response.json['results']), 0)
 
-        # back to having no reason to hit the RapidPro API
-        self.assertEqual(mock_get_messages.call_count, 0)
+        mock_get_messages.assert_called_once_with(contact='C-001', after=t4, before=t5)
+        mock_get_messages.reset_mock()
+
+        mock_get_messages.return_value = MockClientQuery([])
 
         # user closes case
         case.close(self.user1)
@@ -546,23 +540,17 @@ class CaseCRUDLTest(BaseCasesTest):
         self.create_message(self.unicef, 105, self.bob, "But wait", d5)
         handle_messages(self.unicef.pk)
 
-        mock_get_messages.return_value = MockClientQuery([
-            TembaMessage.create(id=105, contact=ObjectRef.create(uuid='C-001', name="Bob"),
-                                created_on=d5, text="But wait", type='inbox',
-                                labels=[], direction='I')
-        ])
-
         # page again looks for new timeline activity
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t5)))
         t6 = microseconds_to_datetime(response.json['max_time'])
+
+        mock_get_messages.assert_called_once_with(contact='C-001', after=t5, before=case.closed_on)
+        mock_get_messages.reset_mock()
 
         # should show the close event but not the message after it
         self.assertEqual(len(response.json['results']), 1)
         self.assertEqual(response.json['results'][0]['type'], 'A')
         self.assertEqual(response.json['results'][0]['item']['action'], 'C')
-
-        # no reason to hit the API
-        self.assertEqual(mock_get_messages.call_count, 0)
 
         # another look for new timeline activity
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t6)))
@@ -919,34 +907,6 @@ class MessageViewsTest(BaseCasesTest):
                                                   after=None, before=t0, pager=pager)
         mock_get_messages.reset_mock()
         mock_get_messages.return_value = []
-
-        # page requests new messages
-        t1 = timezone.now()
-        response = self.url_get('unicef', url, {'view': 'inbox', 'text': '', 'label': '',
-                                                'after': format_iso8601(t0), 'before': format_iso8601(t1)})
-
-        self.assertEqual(len(response.json['results']), 0)
-
-        # shouldn't hit the RapidPro API because we have no reason to believe there are new messages
-        self.assertEqual(mock_get_messages.call_count, 0)
-        mock_get_messages.reset_mock()
-
-        # simulate new message being labelled and recorded by the labelling task
-        msg4 = TembaMessage.create(id=104, contact='C-001', text="Yolo", created_on=timezone.now(), labels=[])
-        self.unicef.record_message_time(msg4.created_on, labelled=True)
-
-        mock_get_messages.return_value = [msg4]
-
-        # again page requests new messages
-        t2 = timezone.now()
-        response = self.url_get('unicef', url, {'view': 'inbox', 'text': '', 'label': '',
-                                                'after': format_iso8601(t1), 'before': format_iso8601(t2)})
-
-        self.assertEqual(len(response.json['results']), 1)
-
-        mock_get_messages.assert_called_once_with(archived=False, labels=['AIDS', 'Pregnancy'],
-                                                  contacts=None, groups=None, text='', _types=None, direction='I',
-                                                  after=t1, before=t2, pager=None)
 
     @patch('dash.orgs.models.TembaClient1.create_broadcast')
     def test_send(self, mock_create_broadcast):
