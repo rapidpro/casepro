@@ -39,8 +39,10 @@ def handle_messages(org, since, until):
 
     case_replies, labelled, unlabelled = [], [], []
 
+    # TODO once all contacts have been migrated, this should ignore messages whose contacts are stubs so that labels can be determined based on contact groups
+
     # fetch all unhandled messages who now have full contacts
-    unhandled = list(Message.objects.filter(org=org, is_handled=False, contact__is_stub=False).select_related('contact'))
+    unhandled = list(Message.objects.filter(org=org, is_handled=False).select_related('contact'))
     if unhandled:
         labels_by_keyword = Label.get_keyword_map(org)
         label_matches = defaultdict(list)  # messages that match each label
