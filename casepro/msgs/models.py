@@ -11,6 +11,7 @@ from dash.orgs.models import Org
 from dash.utils import chunks, random_string
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.contrib.postgres.fields import ArrayField
 from django.core.files import File
 from django.core.files.storage import default_storage
 from django.core.files.temp import NamedTemporaryFile
@@ -69,6 +70,52 @@ class Message(models.Model):
 
     def __str__(self):
         return self.text if self.text else self.pk
+
+
+class MessageAction(models.Model):
+    """
+    An action performed on a set of messages
+    """
+    FLAG = 'F'
+    UNFLAG = 'N'
+    LABEL = 'L'
+    UNLABEL = 'U'
+    ARCHIVE = 'A'
+    RESTORE = 'R'
+
+    ACTION_CHOICES = ((FLAG, _("Flag")),
+                      (UNFLAG, _("Un-flag")),
+                      (LABEL, _("Label")),
+                      (UNLABEL, _("Remove Label")),
+                      (ARCHIVE, _("Archive")),
+                      (RESTORE, _("Restore")))
+
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='message_actions')
+
+    messages = ArrayField(models.IntegerField())
+
+    action = models.CharField(max_length=1, choices=ACTION_CHOICES)
+
+    created_by = models.ForeignKey(User, related_name="message_actions")
+
+    created_on = models.DateTimeField(auto_now_add=True)
+
+    label = models.ForeignKey('cases.Label', null=True)
+
+    @classmethod
+    def create(cls, org, user, message_ids, action, label=None):
+        MessageAction.objects.create(org=org, messages=message_ids, action=action, created_by=user, label=label)
+
+    @classmethod
+    def get_by_message(cls, org, message_id):
+        return cls.objects.filter(org=org, messages__contains=[message_id]).select_related('created_by', 'label')
+
+    def as_json(self):
+        return {'id': self.pk,
+                'action': self.action,
+                'created_by': self.created_by.as_json(),
+                'created_on': self.created_on,
+                'label': self.label.as_json() if self.label else None}
 
 
 class Outgoing(models.Model):

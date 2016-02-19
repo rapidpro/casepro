@@ -4,14 +4,13 @@ import re
 import six
 
 from casepro.contacts.models import Contact
-from casepro.msgs.models import Outgoing, SYSTEM_LABEL_FLAGGED
-from casepro.utils import parse_csv, normalize, match_keywords, safe_max
+from casepro.msgs.models import MessageAction, Outgoing, SYSTEM_LABEL_FLAGGED
+from casepro.utils import parse_csv
 from dash.orgs.models import Org
 from dash.utils import intersection
 from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.db.models import Q
@@ -659,49 +658,3 @@ class RemoteMessage(object):
                 'direction': 'I' if msg.direction in ('I', 'in') else 'O',
                 'archived': msg.archived,
                 'sender': msg.sender.as_json() if getattr(msg, 'sender', None) else None}
-
-
-class MessageAction(models.Model):
-    """
-    An action performed on a set of messages
-    """
-    FLAG = 'F'
-    UNFLAG = 'N'
-    LABEL = 'L'
-    UNLABEL = 'U'
-    ARCHIVE = 'A'
-    RESTORE = 'R'
-
-    ACTION_CHOICES = ((FLAG, _("Flag")),
-                      (UNFLAG, _("Un-flag")),
-                      (LABEL, _("Label")),
-                      (UNLABEL, _("Remove Label")),
-                      (ARCHIVE, _("Archive")),
-                      (RESTORE, _("Restore")))
-
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='message_actions')
-
-    messages = ArrayField(models.IntegerField())
-
-    action = models.CharField(max_length=1, choices=ACTION_CHOICES)
-
-    created_by = models.ForeignKey(User, related_name="message_actions")
-
-    created_on = models.DateTimeField(auto_now_add=True)
-
-    label = models.ForeignKey(Label, null=True)
-
-    @classmethod
-    def create(cls, org, user, message_ids, action, label=None):
-        MessageAction.objects.create(org=org, messages=message_ids, action=action, created_by=user, label=label)
-
-    @classmethod
-    def get_by_message(cls, org, message_id):
-        return cls.objects.filter(org=org, messages__contains=[message_id]).select_related('created_by', 'label')
-
-    def as_json(self):
-        return {'id': self.pk,
-                'action': self.action,
-                'created_by': self.created_by.as_json(),
-                'created_on': self.created_on,
-                'label': self.label.as_json() if self.label else None}
