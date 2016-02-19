@@ -43,6 +43,10 @@ class RapidProBackend(BaseBackend):
                 progress_callback=progress_callback
         )
 
+    def pull_labels(self, org):
+        # TODO
+        pass
+
     def add_to_group(self, org, contact, group):
         client = org.get_temba_client(api_version=1)
         client.add_contacts([contact.uuid], group_uuid=group.uuid)
