@@ -12,8 +12,7 @@ from temba_client.v2.types import Contact as TembaContact, ObjectRef as TembaObj
 
 SAVE_GROUPS_ATTR = '__data__groups'
 
-CONTACT_LOCK_KEY = 'contact-lock:%s:%s'
-CONTACT_LOCK_GROUPS = 'groups'
+CONTACT_LOCK_KEY = 'contact-lock:%s'
 
 
 @python_2_unicode_compatible
@@ -179,17 +178,17 @@ class Contact(models.Model):
 
             return contact
 
-    def lock(self, qualifier):
-        return self._lock(self.uuid, qualifier)
+    def lock(self):
+        return self._lock(self.uuid)
 
     @classmethod
     def sync_lock(cls, uuid):
-        return cls._lock(uuid, 'row')
+        return cls._lock(uuid)
 
     @classmethod
-    def _lock(cls, uuid, qualifier):
+    def _lock(cls, uuid):
         r = get_redis_connection()
-        key = CONTACT_LOCK_KEY % (uuid, qualifier)
+        key = CONTACT_LOCK_KEY % uuid
         return r.lock(key, timeout=60)
 
     @classmethod
@@ -246,13 +245,13 @@ class Contact(models.Model):
         self.archive_messages()
 
     def suspend_groups(self):
-        if self.suspended_groups.all():
-            raise ValueError("Can't suspend from groups as contact is already suspended from groups")
+        with self.lock():
+            if self.suspended_groups.all():
+                raise ValueError("Can't suspend from groups as contact is already suspended from groups")
 
-        cur_groups = list(self.groups.all())
-        suspend_group_pks = {g.pk for g in Group.get_suspend_from(self.org)}
+            cur_groups = list(self.groups.all())
+            suspend_group_pks = {g.pk for g in Group.get_suspend_from(self.org)}
 
-        with self.lock(CONTACT_LOCK_GROUPS):
             for group in cur_groups:
                 if group.pk in suspend_group_pks:
                     self.groups.remove(group)
@@ -261,7 +260,7 @@ class Contact(models.Model):
                     get_backend().remove_from_group(self.org, self, group)
 
     def restore_groups(self):
-        with self.lock(CONTACT_LOCK_GROUPS):
+        with self.lock():
             for group in list(self.suspended_groups.all()):
                 self.groups.add(group)
                 self.suspended_groups.remove(group)
@@ -275,6 +274,15 @@ class Contact(models.Model):
         # TODO archive local messages
 
         get_backend().archive_contact_messages(self.org, self)
+
+    def release(self):
+        """
+        Deletes this contact, removing them from any groups they were part of
+        """
+        self.groups.clear()
+
+        self.is_active = False
+        self.save(update_fields=('is_active',))
 
     def as_json(self, full=False):
         """

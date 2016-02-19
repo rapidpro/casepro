@@ -184,8 +184,6 @@ def sync_pull_contacts(org, model,
     active_query = client.get_contacts(after=modified_after, before=modified_before)
 
     for incoming_batch in active_query.iterfetches(retry_on_rate_exceed=True):
-        # any from this batch that exist locally but now don't belong here due to model changes, e.g. blocked
-        invalid_existing_ids = []
 
         # TODO figure out it is still worth fetching the whole batch of contacts here to optimise for the update case,
         # even tho we have to potentially re-fetch below in case contacts were created by the message pulling process
@@ -200,34 +198,31 @@ def sync_pull_contacts(org, model,
 
                 existing = existing_qs.first()
 
-            # derive kwargs for the local contact model (none return here means don't keep)
-            local_kwargs = model.sync_get_kwargs(org, incoming)
+                # derive kwargs for the local contact model (none return here means don't keep)
+                local_kwargs = model.sync_get_kwargs(org, incoming)
 
-            # contact exists locally
-            if existing:
-                existing.org = org  # saves pre-fetching since we already have the org
+                # contact exists locally
+                if existing:
+                    existing.org = org  # saves pre-fetching since we already have the org
 
-                if local_kwargs:
-                    diff = temba_compare_contacts(incoming, existing.sync_as_temba(), inc_urns, fields, groups)
+                    if local_kwargs:
+                        diff = temba_compare_contacts(incoming, existing.sync_as_temba(), inc_urns, fields, groups)
 
-                    if diff or not existing.is_active:
-                        for field, value in six.iteritems(local_kwargs):
-                            setattr(existing, field, value)
+                        if diff or not existing.is_active:
+                            for field, value in six.iteritems(local_kwargs):
+                                setattr(existing, field, value)
 
-                        existing.is_active = True
-                        existing.save()
-                        num_updated += 1
+                            existing.is_active = True
+                            existing.save()
+                            num_updated += 1
 
-                elif existing.is_active:
-                    invalid_existing_ids.append(existing.pk)
-                    num_deleted += 1
+                    elif existing.is_active:  # contact exists locally, but shouldn't now to due to model changes
+                        existing.release()
+                        num_deleted += 1
 
-            elif local_kwargs:
-                model.objects.create(**local_kwargs)
-                num_created += 1
-
-        # deactivate existing contacts who no longer belong here
-        model.objects.filter(org=org, pk__in=invalid_existing_ids).update(is_active=False)
+                elif local_kwargs:
+                    model.objects.create(**local_kwargs)
+                    num_created += 1
 
         num_synced += len(incoming_batch)
         if progress_callback:
@@ -236,14 +231,14 @@ def sync_pull_contacts(org, model,
     # now get all contacts deleted in RapidPro in the same time window
     deleted_query = client.get_contacts(deleted=True, after=modified_after, before=modified_before)
 
-    # any contact that has been deleted should also be deleted locally
+    # any contact that has been deleted should also be released locally
     for deleted_batch in deleted_query.iterfetches(retry_on_rate_exceed=True):
-        deleted_uuids = [c.uuid for c in deleted_batch]
-
-        # which of these exist locally and are still active
-        existing_contacts = model.objects.filter(org=org, uuid__in=deleted_uuids, is_active=True)
-
-        num_deleted += existing_contacts.update(is_active=False)
+        for deleted_contact in deleted_batch:
+            with model.sync_lock(deleted_contact.uuid):
+                local_contact = model.objects.filter(org=org, uuid=deleted_contact.uuid).first()
+                if local_contact:
+                    local_contact.release()
+                    num_deleted += 1
 
         num_synced += len(deleted_batch)
         if progress_callback:

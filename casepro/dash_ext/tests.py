@@ -176,7 +176,7 @@ class SyncTest(BaseCasesTest):
             )
         ]
 
-        with self.assertNumQueries(8):
+        with self.assertNumQueries(10):
             num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
                                                                        prefetch_related=('groups',))
 
@@ -184,6 +184,8 @@ class SyncTest(BaseCasesTest):
 
         self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, ann})
         self.assertEqual(set(Contact.objects.filter(is_active=False)), {jim})
+
+        self.assertEqual(jim.groups.count(), 0)  # de-activated contacts are removed from groups
 
         bob.refresh_from_db()
         self.assertEqual(bob.name, "Bob McFlough")
@@ -227,7 +229,7 @@ class SyncTest(BaseCasesTest):
             MockClientQuery([])
         ]
 
-        with self.assertNumQueries(3):
+        with self.assertNumQueries(4):
             num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact,
                                                                        prefetch_related=('groups',))
 
