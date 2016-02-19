@@ -15,9 +15,8 @@ def pull_contacts(org, since, until):
     from casepro.backend import get_backend
     backend = get_backend()
 
-    # if we're running for the first time, don't try to grab all contacts
     if not since:
-        since = until - timedelta(minutes=30)
+        logger.warn("First time run for org #%d. Will sync all contacts" % org.pk)
 
     fields_created, fields_updated, fields_deleted = backend.pull_fields(org)
 
