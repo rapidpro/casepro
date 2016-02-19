@@ -4,12 +4,10 @@ import re
 import six
 
 from casepro.contacts.models import Contact
-from casepro.msgs.models import MessageAction, Outgoing, SYSTEM_LABEL_FLAGGED
+from casepro.msgs.models import RemoteMessage
 from casepro.utils import parse_csv
 from dash.orgs.models import Org
 from dash.utils import intersection
-from datetime import timedelta
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import models
@@ -19,10 +17,6 @@ from django.utils.translation import ugettext_lazy as _
 from enum import IntEnum
 from redis_cache import get_redis_connection
 from temba_client.exceptions import TembaException
-
-
-# only show unlabelled messages newer than 2 weeks
-DEFAULT_UNLABELLED_LIMIT_DAYS = 14
 
 
 class AccessLevel(IntEnum):
@@ -517,144 +511,3 @@ class CaseEvent(models.Model):
         return {'id': self.pk,
                 'event': self.event,
                 'created_on': self.created_on}
-
-
-class RemoteMessage(object):
-    """
-    A pseudo-model for messages which are always fetched from RapidPro.
-    """
-    @staticmethod
-    def bulk_flag(org, user, message_ids):
-        if message_ids:
-            client = org.get_temba_client()
-            client.label_messages(message_ids, label=SYSTEM_LABEL_FLAGGED)
-
-            MessageAction.create(org, user, message_ids, MessageAction.FLAG)
-
-    @staticmethod
-    def bulk_unflag(org, user, message_ids):
-        if message_ids:
-            client = org.get_temba_client()
-            client.unlabel_messages(message_ids, label=SYSTEM_LABEL_FLAGGED)
-
-            MessageAction.create(org, user, message_ids, MessageAction.UNFLAG)
-
-    @staticmethod
-    def bulk_label(org, user, message_ids, label):
-        if message_ids:
-            client = org.get_temba_client()
-            client.label_messages(message_ids, label_uuid=label.uuid)
-
-            MessageAction.create(org, user, message_ids, MessageAction.LABEL, label)
-
-    @staticmethod
-    def bulk_unlabel(org, user, message_ids, label):
-        if message_ids:
-            client = org.get_temba_client()
-            client.unlabel_messages(message_ids, label_uuid=label.uuid)
-
-            MessageAction.create(org, user, message_ids, MessageAction.UNLABEL, label)
-
-    @staticmethod
-    def bulk_archive(org, user, message_ids):
-        if message_ids:
-            client = org.get_temba_client()
-            client.archive_messages(message_ids)
-
-            MessageAction.create(org, user, message_ids, MessageAction.ARCHIVE)
-
-    @staticmethod
-    def bulk_restore(org, user, message_ids):
-        if message_ids:
-            client = org.get_temba_client()
-            client.unarchive_messages(message_ids)
-
-            MessageAction.create(org, user, message_ids, MessageAction.RESTORE)
-
-    @classmethod
-    def update_labels(cls, msg, org, user, labels):
-        """
-        Updates all this message's labels to the given set, creating label and unlabel actions as necessary
-        """
-        current_labels = Label.get_all(org, user).filter(name__in=msg.labels)
-
-        add_labels = [l for l in labels if l not in current_labels]
-        rem_labels = [l for l in current_labels if l not in labels]
-
-        for label in add_labels:
-            cls.bulk_label(org, user, [msg.id], label)
-        for label in rem_labels:
-            cls.bulk_unlabel(org, user, [msg.id], label)
-
-    @classmethod
-    def annotate_with_sender(cls, org, messages):
-        """
-        Look for outgoing records for the given messages and annotate them with their sender if one exists
-        """
-        broadcast_ids = set([m.broadcast for m in messages if m.broadcast])
-        outgoings = Outgoing.objects.filter(org=org, broadcast_id__in=broadcast_ids)
-        broadcast_to_outgoing = {out.broadcast_id: out for out in outgoings}
-
-        for msg in messages:
-            outgoing = broadcast_to_outgoing.get(msg.broadcast, None)
-            msg.sender = outgoing.created_by if outgoing else None
-
-    @staticmethod
-    def search(org, search, pager):
-        """
-        Search for labelled messages in RapidPro
-        """
-        if not search['labels']:  # no access to un-labelled messages
-            return []
-
-        # all queries either filter by at least one label, or exclude all labels using - prefix
-        labelled_search = bool([l for l in search['labels'] if not l.startswith('-')])
-
-        # put limit on how far back we fetch unlabelled messages because there are lots of those
-        if not labelled_search and not search['after']:
-            limit_days = getattr(settings, 'UNLABELLED_LIMIT_DAYS', DEFAULT_UNLABELLED_LIMIT_DAYS)
-            search['after'] = timezone.now() - timedelta(days=limit_days)
-
-        # *** TEMPORARY *** fix to disable the Unlabelled view which is increasingly not performant, until the larger
-        # message store refactor is complete. This removes any label exclusions from the search.
-        search['labels'] = [l for l in search['labels'] if not l.startswith('-')]
-
-        client = org.get_temba_client()
-        messages = client.get_messages(pager=pager, text=search['text'], labels=search['labels'],
-                                       contacts=search['contacts'], groups=search['groups'],
-                                       direction='I', _types=search['types'], archived=search['archived'],
-                                       after=search['after'], before=search['before'])
-        
-        # annotate messages with contacts (if they exist). This becomes a lot easier with local messages.
-        contact_uuids = [m.contact for m in messages]
-        contacts = Contact.objects.filter(org=org, uuid__in=contact_uuids)
-        contacts_by_uuid = {c.uuid: c for c in contacts}
-        for message in messages:
-            contact = contacts_by_uuid.get(message.contact)
-            if contact:
-                message.contact = {'uuid': contact.uuid, 'is_stub': contact.is_stub}
-            else:
-                message.contact = {'uuid': message.contact, 'is_stub': True}
-
-        return messages
-
-    @staticmethod
-    def as_json(msg, label_map):
-        """
-        Prepares a message (fetched from RapidPro) for JSON serialization
-        """
-        flagged = SYSTEM_LABEL_FLAGGED in msg.labels
-
-        # convert label names to JSON label objects
-        labels = [label_map[label_name].as_json() for label_name in msg.labels if label_name in label_map]
-
-        return {'id': msg.id,
-                'text': msg.text,
-                'contact': msg.contact,
-                'urn': msg.urn,
-                'time': msg.created_on,
-                'labels': labels,
-                'flagged': flagged,
-                'direction': 'I' if msg.direction in ('I', 'in') else 'O',
-                'archived': msg.archived,
-                'sender': msg.sender.as_json() if getattr(msg, 'sender', None) else None}
