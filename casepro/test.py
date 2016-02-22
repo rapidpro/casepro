@@ -35,12 +35,10 @@ class BaseCasesTest(DashTest):
         self.norbert = self.create_admin(self.nyaruka, "Norbert Kwizera", "norbert@nyaruka.com")
 
         # some message labels
-        self.aids = self.create_label(self.unicef, "AIDS", 'Messages about AIDS',
-                                      ['aids', 'hiv'], 'L-001')
-        self.pregnancy = self.create_label(self.unicef, "Pregnancy", 'Messages about pregnancy',
-                                           ['pregnant', 'pregnancy'], 'L-002')
-        self.code = self.create_label(self.nyaruka, "Code", 'Messages about code',
-                                      ['java', 'python', 'go'], 'L-003')
+        self.aids = self.create_label(self.unicef, 'L-001', "AIDS", 'Messages about AIDS', ['aids', 'hiv'])
+        self.pregnancy = self.create_label(self.unicef, 'L-002', "Pregnancy", 'Messages about pregnancy',
+                                           ['pregnant', 'pregnancy'])
+        self.code = self.create_label(self.nyaruka, 'L-003', "Code", 'Messages about code', ['java', 'python', 'go'])
 
         # some partners
         self.moh = self.create_partner(self.unicef, "MOH", [self.aids, self.pregnancy])
@@ -76,8 +74,8 @@ class BaseCasesTest(DashTest):
     def create_user(self, org, partner, role, full_name, email):
         return User.create(org, partner, role, full_name, email, password=email, change_password=False)
 
-    def create_label(self, org, name, description, words, uuid):
-        return Label.create(org, name, description, words, uuid)
+    def create_label(self, org, uuid, name, description, keywords):
+        return Label.objects.create(org=org, uuid=uuid, name=name, description=description, keywords=','.join(keywords))
 
     def create_contact(self, org, uuid, name, groups=(), fields=None):
         contact = Contact.objects.create(org=org, uuid=uuid, name=name, is_stub=False, fields=fields)

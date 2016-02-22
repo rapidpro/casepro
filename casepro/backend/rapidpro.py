@@ -20,17 +20,32 @@ class RapidProBackend(BaseBackend):
                 progress_callback=progress_callback
         )
 
-    def pull_groups(self, org):
-        from casepro.contacts.models import Group
-        from casepro.dash_ext.sync import sync_pull_groups
-
-        return sync_pull_groups(org, Group)
-
     def pull_fields(self, org):
         from casepro.contacts.models import Field
-        from casepro.dash_ext.sync import sync_pull_fields
+        from casepro.dash_ext.sync import sync_local_to_incoming
 
-        return sync_pull_fields(org, Field)
+        client = org.get_temba_client(api_version=2)
+        incoming_objects = client.get_fields().all(retry_on_rate_exceed=True)
+
+        return sync_local_to_incoming(org, Field, incoming_objects)
+
+    def pull_groups(self, org):
+        from casepro.contacts.models import Group
+        from casepro.dash_ext.sync import sync_local_to_incoming
+
+        client = org.get_temba_client(api_version=2)
+        incoming_objects = client.get_groups().all(retry_on_rate_exceed=True)
+
+        return sync_local_to_incoming(org, Group, incoming_objects)
+
+    def pull_labels(self, org):
+        from casepro.msgs.models import Label
+        from casepro.dash_ext.sync import sync_local_to_incoming
+
+        client = org.get_temba_client(api_version=2)
+        incoming_objects = client.get_labels().all(retry_on_rate_exceed=True)
+
+        return sync_local_to_incoming(org, Label, incoming_objects)
 
     def pull_messages(self, org, modified_after, modified_before, progress_callback=None):
         from casepro.msgs.models import Message
@@ -42,10 +57,6 @@ class RapidProBackend(BaseBackend):
                 modified_before=modified_before,
                 progress_callback=progress_callback
         )
-
-    def pull_labels(self, org):
-        # TODO
-        pass
 
     def add_to_group(self, org, contact, group):
         client = org.get_temba_client(api_version=1)

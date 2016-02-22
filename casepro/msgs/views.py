@@ -80,8 +80,8 @@ class LabelCRUDL(SmartCRUDL):
             org = self.request.user.get_org()
             name = data['name']
             description = data['description']
-            words = parse_csv(data['keywords'])
-            self.object = Label.create(org, name, description, words)
+            keywords = parse_csv(data['keywords'])
+            self.object = Label.create(org, name, description, keywords)
 
     class Update(OrgObjPermsMixin, LabelFormMixin, SmartUpdateView):
         form_class = LabelForm
@@ -90,10 +90,6 @@ class LabelCRUDL(SmartCRUDL):
             initial = super(LabelCRUDL.Update, self).derive_initial()
             initial['keywords'] = ', '.join(self.object.get_keywords())
             return initial
-
-        def post_save(self, obj):
-            obj.update_name(obj.name)
-            return obj
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
         cancel_url = '@msgs.label_list'

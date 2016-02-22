@@ -35,6 +35,16 @@ class BaseBackend(object):
         pass
 
     @abstractmethod
+    def pull_fields(self, org):
+        """
+        Pulls all contact fields
+
+        :param org: the org
+        :return: tuple of the number of fields created, updated and deleted
+        """
+        pass
+
+    @abstractmethod
     def pull_groups(self, org):
         """
         Pulls all contact groups
@@ -45,12 +55,12 @@ class BaseBackend(object):
         pass
 
     @abstractmethod
-    def pull_fields(self, org):
+    def pull_labels(self, org):
         """
-        Pulls all contact fields
+        Pulls all message labels
 
         :param org: the org
-        :return: tuple of the number of fields created, updated and deleted
+        :return: tuple of the number of labels created, updated and deleted
         """
         pass
 
@@ -64,16 +74,6 @@ class BaseBackend(object):
         :param datetime modified_before: pull messages modified before this
         :param progress_callback: callable that will be called from time to time with number of messages pulled
         :return: tuple of the number of messages created, updated and deleted
-        """
-        pass
-
-    @abstractmethod
-    def pull_labels(self, org):
-        """
-        Pulls all message labels
-
-        :param org: the org
-        :return: tuple of the number of labels created, updated and deleted
         """
         pass
 

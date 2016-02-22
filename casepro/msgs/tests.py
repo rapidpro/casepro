@@ -133,10 +133,7 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(ebola.keywords, 'ebola,fever')
         self.assertEqual(ebola.get_keywords(), ['ebola', 'fever'])
 
-    @patch('dash.orgs.models.TembaClient1.update_label')
-    def test_update(self, mock_update_label):
-        mock_update_label.return_value = TembaLabel.create(name="Maternity", uuid='L-002')
-
+    def test_update(self):
         url = reverse('msgs.label_update', args=[self.pregnancy.pk])
 
         # log in as a non-administrator
@@ -158,7 +155,7 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertFormError(response, 'form', 'description', 'This field is required.')
 
         # submit again with valid data
-        response = self.url_post('unicef', url, {'name': "Maternity",
+        response = self.url_post('unicef', url, {'name': "Pregnancy",
                                                  'description': "Msgs about maternity",
                                                  'keywords': "pregnancy, maternity"})
 
@@ -167,12 +164,10 @@ class LabelCRUDLTest(BaseCasesTest):
         label = Label.objects.get(pk=self.pregnancy.pk)
         self.assertEqual(label.uuid, 'L-002')
         self.assertEqual(label.org, self.unicef)
-        self.assertEqual(label.name, "Maternity")
+        self.assertEqual(label.name, "Pregnancy")
         self.assertEqual(label.description, "Msgs about maternity")
         self.assertEqual(label.keywords, 'pregnancy,maternity')
         self.assertEqual(label.get_keywords(), ['pregnancy', 'maternity'])
-
-        mock_update_label.assert_called_once_with(uuid='L-002', name="Maternity")
 
     def test_list(self):
         url = reverse('msgs.label_list')
@@ -433,46 +428,6 @@ class MessageExportCRUDLTest(BaseCasesTest):
 
 
 class TasksTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient2.get_messages')
-    def test_pull_messages(self, mock_get_messages):
-        self.create_contact(self.unicef, 'C-001', "Ann")
-        self.create_contact(self.unicef, 'C-002', "Bob")
-
-        d1 = datetime(2014, 1, 1, 7, 0, tzinfo=timezone.utc)
-        d2 = datetime(2014, 1, 1, 8, 0, tzinfo=timezone.utc)
-        d3 = datetime(2014, 1, 1, 9, 0, tzinfo=timezone.utc)
-        d4 = datetime(2014, 1, 1, 10, 0, tzinfo=timezone.utc)
-        d5 = datetime(2014, 1, 1, 11, 0, tzinfo=timezone.utc)
-
-        mock_get_messages.side_effect = [
-            MockClientQuery([
-                TembaMessage2.create(id=101, contact=ObjectRef.create(uuid='C-001', name="Ann"),
-                                     text="What is aids?", created_on=d1),
-                TembaMessage2.create(id=102, contact=ObjectRef.create(uuid='C-002', name="Bob"),
-                                     text="Can I catch Hiv?", created_on=d2),
-                TembaMessage2.create(id=103, contact=ObjectRef.create(uuid='C-003', name="Cat"),
-                                     text="I think I'm pregnant", created_on=d3),
-                TembaMessage2.create(id=104, contact=ObjectRef.create(uuid='C-004', name="Don"),
-                                     text="Php is amaze", created_on=d4),
-                TembaMessage2.create(id=105, contact=ObjectRef.create(uuid='C-005', name="Eve"),
-                                     text="Thanks for the pregnancy/HIV info", created_on=d5)
-            ])
-        ]
-
-        pull_messages(self.unicef.pk)
-
-        self.assertEqual(Contact.objects.filter(is_stub=False).count(), 2)
-        self.assertEqual(Contact.objects.filter(is_stub=True).count(), 3)
-        self.assertEqual(Message.objects.filter(is_handled=False).count(), 5)
-
-        # check task result
-        task_state = self.unicef.get_task_state('message-pull')
-        self.assertEqual(task_state.get_last_results(), {'messages': {'created': 5, 'updated': 0, 'deleted': 0}})
-
-        call_kwargs = mock_get_messages.call_args[1]
-        self.assertEqual(call_kwargs['after'], task_state.started_on - timedelta(hours=1))
-        self.assertEqual(call_kwargs['before'], task_state.started_on)
-
     @patch('casepro.test.TestBackend.label_messages')
     @patch('casepro.test.TestBackend.archive_messages')
     def test_handle_messages(self, mock_archive_messages, mock_label_messages):

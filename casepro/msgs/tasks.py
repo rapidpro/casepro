@@ -23,11 +23,14 @@ def pull_messages(org, since, until):
     if not since:
         since = until - timedelta(hours=1)
 
-    # TODO sync labels
+    labels_created, labels_updated, labels_deleted = backend.pull_labels(org)
 
     msgs_created, msgs_updated, msgs_deleted = backend.pull_messages(org, since, until)
 
-    return {'messages': {'created': msgs_created, 'updated': msgs_updated, 'deleted': msgs_deleted}}
+    return {
+        'labels': {'created': labels_created, 'updated': labels_updated, 'deleted': labels_deleted},
+        'messages': {'created': msgs_created, 'updated': msgs_updated, 'deleted': msgs_deleted}
+    }
 
 
 @org_task('message-handle')

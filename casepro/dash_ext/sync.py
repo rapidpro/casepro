@@ -15,37 +15,7 @@ from temba_client.v1.types import Contact as TembaContact
 logger = logging.getLogger(__name__)
 
 
-def sync_pull_groups(org, model):
-    """
-    Pull all contact groups from RapidPro and syncs with local groups. Assumes no other process is creating groups at
-    the same time.
-
-    :param * org:
-    :param type model: the local group model
-    :return: tuple containing counts of created, updated and deleted groups
-    """
-    client = org.get_temba_client(api_version=2)
-    incoming_objects = client.get_groups().all(retry_on_rate_exceed=True)
-
-    return _sync_local_to_incoming(org, model, incoming_objects)
-
-
-def sync_pull_fields(org, model):
-    """
-    Pull all contact fields from RapidPro and syncs with local fields. Assumes no other process is creating fields at
-    the same time.
-
-    :param * org:
-    :param type model: the local field model
-    :return: tuple containing counts of created, updated and deleted fields
-    """
-    client = org.get_temba_client(api_version=2)
-    incoming_objects = client.get_fields().all(retry_on_rate_exceed=True)
-
-    return _sync_local_to_incoming(org, model, incoming_objects)
-
-
-def _sync_local_to_incoming(org, model, incoming_objects):
+def sync_local_to_incoming(org, model, incoming_objects):
     """
     Syncs an org's entire set of local instances of a model to match the set of incoming objects. Requires that the
     local model define the following class methods:

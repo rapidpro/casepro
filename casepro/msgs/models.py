@@ -23,7 +23,6 @@ from django.utils.timezone import now
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from temba_client.utils import parse_iso8601
-from temba_client.exceptions import TembaException
 
 
 SYSTEM_LABEL_FLAGGED = "Flagged"
@@ -45,23 +44,22 @@ class Label(models.Model):
 
     name = models.CharField(verbose_name=_("Name"), max_length=32, help_text=_("Name of this label"))
 
-    description = models.CharField(verbose_name=_("Description"), max_length=255)
+    description = models.CharField(verbose_name=_("Description"), null=True, max_length=255)
 
-    keywords = models.CharField(verbose_name=_("Keywords"), max_length=1024, blank=True)
+    keywords = models.CharField(verbose_name=_("Keywords"), null=True, blank=True, max_length=1024)
 
     is_active = models.BooleanField(default=True, help_text="Whether this label is active")
 
     @classmethod
-    def create(cls, org, name, description, keywords, uuid=None):
-        if not uuid:
-            remote = cls.get_or_create_remote(org, name)
-            uuid = remote.uuid
-
-        return cls.objects.create(uuid=uuid, org=org, name=name, description=description, keywords=','.join(keywords))
+    def create(cls, org, name, description, keywords):
+        remote = cls.get_or_create_remote(org, name)
+        return cls.objects.create(org=org,
+                                  uuid=remote.uuid,
+                                  name=name, description=description, keywords=','.join(keywords))
 
     @classmethod
     def get_or_create_remote(cls, org, name):
-        client = org.get_temba_client()
+        client = org.get_temba_client(api_version=1)
         temba_labels = client.get_labels(name=name)  # gets all partial name matches
         temba_labels = [l for l in temba_labels if l.name.lower() == name.lower()]
 
@@ -91,20 +89,24 @@ class Label(models.Model):
                 labels_by_keyword[keyword] = label
         return labels_by_keyword
 
-    def update_name(self, name):
-        # try to update remote label
-        try:
-            client = self.org.get_temba_client()
-            client.update_label(uuid=self.uuid, name=name)
-        except TembaException:
-            # rename may fail if remote label no longer exists or new name conflicts with other remote label
-            pass
+    @classmethod
+    def sync_identity(cls, instance):
+        return instance.uuid
 
-        self.name = name
-        self.save()
+    @classmethod
+    def sync_get_kwargs(cls, org, incoming):
+        return {
+            'org': org,
+            'uuid': incoming.uuid,
+            'name': incoming.name,
+        }
+
+    @classmethod
+    def sync_update_required(cls, local, incoming):
+        return local.name != incoming.name
 
     def get_keywords(self):
-        return parse_csv(self.keywords)
+        return parse_csv(self.keywords) if self.keywords else []
 
     def get_partners(self):
         return self.partners.filter(is_active=True)
@@ -114,7 +116,7 @@ class Label(models.Model):
         self.save(update_fields=('is_active',))
 
     def as_json(self):
-        return {'id': self.pk, 'name': self.name, 'count': getattr(self, 'count', None)}
+        return {'id': self.pk, 'uuid': self.uuid, 'name': self.name}
 
     @classmethod
     def is_valid_keyword(cls, keyword):
