@@ -52,16 +52,12 @@ class Label(models.Model):
     is_active = models.BooleanField(default=True, help_text="Whether this label is active")
 
     @classmethod
-    def create(cls, org, name, description, keywords, partners, uuid=None):
+    def create(cls, org, name, description, keywords, uuid=None):
         if not uuid:
             remote = cls.get_or_create_remote(org, name)
             uuid = remote.uuid
 
-        label = cls.objects.create(uuid=uuid, org=org, name=name, description=description,
-                                   keywords=','.join(keywords))
-        label.partners.add(*partners)
-
-        return label
+        return cls.objects.create(uuid=uuid, org=org, name=name, description=description, keywords=','.join(keywords))
 
     @classmethod
     def get_or_create_remote(cls, org, name):

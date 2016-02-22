@@ -249,117 +249,18 @@ class CaseCRUDL(SmartCRUDL):
             return JsonResponse({'results': context['timeline'], 'max_time': context['max_time']})
 
 
-class LabelForm(forms.ModelForm):
-    name = forms.CharField(label=_("Name"), max_length=128)
-
-    description = forms.CharField(label=_("Description"), max_length=255, widget=forms.Textarea)
-
-    keywords = forms.CharField(label=_("Keywords"), widget=forms.Textarea, required=False,
-                               help_text=_("Match messages containing any of these words"))
-
-    partners = forms.ModelMultipleChoiceField(label=_("Visible to"), queryset=Partner.objects.none(), required=False)
-
-    def __init__(self, *args, **kwargs):
-        org = kwargs.pop('org')
-
-        super(LabelForm, self).__init__(*args, **kwargs)
-
-        self.fields['partners'].queryset = Partner.get_all(org)
-
-    def clean_name(self):
-        name = self.cleaned_data['name'].strip()
-        if name.lower() == 'flagged':
-            raise forms.ValidationError(_("Reserved label name"))
-        elif name.startswith('+') or name.startswith('-'):
-            raise forms.ValidationError(_("Label name cannot start with + or -"))
-        return name
-
-    def clean_keywords(self):
-        keywords = parse_csv(self.cleaned_data['keywords'])
-        clean_keywords = []
-        for keyword in keywords:
-            clean_keyword = normalize(keyword)
-
-            if len(keyword) < Label.KEYWORD_MIN_LENGTH:
-                raise forms.ValidationError(_("Keywords must be at least %d characters long")
-                                            % Label.KEYWORD_MIN_LENGTH)
-
-            if not Label.is_valid_keyword(keyword):
-                raise forms.ValidationError(_("Invalid keyword: %s") % keyword)
-
-            clean_keywords.append(clean_keyword)
-
-        return ','.join(clean_keywords)
-
-    class Meta:
-        model = Label
-        fields = ('name', 'description', 'keywords', 'partners')
-
-
-class LabelFormMixin(object):
-    def get_form_kwargs(self):
-        kwargs = super(LabelFormMixin, self).get_form_kwargs()
-        kwargs['org'] = self.request.user.get_org()
-        return kwargs
-
-
-class LabelCRUDL(SmartCRUDL):
-    actions = ('create', 'update', 'delete', 'list')
-    model = Label
-
-    class Create(OrgPermsMixin, LabelFormMixin, SmartCreateView):
-        form_class = LabelForm
-
-        def save(self, obj):
-            data = self.form.cleaned_data
-            org = self.request.user.get_org()
-            name = data['name']
-            description = data['description']
-            words = parse_csv(data['keywords'])
-            partners = data['partners']
-            self.object = Label.create(org, name, description, words, partners)
-
-    class Update(OrgObjPermsMixin, LabelFormMixin, SmartUpdateView):
-        form_class = LabelForm
-
-        def derive_initial(self):
-            initial = super(LabelCRUDL.Update, self).derive_initial()
-            initial['keywords'] = ', '.join(self.object.get_keywords())
-            return initial
-
-        def post_save(self, obj):
-            obj.update_name(obj.name)
-            return obj
-
-    class Delete(OrgObjPermsMixin, SmartDeleteView):
-        cancel_url = '@cases.label_list'
-
-        def post(self, request, *args, **kwargs):
-            label = self.get_object()
-            label.release()
-            return HttpResponse(status=204)
-
-    class List(OrgPermsMixin, SmartListView):
-        fields = ('name', 'description', 'partners')
-        default_order = ('name',)
-
-        def derive_queryset(self, **kwargs):
-            qs = super(LabelCRUDL.List, self).derive_queryset(**kwargs)
-            qs = qs.filter(org=self.request.org, is_active=True)
-            return qs
-
-        def get_partners(self, obj):
-            return ', '.join([p.name for p in obj.get_partners()])
-
-
 class PartnerForm(forms.ModelForm):
+    labels = forms.ModelMultipleChoiceField(label=_("Can Access"), queryset=Label.objects.none(), required=False)
+
     def __init__(self, *args, **kwargs):
         org = kwargs.pop('org')
         super(PartnerForm, self).__init__(*args, **kwargs)
 
+        self.fields['labels'].queryset = Label.get_all(org)
+
     class Meta:
         model = Partner
-        fields = ('name', 'logo')
+        fields = ('name', 'logo', 'labels')
 
 
 class PartnerFormMixin(object):
@@ -379,7 +280,7 @@ class PartnerCRUDL(SmartCRUDL):
         def save(self, obj):
             data = self.form.cleaned_data
             org = self.request.user.get_org()
-            self.object = Partner.create(org, data['name'], data['logo'])
+            self.object = Partner.create(org, data['name'], data['labels'], data['logo'])
 
     class Update(OrgObjPermsMixin, PartnerFormMixin, SmartUpdateView):
         form_class = PartnerForm

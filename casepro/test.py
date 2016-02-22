@@ -4,9 +4,9 @@ import datetime
 import pytz
 
 from casepro.backend.rapidpro import RapidProBackend
-from casepro.cases.models import Label, Partner
+from casepro.cases.models import Partner
 from casepro.contacts.models import Contact, Group, Field
-from casepro.msgs.models import Message
+from casepro.msgs.models import Label, Message
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from dash.test import DashTest
 from django.contrib.auth.models import User
@@ -34,24 +34,24 @@ class BaseCasesTest(DashTest):
         self.admin = self.create_admin(self.unicef, "Kidus", "kidus@unicef.org")
         self.norbert = self.create_admin(self.nyaruka, "Norbert Kwizera", "norbert@nyaruka.com")
 
+        # some message labels
+        self.aids = self.create_label(self.unicef, "AIDS", 'Messages about AIDS',
+                                      ['aids', 'hiv'], 'L-001')
+        self.pregnancy = self.create_label(self.unicef, "Pregnancy", 'Messages about pregnancy',
+                                           ['pregnant', 'pregnancy'], 'L-002')
+        self.code = self.create_label(self.nyaruka, "Code", 'Messages about code',
+                                      ['java', 'python', 'go'], 'L-003')
+
         # some partners
-        self.moh = self.create_partner(self.unicef, "MOH")
-        self.who = self.create_partner(self.unicef, "WHO")
-        self.klab = self.create_partner(self.nyaruka, "kLab")
+        self.moh = self.create_partner(self.unicef, "MOH", [self.aids, self.pregnancy])
+        self.who = self.create_partner(self.unicef, "WHO", [self.aids])
+        self.klab = self.create_partner(self.nyaruka, "kLab", [self.code])
 
         # some users in those partners
         self.user1 = self.create_user(self.unicef, self.moh, ROLE_MANAGER, "Evan", "evan@unicef.org")
         self.user2 = self.create_user(self.unicef, self.moh, ROLE_ANALYST, "Bob", "bob@unicef.org")
         self.user3 = self.create_user(self.unicef, self.who, ROLE_MANAGER, "Carol", "carol@unicef.org")
         self.user4 = self.create_user(self.nyaruka, self.klab, ROLE_ANALYST, "Bosco", "bosco@klab.rw")
-
-        # some message labels
-        self.aids = self.create_label(self.unicef, "AIDS", 'Messages about AIDS',
-                                      ['aids', 'hiv'], [self.moh, self.who], 'L-001')
-        self.pregnancy = self.create_label(self.unicef, "Pregnancy", 'Messages about pregnancy',
-                                           ['pregnant', 'pregnancy'], [self.moh], 'L-002')
-        self.code = self.create_label(self.nyaruka, "Code", 'Messages about code',
-                                      ['java', 'python', 'go'], [self.klab], 'L-003')
 
         # some groups
         self.males = self.create_group(self.unicef, 'G-001', 'Males')
@@ -65,8 +65,8 @@ class BaseCasesTest(DashTest):
         self.state = self.create_field(self.unicef, 'state', "State", value_type='S', is_visible=False)
         self.motorbike = self.create_field(self.nyaruka, 'motorbike', "Moto", value_type='T')
 
-    def create_partner(self, org, name):
-        return Partner.create(org, name, None)
+    def create_partner(self, org, name, labels=()):
+        return Partner.create(org, name, labels, None)
 
     def create_admin(self, org, full_name, email):
         user = User.create(None, None, None, full_name, email, password=email, change_password=False)
@@ -76,8 +76,8 @@ class BaseCasesTest(DashTest):
     def create_user(self, org, partner, role, full_name, email):
         return User.create(org, partner, role, full_name, email, password=email, change_password=False)
 
-    def create_label(self, org, name, description, words, partners, uuid):
-        return Label.create(org, name, description, words, partners, uuid)
+    def create_label(self, org, name, description, words, uuid):
+        return Label.create(org, name, description, words, uuid)
 
     def create_contact(self, org, uuid, name, groups=(), fields=None):
         contact = Contact.objects.create(org=org, uuid=uuid, name=name, is_stub=False, fields=fields)

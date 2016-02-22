@@ -593,194 +593,13 @@ class HomeViewsTest(BaseCasesTest):
         self.assertNotContains(response, "http://localhost:8001/contact/read/{}/")
 
 
-class LabelTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient1.create_label')
-    @patch('dash.orgs.models.TembaClient1.get_labels')
-    def test_create(self, mock_get_labels, mock_create_label):
-        mock_get_labels.return_value = [
-            TembaLabel.create(name='Not Ebola', uuid='L-011'),
-            TembaLabel.create(name='ebola', uuid='L-012')
-        ]
-
-        # create label that exists in RapidPro
-        ebola = Label.create(self.unicef, "Ebola", "Msgs about ebola", ['ebola', 'fever'], [self.moh, self.who])
-        self.assertEqual(ebola.uuid, 'L-012')
-        self.assertEqual(ebola.org, self.unicef)
-        self.assertEqual(ebola.name, "Ebola")
-        self.assertEqual(ebola.description, "Msgs about ebola")
-        self.assertEqual(ebola.keywords, 'ebola,fever')
-        self.assertEqual(ebola.get_keywords(), ['ebola', 'fever'])
-        self.assertEqual(set(ebola.get_partners()), {self.moh, self.who})
-        self.assertEqual(unicode(ebola), "Ebola")
-
-        mock_get_labels.return_value = []
-        mock_create_label.return_value = TembaLabel.create(name='HIV', uuid='L-013')
-
-        # create label that does not exist in RapidPro
-        ebola = Label.create(self.unicef, "HIV", "Msgs about HIV", ['hiv', 'aids'], [self.moh])
-        self.assertEqual(ebola.uuid, 'L-013')
-
-    def test_get_all(self):
-        self.assertEqual(set(Label.get_all(self.unicef)), {self.aids, self.pregnancy})
-        self.assertEqual(set(Label.get_all(self.unicef, self.user1)), {self.aids, self.pregnancy})  # MOH user
-        self.assertEqual(set(Label.get_all(self.unicef, self.user3)), {self.aids})  # WHO user
-
-    def test_release(self):
-        self.aids.release()
-        self.assertFalse(self.aids.is_active)
-
-    def test_is_valid_keyword(self):
-        self.assertTrue(Label.is_valid_keyword('kit'))
-        self.assertTrue(Label.is_valid_keyword('kit-kat'))
-        self.assertTrue(Label.is_valid_keyword('kit kat'))
-        self.assertTrue(Label.is_valid_keyword('kit-kat wrapper'))
-
-        self.assertFalse(Label.is_valid_keyword('it'))  # too short
-        self.assertFalse(Label.is_valid_keyword(' kitkat'))  # can't start with a space
-        self.assertFalse(Label.is_valid_keyword('-kit'))  # can't start with a dash
-        self.assertFalse(Label.is_valid_keyword('kat '))  # can't end with a space
-        self.assertFalse(Label.is_valid_keyword('kat-'))  # can't end with a dash
-
-
-class LabelCRUDLTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient1.get_labels')
-    def test_create(self, mock_get_labels):
-        mock_get_labels.return_value = [
-            TembaLabel.create(name='Not Ebola', uuid='L-011'),
-            TembaLabel.create(name='ebola', uuid='L-012')
-        ]
-
-        url = reverse('cases.label_create')
-
-        # log in as a non-administrator
-        self.login(self.user1)
-
-        response = self.url_get('unicef', url)
-        self.assertLoginRedirect(response, 'unicef', url)
-
-        # log in as an administrator
-        self.login(self.admin)
-
-        response = self.url_get('unicef', url)
-        self.assertEqual(response.status_code, 200)
-
-        # submit with no data
-        response = self.url_post('unicef', url, {})
-        self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'name', 'This field is required.')
-        self.assertFormError(response, 'form', 'description', 'This field is required.')
-
-        # submit with name that is reserved
-        response = self.url_post('unicef', url, {'name': 'FlaGGED'})
-        self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'name', "Reserved label name")
-
-        # submit with name that is invalid
-        response = self.url_post('unicef', url, {'name': '+Ebola'})
-        self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'name', "Label name cannot start with + or -")
-
-        # submit with a keyword that is too short
-        response = self.url_post('unicef', url, {'name': 'Ebola', 'keywords': 'a, ebola'})
-        self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'keywords', "Keywords must be at least 3 characters long")
-
-        # submit with a keyword that is invalid
-        response = self.url_post('unicef', url, {'name': 'Ebola', 'keywords': r'ebol@?, ebola'})
-        self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'keywords', "Invalid keyword: ebol@?")
-
-        # submit again with valid data
-        response = self.url_post('unicef', url, {'name': "Ebola", 'description': "Msgs about ebola",
-                                                 'keywords': "Ebola,fever", 'partners': [self.moh.pk, self.who.pk]})
-
-        self.assertEqual(response.status_code, 302)
-
-        ebola = Label.objects.get(name="Ebola")
-        self.assertEqual(ebola.uuid, 'L-012')
-        self.assertEqual(ebola.org, self.unicef)
-        self.assertEqual(ebola.name, "Ebola")
-        self.assertEqual(ebola.description, "Msgs about ebola")
-        self.assertEqual(ebola.keywords, 'ebola,fever')
-        self.assertEqual(ebola.get_keywords(), ['ebola', 'fever'])
-        self.assertEqual(set(ebola.get_partners()), {self.moh, self.who})
-
-    @patch('dash.orgs.models.TembaClient1.update_label')
-    def test_update(self, mock_update_label):
-        mock_update_label.return_value = TembaLabel.create(name="Maternity", uuid='L-002')
-
-        url = reverse('cases.label_update', args=[self.pregnancy.pk])
-
-        # log in as a non-administrator
-        self.login(self.user1)
-
-        response = self.url_get('unicef', url)
-        self.assertLoginRedirect(response, 'unicef', url)
-
-        # log in as an administrator
-        self.login(self.admin)
-
-        response = self.url_get('unicef', url)
-        self.assertEqual(response.status_code, 200)
-
-        # submit with no data
-        response = self.url_post('unicef', url, {})
-        self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'name', 'This field is required.')
-        self.assertFormError(response, 'form', 'description', 'This field is required.')
-
-        # submit again with valid data
-        response = self.url_post('unicef', url, {'name': "Maternity", 'description': "Msgs about maternity",
-                                                 'keywords': "pregnancy, maternity", 'partners': [self.moh.pk]})
-
-        self.assertEqual(response.status_code, 302)
-
-        label = Label.objects.get(pk=self.pregnancy.pk)
-        self.assertEqual(label.uuid, 'L-002')
-        self.assertEqual(label.org, self.unicef)
-        self.assertEqual(label.name, "Maternity")
-        self.assertEqual(label.description, "Msgs about maternity")
-        self.assertEqual(label.keywords, 'pregnancy,maternity')
-        self.assertEqual(label.get_keywords(), ['pregnancy', 'maternity'])
-        self.assertEqual(set(label.get_partners()), {self.moh})
-
-        mock_update_label.assert_called_once_with(uuid='L-002', name="Maternity")
-
-    def test_list(self):
-        url = reverse('cases.label_list')
-
-        # log in as an administrator
-        self.login(self.admin)
-
-        response = self.url_get('unicef', url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(list(response.context['object_list']), [self.aids, self.pregnancy])
-
-    def test_delete(self):
-        url = reverse('cases.label_delete', args=[self.pregnancy.pk])
-
-        # log in as a non-administrator
-        self.login(self.user1)
-
-        response = self.url_get('unicef', url)
-        self.assertLoginRedirect(response, 'unicef', url)
-
-        # log in as an administrator
-        self.login(self.admin)
-
-        response = self.url_post('unicef', url)
-        self.assertEqual(response.status_code, 204)
-
-        pregnancy = Label.objects.get(pk=self.pregnancy.pk)
-        self.assertFalse(pregnancy.is_active)
-
-
 class PartnerTest(BaseCasesTest):
     def test_create(self):
-        wfp = Partner.create(self.unicef, "WFP", None)
+        wfp = Partner.create(self.unicef, "WFP", [self.aids, self.code], None)
         self.assertEqual(wfp.org, self.unicef)
         self.assertEqual(wfp.name, "WFP")
         self.assertEqual(unicode(wfp), "WFP")
+        self.assertEqual(set(wfp.get_labels()), {self.aids, self.code})
 
         # create some users for this partner
         jim = self.create_user(self.unicef, wfp, ROLE_MANAGER, "Jim", "jim@wfp.org")
@@ -789,12 +608,6 @@ class PartnerTest(BaseCasesTest):
         self.assertEqual(set(wfp.get_users()), {jim, kim})
         self.assertEqual(set(wfp.get_managers()), {jim})
         self.assertEqual(set(wfp.get_analysts()), {kim})
-
-        # give this partner access to the AIDS and Code labels
-        self.aids.partners.add(wfp)
-        self.code.partners.add(wfp)
-
-        self.assertEqual(set(wfp.get_labels()), {self.aids, self.code})
 
     def test_release(self):
         self.who.release()

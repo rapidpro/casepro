@@ -301,11 +301,11 @@ PERMISSIONS = {
 
     'orgs.org': ('create', 'update', 'list', 'edit', 'home', 'inbox'),
 
+    'msgs.label': ('create', 'update', 'list', 'unlabelled'),
+
     'msgs.messageexport': ('create', 'read'),
 
     'cases.case': ('create', 'read', 'update', 'list'),
-
-    'cases.label': ('create', 'update', 'list', 'unlabelled'),
 
     'cases.partner': ('create', 'read', 'delete', 'list'),
 
@@ -322,10 +322,10 @@ GROUP_PERMISSIONS = {
         'orgs.org_edit',
         'orgs.org_inbox',
 
+        'msgs.label.*',
         'msgs.messageexport.*',
 
         'cases.case.*',
-        'cases.label.*',
         'cases.partner.*',
 
         'contacts.contact.*',

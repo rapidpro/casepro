@@ -2,9 +2,10 @@ from __future__ import unicode_literals
 
 from django.conf.urls import url
 from .views import MessageSearchView, MessageLabelView, MessageActionView, MessageHistoryView, MessageSendView
-from .views import MessageExportCRUDL
+from .views import LabelCRUDL, MessageExportCRUDL
 
-urlpatterns = MessageExportCRUDL().as_urlpatterns()
+urlpatterns = LabelCRUDL().as_urlpatterns()
+urlpatterns += MessageExportCRUDL().as_urlpatterns()
 
 urlpatterns += [
     url(r'^message/$', MessageSearchView.as_view(), name='msgs.message_search'),

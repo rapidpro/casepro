@@ -1,13 +1,12 @@
 from __future__ import absolute_import, unicode_literals
 
 from django.conf.urls import url
-from .views import CaseCRUDL, LabelCRUDL, PartnerCRUDL
+from .views import CaseCRUDL, PartnerCRUDL
 from .views import InboxView, FlaggedView, OpenCasesView, ClosedCasesView, ArchivedView, UnlabelledView
 from .views import StatusView, PingView
 
 
 urlpatterns = CaseCRUDL().as_urlpatterns()
-urlpatterns += LabelCRUDL().as_urlpatterns()
 urlpatterns += PartnerCRUDL().as_urlpatterns()
 
 urlpatterns += [

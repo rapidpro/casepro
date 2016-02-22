@@ -28,12 +28,12 @@
           %span.glyphicon.glyphicon-tag
           &nbsp;
           [[ activeLabel.name ]]
-        - if org_perms.cases.label_update or org_perms.cases.label_delete
+        - if org_perms.msgs.label_update or org_perms.msgs.label_delete
           .btn-group
-            - if org_perms.cases.label_update
+            - if org_perms.msgs.label_update
               %a.btn.btn-default{ ng-href:"/label/update/[[ activeLabel.id ]]/", tooltip:"Edit Label" }
                 %span.glyphicon.glyphicon-pencil
-            - if org_perms.cases.label_delete
+            - if org_perms.msgs.label_delete
               %button.btn.btn-default{ ng-click:"onDeleteLabel()", tooltip:"Delete Label" }
                 %span.glyphicon.glyphicon-trash
 
@@ -59,7 +59,7 @@
             %li{ class:"{% if_url 'cases.archived' 'active' '' %}" }
               %a{ href:"{% url 'cases.archived' %}" }
                 - trans "Archived"
-            - if org_perms.cases.label_unlabelled
+            - if org_perms.msgs.label_unlabelled
               %li{ class:"{% if_url 'cases.unlabelled' 'active' '' %}" }
                 %a{ href:"{% url 'cases.unlabelled' %}" }
                   - trans "Unlabelled"

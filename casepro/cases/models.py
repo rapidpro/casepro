@@ -34,15 +34,21 @@ class Partner(models.Model):
     name = models.CharField(verbose_name=_("Name"), max_length=128,
                             help_text=_("Name of this partner organization"))
 
-    logo = models.ImageField(verbose_name=_("Logo"), upload_to='partner_logos', null=True, blank=True)
+    labels = models.ManyToManyField(Label, verbose_name=_("Labels"), related_name='partners',
+                                    help_text=_("Labels that this partner can access"))
 
-    labels = models.ManyToManyField(Label, verbose_name=_("Labels"), help_text=_("Labels that this partner can access"))
+    logo = models.ImageField(verbose_name=_("Logo"), upload_to='partner_logos', null=True, blank=True)
 
     is_active = models.BooleanField(default=True, help_text="Whether this partner is active")
 
     @classmethod
-    def create(cls, org, name, logo):
-        return cls.objects.create(org=org, name=name, logo=logo)
+    def create(cls, org, name, labels, logo):
+        partner = cls.objects.create(org=org, name=name, logo=logo)
+
+        for label in labels:
+            partner.labels.add(label)
+
+        return partner
 
     @classmethod
     def get_all(cls, org):
