@@ -360,6 +360,7 @@ class RemoteMessage(object):
                 'sender': msg.sender.as_json() if getattr(msg, 'sender', None) else None}
 
 
+@python_2_unicode_compatible
 class Outgoing(models.Model):
     """
     An outgoing message (i.e. broadcast) sent by a user
@@ -415,6 +416,9 @@ class Outgoing(models.Model):
                 'direction': 'O',
                 'archived': False,
                 'sender': self.created_by.as_json()}
+
+    def __str__(self):
+        return self.text
 
 
 class MessageExport(models.Model):

@@ -11,6 +11,7 @@ from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from enum import IntEnum
 from redis_cache import get_redis_connection
@@ -25,6 +26,7 @@ class AccessLevel(IntEnum):
     update = 2
 
 
+@python_2_unicode_compatible
 class Partner(models.Model):
     """
     Corresponds to a partner organization
@@ -76,7 +78,7 @@ class Partner(models.Model):
     def as_json(self):
         return {'id': self.pk, 'name': self.name}
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 
@@ -97,6 +99,7 @@ class case_action(object):
         return wrapped
 
 
+@python_2_unicode_compatible
 class Case(models.Model):
     """
     A case between a partner organization and a contact
@@ -342,7 +345,7 @@ class Case(models.Model):
                 'opened_on': self.opened_on,
                 'is_closed': self.is_closed}
 
-    def __unicode__(self):
+    def __str__(self):
         return '#%d' % self.pk
 
 

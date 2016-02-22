@@ -1,6 +1,8 @@
 # coding=utf-8
 from __future__ import absolute_import, unicode_literals
 
+import six
+
 from casepro.msgs.models import Message, Outgoing
 from casepro.msgs.tasks import handle_messages
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
@@ -598,7 +600,7 @@ class PartnerTest(BaseCasesTest):
         wfp = Partner.create(self.unicef, "WFP", [self.aids, self.code], None)
         self.assertEqual(wfp.org, self.unicef)
         self.assertEqual(wfp.name, "WFP")
-        self.assertEqual(unicode(wfp), "WFP")
+        self.assertEqual(six.text_type(wfp), "WFP")
         self.assertEqual(set(wfp.get_labels()), {self.aids, self.code})
 
         # create some users for this partner

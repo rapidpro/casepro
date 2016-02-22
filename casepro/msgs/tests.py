@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 import pytz
+import six
 
 from casepro.cases.models import Case, CaseEvent
 from casepro.contacts.models import Contact
@@ -38,7 +39,7 @@ class LabelTest(BaseCasesTest):
         self.assertEqual(ebola.description, "Msgs about ebola")
         self.assertEqual(ebola.keywords, 'ebola,fever')
         self.assertEqual(ebola.get_keywords(), ['ebola', 'fever'])
-        self.assertEqual(unicode(ebola), "Ebola")
+        self.assertEqual(six.text_type(ebola), "Ebola")
 
         mock_get_labels.return_value = []
         mock_create_label.return_value = TembaLabel.create(name='HIV', uuid='L-013')
