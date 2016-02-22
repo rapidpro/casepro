@@ -88,6 +88,10 @@ class Label(models.Model):
 
     @classmethod
     def sync_get_kwargs(cls, org, incoming):
+        # don't create locally if this is just the pseudo-label for flagging
+        if incoming.name == SYSTEM_LABEL_FLAGGED:
+            return None
+
         return {
             'org': org,
             'uuid': incoming.uuid,

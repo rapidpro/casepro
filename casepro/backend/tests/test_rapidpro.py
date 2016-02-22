@@ -110,6 +110,7 @@ class RapidProBackendTest(BaseCasesTest):
         mock_get_labels.return_value = MockClientQuery([
             TembaLabel.create(uuid="L-001", name="Requests", count=45),
             TembaLabel.create(uuid="L-002", name="Feedback", count=32),
+            TembaLabel.create(uuid="L-009", name="Flagged", count=21),  # should be ignored
         ])
 
         with self.assertNumQueries(3):
@@ -119,6 +120,8 @@ class RapidProBackendTest(BaseCasesTest):
 
         Label.objects.get(uuid="L-001", name="Requests", is_active=True)
         Label.objects.get(uuid="L-002", name="Feedback", is_active=True)
+
+        self.assertEqual(Label.objects.filter(name="Flagged").count(), 0)
 
         mock_get_labels.return_value = MockClientQuery([
             TembaLabel.create(uuid="L-002", name="Complaints", count=32),
