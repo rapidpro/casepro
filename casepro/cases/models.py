@@ -1,11 +1,9 @@
 from __future__ import absolute_import, unicode_literals
 
-import re
 import six
 
 from casepro.contacts.models import Contact
-from casepro.msgs.models import RemoteMessage
-from casepro.utils import parse_csv
+from casepro.msgs.models import Label, RemoteMessage
 from dash.orgs.models import Org
 from dash.utils import intersection
 from django.contrib.auth.models import User
@@ -16,7 +14,6 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from enum import IntEnum
 from redis_cache import get_redis_connection
-from temba_client.exceptions import TembaException
 
 
 class AccessLevel(IntEnum):
@@ -38,6 +35,8 @@ class Partner(models.Model):
                             help_text=_("Name of this partner organization"))
 
     logo = models.ImageField(verbose_name=_("Logo"), upload_to='partner_logos', null=True, blank=True)
+
+    labels = models.ManyToManyField(Label, verbose_name=_("Labels"), help_text=_("Labels that this partner can access"))
 
     is_active = models.BooleanField(default=True, help_text="Whether this partner is active")
 
@@ -75,104 +74,6 @@ class Partner(models.Model):
         return self.name
 
 
-class Label(models.Model):
-    """
-    Corresponds to a message label in RapidPro. Used for determining visibility of messages to different partners.
-    """
-    KEYWORD_MIN_LENGTH = 3
-
-    uuid = models.CharField(max_length=36, unique=True)
-
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='labels')
-
-    name = models.CharField(verbose_name=_("Name"), max_length=32, help_text=_("Name of this label"))
-
-    description = models.CharField(verbose_name=_("Description"), max_length=255)
-
-    keywords = models.CharField(verbose_name=_("Keywords"), max_length=1024, blank=True)
-
-    partners = models.ManyToManyField(Partner, related_name='labels',
-                                      help_text=_("Partner organizations who can access messages with this label"))
-
-    is_active = models.BooleanField(default=True, help_text="Whether this label is active")
-
-    @classmethod
-    def create(cls, org, name, description, keywords, partners, uuid=None):
-        if not uuid:
-            remote = cls.get_or_create_remote(org, name)
-            uuid = remote.uuid
-
-        label = cls.objects.create(uuid=uuid, org=org, name=name, description=description,
-                                   keywords=','.join(keywords))
-        label.partners.add(*partners)
-
-        return label
-
-    @classmethod
-    def get_or_create_remote(cls, org, name):
-        client = org.get_temba_client()
-        temba_labels = client.get_labels(name=name)  # gets all partial name matches
-        temba_labels = [l for l in temba_labels if l.name.lower() == name.lower()]
-
-        if temba_labels:
-            return temba_labels[0]
-        else:
-            return client.create_label(name)
-
-    @classmethod
-    def get_all(cls, org, user=None):
-        if not user or user.can_administer(org):
-            return cls.objects.filter(org=org, is_active=True)
-
-        partner = user.get_partner()
-        return partner.get_labels() if partner else cls.objects.none()
-
-    @classmethod
-    def get_keyword_map(cls, org):
-        """
-        Gets a map of all keywords to their corresponding labels
-        :param org: the org
-        :return: map of keywords to labels
-        """
-        labels_by_keyword = {}
-        for label in Label.get_all(org):
-            for keyword in label.get_keywords():
-                labels_by_keyword[keyword] = label
-        return labels_by_keyword
-
-    def update_name(self, name):
-        # try to update remote label
-        try:
-            client = self.org.get_temba_client()
-            client.update_label(uuid=self.uuid, name=name)
-        except TembaException:
-            # rename may fail if remote label no longer exists or new name conflicts with other remote label
-            pass
-
-        self.name = name
-        self.save()
-
-    def get_keywords(self):
-        return parse_csv(self.keywords)
-
-    def get_partners(self):
-        return self.partners.filter(is_active=True)
-
-    def release(self):
-        self.is_active = False
-        self.save(update_fields=('is_active',))
-
-    def as_json(self):
-        return {'id': self.pk, 'name': self.name, 'count': getattr(self, 'count', None)}
-
-    @classmethod
-    def is_valid_keyword(cls, keyword):
-        return len(keyword) >= cls.KEYWORD_MIN_LENGTH and re.match(r'^\w[\w\- ]*\w$', keyword)
-
-    def __unicode__(self):
-        return self.name
-
-
 class case_action(object):
     """
     Helper decorator for case action methods that should check the user is allowed to update the case
@@ -196,7 +97,7 @@ class Case(models.Model):
     """
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='cases')
 
-    labels = models.ManyToManyField(Label, verbose_name=_("Labels"), related_name='cases')
+    labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this case"))
 
     assignee = models.ForeignKey(Partner, related_name="cases")
 
