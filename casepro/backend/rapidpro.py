@@ -62,6 +62,18 @@ class RapidProBackend(BaseBackend):
                 progress_callback=progress_callback
         )
 
+    def create_label(self, org, name):
+        client = self._get_client(org, 1)
+        temba_labels = client.get_labels(name=name)  # gets all partial name matches
+        temba_labels = [l for l in temba_labels if l.name.lower() == name.lower()]
+
+        if temba_labels:
+            remote = temba_labels[0]
+        else:
+            remote = client.create_label(name)
+
+        return remote.uuid
+
     def add_to_group(self, org, contact, group):
         client = self._get_client(org, 1)
         client.add_contacts([contact.uuid], group_uuid=group.uuid)

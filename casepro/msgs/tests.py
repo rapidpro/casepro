@@ -5,35 +5,26 @@ import pytz
 import six
 
 from casepro.cases.models import Case, CaseEvent
-from casepro.contacts.models import Contact
 from casepro.test import BaseCasesTest
-from dash.test import MockClientQuery
-from datetime import datetime, timedelta
+from datetime import datetime
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch, call
 from temba_client.clients import Pager
 from temba_client.utils import format_iso8601
-from temba_client.v1.types import Contact as TembaContact, Label as TembaLabel
-from temba_client.v1.types import Message as TembaMessage, Broadcast as TembaBroadcast
-from temba_client.v2.types import Message as TembaMessage2, ObjectRef
+from temba_client.v1.types import Contact as TembaContact, Message as TembaMessage, Broadcast as TembaBroadcast
 from .models import Label, Message, MessageAction, RemoteMessage, Outgoing, MessageExport
-from .tasks import pull_messages, handle_messages
+from .tasks import handle_messages
 
 
 class LabelTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient1.create_label')
-    @patch('dash.orgs.models.TembaClient1.get_labels')
-    def test_create(self, mock_get_labels, mock_create_label):
-        mock_get_labels.return_value = [
-            TembaLabel.create(name='Not Ebola', uuid='L-011'),
-            TembaLabel.create(name='ebola', uuid='L-012')
-        ]
+    @patch('casepro.test.TestBackend.create_label')
+    def test_create(self, mock_create_label):
+        mock_create_label.return_value = "L-010"
 
-        # create label that exists in RapidPro
         ebola = Label.create(self.unicef, "Ebola", "Msgs about ebola", ['ebola', 'fever'])
-        self.assertEqual(ebola.uuid, 'L-012')
+        self.assertEqual(ebola.uuid, 'L-010')
         self.assertEqual(ebola.org, self.unicef)
         self.assertEqual(ebola.name, "Ebola")
         self.assertEqual(ebola.description, "Msgs about ebola")
@@ -41,17 +32,17 @@ class LabelTest(BaseCasesTest):
         self.assertEqual(ebola.get_keywords(), ['ebola', 'fever'])
         self.assertEqual(six.text_type(ebola), "Ebola")
 
-        mock_get_labels.return_value = []
-        mock_create_label.return_value = TembaLabel.create(name='HIV', uuid='L-013')
-
-        # create label that does not exist in RapidPro
-        ebola = Label.create(self.unicef, "HIV", "Msgs about HIV", ['hiv', 'aids'])
-        self.assertEqual(ebola.uuid, 'L-013')
-
     def test_get_all(self):
         self.assertEqual(set(Label.get_all(self.unicef)), {self.aids, self.pregnancy})
         self.assertEqual(set(Label.get_all(self.unicef, self.user1)), {self.aids, self.pregnancy})  # MOH user
         self.assertEqual(set(Label.get_all(self.unicef, self.user3)), {self.aids})  # WHO user
+
+    def test_get_keyword_map(self):
+        self.assertEqual(Label.get_keyword_map(self.unicef), {'aids': self.aids,
+                                                              'hiv': self.aids,
+                                                              'pregnant': self.pregnancy,
+                                                              'pregnancy': self.pregnancy})
+        self.assertEqual(Label.get_keyword_map(self.nyaruka), {'java': self.code, 'python': self.code, 'go': self.code})
 
     def test_release(self):
         self.aids.release()
@@ -71,12 +62,9 @@ class LabelTest(BaseCasesTest):
 
 
 class LabelCRUDLTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient1.get_labels')
-    def test_create(self, mock_get_labels):
-        mock_get_labels.return_value = [
-            TembaLabel.create(name='Not Ebola', uuid='L-011'),
-            TembaLabel.create(name='ebola', uuid='L-012')
-        ]
+    @patch('casepro.test.TestBackend.create_label')
+    def test_create(self, mock_create_label):
+        mock_create_label.return_value = "L-010"
 
         url = reverse('msgs.label_create')
 
@@ -126,7 +114,7 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 302)
 
         ebola = Label.objects.get(name="Ebola")
-        self.assertEqual(ebola.uuid, 'L-012')
+        self.assertEqual(ebola.uuid, 'L-010')
         self.assertEqual(ebola.org, self.unicef)
         self.assertEqual(ebola.name, "Ebola")
         self.assertEqual(ebola.description, "Msgs about ebola")

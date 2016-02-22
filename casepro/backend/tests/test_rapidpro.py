@@ -169,6 +169,23 @@ class RapidProBackendTest(BaseCasesTest):
         self.assertEqual(Contact.objects.filter(is_stub=True).count(), 3)
         self.assertEqual(Message.objects.filter(is_handled=False).count(), 5)
 
+    @patch('dash.orgs.models.TembaClient1.create_label')
+    @patch('dash.orgs.models.TembaClient1.get_labels')
+    def test_create_label(self, mock_get_labels, mock_create_label):
+        mock_get_labels.return_value = [
+            TembaLabel.create(uuid='L-011', name='Not Ebola', count=213),
+            TembaLabel.create(uuid='L-012', name='ebola', count=345)
+        ]
+
+        # check when label exists
+        self.assertEqual(self.backend.create_label(self.unicef, "Ebola"), 'L-012')
+
+        # check when label doesn't exist
+        mock_get_labels.return_value = []
+        mock_create_label.return_value = TembaLabel.create(uuid='L-013', name='Ebola', count=0)
+
+        self.assertEqual(self.backend.create_label(self.unicef, "Ebola"), 'L-013')
+
     @patch('dash.orgs.models.TembaClient1.add_contacts')
     def test_add_to_group(self, mock_add_contacts):
         self.backend.add_to_group(self.unicef, self.bob, self.reporters)

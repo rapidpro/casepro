@@ -78,6 +78,17 @@ class BaseBackend(object):
         pass
 
     @abstractmethod
+    def create_label(self, org, name):
+        """
+        Creates a label (or returns an existing label) with the given name
+
+        :param org: the org
+        :param name: the name, e.g. "Spam"
+        :return: the backend label UUID
+        """
+        pass
+
+    @abstractmethod
     def add_to_group(self, org, contact, group):
         """
         Adds the given contact to a group

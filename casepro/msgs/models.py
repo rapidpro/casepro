@@ -5,6 +5,7 @@ import pytz
 import regex
 import six
 
+from casepro.backend import get_backend
 from casepro.contacts.models import Contact
 from casepro.utils import JSONEncoder, normalize, parse_csv
 from casepro.utils.email import send_email
@@ -52,21 +53,13 @@ class Label(models.Model):
 
     @classmethod
     def create(cls, org, name, description, keywords):
-        remote = cls.get_or_create_remote(org, name)
+        remote_uuid = get_backend().create_label(org, name)
+
         return cls.objects.create(org=org,
-                                  uuid=remote.uuid,
-                                  name=name, description=description, keywords=','.join(keywords))
-
-    @classmethod
-    def get_or_create_remote(cls, org, name):
-        client = org.get_temba_client(api_version=1)
-        temba_labels = client.get_labels(name=name)  # gets all partial name matches
-        temba_labels = [l for l in temba_labels if l.name.lower() == name.lower()]
-
-        if temba_labels:
-            return temba_labels[0]
-        else:
-            return client.create_label(name)
+                                  uuid=remote_uuid,
+                                  name=name,
+                                  description=description,
+                                  keywords=','.join(keywords))
 
     @classmethod
     def get_all(cls, org, user=None):
