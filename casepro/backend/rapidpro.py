@@ -7,6 +7,10 @@ class RapidProBackend(BaseBackend):
     """
     RapidPro instance as a backend
     """
+    @staticmethod
+    def _get_client(org, api_version):
+        return org.get_temba_client(api_version=api_version)
+
     def pull_contacts(self, org, modified_after, modified_before, progress_callback=None):
         from casepro.contacts.models import Contact
         from casepro.dash_ext.sync import sync_pull_contacts
@@ -24,7 +28,7 @@ class RapidProBackend(BaseBackend):
         from casepro.contacts.models import Field
         from casepro.dash_ext.sync import sync_local_to_incoming
 
-        client = org.get_temba_client(api_version=2)
+        client = self._get_client(org, 2)
         incoming_objects = client.get_fields().all(retry_on_rate_exceed=True)
 
         return sync_local_to_incoming(org, Field, incoming_objects)
@@ -33,7 +37,7 @@ class RapidProBackend(BaseBackend):
         from casepro.contacts.models import Group
         from casepro.dash_ext.sync import sync_local_to_incoming
 
-        client = org.get_temba_client(api_version=2)
+        client = self._get_client(org, 2)
         incoming_objects = client.get_groups().all(retry_on_rate_exceed=True)
 
         return sync_local_to_incoming(org, Group, incoming_objects)
@@ -42,7 +46,7 @@ class RapidProBackend(BaseBackend):
         from casepro.msgs.models import Label
         from casepro.dash_ext.sync import sync_local_to_incoming
 
-        client = org.get_temba_client(api_version=2)
+        client = self._get_client(org, 2)
         incoming_objects = client.get_labels().all(retry_on_rate_exceed=True)
 
         return sync_local_to_incoming(org, Label, incoming_objects)
@@ -59,29 +63,29 @@ class RapidProBackend(BaseBackend):
         )
 
     def add_to_group(self, org, contact, group):
-        client = org.get_temba_client(api_version=1)
+        client = self._get_client(org, 1)
         client.add_contacts([contact.uuid], group_uuid=group.uuid)
 
     def remove_from_group(self, org, contact, group):
-        client = org.get_temba_client(api_version=1)
+        client = self._get_client(org, 1)
         client.remove_contacts([contact.uuid], group_uuid=group.uuid)
 
     def stop_runs(self, org, contact):
-        client = org.get_temba_client(api_version=1)
+        client = self._get_client(org, 1)
         client.expire_contacts([contact.uuid])
 
     def label_messages(self, org, messages, label):
         if messages:
-            client = org.get_temba_client(api_version=1)
+            client = self._get_client(org, 1)
             client.label_messages(messages=[m.backend_id for m in messages], label_uuid=label.uuid)
 
     def archive_messages(self, org, messages):
         if messages:
-            client = org.get_temba_client(api_version=1)
+            client = self._get_client(org, 1)
             client.archive_messages(messages=[m.backend_id for m in messages])
 
     def archive_contact_messages(self, org, contact):
-        client = org.get_temba_client(api_version=1)
+        client = self._get_client(org, 1)
 
         # TODO switch to API v2 (downside is this will return all outgoing messages which could be a lot)
         messages = client.get_messages(contacts=[contact.uuid], direction='I', statuses=['H'], _types=['I'], archived=False)
