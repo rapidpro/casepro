@@ -69,7 +69,7 @@ class BaseSyncer(object):
 
 def sync_local_to_set(org, syncer, remote_objects):
     """
-    Syncs an org's entire set of local instances of a model to match the set of incoming objects
+    Syncs an org's entire set of local instances of a model to match the set of remote objects
 
     :param org: the org
     :param syncer: the syncer implementation
@@ -162,20 +162,25 @@ def sync_pull_messages(org, syncer,
             with syncer.lock(syncer.identity(incoming)):
                 existing = syncer.fetch_local(org, syncer.identity(incoming))
 
-                # derive kwargs for the local message model (none return here means don't keep)
+                # derive kwargs for the local model (none return here means don't keep)
                 local_kwargs = syncer.local_kwargs(org, incoming)
 
-                # message exists locally
+                # exists locally
                 if existing:
                     existing.org = org  # saves pre-fetching since we already have the org
 
                     if local_kwargs:
-                        if syncer.update_required(existing, incoming):
+                        if syncer.update_required(existing, incoming) or not existing.is_active:
                             for field, value in six.iteritems(local_kwargs):
                                 setattr(existing, field, value)
 
+                            existing.is_active = True
                             existing.save()
                             num_updated += 1
+
+                    elif existing.is_active:  # exists locally, but shouldn't now to due to model changes
+                        existing.release()
+                        num_deleted += 1
 
                 elif local_kwargs:
                     model.objects.create(**local_kwargs)
@@ -216,10 +221,10 @@ def sync_pull_contacts(org, syncer,
             with syncer.lock(syncer.identity(incoming)):
                 existing = syncer.fetch_local(org, syncer.identity(incoming))
 
-                # derive kwargs for the local contact model (none return here means don't keep)
+                # derive kwargs for the local model (none return here means don't keep)
                 local_kwargs = syncer.local_kwargs(org, incoming)
 
-                # contact exists locally
+                # exists locally
                 if existing:
                     existing.org = org  # saves pre-fetching since we already have the org
 
@@ -232,7 +237,7 @@ def sync_pull_contacts(org, syncer,
                             existing.save()
                             num_updated += 1
 
-                    elif existing.is_active:  # contact exists locally, but shouldn't now to due to model changes
+                    elif existing.is_active:  # exists locally, but shouldn't now to due to model changes
                         existing.release()
                         num_deleted += 1
 

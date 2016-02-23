@@ -137,6 +137,8 @@ class Message(models.Model):
 
     is_handled = models.BooleanField(default=False)
 
+    is_active = models.BooleanField(default=True)
+
     case = models.ForeignKey('cases.Case', null=True, related_name="incoming_messages")
 
     def __init__(self, *args, **kwargs):
@@ -169,7 +171,13 @@ class Message(models.Model):
         return matches
 
     def release(self):
-        self.delete()
+        """
+        Deletes this message, removing it from any labels
+        """
+        self.labels.clear()
+
+        self.is_active = False
+        self.save(update_fields=('is_active',))
 
     def __str__(self):
         return self.text if self.text else self.pk
