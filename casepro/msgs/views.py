@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
-from casepro.cases.models import Case, Label, Partner
+from casepro.backend.rapidpro import SYSTEM_LABEL_FLAGGED
+from casepro.cases.models import Case, Label
 from casepro.utils import parse_csv, str_to_bool, normalize
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django import forms
@@ -14,7 +15,7 @@ from enum import Enum
 from smartmin.views import SmartCRUDL, SmartTemplateView
 from smartmin.views import SmartListView, SmartCreateView, SmartReadView, SmartUpdateView, SmartDeleteView
 from temba_client.utils import parse_iso8601
-from .models import MessageExport, RemoteMessage, MessageAction, Outgoing, SYSTEM_LABEL_FLAGGED
+from .models import MessageExport, RemoteMessage, MessageAction, Outgoing
 from .tasks import message_export
 
 

@@ -385,6 +385,48 @@ class RapidProBackendTest(BaseCasesTest):
         mock_get_messages.assert_called_once_with(contacts=['C-002'], direction='I', statuses=['H'], _types=['I'], archived=False)
         mock_archive_messages.assert_called_once_with(messages=[123, 234])
 
+    @patch('dash.orgs.models.TembaClient1.unarchive_messages')
+    def test_restore_messages(self, mock_unarchive_messages):
+        # empty message list shouldn't make API call
+        self.backend.restore_messages(self.unicef, [])
+
+        mock_unarchive_messages.assert_not_called()
+
+        msg1 = Message.objects.create(org=self.unicef, backend_id=123, contact=self.bob, text="Hello", type="I", created_on=now())
+        msg2 = Message.objects.create(org=self.unicef, backend_id=234, contact=self.bob, text="Goodbye", type="I", created_on=now())
+
+        self.backend.restore_messages(self.unicef, [msg1, msg2])
+
+        mock_unarchive_messages.assert_called_once_with(messages=[123, 234])
+
+    @patch('dash.orgs.models.TembaClient1.label_messages')
+    def test_flag_messages(self, mock_label_messages):
+        # empty message list shouldn't make API call
+        self.backend.flag_messages(self.unicef, [])
+
+        mock_label_messages.assert_not_called()
+
+        msg1 = Message.objects.create(org=self.unicef, backend_id=123, contact=self.bob, text="Hello", type="I", created_on=now())
+        msg2 = Message.objects.create(org=self.unicef, backend_id=234, contact=self.bob, text="Goodbye", type="I", created_on=now())
+
+        self.backend.flag_messages(self.unicef, [msg1, msg2])
+
+        mock_label_messages.assert_called_once_with(messages=[123, 234], label='Flagged')
+
+    @patch('dash.orgs.models.TembaClient1.unlabel_messages')
+    def test_unflag_messages(self, mock_unlabel_messages):
+        # empty message list shouldn't make API call
+        self.backend.unflag_messages(self.unicef, [])
+
+        mock_unlabel_messages.assert_not_called()
+
+        msg1 = Message.objects.create(org=self.unicef, backend_id=123, contact=self.bob, text="Hello", type="I", created_on=now())
+        msg2 = Message.objects.create(org=self.unicef, backend_id=234, contact=self.bob, text="Goodbye", type="I", created_on=now())
+
+        self.backend.unflag_messages(self.unicef, [msg1, msg2])
+
+        mock_unlabel_messages.assert_called_once_with(messages=[123, 234], label='Flagged')
+
 
 @skip
 class PerfTest(BaseCasesTest):

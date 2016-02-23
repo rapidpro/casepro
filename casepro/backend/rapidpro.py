@@ -3,6 +3,9 @@ from __future__ import unicode_literals
 from . import BaseBackend
 
 
+SYSTEM_LABEL_FLAGGED = "Flagged"
+
+
 class RapidProBackend(BaseBackend):
     """
     RapidPro instance as a backend
@@ -103,3 +106,18 @@ class RapidProBackend(BaseBackend):
         messages = client.get_messages(contacts=[contact.uuid], direction='I', statuses=['H'], _types=['I'], archived=False)
         if messages:
             client.archive_messages(messages=[m.id for m in messages])
+
+    def restore_messages(self, org, messages):
+        if messages:
+            client = self._get_client(org, 1)
+            client.unarchive_messages(messages=[m.backend_id for m in messages])
+
+    def flag_messages(self, org, messages):
+        if messages:
+            client = self._get_client(org, 1)
+            client.label_messages(messages=[m.backend_id for m in messages], label=SYSTEM_LABEL_FLAGGED)
+
+    def unflag_messages(self, org, messages):
+        if messages:
+            client = self._get_client(org, 1)
+            client.unlabel_messages(messages=[m.backend_id for m in messages], label=SYSTEM_LABEL_FLAGGED)

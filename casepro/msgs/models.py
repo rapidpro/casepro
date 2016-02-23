@@ -6,6 +6,7 @@ import regex
 import six
 
 from casepro.backend import get_backend
+from casepro.backend.rapidpro import SYSTEM_LABEL_FLAGGED
 from casepro.contacts.models import Contact
 from casepro.utils import JSONEncoder, normalize, parse_csv
 from casepro.utils.email import send_email
@@ -25,8 +26,6 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from temba_client.utils import parse_iso8601
 
-
-SYSTEM_LABEL_FLAGGED = "Flagged"
 
 # only show unlabelled messages newer than 2 weeks
 DEFAULT_UNLABELLED_LIMIT_DAYS = 14

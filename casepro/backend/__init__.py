@@ -150,3 +150,33 @@ class BaseBackend(object):
         :param contact: the contact
         """
         pass
+
+    @abstractmethod
+    def restore_messages(self, org, messages):
+        """
+        Restores (un-archives) the given messages
+
+        :param org: the org
+        :param messages: the messages
+        """
+        pass
+
+    @abstractmethod
+    def flag_messages(self, org, messages):
+        """
+        Flags the given messages
+
+        :param org: the org
+        :param messages: the messages
+        """
+        pass
+
+    @abstractmethod
+    def unflag_messages(self, org, messages):
+        """
+        Un-flags the given messages
+
+        :param org: the org
+        :param messages: the messages
+        """
+        pass
