@@ -290,25 +290,85 @@ class RapidProBackendTest(BaseCasesTest):
         d5 = datetime(2014, 1, 1, 11, 0, tzinfo=pytz.UTC)
 
         mock_get_messages.side_effect = [
-            MockClientQuery([
-                TembaMessage.create(id=101, contact=ObjectRef.create(uuid='C-001', name="Ann"),
-                                    text="What is aids?", created_on=d1),
-                TembaMessage.create(id=102, contact=ObjectRef.create(uuid='C-002', name="Bob"),
-                                    text="Can I catch Hiv?", created_on=d2),
-                TembaMessage.create(id=103, contact=ObjectRef.create(uuid='C-003', name="Cat"),
-                                    text="I think I'm pregnant", created_on=d3),
-                TembaMessage.create(id=104, contact=ObjectRef.create(uuid='C-004', name="Don"),
-                                    text="Php is amaze", created_on=d4),
-                TembaMessage.create(id=105, contact=ObjectRef.create(uuid='C-005', name="Eve"),
-                                    text="Thanks for the pregnancy/HIV info", created_on=d5)
+            MockClientQuery([  # first call is to get inbox messages
+                TembaMessage.create(id=101,
+                                    contact=ObjectRef.create(uuid='C-001', name="Ann"),
+                                    type='inbox',
+                                    text="What is aids?",
+                                    archived=False,
+                                    labels=[
+                                        ObjectRef.create(uuid='L-001', name="AIDS"),  # existing label
+                                        ObjectRef.create(uuid='L-009', name="Flagged"),  # pseudo-label
+                                    ],
+                                    created_on=d1),
+                TembaMessage.create(id=102,
+                                    contact=ObjectRef.create(uuid='C-002', name="Bob"),
+                                    type='inbox',
+                                    text="Can I catch Hiv?",
+                                    archived=False,
+                                    labels=[
+                                        ObjectRef.create(uuid='L-007', name="Important"),  # new label
+                                    ],
+                                    created_on=d2),
+                TembaMessage.create(id=103,
+                                    contact=ObjectRef.create(uuid='C-003', name="Cat"),
+                                    type='inbox',
+                                    text="I think I'm pregnant",
+                                    archived=False,
+                                    labels=[],
+                                    created_on=d3),
+            ]),
+            MockClientQuery([  # second call is to get flow messages
+                TembaMessage.create(id=104,
+                                    contact=ObjectRef.create(uuid='C-004', name="Don"),
+                                    type='flow',
+                                    text="Php is amaze",
+                                    archived=False,
+                                    labels=[],
+                                    created_on=d4),
+                TembaMessage.create(id=105,
+                                    contact=ObjectRef.create(uuid='C-005', name="Eve"),
+                                    type='flow',
+                                    text="Thanks for the pregnancy/HIV info",
+                                    archived=False,
+                                    labels=[],
+                                    created_on=d5)
             ])
         ]
 
-        self.backend.pull_messages(self.unicef, d1, d5)
+        self.assertEqual(self.backend.pull_messages(self.unicef, d1, d5), (5, 0, 0))
 
         self.assertEqual(Contact.objects.filter(is_stub=False).count(), 2)
         self.assertEqual(Contact.objects.filter(is_stub=True).count(), 3)
         self.assertEqual(Message.objects.filter(is_handled=False).count(), 5)
+
+        msg1 = Message.objects.get(backend_id=101, type='I', text="What is aids?", is_archived=False, is_flagged=True)
+        important = Label.objects.get(org=self.unicef, uuid='L-007', name="Important")
+
+        self.assertEqual(set(msg1.labels.all()), {self.aids})
+
+        # a message is updated in RapidPro
+        mock_get_messages.side_effect = [
+            MockClientQuery([
+                TembaMessage.create(id=101,
+                                    contact=ObjectRef.create(uuid='C-001', name="Ann"),
+                                    type='inbox',
+                                    text="What is aids?",
+                                    archived=True,
+                                    labels=[
+                                        ObjectRef.create(uuid='L-001', name="AIDS"),
+                                        ObjectRef.create(uuid='L-007', name="Important")
+                                    ],
+                                    created_on=d1)
+            ]),
+            MockClientQuery([])
+        ]
+
+        self.assertEqual(self.backend.pull_messages(self.unicef, d1, d5), (0, 1, 0))
+
+        msg1 = Message.objects.get(backend_id=101, type='I', text="What is aids?", is_archived=True, is_flagged=False)
+
+        self.assertEqual(set(msg1.labels.all()), {self.aids, important})
 
     @patch('dash.orgs.models.TembaClient1.create_label')
     @patch('dash.orgs.models.TembaClient1.get_labels')

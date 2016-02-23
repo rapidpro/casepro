@@ -9,6 +9,7 @@ import six
 
 from casepro.utils import is_dict_equal
 from dash.utils import intersection
+from itertools import chain
 from temba_client.v1.types import Contact as TembaContact
 
 
@@ -80,14 +81,22 @@ def sync_local_to_incoming(org, model, incoming_objects):
     return num_created, num_updated, num_deleted
 
 
-def sync_pull_messages(org, model, modified_after, modified_before, progress_callback=None):
+def sync_pull_messages(org, model,
+                       modified_after, modified_before,
+                       select_related=(), prefetch_related=(),
+                       progress_callback=None):
     """
     Pull modified messages from RapidPro and syncs with local messages.
+
+    :param * org: the org
+    :param type model: the local message model
+    :param * modified_after: the last time we pulled contacts, if None, sync all contacts
+    :param * modified_before: the last time we pulled contacts, if None, sync all contacts
+    :param [str] select_related: select related fields when fetching local contacts
+    :param [str] prefetch_related: prefetch related fields when fetching local contacts
+    :param * progress_callback: callable for tracking progress - called for each fetch with number of contacts fetched
+    :return: tuple containing counts of created, updated and deleted messages
     """
-    # TODO this needs to become a proper sync routine once the RapidPro API exposes modified messages
-
-    from casepro.contacts.models import Contact
-
     client = org.get_temba_client(api_version=2)
 
     num_synced = 0
@@ -96,26 +105,42 @@ def sync_pull_messages(org, model, modified_after, modified_before, progress_cal
     num_deleted = 0
 
     inbox_query = client.get_messages(folder='inbox', after=modified_after, before=modified_before)
+    flows_query = client.get_messages(folder='flows', after=modified_after, before=modified_before)
 
-    for incoming_batch in inbox_query.iterfetches(retry_on_rate_exceed=True):
-        incoming_batch_ids = [m.id for m in incoming_batch]
-        existing_by_backend_id = {m.backend_id for m in model.objects.filter(backend_id__in=incoming_batch_ids)}
+    all_message_fetches = chain(
+        inbox_query.iterfetches(retry_on_rate_exceed=True),
+        flows_query.iterfetches(retry_on_rate_exceed=True)
+    )
 
+    for incoming_batch in all_message_fetches:
         for incoming in incoming_batch:
-            # check if message already exists
-            if incoming.id in existing_by_backend_id:
-                continue
+            with model.sync_lock(incoming.id):
+                existing_qs = model.objects.filter(org=org, backend_id=incoming.id)
+                if select_related:
+                    existing_qs = existing_qs.select_related(*select_related)
+                if prefetch_related:
+                    existing_qs = existing_qs.prefetch_related(*prefetch_related)
 
-            contact = Contact.get_or_create(org, incoming.contact.uuid)
+                existing = existing_qs.first()
 
-            model.objects.create(org=org,
-                                 backend_id=incoming.id,
-                                 contact=contact,
-                                 type='I' if incoming.type == 'inbox' else 'F',
-                                 text=incoming.text,
-                                 created_on=incoming.created_on)
+                # derive kwargs for the local message model (none return here means don't keep)
+                local_kwargs = model.sync_get_kwargs(org, incoming)
 
-            num_created += 1
+                # message exists locally
+                if existing:
+                    existing.org = org  # saves pre-fetching since we already have the org
+
+                    if local_kwargs:
+                        if model.sync_update_required(existing, incoming):
+                            for field, value in six.iteritems(local_kwargs):
+                                setattr(existing, field, value)
+
+                            existing.save()
+                            num_updated += 1
+
+                elif local_kwargs:
+                    model.objects.create(**local_kwargs)
+                    num_created += 1
 
         num_synced += len(incoming_batch)
         if progress_callback:
@@ -154,10 +179,6 @@ def sync_pull_contacts(org, model,
     active_query = client.get_contacts(after=modified_after, before=modified_before)
 
     for incoming_batch in active_query.iterfetches(retry_on_rate_exceed=True):
-
-        # TODO figure out it is still worth fetching the whole batch of contacts here to optimise for the update case,
-        # even tho we have to potentially re-fetch below in case contacts were created by the message pulling process
-
         for incoming in incoming_batch:
             with model.sync_lock(incoming.uuid):
                 existing_qs = model.objects.filter(org=org, uuid=incoming.uuid)

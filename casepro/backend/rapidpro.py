@@ -62,6 +62,8 @@ class RapidProBackend(BaseBackend):
                 org, Message,
                 modified_after=modified_after,
                 modified_before=modified_before,
+                select_related=('contact',),
+                prefetch_related=('labels',),
                 progress_callback=progress_callback
         )
 

@@ -5,6 +5,7 @@ import pytz
 import six
 
 from casepro.cases.models import Case, CaseEvent
+from casepro.contacts.models import Contact
 from casepro.test import BaseCasesTest
 from datetime import datetime
 from django.core.urlresolvers import reverse
@@ -13,7 +14,8 @@ from django.utils import timezone
 from mock import patch, call
 from temba_client.clients import Pager
 from temba_client.utils import format_iso8601
-from temba_client.v1.types import Contact as TembaContact, Message as TembaMessage, Broadcast as TembaBroadcast
+from temba_client.v1.types import Broadcast as TembaBroadcast
+from temba_client.v2.types import Contact as TembaContact, Message as TembaMessage, ObjectRef
 from .models import Label, Message, MessageAction, RemoteMessage, Outgoing, MessageExport
 from .tasks import handle_messages
 
@@ -186,6 +188,75 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertFalse(pregnancy.is_active)
 
 
+class MessageTest(BaseCasesTest):
+    def test_save(self):
+        # start with no labels or contacts
+        Label.objects.all().delete()
+
+        d1 = datetime(2015, 12, 25, 13, 30, 0, 0, pytz.UTC)
+
+        kwargs = Message.sync_get_kwargs(self.unicef, TembaMessage.create(
+                id=123456789,
+                contact=ObjectRef.create(uuid='C-001', name="Ann"),
+                urn="twitter:ann123",
+                direction='in',
+                type='inbox',
+                status='handled',
+                archived=False,
+                text="I have lots of questions!",
+                labels=[ObjectRef.create(uuid='L-001', name="Spam"), ObjectRef.create(uuid='L-009', name="Flagged")],
+                created_on=d1
+        ))
+
+        self.assertEqual(kwargs, {
+            'org': self.unicef,
+            'backend_id': 123456789,
+            'type': 'I',
+            'text': "I have lots of questions!",
+            'is_flagged': True,
+            'is_archived': False,
+            'created_on': d1,
+            '__data__contact': ("C-001", "Ann"),
+            '__data__labels': [("L-001", "Spam")],
+        })
+
+        # check saving by result of sync_get_kwargs
+        message = Message.objects.create(**kwargs)
+
+        ann = Contact.objects.get(org=self.unicef, uuid="C-001", name="Ann")
+
+        self.assertEqual(message.backend_id, 123456789)
+        self.assertEqual(message.contact, ann)
+        self.assertEqual(message.type, 'I')
+        self.assertEqual(message.text, "I have lots of questions!")
+        self.assertEqual(message.is_flagged, True)
+        self.assertEqual(message.is_archived, False)
+        self.assertEqual(message.created_on, d1)
+
+        spam = Label.objects.get(org=self.unicef, uuid="L-001", name="Spam")
+
+        self.assertEqual(set(message.labels.all()), {spam})
+
+        message = Message.objects.select_related('org').prefetch_related('labels').get(backend_id=123456789)
+
+        # check there are no extra db hits when saving without change, assuming appropriate pre-fetches (as above)
+        with self.assertNumQueries(1):
+            setattr(message, '__data__labels', [("L-001", "Spam")])
+            message.save()
+
+        # check removing a group and adding new ones
+        with self.assertNumQueries(7):
+            setattr(message, '__data__labels', [("L-002", "Feedback"), ("L-003", "Important")])
+            message.save()
+
+        message = Message.objects.get(backend_id=123456789)
+
+        feedback = Label.objects.get(org=self.unicef, uuid="L-002", name="Feedback")
+        important = Label.objects.get(org=self.unicef, uuid="L-003", name="Important")
+
+        self.assertEqual(set(message.labels.all()), {feedback, important})
+
+
 class RemoteMessageTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient1.archive_messages')
     def test_bulk_archive(self, mock_archive_messages):
@@ -199,10 +270,12 @@ class RemoteMessageTest(BaseCasesTest):
         mock_archive_messages.assert_called_once_with([123, 234, 345])
 
     def test_annotate_with_sender(self):
+        from temba_client.v1.types import Message as TembaMessage1
+
         d1 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
         Outgoing.objects.create(org=self.unicef, activity='C', broadcast_id=201, recipient_count=1,
                                 created_by=self.user2, created_on=d1)
-        msg = TembaMessage.create(id=101, broadcast=201, text="Yo")
+        msg = TembaMessage1.create(id=101, broadcast=201, text="Yo")
         RemoteMessage.annotate_with_sender(self.unicef, [msg])
         self.assertEqual(msg.sender, self.user2)
 
@@ -237,8 +310,6 @@ class MessageViewsTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient1.label_messages')
     def test_history(self, mock_label_messages):
         mock_label_messages.return_value = None
-        TembaMessage.create(id=101, contact='C-001', text="Is this thing on?", created_on=timezone.now())
-        TembaMessage.create(id=102, contact='C-002', text="I ♡ RapidPro", created_on=timezone.now())
 
         url = reverse('msgs.message_history', kwargs={'id': 102})
 
@@ -262,7 +333,9 @@ class MessageViewsTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient1.label_messages')
     @patch('dash.orgs.models.TembaClient1.unlabel_messages')
     def test_label(self, mock_unlabel_messages, mock_label_messages, mock_get_message):
-        msg = TembaMessage.create(id=101, contact='C-002', text="Huh?", created_on=timezone.now(), labels=['AIDS'])
+        from temba_client.v1.types import Message as TembaMessage1
+
+        msg = TembaMessage1.create(id=101, contact='C-002', text="Huh?", created_on=timezone.now(), labels=['AIDS'])
         mock_get_message.return_value = msg
 
         url = reverse('msgs.message_label', kwargs={'id': 101})
@@ -279,11 +352,13 @@ class MessageViewsTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient1.get_messages')
     @patch('dash.orgs.models.TembaClient1.pager')
     def test_search(self, mock_pager, mock_get_messages):
+        from temba_client.v1.types import Message as TembaMessage1
+
         url = reverse('msgs.message_search')
 
-        msg1 = TembaMessage.create(id=101, contact='C-001', text="What is HIV?", created_on=timezone.now(), labels=['AIDS'])
-        msg2 = TembaMessage.create(id=102, contact='C-002', text="I ♡ RapidPro", created_on=timezone.now(), labels=[])
-        msg3 = TembaMessage.create(id=103, contact='C-003', text="RapidCon 2016!", created_on=timezone.now(), labels=[])
+        msg1 = TembaMessage1.create(id=101, contact='C-001', text="What is HIV?", created_on=timezone.now(), labels=['AIDS'])
+        msg2 = TembaMessage1.create(id=102, contact='C-002', text="I ♡ RapidPro", created_on=timezone.now(), labels=[])
+        msg3 = TembaMessage1.create(id=103, contact='C-003', text="RapidCon 2016!", created_on=timezone.now(), labels=[])
 
         pager = Pager(start_page=1)
         mock_pager.return_value = pager
@@ -374,11 +449,13 @@ class MessageExportCRUDLTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient1.get_messages')
     @patch('dash.orgs.models.TembaClient1.get_contacts')
     def test_create_and_read(self, mock_get_contacts, mock_get_messages):
+        from temba_client.v1.types import Message as TembaMessage1
+
         mock_get_messages.return_value = [
-            TembaMessage.create(id=101, contact='C-001', text="What is HIV?", created_on=timezone.now(),
-                                labels=['AIDS']),
-            TembaMessage.create(id=102, contact='C-002', text="I ♡ RapidPro", created_on=timezone.now(),
-                                labels=[])
+            TembaMessage1.create(id=101, contact='C-001', text="What is HIV?", created_on=timezone.now(),
+                                 labels=['AIDS']),
+            TembaMessage1.create(id=102, contact='C-002', text="I ♡ RapidPro", created_on=timezone.now(),
+                                 labels=[])
         ]
         mock_get_contacts.return_value = [
             TembaContact.create(uuid='C-001', urns=[], groups=[],

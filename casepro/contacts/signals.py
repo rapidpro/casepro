@@ -11,7 +11,7 @@ from .models import Contact, SAVE_GROUPS_ATTR
 @receiver(post_save, sender=Contact)
 def update_contact_groups(sender, instance, created, **kwargs):
     """
-    Save signal handler to update the contact groups when groups are specified as attribute on contact object
+    Save signal handler to update the contact groups when groups are specified as attribute on the contact object
     """
     if not hasattr(instance, SAVE_GROUPS_ATTR):
         return

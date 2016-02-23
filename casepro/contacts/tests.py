@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 from casepro.test import BaseCasesTest
-from temba_client.v2.types import Contact as TembaContact, ObjectRef as TembaObjectRef
+from temba_client.v2.types import Contact as TembaContact, ObjectRef
 from .models import Contact, Group, Field
 
 
@@ -17,7 +17,7 @@ class ContactTest(BaseCasesTest):
                 name="Bob McFlow",
                 language="eng",
                 urns=["twitter:bobflow"],
-                groups=[TembaObjectRef.create(uuid="G-001", name="Customers")],
+                groups=[ObjectRef.create(uuid="G-001", name="Customers")],
                 fields={'age': "34"},
                 failed=False,
                 blocked=False

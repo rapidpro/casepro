@@ -24,11 +24,17 @@ from django.db import models
 from django.utils.timezone import now
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
+from redis_cache import get_redis_connection
 from temba_client.utils import parse_iso8601
 
 
 # only show unlabelled messages newer than 2 weeks
 DEFAULT_UNLABELLED_LIMIT_DAYS = 14
+
+SAVE_CONTACT_ATTR = '__data__contact'
+SAVE_LABELS_ATTR = '__data__labels'
+
+MESSAGE_LOCK_KEY = 'message-lock:%s'
 
 
 @python_2_unicode_compatible
@@ -38,7 +44,7 @@ class Label(models.Model):
     """
     KEYWORD_MIN_LENGTH = 3
 
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='new_labels')
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='labels')
 
     uuid = models.CharField(max_length=36, unique=True)
 
@@ -142,13 +148,68 @@ class Message(models.Model):
 
     text = models.TextField(max_length=640, verbose_name=_("Text"))
 
-    is_handled = models.BooleanField(default=False)
+    labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this message"))
+
+    is_flagged = models.BooleanField(default=False)
 
     is_archived = models.BooleanField(default=False)
 
     created_on = models.DateTimeField()
 
+    is_handled = models.BooleanField(default=False)
+
     case = models.ForeignKey('cases.Case', null=True, related_name="incoming_messages")
+
+    def __init__(self, *args, **kwargs):
+        if SAVE_CONTACT_ATTR in kwargs:
+            setattr(self, SAVE_CONTACT_ATTR, kwargs.pop(SAVE_CONTACT_ATTR))
+        if SAVE_LABELS_ATTR in kwargs:
+            setattr(self, SAVE_LABELS_ATTR, kwargs.pop(SAVE_LABELS_ATTR))
+
+        super(Message, self).__init__(*args, **kwargs)
+
+    def lock(self):
+        return self._lock(self.backend_id)
+
+    @classmethod
+    def sync_lock(cls, backend_id):
+        return cls._lock(backend_id)
+
+    @classmethod
+    def _lock(cls, backend_id):
+        r = get_redis_connection()
+        key = MESSAGE_LOCK_KEY % backend_id
+        return r.lock(key, timeout=60)
+
+    @classmethod
+    def sync_get_kwargs(cls, org, incoming):
+        # labels are updated via a post save signal handler
+        labels = [(l.uuid, l.name) for l in incoming.labels if l.name != SYSTEM_LABEL_FLAGGED]
+
+        return {
+            'org': org,
+            'backend_id': incoming.id,
+            'type': 'I' if incoming.type == 'inbox' else 'F',
+            'text': incoming.text,
+            'is_flagged': SYSTEM_LABEL_FLAGGED in [l.name for l in incoming.labels],
+            'is_archived': incoming.archived,
+            'created_on': incoming.created_on,
+            SAVE_CONTACT_ATTR: (incoming.contact.uuid, incoming.contact.name),
+            SAVE_LABELS_ATTR: labels,
+        }
+
+    @classmethod
+    def sync_update_required(cls, local, incoming):
+        if local.is_flagged != (SYSTEM_LABEL_FLAGGED in [l.name for l in incoming.labels]):
+            return True
+
+        if local.is_archived != incoming.archived:
+            return True
+
+        local_label_uuids = [l.uuid for l in local.labels.all()]
+        incoming_label_uuids = [l.uuid for l in incoming.labels if l.name != SYSTEM_LABEL_FLAGGED]
+
+        return local_label_uuids != incoming_label_uuids
 
     def auto_label(self, labels_by_keyword):
         """
@@ -164,6 +225,10 @@ class Message(models.Model):
                 matches.add(label)
 
         return matches
+
+    def release(self):
+        # TODO
+        pass
 
     def __str__(self):
         return self.text if self.text else self.pk
