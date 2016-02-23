@@ -28,9 +28,13 @@ class LabelForm(forms.ModelForm):
                                help_text=_("Match messages containing any of these words"))
 
     def __init__(self, *args, **kwargs):
-        org = kwargs.pop('org')
+        is_create = kwargs.pop('is_create')
 
         super(LabelForm, self).__init__(*args, **kwargs)
+
+        # don't let users change names of existing labels
+        if not is_create:
+            self.fields['name'].widget = forms.TextInput(attrs={'readonly': 'readonly'})
 
     def clean_name(self):
         name = self.cleaned_data['name'].strip()
@@ -62,19 +66,17 @@ class LabelForm(forms.ModelForm):
         fields = ('name', 'description', 'keywords')
 
 
-class LabelFormMixin(object):
-    def get_form_kwargs(self):
-        kwargs = super(LabelFormMixin, self).get_form_kwargs()
-        kwargs['org'] = self.request.user.get_org()
-        return kwargs
-
-
 class LabelCRUDL(SmartCRUDL):
     actions = ('create', 'update', 'delete', 'list')
     model = Label
 
-    class Create(OrgPermsMixin, LabelFormMixin, SmartCreateView):
+    class Create(OrgPermsMixin, SmartCreateView):
         form_class = LabelForm
+
+        def get_form_kwargs(self):
+            kwargs = super(LabelCRUDL.Create, self).get_form_kwargs()
+            kwargs['is_create'] = True
+            return kwargs
 
         def save(self, obj):
             data = self.form.cleaned_data
@@ -84,8 +86,13 @@ class LabelCRUDL(SmartCRUDL):
             keywords = parse_csv(data['keywords'])
             self.object = Label.create(org, name, description, keywords)
 
-    class Update(OrgObjPermsMixin, LabelFormMixin, SmartUpdateView):
+    class Update(OrgObjPermsMixin, SmartUpdateView):
         form_class = LabelForm
+
+        def get_form_kwargs(self):
+            kwargs = super(LabelCRUDL.Update, self).get_form_kwargs()
+            kwargs['is_create'] = False
+            return kwargs
 
         def derive_initial(self):
             initial = super(LabelCRUDL.Update, self).derive_initial()
