@@ -7,6 +7,7 @@ Sync support for contacts, groups and fields
 import logging
 import six
 
+from abc import ABCMeta, abstractmethod
 from casepro.utils import is_dict_equal
 from dash.utils import intersection
 from itertools import chain
@@ -16,42 +17,91 @@ from temba_client.v1.types import Contact as TembaContact
 logger = logging.getLogger(__name__)
 
 
-def sync_local_to_incoming(org, model, incoming_objects):
+class BaseSyncer(object):
     """
-    Syncs an org's entire set of local instances of a model to match the set of incoming objects. Requires that the
-    local model define the following class methods:
+    Base class for classes that describe how to synchronize particular local models against data from the RapidPro API
+    """
+    __metaclass__ = ABCMeta
 
-        def sync_identity(cls, instance) - returns the unique identifier of the given local or incoming object
-        def sync_get_kwargs(org, incoming) - returns kwargs used to create new local instance or update existing
-        def sync_update_required(cls, local, incoming) - returns whether the local instance differs from the incoming
+    model = None
+
+    def identity(self, local_or_remote):
+        """
+        Gets the unique identity of the local model instance or remote object
+        :param local_or_remote: the local model instance or remote object
+        :return: the unique identity
+        """
+        return local_or_remote.uuid
+
+    def fetch_all_local(self, org):
+        """
+        Fetches all local model instances
+        :param org: the org
+        :return: the queryset
+        """
+        return self.model.objects.filter(org=org)
+
+    def fetch_local(self, org, identifier):
+        """
+        Fetches a local model instance
+        :param org: the org
+        :param identifier: the unique identifier
+        :return: the instance
+        """
+        return self.fetch_all_local(org).filter(uuid=identifier).first()
+
+    @abstractmethod
+    def local_kwargs(self, org, remote):
+        """
+        Generates kwargs for creating or updating a local model instance from a remote object
+        :param org: the org
+        :param remote: the incoming remote object
+        :return: the kwargs
+        """
+        pass
+
+    def update_required(self, local, remote):
+        """
+        Determines whether local instance differs from the remote object and so needs to be updated
+        :param local:
+        :param remote:
+        :return:
+        """
+        return True
+
+
+def sync_local_to_set(org, syncer, remote_objects):
+    """
+    Syncs an org's entire set of local instances of a model to match the set of incoming objects
 
     :param org: the org
-    :param model: the local model
-    :param incoming_objects: the set of incoming objects
+    :param syncer: the syncer implementation
+    :param remote_objects: the set of incoming remote objects
     :return: tuple of number of local objects created, updated and deleted
     """
+    model = syncer.model
     num_created = 0
     num_updated = 0
     num_deleted = 0
 
-    existing_by_identity = {model.sync_identity(g): g for g in model.objects.filter(org=org)}
+    existing_by_identity = {syncer.identity(g): g for g in syncer.fetch_all_local(org)}
     synced_identifiers = set()
 
     # any local active objects that need deactivated
     invalid_existing_ids = []
 
-    for incoming in incoming_objects:
-        existing = existing_by_identity.get(model.sync_identity(incoming))
+    for incoming in remote_objects:
+        existing = existing_by_identity.get(syncer.identity(incoming))
 
         # derive kwargs for the local model (none returned here means don't keep)
-        local_kwargs = model.sync_get_kwargs(org, incoming)
+        local_kwargs = syncer.local_kwargs(org, incoming)
 
         # item exists locally
         if existing:
             existing.org = org  # saves pre-fetching since we already have the org
 
             if local_kwargs:
-                if model.sync_update_required(existing, incoming) or not existing.is_active:
+                if syncer.update_required(existing, incoming) or not existing.is_active:
                     for field, value in six.iteritems(local_kwargs):
                         setattr(existing, field, value)
 
@@ -67,11 +117,11 @@ def sync_local_to_incoming(org, model, incoming_objects):
             model.objects.create(**local_kwargs)
             num_created += 1
 
-        synced_identifiers.add(model.sync_identity(incoming))
+        synced_identifiers.add(syncer.identity(incoming))
 
     # active local objects which weren't in the remote set need to be deleted
     for existing in existing_by_identity.values():
-        if existing.is_active and model.sync_identity(existing) not in synced_identifiers:
+        if existing.is_active and syncer.identity(existing) not in synced_identifiers:
             invalid_existing_ids.append(existing.pk)
             num_deleted += 1
 
@@ -81,24 +131,22 @@ def sync_local_to_incoming(org, model, incoming_objects):
     return num_created, num_updated, num_deleted
 
 
-def sync_pull_messages(org, model,
+def sync_pull_messages(org, syncer,
                        modified_after, modified_before,
-                       select_related=(), prefetch_related=(),
                        progress_callback=None):
     """
     Pull modified messages from RapidPro and syncs with local messages.
 
     :param * org: the org
-    :param type model: the local message model
-    :param * modified_after: the last time we pulled contacts, if None, sync all contacts
-    :param * modified_before: the last time we pulled contacts, if None, sync all contacts
-    :param [str] select_related: select related fields when fetching local contacts
-    :param [str] prefetch_related: prefetch related fields when fetching local contacts
-    :param * progress_callback: callable for tracking progress - called for each fetch with number of contacts fetched
+    :param * syncer: the local model syncer
+    :param * modified_after: the last time we pulled contacts, if None, sync all messages
+    :param * modified_before: the last time we pulled contacts, if None, sync all messages
+    :param * progress_callback: callable for tracking progress - called for each fetch with number of messages fetched
     :return: tuple containing counts of created, updated and deleted messages
     """
     client = org.get_temba_client(api_version=2)
 
+    model = syncer.model
     num_synced = 0
     num_created = 0
     num_updated = 0
@@ -114,24 +162,18 @@ def sync_pull_messages(org, model,
 
     for incoming_batch in all_message_fetches:
         for incoming in incoming_batch:
-            with model.sync_lock(incoming.id):
-                existing_qs = model.objects.filter(org=org, backend_id=incoming.id)
-                if select_related:
-                    existing_qs = existing_qs.select_related(*select_related)
-                if prefetch_related:
-                    existing_qs = existing_qs.prefetch_related(*prefetch_related)
-
-                existing = existing_qs.first()
+            with syncer.lock(syncer.identity(incoming)):
+                existing = syncer.fetch_local(org, syncer.identity(incoming))
 
                 # derive kwargs for the local message model (none return here means don't keep)
-                local_kwargs = model.sync_get_kwargs(org, incoming)
+                local_kwargs = syncer.local_kwargs(org, incoming)
 
                 # message exists locally
                 if existing:
                     existing.org = org  # saves pre-fetching since we already have the org
 
                     if local_kwargs:
-                        if model.sync_update_required(existing, incoming):
+                        if syncer.update_required(existing, incoming):
                             for field, value in six.iteritems(local_kwargs):
                                 setattr(existing, field, value)
 

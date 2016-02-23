@@ -195,33 +195,17 @@ class MessageTest(BaseCasesTest):
 
         d1 = datetime(2015, 12, 25, 13, 30, 0, 0, pytz.UTC)
 
-        kwargs = Message.sync_get_kwargs(self.unicef, TembaMessage.create(
-                id=123456789,
-                contact=ObjectRef.create(uuid='C-001', name="Ann"),
-                urn="twitter:ann123",
-                direction='in',
-                type='inbox',
-                status='handled',
-                archived=False,
-                text="I have lots of questions!",
-                labels=[ObjectRef.create(uuid='L-001', name="Spam"), ObjectRef.create(uuid='L-009', name="Flagged")],
-                created_on=d1
-        ))
-
-        self.assertEqual(kwargs, {
-            'org': self.unicef,
-            'backend_id': 123456789,
-            'type': 'I',
-            'text': "I have lots of questions!",
-            'is_flagged': True,
-            'is_archived': False,
-            'created_on': d1,
-            '__data__contact': ("C-001", "Ann"),
-            '__data__labels': [("L-001", "Spam")],
-        })
-
-        # check saving by result of sync_get_kwargs
-        message = Message.objects.create(**kwargs)
+        message = Message.objects.create(
+            org=self.unicef,
+            backend_id=123456789,
+            type='I',
+            text="I have lots of questions!",
+            is_flagged=True,
+            is_archived=False,
+            created_on=d1,
+            __data__contact=("C-001", "Ann"),
+            __data__labels=[("L-001", "Spam")]
+        )
 
         ann = Contact.objects.get(org=self.unicef, uuid="C-001", name="Ann")
 

@@ -48,23 +48,6 @@ class Group(models.Model):
     def get_suspend_from(cls, org):
         return cls.get_all(org).filter(suspend_from=True)
 
-    @classmethod
-    def sync_identity(cls, instance):
-        return instance.uuid
-
-    @classmethod
-    def sync_get_kwargs(cls, org, incoming):
-        return {
-            'org': org,
-            'uuid': incoming.uuid,
-            'name': incoming.name,
-            'count': incoming.count,
-        }
-
-    @classmethod
-    def sync_update_required(cls, local, incoming):
-        return local.name != incoming.name or local.count != incoming.count
-
     def as_json(self):
         return {'id': self.pk, 'uuid': self.uuid, 'name': self.name, 'count': self.count}
 
@@ -107,23 +90,6 @@ class Field(models.Model):
         if visible is not None:
             qs = qs.filter(is_visible=visible)
         return qs
-
-    @classmethod
-    def sync_identity(cls, instance):
-        return instance.key
-
-    @classmethod
-    def sync_get_kwargs(cls, org, incoming):
-        return {
-            'org': org,
-            'key': incoming.key,
-            'label': incoming.label,
-            'value_type': cls.TEMBA_TYPES.get(incoming.value_type, cls.TYPE_TEXT)
-        }
-
-    @classmethod
-    def sync_update_required(cls, local, incoming):
-        return local.label != incoming.label or local.value_type != cls.TEMBA_TYPES.get(incoming.value_type)
 
     def __str__(self):
         return self.key

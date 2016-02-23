@@ -14,7 +14,47 @@ from mock import patch
 from temba_client.v2.types import Group as TembaGroup, Field as TembaField, Label as TembaLabel, ObjectRef
 from temba_client.v2.types import Contact as TembaContact, Message as TembaMessage
 from unittest import skip
-from ..rapidpro import RapidProBackend
+from ..rapidpro import RapidProBackend, MessageSyncer
+
+
+class MessageSyncerTest(BaseCasesTest):
+    syncer = MessageSyncer()
+
+    def test_identity(self):
+        ann = self.create_contact(self.unicef, 'C-001', "Ann")
+        msg1 = Message.objects.create(org=self.unicef, backend_id=123456789, type='I',
+                                      text="Yes", contact=ann, created_on=now())
+
+        self.assertEqual(self.syncer.identity(msg1), 123456789)
+        self.assertEqual(self.syncer.identity(TembaMessage.create(id=123)), 123)
+
+    def test_local_kwargs(self):
+        d1 = datetime(2015, 12, 25, 13, 30, 0, 0, pytz.UTC)
+
+        kwargs = self.syncer.local_kwargs(self.unicef, TembaMessage.create(
+                id=123456789,
+                contact=ObjectRef.create(uuid='C-001', name="Ann"),
+                urn="twitter:ann123",
+                direction='in',
+                type='inbox',
+                status='handled',
+                archived=False,
+                text="I have lots of questions!",
+                labels=[ObjectRef.create(uuid='L-001', name="Spam"), ObjectRef.create(uuid='L-009', name="Flagged")],
+                created_on=d1
+        ))
+
+        self.assertEqual(kwargs, {
+            'org': self.unicef,
+            'backend_id': 123456789,
+            'type': 'I',
+            'text': "I have lots of questions!",
+            'is_flagged': True,
+            'is_archived': False,
+            'created_on': d1,
+            '__data__contact': ("C-001", "Ann"),
+            '__data__labels': [("L-001", "Spam")],
+        })
 
 
 class RapidProBackendTest(BaseCasesTest):

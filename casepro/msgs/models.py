@@ -6,7 +6,6 @@ import regex
 import six
 
 from casepro.backend import get_backend
-from casepro.backend.rapidpro import SYSTEM_LABEL_FLAGGED
 from casepro.contacts.models import Contact
 from casepro.utils import JSONEncoder, normalize, parse_csv
 from casepro.utils.email import send_email
@@ -87,26 +86,6 @@ class Label(models.Model):
                 labels_by_keyword[keyword] = label
         return labels_by_keyword
 
-    @classmethod
-    def sync_identity(cls, instance):
-        return instance.uuid
-
-    @classmethod
-    def sync_get_kwargs(cls, org, incoming):
-        # don't create locally if this is just the pseudo-label for flagging
-        if incoming.name == SYSTEM_LABEL_FLAGGED:
-            return None
-
-        return {
-            'org': org,
-            'uuid': incoming.uuid,
-            'name': incoming.name,
-        }
-
-    @classmethod
-    def sync_update_required(cls, local, incoming):
-        return local.name != incoming.name
-
     def get_keywords(self):
         return parse_csv(self.keywords) if self.keywords else []
 
@@ -142,7 +121,7 @@ class Message(models.Model):
 
     backend_id = models.IntegerField(unique=True, help_text=_("Backend identifier for this message"))
 
-    contact = models.ForeignKey('contacts.Contact')
+    contact = models.ForeignKey(Contact)
 
     type = models.CharField(max_length=1)
 
@@ -168,48 +147,11 @@ class Message(models.Model):
 
         super(Message, self).__init__(*args, **kwargs)
 
-    def lock(self):
-        return self._lock(self.backend_id)
-
     @classmethod
-    def sync_lock(cls, backend_id):
-        return cls._lock(backend_id)
-
-    @classmethod
-    def _lock(cls, backend_id):
+    def lock(cls, backend_id):
         r = get_redis_connection()
         key = MESSAGE_LOCK_KEY % backend_id
         return r.lock(key, timeout=60)
-
-    @classmethod
-    def sync_get_kwargs(cls, org, incoming):
-        # labels are updated via a post save signal handler
-        labels = [(l.uuid, l.name) for l in incoming.labels if l.name != SYSTEM_LABEL_FLAGGED]
-
-        return {
-            'org': org,
-            'backend_id': incoming.id,
-            'type': 'I' if incoming.type == 'inbox' else 'F',
-            'text': incoming.text,
-            'is_flagged': SYSTEM_LABEL_FLAGGED in [l.name for l in incoming.labels],
-            'is_archived': incoming.archived,
-            'created_on': incoming.created_on,
-            SAVE_CONTACT_ATTR: (incoming.contact.uuid, incoming.contact.name),
-            SAVE_LABELS_ATTR: labels,
-        }
-
-    @classmethod
-    def sync_update_required(cls, local, incoming):
-        if local.is_flagged != (SYSTEM_LABEL_FLAGGED in [l.name for l in incoming.labels]):
-            return True
-
-        if local.is_archived != incoming.archived:
-            return True
-
-        local_label_uuids = [l.uuid for l in local.labels.all()]
-        incoming_label_uuids = [l.uuid for l in incoming.labels if l.name != SYSTEM_LABEL_FLAGGED]
-
-        return local_label_uuids != incoming_label_uuids
 
     def auto_label(self, labels_by_keyword):
         """
@@ -227,8 +169,7 @@ class Message(models.Model):
         return matches
 
     def release(self):
-        # TODO
-        pass
+        self.delete()
 
     def __str__(self):
         return self.text if self.text else self.pk
@@ -286,6 +227,8 @@ class RemoteMessage(object):
     """
     @staticmethod
     def bulk_flag(org, user, message_ids):
+        from casepro.backend.rapidpro import SYSTEM_LABEL_FLAGGED
+
         if message_ids:
             client = org.get_temba_client()
             client.label_messages(message_ids, label=SYSTEM_LABEL_FLAGGED)
@@ -294,6 +237,8 @@ class RemoteMessage(object):
 
     @staticmethod
     def bulk_unflag(org, user, message_ids):
+        from casepro.backend.rapidpro import SYSTEM_LABEL_FLAGGED
+
         if message_ids:
             client = org.get_temba_client()
             client.unlabel_messages(message_ids, label=SYSTEM_LABEL_FLAGGED)
@@ -406,6 +351,8 @@ class RemoteMessage(object):
         """
         Prepares a message (fetched from RapidPro) for JSON serialization
         """
+        from casepro.backend.rapidpro import SYSTEM_LABEL_FLAGGED
+
         flagged = SYSTEM_LABEL_FLAGGED in msg.labels
 
         # convert label names to JSON label objects
@@ -516,6 +463,7 @@ class MessageExport(models.Model):
         """
         from casepro.cases.models import Label
         from casepro.contacts.models import Field
+        from casepro.backend.rapidpro import SYSTEM_LABEL_FLAGGED
         from xlwt import Workbook, XFStyle
 
         book = Workbook()
