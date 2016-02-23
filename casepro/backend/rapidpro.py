@@ -15,6 +15,9 @@ SYSTEM_LABEL_FLAGGED = "Flagged"
 
 
 class ContactSyncer(BaseSyncer):
+    """
+    Syncer for contacts
+    """
     model = Contact
 
     def fetch_local(self, org, identifier):
@@ -54,8 +57,14 @@ class ContactSyncer(BaseSyncer):
     def lock(self, identifier):
         return self.model.lock(identifier)
 
+    def delete_local(self, local):
+        local.release()
+
 
 class FieldSyncer(BaseSyncer):
+    """
+    Syncer for contact fields
+    """
     model = Field
 
     def identity(self, local_or_remote):
@@ -74,6 +83,9 @@ class FieldSyncer(BaseSyncer):
 
 
 class GroupSyncer(BaseSyncer):
+    """
+    Syncer for contact groups
+    """
     model = Group
 
     def local_kwargs(self, org, remote):
@@ -89,6 +101,9 @@ class GroupSyncer(BaseSyncer):
 
 
 class LabelSyncer(BaseSyncer):
+    """
+    Syncer for message labels
+    """
     model = Label
 
     def local_kwargs(self, org, remote):
@@ -107,6 +122,9 @@ class LabelSyncer(BaseSyncer):
 
 
 class MessageSyncer(BaseSyncer):
+    """
+    Syncer for messages
+    """
     model = Message
 
     def identity(self, local_or_remote):
@@ -146,6 +164,9 @@ class MessageSyncer(BaseSyncer):
 
     def lock(self, identifier):
         return self.model.lock(identifier)
+
+    def delete_local(self, local):
+        local.release()
 
 
 class RapidProBackend(BaseBackend):

@@ -55,11 +55,20 @@ class BaseSyncer(object):
     def update_required(self, local, remote):
         """
         Determines whether local instance differs from the remote object and so needs to be updated
-        :param local:
-        :param remote:
-        :return:
+        :param local: the local instance
+        :param remote: the remote object
+        :return: whether the local instance must be updated
         """
         return True
+
+    def delete_local(self, local):
+        """
+        Deletes a local instance
+        :param local:
+        :return:
+        """
+        local.is_active = False
+        local.save(update_fields=('is_active',))
 
 
 def sync_local_to_set(org, syncer, remote_objects):
@@ -78,9 +87,6 @@ def sync_local_to_set(org, syncer, remote_objects):
 
     existing_by_identity = {syncer.identity(g): g for g in syncer.fetch_all_local(org)}
     synced_identifiers = set()
-
-    # any local active objects that need deactivated
-    invalid_existing_ids = []
 
     for incoming in remote_objects:
         existing = existing_by_identity.get(syncer.identity(incoming))
@@ -102,7 +108,7 @@ def sync_local_to_set(org, syncer, remote_objects):
                     num_updated += 1
 
             elif existing.is_active:
-                invalid_existing_ids.append(existing.pk)
+                syncer.delete_local(existing)
                 num_deleted += 1
 
         elif local_kwargs:
@@ -114,11 +120,8 @@ def sync_local_to_set(org, syncer, remote_objects):
     # active local objects which weren't in the remote set need to be deleted
     for existing in existing_by_identity.values():
         if existing.is_active and syncer.identity(existing) not in synced_identifiers:
-            invalid_existing_ids.append(existing.pk)
+            syncer.delete_local(existing)
             num_deleted += 1
-
-    if invalid_existing_ids:
-        model.objects.filter(org=org, pk__in=invalid_existing_ids).update(is_active=False)
 
     return num_created, num_updated, num_deleted
 
@@ -162,7 +165,7 @@ def sync_local_to_changes(org, syncer, fetches, deleted_fetches, progress_callba
                             num_updated += 1
 
                     elif existing.is_active:  # exists locally, but shouldn't now to due to model changes
-                        existing.release()
+                        syncer.delete_local(existing)
                         num_deleted += 1
 
                 elif local_kwargs:
@@ -179,7 +182,7 @@ def sync_local_to_changes(org, syncer, fetches, deleted_fetches, progress_callba
             with syncer.lock(syncer.identity(deleted_remote)):
                 existing = syncer.fetch_local(org, syncer.identity(deleted_remote))
                 if existing:
-                    existing.release()
+                    syncer.delete_local(existing)
                     num_deleted += 1
 
         num_synced += len(deleted_fetch)
