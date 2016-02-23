@@ -26,6 +26,144 @@ class RapidProBackendTest(BaseCasesTest):
         self.ann = self.create_contact(self.unicef, 'C-001', "Ann")
         self.bob = self.create_contact(self.unicef, 'C-002', "Bob")
 
+    @patch('dash.orgs.models.TembaClient2.get_contacts')
+    def test_sync_pull_contacts(self, mock_get_contacts):
+        # start with nothing...
+        Group.objects.all().delete()
+        Field.objects.all().delete()
+        Contact.objects.all().delete()
+
+        mock_get_contacts.side_effect = [
+            # first call to get active contacts will return two fetches of 2 and 1 contacts
+            MockClientQuery(
+                [
+                    TembaContact.create(
+                        uuid="C-001", name="Bob McFlow", language="eng", urns=["twitter:bobflow"],
+                        groups=[ObjectRef.create(uuid="G-001", name="Customers")],
+                        fields={'age': "34"}, failed=False, blocked=False
+                    ),
+                    TembaContact.create(
+                        uuid="C-002", name="Jim McMsg", language="fre", urns=["tel:+250783835665"],
+                        groups=[ObjectRef.create(uuid="G-002", name="Spammers")],
+                        fields={'age': "67"}, failed=False, blocked=False
+                    ),
+                ],
+                [
+                    TembaContact.create(
+                        uuid="C-003", name="Ann McPoll", language="eng", urns=["tel:+250783835664"],
+                        groups=[],
+                        fields={'age': "35"}, failed=True, blocked=False
+                    ),
+                ]
+            ),
+            # second call to get deleted contacts returns a contact we don't have
+            MockClientQuery(
+                [
+                    TembaContact.create(
+                        uuid="C-004", name=None, language=None, urns=[], groups=[],
+                        fields=None, failed=True, blocked=False
+                    ),
+                ]
+            )
+        ]
+
+        with self.assertNumQueries(15):
+            num_created, num_updated, num_deleted = self.backend.pull_contacts(self.unicef, None, None)
+
+        self.assertEqual((num_created, num_updated, num_deleted), (3, 0, 0))
+
+        bob = Contact.objects.get(uuid="C-001")
+        jim = Contact.objects.get(uuid="C-002")
+        ann = Contact.objects.get(uuid="C-003")
+
+        self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, jim, ann})
+        self.assertEqual(set(Contact.objects.filter(is_active=False)), set())
+
+        # stub contact groups will have been created too
+        customers = Group.objects.get(org=self.unicef, uuid="G-001", name="Customers", is_active=False)
+        spammers = Group.objects.get(org=self.unicef, uuid="G-002", name="Spammers", is_active=False)
+
+        self.assertEqual(bob.name, "Bob McFlow")
+        self.assertEqual(bob.language, "eng")
+        self.assertEqual(set(bob.groups.all()), {customers})
+        self.assertEqual(bob.get_fields(), {'age': "34"})
+
+        mock_get_contacts.side_effect = [
+            # first call to get active contacts will just one updated contact
+            MockClientQuery(
+                [
+                    TembaContact.create(
+                        uuid="C-001", name="Bob McFlough", language="fre", urns=["twitter:bobflow"],
+                        groups=[ObjectRef.create(uuid="G-002", name="Spammers")],
+                        fields={'age': "35"}, failed=True, blocked=False
+                    )
+                ]
+            ),
+            # second call to get deleted contacts returns Jim
+            MockClientQuery(
+                [
+                    TembaContact.create(
+                        uuid="C-002", name=None, language=None, urns=[], groups=[],
+                        fields=None, failed=True, blocked=False
+                    ),
+                ]
+            )
+        ]
+
+        with self.assertNumQueries(10):
+            self.assertEqual(self.backend.pull_contacts(self.unicef, None, None), (0, 1, 1))
+
+        self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, ann})
+        self.assertEqual(set(Contact.objects.filter(is_active=False)), {jim})
+
+        self.assertEqual(jim.groups.count(), 0)  # de-activated contacts are removed from groups
+
+        bob.refresh_from_db()
+        self.assertEqual(bob.name, "Bob McFlough")
+        self.assertEqual(bob.language, "fre")
+        self.assertEqual(set(bob.groups.all()), {spammers})
+        self.assertEqual(bob.get_fields(), {'age': "35"})
+
+        mock_get_contacts.side_effect = [
+            # first call to get active contacts will return a contact with only a change to URNs.. which we don't track
+            MockClientQuery(
+                [
+                    TembaContact.create(
+                        uuid="C-001", name="Bob McFlough", language="fre", urns=["twitter:bobflow22"],
+                        groups=[ObjectRef.create(uuid="G-002", name="Spammers")],
+                        fields={'age': "35"}, failed=True, blocked=False
+                    )
+                ]
+            ),
+            MockClientQuery([])
+        ]
+
+        with self.assertNumQueries(2):
+            self.assertEqual(self.backend.pull_contacts(self.unicef, None, None), (0, 0, 0))
+
+        self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, ann})
+        self.assertEqual(set(Contact.objects.filter(is_active=False)), {jim})
+
+        mock_get_contacts.side_effect = [
+            # first call to get active contacts will show one contact is now blocked
+            MockClientQuery(
+                [
+                    TembaContact.create(
+                        uuid="C-001", name="Bob McFlough", language="fre", urns=["twitter:bobflow"],
+                        groups=[ObjectRef.create(uuid="G-002", name="Spammers")],
+                        fields={'age': 35}, failed=True, blocked=True
+                    )
+                ]
+            ),
+            MockClientQuery([])
+        ]
+
+        with self.assertNumQueries(4):
+            self.assertEqual(self.backend.pull_contacts(self.unicef, None, None), (0, 0, 1))  # blocked = deleted
+
+        self.assertEqual(set(Contact.objects.filter(is_active=True)), {ann})
+        self.assertEqual(set(Contact.objects.filter(is_active=False)), {bob, jim})
+
     @patch('dash.orgs.models.TembaClient2.get_fields')
     def test_pull_fields(self, mock_get_fields):
         # start with no fields

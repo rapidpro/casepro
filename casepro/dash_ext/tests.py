@@ -1,166 +1,17 @@
 # coding=utf-8
 from __future__ import unicode_literals
 
-from casepro.contacts.models import Contact, Group, Field
 from casepro.test import BaseCasesTest
-from dash.test import MockClientQuery
 from django.utils import timezone
-from mock import patch
-from temba_client.v2.types import Contact as TembaContact, ObjectRef as TembaObjectRef
-from .sync import sync_pull_contacts, temba_compare_contacts, temba_merge_contacts
+from temba_client.v2.types import Contact as TembaContact, ObjectRef
+from .sync import sync_compare_contacts, sync_merge_contacts
 
 
 class SyncTest(BaseCasesTest):
 
-    @patch('dash.orgs.models.TembaClient2.get_contacts')
-    def test_sync_pull_contacts(self, mock_get_contacts):
-        # start with no groups or fields
-        Group.objects.all().delete()
-        Field.objects.all().delete()
-
-        mock_get_contacts.side_effect = [
-            # first call to get active contacts will return two fetches of 2 and 1 contacts
-            MockClientQuery(
-                [
-                    TembaContact.create(
-                        uuid="C-001", name="Bob McFlow", language="eng", urns=["twitter:bobflow"],
-                        groups=[TembaObjectRef.create(uuid="G-001", name="Customers")],
-                        fields={'age': "34"}, failed=False, blocked=False
-                    ),
-                    TembaContact.create(
-                        uuid="C-002", name="Jim McMsg", language="fre", urns=["tel:+250783835665"],
-                        groups=[TembaObjectRef.create(uuid="G-002", name="Spammers")],
-                        fields={'age': "67"}, failed=False, blocked=False
-                    ),
-                ],
-                [
-                    TembaContact.create(
-                        uuid="C-003", name="Ann McPoll", language="eng", urns=["tel:+250783835664"],
-                        groups=[],
-                        fields={'age': "35"}, failed=True, blocked=False
-                    ),
-                ]
-            ),
-            # second call to get deleted contacts returns a contact we don't have
-            MockClientQuery(
-                [
-                    TembaContact.create(
-                        uuid="C-004", name=None, language=None, urns=[], groups=[],
-                        fields=None, failed=True, blocked=False
-                    ),
-                ]
-            )
-        ]
-
-        with self.assertNumQueries(15):
-            num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
-                                                                       prefetch_related=('groups',))
-
-        self.assertEqual((num_created, num_updated, num_deleted), (3, 0, 0))
-
-        bob = Contact.objects.get(uuid="C-001")
-        jim = Contact.objects.get(uuid="C-002")
-        ann = Contact.objects.get(uuid="C-003")
-
-        self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, jim, ann})
-        self.assertEqual(set(Contact.objects.filter(is_active=False)), set())
-
-        # stub contact groups will have been created too
-        customers = Group.objects.get(org=self.unicef, uuid="G-001", name="Customers", is_active=False)
-        spammers = Group.objects.get(org=self.unicef, uuid="G-002", name="Spammers", is_active=False)
-
-        self.assertEqual(bob.name, "Bob McFlow")
-        self.assertEqual(bob.language, "eng")
-        self.assertEqual(set(bob.groups.all()), {customers})
-        self.assertEqual(bob.get_fields(), {'age': "34"})
-
-        mock_get_contacts.side_effect = [
-            # first call to get active contacts will just one updated contact
-            MockClientQuery(
-                [
-                    TembaContact.create(
-                        uuid="C-001", name="Bob McFlough", language="fre", urns=["twitter:bobflow"],
-                        groups=[TembaObjectRef.create(uuid="G-002", name="Spammers")],
-                        fields={'age': "35"}, failed=True, blocked=False
-                    )
-                ]
-            ),
-            # second call to get deleted contacts returns Jim
-            MockClientQuery(
-                [
-                    TembaContact.create(
-                        uuid="C-002", name=None, language=None, urns=[], groups=[],
-                        fields=None, failed=True, blocked=False
-                    ),
-                ]
-            )
-        ]
-
-        with self.assertNumQueries(10):
-            num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
-                                                                       prefetch_related=('groups',))
-
-        self.assertEqual((num_created, num_updated, num_deleted), (0, 1, 1))
-
-        self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, ann})
-        self.assertEqual(set(Contact.objects.filter(is_active=False)), {jim})
-
-        self.assertEqual(jim.groups.count(), 0)  # de-activated contacts are removed from groups
-
-        bob.refresh_from_db()
-        self.assertEqual(bob.name, "Bob McFlough")
-        self.assertEqual(bob.language, "fre")
-        self.assertEqual(set(bob.groups.all()), {spammers})
-        self.assertEqual(bob.get_fields(), {'age': "35"})
-
-        mock_get_contacts.side_effect = [
-            # first call to get active contacts will return a contact with only a change to URNs.. which we don't track
-            MockClientQuery(
-                [
-                    TembaContact.create(
-                        uuid="C-001", name="Bob McFlough", language="fre", urns=["twitter:bobflow22"],
-                        groups=[TembaObjectRef.create(uuid="G-002", name="Spammers")],
-                        fields={'age': "35"}, failed=True, blocked=False
-                    )
-                ]
-            ),
-            MockClientQuery([])
-        ]
-
-        with self.assertNumQueries(2):
-            num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact, inc_urns=False,
-                                                                       prefetch_related=('groups',))
-        self.assertEqual((num_created, num_updated, num_deleted), (0, 0, 0))
-
-        self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, ann})
-        self.assertEqual(set(Contact.objects.filter(is_active=False)), {jim})
-
-        mock_get_contacts.side_effect = [
-            # first call to get active contacts will show one contact is now blocked
-            MockClientQuery(
-                [
-                    TembaContact.create(
-                        uuid="C-001", name="Bob McFlough", language="fre", urns=["twitter:bobflow"],
-                        groups=[TembaObjectRef.create(uuid="G-002", name="Spammers")],
-                        fields={'age': 35}, failed=True, blocked=True
-                    )
-                ]
-            ),
-            MockClientQuery([])
-        ]
-
-        with self.assertNumQueries(4):
-            num_created, num_updated, num_deleted = sync_pull_contacts(self.unicef, Contact,
-                                                                       prefetch_related=('groups',))
-
-        self.assertEqual((num_created, num_updated, num_deleted), (0, 0, 1))  # blocked = deleted for us
-
-        self.assertEqual(set(Contact.objects.filter(is_active=True)), {ann})
-        self.assertEqual(set(Contact.objects.filter(is_active=False)), {bob, jim})
-
-    def test_temba_compare_contacts(self):
-        group1 = TembaObjectRef.create(uuid='000-001', name="Customers")
-        group2 = TembaObjectRef.create(uuid='000-002', name="Spammers")
+    def test_sync_compare_contacts(self):
+        group1 = ObjectRef.create(uuid='000-001', name="Customers")
+        group2 = ObjectRef.create(uuid='000-002', name="Spammers")
 
         # no differences (besides null field value which is ignored)
         first = TembaContact.create(
@@ -171,61 +22,61 @@ class SyncTest(BaseCasesTest):
             uuid='000-001', name="Ann", urns=['tel:1234'], groups=[group1],
             fields={'chat_name': "ann", 'age': None}, language='eng', modified_on=timezone.now()
         )
-        self.assertIsNone(temba_compare_contacts(first, second))
-        self.assertIsNone(temba_compare_contacts(second, first))
+        self.assertIsNone(sync_compare_contacts(first, second))
+        self.assertIsNone(sync_compare_contacts(second, first))
 
         # different name
         second = TembaContact.create(
             uuid='000-001', name="Annie", urns=['tel:1234'], groups=[group1],
             fields={'chat_name': "ann"}, language='eng', modified_on=timezone.now()
         )
-        self.assertEqual(temba_compare_contacts(first, second), 'name')
+        self.assertEqual(sync_compare_contacts(first, second), 'name')
 
         # different URNs
         second = TembaContact.create(
             uuid='000-001', name="Ann", urns=['tel:1234', 'twitter:ann'], groups=[group1],
             fields={'chat_name': "ann"}, language='eng', modified_on=timezone.now()
         )
-        self.assertEqual(temba_compare_contacts(first, second), 'urns')
+        self.assertEqual(sync_compare_contacts(first, second), 'urns')
 
         # different group
         second = TembaContact.create(
             uuid='000-001', name="Ann", urns=['tel:1234'], groups=[group2],
             fields={'chat_name': "ann"}, language='eng', modified_on=timezone.now()
         )
-        self.assertEqual(temba_compare_contacts(first, second), 'groups')
-        self.assertEqual(temba_compare_contacts(first, second, groups=('000-001', '000-002')), 'groups')
-        self.assertIsNone(temba_compare_contacts(first, second, groups=()))
-        self.assertIsNone(temba_compare_contacts(first, second, groups=('000-003', '000-004')))
+        self.assertEqual(sync_compare_contacts(first, second), 'groups')
+        self.assertEqual(sync_compare_contacts(first, second, groups=('000-001', '000-002')), 'groups')
+        self.assertIsNone(sync_compare_contacts(first, second, groups=()))
+        self.assertIsNone(sync_compare_contacts(first, second, groups=('000-003', '000-004')))
 
         # different field
         second = TembaContact.create(
             uuid='000-001', name="Ann", urns=['tel:1234'], groups=[group1],
             fields={'chat_name': "annie"}, language='eng', modified_on=timezone.now()
         )
-        self.assertEqual(temba_compare_contacts(first, second), 'fields')
-        self.assertEqual(temba_compare_contacts(first, second, fields=('chat_name', 'gender')), 'fields')
-        self.assertIsNone(temba_compare_contacts(first, second, fields=()))
-        self.assertIsNone(temba_compare_contacts(first, second, fields=('age', 'gender')))
+        self.assertEqual(sync_compare_contacts(first, second), 'fields')
+        self.assertEqual(sync_compare_contacts(first, second, fields=('chat_name', 'gender')), 'fields')
+        self.assertIsNone(sync_compare_contacts(first, second, fields=()))
+        self.assertIsNone(sync_compare_contacts(first, second, fields=('age', 'gender')))
 
         # additional field
         second = TembaContact.create(
             uuid='000-001', name="Ann", urns=['tel:1234'], groups=[group1],
             fields={'chat_name': "ann", 'age': 18}, language='eng', modified_on=timezone.now()
         )
-        self.assertEqual(temba_compare_contacts(first, second), 'fields')
-        self.assertIsNone(temba_compare_contacts(first, second, fields=()))
-        self.assertIsNone(temba_compare_contacts(first, second, fields=('chat_name',)))
+        self.assertEqual(sync_compare_contacts(first, second), 'fields')
+        self.assertIsNone(sync_compare_contacts(first, second, fields=()))
+        self.assertIsNone(sync_compare_contacts(first, second, fields=('chat_name',)))
 
-    def test_temba_merge_contacts(self):
+    def test_sync_merge_contacts(self):
         contact1 = TembaContact.create(
                 uuid="000-001", name="Bob",
                 urns=['tel:123', 'email:bob@bob.com'],
                 fields={'chat_name': "bob", 'age': 23},
                 groups=[
-                    TembaObjectRef.create(uuid='000-001', name="Lusaka"),
-                    TembaObjectRef.create(uuid='000-002', name="Seattle"),
-                    TembaObjectRef.create(uuid='000-010', name="Customers")
+                    ObjectRef.create(uuid='000-001', name="Lusaka"),
+                    ObjectRef.create(uuid='000-002', name="Seattle"),
+                    ObjectRef.create(uuid='000-010', name="Customers")
                 ]
         )
         contact2 = TembaContact.create(
@@ -233,13 +84,13 @@ class SyncTest(BaseCasesTest):
                 urns=['tel:234', 'twitter:bob'],
                 fields={'chat_name': "bobz", 'state': "IN"},
                 groups=[
-                    TembaObjectRef.create(uuid='000-003', name="Kigali"),
-                    TembaObjectRef.create(uuid='000-009', name="Females"),
-                    TembaObjectRef.create(uuid='000-011', name="Spammers")
+                    ObjectRef.create(uuid='000-003', name="Kigali"),
+                    ObjectRef.create(uuid='000-009', name="Females"),
+                    ObjectRef.create(uuid='000-011', name="Spammers")
                 ]
         )
 
-        merged = temba_merge_contacts(contact1, contact2, mutex_group_sets=(
+        merged = sync_merge_contacts(contact1, contact2, mutex_group_sets=(
             ('000-001', '000-002', '000-003'),  # Lusaka, Seattle, Kigali
             ('000-008', '000-009'),             # Males, Females
             ('000-098', '000-099'),             # other...

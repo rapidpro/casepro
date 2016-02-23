@@ -176,7 +176,7 @@ def sync_pull_contacts(org, model,
                     existing.org = org  # saves pre-fetching since we already have the org
 
                     if local_kwargs:
-                        diff = temba_compare_contacts(incoming, existing.sync_as_temba(), inc_urns, fields, groups)
+                        diff = sync_compare_contacts(incoming, existing.sync_as_temba(), inc_urns, fields, groups)
 
                         if diff or not existing.is_active:
                             for field, value in six.iteritems(local_kwargs):
@@ -217,7 +217,7 @@ def sync_pull_contacts(org, model,
     return num_created, num_updated, num_deleted
 
 
-def temba_compare_contacts(first, second, inc_urns=True, fields=None, groups=None):
+def sync_compare_contacts(first, second, inc_urns=True, fields=None, groups=None):
     """
     Compares two Temba contacts to determine if there are differences. Returns
     first difference found.
@@ -248,7 +248,7 @@ def temba_compare_contacts(first, second, inc_urns=True, fields=None, groups=Non
     return None
 
 
-def temba_merge_contacts(first, second, mutex_group_sets):
+def sync_merge_contacts(first, second, mutex_group_sets):
     """
     Merges two Temba contacts, with priority given to the first contact.
     :param first: the first contact (has priority)
