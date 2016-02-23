@@ -1,13 +1,57 @@
 from __future__ import unicode_literals
 
-from casepro.contacts.models import Contact, Group, Field
+import six
+
+from casepro.contacts.models import Contact, Group, Field, SAVE_GROUPS_ATTR
 from casepro.msgs.models import Label, Message, SAVE_CONTACT_ATTR, SAVE_LABELS_ATTR
 from casepro.dash_ext.sync import BaseSyncer, sync_local_to_set, sync_pull_messages, sync_pull_contacts
+from casepro.utils import is_dict_equal
 from . import BaseBackend
 
 
 # no concept of flagging in RapidPro so that is modelled with a label
 SYSTEM_LABEL_FLAGGED = "Flagged"
+
+
+class ContactSyncer(BaseSyncer):
+    model = Contact
+
+    def fetch_local(self, org, identifier):
+        qs = self.model.objects.filter(org=org, uuid=identifier)
+        return qs.prefetch_related('groups').first()
+
+    def local_kwargs(self, org, remote):
+        if remote.blocked:  # we don't keep blocked contacts
+            return None
+
+        # groups and fields are updated via a post save signal handler
+        groups = [(g.uuid, g.name) for g in remote.groups]
+        fields = {k: v for k, v in six.iteritems(remote.fields) if v is not None}  # don't include none values
+
+        return {
+            'org': org,
+            'uuid': remote.uuid,
+            'name': remote.name,
+            'language': remote.language,
+            'is_stub': False,
+            'fields': fields,
+            SAVE_GROUPS_ATTR: groups,
+        }
+
+    def update_required(self, local, remote):
+        if local.name != remote.name:
+            return True
+
+        if local.language != remote.language:
+            return True
+
+        if [g.uuid for g in local.groups.all()] != [g.uuid for g in remote.groups]:
+            return True
+
+        return not is_dict_equal(local.get_fields(), remote.fields, ignore_none_values=True)
+
+    def lock(self, identifier):
+        return self.model.lock(identifier)
 
 
 class FieldSyncer(BaseSyncer):
@@ -107,6 +151,7 @@ class RapidProBackend(BaseBackend):
     """
     RapidPro instance as a backend
     """
+    contact_syncer = ContactSyncer()
     field_syncer = FieldSyncer()
     group_syncer = GroupSyncer()
     label_syncer = LabelSyncer()
@@ -118,11 +163,9 @@ class RapidProBackend(BaseBackend):
 
     def pull_contacts(self, org, modified_after, modified_before, progress_callback=None):
         return sync_pull_contacts(
-                org, Contact,
+                org, self.contact_syncer,
                 modified_after=modified_after,
                 modified_before=modified_before,
-                inc_urns=False,
-                prefetch_related=('groups',),
                 progress_callback=progress_callback
         )
 

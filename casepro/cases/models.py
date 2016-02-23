@@ -166,14 +166,15 @@ class Case(models.Model):
         # TODO: until contacts are all pulled in locally, we need to create/update them as cases are opened
         contact_uuid = message.contact.uuid
 
-        with Contact.sync_lock(contact_uuid):
+        with Contact.lock(contact_uuid):
             contact = Contact.objects.filter(org=org, uuid=contact_uuid).first()
             temba_contact = org.get_temba_client(api_version=2).get_contacts(uuid=contact_uuid).first()
 
             if not temba_contact:
                 raise ValueError("Can't create case for contact which has been deleted")
 
-            local_kwargs = Contact.sync_get_kwargs(org, temba_contact)
+            from casepro.backend.rapidpro import ContactSyncer
+            local_kwargs = ContactSyncer().local_kwargs(org, temba_contact)
 
             if contact:
                 for field, value in six.iteritems(local_kwargs):

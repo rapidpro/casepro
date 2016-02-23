@@ -137,53 +137,18 @@ class Contact(models.Model):
         Gets an existing contact or creates a stub contact. Used when receiving messages where the contact might not
         have been synced yet
         """
-        with cls.sync_lock(uuid):
+        with cls.lock(uuid):
             contact = cls.objects.filter(org=org, uuid=uuid).first()
             if not contact:
                 contact = cls.objects.create(org=org, uuid=uuid, name=name, is_stub=True)
 
             return contact
 
-    def lock(self):
-        return self._lock(self.uuid)
-
     @classmethod
-    def sync_lock(cls, uuid):
-        return cls._lock(uuid)
-
-    @classmethod
-    def _lock(cls, uuid):
+    def lock(cls, uuid):
         r = get_redis_connection()
         key = CONTACT_LOCK_KEY % uuid
         return r.lock(key, timeout=60)
-
-    @classmethod
-    def sync_get_kwargs(cls, org, temba_instance):
-        if temba_instance.blocked:  # we don't keep blocked contacts
-            return None
-
-        # groups and fields are updated via a post save signal handler
-        groups = [(g.uuid, g.name) for g in temba_instance.groups]
-        fields = {k: v for k, v in six.iteritems(temba_instance.fields) if v is not None}  # don't include none values
-
-        return {
-            'org': org,
-            'uuid': temba_instance.uuid,
-            'name': temba_instance.name,
-            'language': temba_instance.language,
-            'is_stub': False,
-            'fields': fields,
-            SAVE_GROUPS_ATTR: groups,
-        }
-
-    def sync_as_temba(self):
-        """
-        Return a Temba version of this contact
-        """
-        groups = [TembaObjectRef.create(uuid=g.uuid, name=g.name) for g in self.groups.all()]
-
-        return TembaContact.create(uuid=self.uuid, name=self.name, urns=[], groups=groups, fields=self.get_fields(),
-                                   language=self.language)
 
     def get_fields(self, visible=None):
         fields = self.fields if self.fields else {}
@@ -211,7 +176,7 @@ class Contact(models.Model):
         self.archive_messages()
 
     def suspend_groups(self):
-        with self.lock():
+        with self.lock(self.uuid):
             if self.suspended_groups.all():
                 raise ValueError("Can't suspend from groups as contact is already suspended from groups")
 
@@ -226,7 +191,7 @@ class Contact(models.Model):
                     get_backend().remove_from_group(self.org, self, group)
 
     def restore_groups(self):
-        with self.lock():
+        with self.lock(self.uuid):
             for group in list(self.suspended_groups.all()):
                 self.groups.add(group)
                 self.suspended_groups.remove(group)

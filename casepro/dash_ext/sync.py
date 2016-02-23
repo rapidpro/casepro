@@ -8,10 +8,7 @@ import logging
 import six
 
 from abc import ABCMeta, abstractmethod
-from casepro.utils import is_dict_equal
-from dash.utils import intersection
 from itertools import chain
-from temba_client.v1.types import Contact as TembaContact
 
 
 logger = logging.getLogger(__name__)
@@ -191,28 +188,22 @@ def sync_pull_messages(org, syncer,
     return num_created, num_updated, num_deleted
 
 
-def sync_pull_contacts(org, model,
+def sync_pull_contacts(org, syncer,
                        modified_after=None, modified_before=None,
-                       inc_urns=True, groups=None, fields=None,
-                       select_related=(), prefetch_related=(),
                        progress_callback=None):
     """
     Pull modified contacts from RapidPro and syncs with local contacts.
 
     :param * org: the org
-    :param type model: the local contact model
+    :param * syncer: the local model syncer
     :param * modified_after: the last time we pulled contacts, if None, sync all contacts
     :param * modified_before: the last time we pulled contacts, if None, sync all contacts
-    :param bool inc_urns: whether to compare URNs to determine if local contact differs
-    :param [str] groups: the contact group UUIDs used - used to determine if local contact differs
-    :param [str] fields: the contact field keys used - used to determine if local contact differs
-    :param [str] select_related: select related fields when fetching local contacts
-    :param [str] prefetch_related: prefetch related fields when fetching local contacts
     :param * progress_callback: callable for tracking progress - called for each fetch with number of contacts fetched
     :return: tuple containing counts of created, updated and deleted contacts
     """
     client = org.get_temba_client(api_version=2)
 
+    model = syncer.model
     num_synced = 0
     num_created = 0
     num_updated = 0
@@ -222,26 +213,18 @@ def sync_pull_contacts(org, model,
 
     for incoming_batch in active_query.iterfetches(retry_on_rate_exceed=True):
         for incoming in incoming_batch:
-            with model.sync_lock(incoming.uuid):
-                existing_qs = model.objects.filter(org=org, uuid=incoming.uuid)
-                if select_related:
-                    existing_qs = existing_qs.select_related(*select_related)
-                if prefetch_related:
-                    existing_qs = existing_qs.prefetch_related(*prefetch_related)
-
-                existing = existing_qs.first()
+            with syncer.lock(syncer.identity(incoming)):
+                existing = syncer.fetch_local(org, syncer.identity(incoming))
 
                 # derive kwargs for the local contact model (none return here means don't keep)
-                local_kwargs = model.sync_get_kwargs(org, incoming)
+                local_kwargs = syncer.local_kwargs(org, incoming)
 
                 # contact exists locally
                 if existing:
                     existing.org = org  # saves pre-fetching since we already have the org
 
                     if local_kwargs:
-                        diff = sync_compare_contacts(incoming, existing.sync_as_temba(), inc_urns, fields, groups)
-
-                        if diff or not existing.is_active:
+                        if syncer.update_required(existing, incoming) or not existing.is_active:
                             for field, value in six.iteritems(local_kwargs):
                                 setattr(existing, field, value)
 
@@ -267,7 +250,7 @@ def sync_pull_contacts(org, model,
     # any contact that has been deleted should also be released locally
     for deleted_batch in deleted_query.iterfetches(retry_on_rate_exceed=True):
         for deleted_contact in deleted_batch:
-            with model.sync_lock(deleted_contact.uuid):
+            with syncer.lock(deleted_contact.uuid):
                 local_contact = model.objects.filter(org=org, uuid=deleted_contact.uuid).first()
                 if local_contact:
                     local_contact.release()
@@ -278,91 +261,3 @@ def sync_pull_contacts(org, model,
             progress_callback(num_synced)
 
     return num_created, num_updated, num_deleted
-
-
-def sync_compare_contacts(first, second, inc_urns=True, fields=None, groups=None):
-    """
-    Compares two Temba contacts to determine if there are differences. Returns
-    first difference found.
-    """
-    def uuids(refs):
-        return [o.uuid for o in refs]
-
-    if first.uuid != second.uuid:  # pragma: no cover
-        raise ValueError("Can't compare contacts with different UUIDs")
-
-    if first.name != second.name:
-        return 'name'
-
-    if inc_urns and sorted(first.urns) != sorted(second.urns):
-        return 'urns'
-
-    if groups is None and (sorted(uuids(first.groups)) != sorted(uuids(second.groups))):
-        return 'groups'
-    if groups:
-        a = sorted(intersection(uuids(first.groups), groups))
-        b = sorted(intersection(uuids(second.groups), groups))
-        if a != b:
-            return 'groups'
-
-    if not is_dict_equal(first.fields, second.fields, keys=fields, ignore_none_values=True):
-        return 'fields'
-
-    return None
-
-
-def sync_merge_contacts(first, second, mutex_group_sets):
-    """
-    Merges two Temba contacts, with priority given to the first contact.
-    :param first: the first contact (has priority)
-    :param second: the second contact
-    :param mutex_group_sets: a list of lists of group UUIDs whose membership is mutually exclusive. For example, if a
-            groups A and B describe the contact's state, and groups C and D describe their gender, one can pass
-            [(A, B), (C, D)] as this parameter's value to ensure that the merged contact is only in group A or B and
-            C or D.
-    """
-    if first.uuid != second.uuid:  # pragma: no cover
-        raise ValueError("Can't merge contacts with different UUIDs")
-
-    # URNs are merged by scheme
-    first_urns_by_scheme = {u[0]: u[1] for u in [urn.split(':', 1) for urn in first.urns]}
-    urns_by_scheme = {u[0]: u[1] for u in [urn.split(':', 1) for urn in second.urns]}
-    urns_by_scheme.update(first_urns_by_scheme)
-    merged_urns = ['%s:%s' % (scheme, path) for scheme, path in six.iteritems(urns_by_scheme)]
-
-    # fields are simple key based merge
-    merged_fields = second.fields.copy()
-    merged_fields.update(first.fields)
-
-    # first merge mutually exclusive group sets
-    merged_groups = []
-    ignore_uuids = set()
-
-    for group_set in mutex_group_sets:
-        # find first possible in set from first contact
-        for g in first.groups:
-            if g.uuid in group_set:
-                merged_groups.append(g)
-                break
-        # if we didn't find one, look at second contact
-        else:
-            for g in second.groups:
-                if g.uuid in group_set:
-                    merged_groups.append(g)
-                    break
-
-        # ignore all groups in this set from now on
-        ignore_uuids.update(group_set)
-
-    # then merge the remaining groups
-    for g in first.groups:
-        if g.uuid not in ignore_uuids:
-            merged_groups.append(g)
-            ignore_uuids.add(g.uuid)
-    for g in second.groups:
-        if g.uuid not in ignore_uuids:
-            merged_groups.append(g)
-            ignore_uuids.add(g.uuid)
-
-    return TembaContact.create(uuid=first.uuid, name=first.name,
-                               urns=merged_urns, fields=merged_fields, groups=merged_groups)

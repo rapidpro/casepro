@@ -14,7 +14,86 @@ from mock import patch
 from temba_client.v2.types import Group as TembaGroup, Field as TembaField, Label as TembaLabel, ObjectRef
 from temba_client.v2.types import Contact as TembaContact, Message as TembaMessage
 from unittest import skip
-from ..rapidpro import RapidProBackend, MessageSyncer
+from ..rapidpro import RapidProBackend, ContactSyncer, MessageSyncer
+
+
+class ContactSyncerTest(BaseCasesTest):
+    syncer = ContactSyncer()
+
+    def test_local_kwargs(self):
+        kwargs = self.syncer.local_kwargs(self.unicef, TembaContact.create(
+                uuid="C-001",
+                name="Bob McFlow",
+                language="eng",
+                urns=["twitter:bobflow"],
+                groups=[ObjectRef.create(uuid="G-001", name="Customers")],
+                fields={'age': "34"},
+                failed=False,
+                blocked=False
+        ))
+
+        self.assertEqual(kwargs, {
+            'org': self.unicef,
+            'uuid': "C-001",
+            'name': "Bob McFlow",
+            'language': "eng",
+            'is_stub': False,
+            'fields': {'age': "34"},
+            '__data__groups': [("G-001", "Customers")],
+        })
+
+    def test_update_required(self):
+        local = self.create_contact(self.unicef, 'C-001', "Ann", [self.reporters], {'chat_name': "ann"})
+
+        # no differences (besides null field value which is ignored)
+        self.assertFalse(self.syncer.update_required(local, TembaContact.create(
+            uuid='000-001',
+            name="Ann",
+            urns=['tel:1234'],
+            groups=[ObjectRef.create(uuid='G-003', name="Reporters")],
+            fields={'chat_name': "ann", 'age': None},
+            language='eng', modified_on=now()
+        )))
+
+        # name change
+        self.assertTrue(self.syncer.update_required(local, TembaContact.create(
+            uuid='000-001',
+            name="Annie",
+            urns=['tel:1234'],
+            groups=[ObjectRef.create(uuid='G-003', name="Reporters")],
+            fields={'chat_name': "ann"},
+            language='eng', modified_on=now()
+        )))
+
+        # group change
+        self.assertTrue(self.syncer.update_required(local, TembaContact.create(
+            uuid='000-001',
+            name="Ann",
+            urns=['tel:1234'],
+            groups=[ObjectRef.create(uuid='G-002', name="Females")],
+            fields={'chat_name': "ann"},
+            language='eng', modified_on=now()
+        )))
+
+        # field value change
+        self.assertTrue(self.syncer.update_required(local, TembaContact.create(
+            uuid='000-001',
+            name="Ann",
+            urns=['tel:1234'],
+            groups=[ObjectRef.create(uuid='G-003', name="Reporters")],
+            fields={'chat_name': "ann8111"},
+            language='eng', modified_on=now()
+        )))
+
+        # new field
+        self.assertTrue(self.syncer.update_required(local, TembaContact.create(
+            uuid='000-001',
+            name="Ann",
+            urns=['tel:1234'],
+            groups=[ObjectRef.create(uuid='G-003', name="Reporters")],
+            fields={'chat_name': "ann", 'age': "35"},
+            language='eng', modified_on=now()
+        )))
 
 
 class MessageSyncerTest(BaseCasesTest):

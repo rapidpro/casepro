@@ -12,29 +12,15 @@ class ContactTest(BaseCasesTest):
         Group.objects.all().delete()
         Field.objects.all().delete()
 
-        kwargs = Contact.sync_get_kwargs(self.unicef, TembaContact.create(
-                uuid="C-001",
-                name="Bob McFlow",
-                language="eng",
-                urns=["twitter:bobflow"],
-                groups=[ObjectRef.create(uuid="G-001", name="Customers")],
-                fields={'age': "34"},
-                failed=False,
-                blocked=False
-        ))
-
-        self.assertEqual(kwargs, {
-            'org': self.unicef,
-            'uuid': "C-001",
-            'name': "Bob McFlow",
-            'language': "eng",
-            'is_stub': False,
-            'fields': {'age': "34"},
-            '__data__groups': [("G-001", "Customers")],
-        })
-
-        # check saving by result of sync_get_kwargs
-        contact = Contact.objects.create(**kwargs)
+        contact = Contact.objects.create(
+            org=self.unicef,
+            uuid="C-001",
+            name="Bob McFlow",
+            language="eng",
+            is_stub=False,
+            fields={'age': "34"},
+            __data__groups=[("G-001", "Customers")]
+        )
 
         self.assertEqual(contact.uuid, "C-001")
         self.assertEqual(contact.name, "Bob McFlow")

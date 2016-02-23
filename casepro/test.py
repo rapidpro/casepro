@@ -78,7 +78,7 @@ class BaseCasesTest(DashTest):
         return Label.objects.create(org=org, uuid=uuid, name=name, description=description, keywords=','.join(keywords))
 
     def create_contact(self, org, uuid, name, groups=(), fields=None):
-        contact = Contact.objects.create(org=org, uuid=uuid, name=name, is_stub=False, fields=fields)
+        contact = Contact.objects.create(org=org, uuid=uuid, name=name, is_stub=False, fields=fields, language="eng")
 
         for group in groups:
             contact.groups.add(group)
