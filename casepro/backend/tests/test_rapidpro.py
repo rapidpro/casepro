@@ -146,7 +146,7 @@ class RapidProBackendTest(BaseCasesTest):
         self.bob = self.create_contact(self.unicef, 'C-002', "Bob")
 
     @patch('dash.orgs.models.TembaClient2.get_contacts')
-    def test_sync_pull_contacts(self, mock_get_contacts):
+    def test_pull_contacts(self, mock_get_contacts):
         # start with nothing...
         Group.objects.all().delete()
         Field.objects.all().delete()
@@ -229,7 +229,7 @@ class RapidProBackendTest(BaseCasesTest):
             )
         ]
 
-        with self.assertNumQueries(10):
+        with self.assertNumQueries(11):
             self.assertEqual(self.backend.pull_contacts(self.unicef, None, None), (0, 1, 1))
 
         self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, ann})

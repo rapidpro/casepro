@@ -4,8 +4,9 @@ import six
 
 from casepro.contacts.models import Contact, Group, Field, SAVE_GROUPS_ATTR
 from casepro.msgs.models import Label, Message, SAVE_CONTACT_ATTR, SAVE_LABELS_ATTR
-from casepro.dash_ext.sync import BaseSyncer, sync_local_to_set, sync_pull_messages, sync_pull_contacts
+from casepro.dash_ext.sync import BaseSyncer, sync_local_to_set, sync_local_to_changes
 from casepro.utils import is_dict_equal
+from itertools import chain
 from . import BaseBackend
 
 
@@ -162,12 +163,17 @@ class RapidProBackend(BaseBackend):
         return org.get_temba_client(api_version=api_version)
 
     def pull_contacts(self, org, modified_after, modified_before, progress_callback=None):
-        return sync_pull_contacts(
-                org, self.contact_syncer,
-                modified_after=modified_after,
-                modified_before=modified_before,
-                progress_callback=progress_callback
-        )
+        client = self._get_client(org, 2)
+
+        # all contacts created or modified in RapidPro in the time window
+        active_query = client.get_contacts(after=modified_after, before=modified_before)
+        fetches = active_query.iterfetches(retry_on_rate_exceed=True)
+
+        # all contacts deleted in RapidPro in the same time window
+        deleted_query = client.get_contacts(deleted=True, after=modified_after, before=modified_before)
+        deleted_fetches = deleted_query.iterfetches(retry_on_rate_exceed=True)
+
+        return sync_local_to_changes(org, self.contact_syncer, fetches, deleted_fetches, progress_callback)
 
     def pull_fields(self, org):
         client = self._get_client(org, 2)
@@ -188,12 +194,18 @@ class RapidProBackend(BaseBackend):
         return sync_local_to_set(org, self.label_syncer, incoming_objects)
 
     def pull_messages(self, org, modified_after, modified_before, progress_callback=None):
-        return sync_pull_messages(
-                org, self.message_syncer,
-                modified_after=modified_after,
-                modified_before=modified_before,
-                progress_callback=progress_callback
+        client = self._get_client(org, 2)
+
+        # all incoming messages created or modified in RapidPro in the time window
+        inbox_query = client.get_messages(folder='inbox', after=modified_after, before=modified_before)
+        flows_query = client.get_messages(folder='flows', after=modified_after, before=modified_before)
+
+        fetches = chain(
+            inbox_query.iterfetches(retry_on_rate_exceed=True),
+            flows_query.iterfetches(retry_on_rate_exceed=True)
         )
+
+        return sync_local_to_changes(org, self.message_syncer, fetches, [], progress_callback)
 
     def create_label(self, org, name):
         client = self._get_client(org, 1)

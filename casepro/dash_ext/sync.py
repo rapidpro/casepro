@@ -1,17 +1,12 @@
 from __future__ import unicode_literals
 
 """
-Sync support for contacts, groups and fields
+Sync support
 """
 
-import logging
 import six
 
 from abc import ABCMeta, abstractmethod
-from itertools import chain
-
-
-logger = logging.getLogger(__name__)
 
 
 class BaseSyncer(object):
@@ -128,108 +123,37 @@ def sync_local_to_set(org, syncer, remote_objects):
     return num_created, num_updated, num_deleted
 
 
-def sync_pull_messages(org, syncer,
-                       modified_after, modified_before,
-                       progress_callback=None):
+def sync_local_to_changes(org, syncer, fetches, deleted_fetches, progress_callback=None):
     """
-    Pull modified messages from RapidPro and syncs with local messages.
+    Sync local instances against changed and deleted remote objects
 
     :param * org: the org
     :param * syncer: the local model syncer
-    :param * modified_after: the last time we pulled contacts, if None, sync all messages
-    :param * modified_before: the last time we pulled contacts, if None, sync all messages
-    :param * progress_callback: callable for tracking progress - called for each fetch with number of messages fetched
-    :return: tuple containing counts of created, updated and deleted messages
-    """
-    client = org.get_temba_client(api_version=2)
-
-    model = syncer.model
-    num_synced = 0
-    num_created = 0
-    num_updated = 0
-    num_deleted = 0
-
-    inbox_query = client.get_messages(folder='inbox', after=modified_after, before=modified_before)
-    flows_query = client.get_messages(folder='flows', after=modified_after, before=modified_before)
-
-    all_message_fetches = chain(
-        inbox_query.iterfetches(retry_on_rate_exceed=True),
-        flows_query.iterfetches(retry_on_rate_exceed=True)
-    )
-
-    for incoming_batch in all_message_fetches:
-        for incoming in incoming_batch:
-            with syncer.lock(syncer.identity(incoming)):
-                existing = syncer.fetch_local(org, syncer.identity(incoming))
-
-                # derive kwargs for the local model (none return here means don't keep)
-                local_kwargs = syncer.local_kwargs(org, incoming)
-
-                # exists locally
-                if existing:
-                    existing.org = org  # saves pre-fetching since we already have the org
-
-                    if local_kwargs:
-                        if syncer.update_required(existing, incoming) or not existing.is_active:
-                            for field, value in six.iteritems(local_kwargs):
-                                setattr(existing, field, value)
-
-                            existing.is_active = True
-                            existing.save()
-                            num_updated += 1
-
-                    elif existing.is_active:  # exists locally, but shouldn't now to due to model changes
-                        existing.release()
-                        num_deleted += 1
-
-                elif local_kwargs:
-                    model.objects.create(**local_kwargs)
-                    num_created += 1
-
-        num_synced += len(incoming_batch)
-        if progress_callback:
-            progress_callback(num_synced)
-
-    return num_created, num_updated, num_deleted
-
-
-def sync_pull_contacts(org, syncer,
-                       modified_after=None, modified_before=None,
-                       progress_callback=None):
-    """
-    Pull modified contacts from RapidPro and syncs with local contacts.
-
-    :param * org: the org
-    :param * syncer: the local model syncer
-    :param * modified_after: the last time we pulled contacts, if None, sync all contacts
-    :param * modified_before: the last time we pulled contacts, if None, sync all contacts
+    :param * fetches: an iterator returning fetches of modified remote objects
+    :param * deleted_fetches: an iterator returning fetches of deleted remote objects
     :param * progress_callback: callable for tracking progress - called for each fetch with number of contacts fetched
-    :return: tuple containing counts of created, updated and deleted contacts
+    :return: tuple containing counts of created, updated and deleted local instances
     """
-    client = org.get_temba_client(api_version=2)
-
     model = syncer.model
     num_synced = 0
     num_created = 0
     num_updated = 0
     num_deleted = 0
 
-    active_query = client.get_contacts(after=modified_after, before=modified_before)
-
-    for incoming_batch in active_query.iterfetches(retry_on_rate_exceed=True):
-        for incoming in incoming_batch:
-            with syncer.lock(syncer.identity(incoming)):
-                existing = syncer.fetch_local(org, syncer.identity(incoming))
+    for fetch in fetches:
+        for remote in fetch:
+            with syncer.lock(syncer.identity(remote)):
+                existing = syncer.fetch_local(org, syncer.identity(remote))
 
                 # derive kwargs for the local model (none return here means don't keep)
-                local_kwargs = syncer.local_kwargs(org, incoming)
+                local_kwargs = syncer.local_kwargs(org, remote)
 
                 # exists locally
                 if existing:
                     existing.org = org  # saves pre-fetching since we already have the org
 
                     if local_kwargs:
-                        if syncer.update_required(existing, incoming) or not existing.is_active:
+                        if syncer.update_required(existing, remote) or not existing.is_active:
                             for field, value in six.iteritems(local_kwargs):
                                 setattr(existing, field, value)
 
@@ -245,23 +169,20 @@ def sync_pull_contacts(org, syncer,
                     model.objects.create(**local_kwargs)
                     num_created += 1
 
-        num_synced += len(incoming_batch)
+        num_synced += len(fetch)
         if progress_callback:
             progress_callback(num_synced)
 
-    # now get all contacts deleted in RapidPro in the same time window
-    deleted_query = client.get_contacts(deleted=True, after=modified_after, before=modified_before)
-
-    # any contact that has been deleted should also be released locally
-    for deleted_batch in deleted_query.iterfetches(retry_on_rate_exceed=True):
-        for deleted_contact in deleted_batch:
-            with syncer.lock(deleted_contact.uuid):
-                local_contact = model.objects.filter(org=org, uuid=deleted_contact.uuid).first()
-                if local_contact:
-                    local_contact.release()
+    # any item that has been deleted remotely should also be released locally
+    for deleted_fetch in deleted_fetches:
+        for deleted_remote in deleted_fetch:
+            with syncer.lock(syncer.identity(deleted_remote)):
+                existing = syncer.fetch_local(org, syncer.identity(deleted_remote))
+                if existing:
+                    existing.release()
                     num_deleted += 1
 
-        num_synced += len(deleted_batch)
+        num_synced += len(deleted_fetch)
         if progress_callback:
             progress_callback(num_synced)
 
