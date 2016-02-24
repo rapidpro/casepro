@@ -341,18 +341,18 @@ class RemoteMessage(object):
                                        direction='I', _types=search['types'], archived=search['archived'],
                                        after=search['after'], before=search['before'])
 
-        # annotate messages with contacts (if they exist). This becomes a lot easier with local messages.
+        # annotate messages with contacts and discard those with only stub contacts
         contact_uuids = [m.contact for m in messages]
-        contacts = Contact.objects.filter(org=org, uuid__in=contact_uuids)
-        contacts_by_uuid = {c.uuid: c for c in contacts}
+        contacts_by_uuid = {c.uuid: c for c in Contact.objects.filter(org=org, uuid__in=contact_uuids, is_stub=False)}
+
+        annotated = []
         for message in messages:
             contact = contacts_by_uuid.get(message.contact)
             if contact:
-                message.contact = {'uuid': contact.uuid, 'is_stub': contact.is_stub}
-            else:
-                message.contact = {'uuid': message.contact, 'is_stub': True}
+                message.contact = contact.as_json()
+                annotated.append(message)
 
-        return messages
+        return annotated
 
     @staticmethod
     def as_json(msg, label_map):
@@ -484,22 +484,10 @@ class MessageExport(models.Model):
         all_fields = base_fields + contact_fields
         label_map = {l.name: l for l in Label.get_all(self.org)}
 
-        client = self.org.get_temba_client()
         search = self.get_search()
 
         # fetch all messages to be exported
         messages = RemoteMessage.search(self.org, search, None)
-
-        # extract all unique contacts in those messages
-        contact_uuids = set()
-        for msg in messages:
-            contact_uuids.add(msg.contact['uuid'])
-
-        # fetch all contacts in batches of 25 and organize by UUID
-        contacts_by_uuid = {}
-        for uuid_chunk in chunks(list(contact_uuids), 25):
-            for contact in client.get_contacts(uuids=uuid_chunk):
-                contacts_by_uuid[contact.uuid] = contact
 
         def add_sheet(num):
             sheet = book.add_sheet(unicode(_("Messages %d" % num)))
@@ -521,21 +509,21 @@ class MessageExport(models.Model):
                     created_on = msg.created_on.astimezone(pytz.utc).replace(tzinfo=None)
                     flagged = SYSTEM_LABEL_FLAGGED in msg.labels
                     labels = ', '.join([label_map[l_name].name for l_name in msg.labels if l_name in label_map])
-                    contact = contacts_by_uuid.get(msg.contact['uuid'])  # contact may no longer exist in RapidPro
 
                     current_sheet.write(row, 0, created_on, date_style)
                     current_sheet.write(row, 1, msg.id)
                     current_sheet.write(row, 2, 'Yes' if flagged else 'No')
                     current_sheet.write(row, 3, labels)
                     current_sheet.write(row, 4, msg.text)
-                    current_sheet.write(row, 5, contact.uuid)
+                    current_sheet.write(row, 5, msg.contact['uuid'])
+
+                    # TODO after refactor, .search() should return Message objects with contacts
+                    contact = Contact.objects.filter(uuid=msg.contact['uuid']).first()
+                    fields = contact.get_fields() if contact else {}
 
                     for cf in range(len(contact_fields)):
-                        if contact:
-                            contact_field = contact_fields[cf]
-                            current_sheet.write(row, 6 + cf, contact.fields.get(contact_field, None))
-                        else:
-                            current_sheet.write(row, 6 + cf, None)
+                        contact_field = contact_fields[cf]
+                        current_sheet.write(row, 6 + cf, fields.get(contact_field, None))
 
                     row += 1
 

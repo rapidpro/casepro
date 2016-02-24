@@ -163,30 +163,12 @@ class Case(models.Model):
 
     @classmethod
     def get_or_open(cls, org, user, labels, message, summary, assignee, update_contact=True):
-        # TODO: until contacts are all pulled in locally, we need to create/update them as cases are opened
         contact_uuid = message.contact.uuid
+        contact = Contact.objects.filter(org=org, uuid=contact_uuid, is_stub=False, is_active=True).first()
 
-        with Contact.lock(contact_uuid):
-            contact = Contact.objects.filter(org=org, uuid=contact_uuid).first()
-            temba_contact = org.get_temba_client(api_version=2).get_contacts(uuid=contact_uuid).first()
-
-            if not temba_contact:
-                raise ValueError("Can't create case for contact which has been deleted")
-
-            from casepro.backend.rapidpro import ContactSyncer
-            local_kwargs = ContactSyncer().local_kwargs(org, temba_contact)
-
-            if contact:
-                for field, value in six.iteritems(local_kwargs):
-                    setattr(contact, field, value)
-                contact.is_active = True
-                contact.save()
-            else:
-                contact = Contact.objects.create(**local_kwargs)
-
-        #contact = Contact.objects.filter(org=org, uuid=message.contact, is_stub=False, is_active=True).first()
-        #if not contact:
-        #    raise ValueError("Contact does not exist or is a stub")
+        # we shouldn't be displaying messages that don't have non-stub contacts... so this shouldn't happen
+        if not contact:
+            raise ValueError("Contact does not exist or is a stub")
 
         r = get_redis_connection()
         with r.lock('org:%d:cases_lock' % org.pk):

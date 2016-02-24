@@ -10,12 +10,12 @@ from casepro.test import BaseCasesTest
 from datetime import datetime
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
-from django.utils import timezone
+from django.utils.timezone import now
 from mock import patch, call
 from temba_client.clients import Pager
 from temba_client.utils import format_iso8601
 from temba_client.v1.types import Broadcast as TembaBroadcast
-from temba_client.v2.types import Contact as TembaContact, Message as TembaMessage, ObjectRef
+from temba_client.v2.types import Contact as TembaContact
 from .models import Label, Message, MessageAction, RemoteMessage, Outgoing, MessageExport
 from .tasks import handle_messages
 
@@ -256,7 +256,7 @@ class RemoteMessageTest(BaseCasesTest):
     def test_annotate_with_sender(self):
         from temba_client.v1.types import Message as TembaMessage1
 
-        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
+        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=pytz.UTC)
         Outgoing.objects.create(org=self.unicef, activity='C', broadcast_id=201, recipient_count=1,
                                 created_by=self.user2, created_on=d1)
         msg = TembaMessage1.create(id=101, broadcast=201, text="Yo")
@@ -319,7 +319,7 @@ class MessageViewsTest(BaseCasesTest):
     def test_label(self, mock_unlabel_messages, mock_label_messages, mock_get_message):
         from temba_client.v1.types import Message as TembaMessage1
 
-        msg = TembaMessage1.create(id=101, contact='C-002', text="Huh?", created_on=timezone.now(), labels=['AIDS'])
+        msg = TembaMessage1.create(id=101, contact='C-002', text="Huh?", created_on=now(), labels=['AIDS'])
         mock_get_message.return_value = msg
 
         url = reverse('msgs.message_label', kwargs={'id': 101})
@@ -340,23 +340,28 @@ class MessageViewsTest(BaseCasesTest):
 
         url = reverse('msgs.message_search')
 
-        msg1 = TembaMessage1.create(id=101, contact='C-001', text="What is HIV?", created_on=timezone.now(), labels=['AIDS'])
-        msg2 = TembaMessage1.create(id=102, contact='C-002', text="I ♡ RapidPro", created_on=timezone.now(), labels=[])
-        msg3 = TembaMessage1.create(id=103, contact='C-003', text="RapidCon 2016!", created_on=timezone.now(), labels=[])
+        self.create_contact(self.unicef, 'C-001', "Ann")
+        self.create_contact(self.unicef, 'C-002', "Bob")
+        self.create_contact(self.unicef, 'C-004', "Don")
+
+        msg1 = TembaMessage1.create(id=101, contact='C-001', text="What is HIV?", created_on=now(), labels=['AIDS'])
+        msg2 = TembaMessage1.create(id=102, contact='C-002', text="I ♡ RapidPro", created_on=now(), labels=[])
+        msg3 = TembaMessage1.create(id=103, contact='C-003', text="New contact..", created_on=now(), labels=[])
+        msg4 = TembaMessage1.create(id=104, contact='C-004', text="RapidCon 2016!", created_on=now(), labels=[])
 
         pager = Pager(start_page=1)
         mock_pager.return_value = pager
-        mock_get_messages.return_value = [msg3, msg2]
+        mock_get_messages.return_value = [msg4, msg3, msg2]
 
         # log in as a non-administrator
         self.login(self.user1)
 
         # page requests first page of existing inbox messages
-        t0 = timezone.now()
+        t0 = now()
         response = self.url_get('unicef', url, {'view': 'inbox', 'text': '', 'label': '', 'page': 1,
                                                 'after': '', 'before': format_iso8601(t0)})
 
-        self.assertEqual(len(response.json['results']), 2)
+        self.assertEqual(len(response.json['results']), 2)  # msg3 doesn't have a contact so hidden for now
 
         mock_get_messages.assert_called_once_with(archived=False, labels=['AIDS', 'Pregnancy'],
                                                   contacts=None, groups=None, text='', _types=None, direction='I',
@@ -383,7 +388,7 @@ class MessageViewsTest(BaseCasesTest):
         # log in as a non-administrator
         self.login(self.user1)
 
-        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
+        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=pytz.UTC)
         mock_create_broadcast.return_value = TembaBroadcast.create(id=201,
                                                                    text="That's great",
                                                                    urns=[],
@@ -406,7 +411,7 @@ class MessageViewsTest(BaseCasesTest):
 class OutgoingTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient1.create_broadcast')
     def test_create(self, mock_create_broadcast):
-        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
+        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=pytz.UTC)
         mock_create_broadcast.return_value = TembaBroadcast.create(id=201,
                                                                    text="That's great",
                                                                    urns=[],
@@ -435,17 +440,12 @@ class MessageExportCRUDLTest(BaseCasesTest):
     def test_create_and_read(self, mock_get_contacts, mock_get_messages):
         from temba_client.v1.types import Message as TembaMessage1
 
+        self.create_contact(self.unicef, 'C-001', None, fields={'nickname': "Bob", 'age': "28", 'state': "WA"})
+        self.create_contact(self.unicef, 'C-002', None, fields={'nickname': "Ann", 'age': "32", 'state': "IN"})
+
         mock_get_messages.return_value = [
-            TembaMessage1.create(id=101, contact='C-001', text="What is HIV?", created_on=timezone.now(),
-                                 labels=['AIDS']),
-            TembaMessage1.create(id=102, contact='C-002', text="I ♡ RapidPro", created_on=timezone.now(),
-                                 labels=[])
-        ]
-        mock_get_contacts.return_value = [
-            TembaContact.create(uuid='C-001', urns=[], groups=[],
-                                fields={'nickname': "Bob", 'age': 28, 'state': "WA"}),
-            TembaContact.create(uuid='C-002', urns=[], groups=[],
-                                fields={'nickname': "Ann", 'age': 32, 'state': "IN"})
+            TembaMessage1.create(id=101, contact='C-001', text="What is HIV?", created_on=now(), labels=['AIDS']),
+            TembaMessage1.create(id=102, contact='C-002', text="I ♡ RapidPro", created_on=now(), labels=[])
         ]
 
         # log in as a non-administrator
@@ -458,8 +458,6 @@ class MessageExportCRUDLTest(BaseCasesTest):
                                                   contacts=None, groups=None, text='', _types=None, direction='I',
                                                   after=datetime(2015, 4, 1, 22, 0, 0, 0, pytz.UTC), before=None,
                                                   pager=None)
-
-        mock_get_contacts.assert_called_once_with(uuids=['C-001', 'C-002'])
 
         export = MessageExport.objects.get()
         self.assertEqual(export.created_by, self.user1)
@@ -485,20 +483,22 @@ class TasksTest(BaseCasesTest):
         cat = self.create_contact(self.unicef, 'C-003', "Cat")
         don = self.create_contact(self.unicef, 'C-004', "Don")
         eve = self.create_contact(self.unicef, 'C-005', "Eve")
+        fra = self.create_contact(self.unicef, 'C-006', "Fra", is_stub=True)
         nic = self.create_contact(self.nyaruka, 'C-0101', "Nic")
 
-        d1 = datetime(2014, 1, 1, 7, 0, tzinfo=timezone.utc)
-        d2 = datetime(2014, 1, 1, 8, 0, tzinfo=timezone.utc)
-        d3 = datetime(2014, 1, 1, 9, 0, tzinfo=timezone.utc)
-        d4 = datetime(2014, 1, 1, 10, 0, tzinfo=timezone.utc)
-        d5 = datetime(2014, 1, 1, 11, 0, tzinfo=timezone.utc)
+        d1 = datetime(2014, 1, 1, 7, 0, tzinfo=pytz.UTC)
+        d2 = datetime(2014, 1, 1, 8, 0, tzinfo=pytz.UTC)
+        d3 = datetime(2014, 1, 1, 9, 0, tzinfo=pytz.UTC)
+        d4 = datetime(2014, 1, 1, 10, 0, tzinfo=pytz.UTC)
+        d5 = datetime(2014, 1, 1, 11, 0, tzinfo=pytz.UTC)
 
         msg1 = self.create_message(self.unicef, 101, ann, "What is aids?", d1)
         msg2 = self.create_message(self.unicef, 102, bob, "Can I catch Hiv?", d2)
         msg3 = self.create_message(self.unicef, 103, cat, "I think I'm pregnant", d3)
         msg4 = self.create_message(self.unicef, 104, don, "Php is amaze", d4)
         msg5 = self.create_message(self.unicef, 105, eve, "Thanks for the pregnancy/HIV info", d5)
-        msg6 = self.create_message(self.nyaruka, 106, nic, "Thanks for the pregnancy/HIV info", d5)
+        msg6 = self.create_message(self.unicef, 106, fra, "HIV", d5)
+        msg7 = self.create_message(self.nyaruka, 201, nic, "HIV", d5)
 
         # contact #5 has a case open that day
         case1 = Case.objects.create(org=self.unicef, contact=eve, assignee=self.moh, message_id=99, message_on=d1)
@@ -508,7 +508,7 @@ class TasksTest(BaseCasesTest):
         handle_messages(self.unicef.pk)
 
         self.assertEqual(set(Message.objects.filter(is_handled=True)), {msg1, msg2, msg3, msg4, msg5})
-        self.assertEqual(set(Message.objects.filter(is_handled=False)), {msg6})
+        self.assertEqual(set(Message.objects.filter(is_handled=False)), {msg6, msg7})  # stub contact and wrong org
 
         mock_label_messages.assert_has_calls([
             call(self.unicef, [msg1, msg2], self.aids),
