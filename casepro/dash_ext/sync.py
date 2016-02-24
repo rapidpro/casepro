@@ -7,6 +7,14 @@ Sync support
 import six
 
 from abc import ABCMeta, abstractmethod
+from collections import defaultdict
+from enum import Enum
+
+
+class SyncOutcome(Enum):
+    created = 1
+    updated = 2
+    deleted = 3
 
 
 class BaseSyncer(object):
@@ -16,31 +24,42 @@ class BaseSyncer(object):
     __metaclass__ = ABCMeta
 
     model = None
+    local_id_attr = 'uuid'
+    remote_id_attr = 'uuid'
 
-    def identity(self, local_or_remote):
+    def identify_local(self, local):
         """
-        Gets the unique identity of the local model instance or remote object
-        :param local_or_remote: the local model instance or remote object
+        Gets the unique identity of the local model instance
+        :param local: the local model instance
         :return: the unique identity
         """
-        return local_or_remote.uuid
+        return getattr(local, self.local_id_attr)
 
-    def fetch_all_local(self, org):
+    def identify_remote(self, remote):
         """
-        Fetches all local model instances
+        Gets the unique identity of the remote object
+        :param remote: the remote object
+        :return: the unique identity
+        """
+        return getattr(remote, self.remote_id_attr)
+
+    def lock(self, org, identity):
+        """
+        Gets a lock on the given identity value
         :param org: the org
-        :return: the queryset
+        :param identity: the unique identity
+        :return: the lock
         """
-        return self.model.objects.filter(org=org)
+        return self.model.lock(org, identity)
 
-    def fetch_local(self, org, identifier):
+    def fetch_local(self, org, identity):
         """
         Fetches a local model instance
         :param org: the org
-        :param identifier: the unique identifier
+        :param identity: the unique identity
         :return: the instance
         """
-        return self.fetch_all_local(org).filter(uuid=identifier).first()
+        return self.model.objects.filter(org=org).filter(**{self.local_id_attr: identity}).first()
 
     @abstractmethod
     def local_kwargs(self, org, remote):
@@ -71,64 +90,79 @@ class BaseSyncer(object):
         local.save(update_fields=('is_active',))
 
 
-def sync_local_to_set(org, syncer, remote_objects):
+def sync_from_remote(org, syncer, remote):
     """
-    Syncs an org's entire set of local instances of a model to match the set of remote objects
+    Sync local instance against a single remote object
 
-    :param org: the org
-    :param syncer: the syncer implementation
-    :param remote_objects: the set of incoming remote objects
-    :return: tuple of number of local objects created, updated and deleted
+    :param * org: the org
+    :param * syncer: the local model syncer
+    :param * remote: the remote object
+    :return: the outcome (created, updated or deleted)
     """
-    model = syncer.model
-    num_created = 0
-    num_updated = 0
-    num_deleted = 0
+    identity = syncer.identify_remote(remote)
 
-    existing_by_identity = {syncer.identity(g): g for g in syncer.fetch_all_local(org)}
-    synced_identifiers = set()
+    with syncer.lock(org, identity):
+        existing = syncer.fetch_local(org, identity)
 
-    for incoming in remote_objects:
-        existing = existing_by_identity.get(syncer.identity(incoming))
+        # derive kwargs for the local model (none return here means don't keep)
+        local_kwargs = syncer.local_kwargs(org, remote)
 
-        # derive kwargs for the local model (none returned here means don't keep)
-        local_kwargs = syncer.local_kwargs(org, incoming)
-
-        # item exists locally
+        # exists locally
         if existing:
             existing.org = org  # saves pre-fetching since we already have the org
 
             if local_kwargs:
-                if syncer.update_required(existing, incoming) or not existing.is_active:
+                if syncer.update_required(existing, remote) or not existing.is_active:
                     for field, value in six.iteritems(local_kwargs):
                         setattr(existing, field, value)
 
                     existing.is_active = True
                     existing.save()
-                    num_updated += 1
+                    return SyncOutcome.updated
 
-            elif existing.is_active:
+            elif existing.is_active:  # exists locally, but shouldn't now to due to model changes
                 syncer.delete_local(existing)
-                num_deleted += 1
+                return SyncOutcome.deleted
 
         elif local_kwargs:
-            model.objects.create(**local_kwargs)
-            num_created += 1
+            syncer.model.objects.create(**local_kwargs)
+            return SyncOutcome.created
 
-        synced_identifiers.add(syncer.identity(incoming))
+
+def sync_local_to_set(org, syncer, remote_set):
+    """
+    Syncs an org's entire set of local instances of a model to match the set of remote objects
+
+    :param org: the org
+    :param * syncer: the local model syncer
+    :param remote_set: the set of remote objects
+    :return: tuple of number of local objects created, updated and deleted
+    """
+    outcome_counts = defaultdict(int)
+
+    remote_identities = set()
+
+    for remote in remote_set:
+        outcome = sync_from_remote(org, syncer, remote)
+        outcome_counts[outcome] += 1
+
+        remote_identities.add(syncer.identify_remote(remote))
 
     # active local objects which weren't in the remote set need to be deleted
-    for existing in existing_by_identity.values():
-        if existing.is_active and syncer.identity(existing) not in synced_identifiers:
-            syncer.delete_local(existing)
-            num_deleted += 1
+    active_locals = syncer.model.objects.filter(org=org, is_active=True)
+    delete_locals = active_locals.exclude(**{syncer.local_id_attr + '__in': remote_identities})
 
-    return num_created, num_updated, num_deleted
+    for local in delete_locals:
+        with syncer.lock(org, syncer.identify_local(local)):
+            syncer.delete_local(local)
+            outcome_counts[SyncOutcome.deleted] += 1
+
+    return outcome_counts[SyncOutcome.created], outcome_counts[SyncOutcome.updated], outcome_counts[SyncOutcome.deleted]
 
 
 def sync_local_to_changes(org, syncer, fetches, deleted_fetches, progress_callback=None):
     """
-    Sync local instances against changed and deleted remote objects
+    Sync local instances against iterators of changed and deleted remote objects
 
     :param * org: the org
     :param * syncer: the local model syncer
@@ -137,40 +171,13 @@ def sync_local_to_changes(org, syncer, fetches, deleted_fetches, progress_callba
     :param * progress_callback: callable for tracking progress - called for each fetch with number of contacts fetched
     :return: tuple containing counts of created, updated and deleted local instances
     """
-    model = syncer.model
     num_synced = 0
-    num_created = 0
-    num_updated = 0
-    num_deleted = 0
+    outcome_counts = defaultdict(int)
 
     for fetch in fetches:
         for remote in fetch:
-            with syncer.lock(syncer.identity(remote)):
-                existing = syncer.fetch_local(org, syncer.identity(remote))
-
-                # derive kwargs for the local model (none return here means don't keep)
-                local_kwargs = syncer.local_kwargs(org, remote)
-
-                # exists locally
-                if existing:
-                    existing.org = org  # saves pre-fetching since we already have the org
-
-                    if local_kwargs:
-                        if syncer.update_required(existing, remote) or not existing.is_active:
-                            for field, value in six.iteritems(local_kwargs):
-                                setattr(existing, field, value)
-
-                            existing.is_active = True
-                            existing.save()
-                            num_updated += 1
-
-                    elif existing.is_active:  # exists locally, but shouldn't now to due to model changes
-                        syncer.delete_local(existing)
-                        num_deleted += 1
-
-                elif local_kwargs:
-                    model.objects.create(**local_kwargs)
-                    num_created += 1
+            outcome = sync_from_remote(org, syncer, remote)
+            outcome_counts[outcome] += 1
 
         num_synced += len(fetch)
         if progress_callback:
@@ -179,14 +186,15 @@ def sync_local_to_changes(org, syncer, fetches, deleted_fetches, progress_callba
     # any item that has been deleted remotely should also be released locally
     for deleted_fetch in deleted_fetches:
         for deleted_remote in deleted_fetch:
-            with syncer.lock(syncer.identity(deleted_remote)):
-                existing = syncer.fetch_local(org, syncer.identity(deleted_remote))
+            identity = syncer.identify_remote(deleted_remote)
+            with syncer.lock(org, identity):
+                existing = syncer.fetch_local(org, identity)
                 if existing:
                     syncer.delete_local(existing)
-                    num_deleted += 1
+                    outcome_counts[SyncOutcome.deleted] += 1
 
         num_synced += len(deleted_fetch)
         if progress_callback:
             progress_callback(num_synced)
 
-    return num_created, num_updated, num_deleted
+    return outcome_counts[SyncOutcome.created], outcome_counts[SyncOutcome.updated], outcome_counts[SyncOutcome.deleted]

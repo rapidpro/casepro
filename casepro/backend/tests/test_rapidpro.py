@@ -99,13 +99,12 @@ class ContactSyncerTest(BaseCasesTest):
 class MessageSyncerTest(BaseCasesTest):
     syncer = MessageSyncer()
 
-    def test_identity(self):
+    def test_fetch_local(self):
         ann = self.create_contact(self.unicef, 'C-001', "Ann")
-        msg1 = Message.objects.create(org=self.unicef, backend_id=123456789, type='I',
-                                      text="Yes", contact=ann, created_on=now())
+        msg = Message.objects.create(org=self.unicef, backend_id=123456789, type='I',
+                                     text="Yes", contact=ann, created_on=now())
 
-        self.assertEqual(self.syncer.identity(msg1), 123456789)
-        self.assertEqual(self.syncer.identity(TembaMessage.create(id=123)), 123)
+        self.assertEqual(self.syncer.fetch_local(self.unicef, 123456789), msg)
 
     def test_local_kwargs(self):
         d1 = datetime(2015, 12, 25, 13, 30, 0, 0, pytz.UTC)
@@ -293,7 +292,7 @@ class RapidProBackendTest(BaseCasesTest):
             TembaField.create(key="age", label="Age", value_type="numeric"),
         ])
 
-        with self.assertNumQueries(3):
+        with self.assertNumQueries(5):
             num_created, num_updated, num_deleted = self.backend.pull_fields(self.unicef)
 
         self.assertEqual((num_created, num_updated, num_deleted), (2, 0, 0))
@@ -306,7 +305,7 @@ class RapidProBackendTest(BaseCasesTest):
             TembaField.create(key="homestate", label="Homestate", value_type="state"),
         ])
 
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(6):
             num_created, num_updated, num_deleted = self.backend.pull_fields(self.unicef)
 
         self.assertEqual((num_created, num_updated, num_deleted), (1, 1, 1))
@@ -316,7 +315,7 @@ class RapidProBackendTest(BaseCasesTest):
         Field.objects.get(key="homestate", label="Homestate", value_type="S", is_active=True)
 
         # check that no changes means no updates
-        with self.assertNumQueries(1):
+        with self.assertNumQueries(3):
             num_created, num_updated, num_deleted = self.backend.pull_fields(self.unicef)
 
         self.assertEqual((num_created, num_updated, num_deleted), (0, 0, 0))
@@ -331,7 +330,7 @@ class RapidProBackendTest(BaseCasesTest):
             TembaGroup.create(uuid="G-002", name="Developers", count=32),
         ])
 
-        with self.assertNumQueries(3):
+        with self.assertNumQueries(5):
             num_created, num_updated, num_deleted = self.backend.pull_groups(self.unicef)
 
         self.assertEqual((num_created, num_updated, num_deleted), (2, 0, 0))
@@ -344,7 +343,7 @@ class RapidProBackendTest(BaseCasesTest):
             TembaGroup.create(uuid="G-003", name="Spammers", count=13),
         ])
 
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(6):
             num_created, num_updated, num_deleted = self.backend.pull_groups(self.unicef)
 
         self.assertEqual((num_created, num_updated, num_deleted), (1, 1, 1))
@@ -354,7 +353,7 @@ class RapidProBackendTest(BaseCasesTest):
         Group.objects.get(uuid="G-003", name="Spammers", count=13, is_active=True)
 
         # check that no changes means no updates
-        with self.assertNumQueries(1):
+        with self.assertNumQueries(3):
             num_created, num_updated, num_deleted = self.backend.pull_groups(self.unicef)
 
         self.assertEqual((num_created, num_updated, num_deleted), (0, 0, 0))
@@ -370,7 +369,7 @@ class RapidProBackendTest(BaseCasesTest):
             TembaLabel.create(uuid="L-009", name="Flagged", count=21),  # should be ignored
         ])
 
-        with self.assertNumQueries(3):
+        with self.assertNumQueries(6):
             num_created, num_updated, num_deleted = self.backend.pull_labels(self.unicef)
 
         self.assertEqual((num_created, num_updated, num_deleted), (2, 0, 0))
@@ -385,7 +384,7 @@ class RapidProBackendTest(BaseCasesTest):
             TembaLabel.create(uuid="L-003", name="Spam", count=13),
         ])
 
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(6):
             num_created, num_updated, num_deleted = self.backend.pull_labels(self.unicef)
 
         self.assertEqual((num_created, num_updated, num_deleted), (1, 1, 1))
@@ -395,7 +394,7 @@ class RapidProBackendTest(BaseCasesTest):
         Label.objects.get(uuid="L-003", name="Spam", is_active=True)
 
         # check that no changes means no updates
-        with self.assertNumQueries(1):
+        with self.assertNumQueries(3):
             num_created, num_updated, num_deleted = self.backend.pull_labels(self.unicef)
 
         self.assertEqual((num_created, num_updated, num_deleted), (0, 0, 0))
@@ -638,7 +637,10 @@ class PerfTest(BaseCasesTest):
         mock_get_fields.return_value = MockClientQuery(fields)
 
         # sync fields
+        start = time.time()
         self.assertEqual((num_fields, 0, 0), self.backend.pull_fields(self.unicef))
+
+        print "Initial field sync: %f secs" % (time.time() - start)
 
         # setup get_groups
         groups = [TembaGroup.create(uuid="G0000000-0000-0000-0000-00000000%04d" % g, name="Group #%d" % g, count=0)
@@ -646,7 +648,10 @@ class PerfTest(BaseCasesTest):
         mock_get_groups.return_value = MockClientQuery(groups)
 
         # sync groups
+        start = time.time()
         self.assertEqual((num_groups, 0, 0), self.backend.pull_groups(self.unicef))
+
+        print "Initial group sync: %f secs" % (time.time() - start)
 
         # setup get_contacts to return multiple fetches of contacts
         active_fetches = []

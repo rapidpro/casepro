@@ -54,9 +54,6 @@ class ContactSyncer(BaseSyncer):
 
         return not is_dict_equal(local.get_fields(), remote.fields, ignore_none_values=True)
 
-    def lock(self, identifier):
-        return self.model.lock(identifier)
-
     def delete_local(self, local):
         local.release()
 
@@ -66,9 +63,8 @@ class FieldSyncer(BaseSyncer):
     Syncer for contact fields
     """
     model = Field
-
-    def identity(self, local_or_remote):
-        return local_or_remote.key
+    local_id_attr = 'key'
+    remote_id_attr = 'key'
 
     def local_kwargs(self, org, remote):
         return {
@@ -126,9 +122,8 @@ class MessageSyncer(BaseSyncer):
     Syncer for messages
     """
     model = Message
-
-    def identity(self, local_or_remote):
-        return local_or_remote.backend_id if isinstance(local_or_remote, Message) else local_or_remote.id
+    local_id_attr = 'backend_id'
+    remote_id_attr = 'id'
 
     def fetch_local(self, org, identifier):
         qs = self.model.objects.filter(org=org, backend_id=identifier)
@@ -161,9 +156,6 @@ class MessageSyncer(BaseSyncer):
         incoming_label_uuids = [l.uuid for l in remote.labels if l.name != SYSTEM_LABEL_FLAGGED]
 
         return local_label_uuids != incoming_label_uuids
-
-    def lock(self, identifier):
-        return self.model.lock(identifier)
 
     def delete_local(self, local):
         local.release()

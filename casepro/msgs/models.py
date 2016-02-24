@@ -33,7 +33,8 @@ DEFAULT_UNLABELLED_LIMIT_DAYS = 14
 SAVE_CONTACT_ATTR = '__data__contact'
 SAVE_LABELS_ATTR = '__data__labels'
 
-MESSAGE_LOCK_KEY = 'message-lock:%s'
+LABEL_LOCK_KEY = 'lock:label:%d:%s'
+MESSAGE_LOCK_KEY = 'lock:message:%d:%d'
 
 
 @python_2_unicode_compatible
@@ -85,6 +86,10 @@ class Label(models.Model):
             for keyword in label.get_keywords():
                 labels_by_keyword[keyword] = label
         return labels_by_keyword
+
+    @classmethod
+    def lock(cls, org, uuid):
+        return get_redis_connection().lock(LABEL_LOCK_KEY % (org.pk, uuid), timeout=60)
 
     def get_keywords(self):
         return parse_csv(self.keywords) if self.keywords else []
@@ -150,10 +155,8 @@ class Message(models.Model):
         super(Message, self).__init__(*args, **kwargs)
 
     @classmethod
-    def lock(cls, backend_id):
-        r = get_redis_connection()
-        key = MESSAGE_LOCK_KEY % backend_id
-        return r.lock(key, timeout=60)
+    def lock(cls, org, id):
+        return get_redis_connection().lock(MESSAGE_LOCK_KEY % (org.pk, id), timeout=60)
 
     def auto_label(self, labels_by_keyword):
         """
