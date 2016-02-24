@@ -16,7 +16,7 @@ class Command(BaseCommand):
                             help="Maximum age of messages to pull in days")
         parser.add_argument('--weeks', type=int, default=0, dest='weeks',
                             help="Maximum age of messages to pull in days")
-        parser.add_argument('--handled', type=bool, default=True, dest='as_handled',
+        parser.add_argument('--handled', dest='as_handled', action='store_const', const=True, default=False,
                             help="Whether messages should be saved as already handled")
 
     def handle(self, *args, **options):
