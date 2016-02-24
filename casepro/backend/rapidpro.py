@@ -125,6 +125,9 @@ class MessageSyncer(BaseSyncer):
     local_id_attr = 'backend_id'
     remote_id_attr = 'id'
 
+    def __init__(self, as_handled):
+        self.as_handled = as_handled
+
     def fetch_local(self, org, identifier):
         qs = self.model.objects.filter(org=org, backend_id=identifier)
         return qs.select_related('contact').prefetch_related('labels').first()
@@ -141,6 +144,7 @@ class MessageSyncer(BaseSyncer):
             'is_flagged': SYSTEM_LABEL_FLAGGED in [l.name for l in remote.labels],
             'is_archived': remote.archived,
             'created_on': remote.created_on,
+            'is_handled': self.as_handled,
             SAVE_CONTACT_ATTR: (remote.contact.uuid, remote.contact.name),
             SAVE_LABELS_ATTR: labels,
         }
@@ -165,12 +169,6 @@ class RapidProBackend(BaseBackend):
     """
     RapidPro instance as a backend
     """
-    contact_syncer = ContactSyncer()
-    field_syncer = FieldSyncer()
-    group_syncer = GroupSyncer()
-    label_syncer = LabelSyncer()
-    message_syncer = MessageSyncer()
-
     @staticmethod
     def _get_client(org, api_version):
         return org.get_temba_client(api_version=api_version)
@@ -186,27 +184,27 @@ class RapidProBackend(BaseBackend):
         deleted_query = client.get_contacts(deleted=True, after=modified_after, before=modified_before)
         deleted_fetches = deleted_query.iterfetches(retry_on_rate_exceed=True)
 
-        return sync_local_to_changes(org, self.contact_syncer, fetches, deleted_fetches, progress_callback)
+        return sync_local_to_changes(org, ContactSyncer(), fetches, deleted_fetches, progress_callback)
 
     def pull_fields(self, org):
         client = self._get_client(org, 2)
         incoming_objects = client.get_fields().all(retry_on_rate_exceed=True)
 
-        return sync_local_to_set(org, self.field_syncer, incoming_objects)
+        return sync_local_to_set(org, FieldSyncer(), incoming_objects)
 
     def pull_groups(self, org):
         client = self._get_client(org, 2)
         incoming_objects = client.get_groups().all(retry_on_rate_exceed=True)
 
-        return sync_local_to_set(org, self.group_syncer, incoming_objects)
+        return sync_local_to_set(org, GroupSyncer(), incoming_objects)
 
     def pull_labels(self, org):
         client = self._get_client(org, 2)
         incoming_objects = client.get_labels().all(retry_on_rate_exceed=True)
 
-        return sync_local_to_set(org, self.label_syncer, incoming_objects)
+        return sync_local_to_set(org, LabelSyncer(), incoming_objects)
 
-    def pull_messages(self, org, modified_after, modified_before, progress_callback=None):
+    def pull_messages(self, org, modified_after, modified_before, as_handled=False, progress_callback=None):
         client = self._get_client(org, 2)
 
         # all incoming messages created or modified in RapidPro in the time window
@@ -218,7 +216,7 @@ class RapidProBackend(BaseBackend):
             flows_query.iterfetches(retry_on_rate_exceed=True)
         )
 
-        return sync_local_to_changes(org, self.message_syncer, fetches, [], progress_callback)
+        return sync_local_to_changes(org, MessageSyncer(as_handled), fetches, [], progress_callback)
 
     def create_label(self, org, name):
         client = self._get_client(org, 1)

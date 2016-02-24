@@ -97,19 +97,17 @@ class ContactSyncerTest(BaseCasesTest):
 
 
 class MessageSyncerTest(BaseCasesTest):
-    syncer = MessageSyncer()
-
     def test_fetch_local(self):
         ann = self.create_contact(self.unicef, 'C-001', "Ann")
         msg = Message.objects.create(org=self.unicef, backend_id=123456789, type='I',
                                      text="Yes", contact=ann, created_on=now())
 
-        self.assertEqual(self.syncer.fetch_local(self.unicef, 123456789), msg)
+        self.assertEqual(MessageSyncer(as_handled=False).fetch_local(self.unicef, 123456789), msg)
 
     def test_local_kwargs(self):
         d1 = datetime(2015, 12, 25, 13, 30, 0, 0, pytz.UTC)
 
-        kwargs = self.syncer.local_kwargs(self.unicef, TembaMessage.create(
+        remote = TembaMessage.create(
                 id=123456789,
                 contact=ObjectRef.create(uuid='C-001', name="Ann"),
                 urn="twitter:ann123",
@@ -120,7 +118,9 @@ class MessageSyncerTest(BaseCasesTest):
                 text="I have lots of questions!",
                 labels=[ObjectRef.create(uuid='L-001', name="Spam"), ObjectRef.create(uuid='L-009', name="Flagged")],
                 created_on=d1
-        ))
+        )
+
+        kwargs = MessageSyncer(as_handled=False).local_kwargs(self.unicef, remote)
 
         self.assertEqual(kwargs, {
             'org': self.unicef,
@@ -130,9 +130,14 @@ class MessageSyncerTest(BaseCasesTest):
             'is_flagged': True,
             'is_archived': False,
             'created_on': d1,
+            'is_handled': False,
             '__data__contact': ("C-001", "Ann"),
             '__data__labels': [("L-001", "Spam")],
         })
+
+        kwargs = MessageSyncer(as_handled=True).local_kwargs(self.unicef, remote)
+
+        self.assertTrue(kwargs['is_handled'], True)
 
 
 class RapidProBackendTest(BaseCasesTest):

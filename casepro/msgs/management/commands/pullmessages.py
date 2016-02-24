@@ -12,8 +12,12 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('org_id', type=int)
-        parser.add_argument('--days', type=int, default=0, dest='days', help='Maximum age of messages to pull in days')
-        parser.add_argument('--weeks', type=int, default=0, dest='weeks', help='Maximum age of messages to pull in days')
+        parser.add_argument('--days', type=int, default=0, dest='days',
+                            help="Maximum age of messages to pull in days")
+        parser.add_argument('--weeks', type=int, default=0, dest='weeks',
+                            help="Maximum age of messages to pull in days")
+        parser.add_argument('--handled', type=bool, default=True, dest='as_handled',
+                            help="Whether messages should be saved as already handled")
 
     def handle(self, *args, **options):
         org_id = int(options['org_id'])
@@ -22,7 +26,7 @@ class Command(BaseCommand):
         except Org.DoesNotExist:
             raise CommandError("No such org with id %d" % org_id)
 
-        days, weeks = options['days'], options['weeks']
+        days, weeks, as_handled = options['days'], options['weeks'], options['as_handled']
 
         if not (days or weeks):
             raise CommandError("Must provide at least one of --days or --weeks")
@@ -45,10 +49,10 @@ Type 'yes' to continue, or 'no' to cancel: """ % (org.name, org.pk, since.strfti
 
         backend = get_backend()
 
-        # num_created, num_updated, num_deleted = backend.pull_labels(org)
+        num_created, num_updated, num_deleted = backend.pull_labels(org)
 
-        # self.stdout.write("Finished label pull (%d created, %d updated, %d deleted)" % (num_created, num_updated, num_deleted))
+        self.stdout.write("Finished label pull (%d created, %d updated, %d deleted)" % (num_created, num_updated, num_deleted))
 
-        num_created, num_updated, num_deleted = backend.pull_messages(org, since, timezone.now(), progress_callback)
+        num_created, num_updated, num_deleted = backend.pull_messages(org, since, now, as_handled, progress_callback)
 
         self.stdout.write("Finished contact pull (%d created, %d updated, %d deleted)" % (num_created, num_updated, num_deleted))
