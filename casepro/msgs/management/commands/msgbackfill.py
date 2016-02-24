@@ -1,12 +1,14 @@
 from __future__ import absolute_import, unicode_literals
 
 from casepro.backend import get_backend
-from casepro.dash_ext.sync import sync_local_to_changes
+from casepro.dash_ext.sync import sync_from_remote, sync_local_to_changes
 from casepro.msgs.models import Message
 from dash.orgs.models import Org
+from dash.utils import chunks
 from dateutil.relativedelta import relativedelta
 from django.core.management.base import BaseCommand
 from django.utils.timezone import now
+from temba_client.v2.types import Message as TembaMessage, ObjectRef
 
 
 class Command(BaseCommand):
@@ -65,17 +67,36 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
         """
         Back-fills for all of an org's cases and message actions
         """
+        from casepro.backend.rapidpro import MessageSyncer
+        syncer = MessageSyncer(as_handled=True)
+
         msg_ids = self.get_message_ids_for_cases_and_actions(org)
 
         self.stdout.write(" > Found %d message ids in cases and actions" % len(msg_ids))
 
-        # TODO
+        label_uuids_by_name = {l.name: l.uuid for l in org.labels.all()}
+
+        client = org.get_temba_client(api_version=1)
+
+        num_synced = 0
+
+        for id_batch in chunks(msg_ids, 20):
+            fetched_v1s = client.get_messages(ids=id_batch)
+            remotes_as_v2s = [self.v1_message_to_v2(m, label_uuids_by_name) for m in fetched_v1s]
+
+            for remote in remotes_as_v2s:
+                sync_from_remote(org, syncer, remote)
+
+            num_synced += len(id_batch)
+
+            self.stdout.write("   - Synced %d messages..." % num_synced)
 
     def backfill_for_labels(self, org):
         """
         Back-fills for each of the org's labels
         """
         from casepro.backend.rapidpro import MessageSyncer
+        syncer = MessageSyncer(as_handled=True)
 
         client = org.get_temba_client(api_version=2)
 
@@ -87,7 +108,7 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
 
             fetches = client.get_messages(label=label.name).iterfetches(retry_on_rate_exceed=True)
 
-            created, updated, deleted = sync_local_to_changes(org, MessageSyncer(as_handled=True), fetches, [], progress_callback)
+            created, updated, deleted = sync_local_to_changes(org, syncer, fetches, [], progress_callback)
 
             self.stdout.write(" > Synced messages for label %s (%d created, %d updated, %d deleted)" % (label.name, created, updated, deleted))
 
@@ -118,3 +139,20 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
                 ids_to_fetch.add(message_id)
 
         return sorted(list(ids_to_fetch))
+
+    def v1_message_to_v2(self, msg, label_uuids_by_name):
+        """
+        Converts a API v1 message object to a v2 object
+        """
+        return TembaMessage.create(id=msg.id,
+                                   broadcast=msg.broadcast,
+                                   contact=ObjectRef.create(uuid=msg.contact, name=None),
+                                   urn=msg.urn,
+                                   direction=('in' if msg.direction == 'I' else 'out'),
+                                   type=('inbox' if msg.type == 'I' else 'flow'),
+                                   archived=msg.archived,
+                                   text=msg.text,
+                                   labels=[ObjectRef.create(uuid=label_uuids_by_name.get(l), name=l) for l in msg.labels],
+                                   created_on=msg.created_on,
+                                   sent_on=msg.sent_on,
+                                   modified_on=None)
