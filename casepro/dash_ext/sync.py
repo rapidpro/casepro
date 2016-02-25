@@ -19,13 +19,15 @@ class SyncOutcome(Enum):
 
 class BaseSyncer(object):
     """
-    Base class for classes that describe how to synchronize particular local models against data from the RapidPro API
+    Base class for classes that describe how to synchronize particular local models against incoming data
     """
     __metaclass__ = ABCMeta
 
     model = None
     local_id_attr = 'uuid'
     remote_id_attr = 'uuid'
+    select_related = ()
+    prefetch_related = ()
 
     def identify_local(self, local):
         """
@@ -54,28 +56,37 @@ class BaseSyncer(object):
 
     def fetch_local(self, org, identity):
         """
-        Fetches a local model instance
+        Fetches the local model instance with the given identity, returning none if it doesn't exist
         :param org: the org
         :param identity: the unique identity
-        :return: the instance
+        :return: the instance or none
         """
-        return self.model.objects.filter(org=org).filter(**{self.local_id_attr: identity}).first()
+        qs = self.model.objects.filter(org=org).filter(**{self.local_id_attr: identity})
+
+        if self.select_related:
+            qs = qs.select_related(*self.select_related)
+        if self.prefetch_related:
+            qs = qs.prefetch_related(*self.prefetch_related)
+
+        return qs.first()
 
     @abstractmethod
     def local_kwargs(self, org, remote):
         """
-        Generates kwargs for creating or updating a local model instance from a remote object
+        Generates kwargs for creating or updating a local model instance from a remote object. Returning none from this
+        method means that the remote object doesn't belong locally.
         :param org: the org
         :param remote: the incoming remote object
-        :return: the kwargs
+        :return: the kwargs or none
         """
         pass
 
     def update_required(self, local, remote):
         """
-        Determines whether local instance differs from the remote object and so needs to be updated
+        Determines whether local instance differs from the remote object and so needs to be updated. By default this
+        will always update the local instance which is obviously inefficient.
         :param local: the local instance
-        :param remote: the remote object
+        :param remote: the incoming remote object
         :return: whether the local instance must be updated
         """
         return True
@@ -131,7 +142,8 @@ def sync_from_remote(org, syncer, remote):
 
 def sync_local_to_set(org, syncer, remote_set):
     """
-    Syncs an org's entire set of local instances of a model to match the set of remote objects
+    Syncs an org's set of local instances of a model to match the set of remote objects. Local objects not in the remote
+    set are deleted.
 
     :param org: the org
     :param * syncer: the local model syncer
@@ -162,7 +174,7 @@ def sync_local_to_set(org, syncer, remote_set):
 
 def sync_local_to_changes(org, syncer, fetches, deleted_fetches, progress_callback=None):
     """
-    Sync local instances against iterators of changed and deleted remote objects
+    Sync local instances against iterators which return fetches of changed and deleted remote objects.
 
     :param * org: the org
     :param * syncer: the local model syncer

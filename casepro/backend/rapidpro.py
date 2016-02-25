@@ -19,10 +19,7 @@ class ContactSyncer(BaseSyncer):
     Syncer for contacts
     """
     model = Contact
-
-    def fetch_local(self, org, identifier):
-        qs = self.model.objects.filter(org=org, uuid=identifier)
-        return qs.prefetch_related('groups').first()
+    prefetch_related = ('groups',)
 
     def local_kwargs(self, org, remote):
         if remote.blocked:  # we don't keep blocked contacts
@@ -124,13 +121,11 @@ class MessageSyncer(BaseSyncer):
     model = Message
     local_id_attr = 'backend_id'
     remote_id_attr = 'id'
+    select_related = ('contact',)
+    prefetch_related = ('labels',)
 
     def __init__(self, as_handled):
         self.as_handled = as_handled
-
-    def fetch_local(self, org, identifier):
-        qs = self.model.objects.filter(org=org, backend_id=identifier)
-        return qs.select_related('contact').prefetch_related('labels').first()
 
     def local_kwargs(self, org, remote):
         # labels are updated via a post save signal handler
