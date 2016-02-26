@@ -7,6 +7,7 @@ import six
 from casepro.cases.models import Case, CaseEvent
 from casepro.contacts.models import Contact
 from casepro.test import BaseCasesTest
+from dash.orgs.models import TaskState
 from datetime import datetime
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
@@ -15,9 +16,8 @@ from mock import patch, call
 from temba_client.clients import Pager
 from temba_client.utils import format_iso8601
 from temba_client.v1.types import Broadcast as TembaBroadcast
-from temba_client.v2.types import Contact as TembaContact
 from .models import Label, Message, MessageAction, RemoteMessage, Outgoing, MessageExport
-from .tasks import handle_messages
+from .tasks import handle_messages, pull_messages
 
 
 class LabelTest(BaseCasesTest):
@@ -475,6 +475,20 @@ class MessageExportCRUDLTest(BaseCasesTest):
 
 
 class TasksTest(BaseCasesTest):
+    @patch('casepro.test.TestBackend.pull_labels')
+    @patch('casepro.test.TestBackend.pull_messages')
+    def test_pull_messages(self, mock_pull_messages, mock_pull_labels):
+        mock_pull_labels.return_value = (1, 2, 3, 4)
+        mock_pull_messages.return_value = (5, 6, 7, 8)
+
+        pull_messages(self.unicef.pk)
+
+        task_state = TaskState.objects.get(org=self.unicef, task_key='message-pull')
+        self.assertEqual(task_state.get_last_results(), {
+            'labels': {'created': 1, 'updated': 2, 'deleted': 3},
+            'messages': {'created': 5, 'updated': 6, 'deleted': 7}
+        })
+
     @patch('casepro.test.TestBackend.label_messages')
     @patch('casepro.test.TestBackend.archive_messages')
     def test_handle_messages(self, mock_archive_messages, mock_label_messages):

@@ -2,8 +2,10 @@
 from __future__ import unicode_literals
 
 from casepro.test import BaseCasesTest
-from temba_client.v2.types import Contact as TembaContact, ObjectRef
+from dash.orgs.models import TaskState
+from mock import patch
 from .models import Contact, Group, Field
+from .tasks import pull_contacts
 
 
 class ContactTest(BaseCasesTest):
@@ -65,3 +67,22 @@ class ContactTest(BaseCasesTest):
         self.assertEqual(contact.as_json(full=True), {'uuid': 'C-001',
                                                       'is_stub': False,
                                                       'fields': {'nickname': None, 'age': "32"}})
+
+
+class TasksTest(BaseCasesTest):
+    @patch('casepro.test.TestBackend.pull_fields')
+    @patch('casepro.test.TestBackend.pull_groups')
+    @patch('casepro.test.TestBackend.pull_contacts')
+    def test_pull_messages(self, mock_pull_contacts, mock_pull_groups, mock_pull_fields):
+        mock_pull_fields.return_value = (1, 2, 3, 4)
+        mock_pull_groups.return_value = (5, 6, 7, 8)
+        mock_pull_contacts.return_value = (9, 10, 11, 12)
+
+        pull_contacts(self.unicef.pk)
+
+        task_state = TaskState.objects.get(org=self.unicef, task_key='contact-pull')
+        self.assertEqual(task_state.get_last_results(), {
+            'fields': {'created': 1, 'updated': 2, 'deleted': 3},
+            'groups': {'created': 5, 'updated': 6, 'deleted': 7},
+            'contacts': {'created': 9, 'updated': 10, 'deleted': 11}
+        })
