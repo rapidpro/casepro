@@ -30,7 +30,7 @@ class BaseBackend(object):
         :param datetime modified_after: pull contacts modified after this
         :param datetime modified_before: pull contacts modified before this
         :param progress_callback: callable that will be called from time to time with number of contacts pulled
-        :return: tuple of the number of contacts created, updated and deleted
+        :return: tuple of the number of contacts created, updated, deleted and ignored
         """
         pass
 
@@ -40,7 +40,7 @@ class BaseBackend(object):
         Pulls all contact fields
 
         :param org: the org
-        :return: tuple of the number of fields created, updated and deleted
+        :return: tuple of the number of fields created, updated, deleted and ignored
         """
         pass
 
@@ -50,7 +50,7 @@ class BaseBackend(object):
         Pulls all contact groups
 
         :param org: the org
-        :return: tuple of the number of groups created, updated and deleted
+        :return: tuple of the number of groups created, updated, deleted and ignored
         """
         pass
 
@@ -60,7 +60,7 @@ class BaseBackend(object):
         Pulls all message labels
 
         :param org: the org
-        :return: tuple of the number of labels created, updated and deleted
+        :return: tuple of the number of labels created, updated, deleted and ignored
         """
         pass
 
@@ -74,7 +74,7 @@ class BaseBackend(object):
         :param datetime modified_before: pull messages modified before this
         :param bool as_handled: whether messages should be saved as already handled
         :param progress_callback: callable that will be called from time to time with number of messages pulled
-        :return: tuple of the number of messages created, updated and deleted
+        :return: tuple of the number of messages created, updated, deleted and ignored
         """
         pass
 

@@ -26,6 +26,8 @@ class BaseCasesTest(DashTest):
     Base class for all test cases
     """
     def setUp(self):
+        super(BaseCasesTest, self).setUp()
+
         # some orgs
         self.unicef = self.create_org("UNICEF", timezone="Africa/Kampala", subdomain="unicef")
         self.nyaruka = self.create_org("Nyaruka", timezone="Africa/Kigali", subdomain="nyaruka")

@@ -1,14 +1,12 @@
 from __future__ import unicode_literals
 
-import six
-
 from casepro.backend import get_backend
+from dash.orgs.models import Org
 from django.contrib.postgres.fields import HStoreField
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from redis_cache import get_redis_connection
-from temba_client.v2.types import Contact as TembaContact, ObjectRef as TembaObjectRef
 
 SAVE_GROUPS_ATTR = '__data__groups'
 
@@ -22,7 +20,7 @@ class Group(models.Model):
     """
     A contact group in RapidPro
     """
-    org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name="groups")
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="groups")
 
     uuid = models.CharField(max_length=36, unique=True)
 
@@ -78,7 +76,7 @@ class Field(models.Model):
                    'state': TYPE_STATE,
                    'district': TYPE_DISTRICT}
 
-    org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name="fields")
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="fields")
 
     key = models.CharField(verbose_name=_("Key"), max_length=36)
 
@@ -113,7 +111,7 @@ class Contact(models.Model):
     """
     A contact in RapidPro
     """
-    org = models.ForeignKey('orgs.Org', verbose_name=_("Organization"), related_name="contacts")
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="contacts")
 
     uuid = models.CharField(max_length=36, unique=True)
 

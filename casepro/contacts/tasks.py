@@ -18,11 +18,11 @@ def pull_contacts(org, since, until):
     if not since:
         logger.warn("First time run for org #%d. Will sync all contacts" % org.pk)
 
-    fields_created, fields_updated, fields_deleted = backend.pull_fields(org)
+    fields_created, fields_updated, fields_deleted, ignored = backend.pull_fields(org)
 
-    groups_created, groups_updated, groups_deleted = backend.pull_groups(org)
+    groups_created, groups_updated, groups_deleted, ignored = backend.pull_groups(org)
 
-    contacts_created, contacts_updated, contacts_deleted = backend.pull_contacts(org, since, until)
+    contacts_created, contacts_updated, contacts_deleted, ignored = backend.pull_contacts(org, since, until)
 
     return {
         'fields': {'created': fields_created, 'updated': fields_updated, 'deleted': fields_deleted},

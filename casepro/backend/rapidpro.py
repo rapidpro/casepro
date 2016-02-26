@@ -4,8 +4,8 @@ import six
 
 from casepro.contacts.models import Contact, Group, Field, SAVE_GROUPS_ATTR
 from casepro.msgs.models import Label, Message, SAVE_CONTACT_ATTR, SAVE_LABELS_ATTR
-from casepro.dash_ext.sync import BaseSyncer, sync_local_to_set, sync_local_to_changes
 from casepro.utils import is_dict_equal
+from dash.utils.sync import BaseSyncer, sync_local_to_set, sync_local_to_changes
 from itertools import chain
 from . import BaseBackend
 
@@ -250,7 +250,7 @@ class RapidProBackend(BaseBackend):
     def archive_contact_messages(self, org, contact):
         client = self._get_client(org, 1)
 
-        # TODO switch to API v2 (downside is this will return all outgoing messages which could be a lot)
+        # TODO add to contact action endpoint in RapidPro for archiving a contact's messages as this is inefficient
         messages = client.get_messages(contacts=[contact.uuid], direction='I', statuses=['H'], _types=['I'], archived=False)
         if messages:
             client.archive_messages(messages=[m.id for m in messages])

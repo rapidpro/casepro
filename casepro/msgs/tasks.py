@@ -23,9 +23,9 @@ def pull_messages(org, since, until):
     if not since:
         since = until - timedelta(hours=1)
 
-    labels_created, labels_updated, labels_deleted = backend.pull_labels(org)
+    labels_created, labels_updated, labels_deleted, ignored = backend.pull_labels(org)
 
-    msgs_created, msgs_updated, msgs_deleted = backend.pull_messages(org, since, until)
+    msgs_created, msgs_updated, msgs_deleted, ignored = backend.pull_messages(org, since, until)
 
     return {
         'labels': {'created': labels_created, 'updated': labels_updated, 'deleted': labels_deleted},

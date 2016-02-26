@@ -1,10 +1,10 @@
 from __future__ import absolute_import, unicode_literals
 
 from casepro.backend import get_backend
-from casepro.dash_ext.sync import sync_from_remote, sync_local_to_changes
 from casepro.msgs.models import Message
 from dash.orgs.models import Org
 from dash.utils import chunks
+from dash.utils.sync import sync_from_remote, sync_local_to_changes
 from dateutil.relativedelta import relativedelta
 from django.core.management.base import BaseCommand
 from django.utils.timezone import now
@@ -108,7 +108,7 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
 
             fetches = client.get_messages(label=label.name).iterfetches(retry_on_rate_exceed=True)
 
-            created, updated, deleted = sync_local_to_changes(org, syncer, fetches, [], progress_callback)
+            created, updated, deleted, ignored = sync_local_to_changes(org, syncer, fetches, [], progress_callback)
 
             self.stdout.write(" > Synced messages for label %s (%d created, %d updated, %d deleted)" % (label.name, created, updated, deleted))
 
@@ -124,7 +124,7 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
             self.stdout.write("   - Synced %d messages..." % num_fetched)
 
         backend = get_backend()
-        created, updated, deleted = backend.pull_messages(org, since, now(), as_handled=True, progress_callback=progress_callback)
+        created, updated, deleted, ignored = backend.pull_messages(org, since, now(), as_handled=True, progress_callback=progress_callback)
 
         self.stdout.write(" > Synced messages (%d created, %d updated, %d deleted)" % (created, updated, deleted))
 
