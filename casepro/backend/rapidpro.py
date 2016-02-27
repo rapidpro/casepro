@@ -210,13 +210,8 @@ class RapidProBackend(BaseBackend):
         client = self._get_client(org, 2)
 
         # all incoming messages created or modified in RapidPro in the time window
-        inbox_query = client.get_messages(folder='inbox', after=modified_after, before=modified_before)
-        flows_query = client.get_messages(folder='flows', after=modified_after, before=modified_before)
-
-        fetches = chain(
-            inbox_query.iterfetches(retry_on_rate_exceed=True),
-            flows_query.iterfetches(retry_on_rate_exceed=True)
-        )
+        query = client.get_messages(folder='incoming', after=modified_after, before=modified_before)
+        fetches = query.iterfetches(retry_on_rate_exceed=True)
 
         return sync_local_to_changes(org, MessageSyncer(as_handled), fetches, [], progress_callback)
 

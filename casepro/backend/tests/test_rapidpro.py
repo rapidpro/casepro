@@ -424,7 +424,7 @@ class RapidProBackendTest(BaseCasesTest):
         d5 = datetime(2014, 1, 1, 11, 0, tzinfo=pytz.UTC)
 
         mock_get_messages.side_effect = [
-            MockClientQuery([  # first call is to get inbox messages
+            MockClientQuery([
                 TembaMessage.create(id=101,
                                     contact=ObjectRef.create(uuid='C-001', name="Ann"),
                                     type='inbox',
@@ -451,8 +451,6 @@ class RapidProBackendTest(BaseCasesTest):
                                     visibility="visible",
                                     labels=[],
                                     created_on=d3),
-            ]),
-            MockClientQuery([  # second call is to get flow messages
                 TembaMessage.create(id=104,
                                     contact=ObjectRef.create(uuid='C-004', name="Don"),
                                     type='flow',
@@ -494,8 +492,7 @@ class RapidProBackendTest(BaseCasesTest):
                                         ObjectRef.create(uuid='L-007', name="Important")
                                     ],
                                     created_on=d1)
-            ]),
-            MockClientQuery([])
+            ])
         ]
 
         self.assertEqual(self.backend.pull_messages(self.unicef, d1, d5), (0, 1, 0, 0))
