@@ -73,7 +73,7 @@ class TasksTest(BaseCasesTest):
     @patch('casepro.test.TestBackend.pull_fields')
     @patch('casepro.test.TestBackend.pull_groups')
     @patch('casepro.test.TestBackend.pull_contacts')
-    def test_pull_messages(self, mock_pull_contacts, mock_pull_groups, mock_pull_fields):
+    def test_pull_contacts(self, mock_pull_contacts, mock_pull_groups, mock_pull_fields):
         mock_pull_fields.return_value = (1, 2, 3, 4)
         mock_pull_groups.return_value = (5, 6, 7, 8)
         mock_pull_contacts.return_value = (9, 10, 11, 12)
