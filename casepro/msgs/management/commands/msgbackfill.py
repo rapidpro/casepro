@@ -11,6 +11,10 @@ from django.utils.timezone import now
 from temba_client.v2.types import Message as TembaMessage, ObjectRef
 
 
+MSGS_PER_ID_FETCH = 50
+NUM_WEEKS = 3
+
+
 class Command(BaseCommand):
     """
     Temporary command for back-filling of messages from RapidPro. Will back-fill...
@@ -25,19 +29,29 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--analyze', dest='analyze', action='store_const', const=True, default=False,
                             help="Whether to analyze local messages rather than actually back-fill")
+        parser.add_argument('org_ids', metavar='ORG', type=int, nargs='*',
+                            help='The orgs to backfill')
 
     def handle(self, *args, **options):
+        org_ids = options['org_ids']
         analyze = options['analyze']
 
-        prompt = """This will %s messages for all orgs. Are you sure you want to do this?
+        if org_ids:
+            orgs = Org.objects.filter(pk__in=org_ids)
+        else:
+            orgs = Org.objects.all()
 
-Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'back-fill')
+        orgs = list(orgs.order_by('pk'))
+
+        prompt = """This will %s messages for %s orgs. Are you sure you want to do this?
+
+Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'back-fill', unicode(len(org_ids)) if org_ids else 'all')
 
         if raw_input(prompt).lower() != 'yes':
             self.stdout.write("Operation cancelled")
             return
 
-        for org in Org.objects.all():
+        for org in orgs:
             if analyze:
                 self.analyze(org)
             else:
@@ -59,7 +73,7 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
 
         self.backfill_for_labels(org)
 
-        self.backfill_for_time_window(org, num_weeks=3)
+        self.backfill_for_time_window(org, num_weeks=NUM_WEEKS)
 
         self.stdout.write(" > Finished org with %d messages" % Message.objects.filter(org=org).count())
 
@@ -80,7 +94,7 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
 
         num_synced = 0
 
-        for id_batch in chunks(msg_ids, 20):
+        for id_batch in chunks(msg_ids, MSGS_PER_ID_FETCH):
             fetched_v1s = client.get_messages(ids=id_batch)
             remotes_as_v2s = [self.v1_message_to_v2(m, label_uuids_by_name) for m in fetched_v1s]
 
