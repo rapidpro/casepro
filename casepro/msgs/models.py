@@ -338,7 +338,7 @@ class RemoteMessage(object):
         # message store refactor is complete. This removes any label exclusions from the search.
         search['labels'] = [l for l in search['labels'] if not l.startswith('-')]
 
-        client = org.get_temba_client()
+        client = org.get_temba_client(api_version=1)
         messages = client.get_messages(pager=pager, text=search['text'], labels=search['labels'],
                                        contacts=search['contacts'], groups=search['groups'],
                                        direction='I', _types=search['types'], archived=search['archived'],
@@ -350,6 +350,8 @@ class RemoteMessage(object):
 
         annotated = []
         for message in messages:
+            message.visibility = ('archived' if message.archived else 'visible')
+
             contact = contacts_by_uuid.get(message.contact)
             if contact:
                 message.contact = contact.as_json()
@@ -377,7 +379,7 @@ class RemoteMessage(object):
                 'labels': labels,
                 'flagged': flagged,
                 'direction': 'I' if msg.direction in ('I', 'in') else 'O',
-                'archived': msg.archived,
+                'archived': msg.visibility == 'archived',
                 'sender': msg.sender.as_json() if getattr(msg, 'sender', None) else None}
 
 

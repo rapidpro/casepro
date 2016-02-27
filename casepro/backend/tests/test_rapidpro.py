@@ -114,13 +114,13 @@ class MessageSyncerTest(BaseCasesTest):
                 direction='in',
                 type='inbox',
                 status='handled',
-                archived=False,
+                visibility='visible',
                 text="I have lots of questions!",
                 labels=[ObjectRef.create(uuid='L-001', name="Spam"), ObjectRef.create(uuid='L-009', name="Flagged")],
                 created_on=d1
         )
 
-        kwargs = MessageSyncer(as_handled=False).local_kwargs(self.unicef, remote)
+        kwargs = MessageSyncer().local_kwargs(self.unicef, remote)
 
         self.assertEqual(kwargs, {
             'org': self.unicef,
@@ -134,9 +134,21 @@ class MessageSyncerTest(BaseCasesTest):
             '__data__labels': [("L-001", "Spam")],
         })
 
+        remote.visibility = 'archived'
+
+        kwargs = MessageSyncer(as_handled=False).local_kwargs(self.unicef, remote)
+
+        self.assertEqual(kwargs['is_archived'], True)
+        self.assertNotIn('is_handled', kwargs)
+
         kwargs = MessageSyncer(as_handled=True).local_kwargs(self.unicef, remote)
 
         self.assertTrue(kwargs['is_handled'], True)
+
+        # if remote is deleted, should return none
+        remote.visibility = 'deleted'
+
+        self.assertIsNone(MessageSyncer(as_handled=False).local_kwargs(self.unicef, remote))
 
 
 class RapidProBackendTest(BaseCasesTest):
@@ -417,7 +429,7 @@ class RapidProBackendTest(BaseCasesTest):
                                     contact=ObjectRef.create(uuid='C-001', name="Ann"),
                                     type='inbox',
                                     text="What is aids?",
-                                    archived=False,
+                                    visibility="visible",
                                     labels=[
                                         ObjectRef.create(uuid='L-001', name="AIDS"),  # existing label
                                         ObjectRef.create(uuid='L-009', name="Flagged"),  # pseudo-label
@@ -427,7 +439,7 @@ class RapidProBackendTest(BaseCasesTest):
                                     contact=ObjectRef.create(uuid='C-002', name="Bob"),
                                     type='inbox',
                                     text="Can I catch Hiv?",
-                                    archived=False,
+                                    visibility="visible",
                                     labels=[
                                         ObjectRef.create(uuid='L-007', name="Important"),  # new label
                                     ],
@@ -436,7 +448,7 @@ class RapidProBackendTest(BaseCasesTest):
                                     contact=ObjectRef.create(uuid='C-003', name="Cat"),
                                     type='inbox',
                                     text="I think I'm pregnant",
-                                    archived=False,
+                                    visibility="visible",
                                     labels=[],
                                     created_on=d3),
             ]),
@@ -445,14 +457,14 @@ class RapidProBackendTest(BaseCasesTest):
                                     contact=ObjectRef.create(uuid='C-004', name="Don"),
                                     type='flow',
                                     text="Php is amaze",
-                                    archived=False,
+                                    visibility="visible",
                                     labels=[],
                                     created_on=d4),
                 TembaMessage.create(id=105,
                                     contact=ObjectRef.create(uuid='C-005', name="Eve"),
                                     type='flow',
                                     text="Thanks for the pregnancy/HIV info",
-                                    archived=False,
+                                    visibility="visible",
                                     labels=[],
                                     created_on=d5)
             ])
@@ -476,7 +488,7 @@ class RapidProBackendTest(BaseCasesTest):
                                     contact=ObjectRef.create(uuid='C-001', name="Ann"),
                                     type='inbox',
                                     text="What is aids?",
-                                    archived=True,
+                                    visibility="archived",
                                     labels=[
                                         ObjectRef.create(uuid='L-001', name="AIDS"),
                                         ObjectRef.create(uuid='L-007', name="Important")

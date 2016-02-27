@@ -128,6 +128,9 @@ class MessageSyncer(BaseSyncer):
         self.as_handled = as_handled
 
     def local_kwargs(self, org, remote):
+        if remote.visibility == 'deleted':
+            return None
+
         # labels are updated via a post save signal handler
         labels = [(l.uuid, l.name) for l in remote.labels if l.name != SYSTEM_LABEL_FLAGGED]
 
@@ -137,7 +140,7 @@ class MessageSyncer(BaseSyncer):
             'type': 'I' if remote.type == 'inbox' else 'F',
             'text': remote.text,
             'is_flagged': SYSTEM_LABEL_FLAGGED in [l.name for l in remote.labels],
-            'is_archived': remote.archived,
+            'is_archived': (remote.visibility == 'archived'),
             'created_on': remote.created_on,
             SAVE_CONTACT_ATTR: (remote.contact.uuid, remote.contact.name),
             SAVE_LABELS_ATTR: labels,
@@ -152,7 +155,7 @@ class MessageSyncer(BaseSyncer):
         if local.is_flagged != (SYSTEM_LABEL_FLAGGED in [l.name for l in remote.labels]):
             return True
 
-        if local.is_archived != remote.archived:
+        if local.is_archived and remote.visibility != 'archived':
             return True
 
         local_label_uuids = [l.uuid for l in local.labels.all()]

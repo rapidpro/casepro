@@ -150,7 +150,7 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
                                    urn=msg.urn,
                                    direction=('in' if msg.direction == 'I' else 'out'),
                                    type=('inbox' if msg.type == 'I' else 'flow'),
-                                   archived=msg.archived,
+                                   visibility=('archived' if msg.archived else 'visible'),
                                    text=msg.text,
                                    labels=[ObjectRef.create(uuid=label_uuids_by_name.get(l), name=l) for l in msg.labels],
                                    created_on=msg.created_on,
