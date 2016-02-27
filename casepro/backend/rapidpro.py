@@ -124,14 +124,14 @@ class MessageSyncer(BaseSyncer):
     select_related = ('contact',)
     prefetch_related = ('labels',)
 
-    def __init__(self, as_handled):
+    def __init__(self, as_handled=False):
         self.as_handled = as_handled
 
     def local_kwargs(self, org, remote):
         # labels are updated via a post save signal handler
         labels = [(l.uuid, l.name) for l in remote.labels if l.name != SYSTEM_LABEL_FLAGGED]
 
-        return {
+        kwargs = {
             'org': org,
             'backend_id': remote.id,
             'type': 'I' if remote.type == 'inbox' else 'F',
@@ -139,10 +139,14 @@ class MessageSyncer(BaseSyncer):
             'is_flagged': SYSTEM_LABEL_FLAGGED in [l.name for l in remote.labels],
             'is_archived': remote.archived,
             'created_on': remote.created_on,
-            'is_handled': self.as_handled,
             SAVE_CONTACT_ATTR: (remote.contact.uuid, remote.contact.name),
             SAVE_LABELS_ATTR: labels,
         }
+
+        if self.as_handled:
+            kwargs['is_handled'] = True
+
+        return kwargs
 
     def update_required(self, local, remote):
         if local.is_flagged != (SYSTEM_LABEL_FLAGGED in [l.name for l in remote.labels]):

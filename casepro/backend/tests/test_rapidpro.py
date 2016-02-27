@@ -130,7 +130,6 @@ class MessageSyncerTest(BaseCasesTest):
             'is_flagged': True,
             'is_archived': False,
             'created_on': d1,
-            'is_handled': False,
             '__data__contact': ("C-001", "Ann"),
             '__data__labels': [("L-001", "Spam")],
         })
