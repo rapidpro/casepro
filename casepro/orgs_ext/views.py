@@ -2,13 +2,13 @@ from __future__ import absolute_import, unicode_literals
 
 from casepro.contacts.models import Field, Group
 from dash.orgs.models import Org, TaskState
-from dash.orgs.views import OrgCRUDL, InferOrgMixin, OrgPermsMixin, SmartUpdateView, SmartListView
+from dash.orgs.views import OrgCRUDL, TaskCRUDL, InferOrgMixin, OrgPermsMixin
 from django import forms
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
-from smartmin.views import SmartCRUDL
+from smartmin.views import SmartCRUDL, SmartUpdateView, SmartListView
 from timezones.forms import TimeZoneField
 
 
@@ -131,17 +131,8 @@ class OrgExtCRUDL(SmartCRUDL):
         pass
 
 
-class TaskCRUDL(SmartCRUDL):
-    actions = ('list',)
-    model = TaskState
-    model_name = _("Task")
-    path = 'task'
-
-    class List(SmartListView):
-        title = _("Tasks")
-        link_fields = ('org',)
-        default_order = ('org__name', 'task_key')
-
+class TaskExtCRUDL(TaskCRUDL):
+    class List(TaskCRUDL.List):
         def lookup_field_link(self, context, field, obj):
             if field == 'org':
                 return reverse('orgs_ext.org_update', args=[obj.org_id])

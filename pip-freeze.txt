@@ -8,7 +8,7 @@ billiard==3.3.0.22
 boto==2.38.0
 celery==3.1.19
 coverage==3.7.1
--e git+https://github.com/rapidpro/dash.git@791fbf0c8d7ae031f52bb8455e15c2f0bc493865#egg=dash-master
+-e git+https://github.com/rapidpro/dash.git@622ad883b5afec322c660d0e56214ff798c42dc9#egg=dash-master
 dj-database-url==0.3.0
 django-appconf==1.0.1
 django-celery==3.1.17
