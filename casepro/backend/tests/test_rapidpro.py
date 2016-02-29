@@ -43,7 +43,25 @@ class ContactSyncerTest(BaseCasesTest):
         })
 
     def test_update_required(self):
-        local = self.create_contact(self.unicef, 'C-001', "Ann", [self.reporters], {'chat_name': "ann"})
+        # create stub contact
+        local = Contact.get_or_create(self.unicef, 'C-001', "Ann")
+
+        # a stub contact should always be updated
+        self.assertTrue(self.syncer.update_required(local, TembaContact.create(
+            uuid='000-001',
+            name="Ann",
+            urns=['tel:1234'],
+            groups=[],
+            fields={},
+            language=None,
+            modified_on=now()
+        )))
+
+        local.groups.add(self.reporters)
+        local.language = "eng"
+        local.is_stub = False
+        local.fields = {'chat_name': "ann"}
+        local.save()
 
         # no differences (besides null field value which is ignored)
         self.assertFalse(self.syncer.update_required(local, TembaContact.create(
@@ -52,7 +70,8 @@ class ContactSyncerTest(BaseCasesTest):
             urns=['tel:1234'],
             groups=[ObjectRef.create(uuid='G-003', name="Reporters")],
             fields={'chat_name': "ann", 'age': None},
-            language='eng', modified_on=now()
+            language='eng',
+            modified_on=now()
         )))
 
         # name change
@@ -62,7 +81,8 @@ class ContactSyncerTest(BaseCasesTest):
             urns=['tel:1234'],
             groups=[ObjectRef.create(uuid='G-003', name="Reporters")],
             fields={'chat_name': "ann"},
-            language='eng', modified_on=now()
+            language='eng',
+            modified_on=now()
         )))
 
         # group change

@@ -40,6 +40,9 @@ class ContactSyncer(BaseSyncer):
         }
 
     def update_required(self, local, remote):
+        if local.is_stub:
+            return True
+
         if local.name != remote.name:
             return True
 
