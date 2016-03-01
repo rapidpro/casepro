@@ -244,7 +244,7 @@ class RapidProBackend(BaseBackend):
 
     def stop_runs(self, org, contact):
         client = self._get_client(org, 1)
-        client.expire_contacts([contact.uuid])
+        client.expire_contacts(contacts=[contact.uuid])
 
     def label_messages(self, org, messages, label):
         if messages:
@@ -258,11 +258,7 @@ class RapidProBackend(BaseBackend):
 
     def archive_contact_messages(self, org, contact):
         client = self._get_client(org, 1)
-
-        # TODO add to contact action endpoint in RapidPro for archiving a contact's messages as this is inefficient
-        messages = client.get_messages(contacts=[contact.uuid], direction='I', statuses=['H'], _types=['I'], archived=False)
-        if messages:
-            client.archive_messages(messages=[m.id for m in messages])
+        client.archive_contacts(contacts=[contact.uuid])
 
     def restore_messages(self, org, messages):
         if messages:

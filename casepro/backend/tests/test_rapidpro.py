@@ -558,7 +558,7 @@ class RapidProBackendTest(BaseCasesTest):
     def test_stop_runs(self, mock_expire_contacts):
         self.backend.stop_runs(self.unicef, self.bob)
 
-        mock_expire_contacts.assert_called_once_with(['C-002'])
+        mock_expire_contacts.assert_called_once_with(contacts=['C-002'])
 
     @patch('dash.orgs.models.TembaClient1.label_messages')
     def test_label_messages(self, mock_label_messages):
@@ -588,17 +588,11 @@ class RapidProBackendTest(BaseCasesTest):
 
         mock_archive_messages.assert_called_once_with(messages=[123, 234])
 
-    @patch('dash.orgs.models.TembaClient1.get_messages')
-    @patch('dash.orgs.models.TembaClient1.archive_messages')
-    def test_archive_contact_messages(self, mock_archive_messages, mock_get_messages):
-        from temba_client.v1.types import Message as TembaMessage1
-
-        mock_get_messages.return_value = [TembaMessage1.create(id=123), TembaMessage1.create(id=234)]
-
+    @patch('dash.orgs.models.TembaClient1.archive_contacts')
+    def test_archive_contact_messages(self, mock_archive_contacts):
         self.backend.archive_contact_messages(self.unicef, self.bob)
 
-        mock_get_messages.assert_called_once_with(contacts=['C-002'], direction='I', statuses=['H'], _types=['I'], archived=False)
-        mock_archive_messages.assert_called_once_with(messages=[123, 234])
+        mock_archive_contacts.assert_called_once_with(contacts=['C-002'])
 
     @patch('dash.orgs.models.TembaClient1.unarchive_messages')
     def test_restore_messages(self, mock_unarchive_messages):
