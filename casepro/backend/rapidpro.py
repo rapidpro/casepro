@@ -52,7 +52,7 @@ class ContactSyncer(BaseSyncer):
         if local.language != remote.language:
             return True
 
-        if [g.uuid for g in local.groups.all()] != [g.uuid for g in remote.groups]:
+        if {g.uuid for g in local.groups.all()} != {g.uuid for g in remote.groups}:
             return True
 
         return not is_dict_equal(local.get_fields(), remote.fields, ignore_none_values=True)
