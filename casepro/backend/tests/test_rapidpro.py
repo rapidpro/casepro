@@ -8,7 +8,7 @@ from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message
 from casepro.test import BaseCasesTest
 from dash.test import MockClientQuery
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.utils.timezone import now
 from mock import patch
 from temba_client.v2.types import Group as TembaGroup, Field as TembaField, Label as TembaLabel, ObjectRef
@@ -125,7 +125,8 @@ class MessageSyncerTest(BaseCasesTest):
         self.assertEqual(MessageSyncer(as_handled=False).fetch_local(self.unicef, 123456789), msg)
 
     def test_local_kwargs(self):
-        d1 = datetime(2015, 12, 25, 13, 30, 0, 0, pytz.UTC)
+        d1 = now() - timedelta(hours=1)
+        d2 = now() - timedelta(days=32)
 
         remote = TembaMessage.create(
                 id=123456789,
@@ -154,15 +155,18 @@ class MessageSyncerTest(BaseCasesTest):
             '__data__labels': [("L-001", "Spam")],
         })
 
+        # if remote is archived, so will local
         remote.visibility = 'archived'
-
-        kwargs = MessageSyncer(as_handled=False).local_kwargs(self.unicef, remote)
-
+        kwargs = MessageSyncer().local_kwargs(self.unicef, remote)
         self.assertEqual(kwargs['is_archived'], True)
-        self.assertNotIn('is_handled', kwargs)
 
+        # if syncer is set to save as handled, local will be marked as handled
         kwargs = MessageSyncer(as_handled=True).local_kwargs(self.unicef, remote)
+        self.assertTrue(kwargs['is_handled'], True)
 
+        # if remote is too old, local will be marked as handled
+        remote.created_on = d2
+        kwargs = MessageSyncer(as_handled=False).local_kwargs(self.unicef, remote)
         self.assertTrue(kwargs['is_handled'], True)
 
         # if remote is deleted, should return none
@@ -437,11 +441,11 @@ class RapidProBackendTest(BaseCasesTest):
 
     @patch('dash.orgs.models.TembaClient2.get_messages')
     def test_pull_messages(self, mock_get_messages):
-        d1 = datetime(2014, 1, 1, 7, 0, tzinfo=pytz.UTC)
-        d2 = datetime(2014, 1, 1, 8, 0, tzinfo=pytz.UTC)
-        d3 = datetime(2014, 1, 1, 9, 0, tzinfo=pytz.UTC)
-        d4 = datetime(2014, 1, 1, 10, 0, tzinfo=pytz.UTC)
-        d5 = datetime(2014, 1, 1, 11, 0, tzinfo=pytz.UTC)
+        d1 = now() - timedelta(hours=10)
+        d2 = now() - timedelta(hours=9)
+        d3 = now() - timedelta(hours=8)
+        d4 = now() - timedelta(hours=7)
+        d5 = now() - timedelta(hours=6)
 
         mock_get_messages.side_effect = [
             MockClientQuery([

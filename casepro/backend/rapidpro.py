@@ -6,12 +6,15 @@ from casepro.contacts.models import Contact, Group, Field, SAVE_GROUPS_ATTR
 from casepro.msgs.models import Label, Message, SAVE_CONTACT_ATTR, SAVE_LABELS_ATTR
 from casepro.utils import is_dict_equal
 from dash.utils.sync import BaseSyncer, sync_local_to_set, sync_local_to_changes
-from itertools import chain
+from django.utils.timezone import now
 from . import BaseBackend
 
 
 # no concept of flagging in RapidPro so that is modelled with a label
 SYSTEM_LABEL_FLAGGED = "Flagged"
+
+# maximum number of days old a message can be for it to be handled
+MAXIMUM_HANDLE_MESSAGE_AGE = 30
 
 
 class ContactSyncer(BaseSyncer):
@@ -149,7 +152,8 @@ class MessageSyncer(BaseSyncer):
             SAVE_LABELS_ATTR: labels,
         }
 
-        if self.as_handled:
+        # if syncer is set explicitly or message is too old, save as handled already
+        if self.as_handled or (now() - remote.created_on).days > MAXIMUM_HANDLE_MESSAGE_AGE:
             kwargs['is_handled'] = True
 
         return kwargs
