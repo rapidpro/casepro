@@ -49,10 +49,12 @@ Type 'yes' to continue, or 'no' to cancel: """ % (org.name, org.pk, since.strfti
 
         backend = get_backend()
 
-        num_created, num_updated, num_deleted = backend.pull_labels(org)
+        created, updated, deleted, ignored = backend.pull_labels(org)
 
-        self.stdout.write("Finished label pull (%d created, %d updated, %d deleted)" % (num_created, num_updated, num_deleted))
+        self.stdout.write("Finished label pull (%d created, %d updated, %d deleted, %d ignored)"
+                          % (created, updated, deleted, ignored))
 
-        num_created, num_updated, num_deleted = backend.pull_messages(org, since, now, as_handled, progress_callback)
+        created, updated, deleted, ignored = backend.pull_messages(org, since, now, as_handled, progress_callback)
 
-        self.stdout.write("Finished contact pull (%d created, %d updated, %d deleted)" % (num_created, num_updated, num_deleted))
+        self.stdout.write("Finished message pull (%d created, %d updated, %d deleted, %d ignored)"
+                          % (created, updated, deleted, ignored))
