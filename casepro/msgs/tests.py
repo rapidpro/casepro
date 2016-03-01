@@ -189,9 +189,28 @@ class LabelCRUDLTest(BaseCasesTest):
 
 
 class MessageTest(BaseCasesTest):
+    def setUp(self):
+        super(MessageTest, self).setUp()
+
+        self.ann = self.create_contact(self.unicef, 'C-001', "Ann")
+
+    def create_test_messages(self):
+        self.msg1 = Message.objects.create(org=self.unicef, backend_id=101, type='I', text="Normal",
+                                           created_on=now(), contact=self.ann,
+                                           __data__labels=[("L-001", "Aids"), ("L-002", "Pregnancy")])
+        self.msg2 = Message.objects.create(org=self.unicef, backend_id=102, type='F', text="Flow",
+                                           created_on=now(), contact=self.ann)
+        self.msg3 = Message.objects.create(org=self.unicef, backend_id=103, type='I', text="Archived", is_archived=True,
+                                           created_on=now(), contact=self.ann)
+        self.msg4 = Message.objects.create(org=self.unicef, backend_id=104, type='I', text="Flagged", is_flagged=True,
+                                           created_on=now(), contact=self.ann)
+        self.msg5 = Message.objects.create(org=self.unicef, backend_id=105, type='I', text="Inactive", is_active=False,
+                                           created_on=now(), contact=self.ann)
+
     def test_save(self):
         # start with no labels or contacts
         Label.objects.all().delete()
+        Contact.objects.all().delete()
 
         d1 = datetime(2015, 12, 25, 13, 30, 0, 0, pytz.UTC)
 
@@ -240,19 +259,119 @@ class MessageTest(BaseCasesTest):
 
         self.assertEqual(set(message.labels.all()), {feedback, important})
 
+    @patch('casepro.test.TestBackend.label_messages')
+    @patch('casepro.test.TestBackend.unlabel_messages')
+    def test_update_labels(self, mock_unlabel_messages, mock_label_messages):
+        self.create_test_messages()
+        ebola = self.create_label(self.unicef, "L-007", "Ebola", "About Ebola", "ebola")
 
-class RemoteMessageTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient1.archive_messages')
+        self.msg1.update_labels(self.user1, [self.pregnancy, ebola])
+
+        mock_label_messages.assert_called_once_with(self.unicef, [self.msg1], ebola)
+        mock_unlabel_messages.assert_called_once_with(self.unicef, [self.msg1], self.aids)
+
+        actions = list(MessageAction.objects.order_by('pk'))
+        self.assertEqual(actions[0].action, MessageAction.LABEL)
+        self.assertEqual(actions[0].created_by, self.user1)
+        self.assertEqual(actions[0].messages, [101])
+        self.assertEqual(actions[0].label, ebola)
+        self.assertEqual(actions[1].action, MessageAction.UNLABEL)
+        self.assertEqual(actions[1].created_by, self.user1)
+        self.assertEqual(actions[1].messages, [101])
+        self.assertEqual(actions[1].label, self.aids)
+
+    @patch('casepro.test.TestBackend.flag_messages')
+    def test_bulk_flag(self, mock_flag_messages):
+        self.create_test_messages()
+
+        Message.bulk_flag(self.unicef, self.user1, [self.msg2, self.msg3])
+
+        mock_flag_messages.assert_called_once_with(self.unicef, [self.msg2, self.msg3])
+
+        action = MessageAction.objects.get()
+        self.assertEqual(action.action, MessageAction.FLAG)
+        self.assertEqual(action.created_by, self.user1)
+        self.assertEqual(action.messages, [102, 103])
+
+        self.assertEqual(Message.objects.filter(is_flagged=True).count(), 3)
+
+    @patch('casepro.test.TestBackend.unflag_messages')
+    def test_bulk_unflag(self, mock_unflag_messages):
+        self.create_test_messages()
+
+        Message.bulk_unflag(self.unicef, self.user1, [self.msg3, self.msg4])
+
+        mock_unflag_messages.assert_called_once_with(self.unicef, [self.msg3, self.msg4])
+
+        action = MessageAction.objects.get()
+        self.assertEqual(action.action, MessageAction.UNFLAG)
+        self.assertEqual(action.created_by, self.user1)
+        self.assertEqual(action.messages, [103, 104])
+
+        self.assertEqual(Message.objects.filter(is_flagged=True).count(), 0)
+
+    @patch('casepro.test.TestBackend.label_messages')
+    def test_bulk_label(self, mock_label_messages):
+        self.create_test_messages()
+
+        Message.bulk_label(self.unicef, self.user1, [self.msg1, self.msg2], self.aids)
+
+        mock_label_messages.assert_called_once_with(self.unicef, [self.msg1, self.msg2], self.aids)
+
+        action = MessageAction.objects.get()
+        self.assertEqual(action.action, MessageAction.LABEL)
+        self.assertEqual(action.created_by, self.user1)
+        self.assertEqual(action.messages, [101, 102])
+
+        self.assertEqual(self.aids.messages.count(), 2)
+
+    @patch('casepro.test.TestBackend.unlabel_messages')
+    def test_bulk_unlabel(self, mock_unlabel_messages):
+        self.create_test_messages()
+
+        Message.bulk_unlabel(self.unicef, self.user1, [self.msg1, self.msg2], self.aids)
+
+        mock_unlabel_messages.assert_called_once_with(self.unicef, [self.msg1, self.msg2], self.aids)
+
+        action = MessageAction.objects.get()
+        self.assertEqual(action.action, MessageAction.UNLABEL)
+        self.assertEqual(action.created_by, self.user1)
+        self.assertEqual(action.messages, [101, 102])
+
+        self.assertEqual(self.aids.messages.count(), 0)
+
+    @patch('casepro.test.TestBackend.archive_messages')
     def test_bulk_archive(self, mock_archive_messages):
-        RemoteMessage.bulk_archive(self.unicef, self.user1, [123, 234, 345])
+        self.create_test_messages()
+
+        Message.bulk_archive(self.unicef, self.user1, [self.msg1, self.msg2])
+
+        mock_archive_messages.assert_called_once_with(self.unicef, [self.msg1, self.msg2])
 
         action = MessageAction.objects.get()
         self.assertEqual(action.action, MessageAction.ARCHIVE)
         self.assertEqual(action.created_by, self.user1)
-        self.assertEqual(action.messages, [123, 234, 345])
+        self.assertEqual(action.messages, [101, 102])
 
-        mock_archive_messages.assert_called_once_with([123, 234, 345])
+        self.assertEqual(Message.objects.filter(is_archived=True).count(), 3)
 
+    @patch('casepro.test.TestBackend.restore_messages')
+    def test_bulk_restore(self, mock_restore_messages):
+        self.create_test_messages()
+
+        Message.bulk_restore(self.unicef, self.user1, [self.msg2, self.msg3])
+
+        mock_restore_messages.assert_called_once_with(self.unicef, [self.msg2, self.msg3])
+
+        action = MessageAction.objects.get()
+        self.assertEqual(action.action, MessageAction.RESTORE)
+        self.assertEqual(action.created_by, self.user1)
+        self.assertEqual(action.messages, [102, 103])
+
+        self.assertEqual(Message.objects.filter(is_archived=True).count(), 0)
+
+
+class RemoteMessageTest(BaseCasesTest):
     def test_annotate_with_sender(self):
         from temba_client.v1.types import Message as TembaMessage1
 

@@ -133,6 +133,17 @@ class BaseBackend(object):
         pass
 
     @abstractmethod
+    def unlabel_messages(self, org, messages, label):
+        """
+        Removes a label from the given messages
+
+        :param org: the org
+        :param messages: the messages
+        :param label: the label
+        """
+        pass
+
+    @abstractmethod
     def archive_messages(self, org, messages):
         """
         Archives the given messages

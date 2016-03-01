@@ -574,6 +574,20 @@ class RapidProBackendTest(BaseCasesTest):
 
         mock_label_messages.assert_called_once_with(messages=[123, 234], label_uuid='L-001')
 
+    @patch('dash.orgs.models.TembaClient1.unlabel_messages')
+    def test_label_messages(self, mock_unlabel_messages):
+        # empty message list shouldn't make API call
+        self.backend.unlabel_messages(self.unicef, [], self.aids)
+
+        mock_unlabel_messages.assert_not_called()
+
+        msg1 = Message.objects.create(org=self.unicef, backend_id=123, contact=self.bob, text="Hello", type="I", created_on=now())
+        msg2 = Message.objects.create(org=self.unicef, backend_id=234, contact=self.bob, text="Goodbye", type="I", created_on=now())
+
+        self.backend.unlabel_messages(self.unicef, [msg1, msg2], self.aids)
+
+        mock_unlabel_messages.assert_called_once_with(messages=[123, 234], label_uuid='L-001')
+
     @patch('dash.orgs.models.TembaClient1.archive_messages')
     def test_archive_messages(self, mock_archive_messages):
         # empty message list shouldn't make API call

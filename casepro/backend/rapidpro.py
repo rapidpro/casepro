@@ -251,6 +251,11 @@ class RapidProBackend(BaseBackend):
             client = self._get_client(org, 1)
             client.label_messages(messages=[m.backend_id for m in messages], label_uuid=label.uuid)
 
+    def unlabel_messages(self, org, messages, label):
+        if messages:
+            client = self._get_client(org, 1)
+            client.unlabel_messages(messages=[m.backend_id for m in messages], label_uuid=label.uuid)
+
     def archive_messages(self, org, messages):
         if messages:
             client = self._get_client(org, 1)

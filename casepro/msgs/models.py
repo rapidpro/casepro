@@ -132,7 +132,7 @@ class Message(models.Model):
 
     text = models.TextField(max_length=640, verbose_name=_("Text"))
 
-    labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this message"))
+    labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this message"), related_name='messages')
 
     is_flagged = models.BooleanField(default=False)
 
@@ -155,8 +155,8 @@ class Message(models.Model):
         super(Message, self).__init__(*args, **kwargs)
 
     @classmethod
-    def lock(cls, org, id):
-        return get_redis_connection().lock(MESSAGE_LOCK_KEY % (org.pk, id), timeout=60)
+    def lock(cls, org, backend_id):
+        return get_redis_connection().lock(MESSAGE_LOCK_KEY % (org.pk, backend_id), timeout=60)
 
     def auto_label(self, labels_by_keyword):
         """
@@ -175,12 +175,83 @@ class Message(models.Model):
 
     def release(self):
         """
-        Deletes this message, removing it from any labels
+        Deletes this message, removing it from any labels (only callable by sync)
         """
         self.labels.clear()
 
         self.is_active = False
         self.save(update_fields=('is_active',))
+
+    def update_labels(self, user, labels):
+        """
+        Updates this message's labels to match the given set, creating label and unlabel actions as necessary
+        """
+        with self.lock(self.org, self.backend_id):
+            current_labels = set(self.labels.all())
+
+            add_labels = [l for l in labels if l not in current_labels]
+            rem_labels = [l for l in current_labels if l not in labels]
+
+            for label in add_labels:
+                self.bulk_label(self.org, user, [self], label)
+            for label in rem_labels:
+                self.bulk_unlabel(self.org, user, [self], label)
+
+    @staticmethod
+    def bulk_flag(org, user, messages):
+        if messages:
+            org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(is_flagged=True)
+
+            get_backend().flag_messages(org, messages)
+
+            MessageAction.create(org, user, [m.backend_id for m in messages], MessageAction.FLAG)
+
+    @staticmethod
+    def bulk_unflag(org, user, messages):
+        if messages:
+            org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(is_flagged=False)
+
+            get_backend().unflag_messages(org, messages)
+
+            MessageAction.create(org, user, [m.backend_id for m in messages], MessageAction.UNFLAG)
+
+    @staticmethod
+    def bulk_label(org, user, messages, label):
+        if messages:
+            for msg in messages:
+                msg.labels.add(label)
+
+            get_backend().label_messages(org, messages, label)
+
+            MessageAction.create(org, user, [m.backend_id for m in messages], MessageAction.LABEL, label)
+
+    @staticmethod
+    def bulk_unlabel(org, user, messages, label):
+        if messages:
+            for msg in messages:
+                msg.labels.remove(label)
+
+            get_backend().unlabel_messages(org, messages, label)
+
+            MessageAction.create(org, user, [m.backend_id for m in messages], MessageAction.UNLABEL, label)
+
+    @staticmethod
+    def bulk_archive(org, user, messages):
+        if messages:
+            org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(is_archived=True)
+
+            get_backend().archive_messages(org, messages)
+
+            MessageAction.create(org, user, [m.backend_id for m in messages], MessageAction.ARCHIVE)
+
+    @staticmethod
+    def bulk_restore(org, user, messages):
+        if messages:
+            org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(is_archived=False)
+
+            get_backend().restore_messages(org, messages)
+
+            MessageAction.create(org, user, [m.backend_id for m in messages], MessageAction.RESTORE)
 
     def __str__(self):
         return self.text if self.text else self.pk
@@ -234,7 +305,8 @@ class MessageAction(models.Model):
 
 class RemoteMessage(object):
     """
-    A pseudo-model for messages which are always fetched from RapidPro.
+    A pseudo-model for messages which are always fetched from RapidPro. All of these methods will be replaced by new
+    methods in the Message class which operate both locally and remotely.
     """
     @staticmethod
     def bulk_flag(org, user, message_ids):
