@@ -198,11 +198,9 @@ class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
         if page:
             context['page'] = page
             context['has_more'] = pager.has_more()
-            context['total'] = pager.total
         else:
             context['page'] = None
             context['has_more'] = None
-            context['total'] = len(messages)
 
         return context
 
@@ -211,7 +209,7 @@ class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
 
         results = [RemoteMessage.as_json(m, label_map) for m in context['messages']]
 
-        return JsonResponse({'results': results, 'has_more': context['has_more'], 'total': context['total']})
+        return JsonResponse({'results': results, 'has_more': context['has_more']})
 
 
 class MessageActionView(OrgPermsMixin, View):
