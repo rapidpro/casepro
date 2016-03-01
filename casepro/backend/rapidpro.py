@@ -165,8 +165,8 @@ class MessageSyncer(BaseSyncer):
         if local.is_archived and remote.visibility != 'archived':
             return True
 
-        local_label_uuids = [l.uuid for l in local.labels.all()]
-        incoming_label_uuids = [l.uuid for l in remote.labels if l.name != SYSTEM_LABEL_FLAGGED]
+        local_label_uuids = {l.uuid for l in local.labels.all()}
+        incoming_label_uuids = {l.uuid for l in remote.labels if l.name != SYSTEM_LABEL_FLAGGED}
 
         return local_label_uuids != incoming_label_uuids
 
