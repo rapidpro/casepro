@@ -138,7 +138,7 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
             self.api_v2_message_requests[org] += 1
             self.stdout.write("   - Synced %d messages (%d total v2 requests)..." % (num_fetched, self.api_v2_message_requests[org]))
 
-        for label in org.labels.all():
+        for label in org.labels.all().order_by('name'):
             if exclude_label and label.name.lower() == exclude_label.lower():
                 self.stdout.write(" > Skipping messages for excluded label %s" % label.name)
                 continue
