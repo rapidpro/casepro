@@ -1,6 +1,7 @@
 # coding=utf-8
 from __future__ import absolute_import, unicode_literals
 
+import pytz
 import six
 
 from casepro.msgs.models import Message, Outgoing
@@ -9,13 +10,13 @@ from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
 from casepro.utils import datetime_to_microseconds, microseconds_to_datetime
 from dash.test import MockClientQuery
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.utils import timezone
 from mock import patch
-from temba_client.v1.types import Label as TembaLabel, Broadcast as TembaBroadcast
+from temba_client.v1.types import Broadcast as TembaBroadcast
 from temba_client.v2.types import Contact as TembaContact, ObjectRef, Message as TembaMessage
 from .context_processors import contact_ext_url, sentry_dsn
 from .models import AccessLevel, Case, CaseAction, CaseEvent, Contact, Label, Partner
@@ -37,14 +38,14 @@ class CaseTest(BaseCasesTest):
     def test_lifecycle(self, mock_get_contacts, mock_remove_from_group, mock_add_to_group,
                        mock_stop_runs, mock_archive_messages, mock_archive_contact_messages):
 
-        d0 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
-        d1 = datetime(2014, 1, 2, 7, 0, tzinfo=timezone.utc)
-        d2 = datetime(2014, 1, 2, 8, 0, tzinfo=timezone.utc)
-        d3 = datetime(2014, 1, 2, 9, 0, tzinfo=timezone.utc)
-        d4 = datetime(2014, 1, 2, 10, 0, tzinfo=timezone.utc)
-        d5 = datetime(2014, 1, 2, 11, 0, tzinfo=timezone.utc)
-        d6 = datetime(2014, 1, 2, 12, 0, tzinfo=timezone.utc)
-        d7 = datetime(2014, 1, 2, 13, 0, tzinfo=timezone.utc)
+        d0 = datetime(2014, 1, 2, 6, 0, tzinfo=pytz.UTC)
+        d1 = datetime(2014, 1, 2, 7, 0, tzinfo=pytz.UTC)
+        d2 = datetime(2014, 1, 2, 8, 0, tzinfo=pytz.UTC)
+        d3 = datetime(2014, 1, 2, 9, 0, tzinfo=pytz.UTC)
+        d4 = datetime(2014, 1, 2, 10, 0, tzinfo=pytz.UTC)
+        d5 = datetime(2014, 1, 2, 11, 0, tzinfo=pytz.UTC)
+        d6 = datetime(2014, 1, 2, 12, 0, tzinfo=pytz.UTC)
+        d7 = datetime(2014, 1, 2, 13, 0, tzinfo=pytz.UTC)
 
         msg1 = TembaMessage.create(id=123, contact=ObjectRef.create(uuid='C-001', name="Bob"), created_on=d0, text="Hello")
         msg2 = TembaMessage.create(id=234, contact=ObjectRef.create(uuid='C-001', name="Bob"), created_on=d1, text="Hello again")
@@ -708,7 +709,19 @@ class InternalViewsTest(BaseCasesTest):
         url = reverse('internal.status')
         response = self.url_get('unicef', url)
 
-        self.assertEqual(response.json, {'cache': "OK", 'db': "OK", 'org_tasks': 'OK'})
+        self.assertEqual(response.json, {'cache': "OK", 'org_tasks': 'OK', 'unhandled': 0})
+
+        ann = self.create_contact(self.unicef, 'C-001', "Ann")
+        dt1 = timezone.now() - timedelta(hours=2)
+        dt2 = timezone.now() - timedelta(minutes=5)
+
+        Message.objects.create(org=self.unicef, backend_id=101, contact=ann, text="Hmm 1", is_handled=False, created_on=dt1)
+        Message.objects.create(org=self.unicef, backend_id=102, contact=ann, text="Hmm 2", is_handled=False, created_on=dt2)
+
+        response = self.url_get('unicef', url)
+
+        # check only message older than 1 hour counts
+        self.assertEqual(response.json, {'cache': "OK", 'org_tasks': 'OK', 'unhandled': 1})
 
     def test_ping(self):
         url = reverse('internal.ping')

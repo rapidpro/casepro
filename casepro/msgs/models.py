@@ -155,6 +155,10 @@ class Message(models.Model):
         super(Message, self).__init__(*args, **kwargs)
 
     @classmethod
+    def get_unhandled(cls, org):
+        return cls.objects.filter(org=org, is_handled=False)
+
+    @classmethod
     def lock(cls, org, backend_id):
         return get_redis_connection().lock(MESSAGE_LOCK_KEY % (org.pk, backend_id), timeout=60)
 

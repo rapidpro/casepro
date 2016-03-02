@@ -1,14 +1,16 @@
 from __future__ import absolute_import, unicode_literals
 
 from casepro.contacts.models import Group
+from casepro.msgs.models import Message, Label
 from casepro.msgs.views import MessageView
-from casepro.utils import parse_csv, json_encode, normalize, datetime_to_microseconds, microseconds_to_datetime
+from casepro.utils import parse_csv, json_encode, datetime_to_microseconds, microseconds_to_datetime
 from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
+from datetime import timedelta
 from django import forms
 from django.core.cache import cache
 from django.http import HttpResponse, JsonResponse
-from django.utils import timezone
+from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
 from enum import Enum
@@ -16,7 +18,7 @@ from smartmin.views import SmartCRUDL, SmartListView, SmartCreateView, SmartRead
 from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
 from . import MAX_MESSAGE_CHARS
-from .models import AccessLevel, Case, Label, Partner
+from .models import AccessLevel, Case, Partner
 
 
 class CaseView(Enum):
@@ -221,7 +223,7 @@ class CaseCRUDL(SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super(CaseCRUDL.Timeline, self).get_context_data(**kwargs)
-            now = timezone.now()
+            dt_now = now()
             empty = False
 
             after = self.request.GET.get('after', None)
@@ -237,12 +239,12 @@ class CaseCRUDL(SmartCRUDL):
                 # don't return anything after a case close event
                 before = self.object.closed_on
             else:
-                before = now
+                before = dt_now
 
             timeline = self.object.get_timeline(after, before) if not empty else []
 
             context['timeline'] = timeline
-            context['max_time'] = datetime_to_microseconds(now)
+            context['max_time'] = datetime_to_microseconds(dt_now)
             return context
 
         def render_to_response(self, context, **response_kwargs):
@@ -426,13 +428,19 @@ class StatusView(View):
             except Exception:
                 return 'ERROR'
 
-        # hit the db and Redis
-        db_status = status_check(lambda: Org.objects.first())
+        # hit Redis
         cache_status = status_check(lambda: cache.get('xxxxxx'))
 
+        # check for failing org tasks
         org_tasks = "ERROR" if TaskState.get_failing().exists() else "OK"
 
-        return JsonResponse({'db': db_status, 'cache': cache_status, 'org_tasks': org_tasks})
+        # check for unhandled messages older than 1 hour
+        an_hour_ago = now() - timedelta(hours=1)
+        old_unhandled = 0
+        for org in Org.objects.filter(is_active=True):
+            old_unhandled += Message.get_unhandled(org).filter(created_on__lt=an_hour_ago).count()
+
+        return JsonResponse({'cache': cache_status, 'org_tasks': org_tasks, 'unhandled': old_unhandled})
 
 
 class PingView(View):
