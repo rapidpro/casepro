@@ -41,6 +41,8 @@ class Command(BaseCommand):
                             help="Whether to exclude labelled messages from the back-fill")
         parser.add_argument('--no-recent', dest='ignore_recent', action='store_const', const=True, default=False,
                             help="Whether to exclude recent messages from the back-fill")
+        parser.add_argument('--exclude-label', dest='exclude_label', default=None,
+                            help="Name of a label to exclude")
 
     def handle(self, *args, **options):
         org_ids = options['org_ids']
@@ -48,6 +50,7 @@ class Command(BaseCommand):
         ignore_actioned = options['ignore_actioned']
         ignore_labelled = options['ignore_labelled']
         ignore_recent = options['ignore_recent']
+        exclude_label = options['exclude_label']
 
         if org_ids:
             orgs = Org.objects.filter(pk__in=org_ids)
@@ -68,7 +71,7 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
             if analyze:
                 self.analyze(org)
             else:
-                self.backfill(org, ignore_actioned, ignore_labelled, ignore_recent)
+                self.backfill(org, ignore_actioned, ignore_labelled, ignore_recent, exclude_label)
 
     def analyze(self, org):
         self.stdout.write("Starting analysis for org %s [%d]..." % (org.name, org.pk))
@@ -80,14 +83,14 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
 
         self.stdout.write(" > Found %d message ids in cases and actions (%d missing locally)" % (len(rapidpro_msg_ids), num_missing))
 
-    def backfill(self, org, ignore_actioned, ignore_labelled, ignore_recent):
+    def backfill(self, org, ignore_actioned, ignore_labelled, ignore_recent, exclude_label):
         self.stdout.write("Starting backfill for org %s [%d]..." % (org.name, org.pk))
 
         if not ignore_actioned:
             self.backfill_actioned(org)
 
         if not ignore_labelled:
-            self.backfill_labelled(org)
+            self.backfill_labelled(org, exclude_label)
 
         if not ignore_recent:
             self.backfill_recent(org, num_weeks=NUM_WEEKS)
@@ -122,7 +125,7 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
 
             self.stdout.write("   - Synced %d messages..." % num_synced)
 
-    def backfill_labelled(self, org):
+    def backfill_labelled(self, org, exclude_label):
         """
         Back-fills for each of the org's labels
         """
@@ -136,6 +139,10 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
             self.stdout.write("   - Synced %d messages (%d total v2 requests)..." % (num_fetched, self.api_v2_message_requests[org]))
 
         for label in org.labels.all():
+            if exclude_label and label.name.lower() == exclude_label.lower():
+                self.stdout.write(" > Skipping messages for excluded label %s" % label.name)
+                continue
+
             self.stdout.write(" > Fetching messages for label %s..." % label.name)
 
             fetches = client.get_messages(label=label.name).iterfetches(retry_on_rate_exceed=True)
