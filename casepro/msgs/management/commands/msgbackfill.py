@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from casepro.backend import get_backend
 from casepro.msgs.models import Message
+from collections import defaultdict
 from dash.orgs.models import Org
 from dash.utils import chunks
 from dash.utils.sync import sync_from_remote, sync_local_to_changes
@@ -25,6 +26,9 @@ class Command(BaseCommand):
         * Any message < 2 weeks old
     """
     help = "Back-fills messages from RapidPro"
+
+    # track number of requests made to the rate-limited API v2 messages endpoint
+    api_v2_message_requests = defaultdict(int)
 
     def add_arguments(self, parser):
         parser.add_argument('org_ids', metavar='ORG', type=int, nargs='*',
@@ -128,7 +132,8 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
         client = org.get_temba_client(api_version=2)
 
         def progress_callback(num_fetched):
-            self.stdout.write("   - Synced %d messages..." % num_fetched)
+            self.api_v2_message_requests[org] += 1
+            self.stdout.write("   - Synced %d messages (%d total v2 requests)..." % (num_fetched, self.api_v2_message_requests[org]))
 
         for label in org.labels.all():
             self.stdout.write(" > Fetching messages for label %s..." % label.name)
@@ -148,7 +153,8 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
         self.stdout.write(" > Fetching all messages since %s..." % since.strftime('%b %d, %Y %H:%M'))
 
         def progress_callback(num_fetched):
-            self.stdout.write("   - Synced %d messages..." % num_fetched)
+            self.api_v2_message_requests[org] += 1
+            self.stdout.write("   - Synced %d messages (%d total v2 requests)..." % (num_fetched, self.api_v2_message_requests[org]))
 
         backend = get_backend()
         created, updated, deleted, ignored = backend.pull_messages(org, since, now(), as_handled=True, progress_callback=progress_callback)
