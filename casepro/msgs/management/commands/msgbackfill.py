@@ -79,7 +79,7 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
         rapidpro_msg_ids = self.get_message_ids_for_cases_and_actions(org)
 
         num_existing = Message.objects.filter(org=org, backend_id__in=rapidpro_msg_ids).count()
-        num_missing = rapidpro_msg_ids - num_existing
+        num_missing = len(rapidpro_msg_ids) - num_existing
 
         self.stdout.write(" > Found %d message ids in cases and actions (%d missing locally)" % (len(rapidpro_msg_ids), num_missing))
 
