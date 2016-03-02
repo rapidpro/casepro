@@ -41,12 +41,12 @@ class Command(BaseCommand):
         an_hour_ago = now() - timedelta(hours=1)
 
         for org in orgs:
-            contacts = org.contacts.all()
+            contacts = org.contacts.filter(is_active=True)
             total_contacts = contacts.count()
             stub_contacts = contacts.filter(is_stub=True).count()
             stuck_stub_contacts = contacts.filter(is_stub=True, created_on__lt=an_hour_ago).count()
 
-            messages = org.incoming_messages.all()
+            messages = org.incoming_messages.filter(is_active=True)
             total_messages = messages.count()
             unhandled_messages = messages.filter(is_handled=False).count()
             stuck_unhandled_messages = messages.filter(is_handled=False, created_on__lt=an_hour_ago).count()
