@@ -218,6 +218,9 @@ class Contact(models.Model):
         """
         self.groups.clear()
 
+        # mark all messages as inactive and handled
+        self.incoming_messages.update(is_handled=True, is_active=False)
+
         self.is_active = False
         self.save(update_fields=('is_active',))
 

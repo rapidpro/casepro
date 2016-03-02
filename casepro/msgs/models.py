@@ -126,7 +126,7 @@ class Message(models.Model):
 
     backend_id = models.IntegerField(unique=True, help_text=_("Backend identifier for this message"))
 
-    contact = models.ForeignKey(Contact)
+    contact = models.ForeignKey(Contact, related_name='incoming_messages')
 
     type = models.CharField(max_length=1)
 
