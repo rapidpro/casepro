@@ -58,6 +58,17 @@ class ContactTest(BaseCasesTest):
         self.assertEqual(contact.get_fields(), {'age': "32", 'state': "WA"})  # what is stored on the contact
         self.assertEqual(contact.get_fields(visible=True), {'nickname': None, 'age': "32"})  # visible fields
 
+    def test_release(self):
+        contact = self.create_contact(self.unicef, 'C-001', "Jean", [self.reporters], {'age': "32"})
+        self.create_message(self.unicef, 101, contact, "Hello")
+        self.create_message(self.unicef, 102, contact, "Goodbye")
+
+        contact.release()
+
+        self.assertEqual(contact.groups.count(), 0)  # should be removed from groups
+        self.assertEqual(contact.incoming_messages.count(), 2)  # messages should be inactive and handled
+        self.assertEqual(contact.incoming_messages.filter(is_active=False, is_handled=True).count(), 2)
+
     def test_as_json(self):
         contact = self.create_contact(self.unicef, 'C-001', "Richard", fields={'age': "32", 'state': "WA"})
 
