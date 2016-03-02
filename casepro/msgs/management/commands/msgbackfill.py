@@ -13,7 +13,8 @@ from temba_client.v2.types import Message as TembaMessage, ObjectRef
 
 
 MSGS_PER_ID_FETCH = 50
-NUM_WEEKS = 3
+NUM_LABELLED_MONTHS = 6
+NUM_RECENT_MONTHS = 1
 
 
 class Command(BaseCommand):
@@ -90,10 +91,10 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
             self.backfill_actioned(org)
 
         if not ignore_labelled:
-            self.backfill_labelled(org, exclude_label)
+            self.backfill_labelled(org, NUM_LABELLED_MONTHS, exclude_label)
 
         if not ignore_recent:
-            self.backfill_recent(org, num_weeks=NUM_WEEKS)
+            self.backfill_recent(org, NUM_RECENT_MONTHS)
 
         self.stdout.write(" > Finished org with %d messages" % Message.objects.filter(org=org).count())
 
@@ -125,12 +126,14 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
 
             self.stdout.write("   - Synced %d messages..." % num_synced)
 
-    def backfill_labelled(self, org, exclude_label):
+    def backfill_labelled(self, org, num_months, exclude_label):
         """
         Back-fills for each of the org's labels
         """
         from casepro.backend.rapidpro import MessageSyncer
         syncer = MessageSyncer(as_handled=True)
+
+        since = now() - relativedelta(months=num_months)
 
         client = org.get_temba_client(api_version=2)
 
@@ -145,17 +148,17 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
 
             self.stdout.write(" > Fetching messages for label %s..." % label.name)
 
-            fetches = client.get_messages(label=label.name).iterfetches(retry_on_rate_exceed=True)
+            fetches = client.get_messages(label=label.name, after=since).iterfetches(retry_on_rate_exceed=True)
 
             created, updated, deleted, ignored = sync_local_to_changes(org, syncer, fetches, [], progress_callback)
 
             self.stdout.write(" > Synced messages for label %s (%d created, %d updated, %d deleted)" % (label.name, created, updated, deleted))
 
-    def backfill_recent(self, org, num_weeks):
+    def backfill_recent(self, org, num_months):
         """
         Back-fills all incoming messages within a time window
         """
-        since = now() - relativedelta(weeks=num_weeks)
+        since = now() - relativedelta(months=num_months)
 
         self.stdout.write(" > Fetching all messages since %s..." % since.strftime('%b %d, %Y %H:%M'))
 
