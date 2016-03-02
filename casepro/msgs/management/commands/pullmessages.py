@@ -11,7 +11,7 @@ class Command(BaseCommand):
     help = 'Pulls and labels messages from the backend for the specified org'
 
     def add_arguments(self, parser):
-        parser.add_argument('org_id', type=int)
+        parser.add_argument('org_id', type=int, metavar='ORG', help="The org to pull messages for")
         parser.add_argument('--days', type=int, default=0, dest='days',
                             help="Maximum age of messages to pull in days")
         parser.add_argument('--weeks', type=int, default=0, dest='weeks',
@@ -44,8 +44,8 @@ Type 'yes' to continue, or 'no' to cancel: """ % (org.name, org.pk, since.strfti
             self.stdout.write("Operation cancelled")
             return
 
-        def progress_callback(num_fetched):
-            self.stdout.write("Fetched %d messages..." % num_fetched)
+        def progress_callback(num_synced):
+            self.stdout.write(" > Synced %d messages..." % num_synced)
 
         backend = get_backend()
 
