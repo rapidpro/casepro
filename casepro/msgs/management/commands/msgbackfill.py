@@ -27,14 +27,23 @@ class Command(BaseCommand):
     help = "Back-fills messages from RapidPro"
 
     def add_arguments(self, parser):
-        parser.add_argument('--analyze', dest='analyze', action='store_const', const=True, default=False,
-                            help="Whether to analyze local messages rather than actually back-fill")
         parser.add_argument('org_ids', metavar='ORG', type=int, nargs='*',
                             help='The orgs to backfill')
+        parser.add_argument('--analyze', dest='analyze', action='store_const', const=True, default=False,
+                            help="Whether to analyze local messages rather than actually back-fill")
+        parser.add_argument('--no-actioned', dest='ignore_actioned', action='store_const', const=True, default=False,
+                            help="Whether to exclude actioned messages from the back-fill")
+        parser.add_argument('--no-labelled', dest='ignore_labelled', action='store_const', const=True, default=False,
+                            help="Whether to exclude labelled messages from the back-fill")
+        parser.add_argument('--no-recent', dest='ignore_recent', action='store_const', const=True, default=False,
+                            help="Whether to exclude recent messages from the back-fill")
 
     def handle(self, *args, **options):
         org_ids = options['org_ids']
         analyze = options['analyze']
+        ignore_actioned = options['ignore_actioned']
+        ignore_labelled = options['ignore_labelled']
+        ignore_recent = options['ignore_recent']
 
         if org_ids:
             orgs = Org.objects.filter(pk__in=org_ids)
@@ -55,7 +64,7 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
             if analyze:
                 self.analyze(org)
             else:
-                self.backfill(org)
+                self.backfill(org, ignore_actioned, ignore_labelled, ignore_recent)
 
     def analyze(self, org):
         self.stdout.write("Starting analysis for org %s [%d]..." % (org.name, org.pk))
@@ -67,18 +76,21 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
 
         self.stdout.write(" > Found %d message ids in cases and actions (%d missing locally)" % (len(rapidpro_msg_ids), num_missing))
 
-    def backfill(self, org):
+    def backfill(self, org, ignore_actioned, ignore_labelled, ignore_recent):
         self.stdout.write("Starting backfill for org %s [%d]..." % (org.name, org.pk))
 
-        self.backfill_for_cases_and_actions(org)
+        if not ignore_actioned:
+            self.backfill_actioned(org)
 
-        self.backfill_for_labels(org)
+        if not ignore_labelled:
+            self.backfill_labelled(org)
 
-        self.backfill_for_time_window(org, num_weeks=NUM_WEEKS)
+        if not ignore_recent:
+            self.backfill_recent(org, num_weeks=NUM_WEEKS)
 
         self.stdout.write(" > Finished org with %d messages" % Message.objects.filter(org=org).count())
 
-    def backfill_for_cases_and_actions(self, org):
+    def backfill_actioned(self, org):
         """
         Back-fills for all of an org's cases and message actions
         """
@@ -106,7 +118,7 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
 
             self.stdout.write("   - Synced %d messages..." % num_synced)
 
-    def backfill_for_labels(self, org):
+    def backfill_labelled(self, org):
         """
         Back-fills for each of the org's labels
         """
@@ -127,7 +139,7 @@ Type 'yes' to continue, or 'no' to cancel: """ % ('analyze' if analyze else 'bac
 
             self.stdout.write(" > Synced messages for label %s (%d created, %d updated, %d deleted)" % (label.name, created, updated, deleted))
 
-    def backfill_for_time_window(self, org, num_weeks):
+    def backfill_recent(self, org, num_weeks):
         """
         Back-fills all incoming messages within a time window
         """
