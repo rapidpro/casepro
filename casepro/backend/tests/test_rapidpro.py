@@ -267,7 +267,7 @@ class RapidProBackendTest(BaseCasesTest):
             )
         ]
 
-        with self.assertNumQueries(11):
+        with self.assertNumQueries(12):
             self.assertEqual(self.backend.pull_contacts(self.unicef, None, None), (0, 1, 1, 0))
 
         self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, ann})
@@ -315,7 +315,7 @@ class RapidProBackendTest(BaseCasesTest):
             MockClientQuery([])
         ]
 
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(5):
             self.assertEqual(self.backend.pull_contacts(self.unicef, None, None), (0, 0, 1, 0))  # blocked = deleted
 
         self.assertEqual(set(Contact.objects.filter(is_active=True)), {ann})
