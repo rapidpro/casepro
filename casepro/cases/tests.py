@@ -108,7 +108,7 @@ class CaseTest(BaseCasesTest):
             self.assertEqual(case, case2)
 
         # contact sends a reply
-        self.create_message(self.unicef, 432, self.bob, "OK", d2)
+        self.create_message(self.unicef, 432, self.bob, "OK", created_on=d2)
         handle_messages(self.unicef.pk)
 
         events = case.events.order_by('pk')
@@ -156,7 +156,7 @@ class CaseTest(BaseCasesTest):
         mock_add_to_group.reset_mock()
 
         # contact sends a message after case was closed
-        self.create_message(self.unicef, 345, self.bob, "No more case", d4)
+        self.create_message(self.unicef, 345, self.bob, "No more case", created_on=d4)
         handle_messages(self.unicef.pk)
 
         # message is not in an open case, so won't have been archived
@@ -500,7 +500,7 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # contact sends a reply
         d4 = timezone.now()
-        self.create_message(self.unicef, 104, self.bob, "OK thanks", d4)
+        self.create_message(self.unicef, 104, self.bob, "OK thanks", created_on=d4)
         handle_messages(self.unicef.pk)
 
         mock_get_messages.return_value = MockClientQuery([
@@ -538,7 +538,7 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # contact sends new message after that
         d5 = timezone.now()
-        self.create_message(self.unicef, 105, self.bob, "But wait", d5)
+        self.create_message(self.unicef, 105, self.bob, "But wait", created_on=d5)
         handle_messages(self.unicef.pk)
 
         # page again looks for new timeline activity
@@ -715,8 +715,8 @@ class InternalViewsTest(BaseCasesTest):
         dt1 = timezone.now() - timedelta(hours=2)
         dt2 = timezone.now() - timedelta(minutes=5)
 
-        Message.objects.create(org=self.unicef, backend_id=101, contact=ann, text="Hmm 1", is_handled=False, created_on=dt1)
-        Message.objects.create(org=self.unicef, backend_id=102, contact=ann, text="Hmm 2", is_handled=False, created_on=dt2)
+        self.create_message(self.unicef, 101, ann, "Hmm 1", created_on=dt1)
+        self.create_message(self.unicef, 102, ann, "Hmm 2", created_on=dt2)
 
         response = self.url_get('unicef', url)
 

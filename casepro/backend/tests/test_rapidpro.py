@@ -119,8 +119,7 @@ class ContactSyncerTest(BaseCasesTest):
 class MessageSyncerTest(BaseCasesTest):
     def test_fetch_local(self):
         ann = self.create_contact(self.unicef, 'C-001', "Ann")
-        msg = Message.objects.create(org=self.unicef, backend_id=123456789, type='I',
-                                     text="Yes", contact=ann, created_on=now())
+        msg = self.create_message(self.unicef, 123456789, ann, "Yes")
 
         self.assertEqual(MessageSyncer(as_handled=False).fetch_local(self.unicef, 123456789), msg)
 
@@ -567,8 +566,8 @@ class RapidProBackendTest(BaseCasesTest):
 
         mock_label_messages.assert_not_called()
 
-        msg1 = Message.objects.create(org=self.unicef, backend_id=123, contact=self.bob, text="Hello", type="I", created_on=now())
-        msg2 = Message.objects.create(org=self.unicef, backend_id=234, contact=self.bob, text="Goodbye", type="I", created_on=now())
+        msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
+        msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")
 
         self.backend.label_messages(self.unicef, [msg1, msg2], self.aids)
 
@@ -581,8 +580,8 @@ class RapidProBackendTest(BaseCasesTest):
 
         mock_unlabel_messages.assert_not_called()
 
-        msg1 = Message.objects.create(org=self.unicef, backend_id=123, contact=self.bob, text="Hello", type="I", created_on=now())
-        msg2 = Message.objects.create(org=self.unicef, backend_id=234, contact=self.bob, text="Goodbye", type="I", created_on=now())
+        msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
+        msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")
 
         self.backend.unlabel_messages(self.unicef, [msg1, msg2], self.aids)
 
@@ -595,8 +594,8 @@ class RapidProBackendTest(BaseCasesTest):
 
         mock_archive_messages.assert_not_called()
 
-        msg1 = Message.objects.create(org=self.unicef, backend_id=123, contact=self.bob, text="Hello", type="I", created_on=now())
-        msg2 = Message.objects.create(org=self.unicef, backend_id=234, contact=self.bob, text="Goodbye", type="I", created_on=now())
+        msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
+        msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")
 
         self.backend.archive_messages(self.unicef, [msg1, msg2])
 
@@ -615,8 +614,8 @@ class RapidProBackendTest(BaseCasesTest):
 
         mock_unarchive_messages.assert_not_called()
 
-        msg1 = Message.objects.create(org=self.unicef, backend_id=123, contact=self.bob, text="Hello", type="I", created_on=now())
-        msg2 = Message.objects.create(org=self.unicef, backend_id=234, contact=self.bob, text="Goodbye", type="I", created_on=now())
+        msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
+        msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")
 
         self.backend.restore_messages(self.unicef, [msg1, msg2])
 
@@ -629,8 +628,8 @@ class RapidProBackendTest(BaseCasesTest):
 
         mock_label_messages.assert_not_called()
 
-        msg1 = Message.objects.create(org=self.unicef, backend_id=123, contact=self.bob, text="Hello", type="I", created_on=now())
-        msg2 = Message.objects.create(org=self.unicef, backend_id=234, contact=self.bob, text="Goodbye", type="I", created_on=now())
+        msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
+        msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")
 
         self.backend.flag_messages(self.unicef, [msg1, msg2])
 
@@ -643,8 +642,8 @@ class RapidProBackendTest(BaseCasesTest):
 
         mock_unlabel_messages.assert_not_called()
 
-        msg1 = Message.objects.create(org=self.unicef, backend_id=123, contact=self.bob, text="Hello", type="I", created_on=now())
-        msg2 = Message.objects.create(org=self.unicef, backend_id=234, contact=self.bob, text="Goodbye", type="I", created_on=now())
+        msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
+        msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")
 
         self.backend.unflag_messages(self.unicef, [msg1, msg2])
 

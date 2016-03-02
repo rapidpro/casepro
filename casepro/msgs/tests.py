@@ -195,17 +195,11 @@ class MessageTest(BaseCasesTest):
         self.ann = self.create_contact(self.unicef, 'C-001', "Ann")
 
     def create_test_messages(self):
-        self.msg1 = Message.objects.create(org=self.unicef, backend_id=101, type='I', text="Normal",
-                                           created_on=now(), contact=self.ann,
-                                           __data__labels=[("L-001", "Aids"), ("L-002", "Pregnancy")])
-        self.msg2 = Message.objects.create(org=self.unicef, backend_id=102, type='F', text="Flow",
-                                           created_on=now(), contact=self.ann)
-        self.msg3 = Message.objects.create(org=self.unicef, backend_id=103, type='I', text="Archived", is_archived=True,
-                                           created_on=now(), contact=self.ann)
-        self.msg4 = Message.objects.create(org=self.unicef, backend_id=104, type='I', text="Flagged", is_flagged=True,
-                                           created_on=now(), contact=self.ann)
-        self.msg5 = Message.objects.create(org=self.unicef, backend_id=105, type='I', text="Inactive", is_active=False,
-                                           created_on=now(), contact=self.ann)
+        self.msg1 = self.create_message(self.unicef, 101, self.ann, "Normal", [self.aids, self.pregnancy])
+        self.msg2 = self.create_message(self.unicef, 102, self.ann, "Flow", type='F')
+        self.msg3 = self.create_message(self.unicef, 103, self.ann, "Archived", is_archived=True)
+        self.msg4 = self.create_message(self.unicef, 104, self.ann, "Flagged", is_flagged=True)
+        self.msg5 = self.create_message(self.unicef, 105, self.ann, "Inactive", is_active=False)
 
     def test_save(self):
         # start with no labels or contacts
@@ -625,13 +619,13 @@ class TasksTest(BaseCasesTest):
         d4 = datetime(2014, 1, 1, 10, 0, tzinfo=pytz.UTC)
         d5 = datetime(2014, 1, 1, 11, 0, tzinfo=pytz.UTC)
 
-        msg1 = self.create_message(self.unicef, 101, ann, "What is aids?", d1)
-        msg2 = self.create_message(self.unicef, 102, bob, "Can I catch Hiv?", d2)
-        msg3 = self.create_message(self.unicef, 103, cat, "I think I'm pregnant", d3)
-        msg4 = self.create_message(self.unicef, 104, don, "Php is amaze", d4)
-        msg5 = self.create_message(self.unicef, 105, eve, "Thanks for the pregnancy/HIV info", d5)
-        msg6 = self.create_message(self.unicef, 106, fra, "HIV", d5)
-        msg7 = self.create_message(self.nyaruka, 201, nic, "HIV", d5)
+        msg1 = self.create_message(self.unicef, 101, ann, "What is aids?", created_on=d1)
+        msg2 = self.create_message(self.unicef, 102, bob, "Can I catch Hiv?", created_on=d2)
+        msg3 = self.create_message(self.unicef, 103, cat, "I think I'm pregnant", created_on=d3)
+        msg4 = self.create_message(self.unicef, 104, don, "Php is amaze", created_on=d4)
+        msg5 = self.create_message(self.unicef, 105, eve, "Thanks for the pregnancy/HIV info", created_on=d5)
+        msg6 = self.create_message(self.unicef, 106, fra, "HIV", created_on=d5)
+        msg7 = self.create_message(self.nyaruka, 201, nic, "HIV", created_on=d5)
 
         # contact #5 has a case open that day
         case1 = Case.objects.create(org=self.unicef, contact=eve, assignee=self.moh, message_id=99, message_on=d1)

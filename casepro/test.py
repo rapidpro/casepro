@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import datetime
 import pytz
 
 from casepro.backend.rapidpro import RapidProBackend
@@ -9,7 +8,9 @@ from casepro.contacts.models import Contact, Group, Field
 from casepro.msgs.models import Label, Message
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from dash.test import DashTest
+from datetime import datetime
 from django.contrib.auth.models import User
+from django.utils.timezone import now
 from django.test import override_settings
 
 
@@ -93,9 +94,19 @@ class BaseCasesTest(DashTest):
     def create_field(self, org, key, label, value_type='T', is_visible=True):
         return Field.objects.create(org=org, key=key, label=label, value_type=value_type, is_visible=is_visible)
 
-    def create_message(self, org, backend_id, contact, text, created_on):
-        return Message.objects.create(org=org, backend_id=backend_id, contact=contact, text=text, created_on=created_on)
+    def create_message(self, org, backend_id, contact, text, labels=(), **kwargs):
+        if 'type' not in kwargs:
+            kwargs['type'] = 'I'
+        if 'created_on' not in kwargs:
+            kwargs['created_on'] = now()
+
+        msg = Message.objects.create(org=org, backend_id=backend_id, contact=contact, text=text, **kwargs)
+
+        for label in labels:
+            msg.labels.add(label)
+
+        return msg
 
     def datetime(self, year, month, day, hour=0, minute=0, second=0, microsecond=0, tz=pytz.UTC):
-        return datetime.datetime(year, month, day, hour, minute, second, microsecond, tz)
+        return datetime(year, month, day, hour, minute, second, microsecond, tz)
 
