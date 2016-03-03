@@ -109,11 +109,9 @@ class Case(models.Model):
 
     assignee = models.ForeignKey(Partner, related_name='cases')
 
-    # TODO make non-null
-    contact = models.ForeignKey(Contact, related_name='cases', null=True)
+    contact = models.ForeignKey(Contact, related_name='cases')
 
-    # TODO make non-null
-    initial_message = models.OneToOneField(Message, null=True, related_name='initial_case')
+    initial_message = models.OneToOneField(Message, related_name='initial_case')
 
     summary = models.CharField(verbose_name=_("Summary"), max_length=255)
 
@@ -122,9 +120,6 @@ class Case(models.Model):
 
     closed_on = models.DateTimeField(null=True,
                                      help_text="When this case was closed")
-
-    # TODO remove this field
-    message_id = models.IntegerField(null=True)
 
     @classmethod
     def get_all(cls, org, user=None, label=None):
