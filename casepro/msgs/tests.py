@@ -267,11 +267,11 @@ class MessageTest(BaseCasesTest):
         actions = list(MessageAction.objects.order_by('pk'))
         self.assertEqual(actions[0].action, MessageAction.LABEL)
         self.assertEqual(actions[0].created_by, self.user1)
-        self.assertEqual(actions[0].messages, [101])
+        self.assertEqual(set(actions[0].messages.all()), {self.msg1})
         self.assertEqual(actions[0].label, ebola)
         self.assertEqual(actions[1].action, MessageAction.UNLABEL)
         self.assertEqual(actions[1].created_by, self.user1)
-        self.assertEqual(actions[1].messages, [101])
+        self.assertEqual(set(actions[1].messages.all()), {self.msg1})
         self.assertEqual(actions[1].label, self.aids)
 
     @patch('casepro.test.TestBackend.flag_messages')
@@ -285,7 +285,7 @@ class MessageTest(BaseCasesTest):
         action = MessageAction.objects.get()
         self.assertEqual(action.action, MessageAction.FLAG)
         self.assertEqual(action.created_by, self.user1)
-        self.assertEqual(action.messages, [102, 103])
+        self.assertEqual(set(action.messages.all()), {self.msg2, self.msg3})
 
         self.assertEqual(Message.objects.filter(is_flagged=True).count(), 3)
 
@@ -300,7 +300,7 @@ class MessageTest(BaseCasesTest):
         action = MessageAction.objects.get()
         self.assertEqual(action.action, MessageAction.UNFLAG)
         self.assertEqual(action.created_by, self.user1)
-        self.assertEqual(action.messages, [103, 104])
+        self.assertEqual(set(action.messages.all()), {self.msg3, self.msg4})
 
         self.assertEqual(Message.objects.filter(is_flagged=True).count(), 0)
 
@@ -315,7 +315,7 @@ class MessageTest(BaseCasesTest):
         action = MessageAction.objects.get()
         self.assertEqual(action.action, MessageAction.LABEL)
         self.assertEqual(action.created_by, self.user1)
-        self.assertEqual(action.messages, [101, 102])
+        self.assertEqual(set(action.messages.all()), {self.msg1, self.msg2})
 
         self.assertEqual(self.aids.messages.count(), 2)
 
@@ -330,7 +330,7 @@ class MessageTest(BaseCasesTest):
         action = MessageAction.objects.get()
         self.assertEqual(action.action, MessageAction.UNLABEL)
         self.assertEqual(action.created_by, self.user1)
-        self.assertEqual(action.messages, [101, 102])
+        self.assertEqual(set(action.messages.all()), {self.msg1, self.msg2})
 
         self.assertEqual(self.aids.messages.count(), 0)
 
@@ -345,7 +345,7 @@ class MessageTest(BaseCasesTest):
         action = MessageAction.objects.get()
         self.assertEqual(action.action, MessageAction.ARCHIVE)
         self.assertEqual(action.created_by, self.user1)
-        self.assertEqual(action.messages, [101, 102])
+        self.assertEqual(set(action.messages.all()), {self.msg1, self.msg2})
 
         self.assertEqual(Message.objects.filter(is_archived=True).count(), 3)
 
@@ -360,7 +360,7 @@ class MessageTest(BaseCasesTest):
         action = MessageAction.objects.get()
         self.assertEqual(action.action, MessageAction.RESTORE)
         self.assertEqual(action.created_by, self.user1)
-        self.assertEqual(action.messages, [102, 103])
+        self.assertEqual(set(action.messages.all()), {self.msg2, self.msg3})
 
         self.assertEqual(Message.objects.filter(is_archived=True).count(), 0)
 

@@ -82,10 +82,7 @@ class BaseCasesTest(DashTest):
 
     def create_contact(self, org, uuid, name, groups=(), fields=None, is_stub=False):
         contact = Contact.objects.create(org=org, uuid=uuid, name=name, is_stub=is_stub, fields=fields, language="eng")
-
-        for group in groups:
-            contact.groups.add(group)
-
+        contact.groups.add(*groups)
         return contact
 
     def create_group(self, org, uuid, name, is_visible=True, suspend_from=False):
@@ -101,10 +98,7 @@ class BaseCasesTest(DashTest):
             kwargs['created_on'] = now()
 
         msg = Message.objects.create(org=org, backend_id=backend_id, contact=contact, text=text, **kwargs)
-
-        for label in labels:
-            msg.labels.add(label)
-
+        msg.labels.add(*labels)
         return msg
 
     def datetime(self, year, month, day, hour=0, minute=0, second=0, microsecond=0, tz=pytz.UTC):

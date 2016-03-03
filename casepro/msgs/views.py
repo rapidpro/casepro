@@ -15,7 +15,7 @@ from enum import Enum
 from smartmin.views import SmartCRUDL, SmartTemplateView
 from smartmin.views import SmartListView, SmartCreateView, SmartReadView, SmartUpdateView, SmartDeleteView
 from temba_client.utils import parse_iso8601
-from .models import Message, MessageAction, MessageExport, RemoteMessage, Outgoing
+from .models import Message, MessageExport, RemoteMessage, Outgoing
 from .tasks import message_export
 
 
@@ -292,13 +292,13 @@ class MessageSendView(OrgPermsMixin, View):
 
 class MessageHistoryView(OrgPermsMixin, View):
     """
-    JSON endpoint for fetching message history. Takes a message id
+    JSON endpoint for fetching message history. Takes a message backend id
     """
     permission = 'orgs.org_inbox'
 
     def get(self, request, *args, **kwargs):
-        actions = MessageAction.get_by_message(self.request.org, int(kwargs['id'])).order_by('-pk')
-        actions = [a.as_json() for a in actions]
+        message = Message.objects.get(org=self.request.org, backend_id=int(kwargs['id']))
+        actions = [a.as_json() for a in message.get_history()]
         return JsonResponse({'actions': actions})
 
 

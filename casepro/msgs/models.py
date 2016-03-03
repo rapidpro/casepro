@@ -177,6 +177,13 @@ class Message(models.Model):
 
         return matches
 
+    def get_history(self):
+        """
+        Gets the actions for this message in reverse chronological order
+        :return: the actions
+        """
+        return self.actions.select_related('created_by', 'label').order_by('-pk')
+
     def release(self):
         """
         Deletes this message, removing it from any labels (only callable by sync)
@@ -209,7 +216,7 @@ class Message(models.Model):
 
             get_backend().flag_messages(org, messages)
 
-            MessageAction.create(org, user, [m.backend_id for m in messages], MessageAction.FLAG)
+            MessageAction.create(org, user, messages, MessageAction.FLAG)
 
     @staticmethod
     def bulk_unflag(org, user, messages):
@@ -219,7 +226,7 @@ class Message(models.Model):
 
             get_backend().unflag_messages(org, messages)
 
-            MessageAction.create(org, user, [m.backend_id for m in messages], MessageAction.UNFLAG)
+            MessageAction.create(org, user, messages, MessageAction.UNFLAG)
 
     @staticmethod
     def bulk_label(org, user, messages, label):
@@ -230,7 +237,7 @@ class Message(models.Model):
 
             get_backend().label_messages(org, messages, label)
 
-            MessageAction.create(org, user, [m.backend_id for m in messages], MessageAction.LABEL, label)
+            MessageAction.create(org, user, messages, MessageAction.LABEL, label)
 
     @staticmethod
     def bulk_unlabel(org, user, messages, label):
@@ -241,7 +248,7 @@ class Message(models.Model):
 
             get_backend().unlabel_messages(org, messages, label)
 
-            MessageAction.create(org, user, [m.backend_id for m in messages], MessageAction.UNLABEL, label)
+            MessageAction.create(org, user, messages, MessageAction.UNLABEL, label)
 
     @staticmethod
     def bulk_archive(org, user, messages):
@@ -251,7 +258,7 @@ class Message(models.Model):
 
             get_backend().archive_messages(org, messages)
 
-            MessageAction.create(org, user, [m.backend_id for m in messages], MessageAction.ARCHIVE)
+            MessageAction.create(org, user, messages, MessageAction.ARCHIVE)
 
     @staticmethod
     def bulk_restore(org, user, messages):
@@ -261,7 +268,7 @@ class Message(models.Model):
 
             get_backend().restore_messages(org, messages)
 
-            MessageAction.create(org, user, [m.backend_id for m in messages], MessageAction.RESTORE)
+            MessageAction.create(org, user, messages, MessageAction.RESTORE)
 
     def __str__(self):
         return self.text if self.text else self.pk
@@ -287,7 +294,7 @@ class MessageAction(models.Model):
 
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='message_actions')
 
-    messages = ArrayField(models.IntegerField())
+    messages = models.ManyToManyField(Message, related_name='actions')
 
     action = models.CharField(max_length=1, choices=ACTION_CHOICES)
 
@@ -298,12 +305,10 @@ class MessageAction(models.Model):
     label = models.ForeignKey(Label, null=True)
 
     @classmethod
-    def create(cls, org, user, message_ids, action, label=None):
-        MessageAction.objects.create(org=org, messages=message_ids, action=action, created_by=user, label=label)
-
-    @classmethod
-    def get_by_message(cls, org, message_id):
-        return cls.objects.filter(org=org, messages__contains=[message_id]).select_related('created_by', 'label')
+    def create(cls, org, user, messages, action, label=None):
+        action_obj = MessageAction.objects.create(org=org, action=action, created_by=user, label=label)
+        action_obj.messages.add(*messages)
+        return action_obj
 
     def as_json(self):
         return {'id': self.pk,
