@@ -313,125 +313,6 @@ class MessageAction(models.Model):
                 'label': self.label.as_json() if self.label else None}
 
 
-class RemoteMessage(object):
-    """
-    A pseudo-model for messages which are always fetched from RapidPro. All of these methods will be replaced by new
-    methods in the Message class which operate both locally and remotely.
-    """
-    @staticmethod
-    def bulk_label(org, user, message_ids, label):
-        if message_ids:
-            client = org.get_temba_client()
-            client.label_messages(message_ids, label_uuid=label.uuid)
-
-            MessageAction.create(org, user, message_ids, MessageAction.LABEL, label)
-
-    @staticmethod
-    def bulk_unlabel(org, user, message_ids, label):
-        if message_ids:
-            client = org.get_temba_client()
-            client.unlabel_messages(message_ids, label_uuid=label.uuid)
-
-            MessageAction.create(org, user, message_ids, MessageAction.UNLABEL, label)
-
-    @classmethod
-    def update_labels(cls, msg, org, user, labels):
-        """
-        Updates all this message's labels to the given set, creating label and unlabel actions as necessary
-        """
-        from casepro.cases.models import Label
-
-        current_labels = Label.get_all(org, user).filter(name__in=msg.labels)
-
-        add_labels = [l for l in labels if l not in current_labels]
-        rem_labels = [l for l in current_labels if l not in labels]
-
-        for label in add_labels:
-            cls.bulk_label(org, user, [msg.id], label)
-        for label in rem_labels:
-            cls.bulk_unlabel(org, user, [msg.id], label)
-
-    @classmethod
-    def annotate_with_sender(cls, org, messages):
-        """
-        Look for outgoing records for the given messages and annotate them with their sender if one exists
-        """
-        broadcast_ids = set([m.broadcast for m in messages if m.broadcast])
-        outgoings = Outgoing.objects.filter(org=org, broadcast_id__in=broadcast_ids)
-        broadcast_to_outgoing = {out.broadcast_id: out for out in outgoings}
-
-        for msg in messages:
-            outgoing = broadcast_to_outgoing.get(msg.broadcast, None)
-            msg.sender = outgoing.created_by if outgoing else None
-
-    @staticmethod
-    def search(org, search, pager):
-        """
-        Search for labelled messages in RapidPro
-        """
-        if not search['labels']:  # no access to un-labelled messages
-            return []
-
-        # all queries either filter by at least one label, or exclude all labels using - prefix
-        labelled_search = bool([l for l in search['labels'] if not l.startswith('-')])
-
-        # put limit on how far back we fetch unlabelled messages because there are lots of those
-        if not labelled_search and not search['after']:
-            limit_days = getattr(settings, 'UNLABELLED_LIMIT_DAYS', DEFAULT_UNLABELLED_LIMIT_DAYS)
-            search['after'] = now() - timedelta(days=limit_days)
-
-        # *** TEMPORARY *** fix to disable the Unlabelled view which is increasingly not performant, until the larger
-        # message store refactor is complete. This removes any label exclusions from the search.
-        search['labels'] = [l for l in search['labels'] if not l.startswith('-')]
-
-        client = org.get_temba_client(api_version=1)
-        backend_messages = client.get_messages(pager=pager, text=search['text'], labels=search['labels'],
-                                               contacts=search['contacts'], groups=search['groups'],
-                                               direction='I', _types=search['types'], archived=search['archived'],
-                                               after=search['after'], before=search['before'])
-
-        # only show remote messages which match a local handled message. This is stop users actioning or casing messages
-        # which aren't synced. Needed until refactor is complete... when we'll actually be searching against local
-        # handled messages
-        backend_ids = [m.id for m in backend_messages]
-        local_messages = org.incoming_messages.filter(backend_id__in=backend_ids, is_handled=True)
-        local_messages = list(local_messages.select_related('contact'))
-        local_by_backend_id = {m.backend_id: m for m in local_messages}
-
-        annotated = []
-        for backend_message in backend_messages:
-            local_message = local_by_backend_id.get(backend_message.id)
-            if local_message:
-                backend_message.contact = local_message.contact.as_json()
-                backend_message.visibility = ('archived' if backend_message.archived else 'visible')
-                annotated.append(backend_message)
-
-        return annotated
-
-    @staticmethod
-    def as_json(msg, label_map):
-        """
-        Prepares a message (fetched from RapidPro) for JSON serialization
-        """
-        from casepro.backend.rapidpro import SYSTEM_LABEL_FLAGGED
-
-        flagged = SYSTEM_LABEL_FLAGGED in msg.labels
-
-        # convert label names to JSON label objects
-        labels = [label_map[label_name].as_json() for label_name in msg.labels if label_name in label_map]
-
-        return {'id': msg.id,
-                'text': msg.text,
-                'contact': msg.contact,
-                'urn': msg.urn,
-                'time': msg.created_on,
-                'labels': labels,
-                'flagged': flagged,
-                'direction': 'I' if msg.direction in ('I', 'in') else 'O',
-                'archived': msg.visibility == 'archived',
-                'sender': msg.sender.as_json() if getattr(msg, 'sender', None) else None}
-
-
 @python_2_unicode_compatible
 class Outgoing(models.Model):
     """
@@ -601,3 +482,89 @@ class MessageExport(models.Model):
         # force a gc
         import gc
         gc.collect()
+
+
+class RemoteMessage(object):
+    """
+    A pseudo-model for messages which are always fetched from RapidPro. All of these methods will be replaced by new
+    methods in the Message class which operate both locally and remotely.
+    """
+    @classmethod
+    def annotate_with_sender(cls, org, messages):
+        """
+        Look for outgoing records for the given messages and annotate them with their sender if one exists
+        """
+        broadcast_ids = set([m.broadcast for m in messages if m.broadcast])
+        outgoings = Outgoing.objects.filter(org=org, broadcast_id__in=broadcast_ids)
+        broadcast_to_outgoing = {out.broadcast_id: out for out in outgoings}
+
+        for msg in messages:
+            outgoing = broadcast_to_outgoing.get(msg.broadcast, None)
+            msg.sender = outgoing.created_by if outgoing else None
+
+    @staticmethod
+    def search(org, search, pager):
+        """
+        Search for labelled messages in RapidPro
+        """
+        if not search['labels']:  # no access to un-labelled messages
+            return []
+
+        # all queries either filter by at least one label, or exclude all labels using - prefix
+        labelled_search = bool([l for l in search['labels'] if not l.startswith('-')])
+
+        # put limit on how far back we fetch unlabelled messages because there are lots of those
+        if not labelled_search and not search['after']:
+            limit_days = getattr(settings, 'UNLABELLED_LIMIT_DAYS', DEFAULT_UNLABELLED_LIMIT_DAYS)
+            search['after'] = now() - timedelta(days=limit_days)
+
+        # *** TEMPORARY *** fix to disable the Unlabelled view which is increasingly not performant, until the larger
+        # message store refactor is complete. This removes any label exclusions from the search.
+        search['labels'] = [l for l in search['labels'] if not l.startswith('-')]
+
+        client = org.get_temba_client(api_version=1)
+        backend_messages = client.get_messages(pager=pager, text=search['text'], labels=search['labels'],
+                                               contacts=search['contacts'], groups=search['groups'],
+                                               direction='I', _types=search['types'], archived=search['archived'],
+                                               after=search['after'], before=search['before'])
+
+        # only show remote messages which match a local handled message. This is stop users actioning or casing messages
+        # which aren't synced. Needed until refactor is complete... when we'll actually be searching against local
+        # handled messages
+        backend_ids = [m.id for m in backend_messages]
+        local_messages = org.incoming_messages.filter(backend_id__in=backend_ids, is_handled=True)
+        local_messages = list(local_messages.select_related('contact'))
+        local_by_backend_id = {m.backend_id: m for m in local_messages}
+
+        annotated = []
+        for backend_message in backend_messages:
+            local_message = local_by_backend_id.get(backend_message.id)
+            if local_message:
+                backend_message.contact = local_message.contact.as_json()
+                backend_message.visibility = ('archived' if backend_message.archived else 'visible')
+                annotated.append(backend_message)
+
+        return annotated
+
+    @staticmethod
+    def as_json(msg, label_map):
+        """
+        Prepares a message (fetched from RapidPro) for JSON serialization
+        """
+        from casepro.backend.rapidpro import SYSTEM_LABEL_FLAGGED
+
+        flagged = SYSTEM_LABEL_FLAGGED in msg.labels
+
+        # convert label names to JSON label objects
+        labels = [label_map[label_name].as_json() for label_name in msg.labels if label_name in label_map]
+
+        return {'id': msg.id,
+                'text': msg.text,
+                'contact': msg.contact,
+                'urn': msg.urn,
+                'time': msg.created_on,
+                'labels': labels,
+                'flagged': flagged,
+                'direction': 'I' if msg.direction in ('I', 'in') else 'O',
+                'archived': msg.visibility == 'archived',
+                'sender': msg.sender.as_json() if getattr(msg, 'sender', None) else None}

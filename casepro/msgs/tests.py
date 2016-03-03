@@ -405,6 +405,26 @@ class MessageViewsTest(BaseCasesTest):
         mock_restore_messages.assert_called_once_with(self.unicef, [msg2, msg3])
         self.assertEqual(Message.objects.filter(is_archived=True).count(), 0)
 
+    @patch('casepro.test.TestBackend.label_messages')
+    @patch('casepro.test.TestBackend.unlabel_messages')
+    def test_label(self, mock_unlabel_messages, mock_label_messages):
+        ann = self.create_contact(self.unicef, 'C-001', "Ann")
+        msg1 = self.create_message(self.unicef, 101, ann, "Normal", [self.aids])
+
+        url = reverse('msgs.message_label', kwargs={'id': 101})
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_post('unicef', url, {'labels': [self.pregnancy.pk]})
+        self.assertEqual(response.status_code, 204)
+
+        mock_label_messages.assert_called_once_with(self.unicef, [msg1], self.pregnancy)
+        mock_unlabel_messages.assert_called_once_with(self.unicef, [msg1], self.aids)
+
+        msg1.refresh_from_db()
+        self.assertEqual(set(msg1.labels.all()), {self.pregnancy})
+
     @patch('casepro.test.TestBackend.flag_messages')
     @patch('casepro.test.TestBackend.label_messages')
     def test_history(self, mock_label_messages, mock_flag_messages):
@@ -429,26 +449,6 @@ class MessageViewsTest(BaseCasesTest):
         self.assertEqual(response.json['actions'][0]['created_by']['id'], self.user2.pk)
         self.assertEqual(response.json['actions'][1]['action'], 'F')
         self.assertEqual(response.json['actions'][1]['created_by']['id'], self.user1.pk)
-
-    @patch('dash.orgs.models.TembaClient1.get_message')
-    @patch('dash.orgs.models.TembaClient1.label_messages')
-    @patch('dash.orgs.models.TembaClient1.unlabel_messages')
-    def test_label(self, mock_unlabel_messages, mock_label_messages, mock_get_message):
-        from temba_client.v1.types import Message as TembaMessage1
-
-        msg = TembaMessage1.create(id=101, contact='C-002', text="Huh?", created_on=now(), labels=['AIDS'])
-        mock_get_message.return_value = msg
-
-        url = reverse('msgs.message_label', kwargs={'id': 101})
-
-        # log in as a non-administrator
-        self.login(self.user1)
-
-        response = self.url_post('unicef', url, {'labels': [self.pregnancy.pk]})
-        self.assertEqual(response.status_code, 204)
-
-        mock_label_messages.assert_called_once_with([101], label_uuid='L-002')
-        mock_unlabel_messages.assert_called_once_with([101], label_uuid='L-001')
 
     @patch('dash.orgs.models.TembaClient1.get_messages')
     @patch('dash.orgs.models.TembaClient1.pager')

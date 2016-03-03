@@ -259,11 +259,15 @@ class MessageLabelView(OrgPermsMixin, View):
     def post(self, request, *args, **kwargs):
         org = self.request.org
         user = self.request.user
-        message = org.get_temba_client().get_message(int(kwargs['id']))
+
+        message_id = int(kwargs['id'])
+        message = org.incoming_messages.filter(org=org, backend_id=message_id).first()
+
         label_ids = parse_csv(self.request.POST.get('labels', ''), as_ints=True)
         labels = Label.get_all(org, user).filter(pk__in=label_ids)
 
-        RemoteMessage.update_labels(message, org, user, labels)
+        message.update_labels(user, labels)
+
         return HttpResponse(status=204)
 
 
