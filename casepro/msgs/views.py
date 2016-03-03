@@ -15,7 +15,7 @@ from enum import Enum
 from smartmin.views import SmartCRUDL, SmartTemplateView
 from smartmin.views import SmartListView, SmartCreateView, SmartReadView, SmartUpdateView, SmartDeleteView
 from temba_client.utils import parse_iso8601
-from .models import MessageExport, RemoteMessage, MessageAction, Outgoing
+from .models import Message, MessageAction, MessageExport, RemoteMessage, Outgoing
 from .tasks import message_export
 
 
@@ -225,22 +225,25 @@ class MessageActionView(OrgPermsMixin, View):
         user = self.request.user
 
         action = kwargs['action']
+
         message_ids = parse_csv(self.request.POST.get('messages', ''), as_ints=True)
+        messages = org.incoming_messages.filter(org=org, backend_id__in=message_ids)
+
         label_id = int(self.request.POST.get('label', 0))
         label = Label.get_all(org, user).get(pk=label_id) if label_id else None
 
         if action == 'flag':
-            RemoteMessage.bulk_flag(org, user, message_ids)
+            Message.bulk_flag(org, user, messages)
         elif action == 'unflag':
-            RemoteMessage.bulk_unflag(org, user, message_ids)
+            Message.bulk_unflag(org, user, messages)
         elif action == 'label':
-            RemoteMessage.bulk_label(org, user, message_ids, label)
+            Message.bulk_label(org, user, messages, label)
         elif action == 'unlabel':
-            RemoteMessage.bulk_unlabel(org, user, message_ids, label)
+            Message.bulk_unlabel(org, user, messages, label)
         elif action == 'archive':
-            RemoteMessage.bulk_archive(org, user, message_ids)
+            Message.bulk_archive(org, user, messages)
         elif action == 'restore':
-            RemoteMessage.bulk_restore(org, user, message_ids)
+            Message.bulk_restore(org, user, messages)
         else:
             return HttpResponseBadRequest("Invalid action: %s", action)
 

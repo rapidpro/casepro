@@ -203,6 +203,7 @@ class Message(models.Model):
 
     @staticmethod
     def bulk_flag(org, user, messages):
+        messages = list(messages)
         if messages:
             org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(is_flagged=True)
 
@@ -212,6 +213,7 @@ class Message(models.Model):
 
     @staticmethod
     def bulk_unflag(org, user, messages):
+        messages = list(messages)
         if messages:
             org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(is_flagged=False)
 
@@ -221,6 +223,7 @@ class Message(models.Model):
 
     @staticmethod
     def bulk_label(org, user, messages, label):
+        messages = list(messages)
         if messages:
             for msg in messages:
                 msg.labels.add(label)
@@ -231,6 +234,7 @@ class Message(models.Model):
 
     @staticmethod
     def bulk_unlabel(org, user, messages, label):
+        messages = list(messages)
         if messages:
             for msg in messages:
                 msg.labels.remove(label)
@@ -241,6 +245,7 @@ class Message(models.Model):
 
     @staticmethod
     def bulk_archive(org, user, messages):
+        messages = list(messages)
         if messages:
             org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(is_archived=True)
 
@@ -250,6 +255,7 @@ class Message(models.Model):
 
     @staticmethod
     def bulk_restore(org, user, messages):
+        messages = list(messages)
         if messages:
             org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(is_archived=False)
 
@@ -313,26 +319,6 @@ class RemoteMessage(object):
     methods in the Message class which operate both locally and remotely.
     """
     @staticmethod
-    def bulk_flag(org, user, message_ids):
-        from casepro.backend.rapidpro import SYSTEM_LABEL_FLAGGED
-
-        if message_ids:
-            client = org.get_temba_client()
-            client.label_messages(message_ids, label=SYSTEM_LABEL_FLAGGED)
-
-            MessageAction.create(org, user, message_ids, MessageAction.FLAG)
-
-    @staticmethod
-    def bulk_unflag(org, user, message_ids):
-        from casepro.backend.rapidpro import SYSTEM_LABEL_FLAGGED
-
-        if message_ids:
-            client = org.get_temba_client()
-            client.unlabel_messages(message_ids, label=SYSTEM_LABEL_FLAGGED)
-
-            MessageAction.create(org, user, message_ids, MessageAction.UNFLAG)
-
-    @staticmethod
     def bulk_label(org, user, message_ids, label):
         if message_ids:
             client = org.get_temba_client()
@@ -347,22 +333,6 @@ class RemoteMessage(object):
             client.unlabel_messages(message_ids, label_uuid=label.uuid)
 
             MessageAction.create(org, user, message_ids, MessageAction.UNLABEL, label)
-
-    @staticmethod
-    def bulk_archive(org, user, message_ids):
-        if message_ids:
-            client = org.get_temba_client()
-            client.archive_messages(message_ids)
-
-            MessageAction.create(org, user, message_ids, MessageAction.ARCHIVE)
-
-    @staticmethod
-    def bulk_restore(org, user, message_ids):
-        if message_ids:
-            client = org.get_temba_client()
-            client.unarchive_messages(message_ids)
-
-            MessageAction.create(org, user, message_ids, MessageAction.RESTORE)
 
     @classmethod
     def update_labels(cls, msg, org, user, labels):
