@@ -64,25 +64,20 @@ class CaseCRUDL(SmartCRUDL):
 
     class Open(OrgPermsMixin, SmartCreateView):
         """
-        JSON endpoint for opening a new case
+        JSON endpoint for opening a new case. Takes a message backend id.
         """
         permission = 'cases.case_create'
 
         def post(self, request, *args, **kwargs):
-            message_id = int(request.POST['message'])
             summary = request.POST['summary']
 
             assignee_id = request.POST.get('assignee', None)
             assignee = Partner.get_all(request.org).get(pk=assignee_id) if assignee_id else request.user.get_partner()
 
-            # TODO this should lookup a local message once they exist
+            message_id = int(request.POST['message'])
+            message = Message.objects.get(org=request.org, backend_id=message_id)
 
-            # fetch message from RapidPro to get its current labels
-            client = request.org.get_temba_client(api_version=2)
-            message = client.get_messages(id=message_id).first()
-            labels = Label.get_all(request.org).filter(uuid__in=[l.uuid for l in message.labels])
-
-            case = Case.get_or_open(request.org, request.user, labels, message, summary, assignee)
+            case = Case.get_or_open(request.org, request.user, message, summary, assignee)
 
             return JsonResponse({'case': case.as_json(), 'is_new': case.is_new})
 
@@ -230,7 +225,7 @@ class CaseCRUDL(SmartCRUDL):
             if after:
                 after = microseconds_to_datetime(int(after))
             else:
-                after = self.object.message_on
+                after = self.object.initial_message.created_on
 
             if self.object.closed_on:
                 if after > self.object.closed_on:

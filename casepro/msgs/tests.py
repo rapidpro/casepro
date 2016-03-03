@@ -636,23 +636,33 @@ class TasksTest(BaseCasesTest):
         msg7 = self.create_message(self.nyaruka, 201, nic, "HIV", created_on=d5)
 
         # contact #5 has a case open that day
-        case1 = Case.objects.create(org=self.unicef, contact=eve, assignee=self.moh, message_id=99, message_on=d1)
+        msg8 = self.create_message(self.unicef, 108, eve, "Start case", created_on=d1, is_handled=True)
+        case1 = Case.objects.create(org=self.unicef, contact=eve, assignee=self.moh, initial_message=msg8)
         case1.opened_on = d1
         case1.save()
 
         handle_messages(self.unicef.pk)
 
-        self.assertEqual(set(Message.objects.filter(is_handled=True)), {msg1, msg2, msg3, msg4, msg5})
+        self.assertEqual(set(Message.objects.filter(is_handled=True)), {msg1, msg2, msg3, msg4, msg5, msg8})
         self.assertEqual(set(Message.objects.filter(is_handled=False)), {msg6, msg7})  # stub contact and wrong org
+
+        # check labelling
+        self.assertEqual(set(msg1.labels.all()), {self.aids})
+        self.assertEqual(set(msg2.labels.all()), {self.aids})
+        self.assertEqual(set(msg3.labels.all()), {self.pregnancy})
 
         mock_label_messages.assert_has_calls([
             call(self.unicef, [msg1, msg2], self.aids),
             call(self.unicef, [msg3], self.pregnancy)
         ], any_order=True)
 
-        mock_archive_messages.assert_called_once_with(self.unicef, [msg5])  # because contact has open case
+        # check msg 5 was added to the case and archived
+        msg5.refresh_from_db()
+        self.assertTrue(msg5.is_archived)
+        self.assertEqual(msg5.case, case1)
+        mock_archive_messages.assert_called_once_with(self.unicef, [msg5])
 
-        # check reply event was created for message 5
+        # check reply event was created for msg 5
         events = case1.events.all()
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].event, CaseEvent.REPLY)

@@ -1,9 +1,8 @@
 from __future__ import absolute_import, unicode_literals
 
-import six
-
+from casepro.backend import get_backend
 from casepro.contacts.models import Contact
-from casepro.msgs.models import Label, RemoteMessage
+from casepro.msgs.models import Label, Message, RemoteMessage
 from dash.orgs.models import Org
 from dash.utils import intersection
 from django.contrib.auth.models import User
@@ -108,13 +107,13 @@ class Case(models.Model):
 
     labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this case"))
 
-    assignee = models.ForeignKey(Partner, related_name="cases")
+    assignee = models.ForeignKey(Partner, related_name='cases')
 
-    contact = models.ForeignKey(Contact, related_name="cases", null=True)
+    # TODO make non-null
+    contact = models.ForeignKey(Contact, related_name='cases', null=True)
 
-    message_id = models.IntegerField(unique=True)
-
-    message_on = models.DateTimeField(help_text="When initial message was sent")
+    # TODO make non-null
+    initial_message = models.OneToOneField(Message, null=True, related_name='initial_case')
 
     summary = models.CharField(verbose_name=_("Summary"), max_length=255)
 
@@ -123,6 +122,9 @@ class Case(models.Model):
 
     closed_on = models.DateTimeField(null=True,
                                      help_text="When this case was closed")
+
+    # TODO remove this field
+    message_id = models.IntegerField(null=True)
 
     @classmethod
     def get_all(cls, org, user=None, label=None):
@@ -162,36 +164,32 @@ class Case(models.Model):
         return self.labels.filter(is_active=True)
 
     @classmethod
-    def get_or_open(cls, org, user, labels, message, summary, assignee, update_contact=True):
-        contact_uuid = message.contact.uuid
-        contact = Contact.objects.filter(org=org, uuid=contact_uuid, is_stub=False, is_active=True).first()
-
-        # we shouldn't be displaying messages that don't have non-stub contacts... so this shouldn't happen
-        if not contact:
-            raise ValueError("Contact does not exist or is a stub")
-
+    def get_or_open(cls, org, user, message, summary, assignee, update_contact=True):
         r = get_redis_connection()
         with r.lock('org:%d:cases_lock' % org.pk):
-            # check for open case with this contact
-            existing_open = cls.get_open_for_contact_on(org, contact, timezone.now())
+            # if message is already associated with a case, return that
+            if message.case:
+                message.case.is_new = False
+                return message.case
+
+            # if message contact has an open case, return that
+            existing_open = cls.get_open_for_contact_on(org, message.contact, timezone.now())
             if existing_open:
                 existing_open.is_new = False
                 return existing_open
 
-            # check for another case (possibly closed) connected to this message
-            existing_for_msg = cls.objects.filter(message_id=message.id).first()
-            if existing_for_msg:
-                existing_for_msg.is_new = False
-                return existing_for_msg
-
             if update_contact:
                 # suspend from groups, expire flows and archive messages
-                contact.prepare_for_case()
+                message.contact.prepare_for_case()
 
-            case = cls.objects.create(org=org, assignee=assignee, contact=contact,
-                                      summary=summary, message_id=message.id, message_on=message.created_on)
+            case = cls.objects.create(org=org, assignee=assignee, initial_message=message, contact=message.contact,
+                                      summary=summary)
             case.is_new = True
-            case.labels.add(*labels)
+            case.labels.add(*list(message.labels.all()))  # copy labels from message to new case
+
+            # attach message to this case
+            message.case = case
+            message.save(update_fields=('case',))
 
             CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee)
 

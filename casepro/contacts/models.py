@@ -208,7 +208,7 @@ class Contact(models.Model):
         get_backend().stop_runs(self.org, self)
 
     def archive_messages(self):
-        # TODO archive local messages
+        self.incoming_messages.update(is_archived=True)
 
         get_backend().archive_contact_messages(self.org, self)
 

@@ -40,7 +40,7 @@ def handle_messages(org, since, until):
     from .models import Message
     backend = get_backend()
 
-    case_replies, labelled, unlabelled = [], [], []
+    labelled, unlabelled, case_replies = [], [], []
 
     # fetch all unhandled messages who now have full contacts
     unhandled = list(Message.get_unhandled(org).filter(contact__is_stub=False).select_related('contact'))
@@ -53,6 +53,10 @@ def handle_messages(org, since, until):
 
             if open_case:
                 open_case.reply_event(msg)
+
+                msg.case = open_case
+                msg.is_archived = True
+                msg.save(update_fields=('case', 'is_archived'))
 
                 case_replies.append(msg)
             else:
@@ -68,12 +72,15 @@ def handle_messages(org, since, until):
         # add labels to matching messages
         for label, matched_msgs in six.iteritems(label_matches):
             if matched_msgs:
-                # TODO label locally
+                # TODO check for pointless re-labelling
+
+                for msg in matched_msgs:
+                    msg.labels.add(label)
+
                 backend.label_messages(org, matched_msgs, label)
 
-        # archive messages which are case replies
+        # archive messages which are case replies on the backend
         if case_replies:
-            Message.objects.filter(pk__in=[m.pk for m in case_replies]).update(is_archived=True)
             backend.archive_messages(org, case_replies)
 
         # mark all of these messages as handled
