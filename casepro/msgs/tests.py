@@ -376,6 +376,33 @@ class RemoteMessageTest(BaseCasesTest):
         RemoteMessage.annotate_with_sender(self.unicef, [msg])
         self.assertEqual(msg.sender, self.user2)
 
+    @patch('dash.orgs.models.TembaClient1.get_messages')
+    def test_search(self, mock_get_messages):
+        from temba_client.clients import Pager
+        from temba_client.v1.types import Message as TembaMessage1
+
+        ann = self.create_contact(self.unicef, 'C-001', "Ann", fields={'nickname': "Ann"})
+        bob = self.create_contact(self.unicef, 'C-002', "Bob", fields={'nickname': "Bob"})
+
+        mock_get_messages.return_value = [
+            TembaMessage1.create(id=101, contact='C-001', text="What is HIV?", created_on=now(), labels=['AIDS']),
+            TembaMessage1.create(id=102, contact='C-002', text="I ♡ RapidPro", created_on=now(), labels=[]),
+            TembaMessage1.create(id=103, contact='C-002', text="Yup", created_on=now(), labels=[])
+        ]
+
+        self.create_message(self.unicef, 101, ann, "What is HIV?", [self.aids], is_handled=True)
+        self.create_message(self.unicef, 102, bob, "I ♡ RapidPro", [self.aids], is_handled=False)
+
+        search = {'labels': ['AIDS'], 'contacts': None, 'groups': None, 'after': None, 'before': None,
+                  'text': None, 'types': ['I'], 'archived': False}
+
+        messages = RemoteMessage.search(self.unicef, search, Pager(start_page=1))
+
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0].id, 101)
+        self.assertEqual(messages[0].text, "What is HIV?")
+        self.assertEqual(messages[0].contact, {'uuid': "C-001", 'name': "Ann"})
+
 
 class MessageViewsTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient1.label_messages')
@@ -453,9 +480,13 @@ class MessageViewsTest(BaseCasesTest):
 
         url = reverse('msgs.message_search')
 
-        self.create_contact(self.unicef, 'C-001', "Ann")
-        self.create_contact(self.unicef, 'C-002', "Bob")
-        self.create_contact(self.unicef, 'C-004', "Don")
+        ann = self.create_contact(self.unicef, 'C-001', "Ann")
+        bob = self.create_contact(self.unicef, 'C-002', "Bob")
+        don = self.create_contact(self.unicef, 'C-004', "Don")
+
+        self.create_message(self.unicef, 101, ann, "What is HIV?", [self.aids], is_handled=True)
+        self.create_message(self.unicef, 102, bob, "I ♡ RapidPro", is_handled=True)
+        self.create_message(self.unicef, 104, don, "RapidCon 2016!", is_handled=True)
 
         msg1 = TembaMessage1.create(id=101, contact='C-001', text="What is HIV?", created_on=now(), labels=['AIDS'])
         msg2 = TembaMessage1.create(id=102, contact='C-002', text="I ♡ RapidPro", created_on=now(), labels=[])
@@ -474,7 +505,7 @@ class MessageViewsTest(BaseCasesTest):
         response = self.url_get('unicef', url, {'view': 'inbox', 'text': '', 'label': '', 'page': 1,
                                                 'after': '', 'before': format_iso8601(t0)})
 
-        self.assertEqual(len(response.json['results']), 2)  # msg3 doesn't have a contact so hidden for now
+        self.assertEqual(len(response.json['results']), 2)  # msg3 doesn't have a local message so hidden for now
 
         mock_get_messages.assert_called_once_with(archived=False, labels=['AIDS', 'Pregnancy'],
                                                   contacts=None, groups=None, text='', _types=None, direction='I',

@@ -72,11 +72,11 @@ class ContactTest(BaseCasesTest):
     def test_as_json(self):
         contact = self.create_contact(self.unicef, 'C-001', "Richard", fields={'age': "32", 'state': "WA"})
 
-        self.assertEqual(contact.as_json(full=False), {'uuid': 'C-001', 'is_stub': False})
+        self.assertEqual(contact.as_json(full=False), {'uuid': 'C-001', 'name': "Richard"})
 
         # full=True means include visible contact fields
         self.assertEqual(contact.as_json(full=True), {'uuid': 'C-001',
-                                                      'is_stub': False,
+                                                      'name': "Richard",
                                                       'fields': {'nickname': None, 'age': "32"}})
 
 

@@ -415,23 +415,26 @@ class RemoteMessage(object):
         search['labels'] = [l for l in search['labels'] if not l.startswith('-')]
 
         client = org.get_temba_client(api_version=1)
-        messages = client.get_messages(pager=pager, text=search['text'], labels=search['labels'],
-                                       contacts=search['contacts'], groups=search['groups'],
-                                       direction='I', _types=search['types'], archived=search['archived'],
-                                       after=search['after'], before=search['before'])
+        backend_messages = client.get_messages(pager=pager, text=search['text'], labels=search['labels'],
+                                               contacts=search['contacts'], groups=search['groups'],
+                                               direction='I', _types=search['types'], archived=search['archived'],
+                                               after=search['after'], before=search['before'])
 
-        # annotate messages with contacts and discard those with only stub contacts
-        contact_uuids = [m.contact for m in messages]
-        contacts_by_uuid = {c.uuid: c for c in Contact.objects.filter(org=org, uuid__in=contact_uuids, is_stub=False)}
+        # only show remote messages which match a local handled message. This is stop users actioning or casing messages
+        # which aren't synced. Needed until refactor is complete... when we'll actually be searching against local
+        # handled messages
+        backend_ids = [m.id for m in backend_messages]
+        local_messages = org.incoming_messages.filter(backend_id__in=backend_ids, is_handled=True)
+        local_messages = list(local_messages.select_related('contact'))
+        local_by_backend_id = {m.backend_id: m for m in local_messages}
 
         annotated = []
-        for message in messages:
-            message.visibility = ('archived' if message.archived else 'visible')
-
-            contact = contacts_by_uuid.get(message.contact)
-            if contact:
-                message.contact = contact.as_json()
-                annotated.append(message)
+        for backend_message in backend_messages:
+            local_message = local_by_backend_id.get(backend_message.id)
+            if local_message:
+                backend_message.contact = local_message.contact.as_json()
+                backend_message.visibility = ('archived' if backend_message.archived else 'visible')
+                annotated.append(backend_message)
 
         return annotated
 

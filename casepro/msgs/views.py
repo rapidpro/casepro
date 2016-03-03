@@ -167,14 +167,16 @@ class MessageSearchMixin(object):
         else:
             archived = False  # only non-archived
 
-        return {'labels': labels,
-                'contacts': contacts,
-                'groups': groups,
-                'after': after,
-                'before': before,
-                'text': request.GET.get('text', None),
-                'types': msg_types,
-                'archived': archived}
+        return {
+            'labels': labels,
+            'contacts': contacts,
+            'groups': groups,
+            'after': after,
+            'before': before,
+            'text': request.GET.get('text', None),
+            'types': msg_types,
+            'archived': archived
+        }
 
 
 class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
