@@ -173,6 +173,8 @@
             removed
           %span{ ng-if:'action.action == "A"' }
             Archived
+          %span{ ng-if:'action.action == "R"' }
+            Restored
 
           by
           %a{ ng-href:"/user/read/[[ action.created_by.id ]]/" }
