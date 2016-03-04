@@ -358,11 +358,9 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
 
-    @patch('casepro.test.TestBackend.archive_messages')
-    @patch('casepro.test.TestBackend.label_messages')
     @patch('casepro.test.TestBackend.fetch_contact_messages')
     @patch('casepro.test.TestBackend.create_outgoing')
-    def test_timeline(self, mock_create_outgoing, mock_fetch_contact_messages, mock_label_messages, mock_archive_messages):
+    def test_timeline(self, mock_create_outgoing, mock_fetch_contact_messages):
         d1 = datetime(2014, 1, 2, 13, 0, tzinfo=timezone.utc)
         msg1 = self.create_message(self.unicef, 101, self.ann, "What is AIDS?", [self.aids], created_on=d1)
 

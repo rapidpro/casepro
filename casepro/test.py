@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 import pytz
 
-from casepro.backend.rapidpro import RapidProBackend
+from casepro.backend import BaseBackend
 from casepro.cases.models import Partner
 from casepro.contacts.models import Contact, Group, Field
 from casepro.msgs.models import Label, Message
@@ -16,11 +16,13 @@ from xlrd import xldate_as_tuple
 from xlrd.sheet import XL_CELL_DATE
 
 
-class TestBackend(RapidProBackend):
+class TestBackend(BaseBackend):
     """
-    TODO once all backend functionality actually goes through get_backend() this can become a stub
+    A stub backend which doesn't do anything but can be mocked
     """
     pass
+
+TestBackend.__abstractmethods__ = set()
 
 
 @override_settings(SITE_BACKEND='casepro.test.TestBackend')
@@ -131,4 +133,3 @@ class BaseCasesTest(DashTest):
             expected_values.append(expected)
 
         self.assertEqual(actual_values, expected_values)
-
