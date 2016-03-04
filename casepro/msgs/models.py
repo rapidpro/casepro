@@ -365,22 +365,19 @@ class Outgoing(models.Model):
     case = models.ForeignKey('cases.Case', null=True, related_name="outgoing_messages")
 
     @classmethod
-    def create(cls, org, user, activity, text, urns, contacts, case=None):
+    def create(cls, org, user, activity, text, contacts, urns, case=None):
         if not text:
             raise ValueError("Message text cannot be empty")
 
-        broadcast = org.get_temba_client().create_broadcast(text=text, urns=urns, contacts=contacts)
-
-        # TODO update RapidPro api to expose more accurate recipient_count
-        recipient_count = len(broadcast.urns) + len(broadcast.contacts)
+        backend_id, backend_created_on = get_backend().create_outgoing(org, text, list(contacts), urns)
 
         return cls.objects.create(org=org,
-                                  broadcast_id=broadcast.id,
-                                  recipient_count=recipient_count,
+                                  broadcast_id=backend_id,
+                                  recipient_count=len(contacts) + len(urns),
                                   activity=activity, case=case,
                                   text=text,
                                   created_by=user,
-                                  created_on=broadcast.created_on)
+                                  created_on=backend_created_on)
 
     def as_json(self):
         """

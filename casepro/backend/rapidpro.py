@@ -242,6 +242,11 @@ class RapidProBackend(BaseBackend):
 
         return remote.uuid
 
+    def create_outgoing(self, org, text, contacts, urns):
+        client = self._get_client(org, 1)
+        broadcast = client.create_broadcast(text=text, contacts=contacts, urns=urns)
+        return broadcast.id, broadcast.created_on
+
     def add_to_group(self, org, contact, group):
         client = self._get_client(org, 1)
         client.add_contacts([contact.uuid], group_uuid=group.uuid)

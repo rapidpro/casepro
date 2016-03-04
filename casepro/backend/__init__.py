@@ -90,6 +90,19 @@ class BaseBackend(object):
         pass
 
     @abstractmethod
+    def create_outgoing(self, org, text, contacts, urns):
+        """
+        Creates an outgoing broadcast message
+
+        :param org: the org
+        :param text: the message text
+        :param contacts: the contact recipients
+        :param urns: the raw URN recipients
+        :return: tuple of the broadcast id and it's timestamp
+        """
+        pass
+
+    @abstractmethod
     def add_to_group(self, org, contact, group):
         """
         Adds the given contact to a group

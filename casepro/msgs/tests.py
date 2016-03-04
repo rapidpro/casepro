@@ -506,53 +506,54 @@ class MessageViewsTest(BaseCasesTest):
         mock_get_messages.reset_mock()
         mock_get_messages.return_value = []
 
-    @patch('dash.orgs.models.TembaClient1.create_broadcast')
-    def test_send(self, mock_create_broadcast):
+    @patch('casepro.test.TestBackend.create_outgoing')
+    def test_send(self, mock_create_outgoing):
         url = reverse('msgs.message_send')
 
         # log in as a non-administrator
         self.login(self.user1)
 
-        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=pytz.UTC)
-        mock_create_broadcast.return_value = TembaBroadcast.create(id=201,
-                                                                   text="That's great",
-                                                                   urns=[],
-                                                                   contacts=['C-001', 'C-002'],
-                                                                   created_on=d1)
+        ann = self.create_contact(self.unicef, "C-001", "Ann")
+        bob = self.create_contact(self.unicef, "C-002", "Bob")
 
-        response = self.url_post('unicef', url, {'activity': 'B', 'text': "That's fine",
-                                                 'urns': [], 'contacts': ['C-001', 'C-002']})
+        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=pytz.UTC)
+        mock_create_outgoing.return_value = (201, d1)
+
+        response = self.url_post('unicef', url, {
+            'activity': 'B',
+            'text': "That's fine",
+            'contacts': "C-001,C-002",
+            'urns': "tel:+260964153686"
+        })
         outgoing = Outgoing.objects.get(pk=response.json['id'])
 
         self.assertEqual(outgoing.org, self.unicef)
         self.assertEqual(outgoing.activity, Outgoing.BULK_REPLY)
         self.assertEqual(outgoing.broadcast_id, 201)
-        self.assertEqual(outgoing.recipient_count, 2)
+        self.assertEqual(outgoing.recipient_count, 3)
         self.assertEqual(outgoing.created_by, self.user1)
         self.assertEqual(outgoing.created_on, d1)
         self.assertEqual(outgoing.case, None)
 
 
 class OutgoingTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient1.create_broadcast')
-    def test_create(self, mock_create_broadcast):
+    @patch('casepro.test.TestBackend.create_outgoing')
+    def test_create(self, mock_create_outgoing):
+        ann = self.create_contact(self.unicef, "C-001", "Ann")
+        bob = self.create_contact(self.unicef, "C-002", "Bob")
         d1 = datetime(2014, 1, 2, 6, 0, tzinfo=pytz.UTC)
-        mock_create_broadcast.return_value = TembaBroadcast.create(id=201,
-                                                                   text="That's great",
-                                                                   urns=[],
-                                                                   contacts=['C-001', 'C-002'],
-                                                                   created_on=d1)
+        mock_create_outgoing.return_value = (201, d1)
 
         # create bulk reply
         outgoing = Outgoing.create(self.unicef, self.user1, Outgoing.BULK_REPLY, "That's great",
-                                   urns=[], contacts=['C-001', 'C-002'])
+                                   [ann, bob], ["twitter:rick123"])
 
-        mock_create_broadcast.assert_called_once_with(text="That's great", urns=[], contacts=['C-001', 'C-002'])
+        mock_create_outgoing.assert_called_once_with(self.unicef, "That's great", [ann, bob], ["twitter:rick123"])
 
         self.assertEqual(outgoing.org, self.unicef)
         self.assertEqual(outgoing.activity, Outgoing.BULK_REPLY)
         self.assertEqual(outgoing.broadcast_id, 201)
-        self.assertEqual(outgoing.recipient_count, 2)
+        self.assertEqual(outgoing.recipient_count, 3)
         self.assertEqual(outgoing.created_by, self.user1)
         self.assertEqual(outgoing.created_on, d1)
         self.assertEqual(outgoing.case, None)

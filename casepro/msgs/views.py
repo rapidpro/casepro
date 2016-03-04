@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from casepro.cases.models import Case, Label
+from casepro.contacts.models import Contact
 from casepro.utils import parse_csv, str_to_bool, normalize
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django import forms
@@ -279,11 +280,14 @@ class MessageSendView(OrgPermsMixin, View):
         activity = request.POST['activity']
         text = request.POST['text']
         urns = parse_csv(request.POST.get('urns', ''), as_ints=False)
-        contacts = parse_csv(request.POST.get('contacts', ''), as_ints=False)
+
+        contact_uuids = parse_csv(request.POST.get('contacts', ''), as_ints=False)
+        contacts = Contact.objects.filter(org=request.org, uuid__in=contact_uuids)
+
         case_id = request.POST.get('case', None)
         case = Case.objects.get(org=request.org, pk=case_id) if case_id else None
 
-        outgoing = Outgoing.create(request.org, request.user, activity, text, urns=urns, contacts=contacts, case=case)
+        outgoing = Outgoing.create(request.org, request.user, activity, text, contacts, urns, case)
 
         return JsonResponse({'id': outgoing.pk})
 

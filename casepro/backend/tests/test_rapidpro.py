@@ -11,6 +11,7 @@ from dash.test import MockClientQuery
 from datetime import datetime, timedelta
 from django.utils.timezone import now
 from mock import patch
+from temba_client.v1.types import Broadcast as TembaBroadcast
 from temba_client.v2.types import Group as TembaGroup, Field as TembaField, Label as TembaLabel, ObjectRef
 from temba_client.v2.types import Contact as TembaContact, Message as TembaMessage
 from unittest import skip
@@ -540,6 +541,19 @@ class RapidProBackendTest(BaseCasesTest):
         mock_create_label.return_value = TembaLabel.create(uuid='L-013', name='Ebola', count=0)
 
         self.assertEqual(self.backend.create_label(self.unicef, "Ebola"), 'L-013')
+
+    @patch('dash.orgs.models.TembaClient1.create_broadcast')
+    def test_create_outgoing(self, mock_create_broadcast):
+        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=pytz.UTC)
+        mock_create_broadcast.return_value = TembaBroadcast.create(id=201,
+                                                                   text="That's great",
+                                                                   urns=["tel:+250783935665"],
+                                                                   contacts=["C-001"],
+                                                                   created_on=d1)
+
+        res = self.backend.create_outgoing(self.unicef, "That's great", [self.ann], ["tel:+250783935665"])
+
+        self.assertEqual(res, (201, d1))
 
     @patch('dash.orgs.models.TembaClient1.add_contacts')
     def test_add_to_group(self, mock_add_contacts):

@@ -361,8 +361,8 @@ class CaseCRUDLTest(BaseCasesTest):
     @patch('casepro.test.TestBackend.archive_messages')
     @patch('casepro.test.TestBackend.label_messages')
     @patch('casepro.test.TestBackend.fetch_contact_messages')
-    @patch('dash.orgs.models.TembaClient1.create_broadcast')
-    def test_timeline(self, mock_create_broadcast, mock_fetch_contact_messages, mock_label_messages, mock_archive_messages):
+    @patch('casepro.test.TestBackend.create_outgoing')
+    def test_timeline(self, mock_create_outgoing, mock_fetch_contact_messages, mock_label_messages, mock_archive_messages):
         d1 = datetime(2014, 1, 2, 13, 0, tzinfo=timezone.utc)
         msg1 = self.create_message(self.unicef, 101, self.ann, "What is AIDS?", [self.aids], created_on=d1)
 
@@ -427,13 +427,8 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # user sends an outgoing message
         d3 = timezone.now()
-
-        # TODO go via backend
-
-        from temba_client.v1.types import Broadcast as TembaBroadcast
-        mock_create_broadcast.return_value = TembaBroadcast.create(id=201, text="It's bad", urns=[],
-                                                                   contacts=['C-001'], created_on=d3)
-        Outgoing.create(self.unicef, self.user1, Outgoing.CASE_REPLY, "It's bad", [], ['C-001'], case)
+        mock_create_outgoing.return_value = (201, d3)
+        Outgoing.create(self.unicef, self.user1, Outgoing.CASE_REPLY, "It's bad", ['C-001'], [], case)
 
         mock_fetch_contact_messages.return_value = [{
             'id': 103,
