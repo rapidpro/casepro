@@ -2,20 +2,20 @@ from __future__ import unicode_literals
 
 from casepro.cases.models import Case, Label
 from casepro.contacts.models import Contact
-from casepro.utils import parse_csv, str_to_bool, normalize
+from casepro.utils import parse_csv, normalize, str_to_bool
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django import forms
 from django.core.files.storage import default_storage
+from django.core.paginator import Paginator, EmptyPage
 from django.core.urlresolvers import reverse
 from django.db.transaction import non_atomic_requests
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
-from enum import Enum
 from smartmin.views import SmartCRUDL, SmartTemplateView
 from smartmin.views import SmartListView, SmartCreateView, SmartReadView, SmartUpdateView, SmartDeleteView
 from temba_client.utils import parse_iso8601
-from .models import Message, MessageExport, RemoteMessage, Outgoing
+from .models import Message, MessageExport, MessageFolder, Outgoing
 from .tasks import message_export
 
 
@@ -120,63 +120,29 @@ class LabelCRUDL(SmartCRUDL):
             return ', '.join([p.name for p in obj.get_partners()])
 
 
-class MessageView(Enum):
-    inbox = 1
-    flagged = 2
-    archived = 3
-    unlabelled = 4
-
-
 class MessageSearchMixin(object):
     def derive_search(self):
         """
         Collects and prepares message search parameters into JSON serializable dict
         """
-        from casepro.cases.models import Label
-        from casepro.backend.rapidpro import SYSTEM_LABEL_FLAGGED
-
-        request = self.request
-        view = MessageView[request.GET['view']]
-        after = parse_iso8601(request.GET.get('after', None))
-        before = parse_iso8601(request.GET.get('before', None))
-
-        label_objs = Label.get_all(request.org, request.user)
-
-        if view == MessageView.unlabelled:
-            labels = [('-%s' % l.name) for l in label_objs]
-            msg_types = ['I']
-        else:
-            label_id = request.GET.get('label', None)
-            if label_id:
-                label_objs = label_objs.filter(pk=label_id)
-            labels = [l.name for l in label_objs]
-            msg_types = None
-
-        if view == MessageView.flagged:
-            labels.append('+%s' % SYSTEM_LABEL_FLAGGED)
-
-        contact = request.GET.get('contact', None)
-        contacts = [contact] if contact else None
-
-        groups = request.GET.get('groups', None)
-        groups = parse_csv(groups) if groups else None
-
-        if view == MessageView.archived:
-            archived = True  # only archived
-        elif str_to_bool(request.GET.get('archived', '')):
-            archived = None  # both archived and non-archived
-        else:
-            archived = False  # only non-archived
+        folder = MessageFolder[self.request.GET['folder']]
+        label = self.request.GET.get('label', None)
+        include_archived = str_to_bool(self.request.GET.get('archived', ''))
+        text = self.request.GET.get('text', None)
+        contact = self.request.GET.get('contact', None)
+        groups = parse_csv(self.request.GET.get('groups', ''))
+        after = parse_iso8601(self.request.GET.get('after', None))
+        before = parse_iso8601(self.request.GET.get('before', None))
 
         return {
-            'labels': labels,
-            'contacts': contacts,
+            'folder': folder,
+            'label': label,
+            'include_archived': include_archived,  # only applies to flagged folder
+            'text': text,
+            'contact': contact,
             'groups': groups,
             'after': after,
-            'before': before,
-            'text': request.GET.get('text', None),
-            'types': msg_types,
-            'archived': archived
+            'before': before
         }
 
 
@@ -187,30 +153,29 @@ class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
     permission = 'orgs.org_inbox'
 
     def get_context_data(self, **kwargs):
-        context = super(MessageSearchView, self).get_context_data(**kwargs)
+        org = self.request.org
+        user = self.request.user
 
         search = self.derive_search()
-        page = int(self.request.GET.get('page', 0))
+        messages = Message.search(org, user, search)
 
-        client = self.request.org.get_temba_client()
-        pager = client.pager(start_page=page) if page else None
-        messages = RemoteMessage.search(self.request.org, search, pager)
+        # TODO switch to cursor pagination to avoid the unused count
 
+        page = int(self.request.GET.get('page', 1))
+        paginator = Paginator(messages, 100)
+        try:
+            messages = paginator.page(page)
+        except EmptyPage:
+            messages = Message.objects.none()
+
+        context = super(MessageSearchView, self).get_context_data(**kwargs)
         context['messages'] = messages
-
-        if page:
-            context['page'] = page
-            context['has_more'] = pager.has_more()
-        else:
-            context['page'] = None
-            context['has_more'] = None
-
         return context
 
     def render_to_response(self, context, **response_kwargs):
         results = [m.as_json() for m in context['messages']]
 
-        return JsonResponse({'results': results, 'has_more': context['has_more']})
+        return JsonResponse({'results': results})
 
 
 class MessageActionView(OrgPermsMixin, View):

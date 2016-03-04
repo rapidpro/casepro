@@ -696,7 +696,7 @@ class RapidProBackendTest(BaseCasesTest):
             'contact': {'uuid': "C-001", 'name': "Ann"},
             'text': "What is AIDS?",
             'time': d2,
-            'labels': [{'id': self.aids.pk, 'uuid': "L-001", 'name': "AIDS"}],
+            'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
             'flagged': True,
             'archived': False,
             'direction': 'I',

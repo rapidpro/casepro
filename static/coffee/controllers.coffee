@@ -26,8 +26,8 @@ controllers.controller 'HomeController', [ '$scope', '$window', '$location', 'La
   $scope.activeLabel = null
   $scope.activeContact = null
 
-  $scope.init = (itemView) ->
-    $scope.itemView = itemView
+  $scope.init = (folder) ->
+    $scope.folder = folder
 
     $scope.$on '$locationChangeSuccess', () ->
       params = $location.search()
@@ -152,9 +152,9 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
     $scope.oldItemsLoading = true
     $scope.oldItemsPage += 1
 
-    $scope.fetchOldItems((items, hasMore) ->
+    $scope.fetchOldItems((items) ->
       $scope.items = $scope.items.concat(items)
-      $scope.oldItemsMore = hasMore
+      $scope.oldItemsMore = items.length > 0
       $scope.oldItemsLoading = false
 
       if forSelectAll
@@ -199,18 +199,18 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     )
 
   $scope.getItemFilter = () ->
-    if $scope.itemView == 'inbox'
+    if $scope.folder == 'inbox'
       return (item) -> !item.archived
-    else if $scope.itemView == 'flagged'
+    else if $scope.folder == 'flagged'
       return (item) -> (!item.archived or $scope.searchFields.archived) and item.flagged
-    else if $scope.itemView == 'archived'
+    else if $scope.folder == 'archived'
       return (item) -> item.archived
-    else if $scope.itemView == 'unlabelled'
+    else if $scope.folder == 'unlabelled'
       return (item) -> !item.archived and item.labels.length == 0
 
   $scope.buildSearch = () ->
     search = angular.copy($scope.searchFields)
-    search.view = $scope.itemView
+    search.folder = $scope.folder
     search.label = $scope.activeLabel
     search.contact = if $scope.activeContact then $scope.activeContact.uuid else null
     search.timeCode = Date.now()
@@ -362,14 +362,14 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
     )
 
   $scope.getItemFilter = () ->
-    if $scope.itemView == 'open'
+    if $scope.folder == 'open'
       return (item) -> !item.is_closed
-    else if $scope.itemView == 'closed'
+    else if $scope.folder == 'closed'
       return (item) -> item.is_closed
 
   $scope.buildSearch = () ->
     search = angular.copy($scope.searchFields)
-    search.view = $scope.itemView
+    search.folder = $scope.folder
     search.label = $scope.activeLabel
     search.timeCode = Date.now()
     return search

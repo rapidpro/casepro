@@ -40,7 +40,10 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       $http.get('/message/?' + $.param(params))
       .success((data) =>
         @_processMessages(data.results)
-        callback(data.results, data.has_more)
+
+        console.log("Fetched " + data.results.length + " old messages")
+
+        callback(data.results)
       ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
@@ -178,7 +181,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     _searchToParams: (search) ->
       params = {}
-      params.view = search.view
+      params.folder = search.folder
       params.text = search.text
       params.after = formatIso8601(search.after)
       params.before = formatIso8601(search.before)
@@ -272,7 +275,7 @@ services.factory 'CaseService', ['$http', ($http) ->
       $http.get('/case/search/?' + $.param(params))
       .success((data) =>
         @_processCases(data.results)
-        callback(data.results, data.has_more)
+        callback(data.results)
       ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
@@ -413,7 +416,7 @@ services.factory 'CaseService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     _searchToParams: (search) ->
       params = {}
-      params.view = search.view
+      params.folder = search.folder
       params.assignee = if search.assignee then search.assignee.id else null
       params.label = if search.label then search.label.id else null
       return params

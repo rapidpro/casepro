@@ -1,8 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from casepro.contacts.models import Group
-from casepro.msgs.models import Message, Label
-from casepro.msgs.views import MessageView
+from casepro.msgs.models import Message, MessageFolder, Label
 from casepro.utils import parse_csv, json_encode, datetime_to_microseconds, microseconds_to_datetime
 from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
@@ -13,17 +12,11 @@ from django.http import HttpResponse, JsonResponse
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
-from enum import Enum
 from smartmin.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView
 from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
 from . import MAX_MESSAGE_CHARS
-from .models import AccessLevel, Case, Partner
-
-
-class CaseView(Enum):
-    open = 1
-    closed = 2
+from .models import AccessLevel, Case, CaseFolder, Partner
 
 
 class CaseCRUDL(SmartCRUDL):
@@ -176,7 +169,7 @@ class CaseCRUDL(SmartCRUDL):
 
         def derive_queryset(self, **kwargs):
             label_id = self.request.GET.get('label', None)
-            view = CaseView[self.request.GET['view']]
+            folder = CaseFolder[self.request.GET['folder']]
             assignee_id = self.request.GET.get('assignee', None)
 
             before = self.request.REQUEST.get('before', None)
@@ -186,12 +179,12 @@ class CaseCRUDL(SmartCRUDL):
 
             assignee = Partner.get_all(self.request.org).get(pk=assignee_id) if assignee_id else None
 
-            if view == CaseView.open:
+            if folder == CaseFolder.open:
                 qs = Case.get_open(self.request.org, user=self.request.user, label=label)
-            elif view == CaseView.closed:
+            elif folder == CaseFolder.closed:
                 qs = Case.get_closed(self.request.org, user=self.request.user, label=label)
             else:
-                raise ValueError('Invalid item view for cases')
+                raise ValueError('Invalid folder for cases')
 
             if assignee:
                 qs = qs.filter(assignee=assignee)
@@ -205,10 +198,9 @@ class CaseCRUDL(SmartCRUDL):
 
         def render_to_response(self, context, **response_kwargs):
             count = context['paginator'].count
-            has_more = context['page_obj'].has_next()
             results = [obj.as_json() for obj in list(context['object_list'])]
 
-            return JsonResponse({'results': results, 'has_more': has_more, 'total': count})
+            return JsonResponse({'results': results, 'total': count})
 
     class Timeline(OrgPermsMixin, SmartReadView):
         """
@@ -323,6 +315,10 @@ class BaseHomeView(OrgPermsMixin, SmartTemplateView):
     """
     Mixin to add site metadata to the context in JSON format which can then used
     """
+    title = None
+    folder = None
+    folder_icon = None
+    template_name = None
     permission = 'orgs.org_inbox'
 
     def get_context_data(self, **kwargs):
@@ -344,8 +340,8 @@ class BaseHomeView(OrgPermsMixin, SmartTemplateView):
         })
 
         context['banner_text'] = org.get_banner_text()
+        context['folder'] = self.folder.name
         context['folder_icon'] = self.folder_icon
-        context['item_view'] = self.item_view.name
         context['open_case_count'] = Case.get_open(org, user).count()
         context['closed_case_count'] = Case.get_closed(org, user).count()
         return context
@@ -355,60 +351,60 @@ class InboxView(BaseHomeView):
     """
     Inbox view
     """
-    template_name = 'cases/home_messages.haml'
     title = _("Inbox")
+    folder = MessageFolder.inbox
     folder_icon = 'glyphicon-inbox'
-    item_view = MessageView.inbox
+    template_name = 'cases/home_messages.haml'
 
 
 class FlaggedView(BaseHomeView):
     """
     Inbox view
     """
-    template_name = 'cases/home_messages.haml'
     title = _("Flagged")
+    folder = MessageFolder.flagged
     folder_icon = 'glyphicon-flag'
-    item_view = MessageView.flagged
+    template_name = 'cases/home_messages.haml'
 
 
 class ArchivedView(BaseHomeView):
     """
     Archived messages view
     """
-    template_name = 'cases/home_messages.haml'
     title = _("Archived")
+    folder = MessageFolder.archived
     folder_icon = 'glyphicon-trash'
-    item_view = MessageView.archived
+    template_name = 'cases/home_messages.haml'
 
 
 class UnlabelledView(BaseHomeView):
     """
     Unlabelled messages view
     """
-    template_name = 'cases/home_messages.haml'
     title = _("Unlabelled")
+    folder = MessageFolder.unlabelled
     folder_icon = 'glyphicon-bullhorn'
-    item_view = MessageView.unlabelled
+    template_name = 'cases/home_messages.haml'
 
 
 class OpenCasesView(BaseHomeView):
     """
     Open cases view
     """
-    template_name = 'cases/home_cases.haml'
     title = _("Open Cases")
+    folder = CaseFolder.open
     folder_icon = 'glyphicon-folder-open'
-    item_view = CaseView.open
+    template_name = 'cases/home_cases.haml'
 
 
 class ClosedCasesView(BaseHomeView):
     """
     Closed cases view
     """
-    template_name = 'cases/home_cases.haml'
     title = _("Closed Cases")
+    folder = CaseFolder.closed
     folder_icon = 'glyphicon-folder-close'
-    item_view = CaseView.closed
+    template_name = 'cases/home_cases.haml'
 
 
 class StatusView(View):

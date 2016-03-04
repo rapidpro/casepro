@@ -8,7 +8,7 @@ import re
 import six
 import unicodedata
 
-from django.core.serializers.json import DjangoJSONEncoder
+from enum import Enum
 from temba_client.utils import format_iso8601
 
 
@@ -35,7 +35,7 @@ def json_encode(data):
     """
     Encodes the given primitives as JSON using Django's encoder which can handle dates
     """
-    return json.dumps(data, cls=DjangoJSONEncoder)
+    return json.dumps(data, cls=JSONEncoder)
 
 
 def safe_max(*args, **kwargs):
@@ -86,6 +86,8 @@ class JSONEncoder(json.JSONEncoder):
     def default(self, val):
         if isinstance(val, datetime.datetime):
             return format_iso8601(val)
+        elif isinstance(val, Enum):
+            return val.name
 
         return json.JSONEncoder.default(self, val)
 

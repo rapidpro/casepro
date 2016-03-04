@@ -33,9 +33,9 @@
             %button.btn.btn-default{ type:"button", ng-click:"onExportSearch()", tooltip:"Save as Excel" }
               %span.glyphicon.glyphicon-save
 
-          %span{ ng-if:'itemView != "flagged"' }
+          %span{ ng-if:'folder != "flagged"' }
             %input.form-control{ ng-model:"searchFields.text", type:"text", placeholder:"Search", style:"width: 400px" }
-          %span{ ng-if:'itemView == "flagged"' }
+          %span{ ng-if:'folder == "flagged"' }
             %input.form-control{ ng-model:"searchFields.text", type:"text", placeholder:"Search", style:"width: 300px; display: inline-block" }
             %input{ type:"checkbox", ng-model:"searchFields.archived" }
             - trans "include archived"
@@ -86,7 +86,7 @@
                   [[ group.name ]]
                 </ui-select-choices>
               </ui-select>
-          .form-group{ ng-if:'itemView == "flagged"' }
+          .form-group{ ng-if:'folder == "flagged"' }
             %label.control-label.col-sm-2
               - trans "Include archived"
             .col-sm-10{ style:"padding-top: 4px" }
@@ -112,7 +112,7 @@
             <ng-pluralize count="selection.length" when="{'one': '1 message selected', 'other': '{} messages selected'}" />
 
           .selection-actions.pull-away
-            .btn-group{ ng-if:'itemView != "archived"' }
+            .btn-group{ ng-if:'folder != "archived"' }
               .btn-group{ dropdown:"true" }
                 %button.btn.btn-default.dropdown-toggle{ type:"button", dropdown-toggle:"true", ng-disabled:"selection.length == 0", tooltip:"Label" }
                   %span.glyphicon.glyphicon-tag
@@ -121,13 +121,13 @@
                   %li{ ng-repeat:"label in inactiveLabels" }
                     %a{ ng-click:"onLabelSelection(label)" }
                       [[ label.name ]]
-              %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-if:'itemView != "flagged"', ng-click:"onFlagSelection()", type:"button", tooltip:"Flag" }
+              %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-if:'folder != "flagged"', ng-click:"onFlagSelection()", type:"button", tooltip:"Flag" }
                 %span.glyphicon.glyphicon-flag
               %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onReplyToSelection()", type:"button" }
                 - trans "Reply"
               %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onArchiveSelection()", type:"button" }
                 - trans "Archive"
-            .btn-group{ ng-if:'itemView == "archived"' }
+            .btn-group{ ng-if:'folder == "archived"' }
               %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onRestoreSelection()", type:"button" }
                 - trans "Restore"
 

@@ -14,10 +14,9 @@ from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
 from django.utils.timezone import now
 from mock import patch, call
-from temba_client.clients import Pager
 from temba_client.utils import format_iso8601
 from xlrd import open_workbook
-from .models import Label, Message, MessageAction, RemoteMessage, Outgoing, MessageExport
+from .models import Label, Message, MessageAction, Outgoing, MessageExport
 from .tasks import handle_messages, pull_messages
 
 
@@ -426,9 +425,7 @@ class MessageViewsTest(BaseCasesTest):
         msg1.refresh_from_db()
         self.assertEqual(set(msg1.labels.all()), {self.pregnancy})
 
-    @patch('casepro.test.TestBackend.flag_messages')
-    @patch('casepro.test.TestBackend.label_messages')
-    def test_history(self, mock_label_messages, mock_flag_messages):
+    def test_history(self):
         ann = self.create_contact(self.unicef, 'C-001', "Ann")
         msg1 = self.create_message(self.unicef, 101, ann, "Hello")
         msg2 = self.create_message(self.unicef, 102, ann, "Goodbye")
@@ -451,11 +448,7 @@ class MessageViewsTest(BaseCasesTest):
         self.assertEqual(response.json['actions'][1]['action'], 'F')
         self.assertEqual(response.json['actions'][1]['created_by']['id'], self.user1.pk)
 
-    @patch('dash.orgs.models.TembaClient1.get_messages')
-    @patch('dash.orgs.models.TembaClient1.pager')
-    def test_search(self, mock_pager, mock_get_messages):
-        from temba_client.v1.types import Message as TembaMessage1
-
+    def test_search(self):
         url = reverse('msgs.message_search')
 
         ann = self.create_contact(self.unicef, 'C-001', "Ann")
@@ -463,49 +456,28 @@ class MessageViewsTest(BaseCasesTest):
         don = self.create_contact(self.unicef, 'C-004', "Don")
 
         self.create_message(self.unicef, 101, ann, "What is HIV?", [self.aids], is_handled=True)
-        self.create_message(self.unicef, 102, bob, "I ♡ RapidPro", is_handled=True)
-        self.create_message(self.unicef, 104, don, "RapidCon 2016!", is_handled=True)
-
-        msg1 = TembaMessage1.create(id=101, contact='C-001', text="What is HIV?", created_on=now(), labels=['AIDS'])
-        msg2 = TembaMessage1.create(id=102, contact='C-002', text="I ♡ RapidPro", created_on=now(), labels=[])
-        msg3 = TembaMessage1.create(id=103, contact='C-003', text="New contact..", created_on=now(), labels=[])
-        msg4 = TembaMessage1.create(id=104, contact='C-004', text="RapidCon 2016!", created_on=now(), labels=[])
-
-        pager = Pager(start_page=1)
-        mock_pager.return_value = pager
-        mock_get_messages.return_value = [msg4, msg3, msg2]
+        self.create_message(self.unicef, 102, bob, "I ♡ RapidPro", [self.pregnancy], is_handled=True)
+        self.create_message(self.unicef, 103, don, "RapidCon 2016!", is_handled=True)
 
         # log in as a non-administrator
         self.login(self.user1)
 
         # page requests first page of existing inbox messages
         t0 = now()
-        response = self.url_get('unicef', url, {'view': 'inbox', 'text': '', 'label': '', 'page': 1,
-                                                'after': '', 'before': format_iso8601(t0)})
+        response = self.url_get('unicef', url, {
+            'folder': 'inbox',
+            'text': "",
+            'page': 1,
+            'after': "",
+            'before': format_iso8601(t0)
+        })
 
-        self.assertEqual(len(response.json['results']), 2)  # msg3 doesn't have a local message so hidden for now
-        self.assertEqual(response.json['results'][0]['id'], 104)
-        self.assertEqual(response.json['results'][0]['contact'], {'uuid': "C-004", 'name': "Don"})
-        self.assertEqual(response.json['results'][0]['text'], "RapidCon 2016!")
-        self.assertEqual(response.json['results'][0]['labels'], [])
-
-        mock_get_messages.assert_called_once_with(archived=False, labels=['AIDS', 'Pregnancy'],
-                                                  contacts=None, groups=None, text='', _types=None, direction='I',
-                                                  after=None, before=t0, pager=pager)
-        mock_get_messages.reset_mock()
-        mock_get_messages.return_value = [msg1]
-
-        # page requests next (and last) page of existing inbox messages
-        response = self.url_get('unicef', url, {'view': 'inbox', 'text': '', 'label': '', 'page': 2,
-                                                'after': '', 'before': format_iso8601(t0)})
-
-        self.assertEqual(len(response.json['results']), 1)
-
-        mock_get_messages.assert_called_once_with(archived=False, labels=['AIDS', 'Pregnancy'],
-                                                  contacts=None, groups=None, text='', _types=None, direction='I',
-                                                  after=None, before=t0, pager=pager)
-        mock_get_messages.reset_mock()
-        mock_get_messages.return_value = []
+        self.assertEqual(len(response.json['results']), 2)
+        self.assertEqual(response.json['results'][0]['id'], 102)
+        self.assertEqual(response.json['results'][0]['contact'], {'uuid': "C-002", 'name': "Bob"})
+        self.assertEqual(response.json['results'][0]['text'], "I ♡ RapidPro")
+        self.assertEqual(response.json['results'][0]['labels'], [{'id': self.pregnancy.pk, 'name': "Pregnancy"}])
+        self.assertEqual(response.json['results'][1]['id'], 101)
 
     @patch('casepro.test.TestBackend.create_outgoing')
     def test_send(self, mock_create_outgoing):
@@ -537,6 +509,52 @@ class MessageViewsTest(BaseCasesTest):
         self.assertEqual(outgoing.case, None)
 
 
+class MessageExportCRUDLTest(BaseCasesTest):
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    def test_create_and_read(self):
+
+        ann = self.create_contact(self.unicef, "C-001", "Ann", fields={'nickname': "Annie", 'age': "28", 'state': "WA"})
+        bob = self.create_contact(self.unicef, "C-002", "Bob", fields={'nickname': "Bobby", 'age': "32", 'state': "IN"})
+
+        d1 = datetime(2015, 12, 25, 13, 0, 0, 0, pytz.UTC)
+        d2 = datetime(2015, 12, 25, 14, 0, 0, 0, pytz.UTC)
+
+        self.create_message(self.unicef, 101, ann, "What is HIV?", [self.aids], created_on=d1, is_handled=True)
+        self.create_message(self.unicef, 102, bob, "I ♡ RapidPro", [self.pregnancy], created_on=d2, is_flagged=True,
+                            is_handled=True)
+        self.create_message(self.unicef, 103, bob, "Hello", [], created_on=d2, is_handled=True)  # no labels
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_post('unicef', '%s?folder=inbox&text=&after=2015-04-01T22:00:00.000Z'
+                                 % reverse('msgs.messageexport_create'))
+        self.assertEqual(response.status_code, 200)
+
+        export = MessageExport.objects.get()
+        self.assertEqual(export.created_by, self.user1)
+
+        filename = "%s/%s" % (settings.MEDIA_ROOT, export.filename)
+        workbook = open_workbook(filename, 'rb')
+        sheet = workbook.sheets()[0]
+
+        self.assertEqual(sheet.nrows, 3)
+        self.assertExcelRow(sheet, 0, ["Time", "Message ID", "Flagged", "Labels", "Text", "Contact", "Nickname", "Age"])
+        self.assertExcelRow(sheet, 1, [d2, 102, "Yes", "Pregnancy", "I ♡ RapidPro", "C-002", "Bobby", "32"], pytz.UTC)
+        self.assertExcelRow(sheet, 2, [d1, 101, "No", "AIDS", "What is HIV?", "C-001", "Annie", "28"], pytz.UTC)
+
+        read_url = reverse('msgs.messageexport_read', args=[export.pk])
+
+        response = self.url_get('unicef', read_url)
+        self.assertEqual(response.status_code, 200)
+
+        # user from another org can't access this download
+        self.login(self.norbert)
+
+        response = self.url_get('unicef', read_url)
+        self.assertEqual(response.status_code, 302)
+
+
 class OutgoingTest(BaseCasesTest):
     @patch('casepro.test.TestBackend.create_outgoing')
     def test_create(self, mock_create_outgoing):
@@ -558,70 +576,6 @@ class OutgoingTest(BaseCasesTest):
         self.assertEqual(outgoing.created_by, self.user1)
         self.assertEqual(outgoing.created_on, d1)
         self.assertEqual(outgoing.case, None)
-
-
-class MessageExportCRUDLTest(BaseCasesTest):
-    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
-    @patch('dash.orgs.models.TembaClient1.get_messages')
-    def test_create_and_read(self, mock_get_messages):
-        from temba_client.v1.types import Message as TembaMessage1
-
-        ann = self.create_contact(self.unicef, "C-001", "Ann", fields={'nickname': "Annie", 'age': "28", 'state': "WA"})
-        bob = self.create_contact(self.unicef, "C-002", "Bob", fields={'nickname': "Bobby", 'age': "32", 'state': "IN"})
-
-        d1 = datetime(2015, 12, 25, 13, 0, 0, 0, pytz.UTC)
-        d2 = datetime(2015, 12, 25, 14, 0, 0, 0, pytz.UTC)
-
-        msg1 = self.create_message(self.unicef, 101, ann, "What is HIV?", [self.aids], created_on=d1,
-                                   is_handled=True)
-        msg2 = self.create_message(self.unicef, 102, bob, "I ♡ RapidPro", [], created_on=d2,
-                                   is_flagged=True, is_handled=True)
-
-        mock_get_messages.return_value = [
-            TembaMessage1.create(id=101,
-                                 contact='C-001',
-                                 text="What is HIV?",
-                                 created_on=d1,
-                                 labels=['AIDS']),
-            TembaMessage1.create(id=102,
-                                 contact='C-002',
-                                 text="I ♡ RapidPro",
-                                 created_on=d2,
-                                 labels=[])
-        ]
-
-        # log in as a non-administrator
-        self.login(self.user1)
-
-        response = self.url_post('unicef', '%s?view=inbox&text=&after=2015-04-01T22:00:00.000Z' % reverse('msgs.messageexport_create'))
-        self.assertEqual(response.status_code, 200)
-
-        mock_get_messages.assert_called_once_with(archived=False, labels=['AIDS', 'Pregnancy'],
-                                                  contacts=None, groups=None, text='', _types=None, direction='I',
-                                                  after=datetime(2015, 4, 1, 22, 0, 0, 0, pytz.UTC), before=None,
-                                                  pager=None)
-
-        export = MessageExport.objects.get()
-        self.assertEqual(export.created_by, self.user1)
-
-        filename = "%s/%s" % (settings.MEDIA_ROOT, export.filename)
-        workbook = open_workbook(filename, 'rb')
-        sheet = workbook.sheets()[0]
-
-        self.assertExcelRow(sheet, 0, ["Time", "Message ID", "Flagged", "Labels", "Text", "Contact", "Nickname", "Age"])
-        self.assertExcelRow(sheet, 1, [d2, 102, "Yes", "", "I ♡ RapidPro", "C-002", "Bobby", "32"], pytz.UTC)
-        self.assertExcelRow(sheet, 2, [d1, 101, "No", "AIDS", "What is HIV?", "C-001", "Annie", "28"], pytz.UTC)
-
-        read_url = reverse('msgs.messageexport_read', args=[export.pk])
-
-        response = self.url_get('unicef', read_url)
-        self.assertEqual(response.status_code, 200)
-
-        # user from another org can't access this download
-        self.login(self.norbert)
-
-        response = self.url_get('unicef', read_url)
-        self.assertEqual(response.status_code, 302)
 
 
 class TasksTest(BaseCasesTest):
@@ -705,30 +659,3 @@ class TasksTest(BaseCasesTest):
         handle_messages(self.unicef.pk)
         task_state = self.unicef.get_task_state('message-handle')
         self.assertEqual(task_state.get_last_results(), {'messages': 0, 'labelled': 0, 'case_replies': 0})
-
-
-class RemoteMessageTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient1.get_messages')
-    def test_search(self, mock_get_messages):
-        from temba_client.clients import Pager
-        from temba_client.v1.types import Message as TembaMessage1
-
-        ann = self.create_contact(self.unicef, 'C-001', "Ann", fields={'nickname': "Ann"})
-        bob = self.create_contact(self.unicef, 'C-002', "Bob", fields={'nickname': "Bob"})
-
-        mock_get_messages.return_value = [
-            TembaMessage1.create(id=101, contact='C-001', text="What is HIV?", created_on=now(), labels=['AIDS']),
-            TembaMessage1.create(id=102, contact='C-002', text="I ♡ RapidPro", created_on=now(), labels=[]),
-            TembaMessage1.create(id=103, contact='C-002', text="Yup", created_on=now(), labels=[])
-        ]
-
-        msg1 = self.create_message(self.unicef, 101, ann, "What is HIV?", [self.aids], is_handled=True)
-        msg2 = self.create_message(self.unicef, 102, bob, "I ♡ RapidPro", [self.aids], is_handled=False)
-
-        search = {'labels': ['AIDS'], 'contacts': None, 'groups': None, 'after': None, 'before': None,
-                  'text': None, 'types': ['I'], 'archived': False}
-
-        messages = RemoteMessage.search(self.unicef, search, Pager(start_page=1))
-
-        self.assertEqual(len(messages), 1)
-        self.assertEqual(messages[0], msg1)

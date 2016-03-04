@@ -7,11 +7,10 @@ import six
 
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact
-from casepro.utils import JSONEncoder, normalize, parse_csv
+from casepro.utils import normalize, parse_csv, json_encode
 from casepro.utils.email import send_email
 from dash.orgs.models import Org
 from dash.utils import chunks, random_string
-from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.files import File
@@ -19,9 +18,9 @@ from django.core.files.storage import default_storage
 from django.core.files.temp import NamedTemporaryFile
 from django.core.urlresolvers import reverse
 from django.db import models
-from django.utils.timezone import now
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
+from enum import Enum
 from redis_cache import get_redis_connection
 from temba_client.utils import parse_iso8601
 
@@ -34,6 +33,13 @@ SAVE_LABELS_ATTR = '__data__labels'
 
 LABEL_LOCK_KEY = 'lock:label:%d:%s'
 MESSAGE_LOCK_KEY = 'lock:message:%d:%d'
+
+
+class MessageFolder(Enum):
+    inbox = 1
+    flagged = 2
+    archived = 3
+    unlabelled = 4
 
 
 @python_2_unicode_compatible
@@ -101,7 +107,7 @@ class Label(models.Model):
         self.save(update_fields=('is_active',))
 
     def as_json(self):
-        return {'id': self.pk, 'uuid': self.uuid, 'name': self.name}
+        return {'id': self.pk, 'name': self.name}
 
     @classmethod
     def is_valid_keyword(cls, keyword):
@@ -162,6 +168,53 @@ class Message(models.Model):
     @classmethod
     def lock(cls, org, backend_id):
         return get_redis_connection().lock(MESSAGE_LOCK_KEY % (org.pk, backend_id), timeout=60)
+
+    @classmethod
+    def search(cls, org, user, search):
+        """
+        Search for messages
+        """
+        labels = Label.get_all(org, user)
+
+        # only show non-deleted handled messages
+        queryset = org.incoming_messages.filter(is_active=True, is_handled=True)
+
+        # filter by user labels.. or exclude them for the unlabelled view
+        if search['folder'] == MessageFolder.unlabelled:
+            queryset = queryset.exclude(labels__in=labels)  # TODO optimize ?
+        else:
+            if search['label']:
+                labels = labels.filter(pk=search['label'])
+
+            queryset = queryset.filter(labels__in=labels)
+
+        # archived messages can be implicitly or explicitly included depending on folder
+        if search['folder'] == MessageFolder.archived:
+            queryset = queryset.filter(is_archived=True)
+        elif search['folder'] == MessageFolder.flagged:
+            if not search['include_archived']:
+                queryset = queryset.filter(is_archived=False)
+        else:
+            queryset = queryset.filter(is_archived=False)
+
+        # only show flagged messages in flagged folder
+        if search['folder'] == MessageFolder.flagged:
+            queryset = queryset.filter(is_flagged=True)
+
+        if search['text']:
+            queryset = queryset.filter(text__icontains=search['text'])
+
+        if search['contact']:
+            queryset = queryset.filter(contact__uuid=search['contact'])
+        if search['groups']:
+            queryset = queryset.filter(contact__groups__uuid__in=search['groups'])
+
+        if search['after']:
+            queryset = queryset.filter(created_on__gt=search['after'])
+        if search['before']:
+            queryset = queryset.filter(created_on__lt=search['before'])
+
+        return queryset.select_related('contact').prefetch_related('labels').order_by('-created_on').distinct()
 
     def auto_label(self, labels_by_keyword):
         """
@@ -415,10 +468,12 @@ class MessageExport(models.Model):
 
     @classmethod
     def create(cls, org, user, search):
-        return MessageExport.objects.create(org=org, created_by=user, search=json.dumps(search, cls=JSONEncoder))
+        return MessageExport.objects.create(org=org, created_by=user, search=json_encode(search))
 
     def get_search(self):
         search = json.loads(self.search)
+        if 'folder' in search:
+            search['folder'] = MessageFolder[search['folder']]
         if 'after' in search:
             search['after'] = parse_iso8601(search['after'])
         if 'before' in search:
@@ -443,8 +498,8 @@ class MessageExport(models.Model):
 
         search = self.get_search()
 
-        # fetch all messages to be exported
-        messages = RemoteMessage.search(self.org, search, None)
+        # load all messages to be exported
+        messages = Message.search(self.org, self.created_by, search)
 
         def add_sheet(num):
             sheet = book.add_sheet(unicode(_("Messages %d" % num)))
@@ -500,41 +555,3 @@ class MessageExport(models.Model):
         # force a gc
         import gc
         gc.collect()
-
-
-class RemoteMessage(object):
-    """
-    A pseudo-model for messages which are always fetched from RapidPro. All of these methods will be replaced by new
-    methods in the Message class which operate both locally and remotely.
-    """
-    @staticmethod
-    def search(org, search, pager):
-        """
-        Search for labelled messages in RapidPro
-        """
-        if not search['labels']:  # no access to un-labelled messages
-            return []
-
-        # all queries either filter by at least one label, or exclude all labels using - prefix
-        labelled_search = bool([l for l in search['labels'] if not l.startswith('-')])
-
-        # put limit on how far back we fetch unlabelled messages because there are lots of those
-        if not labelled_search and not search['after']:
-            limit_days = getattr(settings, 'UNLABELLED_LIMIT_DAYS', DEFAULT_UNLABELLED_LIMIT_DAYS)
-            search['after'] = now() - timedelta(days=limit_days)
-
-        # *** TEMPORARY *** fix to disable the Unlabelled view which is increasingly not performant, until the larger
-        # message store refactor is complete. This removes any label exclusions from the search.
-        search['labels'] = [l for l in search['labels'] if not l.startswith('-')]
-
-        client = org.get_temba_client(api_version=1)
-        backend_messages = client.get_messages(pager=pager, text=search['text'], labels=search['labels'],
-                                               contacts=search['contacts'], groups=search['groups'],
-                                               direction='I', _types=search['types'], archived=search['archived'],
-                                               after=search['after'], before=search['before'])
-
-        # *** TEMPORARY *** now convert remote messages to local messages...
-
-        backend_ids = [m.id for m in backend_messages]
-        local_messages = org.incoming_messages.filter(backend_id__in=backend_ids, is_handled=True)
-        return local_messages.select_related('contact').prefetch_related('labels').order_by('-created_on')

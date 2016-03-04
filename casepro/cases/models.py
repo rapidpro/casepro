@@ -12,8 +12,13 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from enum import IntEnum
+from enum import Enum, IntEnum
 from redis_cache import get_redis_connection
+
+
+class CaseFolder(Enum):
+    open = 1
+    closed = 2
 
 
 class AccessLevel(IntEnum):
