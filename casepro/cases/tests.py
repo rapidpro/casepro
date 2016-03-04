@@ -532,10 +532,7 @@ class CaseCRUDLTest(BaseCasesTest):
 
 
 class HomeViewsTest(BaseCasesTest):
-    @patch('dash.orgs.models.TembaClient1.get_labels')
-    def test_inbox(self, mock_get_labels):
-        mock_get_labels.return_value = []
-
+    def test_inbox(self):
         url = reverse('cases.inbox')
 
         response = self.url_get('unicef', url)
