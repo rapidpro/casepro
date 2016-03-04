@@ -166,7 +166,7 @@ class MessageCRUDL(SmartCRUDL):
             # TODO switch to cursor pagination to avoid the unused count
 
             page = int(self.request.GET.get('page', 1))
-            paginator = Paginator(messages, 100)
+            paginator = Paginator(messages, 50)
             try:
                 messages = paginator.page(page)
             except EmptyPage:

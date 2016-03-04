@@ -8,7 +8,7 @@ from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from datetime import timedelta
 from django import forms
 from django.core.cache import cache
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, Http404
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
@@ -165,7 +165,14 @@ class CaseCRUDL(SmartCRUDL):
         JSON endpoint for searching for cases
         """
         permission = 'cases.case_list'
-        paginate_by = 25
+        paginate_by = 50
+
+        def get(self, request, *args, **kwargs):
+            try:
+                # TODO switch this to a paginator better suited to infinite scroll
+                return super(CaseCRUDL.Search, self).get(request, *args, **kwargs)
+            except Http404:
+                return JsonResponse({'results': []})
 
         def derive_queryset(self, **kwargs):
             label_id = self.request.GET.get('label', None)
@@ -197,10 +204,9 @@ class CaseCRUDL(SmartCRUDL):
             return qs.prefetch_related('labels').select_related('assignee').order_by('-pk')
 
         def render_to_response(self, context, **response_kwargs):
-            count = context['paginator'].count
             results = [obj.as_json() for obj in list(context['object_list'])]
 
-            return JsonResponse({'results': results, 'total': count})
+            return JsonResponse({'results': results})
 
     class Timeline(OrgPermsMixin, SmartReadView):
         """
