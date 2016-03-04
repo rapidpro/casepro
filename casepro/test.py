@@ -12,6 +12,8 @@ from datetime import datetime
 from django.contrib.auth.models import User
 from django.utils.timezone import now
 from django.test import override_settings
+from xlrd import xldate_as_tuple
+from xlrd.sheet import XL_CELL_DATE
 
 
 class TestBackend(RapidProBackend):
@@ -103,4 +105,30 @@ class BaseCasesTest(DashTest):
 
     def datetime(self, year, month, day, hour=0, minute=0, second=0, microsecond=0, tz=pytz.UTC):
         return datetime(year, month, day, hour, minute, second, microsecond, tz)
+
+    def assertExcelRow(self, sheet, row_num, values, tz=None):
+        """
+        Asserts the cell values in the given worksheet row. Date values are converted using the provided timezone.
+        """
+        self.assertEqual(len(values), sheet.ncols, msg="Expecting %d columns, found %d" % (len(values), sheet.ncols))
+
+        actual_values = []
+        expected_values = []
+
+        for c in range(0, len(values)):
+            cell = sheet.cell(row_num, c)
+            actual = cell.value
+            expected = values[c]
+
+            if cell.ctype == XL_CELL_DATE:
+                actual = datetime(*xldate_as_tuple(actual, sheet.book.datemode))
+
+            # if expected value is datetime, localize and remove microseconds
+            if isinstance(expected, datetime):
+                expected = expected.astimezone(tz).replace(microsecond=0, tzinfo=None)
+
+            actual_values.append(actual)
+            expected_values.append(expected)
+
+        self.assertEqual(actual_values, expected_values)
 

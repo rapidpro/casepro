@@ -429,9 +429,7 @@ class MessageExport(models.Model):
         """
         Does actual export. Called from a celery task as it may require a lot of API calls to grab all messages.
         """
-        from casepro.cases.models import Label
         from casepro.contacts.models import Field
-        from casepro.backend.rapidpro import SYSTEM_LABEL_FLAGGED
         from xlwt import Workbook, XFStyle
 
         book = Workbook()
@@ -440,9 +438,8 @@ class MessageExport(models.Model):
         date_style.num_format_str = 'DD-MM-YYYY HH:MM:SS'
 
         base_fields = ["Time", "Message ID", "Flagged", "Labels", "Text", "Contact"]
-        contact_fields = [f.key for f in Field.get_all(self.org, visible=True)]
-        all_fields = base_fields + contact_fields
-        label_map = {l.name: l for l in Label.get_all(self.org)}
+        contact_fields = Field.get_all(self.org, visible=True)
+        all_fields = base_fields + [f.label for f in contact_fields]
 
         search = self.get_search()
 
@@ -466,24 +463,20 @@ class MessageExport(models.Model):
 
                 row = 1
                 for msg in msg_chunk:
-                    created_on = msg.created_on.astimezone(pytz.utc).replace(tzinfo=None)
-                    flagged = SYSTEM_LABEL_FLAGGED in msg.labels
-                    labels = ', '.join([label_map[l_name].name for l_name in msg.labels if l_name in label_map])
+                    created_on = msg.created_on.astimezone(pytz.UTC).replace(tzinfo=None)
 
                     current_sheet.write(row, 0, created_on, date_style)
-                    current_sheet.write(row, 1, msg.id)
-                    current_sheet.write(row, 2, 'Yes' if flagged else 'No')
-                    current_sheet.write(row, 3, labels)
+                    current_sheet.write(row, 1, msg.backend_id)
+                    current_sheet.write(row, 2, 'Yes' if msg.is_flagged else 'No')
+                    current_sheet.write(row, 3, ', '.join([l.name for l in msg.labels.all()]))
                     current_sheet.write(row, 4, msg.text)
-                    current_sheet.write(row, 5, msg.contact['uuid'])
+                    current_sheet.write(row, 5, msg.contact.uuid)
 
-                    # TODO after refactor, .search() should return Message objects with contacts
-                    contact = Contact.objects.filter(uuid=msg.contact['uuid']).first()
-                    fields = contact.get_fields() if contact else {}
+                    fields = msg.contact.get_fields()
 
                     for cf in range(len(contact_fields)):
                         contact_field = contact_fields[cf]
-                        current_sheet.write(row, 6 + cf, fields.get(contact_field, None))
+                        current_sheet.write(row, len(base_fields) + cf, fields.get(contact_field.key, None))
 
                     row += 1
 

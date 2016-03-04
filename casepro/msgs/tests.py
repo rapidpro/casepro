@@ -9,13 +9,14 @@ from casepro.contacts.models import Contact
 from casepro.test import BaseCasesTest
 from dash.orgs.models import TaskState
 from datetime import datetime
+from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
 from django.utils.timezone import now
 from mock import patch, call
 from temba_client.clients import Pager
 from temba_client.utils import format_iso8601
-from temba_client.v1.types import Broadcast as TembaBroadcast
+from xlrd import open_workbook
 from .models import Label, Message, MessageAction, RemoteMessage, Outgoing, MessageExport
 from .tasks import handle_messages, pull_messages
 
@@ -562,16 +563,31 @@ class OutgoingTest(BaseCasesTest):
 class MessageExportCRUDLTest(BaseCasesTest):
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     @patch('dash.orgs.models.TembaClient1.get_messages')
-    @patch('dash.orgs.models.TembaClient1.get_contacts')
-    def test_create_and_read(self, mock_get_contacts, mock_get_messages):
+    def test_create_and_read(self, mock_get_messages):
         from temba_client.v1.types import Message as TembaMessage1
 
-        self.create_contact(self.unicef, 'C-001', None, fields={'nickname': "Bob", 'age': "28", 'state': "WA"})
-        self.create_contact(self.unicef, 'C-002', None, fields={'nickname': "Ann", 'age': "32", 'state': "IN"})
+        ann = self.create_contact(self.unicef, "C-001", "Ann", fields={'nickname': "Annie", 'age': "28", 'state': "WA"})
+        bob = self.create_contact(self.unicef, "C-002", "Bob", fields={'nickname': "Bobby", 'age': "32", 'state': "IN"})
+
+        d1 = datetime(2015, 12, 25, 13, 0, 0, 0, pytz.UTC)
+        d2 = datetime(2015, 12, 25, 14, 0, 0, 0, pytz.UTC)
+
+        msg1 = self.create_message(self.unicef, 101, ann, "What is HIV?", [self.aids], created_on=d1,
+                                   is_handled=True)
+        msg2 = self.create_message(self.unicef, 102, bob, "I ♡ RapidPro", [], created_on=d2,
+                                   is_flagged=True, is_handled=True)
 
         mock_get_messages.return_value = [
-            TembaMessage1.create(id=101, contact='C-001', text="What is HIV?", created_on=now(), labels=['AIDS']),
-            TembaMessage1.create(id=102, contact='C-002', text="I ♡ RapidPro", created_on=now(), labels=[])
+            TembaMessage1.create(id=101,
+                                 contact='C-001',
+                                 text="What is HIV?",
+                                 created_on=d1,
+                                 labels=['AIDS']),
+            TembaMessage1.create(id=102,
+                                 contact='C-002',
+                                 text="I ♡ RapidPro",
+                                 created_on=d2,
+                                 labels=[])
         ]
 
         # log in as a non-administrator
@@ -587,6 +603,14 @@ class MessageExportCRUDLTest(BaseCasesTest):
 
         export = MessageExport.objects.get()
         self.assertEqual(export.created_by, self.user1)
+
+        filename = "%s/%s" % (settings.MEDIA_ROOT, export.filename)
+        workbook = open_workbook(filename, 'rb')
+        sheet = workbook.sheets()[0]
+
+        self.assertExcelRow(sheet, 0, ["Time", "Message ID", "Flagged", "Labels", "Text", "Contact", "Nickname", "Age"])
+        self.assertExcelRow(sheet, 1, [d2, 102, "Yes", "", "I ♡ RapidPro", "C-002", "Bobby", "32"], pytz.UTC)
+        self.assertExcelRow(sheet, 2, [d1, 101, "No", "AIDS", "What is HIV?", "C-001", "Annie", "28"], pytz.UTC)
 
         read_url = reverse('msgs.messageexport_read', args=[export.pk])
 
