@@ -238,13 +238,13 @@ class RapidProBackend(BaseBackend):
         if temba_labels:
             remote = temba_labels[0]
         else:
-            remote = client.create_label(name)
+            remote = client.create_label(name=name)
 
         return remote.uuid
 
     def create_outgoing(self, org, text, contacts, urns):
         client = self._get_client(org, 1)
-        broadcast = client.create_broadcast(text=text, contacts=contacts, urns=urns)
+        broadcast = client.create_broadcast(text=text, contacts=[c.uuid for c in contacts], urns=urns)
         return broadcast.id, broadcast.created_on
 
     def add_to_group(self, org, contact, group):

@@ -529,18 +529,22 @@ class RapidProBackendTest(BaseCasesTest):
     @patch('dash.orgs.models.TembaClient1.get_labels')
     def test_create_label(self, mock_get_labels, mock_create_label):
         mock_get_labels.return_value = [
-            TembaLabel.create(uuid='L-011', name='Not Ebola', count=213),
-            TembaLabel.create(uuid='L-012', name='ebola', count=345)
+            TembaLabel.create(uuid="L-011", name="Not Ebola", count=213),
+            TembaLabel.create(uuid="L-012", name="ebola", count=345)
         ]
 
         # check when label exists
-        self.assertEqual(self.backend.create_label(self.unicef, "Ebola"), 'L-012')
+        self.assertEqual(self.backend.create_label(self.unicef, "Ebola"), "L-012")
+
+        mock_create_label.assert_not_called()
 
         # check when label doesn't exist
         mock_get_labels.return_value = []
-        mock_create_label.return_value = TembaLabel.create(uuid='L-013', name='Ebola', count=0)
+        mock_create_label.return_value = TembaLabel.create(uuid='L-013', name="Ebola", count=0)
 
-        self.assertEqual(self.backend.create_label(self.unicef, "Ebola"), 'L-013')
+        self.assertEqual(self.backend.create_label(self.unicef, "Ebola"), "L-013")
+
+        mock_create_label.assert_called_once_with(name="Ebola")
 
     @patch('dash.orgs.models.TembaClient1.create_broadcast')
     def test_create_outgoing(self, mock_create_broadcast):
@@ -554,6 +558,8 @@ class RapidProBackendTest(BaseCasesTest):
         res = self.backend.create_outgoing(self.unicef, "That's great", [self.ann], ["tel:+250783935665"])
 
         self.assertEqual(res, (201, d1))
+        mock_create_broadcast.assert_called_once_with(text="That's great", contacts=["C-001"],
+                                                      urns=["tel:+250783935665"])
 
     @patch('dash.orgs.models.TembaClient1.add_contacts')
     def test_add_to_group(self, mock_add_contacts):
