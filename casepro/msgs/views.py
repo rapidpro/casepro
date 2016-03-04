@@ -147,7 +147,7 @@ class MessageSearchMixin(object):
 
 
 class MessageCRUDL(SmartCRUDL):
-    actions = ('search',)
+    actions = ('search', 'action', 'label', 'send', 'history')
     model = Message
 
     class Search(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
@@ -181,96 +181,108 @@ class MessageCRUDL(SmartCRUDL):
 
             return JsonResponse({'results': results})
 
+    class Action(OrgPermsMixin, View):
+        """
+        AJAX endpoint for bulk message actions. Takes a list of message ids.
+        """
+        permission = 'orgs.org_inbox'
 
-class MessageActionView(OrgPermsMixin, View):
-    """
-    AJAX endpoint for bulk message actions. Takes a list of message ids.
-    """
-    permission = 'orgs.org_inbox'
+        @classmethod
+        def derive_url_pattern(cls, path, action):
+            return r'^message/action/(?P<action>\w+)/$'
 
-    def post(self, request, *args, **kwargs):
-        org = self.request.org
-        user = self.request.user
+        def post(self, request, *args, **kwargs):
+            org = request.org
+            user = request.user
 
-        action = kwargs['action']
+            action = kwargs['action']
 
-        message_ids = parse_csv(self.request.POST.get('messages', ''), as_ints=True)
-        messages = org.incoming_messages.filter(org=org, backend_id__in=message_ids)
+            message_ids = parse_csv(request.POST.get('messages', ''), as_ints=True)
+            messages = org.incoming_messages.filter(org=org, backend_id__in=message_ids)
 
-        label_id = int(self.request.POST.get('label', 0))
-        label = Label.get_all(org, user).get(pk=label_id) if label_id else None
+            label_id = int(request.POST.get('label', 0))
+            label = Label.get_all(org, user).get(pk=label_id) if label_id else None
 
-        if action == 'flag':
-            Message.bulk_flag(org, user, messages)
-        elif action == 'unflag':
-            Message.bulk_unflag(org, user, messages)
-        elif action == 'label':
-            Message.bulk_label(org, user, messages, label)
-        elif action == 'unlabel':
-            Message.bulk_unlabel(org, user, messages, label)
-        elif action == 'archive':
-            Message.bulk_archive(org, user, messages)
-        elif action == 'restore':
-            Message.bulk_restore(org, user, messages)
-        else:
-            return HttpResponseBadRequest("Invalid action: %s", action)
+            if action == 'flag':
+                Message.bulk_flag(org, user, messages)
+            elif action == 'unflag':
+                Message.bulk_unflag(org, user, messages)
+            elif action == 'label':
+                Message.bulk_label(org, user, messages, label)
+            elif action == 'unlabel':
+                Message.bulk_unlabel(org, user, messages, label)
+            elif action == 'archive':
+                Message.bulk_archive(org, user, messages)
+            elif action == 'restore':
+                Message.bulk_restore(org, user, messages)
+            else:
+                return HttpResponseBadRequest("Invalid action: %s", action)
 
-        return HttpResponse(status=204)
+            return HttpResponse(status=204)
 
+    class Label(OrgPermsMixin, View):
+        """
+        AJAX endpoint for labelling a message.
+        """
+        permission = 'orgs.org_inbox'
 
-class MessageLabelView(OrgPermsMixin, View):
-    """
-    AJAX endpoint for labelling a message.
-    """
-    permission = 'orgs.org_inbox'
+        @classmethod
+        def derive_url_pattern(cls, path, action):
+            return r'^message/label/(?P<id>\d+)/$'
 
-    def post(self, request, *args, **kwargs):
-        org = self.request.org
-        user = self.request.user
+        def post(self, request, *args, **kwargs):
+            org = request.org
+            user = request.user
 
-        message_id = int(kwargs['id'])
-        message = org.incoming_messages.filter(org=org, backend_id=message_id).first()
+            message_id = int(kwargs['id'])
+            message = org.incoming_messages.filter(org=org, backend_id=message_id).first()
 
-        label_ids = parse_csv(self.request.POST.get('labels', ''), as_ints=True)
-        labels = Label.get_all(org, user).filter(pk__in=label_ids)
+            label_ids = parse_csv(self.request.POST.get('labels', ''), as_ints=True)
+            labels = Label.get_all(org, user).filter(pk__in=label_ids)
 
-        message.update_labels(user, labels)
+            message.update_labels(user, labels)
 
-        return HttpResponse(status=204)
+            return HttpResponse(status=204)
 
+    class Send(OrgPermsMixin, View):
+        """
+        JSON endpoint for message sending. Takes a list of contact UUIDs or URNs
+        """
+        permission = 'orgs.org_inbox'
 
-class MessageSendView(OrgPermsMixin, View):
-    """
-    JSON endpoint for message sending. Takes a list of contact UUIDs or URNs
-    """
-    permission = 'orgs.org_inbox'
+        @classmethod
+        def derive_url_pattern(cls, path, action):
+            return r'^message/send/$'
 
-    def post(self, request, *args, **kwargs):
-        activity = request.POST['activity']
-        text = request.POST['text']
-        urns = parse_csv(request.POST.get('urns', ''), as_ints=False)
+        def post(self, request, *args, **kwargs):
+            activity = request.POST['activity']
+            text = request.POST['text']
+            urns = parse_csv(request.POST.get('urns', ''), as_ints=False)
 
-        contact_uuids = parse_csv(request.POST.get('contacts', ''), as_ints=False)
-        contacts = Contact.objects.filter(org=request.org, uuid__in=contact_uuids)
+            contact_uuids = parse_csv(request.POST.get('contacts', ''), as_ints=False)
+            contacts = Contact.objects.filter(org=request.org, uuid__in=contact_uuids)
 
-        case_id = request.POST.get('case', None)
-        case = Case.objects.get(org=request.org, pk=case_id) if case_id else None
+            case_id = request.POST.get('case', None)
+            case = Case.objects.get(org=request.org, pk=case_id) if case_id else None
 
-        outgoing = Outgoing.create(request.org, request.user, activity, text, contacts, urns, case)
+            outgoing = Outgoing.create(request.org, request.user, activity, text, contacts, urns, case)
 
-        return JsonResponse({'id': outgoing.pk})
+            return JsonResponse({'id': outgoing.pk})
 
+    class History(OrgPermsMixin, View):
+        """
+        JSON endpoint for fetching message history. Takes a message backend id
+        """
+        permission = 'orgs.org_inbox'
 
-class MessageHistoryView(OrgPermsMixin, View):
-    """
-    JSON endpoint for fetching message history. Takes a message backend id
-    """
-    permission = 'orgs.org_inbox'
+        @classmethod
+        def derive_url_pattern(cls, path, action):
+            return r'^message/history/(?P<id>\d+)/$'
 
-    def get(self, request, *args, **kwargs):
-        message = Message.objects.get(org=self.request.org, backend_id=int(kwargs['id']))
-        actions = [a.as_json() for a in message.get_history()]
-        return JsonResponse({'actions': actions})
+        def get(self, request, *args, **kwargs):
+            message = Message.objects.get(org=request.org, backend_id=int(kwargs['id']))
+            actions = [a.as_json() for a in message.get_history()]
+            return JsonResponse({'actions': actions})
 
 
 class MessageExportCRUDL(SmartCRUDL):
