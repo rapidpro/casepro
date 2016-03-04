@@ -37,7 +37,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
         params.before = formatIso8601(before)
       params.page = page
 
-      $http.get('/message/?' + $.param(params))
+      $http.get('/message/search/?' + $.param(params))
       .success((data) =>
         @_processMessages(data.results)
 

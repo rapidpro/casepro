@@ -365,6 +365,39 @@ class MessageTest(BaseCasesTest):
         self.assertEqual(Message.objects.filter(is_archived=True).count(), 0)
 
 
+class MessageCRUDLTest(BaseCasesTest):
+    def test_search(self):
+        url = reverse('msgs.message_search')
+
+        ann = self.create_contact(self.unicef, 'C-001', "Ann")
+        bob = self.create_contact(self.unicef, 'C-002', "Bob")
+        don = self.create_contact(self.unicef, 'C-004', "Don")
+
+        self.create_message(self.unicef, 101, ann, "What is HIV?", [self.aids], is_handled=True)
+        self.create_message(self.unicef, 102, bob, "I ♡ RapidPro", [self.pregnancy], is_handled=True)
+        self.create_message(self.unicef, 103, don, "RapidCon 2016!", is_handled=True)
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        # page requests first page of existing inbox messages
+        t0 = now()
+        response = self.url_get('unicef', url, {
+            'folder': 'inbox',
+            'text': "",
+            'page': 1,
+            'after': "",
+            'before': format_iso8601(t0)
+        })
+
+        self.assertEqual(len(response.json['results']), 2)
+        self.assertEqual(response.json['results'][0]['id'], 102)
+        self.assertEqual(response.json['results'][0]['contact'], {'uuid': "C-002", 'name': "Bob"})
+        self.assertEqual(response.json['results'][0]['text'], "I ♡ RapidPro")
+        self.assertEqual(response.json['results'][0]['labels'], [{'id': self.pregnancy.pk, 'name': "Pregnancy"}])
+        self.assertEqual(response.json['results'][1]['id'], 101)
+
+
 class MessageViewsTest(BaseCasesTest):
     @patch('casepro.test.TestBackend.flag_messages')
     @patch('casepro.test.TestBackend.unflag_messages')
@@ -447,37 +480,6 @@ class MessageViewsTest(BaseCasesTest):
         self.assertEqual(response.json['actions'][0]['created_by']['id'], self.user2.pk)
         self.assertEqual(response.json['actions'][1]['action'], 'F')
         self.assertEqual(response.json['actions'][1]['created_by']['id'], self.user1.pk)
-
-    def test_search(self):
-        url = reverse('msgs.message_search')
-
-        ann = self.create_contact(self.unicef, 'C-001', "Ann")
-        bob = self.create_contact(self.unicef, 'C-002', "Bob")
-        don = self.create_contact(self.unicef, 'C-004', "Don")
-
-        self.create_message(self.unicef, 101, ann, "What is HIV?", [self.aids], is_handled=True)
-        self.create_message(self.unicef, 102, bob, "I ♡ RapidPro", [self.pregnancy], is_handled=True)
-        self.create_message(self.unicef, 103, don, "RapidCon 2016!", is_handled=True)
-
-        # log in as a non-administrator
-        self.login(self.user1)
-
-        # page requests first page of existing inbox messages
-        t0 = now()
-        response = self.url_get('unicef', url, {
-            'folder': 'inbox',
-            'text': "",
-            'page': 1,
-            'after': "",
-            'before': format_iso8601(t0)
-        })
-
-        self.assertEqual(len(response.json['results']), 2)
-        self.assertEqual(response.json['results'][0]['id'], 102)
-        self.assertEqual(response.json['results'][0]['contact'], {'uuid': "C-002", 'name': "Bob"})
-        self.assertEqual(response.json['results'][0]['text'], "I ♡ RapidPro")
-        self.assertEqual(response.json['results'][0]['labels'], [{'id': self.pregnancy.pk, 'name': "Pregnancy"}])
-        self.assertEqual(response.json['results'][1]['id'], 101)
 
     @patch('casepro.test.TestBackend.create_outgoing')
     def test_send(self, mock_create_outgoing):

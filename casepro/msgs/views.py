@@ -146,36 +146,40 @@ class MessageSearchMixin(object):
         }
 
 
-class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
-    """
-    JSON endpoint for fetching messages
-    """
-    permission = 'orgs.org_inbox'
+class MessageCRUDL(SmartCRUDL):
+    actions = ('search',)
+    model = Message
 
-    def get_context_data(self, **kwargs):
-        org = self.request.org
-        user = self.request.user
+    class Search(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
+        """
+        JSON endpoint for fetching messages
+        """
+        permission = 'orgs.org_inbox'
 
-        search = self.derive_search()
-        messages = Message.search(org, user, search)
+        def get_context_data(self, **kwargs):
+            org = self.request.org
+            user = self.request.user
 
-        # TODO switch to cursor pagination to avoid the unused count
+            search = self.derive_search()
+            messages = Message.search(org, user, search)
 
-        page = int(self.request.GET.get('page', 1))
-        paginator = Paginator(messages, 100)
-        try:
-            messages = paginator.page(page)
-        except EmptyPage:
-            messages = Message.objects.none()
+            # TODO switch to cursor pagination to avoid the unused count
 
-        context = super(MessageSearchView, self).get_context_data(**kwargs)
-        context['messages'] = messages
-        return context
+            page = int(self.request.GET.get('page', 1))
+            paginator = Paginator(messages, 100)
+            try:
+                messages = paginator.page(page)
+            except EmptyPage:
+                messages = Message.objects.none()
 
-    def render_to_response(self, context, **response_kwargs):
-        results = [m.as_json() for m in context['messages']]
+            context = super(MessageCRUDL.Search, self).get_context_data(**kwargs)
+            context['messages'] = messages
+            return context
 
-        return JsonResponse({'results': results})
+        def render_to_response(self, context, **response_kwargs):
+            results = [m.as_json() for m in context['messages']]
+
+            return JsonResponse({'results': results})
 
 
 class MessageActionView(OrgPermsMixin, View):
