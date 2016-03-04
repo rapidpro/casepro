@@ -192,3 +192,16 @@ class BaseBackend(object):
         :param messages: the messages
         """
         pass
+
+    @abstractmethod
+    def fetch_contact_messages(self, org, contact, created_after, created_before):
+        """
+        Fetches a contact's incoming and outgoing messages to display on a case timeline
+
+        :param org: the org
+        :param contact: the contact
+        :param created_after: include messages created after this time
+        :param created_before: include messages created before this time
+        :return: the messages as JSON objects in reverse chronological order
+        """
+        pass

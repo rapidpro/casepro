@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from casepro.backend.rapidpro import SYSTEM_LABEL_FLAGGED
 from casepro.cases.models import Case, Label
 from casepro.utils import parse_csv, str_to_bool, normalize
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
@@ -133,6 +132,7 @@ class MessageSearchMixin(object):
         Collects and prepares message search parameters into JSON serializable dict
         """
         from casepro.cases.models import Label
+        from casepro.backend.rapidpro import SYSTEM_LABEL_FLAGGED
 
         request = self.request
         view = MessageView[request.GET['view']]
@@ -207,9 +207,7 @@ class MessageSearchView(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
         return context
 
     def render_to_response(self, context, **response_kwargs):
-        label_map = {l.name: l for l in Label.get_all(self.request.org)}
-
-        results = [RemoteMessage.as_json(m, label_map) for m in context['messages']]
+        results = [m.as_json() for m in context['messages']]
 
         return JsonResponse({'results': results, 'has_more': context['has_more']})
 

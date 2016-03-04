@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import six
 
 from casepro.contacts.models import Contact, Group, Field, SAVE_GROUPS_ATTR
-from casepro.msgs.models import Label, Message, SAVE_CONTACT_ATTR, SAVE_LABELS_ATTR
+from casepro.msgs.models import Label, Message, Outgoing, SAVE_CONTACT_ATTR, SAVE_LABELS_ATTR
 from casepro.utils import is_dict_equal
 from dash.utils.sync import BaseSyncer, sync_local_to_set, sync_local_to_changes
 from django.utils.timezone import now
@@ -15,6 +15,14 @@ SYSTEM_LABEL_FLAGGED = "Flagged"
 
 # maximum number of days old a message can be for it to be handled
 MAXIMUM_HANDLE_MESSAGE_AGE = 30
+
+
+def remote_message_is_flagged(msg):
+    return SYSTEM_LABEL_FLAGGED in [l.name for l in msg.labels]
+
+
+def remote_message_is_archived(msg):
+    return msg.visibility == 'archived'
 
 
 class ContactSyncer(BaseSyncer):
@@ -145,8 +153,8 @@ class MessageSyncer(BaseSyncer):
             'backend_id': remote.id,
             'type': 'I' if remote.type == 'inbox' else 'F',
             'text': remote.text,
-            'is_flagged': SYSTEM_LABEL_FLAGGED in [l.name for l in remote.labels],
-            'is_archived': (remote.visibility == 'archived'),
+            'is_flagged': remote_message_is_flagged(remote),
+            'is_archived': remote_message_is_archived(remote),
             'created_on': remote.created_on,
             SAVE_CONTACT_ATTR: (remote.contact.uuid, remote.contact.name),
             SAVE_LABELS_ATTR: labels,
@@ -279,3 +287,27 @@ class RapidProBackend(BaseBackend):
         if messages:
             client = self._get_client(org, 1)
             client.unlabel_messages(messages=[m.backend_id for m in messages], label=SYSTEM_LABEL_FLAGGED)
+
+    def fetch_contact_messages(self, org, contact, created_after, created_before):
+        contact_json = contact.as_json()
+        label_map = {l.uuid: l for l in Label.get_all(org)}
+
+        # fetch remote messages for contact
+        client = self._get_client(org, 2)
+        remote_messages = client.get_messages(contact=contact.uuid, after=created_after, before=created_before).all()
+
+        def remote_as_json(msg):
+            return {
+                'id': msg.id,
+                'contact': contact_json,
+                'text': msg.text,
+                'time': msg.created_on,
+                'labels': [label_map.get(l.uuid).as_json() for l in msg.labels if l.uuid in label_map],
+                'flagged': remote_message_is_flagged(msg),
+                'archived': remote_message_is_archived(msg),
+                'direction': Message.DIRECTION if msg.direction == 'in' else Outgoing.DIRECTION,
+                'sender': None,
+                'broadcast': msg.broadcast
+            }
+
+        return [remote_as_json(m) for m in remote_messages]

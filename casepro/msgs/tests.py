@@ -483,6 +483,10 @@ class MessageViewsTest(BaseCasesTest):
                                                 'after': '', 'before': format_iso8601(t0)})
 
         self.assertEqual(len(response.json['results']), 2)  # msg3 doesn't have a local message so hidden for now
+        self.assertEqual(response.json['results'][0]['id'], 104)
+        self.assertEqual(response.json['results'][0]['contact'], {'uuid': "C-004", 'name': "Don"})
+        self.assertEqual(response.json['results'][0]['text'], "RapidCon 2016!")
+        self.assertEqual(response.json['results'][0]['labels'], [])
 
         mock_get_messages.assert_called_once_with(archived=False, labels=['AIDS', 'Pregnancy'],
                                                   contacts=None, groups=None, text='', _types=None, direction='I',
@@ -679,16 +683,6 @@ class TasksTest(BaseCasesTest):
 
 
 class RemoteMessageTest(BaseCasesTest):
-    def test_annotate_with_sender(self):
-        from temba_client.v1.types import Message as TembaMessage1
-
-        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=pytz.UTC)
-        Outgoing.objects.create(org=self.unicef, activity='C', broadcast_id=201, recipient_count=1,
-                                created_by=self.user2, created_on=d1)
-        msg = TembaMessage1.create(id=101, broadcast=201, text="Yo")
-        RemoteMessage.annotate_with_sender(self.unicef, [msg])
-        self.assertEqual(msg.sender, self.user2)
-
     @patch('dash.orgs.models.TembaClient1.get_messages')
     def test_search(self, mock_get_messages):
         from temba_client.clients import Pager
@@ -703,8 +697,8 @@ class RemoteMessageTest(BaseCasesTest):
             TembaMessage1.create(id=103, contact='C-002', text="Yup", created_on=now(), labels=[])
         ]
 
-        self.create_message(self.unicef, 101, ann, "What is HIV?", [self.aids], is_handled=True)
-        self.create_message(self.unicef, 102, bob, "I ♡ RapidPro", [self.aids], is_handled=False)
+        msg1 = self.create_message(self.unicef, 101, ann, "What is HIV?", [self.aids], is_handled=True)
+        msg2 = self.create_message(self.unicef, 102, bob, "I ♡ RapidPro", [self.aids], is_handled=False)
 
         search = {'labels': ['AIDS'], 'contacts': None, 'groups': None, 'after': None, 'before': None,
                   'text': None, 'types': ['I'], 'archived': False}
@@ -712,6 +706,4 @@ class RemoteMessageTest(BaseCasesTest):
         messages = RemoteMessage.search(self.unicef, search, Pager(start_page=1))
 
         self.assertEqual(len(messages), 1)
-        self.assertEqual(messages[0].id, 101)
-        self.assertEqual(messages[0].text, "What is HIV?")
-        self.assertEqual(messages[0].contact, {'uuid': "C-001", 'name': "Ann"})
+        self.assertEqual(messages[0], msg1)

@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact
-from casepro.msgs.models import Label, Message, RemoteMessage
+from casepro.msgs.models import Label, Message
 from dash.orgs.models import Org
 from dash.utils import intersection
 from django.contrib.auth.models import User
@@ -191,27 +191,24 @@ class Case(models.Model):
         return case
 
     def get_timeline(self, after, before):
-        label_map = {l.name: l for l in Label.get_all(self.org)}
-
-        # fetch remote messages for contact
-        client = self.org.get_temba_client(api_version=2)
-        remote = client.get_messages(contact=self.contact.uuid, after=after, before=before).all()
+        backend = get_backend()
+        backend_messages = backend.fetch_contact_messages(self.org, self.contact, after, before)
 
         local_outgoing = self.outgoing_messages.filter(created_on__gte=after, created_on__lte=before)
+        local_outgoing = local_outgoing.select_related('case__contact')
         local_by_broadcast = {o.broadcast_id: o for o in local_outgoing}
 
-        # merge remotely fetched and local outgoing messages
+        # merge backend and local outgoing messages
         messages = []
-        for m in remote:
-            m.contact = {'uuid': m.contact.uuid}
+        for msg in backend_messages:
+            # annotate with sender from local message if there is one
+            local = local_by_broadcast.pop(msg['broadcast'], None)
+            msg['sender'] = local.created_by.as_json() if local else None
 
-            local = local_by_broadcast.pop(m.broadcast, None)
-            if local:
-                m.sender = local.created_by
-            messages.append({'time': m.created_on, 'type': 'M', 'item': RemoteMessage.as_json(m, label_map)})
+            messages.append({'time': msg['time'], 'type': 'M', 'item': msg})
 
-        for m in local_by_broadcast.values():
-            messages.append({'time': m.created_on, 'type': 'M', 'item': m.as_json()})
+        for msg in local_by_broadcast.values():
+            messages.append({'time': msg.created_on, 'type': 'M', 'item': msg.as_json()})
 
         # fetch actions in chronological order
         actions = self.actions.filter(created_on__gte=after, created_on__lte=before)

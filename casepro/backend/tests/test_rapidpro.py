@@ -649,6 +649,41 @@ class RapidProBackendTest(BaseCasesTest):
 
         mock_unlabel_messages.assert_called_once_with(messages=[123, 234], label='Flagged')
 
+    @patch('dash.orgs.models.TembaClient2.get_messages')
+    def test_fetch_contact_messages(self, mock_get_messages):
+        d1 = datetime(2015, 1, 2, 13, 0, tzinfo=pytz.UTC)
+        d2 = datetime(2015, 1, 2, 14, 0, tzinfo=pytz.UTC)
+        d3 = datetime(2015, 1, 2, 15, 0, tzinfo=pytz.UTC)
+
+        mock_get_messages.return_value = MockClientQuery([
+            TembaMessage.create(
+                id=101,
+                broadcast=201,
+                contact=ObjectRef.create(uuid="C-001", name="Ann"),
+                text="What is AIDS?",
+                type='inbox',
+                direction='in',
+                visibility='visible',
+                labels=[ObjectRef.create(uuid="L-001", name="AIDS"), ObjectRef.create(uuid="L-111", name="Flagged")],
+                created_on=d2
+            )
+        ])
+
+        messages = self.backend.fetch_contact_messages(self.unicef, self.ann, d1, d3)
+
+        self.assertEqual(messages, [{
+            'id': 101,
+            'contact': {'uuid': "C-001", 'name': "Ann"},
+            'text': "What is AIDS?",
+            'time': d2,
+            'labels': [{'id': self.aids.pk, 'uuid': "L-001", 'name': "AIDS"}],
+            'flagged': True,
+            'archived': False,
+            'direction': 'I',
+            'sender': None,
+            'broadcast': 201
+        }])
+
 
 @skip
 class PerfTest(BaseCasesTest):

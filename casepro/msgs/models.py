@@ -14,7 +14,6 @@ from dash.utils import chunks, random_string
 from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.contrib.postgres.fields import ArrayField
 from django.core.files import File
 from django.core.files.storage import default_storage
 from django.core.files.temp import NamedTemporaryFile
@@ -121,6 +120,8 @@ class Message(models.Model):
     TYPE_FLOW = 'F'
 
     TYPE_CHOICES = ((TYPE_INBOX, _("Inbox")), (TYPE_FLOW, _("Flow")))
+
+    DIRECTION = 'I'
 
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='incoming_messages')
 
@@ -270,6 +271,22 @@ class Message(models.Model):
 
             MessageAction.create(org, user, messages, MessageAction.RESTORE)
 
+    def as_json(self):
+        """
+        Prepares this message for JSON serialization
+        """
+        return {
+            'id': self.backend_id,
+            'contact': self.contact.as_json(),
+            'text': self.text,
+            'time': self.created_on,
+            'labels': [l.as_json() for l in self.labels.all()],
+            'flagged': self.is_flagged,
+            'archived': self.is_archived,
+            'direction': self.DIRECTION,
+            'sender': None
+        }
+
     def __str__(self):
         return self.text if self.text else self.pk
 
@@ -329,6 +346,8 @@ class Outgoing(models.Model):
 
     ACTIVITY_CHOICES = ((BULK_REPLY, _("Bulk Reply")), (CASE_REPLY, "Case Reply"), (FORWARD, _("Forward")))
 
+    DIRECTION = 'O'
+
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='outgoing_messages')
 
     activity = models.CharField(max_length=1, choices=ACTIVITY_CHOICES)
@@ -364,16 +383,20 @@ class Outgoing(models.Model):
                                   created_on=broadcast.created_on)
 
     def as_json(self):
-        return {'id': self.pk,
-                'text': self.text,
-                'contact': self.case.contact.pk,
-                'urn': None,
-                'time': self.created_on,
-                'labels': [],
-                'flagged': False,
-                'direction': 'O',
-                'archived': False,
-                'sender': self.created_by.as_json()}
+        """
+        Prepares this message for JSON serialization
+        """
+        return {
+            'id': self.pk,
+            'contact': self.case.contact.as_json(),
+            'text': self.text,
+            'time': self.created_on,
+            'labels': [],
+            'flagged': False,
+            'archived': False,
+            'direction': self.DIRECTION,
+            'sender': self.created_by.as_json()
+        }
 
     def __str__(self):
         return self.text
@@ -494,19 +517,6 @@ class RemoteMessage(object):
     A pseudo-model for messages which are always fetched from RapidPro. All of these methods will be replaced by new
     methods in the Message class which operate both locally and remotely.
     """
-    @classmethod
-    def annotate_with_sender(cls, org, messages):
-        """
-        Look for outgoing records for the given messages and annotate them with their sender if one exists
-        """
-        broadcast_ids = set([m.broadcast for m in messages if m.broadcast])
-        outgoings = Outgoing.objects.filter(org=org, broadcast_id__in=broadcast_ids)
-        broadcast_to_outgoing = {out.broadcast_id: out for out in outgoings}
-
-        for msg in messages:
-            outgoing = broadcast_to_outgoing.get(msg.broadcast, None)
-            msg.sender = outgoing.created_by if outgoing else None
-
     @staticmethod
     def search(org, search, pager):
         """
@@ -533,43 +543,8 @@ class RemoteMessage(object):
                                                direction='I', _types=search['types'], archived=search['archived'],
                                                after=search['after'], before=search['before'])
 
-        # only show remote messages which match a local handled message. This is stop users actioning or casing messages
-        # which aren't synced. Needed until refactor is complete... when we'll actually be searching against local
-        # handled messages
+        # *** TEMPORARY *** now convert remote messages to local messages...
+
         backend_ids = [m.id for m in backend_messages]
         local_messages = org.incoming_messages.filter(backend_id__in=backend_ids, is_handled=True)
-        local_messages = list(local_messages.select_related('contact'))
-        local_by_backend_id = {m.backend_id: m for m in local_messages}
-
-        annotated = []
-        for backend_message in backend_messages:
-            local_message = local_by_backend_id.get(backend_message.id)
-            if local_message:
-                backend_message.contact = local_message.contact.as_json()
-                backend_message.visibility = ('archived' if backend_message.archived else 'visible')
-                annotated.append(backend_message)
-
-        return annotated
-
-    @staticmethod
-    def as_json(msg, label_map):
-        """
-        Prepares a message (fetched from RapidPro) for JSON serialization
-        """
-        from casepro.backend.rapidpro import SYSTEM_LABEL_FLAGGED
-
-        flagged = SYSTEM_LABEL_FLAGGED in msg.labels
-
-        # convert label names to JSON label objects
-        labels = [label_map[label_name].as_json() for label_name in msg.labels if label_name in label_map]
-
-        return {'id': msg.id,
-                'text': msg.text,
-                'contact': msg.contact,
-                'urn': msg.urn,
-                'time': msg.created_on,
-                'labels': labels,
-                'flagged': flagged,
-                'direction': 'I' if msg.direction in ('I', 'in') else 'O',
-                'archived': msg.visibility == 'archived',
-                'sender': msg.sender.as_json() if getattr(msg, 'sender', None) else None}
+        return local_messages.select_related('contact').prefetch_related('labels').order_by('-created_on')
