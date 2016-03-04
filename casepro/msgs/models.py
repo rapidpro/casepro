@@ -413,7 +413,7 @@ class Outgoing(models.Model):
 
     created_by = models.ForeignKey(User, related_name="outgoing_messages")
 
-    created_on = models.DateTimeField(db_index=True)
+    created_on = models.DateTimeField()
 
     case = models.ForeignKey('cases.Case', null=True, related_name="outgoing_messages")
 
