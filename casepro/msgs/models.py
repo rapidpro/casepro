@@ -25,9 +25,6 @@ from redis_cache import get_redis_connection
 from temba_client.utils import parse_iso8601
 
 
-# only show unlabelled messages newer than 2 weeks
-DEFAULT_UNLABELLED_LIMIT_DAYS = 14
-
 SAVE_CONTACT_ATTR = '__data__contact'
 SAVE_LABELS_ATTR = '__data__labels'
 
