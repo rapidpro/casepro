@@ -181,7 +181,11 @@ class Message(models.Model):
 
         # filter by user labels.. or exclude them for the unlabelled view
         if search['folder'] == MessageFolder.unlabelled:
-            queryset = queryset.exclude(labels__in=labels)  # TODO optimize ?
+            # TODO need a trigger based has_labels flag on Message to speed up this view and the inbox view for admins
+            # For now we just return all messages, and let angular remove the labelled ones
+
+            # queryset = queryset.exclude(labels__in=labels)  # too slow...
+            pass
         else:
             if search['label']:
                 labels = labels.filter(pk=search['label'])
