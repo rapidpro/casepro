@@ -59,7 +59,7 @@
             %li{ class:"{% if_url 'cases.archived' 'active' '' %}" }
               %a{ href:"{% url 'cases.archived' %}" }
                 - trans "Archived"
-            - if org_perms.msgs.label_unlabelled
+            - if perms.msgs.label_unlabelled or org_perms.msgs.label_unlabelled
               %li{ class:"{% if_url 'cases.unlabelled' 'active' '' %}" }
                 %a{ href:"{% url 'cases.unlabelled' %}" }
                   - trans "Unlabelled"
