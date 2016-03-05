@@ -463,16 +463,11 @@ class UserCRUDLTest(BaseCasesTest):
 
 class ForcePasswordChangeMiddlewareTest(BaseCasesTest):
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
-    @patch('dash.orgs.models.TembaClient1.get_labels')
-    def test_process_view(self, mock_get_labels):
-        mock_get_labels.return_value = []
-
+    def test_process_view(self):
         self.user1.profile.change_password = True
         self.user1.profile.save()
 
         self.login(self.user1)
-
-        # TODO figure out why fetch_redirect_response=False became necessary after Dash update
 
         response = self.url_get('unicef', reverse('cases.inbox'))
         self.assertRedirects(response, 'http://unicef.localhost/profile/self/', fetch_redirect_response=False)

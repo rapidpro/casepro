@@ -28,3 +28,8 @@ DATABASES = {
         }
     }
 }
+
+# speed up the background tasks
+CELERYBEAT_SCHEDULE['message-pull']['schedule'] = crontab(minute='*/2')         # every even minute
+CELERYBEAT_SCHEDULE['contact-pull']['schedule'] = crontab(minute='1-59/2')      # every odd minute
+CELERYBEAT_SCHEDULE['message-handle']['schedule'] = timedelta(minutes=1)

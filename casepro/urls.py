@@ -5,6 +5,8 @@ from django.conf.urls import include, url
 
 urlpatterns = [
     url(r'', include('casepro.cases.urls')),
+    url(r'', include('casepro.contacts.urls')),
+    url(r'', include('casepro.msgs.urls')),
     url(r'', include('casepro.profiles.urls')),
     url(r'^manage/', include('casepro.orgs_ext.urls')),
     url(r'^users/', include('dash.users.urls')),

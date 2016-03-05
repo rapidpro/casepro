@@ -6,10 +6,10 @@ controllers = angular.module('cases.controllers', ['cases.services', 'cases.moda
 
 
 # Component refresh intervals
-INTERVAL_MESSAGES_NEW = 15000
-INTERVAL_CASES_NEW = 5000
+INTERVAL_MESSAGES_NEW = 30000
+INTERVAL_CASES_NEW = 10000
 INTERVAL_CASE_INFO = 10000
-INTERVAL_CASE_TIMELINE = 10000
+INTERVAL_CASE_TIMELINE = 30000
 
 INFINITE_SCROLL_MAX_ITEMS = 1000
 
@@ -26,8 +26,8 @@ controllers.controller 'HomeController', [ '$scope', '$window', '$location', 'La
   $scope.activeLabel = null
   $scope.activeContact = null
 
-  $scope.init = (itemView) ->
-    $scope.itemView = itemView
+  $scope.init = (folder) ->
+    $scope.folder = folder
 
     $scope.$on '$locationChangeSuccess', () ->
       params = $location.search()
@@ -152,9 +152,9 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
     $scope.oldItemsLoading = true
     $scope.oldItemsPage += 1
 
-    $scope.fetchOldItems((items, hasMore) ->
+    $scope.fetchOldItems((items) ->
       $scope.items = $scope.items.concat(items)
-      $scope.oldItemsMore = hasMore
+      $scope.oldItemsMore = items.length > 0
       $scope.oldItemsLoading = false
 
       if forSelectAll
@@ -186,7 +186,8 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     $scope.searchFields = $scope.searchFieldDefaults()
     $scope.activeSearch = $scope.buildSearch()
 
-    $scope.refreshNewItems()
+    # TODO temporarily disable auto-refresh of new items until refactor is complete
+    # $scope.refreshNewItems()
 
     $scope.$on('activeLabelChange', () ->
       $scope.onResetSearch()
@@ -198,20 +199,20 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     )
 
   $scope.getItemFilter = () ->
-    if $scope.itemView == 'inbox'
+    if $scope.folder == 'inbox'
       return (item) -> !item.archived
-    else if $scope.itemView == 'flagged'
+    else if $scope.folder == 'flagged'
       return (item) -> (!item.archived or $scope.searchFields.archived) and item.flagged
-    else if $scope.itemView == 'archived'
+    else if $scope.folder == 'archived'
       return (item) -> item.archived
-    else if $scope.itemView == 'unlabelled'
+    else if $scope.folder == 'unlabelled'
       return (item) -> !item.archived and item.labels.length == 0
 
   $scope.buildSearch = () ->
     search = angular.copy($scope.searchFields)
-    search.view = $scope.itemView
+    search.folder = $scope.folder
     search.label = $scope.activeLabel
-    search.contact = $scope.activeContact
+    search.contact = if $scope.activeContact then $scope.activeContact.uuid else null
     search.timeCode = Date.now()
     return search
 
@@ -318,15 +319,17 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     )
 
   $scope.onCaseFromMessage = (message) ->
+    if message.case
+      CaseService.navigateToCase(message.case, null)
+      return
+
     partners = if $scope.user.partner then null else $scope.partners
     resolve = {message: (() -> message), partners: (() -> partners)}
     $modal.open({templateUrl: 'newCaseModal.html', controller: 'NewCaseModalController', resolve: resolve})
     .result.then((result) ->
       CaseService.openCase(message, result.summary, result.assignee, (caseObj, isNew) ->
-          caseUrl = '/case/read/' + caseObj.id + '/'
-          if !isNew
-            caseUrl += '?alert=open_found_existing'
-          UtilsService.navigate(caseUrl)
+          withAlert = if !isNew then 'open_found_existing' else null
+          CaseService.navigateToCase(caseObj, withAlert)
       )
     )
 
@@ -361,14 +364,14 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
     )
 
   $scope.getItemFilter = () ->
-    if $scope.itemView == 'open'
+    if $scope.folder == 'open'
       return (item) -> !item.is_closed
-    else if $scope.itemView == 'closed'
+    else if $scope.folder == 'closed'
       return (item) -> item.is_closed
 
   $scope.buildSearch = () ->
     search = angular.copy($scope.searchFields)
-    search.view = $scope.itemView
+    search.folder = $scope.folder
     search.label = $scope.activeLabel
     search.timeCode = Date.now()
     return search

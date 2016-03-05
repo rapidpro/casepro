@@ -1,12 +1,10 @@
 -e git+https://github.com/rapidpro/dash.git@master#egg=dash-master
 -e git+https://github.com/nyaruka/smartmin.git@master#egg=smartmin-master
 boto
-celery
-celery-with-redis
+celery[redis]
 coverage
 django
 django-celery
-django-celery-transactions
 django-compressor
 django-debug-toolbar
 django-digest

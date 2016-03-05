@@ -1,16 +1,15 @@
 from __future__ import absolute_import, unicode_literals
 
-from dash.orgs.models import Org
-from dash.orgs.views import OrgCRUDL, InferOrgMixin, OrgPermsMixin, SmartUpdateView
-from dash.utils import ms_to_datetime
+from casepro.contacts.models import Field, Group
+from dash.orgs.models import Org, TaskState
+from dash.orgs.views import OrgCRUDL, TaskCRUDL, InferOrgMixin, OrgPermsMixin
 from django import forms
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
-from smartmin.templatetags.smartmin import format_datetime
-from smartmin.views import SmartCRUDL
+from smartmin.views import SmartCRUDL, SmartUpdateView, SmartListView
 from timezones.forms import TimeZoneField
-from . import TaskType
 
 
 class OrgForm(forms.ModelForm):
@@ -44,7 +43,7 @@ class OrgExtCRUDL(SmartCRUDL):
         pass
 
     class Home(OrgCRUDL.Home):
-        fields = ('name', 'timezone', 'api_token', 'contact_fields', 'last_label_task', 'administrators')
+        fields = ('name', 'timezone', 'api_token', 'contact_fields', 'administrators')
         field_config = {'api_token': {'label': _("RapidPro API Token")}}
         permission = 'orgs.org_home'
 
@@ -52,17 +51,7 @@ class OrgExtCRUDL(SmartCRUDL):
             return _("My Organization")
 
         def get_contact_fields(self, obj):
-            return ', '.join(obj.get_contact_fields())
-
-        def get_last_label_task(self, obj):
-            result = obj.get_task_result(TaskType.label_messages)
-            if result:
-                when = format_datetime(ms_to_datetime(result['time']))
-                num_messages = int(result['counts'].get('messages', 0))
-                num_labelled = int(result['counts'].get('labelled', 0))
-                return "%s (%d new messages, %d labelled)" % (when, num_messages, num_labelled)
-            else:
-                return None
+            return ', '.join([f.key for f in Field.get_all(obj, visible=True)])
 
         def get_administrators(self, obj):
             admins = obj.administrators.exclude(profile=None).order_by('profile__full_name').select_related('profile')
@@ -88,23 +77,22 @@ class OrgExtCRUDL(SmartCRUDL):
             def __init__(self, *args, **kwargs):
                 org = kwargs.pop('org')
                 super(OrgExtCRUDL.Edit.OrgExtForm, self).__init__(*args, **kwargs)
-                client = org.get_temba_client()
 
                 self.fields['banner_text'].initial = org.get_banner_text()
 
                 field_choices = []
-                for field in sorted(client.get_fields(), key=lambda f: f.key.lower()):
-                    field_choices.append((field.key, "%s (%s)" % (field.label, field.key)))
+                for field in Field.objects.filter(org=org, is_active=True).order_by('label'):
+                    field_choices.append((field.pk, "%s (%s)" % (field.label, field.key)))
 
                 self.fields['contact_fields'].choices = field_choices
-                self.fields['contact_fields'].initial = org.get_contact_fields()
+                self.fields['contact_fields'].initial = [f.pk for f in Field.get_all(org, visible=True)]
 
                 group_choices = []
-                for group in sorted(client.get_groups(), key=lambda g: g.name.lower()):
-                    group_choices.append((group.uuid, "%s (%s)" % (group.name, group.size)))
+                for group in Group.get_all(org).order_by('name'):
+                    group_choices.append((group.pk, group.name))
 
                 self.fields['suspend_groups'].choices = group_choices
-                self.fields['suspend_groups'].initial = org.get_suspend_groups()
+                self.fields['suspend_groups'].initial = [g.pk for g in Group.get_all(org).filter(suspend_from=True)]
 
             class Meta:
                 model = Org
@@ -123,8 +111,17 @@ class OrgExtCRUDL(SmartCRUDL):
         def pre_save(self, obj):
             obj = super(OrgExtCRUDL.Edit, self).pre_save(obj)
             obj.set_banner_text(self.form.cleaned_data['banner_text'])
-            obj.set_contact_fields(self.form.cleaned_data['contact_fields'])
-            obj.set_suspend_groups(self.form.cleaned_data['suspend_groups'])
+
+            field_ids = self.form.cleaned_data['contact_fields']
+
+            Field.get_all(self.request.org).filter(pk__in=field_ids).update(is_visible=True)
+            Field.get_all(self.request.org).exclude(pk__in=field_ids).update(is_visible=False)
+
+            group_ids = self.form.cleaned_data['suspend_groups']
+
+            Group.get_all(self.request.org).filter(pk__in=group_ids).update(suspend_from=True)
+            Group.get_all(self.request.org).exclude(pk__in=group_ids).update(suspend_from=False)
+
             return obj
 
     class Chooser(OrgCRUDL.Chooser):
@@ -132,3 +129,12 @@ class OrgExtCRUDL(SmartCRUDL):
 
     class Choose(OrgCRUDL.Choose):
         pass
+
+
+class TaskExtCRUDL(TaskCRUDL):
+    class List(TaskCRUDL.List):
+        def lookup_field_link(self, context, field, obj):
+            if field == 'org':
+                return reverse('orgs_ext.org_update', args=[obj.org_id])
+            else:
+                return super(TaskCRUDL.List, self).lookup_field_link(context, field, obj)

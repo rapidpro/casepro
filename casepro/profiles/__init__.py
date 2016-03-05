@@ -3,7 +3,6 @@ from __future__ import absolute_import, unicode_literals
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
-from .models import Profile
 
 
 ROLE_ANALYST = 'A'
@@ -18,6 +17,8 @@ def _user_create(cls, org, partner, role, full_name, email, password, change_pas
     """
     Creates a user
     """
+    from .models import Profile
+
     if role and (not org or not partner):  # pragma: no cover
         raise ValueError("Only users in partner organizations can be assigned a role")
 
@@ -60,6 +61,8 @@ def _user_clean(user):
 
 
 def _user_has_profile(user):
+    from .models import Profile
+
     try:
         return bool(user.profile)
     except Profile.DoesNotExist:

@@ -15,7 +15,7 @@ config = {
     'prod_host': 'partner1',
     'sqldump': False,
     'celery': True,
-    'processes': ('celery',),
+    'processes': ('celery', 'sync'),
     'compress': True,
     'elb': {
         'name': 'UPartners',

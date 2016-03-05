@@ -1,9 +1,11 @@
 from __future__ import absolute_import, unicode_literals
 
-import datetime
 import djcelery
+import os
 import sys
 
+from celery.schedules import crontab
+from datetime import timedelta
 from django.utils.translation import ugettext_lazy as _
 
 # -----------------------------------------------------------------------------------
@@ -48,8 +50,11 @@ SITE_CHOOSER_URL_NAME = 'orgs_ext.org_chooser'
 SITE_CHOOSER_TEMPLATE = 'org_chooser.haml'
 SITE_USER_HOME = '/'
 SITE_ALLOW_NO_ORG = ('orgs_ext.org_create', 'orgs_ext.org_update', 'orgs_ext.org_list',
+                     'orgs_ext.task_list',
                      'profiles.user_create', 'profiles.user_update', 'profiles.user_read', 'profiles.user_list',
                      'internal.status', 'internal.ping')
+
+SITE_BACKEND = 'casepro.backend.rapidpro.RapidProBackend'
 
 # On Unix systems, a value of None will cause Django to use the same
 # timezone as the operating system.
@@ -191,6 +196,9 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'django.contrib.postgres',
+
+    'djcelery',
 
     # mo-betta permission management
     'guardian',
@@ -199,7 +207,7 @@ INSTALLED_APPS = (
     'reversion',
 
     # the django admin
-    'django.contrib.admin',
+    # 'django.contrib.admin',
 
     # compress our CSS and js
     'compressor',
@@ -216,15 +224,14 @@ INSTALLED_APPS = (
     # users
     'smartmin.users',
 
-    # async tasks,
-    'djcelery',
-
     # dash apps
     'dash.orgs',
     'dash.utils',
 
     # custom
     'casepro.cases',
+    'casepro.contacts',
+    'casepro.msgs',
     'casepro.orgs_ext',
     'casepro.profiles'
 )
@@ -264,11 +271,9 @@ LOGGING = {
     }
 }
 
-#-----------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------
 # Directory Configuration
-#-----------------------------------------------------------------------------------
-import os
-
+# -----------------------------------------------------------------------------------
 PROJECT_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)))
 RESOURCES_DIR = os.path.join(PROJECT_DIR, '../resources')
 
@@ -282,9 +287,9 @@ STATIC_ROOT = os.path.join(PROJECT_DIR, '../sitestatic')
 MEDIA_ROOT = os.path.join(PROJECT_DIR, '../media')
 MEDIA_URL = "/media/"
 
-#-----------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------
 # Permission Management
-#-----------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------
 
 # this lets us easily create new permissions across our objects
 PERMISSIONS = {
@@ -296,15 +301,15 @@ PERMISSIONS = {
 
     'orgs.org': ('create', 'update', 'list', 'edit', 'home', 'inbox'),
 
+    'msgs.label': ('create', 'update', 'list', 'unlabelled'),
+
+    'msgs.messageexport': ('create', 'read'),
+
     'cases.case': ('create', 'read', 'update', 'list'),
 
-    'cases.group': ('select', 'list'),
-
-    'cases.messageexport': ('create', 'read'),
-
-    'cases.label': ('create', 'update', 'list', 'unlabelled'),
-
     'cases.partner': ('create', 'read', 'delete', 'list'),
+
+    'contacts.group': ('select', 'list'),
 
     # can't create profiles.user.* permissions because we don't own User
     'profiles.profile': ('user_create', 'user_read', 'user_list'),
@@ -317,43 +322,54 @@ GROUP_PERMISSIONS = {
         'orgs.org_edit',
         'orgs.org_inbox',
 
+        'msgs.label.*',
+        'msgs.messageexport.*',
+
         'cases.case.*',
-        'cases.group.*',
-        'cases.messageexport.*',
-        'cases.label.*',
         'cases.partner.*',
+
+        'contacts.contact.*',
+        'contacts.group.*',
+        'contacts.field.*',
+
         'profiles.profile.*',
     ),
     "Editors": (
         'orgs.org_inbox',
+
+        'msgs.messageexport_create',
+        'msgs.messageexport_read',
+
         'cases.case_create',
         'cases.case_read',
         'cases.case_update',
         'cases.case_list',
-        'cases.messageexport_create',
-        'cases.messageexport_read',
         'cases.partner_list',
         'cases.partner_read',
+
         'profiles.profile_user_create',
         'profiles.profile_user_read',
     ),
     "Viewers": (
         'orgs.org_inbox',
+
+        'msgs.messageexport_create',
+        'msgs.messageexport_read',
+
         'cases.case_create',
         'cases.case_read',
         'cases.case_update',
         'cases.case_list',
-        'cases.messageexport_create',
-        'cases.messageexport_read',
         'cases.partner_list',
         'cases.partner_read',
+
         'profiles.profile_user_read',
     ),
 }
 
-#-----------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------
 # Login / Logout
-#-----------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------
 LOGIN_URL = "/users/login/"
 LOGOUT_URL = "/users/logout/"
 LOGIN_REDIRECT_URL = "/"
@@ -366,25 +382,39 @@ AUTHENTICATION_BACKENDS = (
 
 ANONYMOUS_USER_ID = -1
 
-#-----------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------
 # Debug Toolbar
-#-----------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------
 
 INTERNAL_IPS = ('127.0.0.1',)
 
-#-----------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------
 # Django-celery
-#-----------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------
 djcelery.setup_loader()
 
 BROKER_URL = 'redis://localhost:6379/%d' % (10 if TESTING else 15)
 CELERY_RESULT_BACKEND = BROKER_URL
 
 CELERYBEAT_SCHEDULE = {
-    'process-new-unsolicited': {
-        'task': 'casepro.cases.tasks.process_new_unsolicited',
-        'schedule': datetime.timedelta(minutes=10),  # TODO reduce this when we've made the messages endpoint faster
-        'args': ()
+    'message-pull': {
+        'task': 'dash.orgs.tasks.trigger_org_task',
+        'schedule': crontab(minute=[0, 10, 20, 30, 40, 50]),
+        'args': ('casepro.msgs.tasks.pull_messages', 'sync')
+    },
+    'contact-pull': {
+        'task': 'dash.orgs.tasks.trigger_org_task',
+        'schedule': crontab(minute=[5, 15, 25, 35, 45, 55]),
+        'args': ('casepro.contacts.tasks.pull_contacts', 'sync')
+    },
+    'message-handle': {
+        'task': 'dash.orgs.tasks.trigger_org_task',
+        'schedule': timedelta(minutes=3),
+        'args': ('casepro.msgs.tasks.handle_messages', 'sync')
+    },
+    'delete-old-incoming': {
+        'task': 'casepro.msgs.tasks.delete_old_messages',
+        'schedule': crontab(minute=0, hour=0)  # every midnight
     },
 }
 

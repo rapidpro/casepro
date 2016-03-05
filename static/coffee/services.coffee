@@ -37,10 +37,13 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
         params.before = formatIso8601(before)
       params.page = page
 
-      $http.get('/message/?' + $.param(params))
+      $http.get('/message/search/?' + $.param(params))
       .success((data) =>
         @_processMessages(data.results)
-        callback(data.results, data.has_more)
+
+        console.log("Fetched " + data.results.length + " old messages")
+
+        callback(data.results)
       ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
@@ -96,7 +99,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
         if msg.urn
           urns.push(msg.urn)
         else
-          contacts.push(msg.contact)
+          contacts.push(msg.contact.uuid)
 
       @_messagesSend('B', text, urns, contacts, null, callback)
 
@@ -178,7 +181,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     _searchToParams: (search) ->
       params = {}
-      params.view = search.view
+      params.folder = search.folder
       params.text = search.text
       params.after = formatIso8601(search.after)
       params.before = formatIso8601(search.before)
@@ -258,7 +261,7 @@ services.factory 'LabelService', ['$http', ($http) ->
 # Case service
 #=====================================================================
 
-services.factory 'CaseService', ['$http', ($http) ->
+services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
   new class CaseService
 
     #----------------------------------------------------------------------------
@@ -272,7 +275,7 @@ services.factory 'CaseService', ['$http', ($http) ->
       $http.get('/case/search/?' + $.param(params))
       .success((data) =>
         @_processCases(data.results)
-        callback(data.results, data.has_more)
+        callback(data.results)
       ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
@@ -397,6 +400,15 @@ services.factory 'CaseService', ['$http', ($http) ->
       ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
+    # Navigates to the read page for the given case
+    #----------------------------------------------------------------------------
+    navigateToCase: (caseObj, withAlert) ->
+      caseUrl = '/case/read/' + caseObj.id + '/'
+      if withAlert
+        caseUrl += '?alert=' + withAlert
+      $window.location.href = caseUrl
+
+    #----------------------------------------------------------------------------
     # Fetches timeline events
     #----------------------------------------------------------------------------
     fetchTimeline: (caseObj, after, callback) ->
@@ -413,7 +425,7 @@ services.factory 'CaseService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     _searchToParams: (search) ->
       params = {}
-      params.view = search.view
+      params.folder = search.folder
       params.assignee = if search.assignee then search.assignee.id else null
       params.label = if search.label then search.label.id else null
       return params
