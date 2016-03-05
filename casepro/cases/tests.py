@@ -16,7 +16,7 @@ from django.core.urlresolvers import reverse
 from django.utils import timezone
 from mock import patch
 from .context_processors import contact_ext_url, sentry_dsn
-from .models import AccessLevel, Case, CaseAction, CaseEvent, Contact, Partner
+from .models import AccessLevel, Case, CaseAction, Contact, Partner
 
 
 class CaseTest(BaseCasesTest):
@@ -68,6 +68,10 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(actions[0].created_on, d1)
         self.assertEqual(actions[0].assignee, self.moh)
 
+        # message is now attached to the case
+        msg2.refresh_from_db()
+        self.assertEqual(msg2.case, case)
+
         # check that opening the case archived the contact's messages
         mock_archive_contact_messages.assert_called_once_with(self.unicef, self.ann)
         mock_archive_contact_messages.reset_mock()
@@ -108,11 +112,6 @@ class CaseTest(BaseCasesTest):
         msg3.refresh_from_db()
         self.assertTrue(msg3.is_archived)
         self.assertEqual(msg3.case, case)
-
-        events = case.events.order_by('pk')
-        self.assertEqual(len(events), 1)
-        self.assertEqual(events[0].event, CaseEvent.REPLY)
-        self.assertEqual(events[0].created_on, d2)
 
         with patch.object(timezone, 'now', return_value=d2):
             # other user in MOH adds a note

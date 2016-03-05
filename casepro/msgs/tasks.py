@@ -52,8 +52,6 @@ def handle_messages(org, since, until):
             open_case = Case.get_open_for_contact_on(org, msg.contact, msg.created_on)
 
             if open_case:
-                open_case.reply_event(msg)
-
                 msg.case = open_case
                 msg.is_archived = True
                 msg.save(update_fields=('case', 'is_archived'))

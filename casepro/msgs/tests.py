@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import pytz
 import six
 
-from casepro.cases.models import Case, CaseEvent
+from casepro.cases.models import Case
 from casepro.contacts.models import Contact
 from casepro.test import BaseCasesTest
 from dash.orgs.models import TaskState
@@ -645,12 +645,6 @@ class TasksTest(BaseCasesTest):
         self.assertTrue(msg5.is_archived)
         self.assertEqual(msg5.case, case1)
         mock_archive_messages.assert_called_once_with(self.unicef, [msg5])
-
-        # check reply event was created for msg 5
-        events = case1.events.all()
-        self.assertEqual(len(events), 1)
-        self.assertEqual(events[0].event, CaseEvent.REPLY)
-        self.assertEqual(events[0].created_on, d5)
 
         # check task result
         task_state = self.unicef.get_task_state('message-handle')

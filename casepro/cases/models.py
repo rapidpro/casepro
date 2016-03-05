@@ -275,11 +275,6 @@ class Case(models.Model):
 
         CaseAction.create(self, user, CaseAction.UNLABEL, label=label)
 
-    def reply_event(self, msg):
-        self.incoming_messages.add(msg)
-
-        CaseEvent.create_reply(self, msg)
-
     def update_labels(self, user, labels):
         """
         Updates all this cases's labels to the given set, creating label and unlabel actions as necessary
@@ -375,27 +370,3 @@ class CaseAction(models.Model):
                 'assignee': self.assignee.as_json() if self.assignee else None,
                 'label': self.label.as_json() if self.label else None,
                 'note': self.note}
-
-
-class CaseEvent(models.Model):
-    """
-    An event (i.e. non-user action) relating to a case
-    """
-    REPLY = 'R'
-
-    EVENT_CHOICES = ((REPLY, _("Contact replied")),)
-
-    case = models.ForeignKey(Case, related_name="events")
-
-    event = models.CharField(max_length=1, choices=EVENT_CHOICES)
-
-    created_on = models.DateTimeField(db_index=True)
-
-    @classmethod
-    def create_reply(cls, case, msg):
-        cls.objects.create(case=case, event=cls.REPLY, created_on=msg.created_on)
-
-    def as_json(self):
-        return {'id': self.pk,
-                'event': self.event,
-                'created_on': self.created_on}
