@@ -371,31 +371,59 @@ class MessageCRUDLTest(BaseCasesTest):
 
         ann = self.create_contact(self.unicef, 'C-001', "Ann")
         bob = self.create_contact(self.unicef, 'C-002', "Bob")
+        cat = self.create_contact(self.unicef, 'C-003', "Cat")
         don = self.create_contact(self.unicef, 'C-004', "Don")
+        nic = self.create_contact(self.nyaruka, 'C-101', "Nic")
 
-        self.create_message(self.unicef, 101, ann, "What is HIV?", [self.aids], is_handled=True)
-        self.create_message(self.unicef, 102, bob, "I ♡ RapidPro", [self.pregnancy], is_handled=True)
-        self.create_message(self.unicef, 103, don, "RapidCon 2016!", is_handled=True)
+        # labelled but not cased
+        msg1 = self.create_message(self.unicef, 101, ann, "What is HIV?", [self.aids], is_handled=True)
+        msg2 = self.create_message(self.unicef, 102, bob, "I ♡ RapidPro", [self.pregnancy], is_handled=True)
+
+        # labelled and flagged
+        msg3 = self.create_message(self.unicef, 103, bob, "HELP!", [self.pregnancy], is_handled=True, is_flagged=True)
+
+        # labelled and cased/archived
+        msg4 = self.create_message(self.unicef, 104, bob, "raids", [self.aids], is_handled=True, is_archived=True)
+        msg5 = self.create_message(self.unicef, 105, cat, "AIDS??", [self.aids], is_handled=True, is_archived=True)
+        case = self.create_case(self.unicef, cat, self.moh, msg5)
+
+        # unlabelled
+        self.create_message(self.unicef, 106, don, "RapidCon 2016", is_handled=True)
+
+        # different org
+        self.create_message(self.nyaruka, 201, nic, "Moar codes", is_handled=True)
 
         # log in as a non-administrator
         self.login(self.user1)
 
-        # page requests first page of existing inbox messages
+        # request first page of inbox (i.e. labelled) messages
         t0 = now()
         response = self.url_get('unicef', url, {
-            'folder': 'inbox',
-            'text': "",
-            'page': 1,
-            'after': "",
-            'before': format_iso8601(t0)
+            'folder': 'inbox', 'text': "", 'page': 1, 'after': "", 'before': format_iso8601(t0)
+        })
+
+        self.assertEqual(len(response.json['results']), 3)
+        self.assertEqual(response.json['results'][0]['id'], 103)
+        self.assertEqual(response.json['results'][1]['id'], 102)
+        self.assertEqual(response.json['results'][1]['contact'], {'uuid': "C-002", 'name': "Bob"})
+        self.assertEqual(response.json['results'][1]['text'], "I ♡ RapidPro")
+        self.assertEqual(response.json['results'][1]['labels'], [{'id': self.pregnancy.pk, 'name': "Pregnancy"}])
+        self.assertEqual(response.json['results'][2]['id'], 101)
+
+        # request first page of archived messages
+        t0 = now()
+        response = self.url_get('unicef', url, {
+            'folder': 'archived', 'text': "", 'page': 1, 'after': "", 'before': format_iso8601(t0)
         })
 
         self.assertEqual(len(response.json['results']), 2)
-        self.assertEqual(response.json['results'][0]['id'], 102)
-        self.assertEqual(response.json['results'][0]['contact'], {'uuid': "C-002", 'name': "Bob"})
-        self.assertEqual(response.json['results'][0]['text'], "I ♡ RapidPro")
-        self.assertEqual(response.json['results'][0]['labels'], [{'id': self.pregnancy.pk, 'name': "Pregnancy"}])
-        self.assertEqual(response.json['results'][1]['id'], 101)
+        self.assertEqual(response.json['results'][0]['id'], 105)
+        self.assertEqual(response.json['results'][0]['contact'], {'uuid': "C-003", 'name': "Cat"})
+        self.assertEqual(response.json['results'][0]['text'], "AIDS??")
+        self.assertEqual(response.json['results'][0]['labels'], [{'id': self.aids.pk, 'name': "AIDS"}])
+        self.assertEqual(response.json['results'][0]['case'], {'id': case.pk,
+                                                               'assignee': {'id': self.moh.pk, 'name': "MOH"}})
+        self.assertEqual(response.json['results'][1]['id'], 104)
 
     @patch('casepro.test.TestBackend.flag_messages')
     @patch('casepro.test.TestBackend.unflag_messages')
@@ -621,7 +649,7 @@ class TasksTest(BaseCasesTest):
 
         # contact #5 has a case open that day
         msg8 = self.create_message(self.unicef, 108, eve, "Start case", created_on=d1, is_handled=True)
-        case1 = Case.objects.create(org=self.unicef, contact=eve, assignee=self.moh, initial_message=msg8)
+        case1 = self.create_case(self.unicef, eve, self.moh, msg8)
         case1.opened_on = d1
         case1.save()
 

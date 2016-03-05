@@ -215,7 +215,7 @@ class Message(models.Model):
         if search['before']:
             queryset = queryset.filter(created_on__lt=search['before'])
 
-        queryset = queryset.select_related('contact').prefetch_related('labels')
+        queryset = queryset.select_related('contact').prefetch_related('labels', 'case__assignee')
 
         return queryset.order_by('-created_on', '-pk').distinct('created_on', 'pk')
 
@@ -331,6 +331,8 @@ class Message(models.Model):
         """
         Prepares this message for JSON serialization
         """
+        case_json = {'id': self.case.pk, 'assignee': self.case.assignee.as_json()} if self.case else None
+
         return {
             'id': self.backend_id,
             'contact': self.contact.as_json(),
@@ -340,6 +342,7 @@ class Message(models.Model):
             'flagged': self.is_flagged,
             'archived': self.is_archived,
             'direction': self.DIRECTION,
+            'case': case_json,
             'sender': None
         }
 

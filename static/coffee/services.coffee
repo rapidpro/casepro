@@ -261,7 +261,7 @@ services.factory 'LabelService', ['$http', ($http) ->
 # Case service
 #=====================================================================
 
-services.factory 'CaseService', ['$http', ($http) ->
+services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
   new class CaseService
 
     #----------------------------------------------------------------------------
@@ -398,6 +398,15 @@ services.factory 'CaseService', ['$http', ($http) ->
         if callback
           callback()
       ).error(DEFAULT_ERR_HANDLER)
+
+    #----------------------------------------------------------------------------
+    # Navigates to the read page for the given case
+    #----------------------------------------------------------------------------
+    navigateToCase: (caseObj, withAlert) ->
+      caseUrl = '/case/read/' + caseObj.id + '/'
+      if withAlert
+        caseUrl += '?alert=' + withAlert
+      $window.location.href = caseUrl
 
     #----------------------------------------------------------------------------
     # Fetches timeline events

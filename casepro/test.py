@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import pytz
 
 from casepro.backend import BaseBackend
-from casepro.cases.models import Partner
+from casepro.cases.models import Case, Partner
 from casepro.contacts.models import Contact, Group, Field
 from casepro.msgs.models import Label, Message
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
@@ -104,6 +104,15 @@ class BaseCasesTest(DashTest):
         msg = Message.objects.create(org=org, backend_id=backend_id, contact=contact, text=text, **kwargs)
         msg.labels.add(*labels)
         return msg
+
+    def create_case(self, org, contact, assignee, message, labels=(), **kwargs):
+        case = Case.objects.create(org=org, contact=contact, assignee=assignee, initial_message=message, **kwargs)
+        case.labels.add(*labels)
+
+        message.case = case
+        message.save(update_fields=('case',))
+
+        return case
 
     def datetime(self, year, month, day, hour=0, minute=0, second=0, microsecond=0, tz=pytz.UTC):
         return datetime(year, month, day, hour, minute, second, microsecond, tz)
