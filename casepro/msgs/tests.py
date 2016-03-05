@@ -397,14 +397,13 @@ class MessageCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'][0]['labels'], [{'id': self.pregnancy.pk, 'name': "Pregnancy"}])
         self.assertEqual(response.json['results'][1]['id'], 101)
 
-
-class MessageViewsTest(BaseCasesTest):
     @patch('casepro.test.TestBackend.flag_messages')
     @patch('casepro.test.TestBackend.unflag_messages')
     @patch('casepro.test.TestBackend.archive_messages')
     @patch('casepro.test.TestBackend.restore_messages')
     def test_action(self, mock_restore_messages, mock_archive_messages, mock_unflag_messages, mock_flag_messages):
-        get_url = lambda action: reverse('msgs.message_action', kwargs={'action': action})
+        def get_url(action):
+            return reverse('msgs.message_action', kwargs={'action': action})
 
         ann = self.create_contact(self.unicef, 'C-001', "Ann")
         msg1 = self.create_message(self.unicef, 101, ann, "Normal", [self.aids, self.pregnancy])
@@ -420,23 +419,23 @@ class MessageViewsTest(BaseCasesTest):
         mock_flag_messages.assert_called_once_with(self.unicef, [msg2, msg3])
         self.assertEqual(Message.objects.filter(is_flagged=True).count(), 2)
 
-        response = self.url_post('unicef', get_url('unflag'), {'messages': "102,103"})
+        response = self.url_post('unicef', get_url('unflag'), {'messages': "102"})
 
         self.assertEqual(response.status_code, 204)
-        mock_unflag_messages.assert_called_once_with(self.unicef, [msg2, msg3])
-        self.assertEqual(Message.objects.filter(is_flagged=True).count(), 0)
+        mock_unflag_messages.assert_called_once_with(self.unicef, [msg2])
+        self.assertEqual(Message.objects.filter(is_flagged=True).count(), 1)
 
-        response = self.url_post('unicef', get_url('archive'), {'messages': "102,103"})
+        response = self.url_post('unicef', get_url('archive'), {'messages': "102"})
 
         self.assertEqual(response.status_code, 204)
-        mock_archive_messages.assert_called_once_with(self.unicef, [msg2, msg3])
+        mock_archive_messages.assert_called_once_with(self.unicef, [msg2])
         self.assertEqual(Message.objects.filter(is_archived=True).count(), 2)
 
-        response = self.url_post('unicef', get_url('restore'), {'messages': "102,103"})
+        response = self.url_post('unicef', get_url('restore'), {'messages': "103"})
 
         self.assertEqual(response.status_code, 204)
-        mock_restore_messages.assert_called_once_with(self.unicef, [msg2, msg3])
-        self.assertEqual(Message.objects.filter(is_archived=True).count(), 0)
+        mock_restore_messages.assert_called_once_with(self.unicef, [msg3])
+        self.assertEqual(Message.objects.filter(is_archived=True).count(), 1)
 
     @patch('casepro.test.TestBackend.label_messages')
     @patch('casepro.test.TestBackend.unlabel_messages')
@@ -488,8 +487,8 @@ class MessageViewsTest(BaseCasesTest):
         # log in as a non-administrator
         self.login(self.user1)
 
-        ann = self.create_contact(self.unicef, "C-001", "Ann")
-        bob = self.create_contact(self.unicef, "C-002", "Bob")
+        self.create_contact(self.unicef, "C-001", "Ann")
+        self.create_contact(self.unicef, "C-002", "Bob")
 
         d1 = datetime(2014, 1, 2, 6, 0, tzinfo=pytz.UTC)
         mock_create_outgoing.return_value = (201, d1)
