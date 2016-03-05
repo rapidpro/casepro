@@ -215,7 +215,7 @@ class Message(models.Model):
             queryset = queryset.filter(created_on__lt=search['before'])
 
         queryset = queryset.select_related('contact').prefetch_related('labels')
-        
+
         return queryset.order_by('-created_on', '-pk').distinct('created_on', 'pk')
 
     def auto_label(self, labels_by_keyword):
