@@ -28,7 +28,9 @@ def update_contact_groups(sender, instance, created, **kwargs):
         instance.groups.remove(*remove_from)
 
     # add this contact to any groups not in the current set
-    add_to_by_uuid = {uuid: name for uuid, name in six.iteritems(new_groups_by_uuid) if uuid not in six.viewkeys(cur_groups_by_uuid)}
+    add_to_by_uuid = {uuid: name for uuid, name in six.iteritems(new_groups_by_uuid)
+                      if uuid not in six.viewkeys(cur_groups_by_uuid)}
+
     if add_to_by_uuid:
         org_groups = {g.uuid: g for g in org.groups.all()}
 

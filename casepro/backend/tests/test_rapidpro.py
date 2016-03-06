@@ -594,7 +594,7 @@ class RapidProBackendTest(BaseCasesTest):
         mock_label_messages.assert_called_once_with(messages=[123, 234], label_uuid='L-001')
 
     @patch('dash.orgs.models.TembaClient1.unlabel_messages')
-    def test_label_messages(self, mock_unlabel_messages):
+    def test_unlabel_messages(self, mock_unlabel_messages):
         # empty message list shouldn't make API call
         self.backend.unlabel_messages(self.unicef, [], self.aids)
 

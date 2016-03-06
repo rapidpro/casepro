@@ -17,6 +17,9 @@ if settings.DEBUG:  # pragma: no cover
     import debug_toolbar
     urlpatterns = [
         url(r'^__debug__/', include(debug_toolbar.urls)),
-        url(r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.MEDIA_ROOT, 'show_indexes': True}),
+        url(r'^media/(?P<path>.*)$', 'django.views.static.serve', {
+            'document_root': settings.MEDIA_ROOT,
+            'show_indexes': True
+        }),
         url(r'', include('django.contrib.staticfiles.urls'))
     ] + urlpatterns

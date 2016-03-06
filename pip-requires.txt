@@ -14,6 +14,7 @@ django-rosetta
 django-storages
 dj-database-url
 enum34
+flake8
 gunicorn
 hamlpy
 mock

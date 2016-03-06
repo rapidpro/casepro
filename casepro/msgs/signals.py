@@ -40,7 +40,8 @@ def update_message_labels(sender, instance, created, **kwargs):
         instance.labels.remove(*remove_from)
 
     # add this message to any labels not in the current set
-    add_to_by_uuid = {uuid: name for uuid, name in six.iteritems(new_labels_by_uuid) if uuid not in six.viewkeys(cur_labels_by_uuid)}
+    add_to_by_uuid = {uuid: name for uuid, name in six.iteritems(new_labels_by_uuid)
+                      if uuid not in six.viewkeys(cur_labels_by_uuid)}
     if add_to_by_uuid:
         org_labels = {l.uuid: l for l in org.labels.all()}
 

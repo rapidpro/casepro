@@ -1,14 +1,14 @@
 from __future__ import absolute_import, unicode_literals
 
 from casepro.contacts.models import Field, Group
-from dash.orgs.models import Org, TaskState
+from dash.orgs.models import Org
 from dash.orgs.views import OrgCRUDL, TaskCRUDL, InferOrgMixin, OrgPermsMixin
 from django import forms
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
-from smartmin.views import SmartCRUDL, SmartUpdateView, SmartListView
+from smartmin.views import SmartCRUDL, SmartUpdateView
 from timezones.forms import TimeZoneField
 
 
@@ -70,9 +70,11 @@ class OrgExtCRUDL(SmartCRUDL):
             contact_fields = forms.MultipleChoiceField(choices=(), label=_("Contact fields"),
                                                        help_text=_("Contact fields to display"), required=False)
 
-            suspend_groups = forms.MultipleChoiceField(choices=(), label=_("Suspend groups"),
-                                                       help_text=_("Groups to remove contacts from when creating cases"),
-                                                       required=False)
+            suspend_groups = forms.MultipleChoiceField(
+                choices=(), label=_("Suspend groups"),
+                help_text=_("Groups to remove contacts from when creating cases"),
+                required=False
+            )
 
             def __init__(self, *args, **kwargs):
                 org = kwargs.pop('org')

@@ -291,7 +291,9 @@ class UserCRUDL(SmartCRUDL):
             qs = super(UserCRUDL.List, self).derive_queryset(**kwargs)
             org = self.request.org
             if org:
-                qs = qs.filter(Q(pk__in=org.get_org_admins()) | Q(pk__in=org.get_org_editors()) | Q(pk__in=org.get_org_viewers()))
+                qs = qs.filter(Q(pk__in=org.get_org_admins()) |
+                               Q(pk__in=org.get_org_editors()) |
+                               Q(pk__in=org.get_org_viewers()))
             qs = qs.filter(is_active=True).exclude(profile=None)
             return qs
 

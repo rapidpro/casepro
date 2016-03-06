@@ -102,6 +102,5 @@ def delete_old_messages():
     """
     We don't keep incoming messages forever unless they're labelled or associated with a case
     """
-    from .models import Message
-
     # TODO
+    pass

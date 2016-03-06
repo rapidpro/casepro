@@ -3,7 +3,6 @@ from __future__ import absolute_import, unicode_literals
 from django.contrib.auth.models import User, Group
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
-from mock import patch
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
 
@@ -26,7 +25,8 @@ class UserPatchTest(BaseCasesTest):
         self.assertEqual(user.get_org_group(), Group.objects.get(name="Editors"))
 
         # test creating user with long email
-        User.create(self.unicef, self.moh, ROLE_MANAGER, "Mo Cases", "mo123456789012345678901234567890@moh.com", "Qwerty123", False)
+        User.create(self.unicef, self.moh, ROLE_MANAGER, "Mo Cases",
+                    "mo123456789012345678901234567890@moh.com", "Qwerty123", False)
 
     def test_update_role(self):
         self.user1.update_role(self.unicef, ROLE_ANALYST)
@@ -454,7 +454,7 @@ class UserCRUDLTest(BaseCasesTest):
         data = dict(full_name="Morris", email="mo2@trac.com", password="Qwerty123", confirm_password="Qwerty123")
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
-        
+
         # check password has changed and no longer has to be changed
         user = User.objects.get(pk=self.user1.pk)
         self.assertFalse(user.profile.change_password)

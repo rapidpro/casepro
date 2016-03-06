@@ -23,6 +23,7 @@ django-rosetta==0.7.6
 django-storages==1.1.8
 django-timezones==0.2
 enum34==1.0.4
+flake8==2.5.4
 gunicorn==19.3.0
 hamlpy==0.82.2
 kombu==3.0.33

@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 import pytz
 import six
 
-from casepro.cases.models import Case
 from casepro.contacts.models import Contact
 from casepro.test import BaseCasesTest
 from dash.orgs.models import TaskState
@@ -376,14 +375,14 @@ class MessageCRUDLTest(BaseCasesTest):
         nic = self.create_contact(self.nyaruka, 'C-101', "Nic")
 
         # labelled but not cased
-        msg1 = self.create_message(self.unicef, 101, ann, "What is HIV?", [self.aids], is_handled=True)
-        msg2 = self.create_message(self.unicef, 102, bob, "I ♡ RapidPro", [self.pregnancy], is_handled=True)
+        self.create_message(self.unicef, 101, ann, "What is HIV?", [self.aids], is_handled=True)
+        self.create_message(self.unicef, 102, bob, "I ♡ RapidPro", [self.pregnancy], is_handled=True)
 
         # labelled and flagged
-        msg3 = self.create_message(self.unicef, 103, bob, "HELP!", [self.pregnancy], is_handled=True, is_flagged=True)
+        self.create_message(self.unicef, 103, bob, "HELP!", [self.pregnancy], is_handled=True, is_flagged=True)
 
         # labelled and cased/archived
-        msg4 = self.create_message(self.unicef, 104, bob, "raids", [self.aids], is_handled=True, is_archived=True)
+        self.create_message(self.unicef, 104, bob, "raids", [self.aids], is_handled=True, is_archived=True)
         msg5 = self.create_message(self.unicef, 105, cat, "AIDS??", [self.aids], is_handled=True, is_archived=True)
         case = self.create_case(self.unicef, cat, self.moh, msg5)
 
@@ -434,7 +433,7 @@ class MessageCRUDLTest(BaseCasesTest):
             return reverse('msgs.message_action', kwargs={'action': action})
 
         ann = self.create_contact(self.unicef, 'C-001', "Ann")
-        msg1 = self.create_message(self.unicef, 101, ann, "Normal", [self.aids, self.pregnancy])
+        self.create_message(self.unicef, 101, ann, "Normal", [self.aids, self.pregnancy])
         msg2 = self.create_message(self.unicef, 102, ann, "Flow", type='F')
         msg3 = self.create_message(self.unicef, 103, ann, "Archived", is_archived=True)
 

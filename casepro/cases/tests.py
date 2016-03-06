@@ -44,7 +44,7 @@ class CaseTest(BaseCasesTest):
         d6 = datetime(2015, 1, 2, 12, 0, tzinfo=pytz.UTC)
         d7 = datetime(2015, 1, 2, 13, 0, tzinfo=pytz.UTC)
 
-        msg1 = self.create_message(self.unicef, 123, self.ann, "Hello", created_on=d0)
+        self.create_message(self.unicef, 123, self.ann, "Hello", created_on=d0)
         msg2 = self.create_message(self.unicef, 234, self.ann, "Hello again", [self.aids], created_on=d1)
 
         with patch.object(timezone, 'now', return_value=d1):
@@ -281,19 +281,19 @@ class CaseTest(BaseCasesTest):
             case2 = Case.get_or_open(self.unicef, self.user1, msg, "Summary", self.moh, update_contact=False)
 
         # check no cases open on Jan 4th
-        open_case = Case.get_open_for_contact_on(self.unicef, self.ann, datetime(2014, 1, 4, 0, 0, tzinfo=timezone.utc))
+        open_case = Case.get_open_for_contact_on(self.unicef, self.ann, datetime(2014, 1, 4, 0, 0, tzinfo=pytz.UTC))
         self.assertIsNone(open_case)
 
         # check case open on Jan 7th
-        open_case = Case.get_open_for_contact_on(self.unicef, self.ann, datetime(2014, 1, 7, 0, 0, tzinfo=timezone.utc))
+        open_case = Case.get_open_for_contact_on(self.unicef, self.ann, datetime(2014, 1, 7, 0, 0, tzinfo=pytz.UTC))
         self.assertEqual(open_case, case1)
 
         # check no cases open on Jan 13th
-        open_case = Case.get_open_for_contact_on(self.unicef, self.ann, datetime(2014, 1, 13, 0, 0, tzinfo=timezone.utc))
+        open_case = Case.get_open_for_contact_on(self.unicef, self.ann, datetime(2014, 1, 13, 0, 0, tzinfo=pytz.UTC))
         self.assertIsNone(open_case)
 
         # check case open on 20th
-        open_case = Case.get_open_for_contact_on(self.unicef, self.ann, datetime(2014, 1, 16, 0, 0, tzinfo=timezone.utc))
+        open_case = Case.get_open_for_contact_on(self.unicef, self.ann, datetime(2014, 1, 16, 0, 0, tzinfo=pytz.UTC))
         self.assertEqual(open_case, case2)
 
 

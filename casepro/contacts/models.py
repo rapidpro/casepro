@@ -34,8 +34,9 @@ class Group(models.Model):
 
     is_visible = models.BooleanField(default=False, help_text=_("Whether this group is visible to partner users"))
 
-    suspend_from = models.BooleanField(default=False,
-                                       help_text=_("Whether contacts should be suspended from this group during a case"))
+    suspend_from = models.BooleanField(
+        default=False, help_text=_("Whether contacts should be suspended from this group during a case")
+    )
 
     @classmethod
     def get_all(cls, org, visible=None):

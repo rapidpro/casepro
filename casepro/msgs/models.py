@@ -554,7 +554,8 @@ class MessageExport(models.Model):
         self.save(update_fields=('filename',))
 
         subject = "Your messages export is ready"
-        download_url = settings.SITE_HOST_PATTERN % self.org.subdomain + reverse('msgs.messageexport_read', args=[self.pk])
+        host = settings.SITE_HOST_PATTERN % self.org.subdomain
+        download_url = host + reverse('msgs.messageexport_read', args=[self.pk])
 
         send_email(self.created_by.username, subject, 'msgs/email/message_export', dict(link=download_url))
 

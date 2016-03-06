@@ -117,7 +117,9 @@ def is_dict_equal(d1, d2, keys=None, ignore_none_values=True):
     :return: true if the dictionaries are equal, else false
     """
     if keys or ignore_none_values:
-        d1 = {k: v for k, v in six.iteritems(d1) if (keys is None or k in keys) and (v is not None or not ignore_none_values)}
-        d2 = {k: v for k, v in six.iteritems(d2) if (keys is None or k in keys) and (v is not None or not ignore_none_values)}
+        d1 = {k: v for k, v in six.iteritems(d1)
+              if (keys is None or k in keys) and (v is not None or not ignore_none_values)}
+        d2 = {k: v for k, v in six.iteritems(d2)
+              if (keys is None or k in keys) and (v is not None or not ignore_none_values)}
 
     return d1 == d2
