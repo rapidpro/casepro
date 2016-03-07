@@ -50,12 +50,15 @@ modals.controller 'EditModalController', ['$scope', '$modalInstance', 'title', '
 
 
 #=====================================================================
-# Reply to contact modal
+# Reply to contacts modal
 #=====================================================================
-modals.controller('ReplyModalController', ['$scope', '$modalInstance', ($scope, $modalInstance) ->
-  $scope.fields = { text: '' }
+modals.controller('ReplyModalController', ['$scope', '$modalInstance', 'maxLength', ($scope, $modalInstance, maxLength) ->
+  $scope.fields = {text: {val: '', maxLength: maxLength}}
 
-  $scope.ok = () -> $modalInstance.close($scope.fields.text)
+  $scope.ok = () ->
+    if $scope.form.$valid
+      $modalInstance.close($scope.fields.text.val)
+
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ])
 

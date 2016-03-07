@@ -275,7 +275,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     )
 
   $scope.onReplyToSelection = () ->
-    $modal.open({templateUrl: 'replyModal.html', controller: 'ReplyModalController', resolve: {}})
+    $modal.open({templateUrl: 'replyModal.html', controller: 'ReplyModalController', resolve: {maxLength: (() -> OUTGOING_TEXT_MAX_LEN)}})
     .result.then((text) ->
       MessageService.replyToMessages($scope.selection, text, () ->
         MessageService.archiveMessages($scope.selection, () ->
