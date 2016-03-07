@@ -41,7 +41,10 @@ modals.controller 'EditModalController', ['$scope', '$modalInstance', 'title', '
   $scope.title = title
   $scope.fields = {text: {val: initial, maxLength: maxLength}}
 
-  $scope.ok = () -> $modalInstance.close($scope.fields.text.val)
+  $scope.ok = () ->
+    if $scope.form.$valid
+      $modalInstance.close($scope.fields.text.val)
+
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
 
@@ -60,15 +63,15 @@ modals.controller('ReplyModalController', ['$scope', '$modalInstance', ($scope, 
 #=====================================================================
 # Open new case modal
 #=====================================================================
-modals.controller 'NewCaseModalController', ['$scope', '$modalInstance', 'message', 'partners', ($scope, $modalInstance, message, partners) ->
+modals.controller 'NewCaseModalController', ['$scope', '$modalInstance', 'message', 'summaryMaxLength', 'partners', ($scope, $modalInstance, message, summaryMaxLength, partners) ->
   $scope.partners = partners
   $scope.fields = {
-    summary: message.text,
-    assignee: if partners then partners[0] else null
+    summary: {val: message.text, maxLength: summaryMaxLength},
+    assignee: {val: if partners then partners[0] else null}
   }
 
   $scope.ok = () ->
-    $modalInstance.close({summary: $scope.fields.summary, assignee: $scope.fields.assignee})
+    $modalInstance.close({summary: $scope.fields.summary.val, assignee: $scope.fields.assignee.val})
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
 
