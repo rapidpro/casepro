@@ -59,6 +59,8 @@ modals.controller('ReplyModalController', ['$scope', '$modalInstance', 'maxLengt
   $scope.fields = {text: {val: '', maxLength: maxLength}}
 
   $scope.ok = () ->
+    $scope.form.submitted = true
+
     if $scope.form.$valid
       $modalInstance.close($scope.fields.text.val)
 
@@ -77,6 +79,8 @@ modals.controller 'NewCaseModalController', ['$scope', '$modalInstance', 'messag
   }
 
   $scope.ok = () ->
+    $scope.form.submitted = true
+
     if $scope.form.$valid
       $modalInstance.close({summary: $scope.fields.summary.val, assignee: $scope.fields.assignee.val})
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
@@ -116,11 +120,11 @@ modals.controller('LabelModalController', ['$scope', '$modalInstance', 'title', 
 #=====================================================================
 # Compose message to URN modal
 #=====================================================================
-modals.controller('ComposeModalController', ['$scope', '$modalInstance', 'title', 'initialText', ($scope, $modalInstance, title, initialText) ->
+modals.controller('ComposeModalController', ['$scope', '$modalInstance', 'title', 'initialText', 'maxLength', ($scope, $modalInstance, title, initialText, maxLength) ->
   $scope.title = title
   $scope.fields = {
-    urn: { scheme: null, path: '' },
-    text: initialText
+    urn: {scheme: null, path: ''},
+    text: {val: initialText, maxLength: maxLength}
   }
 
   $scope.setScheme = (scheme) ->
@@ -128,8 +132,11 @@ modals.controller('ComposeModalController', ['$scope', '$modalInstance', 'title'
     $scope.urn_scheme_label = URN_SCHEMES[scheme]
 
   $scope.ok = () ->
-    urn = {scheme: $scope.fields.urn.scheme, path: $scope.fields.urn.path, urn: ($scope.fields.urn.scheme + ':' + $scope.fields.urn.path)}
-    $modalInstance.close({text: $scope.fields.text, urn: urn})
+    $scope.form.submitted = true
+
+    if $scope.form.$valid
+      urn = {scheme: $scope.fields.urn.scheme, path: $scope.fields.urn.path, urn: ($scope.fields.urn.scheme + ':' + $scope.fields.urn.path)}
+      $modalInstance.close({text: $scope.fields.text, urn: urn})
 
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 

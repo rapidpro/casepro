@@ -316,7 +316,8 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
 
     $modal.open({templateUrl: 'composeModal.html', controller: 'ComposeModalController', resolve: {
       title: () -> "Forward",
-      initialText: () -> initialText
+      initialText: () -> initialText,
+      maxLength: () -> OUTGOING_TEXT_MAX_LEN,
     }})
     .result.then((data) ->
       MessageService.forwardToUrn(data.text, data.urn, () ->
