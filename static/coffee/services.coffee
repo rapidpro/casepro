@@ -523,8 +523,8 @@ services.factory 'UtilsService', ['$window', '$modal', ($window, $modal) ->
       .result.then (assignee) ->
         callback(assignee)
 
-    noteModal: (title, prompt, style, callback) ->
-      resolve = {title: (() -> title), prompt: (() -> prompt), style: (() -> style)}
+    noteModal: (title, prompt, style, maxLength, callback) ->
+      resolve = {title: (() -> title), prompt: (() -> prompt), style: (() -> style), maxLength: (() -> maxLength)}
       $modal.open({templateUrl: 'noteModal.html', controller: 'NoteModalController', resolve: resolve})
       .result.then (note) ->
         callback(note)

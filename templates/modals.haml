@@ -20,11 +20,16 @@
     .modal-body
       %p
         %span{ ng-bind-html:"prompt" }
-      %form
-        .form-group
+
+      %form{ name:"form", novalidate:"" }
+        .form-group{ ng-class:'{"has-error": form.note.$invalid && form.note.$dirty}' }
           %label.control-label
             - trans "Note"
-          %textarea.form-control{ ng-model:"fields.note" }
+          %textarea.form-control{ ng-model:"fields.note.val", ng-maxlength:"fields.note.maxLength", name:"note", required:"" }
+          .help-block{ ng-show:"form.note.$error.required && form.note.$dirty" }
+            - trans "Required"
+          .help-block{ ng-show:"form.note.$error.maxlength" }
+            - trans "Too long"
     .modal-footer
       %button.btn{ ng-click:"ok()", ng-class:'{ "btn-primary": style == "primary", "btn-danger": style == "danger" }' }
         - trans "OK"
@@ -77,14 +82,20 @@
     .modal-body
       %p
         - trans "Open a new case for this contact? This will archive all messages from the contact."
-      .form-group
-        %label.control-label
-          - trans "Summary"
-        %textarea.form-control{ ng-model:"fields.summary.val", maxlength:"[[ fields.summary.maxLength ]]" }
-      .form-group{ ng-if:"partners != null" }
-        %label.control-label
-          - trans "Assign to"
-        %select.form-control{ ng-model:"fields.assignee.val", ng-options:"p.name for p in partners track by p.id" }
+
+      %form{ name:"form", novalidate:"" }
+        .form-group{ ng-class:'{"has-error": form.summary.$invalid}' }
+          %label.control-label
+            - trans "Summary"
+          %textarea.form-control{ ng-model:"fields.summary.val", ng-maxlength:"fields.summary.maxLength", name:"summary", required:"" }
+          .help-block{ ng-show:"form.summary.$error.required" }
+            - trans "Required"
+          .help-block{ ng-show:"form.summary.$error.maxlength" }
+            - trans "Too long"
+        .form-group{ ng-if:"partners != null" }
+          %label.control-label
+            - trans "Assign to"
+          %select.form-control{ ng-model:"fields.assignee.val", ng-options:"p.name for p in partners track by p.id" }
     .modal-footer
       %button.btn.btn-primary{ ng-click:"ok()" }
         - trans "Open"

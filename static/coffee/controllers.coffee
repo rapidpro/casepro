@@ -15,6 +15,7 @@ INFINITE_SCROLL_MAX_ITEMS = 1000
 
 # Form constraints
 CASE_SUMMARY_MAX_LEN = 255
+CASE_NOTE_MAX_LEN = 1024
 OUTGOING_TEXT_MAX_LEN = 480
 
 
@@ -466,7 +467,7 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
   #----------------------------------------------------------------------------
 
   $scope.onAddNote = () ->
-    UtilsService.noteModal("Add Note", null, null, (note) ->
+    UtilsService.noteModal("Add Note", null, null, CASE_NOTE_MAX_LEN, (note) ->
       CaseService.noteCase($scope.caseObj, note, () ->
         $scope.$broadcast('timelineChanged')
       )
@@ -480,14 +481,14 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
     )
 
   $scope.onClose = () ->
-    UtilsService.noteModal("Close", "Close this case?", 'danger', (note) ->
+    UtilsService.noteModal("Close", "Close this case?", 'danger', CASE_NOTE_MAX_LEN, (note) ->
       CaseService.closeCase($scope.caseObj, note, () ->
         UtilsService.navigate('/')
       )
     )
 
   $scope.onReopen = () ->
-    UtilsService.noteModal("Re-open", "Re-open this case?", null, (note) ->
+    UtilsService.noteModal("Re-open", "Re-open this case?", null, CASE_NOTE_MAX_LEN, (note) ->
       CaseService.reopenCase($scope.caseObj, note, () ->
         $scope.$broadcast('timelineChanged')
       )

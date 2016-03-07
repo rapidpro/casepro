@@ -23,13 +23,16 @@ modals.controller 'ConfirmModalController', ['$scope', '$modalInstance', 'prompt
 #=====================================================================
 # Confirm with note modal
 #=====================================================================
-modals.controller 'NoteModalController', ['$scope', '$modalInstance', 'title', 'prompt', 'style', ($scope, $modalInstance, title, prompt, style) ->
+modals.controller 'NoteModalController', ['$scope', '$modalInstance', 'title', 'prompt', 'style', 'maxLength', ($scope, $modalInstance, title, prompt, style, maxLength) ->
   $scope.title = title
   $scope.prompt = prompt
   $scope.style = style or 'primary'
-  $scope.fields = {note: ''}
+  $scope.fields = {note: {val: '', maxLength: maxLength}}
 
-  $scope.ok = () -> $modalInstance.close($scope.fields.note)
+  $scope.ok = () ->
+    if $scope.form.$valid
+      $modalInstance.close($scope.fields.note.val)
+
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
 
@@ -74,7 +77,8 @@ modals.controller 'NewCaseModalController', ['$scope', '$modalInstance', 'messag
   }
 
   $scope.ok = () ->
-    $modalInstance.close({summary: $scope.fields.summary.val, assignee: $scope.fields.assignee.val})
+    if $scope.form.$valid
+      $modalInstance.close({summary: $scope.fields.summary.val, assignee: $scope.fields.assignee.val})
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
 
