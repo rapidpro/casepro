@@ -43,6 +43,7 @@ DEFAULT_FROM_EMAIL = 'server@nyaruka.com'
 EMAIL_HOST_PASSWORD = 'NOTREAL'
 EMAIL_USE_TLS = True
 
+# dash configuration
 SITE_API_HOST = 'http://localhost:8001/'
 SITE_API_USER_AGENT = 'casepro/0.1'
 SITE_HOST_PATTERN = 'http://%s.localhost:8000'
@@ -55,6 +56,7 @@ SITE_ALLOW_NO_ORG = ('orgs_ext.org_create', 'orgs_ext.org_update', 'orgs_ext.org
                      'internal.status', 'internal.ping')
 
 SITE_BACKEND = 'casepro.backend.rapidpro.RapidProBackend'
+
 
 # On Unix systems, a value of None will cause Django to use the same
 # timezone as the operating system.

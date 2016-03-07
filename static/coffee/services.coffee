@@ -511,8 +511,8 @@ services.factory 'UtilsService', ['$window', '$modal', ($window, $modal) ->
       .result.then () ->
         callback()
 
-    editModal: (title, initial, callback) ->
-      resolve = {title: (() -> title), initial: (() -> initial)}
+    editModal: (title, initial, maxLength, callback) ->
+      resolve = {title: (() -> title), initial: (() -> initial), maxLength: (() -> maxLength)}
       $modal.open({templateUrl: 'editModal.html', controller: 'EditModalController', resolve: resolve})
       .result.then (text) ->
         callback(text)

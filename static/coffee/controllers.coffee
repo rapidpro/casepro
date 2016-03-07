@@ -13,6 +13,11 @@ INTERVAL_CASE_TIMELINE = 30000
 
 INFINITE_SCROLL_MAX_ITEMS = 1000
 
+# Form constraints
+CASE_SUMMARY_MAX_LEN = 255
+OUTGOING_TEXT_MAX_LEN = 480
+
+
 #============================================================================
 # Home controller (DOM parent of inbox and cases)
 #============================================================================
@@ -431,7 +436,7 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
     )
 
   $scope.onEditSummary = ->
-    UtilsService.editModal("Edit Summary", $scope.caseObj.summary, (text) ->
+    UtilsService.editModal("Edit Summary", $scope.caseObj.summary, CASE_SUMMARY_MAX_LEN, (text) ->
       CaseService.updateCaseSummary($scope.caseObj, text, () ->
         $scope.$broadcast('timelineChanged')
       )

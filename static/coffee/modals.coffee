@@ -10,7 +10,7 @@ URN_SCHEMES = {tel: "Phone", twitter: "Twitter"}
 #=====================================================================
 # Simple confirmation modal
 #=====================================================================
-modals.controller 'ConfirmModalController', [ '$scope', '$modalInstance', 'prompt', 'style', ($scope, $modalInstance, prompt, style) ->
+modals.controller 'ConfirmModalController', ['$scope', '$modalInstance', 'prompt', 'style', ($scope, $modalInstance, prompt, style) ->
   $scope.title = "Confirm"
   $scope.prompt = prompt
   $scope.style = style or 'primary'
@@ -23,11 +23,11 @@ modals.controller 'ConfirmModalController', [ '$scope', '$modalInstance', 'promp
 #=====================================================================
 # Confirm with note modal
 #=====================================================================
-modals.controller 'NoteModalController', [ '$scope', '$modalInstance', 'title', 'prompt', 'style', ($scope, $modalInstance, title, prompt, style) ->
+modals.controller 'NoteModalController', ['$scope', '$modalInstance', 'title', 'prompt', 'style', ($scope, $modalInstance, title, prompt, style) ->
   $scope.title = title
   $scope.prompt = prompt
   $scope.style = style or 'primary'
-  $scope.fields = { note: '' }
+  $scope.fields = {note: ''}
 
   $scope.ok = () -> $modalInstance.close($scope.fields.note)
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
@@ -37,11 +37,11 @@ modals.controller 'NoteModalController', [ '$scope', '$modalInstance', 'title', 
 #=====================================================================
 # Edit text modal
 #=====================================================================
-modals.controller 'EditModalController', [ '$scope', '$modalInstance', 'title', 'initial', ($scope, $modalInstance, title, initial) ->
+modals.controller 'EditModalController', ['$scope', '$modalInstance', 'title', 'initial', 'maxLength', ($scope, $modalInstance, title, initial, maxLength) ->
   $scope.title = title
-  $scope.fields = { text: initial }
+  $scope.fields = {text: {val: initial, maxLength: maxLength}}
 
-  $scope.ok = () -> $modalInstance.close($scope.fields.text)
+  $scope.ok = () -> $modalInstance.close($scope.fields.text.val)
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 ]
 
@@ -49,7 +49,7 @@ modals.controller 'EditModalController', [ '$scope', '$modalInstance', 'title', 
 #=====================================================================
 # Reply to contact modal
 #=====================================================================
-modals.controller('ReplyModalController', [ '$scope', '$modalInstance', ($scope, $modalInstance) ->
+modals.controller('ReplyModalController', ['$scope', '$modalInstance', ($scope, $modalInstance) ->
   $scope.fields = { text: '' }
 
   $scope.ok = () -> $modalInstance.close($scope.fields.text)
@@ -60,7 +60,7 @@ modals.controller('ReplyModalController', [ '$scope', '$modalInstance', ($scope,
 #=====================================================================
 # Open new case modal
 #=====================================================================
-modals.controller 'NewCaseModalController', [ '$scope', '$modalInstance', 'message', 'partners', ($scope, $modalInstance, message, partners) ->
+modals.controller 'NewCaseModalController', ['$scope', '$modalInstance', 'message', 'partners', ($scope, $modalInstance, message, partners) ->
   $scope.partners = partners
   $scope.fields = {
     summary: message.text,
@@ -76,7 +76,7 @@ modals.controller 'NewCaseModalController', [ '$scope', '$modalInstance', 'messa
 #=====================================================================
 # Assign to partner modal
 #=====================================================================
-modals.controller 'AssignModalController', [ '$scope', '$modalInstance', 'title', 'prompt', 'partners', ($scope, $modalInstance, title, prompt, partners) ->
+modals.controller 'AssignModalController', ['$scope', '$modalInstance', 'title', 'prompt', 'partners', ($scope, $modalInstance, title, prompt, partners) ->
   $scope.title = title
   $scope.prompt = prompt
   $scope.partners = partners

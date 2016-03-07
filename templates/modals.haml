@@ -36,7 +36,7 @@
     %h3.modal-title
       [[ title ]]
     .modal-body
-      %textarea.form-control{ ng-model:"fields.text" }
+      %textarea.form-control{ ng-model:"fields.text.val", maxlength:"[[ fields.text.maxLength ]]" }
     .modal-footer
       %button.btn.btn-primary{ ng-click:"ok()" }
         - trans "Save"
