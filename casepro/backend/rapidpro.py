@@ -311,6 +311,7 @@ class RapidProBackend(BaseBackend):
                 'flagged': remote_message_is_flagged(msg),
                 'archived': remote_message_is_archived(msg),
                 'direction': Message.DIRECTION if msg.direction == 'in' else Outgoing.DIRECTION,
+                'flow': msg.type == 'flow',
                 'sender': None,
                 'broadcast': msg.broadcast
             }

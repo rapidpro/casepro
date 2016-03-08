@@ -144,6 +144,10 @@
             %span.glyphicon.glyphicon-phone>
             [[ message.contact.uuid | limitTo:6 | uppercase ]]
         .message-text{ ng-click:"onExpandMessage(message)" }
+          %span.label-container{ ng-if:"message.flow" }
+            %span.label.label-info
+              - trans "Flow"
+            &nbsp;
           %span.label-container{ ng-if:"message.case" }
             %span.label.label-warning
               [[ message.case.assignee.name ]]

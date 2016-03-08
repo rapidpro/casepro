@@ -342,6 +342,7 @@ class Message(models.Model):
             'flagged': self.is_flagged,
             'archived': self.is_archived,
             'direction': self.DIRECTION,
+            'flow': self.type == self.TYPE_FLOW,
             'case': case_json,
             'sender': None
         }
