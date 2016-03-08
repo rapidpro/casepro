@@ -271,17 +271,12 @@ class CaseTest(BaseCasesTest):
         d2 = datetime(2014, 1, 15, 0, 0, tzinfo=pytz.UTC)
 
         # case Jan 5th -> Jan 10th
-        with patch.object(timezone, 'now', return_value=d0):
-            msg = self.create_message(self.unicef, 123, self.ann, "Hello", created_on=d0)
-            case1 = self.create_case(self.unicef, self.ann, self.moh, msg)
-
-        with patch.object(timezone, 'now', return_value=d1):
-            case1.close(self.user1)
+        msg1 = self.create_message(self.unicef, 123, self.ann, "Hello", created_on=d0)
+        case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, opened_on=d0, closed_on=d1)
 
         # case Jan 15th -> now
-        with patch.object(timezone, 'now', return_value=d2):
-            msg = self.create_message(self.unicef, 234, self.ann, "Hello again", created_on=d0)
-            case2 = self.create_case(self.unicef, self.ann, self.moh, msg)
+        msg2 = self.create_message(self.unicef, 234, self.ann, "Hello again", created_on=d2)
+        case2 = self.create_case(self.unicef, self.ann, self.moh, msg2, opened_on=d2)
 
         # check no cases open on Jan 4th
         open_case = Case.get_open_for_contact_on(self.unicef, self.ann, datetime(2014, 1, 4, 0, 0, tzinfo=pytz.UTC))

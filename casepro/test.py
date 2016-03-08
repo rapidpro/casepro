@@ -109,13 +109,14 @@ class BaseCasesTest(DashTest):
         case = Case.objects.create(org=org, contact=contact, assignee=assignee, initial_message=message, **kwargs)
         case.labels.add(*labels)
 
+        if 'opened_on' in kwargs:  # uses auto_now_add
+            case.opened_on = kwargs['opened_on']
+            case.save(update_fields=('opened_on',))
+
         message.case = case
         message.save(update_fields=('case',))
 
         return case
-
-    def datetime(self, year, month, day, hour=0, minute=0, second=0, microsecond=0, tz=pytz.UTC):
-        return datetime(year, month, day, hour, minute, second, microsecond, tz)
 
     def assertExcelRow(self, sheet, row_num, values, tz=None):
         """
