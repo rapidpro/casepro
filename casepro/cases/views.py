@@ -222,8 +222,11 @@ class CaseCRUDL(SmartCRUDL):
             after = self.request.GET.get('after', None)
             if after:
                 after = microseconds_to_datetime(int(after))
+                merge_from_backend = False
             else:
+                # this is the initial request for the complete timeline
                 after = self.object.initial_message.created_on
+                merge_from_backend = True
 
             if self.object.closed_on:
                 if after > self.object.closed_on:
@@ -234,7 +237,7 @@ class CaseCRUDL(SmartCRUDL):
             else:
                 before = dt_now
 
-            timeline = self.object.get_timeline(after, before) if not empty else []
+            timeline = self.object.get_timeline(after, before, merge_from_backend) if not empty else []
 
             context['timeline'] = timeline
             context['max_time'] = datetime_to_microseconds(dt_now)

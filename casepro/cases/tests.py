@@ -360,21 +360,39 @@ class CaseCRUDLTest(BaseCasesTest):
     @patch('casepro.test.TestBackend.fetch_contact_messages')
     @patch('casepro.test.TestBackend.create_outgoing')
     def test_timeline(self, mock_create_outgoing, mock_fetch_contact_messages):
-        d1 = datetime(2014, 1, 2, 13, 0, tzinfo=timezone.utc)
+        d0 = datetime(2014, 1, 2, 12, 0, tzinfo=pytz.UTC)
+        d1 = datetime(2014, 1, 2, 13, 0, tzinfo=pytz.UTC)
+        d2 = datetime(2014, 1, 2, 14, 0, tzinfo=pytz.UTC)
+
+        msg0 = self.create_message(self.unicef, 100, self.ann, "Unrelated", [], created_on=d0)
         msg1 = self.create_message(self.unicef, 101, self.ann, "What is AIDS?", [self.aids], created_on=d1)
 
-        mock_fetch_contact_messages.return_value = [{
-            'id': 101,
-            'contact': {'uuid': "C-001", 'name': "Ann"},
-            'text': "What is AIDS?",
-            'time': d1,
-            'labels': [{'id': self.aids.pk, 'uuid': "L-001", 'name': "AIDS"}],
-            'flagged': False,
-            'archived': False,
-            'direction': 'I',
-            'sender': None,
-            'broadcast': None
-        }]
+        mock_fetch_contact_messages.return_value = [
+            {
+                'id': 102,
+                'contact': {'uuid': "C-001", 'name': "Ann"},
+                'text': "Unrelated message from backend...",
+                'time': d2,
+                'labels': [],
+                'flagged': False,
+                'archived': False,
+                'direction': 'O',
+                'sender': None,
+                'broadcast': 201
+            },
+            {
+                'id': 101,
+                'contact': {'uuid': "C-001", 'name': "Ann"},
+                'text': "What is AIDS?",
+                'time': d1,
+                'labels': [{'id': self.aids.pk, 'uuid': "L-001", 'name': "AIDS"}],
+                'flagged': False,
+                'archived': False,
+                'direction': 'I',
+                'sender': None,
+                'broadcast': None
+            }
+        ]
 
         case = Case.get_or_open(self.unicef, self.user1, msg1, "Summary", self.moh, update_contact=False)
 
@@ -387,17 +405,21 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', '%s?after=' % timeline_url)
         t0 = microseconds_to_datetime(response.json['max_time'])
 
-        self.assertEqual(len(response.json['results']), 2)
+        self.assertEqual(len(response.json['results']), 3)
         self.assertEqual(response.json['results'][0]['type'], 'M')
         self.assertEqual(response.json['results'][0]['item']['text'], "What is AIDS?")
         self.assertEqual(response.json['results'][0]['item']['contact'], {'uuid': "C-001", 'name': "Ann"})
         self.assertEqual(response.json['results'][0]['item']['direction'], 'I')
-        self.assertEqual(response.json['results'][1]['type'], 'A')
-        self.assertEqual(response.json['results'][1]['item']['action'], 'O')
+        self.assertEqual(response.json['results'][1]['type'], 'M')
+        self.assertEqual(response.json['results'][1]['item']['text'], "Unrelated message from backend...")
+        self.assertEqual(response.json['results'][1]['item']['contact'], {'uuid': "C-001", 'name': "Ann"})
+        self.assertEqual(response.json['results'][1]['item']['direction'], 'O')
+        self.assertEqual(response.json['results'][2]['type'], 'A')
+        self.assertEqual(response.json['results'][2]['item']['action'], 'O')
 
+        # as this was the initial request, messages will have been fetched from the backend
         mock_fetch_contact_messages.assert_called_once_with(self.unicef, self.ann, d1, t0)
         mock_fetch_contact_messages.reset_mock()
-
         mock_fetch_contact_messages.return_value = []
 
         # page looks for new timeline activity
@@ -405,8 +427,8 @@ class CaseCRUDLTest(BaseCasesTest):
         t1 = microseconds_to_datetime(response.json['max_time'])
         self.assertEqual(len(response.json['results']), 0)
 
-        mock_fetch_contact_messages.assert_called_once_with(self.unicef, self.ann, t0, t1)
-        mock_fetch_contact_messages.reset_mock()
+        # messages won't have been fetched from the backend this time
+        mock_fetch_contact_messages.assert_not_called()
 
         # another user adds a note
         case.add_note(self.user2, "Looks interesting")
@@ -415,8 +437,7 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t1)))
         t2 = microseconds_to_datetime(response.json['max_time'])
 
-        mock_fetch_contact_messages.assert_called_once_with(self.unicef, self.ann, t1, t2)
-        mock_fetch_contact_messages.reset_mock()
+        mock_fetch_contact_messages.assert_not_called()
 
         self.assertEqual(len(response.json['results']), 1)
         self.assertEqual(response.json['results'][0]['type'], 'A')
@@ -424,21 +445,8 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # user sends an outgoing message
         d3 = timezone.now()
-        mock_create_outgoing.return_value = (201, d3)
+        mock_create_outgoing.return_value = (202, d3)
         Outgoing.create(self.unicef, self.user1, Outgoing.CASE_REPLY, "It's bad", ['C-001'], [], case)
-
-        mock_fetch_contact_messages.return_value = [{
-            'id': 103,
-            'contact': {'uuid': "C-001", 'name': "Ann"},
-            'text': "It's bad",
-            'time': d3,
-            'labels': [],
-            'flagged': False,
-            'archived': False,
-            'direction': 'O',
-            'sender': None,
-            'broadcast': 201
-        }]
 
         # page again looks for new timeline activity
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t2)))
@@ -449,26 +457,12 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'][0]['item']['text'], "It's bad")
         self.assertEqual(response.json['results'][0]['item']['direction'], 'O')
 
-        mock_fetch_contact_messages.assert_called_once_with(self.unicef, self.ann, t2, t3)
-        mock_fetch_contact_messages.reset_mock()
+        mock_fetch_contact_messages.assert_not_called()
 
         # contact sends a reply
         d4 = timezone.now()
         self.create_message(self.unicef, 104, self.ann, "OK thanks", created_on=d4)
         handle_messages(self.unicef.pk)
-
-        mock_fetch_contact_messages.return_value = [{
-            'id': 104,
-            'contact': {'uuid': "C-001", 'name': "Ann"},
-            'text': "OK thanks",
-            'time': d4,
-            'labels': [],
-            'flagged': False,
-            'archived': False,
-            'direction': 'I',
-            'sender': None,
-            'broadcast': None
-        }]
 
         # page again looks for new timeline activity
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t3)))
@@ -479,20 +473,14 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'][0]['item']['text'], "OK thanks")
         self.assertEqual(response.json['results'][0]['item']['direction'], 'I')
 
-        mock_fetch_contact_messages.assert_called_once_with(self.unicef, self.ann, t3, t4)
-        mock_fetch_contact_messages.reset_mock()
-
-        mock_fetch_contact_messages.return_value = []
+        mock_fetch_contact_messages.assert_not_called()
 
         # page again looks for new timeline activity
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t4)))
         t5 = microseconds_to_datetime(response.json['max_time'])
         self.assertEqual(len(response.json['results']), 0)
 
-        mock_fetch_contact_messages.assert_called_once_with(self.unicef, self.ann, t4, t5)
-        mock_fetch_contact_messages.reset_mock()
-
-        mock_fetch_contact_messages.return_value = []
+        mock_fetch_contact_messages.assert_not_called()
 
         # user closes case
         case.close(self.user1)
@@ -506,10 +494,10 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t5)))
         t6 = microseconds_to_datetime(response.json['max_time'])
 
-        mock_fetch_contact_messages.assert_called_once_with(self.unicef, self.ann, t5, case.closed_on)
+        mock_fetch_contact_messages.assert_not_called()
         mock_fetch_contact_messages.reset_mock()
 
-        # should show the close event but not the message after it
+        # should show the close action but not the message after it
         self.assertEqual(len(response.json['results']), 1)
         self.assertEqual(response.json['results'][0]['type'], 'A')
         self.assertEqual(response.json['results'][0]['item']['action'], 'C')
@@ -521,11 +509,86 @@ class CaseCRUDLTest(BaseCasesTest):
         # nothing to see
         self.assertEqual(len(response.json['results']), 0)
 
-        # and one last look for new timeline activity
-        response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t7)))
+        # user now refreshes page...
+        mock_fetch_contact_messages.return_value = [
+            {
+                'id': 104,
+                'contact': {'uuid': "C-001", 'name': "Ann"},
+                'text': "OK thanks",
+                'time': d4,
+                'labels': [],
+                'flagged': False,
+                'archived': False,
+                'direction': 'I',
+                'sender': None,
+                'broadcast': None
+            },
+            {
+                'id': 103,
+                'contact': {'uuid': "C-001", 'name': "Ann"},
+                'text': "It's bad",
+                'time': d3,
+                'labels': [],
+                'flagged': False,
+                'archived': False,
+                'direction': 'O',
+                'sender': None,
+                'broadcast': 202
+            },
+            {
+                'id': 102,
+                'contact': {'uuid': "C-001", 'name': "Ann"},
+                'text': "Unrelated message from backend...",
+                'time': d2,
+                'labels': [],
+                'flagged': False,
+                'archived': False,
+                'direction': 'O',
+                'sender': None,
+                'broadcast': 201
+            },
+            {
+                'id': 101,
+                'contact': {'uuid': "C-001", 'name': "Ann"},
+                'text': "What is AIDS?",
+                'time': d1,
+                'labels': [{'id': self.aids.pk, 'uuid': "L-001", 'name': "AIDS"}],
+                'flagged': False,
+                'archived': False,
+                'direction': 'I',
+                'sender': None,
+                'broadcast': None
+            }
+        ]
 
-        # nothing to see
-        self.assertEqual(len(response.json['results']), 0)
+        # which requests all of the timeline up to now
+        response = self.url_get('unicef', '%s?after=' % timeline_url)
+
+        self.assertEqual(len(response.json['results']), 7)
+        self.assertEqual(response.json['results'][0]['type'], 'M')
+        self.assertEqual(response.json['results'][0]['item']['text'], "What is AIDS?")
+        self.assertEqual(response.json['results'][0]['item']['contact'], {'uuid': "C-001", 'name': "Ann"})
+        self.assertEqual(response.json['results'][0]['item']['direction'], 'I')
+        self.assertEqual(response.json['results'][1]['type'], 'M')
+        self.assertEqual(response.json['results'][1]['item']['text'], "Unrelated message from backend...")
+        self.assertEqual(response.json['results'][1]['item']['contact'], {'uuid': "C-001", 'name': "Ann"})
+        self.assertEqual(response.json['results'][1]['item']['direction'], 'O')
+        self.assertEqual(response.json['results'][1]['item']['sender'], None)
+        self.assertEqual(response.json['results'][2]['type'], 'A')
+        self.assertEqual(response.json['results'][2]['item']['action'], 'O')
+        self.assertEqual(response.json['results'][3]['type'], 'A')
+        self.assertEqual(response.json['results'][3]['item']['action'], 'N')
+        self.assertEqual(response.json['results'][4]['type'], 'M')
+        self.assertEqual(response.json['results'][4]['item']['direction'], 'O')
+        self.assertEqual(response.json['results'][4]['item']['sender'], {'id': self.user1.pk, 'name': "Evan"})
+        self.assertEqual(response.json['results'][5]['type'], 'M')
+        self.assertEqual(response.json['results'][5]['item']['direction'], 'I')
+        self.assertEqual(response.json['results'][6]['type'], 'A')
+        self.assertEqual(response.json['results'][6]['item']['action'], 'C')
+
+        # as this was the initial request, messages will have been fetched from the backend
+        mock_fetch_contact_messages.assert_called_once_with(self.unicef, self.ann, d1, case.closed_on)
+        mock_fetch_contact_messages.reset_mock()
 
 
 class HomeViewsTest(BaseCasesTest):

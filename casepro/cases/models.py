@@ -195,35 +195,46 @@ class Case(models.Model):
 
         return case
 
-    def get_timeline(self, after, before):
-        backend = get_backend()
-        backend_messages = backend.fetch_contact_messages(self.org, self.contact, after, before)
+    def get_timeline(self, after, before, merge_from_backend):
+        messages = []
 
         local_outgoing = self.outgoing_messages.filter(created_on__gte=after, created_on__lte=before)
         local_outgoing = local_outgoing.select_related('case__contact')
-        local_by_broadcast = {o.broadcast_id: o for o in local_outgoing}
 
-        # merge backend and local outgoing messages
-        messages = []
-        for msg in backend_messages:
-            # annotate with sender from local message if there is one
-            local = local_by_broadcast.pop(msg['broadcast'], None)
-            msg['sender'] = local.created_by.as_json() if local else None
+        if merge_from_backend:
+            # if this is the initial request, get a more complete timeline from the backend
+            backend = get_backend()
+            backend_messages = backend.fetch_contact_messages(self.org, self.contact, after, before)
 
-            messages.append({'time': msg['time'], 'type': 'M', 'item': msg})
+            local_by_broadcast = {o.broadcast_id: o for o in local_outgoing}
 
-        for msg in local_by_broadcast.values():
-            messages.append({'time': msg.created_on, 'type': 'M', 'item': msg.as_json()})
+            for msg in backend_messages:
+                # annotate with sender from local message if there is one
+                local = local_by_broadcast.pop(msg['broadcast'], None)
+                msg['sender'] = local.created_by.as_json() if local else None
+
+                messages.append({'time': msg['time'], 'type': 'M', 'item': msg})
+
+            for msg in local_by_broadcast.values():
+                messages.append({'time': msg.created_on, 'type': 'M', 'item': msg.as_json()})
+        else:
+            # otherwise just merge local outgoing and incoming messages
+            for msg in local_outgoing:
+                messages.append({'time': msg.created_on, 'type': 'M', 'item': msg.as_json()})
+
+            local_incoming = self.incoming_messages.filter(created_on__gte=after, created_on__lte=before)
+            local_incoming = local_incoming.select_related('contact')
+
+            for msg in local_incoming:
+                messages.append({'time': msg.created_on, 'type': 'M', 'item': msg.as_json()})
 
         # fetch actions in chronological order
         actions = self.actions.filter(created_on__gte=after, created_on__lte=before)
         actions = actions.select_related('assignee', 'created_by').order_by('pk')
+        actions = [{'time': a.created_on, 'type': 'A', 'item': a.as_json()} for a in actions]
 
-        # merge actions and messages and JSON-ify both
-        timeline = messages
-        timeline += [{'time': a.created_on, 'type': 'A', 'item': a.as_json()} for a in actions]
-        timeline = sorted(timeline, key=lambda event: event['time'])
-        return timeline
+        # merge actions and messages and sort by time
+        return sorted(messages + actions, key=lambda event: event['time'])
 
     @case_action()
     def update_summary(self, user, summary):
