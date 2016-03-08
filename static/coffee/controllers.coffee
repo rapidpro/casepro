@@ -385,6 +385,13 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
 
   $scope.searchFieldDefaults = () -> { assignee: $scope.user.partner }
 
+  $scope.onExportSearch = () ->
+    UtilsService.confirmModal("Export the current case search?", null, () ->
+      CaseService.startExport($scope.activeSearch, () ->
+        UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
+      )
+    )
+
   $scope.fetchOldItems = (callback) ->
     CaseService.fetchOld($scope.activeSearch, $scope.startTime, $scope.oldItemsPage, callback)
 

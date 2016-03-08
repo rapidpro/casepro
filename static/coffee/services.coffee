@@ -303,6 +303,16 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
       ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
+    # Starts a case export
+    #----------------------------------------------------------------------------
+    startExport: (search, callback) ->
+      params = @_searchToParams(search)
+      $http.post('/caseexport/create/?' + $.param(params))
+      .success(() =>
+        callback()
+      ).error(DEFAULT_ERR_HANDLER)
+
+    #----------------------------------------------------------------------------
     # Opens a new case
     #----------------------------------------------------------------------------
     openCase: (message, summary, assignee, callback) ->

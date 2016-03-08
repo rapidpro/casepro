@@ -328,6 +328,7 @@ GROUP_PERMISSIONS = {
         'msgs.messageexport.*',
 
         'cases.case.*',
+        'cases.caseexport.*',
         'cases.partner.*',
 
         'contacts.contact.*',
@@ -346,6 +347,8 @@ GROUP_PERMISSIONS = {
         'cases.case_read',
         'cases.case_update',
         'cases.case_list',
+        'cases.caseexport_create',
+        'cases.caseexport_read',
         'cases.partner_list',
         'cases.partner_read',
 
@@ -362,6 +365,8 @@ GROUP_PERMISSIONS = {
         'cases.case_read',
         'cases.case_update',
         'cases.case_list',
+        'cases.caseexport_create',
+        'cases.caseexport_read',
         'cases.partner_list',
         'cases.partner_read',
 

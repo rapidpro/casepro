@@ -1,10 +1,13 @@
 from __future__ import absolute_import, unicode_literals
 
+import pytz
+
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact
 from casepro.msgs.models import Label, Message
+from casepro.utils.export import BaseExport
 from dash.orgs.models import Org
-from dash.utils import intersection
+from dash.utils import intersection, chunks
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import models
@@ -163,11 +166,35 @@ class Case(models.Model):
         qs = cls.get_for_contact(org, contact)
         return qs.filter(opened_on__lt=dt).filter(Q(closed_on=None) | Q(closed_on__gt=dt)).first()
 
+    @classmethod
+    def search(cls, org, user, search):
+        """
+        Search for cases
+        """
+        if search['folder'] == CaseFolder.open:
+            queryset = Case.get_open(org, user)
+        elif search['folder'] == CaseFolder.closed:
+            queryset = Case.get_closed(org, user)
+        else:
+            raise ValueError('Invalid folder for cases')
+
+        if search['assignee']:
+            queryset = queryset.filter(assignee__pk=search['assignee'])
+
+        if search['after']:
+            queryset = queryset.filter(opened_on__gt=search['after'])
+        if search['before']:
+            queryset = queryset.filter(opened_on__lt=search['before'])
+
+        queryset = queryset.prefetch_related('labels').select_related('contact', 'assignee')
+
+        return queryset.order_by('-pk')
+
     def get_labels(self):
         return self.labels.filter(is_active=True)
 
     @classmethod
-    def get_or_open(cls, org, user, message, summary, assignee, update_contact=True):
+    def get_or_open(cls, org, user, message, summary, assignee):
         r = get_redis_connection()
         with r.lock(CASE_LOCK_KEY % (org.pk, message.contact.uuid)):
             # if message is already associated with a case, return that
@@ -181,9 +208,8 @@ class Case(models.Model):
                 existing_open.is_new = False
                 return existing_open
 
-            if update_contact:
-                # suspend from groups, expire flows and archive messages
-                message.contact.prepare_for_case()
+            # suspend from groups, expire flows and archive messages
+            message.contact.prepare_for_case()
 
             case = cls.objects.create(org=org, assignee=assignee, initial_message=message, contact=message.contact,
                                       summary=summary)
@@ -324,13 +350,15 @@ class Case(models.Model):
         return self.closed_on is not None
 
     def as_json(self, full_contact=False):
-        return {'id': self.pk,
-                'contact': self.contact.as_json(full_contact),
-                'assignee': self.assignee.as_json(),
-                'labels': [l.as_json() for l in self.get_labels()],
-                'summary': self.summary,
-                'opened_on': self.opened_on,
-                'is_closed': self.is_closed}
+        return {
+            'id': self.pk,
+            'contact': self.contact.as_json(full_contact),
+            'assignee': self.assignee.as_json(),
+            'labels': [l.as_json() for l in self.get_labels()],
+            'summary': self.summary,
+            'opened_on': self.opened_on,
+            'is_closed': self.is_closed
+        }
 
     def __str__(self):
         return '#%d' % self.pk
@@ -377,10 +405,74 @@ class CaseAction(models.Model):
                                          created_by=user, assignee=assignee, label=label, note=note)
 
     def as_json(self):
-        return {'id': self.pk,
-                'action': self.action,
-                'created_by': {'id': self.created_by.pk, 'name': self.created_by.get_full_name()},
-                'created_on': self.created_on,
-                'assignee': self.assignee.as_json() if self.assignee else None,
-                'label': self.label.as_json() if self.label else None,
-                'note': self.note}
+        return {
+            'id': self.pk,
+            'action': self.action,
+            'created_by': {'id': self.created_by.pk, 'name': self.created_by.get_full_name()},
+            'created_on': self.created_on,
+            'assignee': self.assignee.as_json() if self.assignee else None,
+            'label': self.label.as_json() if self.label else None,
+            'note': self.note
+        }
+
+
+class CaseExport(BaseExport):
+    """
+    An export of cases
+    """
+    directory = 'case_exports'
+    download_view = 'cases.caseexport_read'
+    email_templates = 'cases/email/case_export'
+
+    def get_search(self):
+        search = super(CaseExport, self).get_search()
+        search['folder'] = CaseFolder[search['folder']]
+        return search
+
+    def render_book(self, book, search):
+        from casepro.contacts.models import Field
+
+        base_fields = ["Opened On", "Closed On", "Labels", "Summary", "Contact"]
+        contact_fields = Field.get_all(self.org, visible=True)
+        all_fields = base_fields + [f.label for f in contact_fields]
+
+        # load all messages to be exported
+        cases = Case.search(self.org, self.created_by, search)
+
+        def add_sheet(num):
+            sheet = book.add_sheet(unicode(_("Cases %d" % num)))
+            for col in range(len(all_fields)):
+                field = all_fields[col]
+                sheet.write(0, col, unicode(field))
+            return sheet
+
+        # even if there are no cases - still add a sheet
+        if not cases:
+            add_sheet(1)
+        else:
+            sheet_number = 1
+            for case_chunk in chunks(cases, 65535):
+                current_sheet = add_sheet(sheet_number)
+
+                row = 1
+                for case in case_chunk:
+                    opened_on = case.opened_on.astimezone(pytz.UTC).replace(tzinfo=None)
+                    closed_on = case.closed_on.astimezone(pytz.UTC).replace(tzinfo=None) if case.closed_on else None
+
+                    current_sheet.write(row, 0, opened_on, self.DATE_STYLE)
+                    current_sheet.write(row, 1, closed_on, self.DATE_STYLE)
+                    current_sheet.write(row, 2, ', '.join([l.name for l in case.labels.all()]))
+                    current_sheet.write(row, 3, case.summary)
+                    current_sheet.write(row, 4, case.contact.uuid)
+
+                    fields = case.contact.get_fields()
+
+                    for cf in range(len(contact_fields)):
+                        contact_field = contact_fields[cf]
+                        current_sheet.write(row, len(base_fields) + cf, fields.get(contact_field.key, None))
+
+                    row += 1
+
+                sheet_number += 1
+
+        return book

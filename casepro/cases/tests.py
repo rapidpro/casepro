@@ -4,19 +4,23 @@ from __future__ import absolute_import, unicode_literals
 import pytz
 import six
 
+from casepro.contacts.models import Contact
 from casepro.msgs.models import Message, Outgoing
 from casepro.msgs.tasks import handle_messages
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
 from casepro.utils import datetime_to_microseconds, microseconds_to_datetime
 from datetime import datetime, timedelta
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
+from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch
+from xlrd import open_workbook
 from .context_processors import contact_ext_url, sentry_dsn
-from .models import AccessLevel, Case, CaseAction, Contact, Partner
+from .models import AccessLevel, Case, CaseAction, CaseExport, Partner
 
 
 class CaseTest(BaseCasesTest):
@@ -228,17 +232,15 @@ class CaseTest(BaseCasesTest):
         cat = self.create_contact(self.unicef, 'C-003', "Cat")
         nic = self.create_contact(self.nyaruka, 'C-104', "Nic")
 
-        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=timezone.utc)
+        msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
+        msg2 = self.create_message(self.unicef, 234, bob, "Hello 2", [self.aids, self.pregnancy])
+        msg3 = self.create_message(self.unicef, 345, cat, "Hello 3", [self.pregnancy])
+        msg4 = self.create_message(self.nyaruka, 456, nic, "Hello 4", [self.code])
 
-        msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids], created_on=d1)
-        msg2 = self.create_message(self.unicef, 234, bob, "Hello 2", [self.aids, self.pregnancy], created_on=d1)
-        msg3 = self.create_message(self.unicef, 345, cat, "Hello 3", [self.pregnancy], created_on=d1)
-        msg4 = self.create_message(self.nyaruka, 456, nic, "Hello 4", [self.code], created_on=d1)
-
-        case1 = Case.get_or_open(self.unicef, self.user1, msg1, "Summary", self.moh, update_contact=False)
-        case2 = Case.get_or_open(self.unicef, self.user2, msg2, "Summary", self.who, update_contact=False)
-        case3 = Case.get_or_open(self.unicef, self.user3, msg3, "Summary", self.who, update_contact=False)
-        case4 = Case.get_or_open(self.nyaruka, self.user4, msg4, "Summary", self.klab, update_contact=False)
+        case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [self.aids])
+        case2 = self.create_case(self.unicef, bob, self.who, msg2, [self.aids, self.pregnancy])
+        case3 = self.create_case(self.unicef, cat, self.who, msg3, [self.pregnancy])
+        case4 = self.create_case(self.nyaruka, nic, self.klab, msg4, [self.code])
 
         self.assertEqual(set(Case.get_all(self.unicef)), {case1, case2, case3})  # org admins see all
         self.assertEqual(set(Case.get_all(self.nyaruka)), {case4})
@@ -264,21 +266,22 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(set(Case.get_closed(self.unicef, user=self.user1, label=self.pregnancy)), {case2})
 
     def test_get_open_for_contact_on(self):
-        d0 = datetime(2014, 1, 5, 0, 0, tzinfo=timezone.utc)
-        d1 = datetime(2014, 1, 10, 0, 0, tzinfo=timezone.utc)
-        d2 = datetime(2014, 1, 15, 0, 0, tzinfo=timezone.utc)
+        d0 = datetime(2014, 1, 5, 0, 0, tzinfo=pytz.UTC)
+        d1 = datetime(2014, 1, 10, 0, 0, tzinfo=pytz.UTC)
+        d2 = datetime(2014, 1, 15, 0, 0, tzinfo=pytz.UTC)
 
         # case Jan 5th -> Jan 10th
         with patch.object(timezone, 'now', return_value=d0):
             msg = self.create_message(self.unicef, 123, self.ann, "Hello", created_on=d0)
-            case1 = Case.get_or_open(self.unicef, self.user1, msg, "Summary", self.moh, update_contact=False)
+            case1 = self.create_case(self.unicef, self.ann, self.moh, msg)
+
         with patch.object(timezone, 'now', return_value=d1):
             case1.close(self.user1)
 
         # case Jan 15th -> now
         with patch.object(timezone, 'now', return_value=d2):
             msg = self.create_message(self.unicef, 234, self.ann, "Hello again", created_on=d0)
-            case2 = Case.get_or_open(self.unicef, self.user1, msg, "Summary", self.moh, update_contact=False)
+            case2 = self.create_case(self.unicef, self.ann, self.moh, msg)
 
         # check no cases open on Jan 4th
         open_case = Case.get_open_for_contact_on(self.unicef, self.ann, datetime(2014, 1, 4, 0, 0, tzinfo=pytz.UTC))
@@ -346,8 +349,7 @@ class CaseCRUDLTest(BaseCasesTest):
 
     def test_read(self):
         msg = self.create_message(self.unicef, 101, self.ann, "Hello", [self.aids])
-
-        case = Case.get_or_open(self.unicef, self.user1, msg, "Summary", self.moh, update_contact=False)
+        case = self.create_case(self.unicef, self.ann, self.moh, msg, [self.aids], summary="Summary")
 
         url = reverse('cases.case_read', args=[case.pk])
 
@@ -394,7 +396,8 @@ class CaseCRUDLTest(BaseCasesTest):
             }
         ]
 
-        case = Case.get_or_open(self.unicef, self.user1, msg1, "Summary", self.moh, update_contact=False)
+        case = self.create_case(self.unicef, self.ann, self.moh, msg1)
+        CaseAction.create(case, self.user1, CaseAction.OPEN, assignee=self.moh)
 
         timeline_url = reverse('cases.case_timeline', args=[case.pk])
 
@@ -562,32 +565,82 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # which requests all of the timeline up to now
         response = self.url_get('unicef', '%s?after=' % timeline_url)
+        items = response.json['results']
 
-        self.assertEqual(len(response.json['results']), 7)
-        self.assertEqual(response.json['results'][0]['type'], 'M')
-        self.assertEqual(response.json['results'][0]['item']['text'], "What is AIDS?")
-        self.assertEqual(response.json['results'][0]['item']['contact'], {'uuid': "C-001", 'name': "Ann"})
-        self.assertEqual(response.json['results'][0]['item']['direction'], 'I')
-        self.assertEqual(response.json['results'][1]['type'], 'M')
-        self.assertEqual(response.json['results'][1]['item']['text'], "Unrelated message from backend...")
-        self.assertEqual(response.json['results'][1]['item']['contact'], {'uuid': "C-001", 'name': "Ann"})
-        self.assertEqual(response.json['results'][1]['item']['direction'], 'O')
-        self.assertEqual(response.json['results'][1]['item']['sender'], None)
-        self.assertEqual(response.json['results'][2]['type'], 'A')
-        self.assertEqual(response.json['results'][2]['item']['action'], 'O')
-        self.assertEqual(response.json['results'][3]['type'], 'A')
-        self.assertEqual(response.json['results'][3]['item']['action'], 'N')
-        self.assertEqual(response.json['results'][4]['type'], 'M')
-        self.assertEqual(response.json['results'][4]['item']['direction'], 'O')
-        self.assertEqual(response.json['results'][4]['item']['sender'], {'id': self.user1.pk, 'name': "Evan"})
-        self.assertEqual(response.json['results'][5]['type'], 'M')
-        self.assertEqual(response.json['results'][5]['item']['direction'], 'I')
-        self.assertEqual(response.json['results'][6]['type'], 'A')
-        self.assertEqual(response.json['results'][6]['item']['action'], 'C')
+        self.assertEqual(len(items), 7)
+        self.assertEqual(items[0]['type'], 'M')
+        self.assertEqual(items[0]['item']['text'], "What is AIDS?")
+        self.assertEqual(items[0]['item']['contact'], {'uuid': "C-001", 'name': "Ann"})
+        self.assertEqual(items[0]['item']['direction'], 'I')
+        self.assertEqual(items[1]['type'], 'M')
+        self.assertEqual(items[1]['item']['text'], "Unrelated message from backend...")
+        self.assertEqual(items[1]['item']['contact'], {'uuid': "C-001", 'name': "Ann"})
+        self.assertEqual(items[1]['item']['direction'], 'O')
+        self.assertEqual(items[1]['item']['sender'], None)
+        self.assertEqual(items[2]['type'], 'A')
+        self.assertEqual(items[2]['item']['action'], 'O')
+        self.assertEqual(items[3]['type'], 'A')
+        self.assertEqual(items[3]['item']['action'], 'N')
+        self.assertEqual(items[4]['type'], 'M')
+        self.assertEqual(items[4]['item']['direction'], 'O')
+        self.assertEqual(items[4]['item']['sender'], {'id': self.user1.pk, 'name': "Evan"})
+        self.assertEqual(items[5]['type'], 'M')
+        self.assertEqual(items[5]['item']['direction'], 'I')
+        self.assertEqual(items[6]['type'], 'A')
+        self.assertEqual(items[6]['item']['action'], 'C')
 
         # as this was the initial request, messages will have been fetched from the backend
         mock_fetch_contact_messages.assert_called_once_with(self.unicef, self.ann, d1, case.closed_on)
         mock_fetch_contact_messages.reset_mock()
+
+
+class CaseExportCRUDLTest(BaseCasesTest):
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    def test_create_and_read(self):
+        ann = self.create_contact(self.unicef, "C-001", "Ann", fields={'nickname': "Annie", 'age': "28", 'state': "WA"})
+        bob = self.create_contact(self.unicef, "C-002", "Bob", fields={'age': "32", 'state': "IN"})
+        cat = self.create_contact(self.unicef, "C-003", "Cat", fields={'age': "64", 'state': "CA"})
+        don = self.create_contact(self.unicef, "C-004", "Don", fields={'age': "22", 'state': "NV"})
+
+        msg1 = self.create_message(self.unicef, 101, ann, "What is HIV?")
+        msg2 = self.create_message(self.unicef, 102, bob, "I ♡ RapidPro")
+        msg3 = self.create_message(self.unicef, 103, cat, "Hello")
+        msg4 = self.create_message(self.unicef, 104, don, "Yo")
+
+        case1 = self.create_case(self.unicef, ann, self.moh, msg1, [self.aids], summary="What is HIV?")
+        case2 = self.create_case(self.unicef, bob, self.who, msg2, [self.pregnancy], summary="I ♡ RapidPro")
+        self.create_case(self.unicef, cat, self.who, msg3, [], summary="Hello")
+        case4 = self.create_case(self.unicef, don, self.moh, msg4, [])
+        case4.close(self.user1)
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_post('unicef', '%s?folder=open' % reverse('cases.caseexport_create'))
+        self.assertEqual(response.status_code, 200)
+
+        export = CaseExport.objects.get()
+        self.assertEqual(export.created_by, self.user1)
+
+        filename = "%s/%s" % (settings.MEDIA_ROOT, export.filename)
+        workbook = open_workbook(filename, 'rb')
+        sheet = workbook.sheets()[0]
+
+        self.assertEqual(sheet.nrows, 3)
+        self.assertExcelRow(sheet, 0, ["Opened On", "Closed On", "Labels", "Summary", "Contact", "Nickname", "Age"])
+        self.assertExcelRow(sheet, 1, [case2.opened_on, "", "Pregnancy", "I ♡ RapidPro", "C-002", "", "32"], pytz.UTC)
+        self.assertExcelRow(sheet, 2, [case1.opened_on, "", "AIDS", "What is HIV?", "C-001", "Annie", "28"], pytz.UTC)
+
+        read_url = reverse('cases.caseexport_read', args=[export.pk])
+
+        response = self.url_get('unicef', read_url)
+        self.assertEqual(response.status_code, 200)
+
+        # user from another org can't access this download
+        self.login(self.norbert)
+
+        response = self.url_get('unicef', read_url)
+        self.assertEqual(response.status_code, 302)
 
 
 class HomeViewsTest(BaseCasesTest):

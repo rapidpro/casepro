@@ -8,7 +8,11 @@ from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from datetime import timedelta
 from django import forms
 from django.core.cache import cache
-from django.http import HttpResponse, JsonResponse, Http404
+from django.core.files.storage import default_storage
+from django.core.paginator import Paginator, EmptyPage
+from django.core.urlresolvers import reverse
+from django.db.transaction import non_atomic_requests
+from django.http import HttpResponse, JsonResponse
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
@@ -16,7 +20,26 @@ from smartmin.views import SmartCRUDL, SmartListView, SmartCreateView, SmartRead
 from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
 from . import MAX_MESSAGE_CHARS
-from .models import AccessLevel, Case, CaseFolder, Partner
+from .models import AccessLevel, Case, CaseFolder, CaseExport, Partner
+from .tasks import case_export
+
+
+class CaseSearchMixin(object):
+    def derive_search(self):
+        """
+        Collects and prepares case search parameters into JSON serializable dict
+        """
+        folder = CaseFolder[self.request.GET['folder']]
+        assignee = self.request.GET.get('assignee', None)
+        after = parse_iso8601(self.request.GET.get('after', None))
+        before = parse_iso8601(self.request.GET.get('before', None))
+
+        return {
+            'folder': folder,
+            'assignee': assignee,
+            'after': after,
+            'before': before
+        }
 
 
 class CaseCRUDL(SmartCRUDL):
@@ -160,51 +183,34 @@ class CaseCRUDL(SmartCRUDL):
         def render_to_response(self, context, **response_kwargs):
             return JsonResponse(self.object.as_json())
 
-    class Search(OrgPermsMixin, SmartListView):
+    class Search(OrgPermsMixin, CaseSearchMixin, SmartTemplateView):
         """
         JSON endpoint for searching for cases
         """
         permission = 'cases.case_list'
-        paginate_by = 50
 
-        def get(self, request, *args, **kwargs):
+        def get_context_data(self, **kwargs):
+            org = self.request.org
+            user = self.request.user
+
+            search = self.derive_search()
+            cases = Case.search(org, user, search)
+
+            # TODO switch to cursor pagination to avoid the unused count
+
+            page = int(self.request.GET.get('page', 1))
+            paginator = Paginator(cases, 50)
             try:
-                # TODO switch this to a paginator better suited to infinite scroll
-                return super(CaseCRUDL.Search, self).get(request, *args, **kwargs)
-            except Http404:
-                return JsonResponse({'results': []})
+                cases = paginator.page(page)
+            except EmptyPage:
+                cases = Case.objects.none()
 
-        def derive_queryset(self, **kwargs):
-            label_id = self.request.GET.get('label', None)
-            folder = CaseFolder[self.request.GET['folder']]
-            assignee_id = self.request.GET.get('assignee', None)
-
-            before = self.request.REQUEST.get('before', None)
-            after = self.request.REQUEST.get('after', None)
-
-            label = Label.objects.get(pk=label_id) if label_id else None
-
-            assignee = Partner.get_all(self.request.org).get(pk=assignee_id) if assignee_id else None
-
-            if folder == CaseFolder.open:
-                qs = Case.get_open(self.request.org, user=self.request.user, label=label)
-            elif folder == CaseFolder.closed:
-                qs = Case.get_closed(self.request.org, user=self.request.user, label=label)
-            else:
-                raise ValueError('Invalid folder for cases')
-
-            if assignee:
-                qs = qs.filter(assignee=assignee)
-
-            if before:
-                qs = qs.filter(opened_on__lt=parse_iso8601(before))
-            if after:
-                qs = qs.filter(opened_on__gt=parse_iso8601(after))
-
-            return qs.prefetch_related('labels').select_related('assignee').order_by('-pk')
+            context = super(CaseCRUDL.Search, self).get_context_data(**kwargs)
+            context['cases'] = cases
+            return context
 
         def render_to_response(self, context, **response_kwargs):
-            results = [obj.as_json() for obj in list(context['object_list'])]
+            results = [c.as_json() for c in context['cases']]
 
             return JsonResponse({'results': results})
 
@@ -245,6 +251,50 @@ class CaseCRUDL(SmartCRUDL):
 
         def render_to_response(self, context, **response_kwargs):
             return JsonResponse({'results': context['timeline'], 'max_time': context['max_time']})
+
+
+class CaseExportCRUDL(SmartCRUDL):
+    model = CaseExport
+    actions = ('create', 'read')
+
+    class Create(OrgPermsMixin, CaseSearchMixin, SmartCreateView):
+        @non_atomic_requests
+        def post(self, request, *args, **kwargs):
+            search = self.derive_search()
+            export = self.model.create(self.request.org, self.request.user, search)
+
+            case_export.delay(export.pk)
+
+            return JsonResponse({'export_id': export.pk})
+
+    class Read(OrgObjPermsMixin, SmartReadView):
+        """
+        Download view for message exports
+        """
+        title = _("Download Cases")
+
+        @classmethod
+        def derive_url_pattern(cls, path, action):
+            return r'%s/download/(?P<pk>\d+)/' % path
+
+        def get(self, request, *args, **kwargs):
+            if 'download' in request.GET:
+                export = self.get_object()
+
+                export_file = default_storage.open(export.filename, 'rb')
+                user_filename = 'case_export.xls'
+
+                response = HttpResponse(export_file, content_type='application/vnd.ms-excel')
+                response['Content-Disposition'] = 'attachment; filename=%s' % user_filename
+
+                return response
+            else:
+                return super(CaseExportCRUDL.Read, self).get(request, *args, **kwargs)
+
+        def get_context_data(self, **kwargs):
+            context = super(CaseExportCRUDL.Read, self).get_context_data(**kwargs)
+            context['download_url'] = '%s?download=1' % reverse('cases.caseexport_read', args=[self.object.pk])
+            return context
 
 
 class PartnerForm(forms.ModelForm):

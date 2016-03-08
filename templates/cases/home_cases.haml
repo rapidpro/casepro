@@ -13,10 +13,12 @@
             %select.form-control.assignee-select{ ng-model:"searchFields.assignee", ng-options:"p.name for p in partners track by p.id" }
               %option{ value:"" }
                 - trans "Anyone"
-            .pull-away
+            .btn-group.pull-away
               %button.btn.btn-default{ type:"button", ng-click:"onSearch()" }
                 %span.glyphicon.glyphicon-search
                 - trans "Search"
+              %button.btn.btn-default{ type:"button", ng-click:"onExportSearch()", tooltip:"Save as Excel" }
+                %span.glyphicon.glyphicon-save
 
     .cases{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"!isInfiniteScrollEnabled()" }
       .stackitem.clearfix.hoverable{ ng-repeat:"item in items | filter: getItemFilter()", ng-click:"onClickCase(item)" }
