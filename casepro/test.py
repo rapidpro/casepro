@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-import pytz
-
 from casepro.backend import BaseBackend
 from casepro.cases.models import Case, Partner
 from casepro.contacts.models import Contact, Group, Field
