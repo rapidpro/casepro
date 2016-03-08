@@ -700,6 +700,7 @@ class RapidProBackendTest(BaseCasesTest):
             'flagged': True,
             'archived': False,
             'direction': 'I',
+            'flow': False,
             'sender': None,
             'broadcast': 201
         }])
