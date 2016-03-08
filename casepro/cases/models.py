@@ -16,6 +16,9 @@ from enum import Enum, IntEnum
 from redis_cache import get_redis_connection
 
 
+CASE_LOCK_KEY = 'org:%d:case_lock:%s'
+
+
 class CaseFolder(Enum):
     open = 1
     closed = 2
@@ -166,7 +169,7 @@ class Case(models.Model):
     @classmethod
     def get_or_open(cls, org, user, message, summary, assignee, update_contact=True):
         r = get_redis_connection()
-        with r.lock('org:%d:cases_lock' % org.pk):
+        with r.lock(CASE_LOCK_KEY % (org.pk, message.contact.uuid)):
             # if message is already associated with a case, return that
             if message.case:
                 message.case.is_new = False
