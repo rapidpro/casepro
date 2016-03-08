@@ -22,14 +22,17 @@
       .stackitem.clearfix.hoverable{ ng-repeat:"item in items | filter: getItemFilter()", ng-click:"onClickCase(item)" }
         .case-time
           [[ item.opened_on | autodate ]]
-        .case-assignee
-          [[ item.assignee.name ]]
         .case-text
+          %span.label-container
+            %span.label.label-warning
+              [[ item.assignee.name ]]
+            &nbsp;
           %span.label-container{ ng-repeat:"label in filterDisplayLabels(item.labels)" }
             %span.label.label-success
               [[ label.name ]]
             &nbsp;
           [[ item.summary ]]
+
       .loading{ ng-if:"oldItemsLoading" }
       .none{ ng-hide:"oldItemsLoading || items.length > 0" }
         - trans "No cases"
@@ -48,11 +51,3 @@
       margin-left: 3px;
       margin-bottom: 3px;
     }
-    .case-assignee {
-      float: left;
-      width: 200px;
-    }
-    .case-text {
-      margin-left: 200px;
-    }
-
