@@ -4,7 +4,7 @@ import six
 
 from casepro.contacts.models import Contact, Group, Field, SAVE_GROUPS_ATTR
 from casepro.msgs.models import Label, Message, Outgoing, SAVE_CONTACT_ATTR, SAVE_LABELS_ATTR
-from casepro.utils import is_dict_equal
+from dash.utils import is_dict_equal
 from dash.utils.sync import BaseSyncer, sync_local_to_set, sync_local_to_changes
 from django.utils.timezone import now
 from . import BaseBackend
@@ -50,7 +50,7 @@ class ContactSyncer(BaseSyncer):
             SAVE_GROUPS_ATTR: groups,
         }
 
-    def update_required(self, local, remote):
+    def update_required(self, local, remote, remote_as_kwargs):
         if local.is_stub:
             return True
 
@@ -85,7 +85,7 @@ class FieldSyncer(BaseSyncer):
             'value_type': self.model.TEMBA_TYPES.get(remote.value_type, self.model.TYPE_TEXT)
         }
 
-    def update_required(self, local, remote):
+    def update_required(self, local, remote, remote_as_kwargs):
         return local.label != remote.label or local.value_type != self.model.TEMBA_TYPES.get(remote.value_type)
 
 
@@ -103,7 +103,7 @@ class GroupSyncer(BaseSyncer):
             'count': remote.count,
         }
 
-    def update_required(self, local, remote):
+    def update_required(self, local, remote, remote_as_kwargs):
         return local.name != remote.name or local.count != remote.count
 
 
@@ -124,7 +124,7 @@ class LabelSyncer(BaseSyncer):
             'name': remote.name,
         }
 
-    def update_required(self, local, remote):
+    def update_required(self, local, remote, remote_as_kwargs):
         return local.name != remote.name
 
 
@@ -166,7 +166,7 @@ class MessageSyncer(BaseSyncer):
 
         return kwargs
 
-    def update_required(self, local, remote):
+    def update_required(self, local, remote, remote_as_kwargs):
         if local.is_flagged != (SYSTEM_LABEL_FLAGGED in [l.name for l in remote.labels]):
             return True
 

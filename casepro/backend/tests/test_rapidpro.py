@@ -56,7 +56,7 @@ class ContactSyncerTest(BaseCasesTest):
             fields={},
             language=None,
             modified_on=now()
-        )))
+        ), {}))
 
         local.groups.add(self.reporters)
         local.language = "eng"
@@ -73,7 +73,7 @@ class ContactSyncerTest(BaseCasesTest):
             fields={'chat_name': "ann", 'age': None},
             language='eng',
             modified_on=now()
-        )))
+        ), {}))
 
         # name change
         self.assertTrue(self.syncer.update_required(local, TembaContact.create(
@@ -84,7 +84,7 @@ class ContactSyncerTest(BaseCasesTest):
             fields={'chat_name': "ann"},
             language='eng',
             modified_on=now()
-        )))
+        ), {}))
 
         # group change
         self.assertTrue(self.syncer.update_required(local, TembaContact.create(
@@ -94,7 +94,7 @@ class ContactSyncerTest(BaseCasesTest):
             groups=[ObjectRef.create(uuid='G-002', name="Females")],
             fields={'chat_name': "ann"},
             language='eng', modified_on=now()
-        )))
+        ), {}))
 
         # field value change
         self.assertTrue(self.syncer.update_required(local, TembaContact.create(
@@ -104,7 +104,7 @@ class ContactSyncerTest(BaseCasesTest):
             groups=[ObjectRef.create(uuid='G-003', name="Reporters")],
             fields={'chat_name': "ann8111"},
             language='eng', modified_on=now()
-        )))
+        ), {}))
 
         # new field
         self.assertTrue(self.syncer.update_required(local, TembaContact.create(
@@ -114,7 +114,7 @@ class ContactSyncerTest(BaseCasesTest):
             groups=[ObjectRef.create(uuid='G-003', name="Reporters")],
             fields={'chat_name': "ann", 'age': "35"},
             language='eng', modified_on=now()
-        )))
+        ), {}))
 
 
 class MessageSyncerTest(BaseCasesTest):
