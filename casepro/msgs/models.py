@@ -1,28 +1,21 @@
 from __future__ import unicode_literals
 
-import json
 import pytz
 import regex
 import six
 
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact
-from casepro.utils import normalize, parse_csv, json_encode
-from casepro.utils.email import send_email
+from casepro.utils import normalize, parse_csv
+from casepro.utils.export import BaseExport
 from dash.orgs.models import Org
-from dash.utils import chunks, random_string
-from django.conf import settings
+from dash.utils import chunks
 from django.contrib.auth.models import User
-from django.core.files import File
-from django.core.files.storage import default_storage
-from django.core.files.temp import NamedTemporaryFile
-from django.core.urlresolvers import reverse
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from enum import Enum
 from redis_cache import get_redis_connection
-from temba_client.utils import parse_iso8601
 
 
 SAVE_CONTACT_ATTR = '__data__contact'
@@ -459,51 +452,25 @@ class Outgoing(models.Model):
         return self.text
 
 
-class MessageExport(models.Model):
+class MessageExport(BaseExport):
     """
     An export of messages
     """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='exports')
-
-    search = models.TextField()
-
-    filename = models.CharField(max_length=512)
-
-    created_by = models.ForeignKey(User, related_name="exports")
-
-    created_on = models.DateTimeField(auto_now_add=True)
-
-    @classmethod
-    def create(cls, org, user, search):
-        return MessageExport.objects.create(org=org, created_by=user, search=json_encode(search))
+    directory = 'message_exports'
+    download_view = 'msgs.messageexport_read'
+    email_templates = 'msgs/email/message_export'
 
     def get_search(self):
-        search = json.loads(self.search)
-        if 'folder' in search:
-            search['folder'] = MessageFolder[search['folder']]
-        if 'after' in search:
-            search['after'] = parse_iso8601(search['after'])
-        if 'before' in search:
-            search['before'] = parse_iso8601(search['before'])
+        search = super(MessageExport, self).get_search()
+        search['folder'] = MessageFolder[search['folder']]
         return search
 
-    def do_export(self):
-        """
-        Does actual export. Called from a celery task as it may require a lot of API calls to grab all messages.
-        """
+    def render_book(self, book, search):
         from casepro.contacts.models import Field
-        from xlwt import Workbook, XFStyle
-
-        book = Workbook()
-
-        date_style = XFStyle()
-        date_style.num_format_str = 'DD-MM-YYYY HH:MM:SS'
 
         base_fields = ["Time", "Message ID", "Flagged", "Labels", "Text", "Contact"]
         contact_fields = Field.get_all(self.org, visible=True)
         all_fields = base_fields + [f.label for f in contact_fields]
-
-        search = self.get_search()
 
         # load all messages to be exported
         messages = Message.search(self.org, self.created_by, search)
@@ -527,7 +494,7 @@ class MessageExport(models.Model):
                 for msg in msg_chunk:
                     created_on = msg.created_on.astimezone(pytz.UTC).replace(tzinfo=None)
 
-                    current_sheet.write(row, 0, created_on, date_style)
+                    current_sheet.write(row, 0, created_on, self.DATE_STYLE)
                     current_sheet.write(row, 1, msg.backend_id)
                     current_sheet.write(row, 2, 'Yes' if msg.is_flagged else 'No')
                     current_sheet.write(row, 3, ', '.join([l.name for l in msg.labels.all()]))
@@ -544,22 +511,4 @@ class MessageExport(models.Model):
 
                 sheet_number += 1
 
-        temp = NamedTemporaryFile(delete=True)
-        book.save(temp)
-        temp.flush()
-
-        filename = 'orgs/%d/message_exports/%s.xls' % (self.org.id, random_string(20))
-        default_storage.save(filename, File(temp))
-
-        self.filename = filename
-        self.save(update_fields=('filename',))
-
-        subject = "Your messages export is ready"
-        host = settings.SITE_HOST_PATTERN % self.org.subdomain
-        download_url = host + reverse('msgs.messageexport_read', args=[self.pk])
-
-        send_email(self.created_by.username, subject, 'msgs/email/message_export', dict(link=download_url))
-
-        # force a gc
-        import gc
-        gc.collect()
+        return book
