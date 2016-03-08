@@ -22,7 +22,7 @@ before_script:
 - ln -s $TRAVIS_BUILD_DIR/casepro/settings.py.dev $TRAVIS_BUILD_DIR/casepro/settings.py
 script:
 - coverage run --source="." manage.py test casepro/cases casepro/orgs_ext casepro/profiles --verbosity=2 --noinput
-- flake8 casepro --max-line-length=120 --exclude="*/migrations/*"
+- flake8
 - python manage.py makemigrations --dry-run | grep 'No changes detected' || (echo 'There are changes which require migrations.' && exit 1)
 after_success:
 - coveralls

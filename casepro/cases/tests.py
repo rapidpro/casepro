@@ -364,7 +364,7 @@ class CaseCRUDLTest(BaseCasesTest):
         d1 = datetime(2014, 1, 2, 13, 0, tzinfo=pytz.UTC)
         d2 = datetime(2014, 1, 2, 14, 0, tzinfo=pytz.UTC)
 
-        msg0 = self.create_message(self.unicef, 100, self.ann, "Unrelated", [], created_on=d0)
+        self.create_message(self.unicef, 100, self.ann, "Unrelated", [], created_on=d0)
         msg1 = self.create_message(self.unicef, 101, self.ann, "What is AIDS?", [self.aids], created_on=d1)
 
         mock_fetch_contact_messages.return_value = [
@@ -504,7 +504,6 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # another look for new timeline activity
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t6)))
-        t7 = microseconds_to_datetime(response.json['max_time'])
 
         # nothing to see
         self.assertEqual(len(response.json['results']), 0)
