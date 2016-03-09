@@ -9,7 +9,7 @@ from dash.utils import intersection, chunks
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -430,12 +430,22 @@ class CaseExport(BaseExport):
     def render_book(self, book, search):
         from casepro.contacts.models import Field
 
-        base_fields = ["Message On", "Opened On", "Closed On", "Assignee", "Labels", "Summary", "Contact"]
+        base_fields = [
+            "Message On", "Opened On", "Closed On", "Assignee", "Labels", "Summary",
+            "Messages Received", "Messages Sent", "Contact"
+        ]
         contact_fields = Field.get_all(self.org, visible=True)
         all_fields = base_fields + [f.label for f in contact_fields]
 
         # load all messages to be exported
-        cases = Case.search(self.org, self.created_by, search).select_related('initial_message')
+        cases = Case.search(self.org, self.created_by, search)
+
+        cases = cases.select_related('initial_message')  # need for "Message On"
+
+        cases = cases.annotate(
+            incoming_count=Count('incoming_messages', distinct=True),
+            outgoing_count=Count('outgoing_messages', distinct=True)
+        )
 
         def add_sheet(num):
             sheet = book.add_sheet(unicode(_("Cases %d" % num)))
@@ -460,7 +470,9 @@ class CaseExport(BaseExport):
                     current_sheet.write(row, 3, case.assignee.name, self.DATE_STYLE)
                     current_sheet.write(row, 4, ', '.join([l.name for l in case.labels.all()]))
                     current_sheet.write(row, 5, case.summary)
-                    current_sheet.write(row, 6, case.contact.uuid)
+                    current_sheet.write(row, 6, case.incoming_count)
+                    current_sheet.write(row, 7, case.outgoing_count)
+                    current_sheet.write(row, 8, case.contact.uuid)
 
                     fields = case.contact.get_fields()
 

@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from casepro.backend import BaseBackend
 from casepro.cases.models import Case, Partner
 from casepro.contacts.models import Contact, Group, Field
-from casepro.msgs.models import Label, Message
+from casepro.msgs.models import Label, Message, Outgoing
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from dash.test import DashTest
 from datetime import datetime
@@ -102,6 +102,20 @@ class BaseCasesTest(DashTest):
         msg = Message.objects.create(org=org, backend_id=backend_id, contact=contact, text=text, **kwargs)
         msg.labels.add(*labels)
         return msg
+
+    def create_outgoing(self, org, user, backend_id, activity, text, case, **kwargs):
+        if 'recipient_count' not in kwargs:
+            kwargs['recipient_count'] = 0
+        if 'created_on' not in kwargs:
+            kwargs['created_on'] = now()
+
+        return Outgoing.objects.create(org=org,
+                                       broadcast_id=backend_id,
+                                       activity=activity,
+                                       text=text,
+                                       case=case,
+                                       created_by=user,
+                                       **kwargs)
 
     def create_case(self, org, contact, assignee, message, labels=(), **kwargs):
         case = Case.objects.create(org=org, contact=contact, assignee=assignee, initial_message=message, **kwargs)

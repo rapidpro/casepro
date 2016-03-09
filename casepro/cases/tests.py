@@ -608,6 +608,12 @@ class CaseExportCRUDLTest(BaseCasesTest):
         case4 = self.create_case(self.unicef, don, self.moh, msg4, [])
         case4.close(self.user1)
 
+        # add some messages to first case
+        self.create_message(self.unicef, 105, ann, "Good question", case=case1)
+        self.create_outgoing(self.unicef, self.user1, 201, Outgoing.CASE_REPLY, "I know", case=case1)
+        self.create_message(self.unicef, 106, ann, "It's bad", case=case1)
+        self.create_outgoing(self.unicef, self.user1, 201, Outgoing.CASE_REPLY, "Ok thanks", case=case1)
+
         # log in as a non-administrator
         self.login(self.user1)
 
@@ -622,12 +628,16 @@ class CaseExportCRUDLTest(BaseCasesTest):
         sheet = workbook.sheets()[0]
 
         self.assertEqual(sheet.nrows, 3)
-        self.assertExcelRow(sheet, 0, ["Message On", "Opened On", "Closed On", "Assignee", "Labels", "Summary",
-                                       "Contact", "Nickname", "Age"])
-        self.assertExcelRow(sheet, 1, [msg2.created_on, case2.opened_on, "", "WHO", "Pregnancy", "I ♡ RapidPro",
-                                       "C-002", "", "32"], pytz.UTC)
-        self.assertExcelRow(sheet, 2, [msg1.created_on, case1.opened_on, "", "MOH", "AIDS", "What is HIV?",
-                                       "C-001", "Annie", "28"], pytz.UTC)
+        self.assertExcelRow(sheet, 0, [
+            "Message On", "Opened On", "Closed On", "Assignee", "Labels", "Summary",
+            "Messages Received", "Messages Sent", "Contact", "Nickname", "Age"
+        ])
+        self.assertExcelRow(sheet, 1, [
+            msg2.created_on, case2.opened_on, "", "WHO", "Pregnancy", "I ♡ RapidPro", 1, 0, "C-002", "", "32"
+        ], pytz.UTC)
+        self.assertExcelRow(sheet, 2, [
+            msg1.created_on, case1.opened_on, "", "MOH", "AIDS", "What is HIV?", 3, 2, "C-001", "Annie", "28"
+        ], pytz.UTC)
 
         read_url = reverse('cases.caseexport_read', args=[export.pk])
 
