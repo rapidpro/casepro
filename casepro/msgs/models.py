@@ -178,6 +178,9 @@ class Message(models.Model):
         else:
             if search['label']:
                 labels = labels.filter(pk=search['label'])
+            else:
+                # if not filtering by a single label, need distinct to avoid duplicates
+                queryset = queryset.distinct()
 
             queryset = queryset.filter(labels__in=labels)
 
@@ -200,7 +203,7 @@ class Message(models.Model):
         if search['contact']:
             queryset = queryset.filter(contact__uuid=search['contact'])
         if search['groups']:
-            queryset = queryset.filter(contact__groups__uuid__in=search['groups'])
+            queryset = queryset.filter(contact__groups__uuid__in=search['groups']).distinct()
 
         if search['after']:
             queryset = queryset.filter(created_on__gt=search['after'])
@@ -209,7 +212,7 @@ class Message(models.Model):
 
         queryset = queryset.select_related('contact').prefetch_related('labels', 'case__assignee')
 
-        return queryset.order_by('-created_on', '-pk').distinct('created_on', 'pk')
+        return queryset.order_by('-created_on')
 
     def auto_label(self, labels_by_keyword):
         """
