@@ -3,17 +3,16 @@ from __future__ import unicode_literals
 from casepro.cases.models import Case, Label
 from casepro.contacts.models import Contact
 from casepro.utils import parse_csv, normalize, str_to_bool
+from casepro.utils.export import BaseDownloadView
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django import forms
-from django.core.files.storage import default_storage
 from django.core.paginator import Paginator, EmptyPage
-from django.core.urlresolvers import reverse
 from django.db.transaction import non_atomic_requests
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
 from smartmin.views import SmartCRUDL, SmartTemplateView
-from smartmin.views import SmartListView, SmartCreateView, SmartReadView, SmartUpdateView, SmartDeleteView
+from smartmin.views import SmartListView, SmartCreateView, SmartUpdateView, SmartDeleteView
 from temba_client.utils import parse_iso8601
 from .models import Message, MessageExport, MessageFolder, Outgoing
 from .tasks import message_export
@@ -299,31 +298,6 @@ class MessageExportCRUDL(SmartCRUDL):
 
             return JsonResponse({'export_id': export.pk})
 
-    class Read(OrgObjPermsMixin, SmartReadView):
-        """
-        Download view for message exports
-        """
+    class Read(BaseDownloadView):
         title = _("Download Messages")
-
-        @classmethod
-        def derive_url_pattern(cls, path, action):
-            return r'%s/download/(?P<pk>\d+)/' % path
-
-        def get(self, request, *args, **kwargs):
-            if 'download' in request.GET:
-                export = self.get_object()
-
-                export_file = default_storage.open(export.filename, 'rb')
-                user_filename = 'message_export.xls'
-
-                response = HttpResponse(export_file, content_type='application/vnd.ms-excel')
-                response['Content-Disposition'] = 'attachment; filename=%s' % user_filename
-
-                return response
-            else:
-                return super(MessageExportCRUDL.Read, self).get(request, *args, **kwargs)
-
-        def get_context_data(self, **kwargs):
-            context = super(MessageExportCRUDL.Read, self).get_context_data(**kwargs)
-            context['download_url'] = '%s?download=1' % reverse('msgs.messageexport_read', args=[self.object.pk])
-            return context
+        filename = 'message_export.xls'

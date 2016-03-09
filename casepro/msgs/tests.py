@@ -574,6 +574,7 @@ class MessageExportCRUDLTest(BaseCasesTest):
 
         response = self.url_get('unicef', read_url)
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['download_url'], "/messageexport/download/%d/?download=1" % export.pk)
 
         # user from another org can't access this download
         self.login(self.norbert)

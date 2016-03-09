@@ -3,14 +3,13 @@ from __future__ import absolute_import, unicode_literals
 from casepro.contacts.models import Group
 from casepro.msgs.models import Message, MessageFolder, Label
 from casepro.utils import parse_csv, json_encode, datetime_to_microseconds, microseconds_to_datetime
+from casepro.utils.export import BaseDownloadView
 from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from datetime import timedelta
 from django import forms
 from django.core.cache import cache
-from django.core.files.storage import default_storage
 from django.core.paginator import Paginator, EmptyPage
-from django.core.urlresolvers import reverse
 from django.db.transaction import non_atomic_requests
 from django.http import HttpResponse, JsonResponse
 from django.utils.timezone import now
@@ -267,34 +266,9 @@ class CaseExportCRUDL(SmartCRUDL):
 
             return JsonResponse({'export_id': export.pk})
 
-    class Read(OrgObjPermsMixin, SmartReadView):
-        """
-        Download view for message exports
-        """
+    class Read(BaseDownloadView):
         title = _("Download Cases")
-
-        @classmethod
-        def derive_url_pattern(cls, path, action):
-            return r'%s/download/(?P<pk>\d+)/' % path
-
-        def get(self, request, *args, **kwargs):
-            if 'download' in request.GET:
-                export = self.get_object()
-
-                export_file = default_storage.open(export.filename, 'rb')
-                user_filename = 'case_export.xls'
-
-                response = HttpResponse(export_file, content_type='application/vnd.ms-excel')
-                response['Content-Disposition'] = 'attachment; filename=%s' % user_filename
-
-                return response
-            else:
-                return super(CaseExportCRUDL.Read, self).get(request, *args, **kwargs)
-
-        def get_context_data(self, **kwargs):
-            context = super(CaseExportCRUDL.Read, self).get_context_data(**kwargs)
-            context['download_url'] = '%s?download=1' % reverse('cases.caseexport_read', args=[self.object.pk])
-            return context
+        filename = 'case_export.xls'
 
 
 class PartnerForm(forms.ModelForm):

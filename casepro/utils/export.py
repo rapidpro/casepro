@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import json
 
 from dash.orgs.models import Org
+from dash.orgs.views import OrgObjPermsMixin
 from dash.utils import random_string
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -11,7 +12,9 @@ from django.core.files.storage import default_storage
 from django.core.files.temp import NamedTemporaryFile
 from django.core.urlresolvers import reverse
 from django.db import models
+from django.http import HttpResponse
 from django.utils.translation import ugettext_lazy as _
+from smartmin.views import SmartReadView
 from temba_client.utils import parse_iso8601
 from xlwt import Workbook, XFStyle
 from . import json_encode
@@ -87,3 +90,38 @@ class BaseExport(models.Model):
 
     class Meta:
         abstract = True
+
+
+class BaseDownloadView(OrgObjPermsMixin, SmartReadView):
+    """
+    Download view for exports
+    """
+    filename = None
+    template_name = 'download.haml'
+
+    @classmethod
+    def derive_url_pattern(cls, path, action):
+        return r'%s/download/(?P<pk>\d+)/' % path
+
+    def derive_title(self):
+        return self.title
+
+    def get(self, request, *args, **kwargs):
+        if 'download' in request.GET:
+            export = self.get_object()
+
+            export_file = default_storage.open(export.filename, 'rb')
+
+            response = HttpResponse(export_file, content_type='application/vnd.ms-excel')
+            response['Content-Disposition'] = 'attachment; filename=%s' % self.filename
+
+            return response
+        else:
+            return super(BaseDownloadView, self).get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super(BaseDownloadView, self).get_context_data(**kwargs)
+
+        current_url_name = self.request.resolver_match.url_name
+        context['download_url'] = '%s?download=1' % reverse(current_url_name, args=[self.object.pk])
+        return context
