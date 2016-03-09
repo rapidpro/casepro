@@ -158,9 +158,9 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
     $scope.oldItemsLoading = true
     $scope.oldItemsPage += 1
 
-    $scope.fetchOldItems((items) ->
+    $scope.fetchOldItems((items, hasMore) ->
       $scope.items = $scope.items.concat(items)
-      $scope.oldItemsMore = items.length > 0
+      $scope.oldItemsMore = hasMore
       $scope.oldItemsLoading = false
 
       if forSelectAll

@@ -6,11 +6,11 @@ from casepro.utils import parse_csv, normalize, str_to_bool
 from casepro.utils.export import BaseDownloadView
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django import forms
-from django.core.paginator import Paginator, EmptyPage
 from django.db.transaction import non_atomic_requests
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
+from el_pagination.paginators import LazyPaginator
 from smartmin.views import SmartCRUDL, SmartTemplateView
 from smartmin.views import SmartListView, SmartCreateView, SmartUpdateView, SmartDeleteView
 from temba_client.utils import parse_iso8601
@@ -156,29 +156,25 @@ class MessageCRUDL(SmartCRUDL):
         permission = 'orgs.org_inbox'
 
         def get_context_data(self, **kwargs):
+            context = super(MessageCRUDL.Search, self).get_context_data(**kwargs)
+
             org = self.request.org
             user = self.request.user
+            page = int(self.request.GET.get('page', 1))
 
             search = self.derive_search()
             messages = Message.search(org, user, search)
+            paginator = LazyPaginator(messages, per_page=50)
 
-            # TODO switch to cursor pagination to avoid the unused count
-
-            page = int(self.request.GET.get('page', 1))
-            paginator = Paginator(messages, 50)
-            try:
-                messages = paginator.page(page)
-            except EmptyPage:
-                messages = Message.objects.none()
-
-            context = super(MessageCRUDL.Search, self).get_context_data(**kwargs)
-            context['messages'] = messages
+            context['object_list'] = paginator.page(page)
+            context['has_more'] = paginator.num_pages > page
             return context
 
         def render_to_response(self, context, **response_kwargs):
-            results = [m.as_json() for m in context['messages']]
-
-            return JsonResponse({'results': results})
+            return JsonResponse({
+                'results': [m.as_json() for m in context['object_list']],
+                'has_more': context['has_more']
+            })
 
     class Action(OrgPermsMixin, View):
         """

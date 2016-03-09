@@ -43,7 +43,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
 
         console.log("Fetched " + data.results.length + " old messages")
 
-        callback(data.results)
+        callback(data.results, data.has_more)
       ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
@@ -275,7 +275,7 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
       $http.get('/case/search/?' + $.param(params))
       .success((data) =>
         @_processCases(data.results)
-        callback(data.results)
+        callback(data.results, data.has_more)
       ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------

@@ -8,6 +8,7 @@ django-celery
 django-compressor
 django-debug-toolbar
 django-digest
+django-el-pagination
 django-redis==3.8.4
 django-reversion
 django-rosetta

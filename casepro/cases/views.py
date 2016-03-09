@@ -9,8 +9,8 @@ from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from datetime import timedelta
 from django import forms
 from django.core.cache import cache
-from django.core.paginator import Paginator, EmptyPage
 from django.db.transaction import non_atomic_requests
+from el_pagination.paginators import LazyPaginator
 from django.http import HttpResponse, JsonResponse
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
@@ -189,29 +189,25 @@ class CaseCRUDL(SmartCRUDL):
         permission = 'cases.case_list'
 
         def get_context_data(self, **kwargs):
+            context = super(CaseCRUDL.Search, self).get_context_data(**kwargs)
+
             org = self.request.org
             user = self.request.user
+            page = int(self.request.GET.get('page', 1))
 
             search = self.derive_search()
             cases = Case.search(org, user, search)
+            paginator = LazyPaginator(cases, 50)
 
-            # TODO switch to cursor pagination to avoid the unused count
-
-            page = int(self.request.GET.get('page', 1))
-            paginator = Paginator(cases, 50)
-            try:
-                cases = paginator.page(page)
-            except EmptyPage:
-                cases = Case.objects.none()
-
-            context = super(CaseCRUDL.Search, self).get_context_data(**kwargs)
-            context['cases'] = cases
+            context['object_list'] = paginator.page(page)
+            context['has_more'] = paginator.num_pages > page
             return context
 
         def render_to_response(self, context, **response_kwargs):
-            results = [c.as_json() for c in context['cases']]
-
-            return JsonResponse({'results': results})
+            return JsonResponse({
+                'results': [c.as_json() for c in context['object_list']],
+                'has_more': context['has_more']
+            })
 
     class Timeline(OrgPermsMixin, SmartReadView):
         """
