@@ -233,16 +233,16 @@ class Case(models.Model):
             backend = get_backend()
             backend_messages = backend.fetch_contact_messages(self.org, self.contact, after, before)
 
-            local_by_broadcast = {o.broadcast_id: o for o in local_outgoing}
+            local_by_backend_id = {o.backend_id: o for o in local_outgoing}
 
             for msg in backend_messages:
                 # annotate with sender from local message if there is one
-                local = local_by_broadcast.pop(msg['broadcast'], None)
+                local = local_by_backend_id.pop(msg['broadcast'], None)
                 msg['sender'] = local.created_by.as_json() if local else None
 
                 messages.append({'time': msg['time'], 'type': 'M', 'item': msg})
 
-            for msg in local_by_broadcast.values():
+            for msg in local_by_backend_id.values():
                 messages.append({'time': msg.created_on, 'type': 'M', 'item': msg.as_json()})
         else:
             # otherwise just merge local outgoing and incoming messages

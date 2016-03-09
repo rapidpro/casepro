@@ -110,7 +110,7 @@ class BaseCasesTest(DashTest):
             kwargs['created_on'] = now()
 
         return Outgoing.objects.create(org=org,
-                                       broadcast_id=backend_id,
+                                       backend_id=backend_id,
                                        activity=activity,
                                        text=text,
                                        case=case,

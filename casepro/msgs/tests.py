@@ -530,7 +530,7 @@ class MessageCRUDLTest(BaseCasesTest):
 
         self.assertEqual(outgoing.org, self.unicef)
         self.assertEqual(outgoing.activity, Outgoing.BULK_REPLY)
-        self.assertEqual(outgoing.broadcast_id, 201)
+        self.assertEqual(outgoing.backend_id, 201)
         self.assertEqual(outgoing.recipient_count, 3)
         self.assertEqual(outgoing.created_by, self.user1)
         self.assertEqual(outgoing.created_on, d1)
@@ -599,7 +599,7 @@ class OutgoingTest(BaseCasesTest):
 
         self.assertEqual(outgoing.org, self.unicef)
         self.assertEqual(outgoing.activity, Outgoing.BULK_REPLY)
-        self.assertEqual(outgoing.broadcast_id, 201)
+        self.assertEqual(outgoing.backend_id, 201)
         self.assertEqual(outgoing.recipient_count, 3)
         self.assertEqual(outgoing.created_by, self.user1)
         self.assertEqual(outgoing.created_on, d1)

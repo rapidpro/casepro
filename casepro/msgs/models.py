@@ -411,7 +411,7 @@ class Outgoing(models.Model):
 
     text = models.TextField(max_length=640, null=True)
 
-    broadcast_id = models.IntegerField()
+    backend_id = models.IntegerField(unique=True, help_text=_("Broadcast id from the backend"))
 
     recipient_count = models.PositiveIntegerField()
 
@@ -429,7 +429,7 @@ class Outgoing(models.Model):
         backend_id, backend_created_on = get_backend().create_outgoing(org, text, list(contacts), urns)
 
         return cls.objects.create(org=org,
-                                  broadcast_id=backend_id,
+                                  backend_id=backend_id,
                                   recipient_count=len(contacts) + len(urns),
                                   activity=activity, case=case,
                                   text=text,
