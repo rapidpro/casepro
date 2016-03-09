@@ -431,8 +431,8 @@ class CaseExport(BaseExport):
         from casepro.contacts.models import Field
 
         base_fields = [
-            "Message On", "Opened On", "Closed On", "Assignee", "Labels", "Summary",
-            "Messages Received", "Messages Sent", "Contact"
+            "Message On", "Opened On", "Closed On", "Assigned Partner", "Labels", "Summary",
+            "Messages Sent", "Messages Received", "Contact"
         ]
         contact_fields = Field.get_all(self.org, visible=True)
         all_fields = base_fields + [f.label for f in contact_fields]
@@ -470,8 +470,8 @@ class CaseExport(BaseExport):
                     current_sheet.write(row, 3, case.assignee.name, self.DATE_STYLE)
                     current_sheet.write(row, 4, ', '.join([l.name for l in case.labels.all()]))
                     current_sheet.write(row, 5, case.summary)
-                    current_sheet.write(row, 6, case.incoming_count)
-                    current_sheet.write(row, 7, case.outgoing_count)
+                    current_sheet.write(row, 6, case.outgoing_count)
+                    current_sheet.write(row, 7, case.incoming_count - 1)  # subtract 1 for the initial messages
                     current_sheet.write(row, 8, case.contact.uuid)
 
                     fields = case.contact.get_fields()
