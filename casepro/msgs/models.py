@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import pytz
 import regex
 import six
 
@@ -492,9 +491,7 @@ class MessageExport(BaseExport):
 
                 row = 1
                 for msg in msg_chunk:
-                    created_on = msg.created_on.astimezone(pytz.UTC).replace(tzinfo=None)
-
-                    current_sheet.write(row, 0, created_on, self.DATE_STYLE)
+                    current_sheet.write(row, 0, self.excel_datetime(msg.created_on), self.DATE_STYLE)
                     current_sheet.write(row, 1, msg.backend_id)
                     current_sheet.write(row, 2, 'Yes' if msg.is_flagged else 'No')
                     current_sheet.write(row, 3, ', '.join([l.name for l in msg.labels.all()]))

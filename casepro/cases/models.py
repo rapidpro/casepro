@@ -1,7 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-import pytz
-
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact
 from casepro.msgs.models import Label, Message
@@ -432,12 +430,12 @@ class CaseExport(BaseExport):
     def render_book(self, book, search):
         from casepro.contacts.models import Field
 
-        base_fields = ["Opened On", "Closed On", "Labels", "Summary", "Contact"]
+        base_fields = ["Message On", "Opened On", "Closed On", "Assignee", "Labels", "Summary", "Contact"]
         contact_fields = Field.get_all(self.org, visible=True)
         all_fields = base_fields + [f.label for f in contact_fields]
 
         # load all messages to be exported
-        cases = Case.search(self.org, self.created_by, search)
+        cases = Case.search(self.org, self.created_by, search).select_related('initial_message')
 
         def add_sheet(num):
             sheet = book.add_sheet(unicode(_("Cases %d" % num)))
@@ -456,14 +454,13 @@ class CaseExport(BaseExport):
 
                 row = 1
                 for case in case_chunk:
-                    opened_on = case.opened_on.astimezone(pytz.UTC).replace(tzinfo=None)
-                    closed_on = case.closed_on.astimezone(pytz.UTC).replace(tzinfo=None) if case.closed_on else None
-
-                    current_sheet.write(row, 0, opened_on, self.DATE_STYLE)
-                    current_sheet.write(row, 1, closed_on, self.DATE_STYLE)
-                    current_sheet.write(row, 2, ', '.join([l.name for l in case.labels.all()]))
-                    current_sheet.write(row, 3, case.summary)
-                    current_sheet.write(row, 4, case.contact.uuid)
+                    current_sheet.write(row, 0, self.excel_datetime(case.initial_message.created_on), self.DATE_STYLE)
+                    current_sheet.write(row, 1, self.excel_datetime(case.opened_on), self.DATE_STYLE)
+                    current_sheet.write(row, 2, self.excel_datetime(case.closed_on), self.DATE_STYLE)
+                    current_sheet.write(row, 3, case.assignee.name, self.DATE_STYLE)
+                    current_sheet.write(row, 4, ', '.join([l.name for l in case.labels.all()]))
+                    current_sheet.write(row, 5, case.summary)
+                    current_sheet.write(row, 6, case.contact.uuid)
 
                     fields = case.contact.get_fields()
 

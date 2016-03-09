@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import json
+import pytz
 
 from dash.orgs.models import Org
 from dash.orgs.views import OrgObjPermsMixin
@@ -87,6 +88,10 @@ class BaseExport(models.Model):
         Child classes implement this to populate the Excel book
         """
         pass
+
+    @staticmethod
+    def excel_datetime(value):
+        return value.astimezone(pytz.UTC).replace(tzinfo=None) if value else None
 
     class Meta:
         abstract = True

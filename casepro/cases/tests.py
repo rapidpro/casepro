@@ -622,9 +622,12 @@ class CaseExportCRUDLTest(BaseCasesTest):
         sheet = workbook.sheets()[0]
 
         self.assertEqual(sheet.nrows, 3)
-        self.assertExcelRow(sheet, 0, ["Opened On", "Closed On", "Labels", "Summary", "Contact", "Nickname", "Age"])
-        self.assertExcelRow(sheet, 1, [case2.opened_on, "", "Pregnancy", "I ♡ RapidPro", "C-002", "", "32"], pytz.UTC)
-        self.assertExcelRow(sheet, 2, [case1.opened_on, "", "AIDS", "What is HIV?", "C-001", "Annie", "28"], pytz.UTC)
+        self.assertExcelRow(sheet, 0, ["Message On", "Opened On", "Closed On", "Assignee", "Labels", "Summary",
+                                       "Contact", "Nickname", "Age"])
+        self.assertExcelRow(sheet, 1, [msg2.created_on, case2.opened_on, "", "WHO", "Pregnancy", "I ♡ RapidPro",
+                                       "C-002", "", "32"], pytz.UTC)
+        self.assertExcelRow(sheet, 2, [msg1.created_on, case1.opened_on, "", "MOH", "AIDS", "What is HIV?",
+                                       "C-001", "Annie", "28"], pytz.UTC)
 
         read_url = reverse('cases.caseexport_read', args=[export.pk])
 
