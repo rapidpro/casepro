@@ -9,7 +9,7 @@ from dash.utils import intersection, chunks
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import models
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Prefetch
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -124,7 +124,7 @@ class Case(models.Model):
 
     summary = models.CharField(verbose_name=_("Summary"), max_length=255)
 
-    opened_on = models.DateTimeField(db_index=True, auto_now_add=True,
+    opened_on = models.DateTimeField(auto_now_add=True,
                                      help_text="When this case was opened")
 
     closed_on = models.DateTimeField(null=True,
@@ -184,12 +184,13 @@ class Case(models.Model):
         if search['before']:
             queryset = queryset.filter(opened_on__lt=search['before'])
 
-        queryset = queryset.prefetch_related('labels').select_related('contact', 'assignee')
+        queryset = queryset.select_related('contact', 'assignee')
 
-        return queryset.order_by('-pk')
+        queryset = queryset.prefetch_related(
+            Prefetch('labels', Label.objects.filter(is_active=True))
+        )
 
-    def get_labels(self):
-        return self.labels.filter(is_active=True)
+        return queryset.order_by('-opened_on')
 
     @classmethod
     def get_or_open(cls, org, user, message, summary, assignee):
@@ -338,7 +339,8 @@ class Case(models.Model):
         """
         if user.can_administer(self.org) or user.profile.partner == self.assignee:
             return AccessLevel.update
-        elif user.profile.partner and intersection(self.get_labels(), user.profile.partner.get_labels()):
+        elif user.profile.partner and intersection(self.labels.filter(is_active=True),
+                                                   user.profile.partner.get_labels()):
             return AccessLevel.read
         else:
             return AccessLevel.none
@@ -352,7 +354,7 @@ class Case(models.Model):
             'id': self.pk,
             'contact': self.contact.as_json(full_contact),
             'assignee': self.assignee.as_json(),
-            'labels': [l.as_json() for l in self.get_labels()],
+            'labels': [l.as_json() for l in self.labels.all()],
             'summary': self.summary,
             'opened_on': self.opened_on,
             'is_closed': self.is_closed
