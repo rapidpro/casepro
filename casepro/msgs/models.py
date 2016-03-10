@@ -184,7 +184,7 @@ class Message(models.Model):
                 # if not filtering by a single label, need distinct to avoid duplicates
                 queryset = queryset.distinct()
 
-            queryset = queryset.filter(labels__in=labels)
+            queryset = queryset.filter(labels__in=list(labels))
 
         # archived messages can be implicitly or explicitly included depending on folder
         if search['folder'] == MessageFolder.archived:

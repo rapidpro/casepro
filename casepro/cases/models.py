@@ -138,7 +138,7 @@ class Case(models.Model):
         if user and not user.can_administer(org):
             partner = user.get_partner()
             if partner:
-                qs = qs.filter(Q(labels__in=partner.get_labels()) | Q(assignee=partner))
+                qs = qs.filter(Q(labels__in=list(partner.get_labels())) | Q(assignee=partner))
             else:
                 return cls.objects.none()
 
