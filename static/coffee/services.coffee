@@ -11,7 +11,7 @@ DEFAULT_ERR_HANDLER = (data, status, headers, config) =>
   console.error("Request error (status = " + status + ")")
 
 #=====================================================================
-# Date utilities
+# Utilities
 #=====================================================================
 
 parseIso8601 = (str) ->
@@ -20,6 +20,20 @@ parseIso8601 = (str) ->
 formatIso8601 = (date) ->
   if date then date.toISOString() else null
 
+isArray = Array.isArray || (val) -> return {}.toString.call(val) is '[object Array]'
+
+toFormData = (params) ->
+  data = new FormData()
+  for own key, val of params
+    if isArray(val)
+      val = (item.toString() for item in val).join(',')
+    else if val
+      val = val.toString()  # required for https://bugzilla.mozilla.org/show_bug.cgi?id=819328
+
+    if val
+      data.append(key, val)
+
+  return data
 
 #=====================================================================
 # Message service
@@ -154,8 +168,9 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     # Relabel the given message (removing labels if necessary)
     #----------------------------------------------------------------------------
     relabelMessage: (message, labels, callback) ->
-      data = new FormData()
-      data.append('labels', (l.id for l in labels))
+      data = toFormData({
+        labels: (l.id for l in labels)
+      })
 
       $http.post('/message/label/' + message.id + '/', data, DEFAULT_POST_OPTS)
       .success(() ->
@@ -195,12 +210,13 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     # POSTs to the messages action endpoint
     #----------------------------------------------------------------------------
     _messagesAction: (messages, action, label, callback) ->
-      data = new FormData();
-      data.append('messages', (m.id for m in messages))
+      params = {
+        messages: (m.id for m in messages)
+      }
       if label
-        data.append('label', label.id)
+        params.label = label.id
 
-      $http.post('/message/action/' + action + '/', data, DEFAULT_POST_OPTS)
+      $http.post('/message/action/' + action + '/', toFormData(params), DEFAULT_POST_OPTS)
       .success(() =>
         if callback
           callback()
@@ -210,15 +226,16 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     # POSTs to the messages send endpoint and returns new broadcast id
     #----------------------------------------------------------------------------
     _messagesSend: (activity, text, urns, contacts, caseObj, callback) ->
-      data = new FormData();
-      data.append('activity', activity)
-      data.append('text', text)
-      data.append('urns', urns)
-      data.append('contacts', contacts)
+      params = {
+        activity: activity,
+        text: text,
+        urns: urns,
+        contacts: contacts
+      }
       if caseObj
-        data.append('case', caseObj.id)
+        params.case = caseObj.id
 
-      $http.post('/message/send/', data, DEFAULT_POST_OPTS)
+      $http.post('/message/send/', toFormData(params), DEFAULT_POST_OPTS)
       .success((data) =>
         callback()
       ).error(DEFAULT_ERR_HANDLER)
@@ -316,13 +333,14 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
     # Opens a new case
     #----------------------------------------------------------------------------
     openCase: (message, summary, assignee, callback) ->
-      data = new FormData()
-      data.append('message', message.id)
-      data.append('summary', summary)
+      params = {
+        message: message.id,
+        summary: summary
+      }
       if assignee
-        data.append('assignee', assignee.id)
+        params.assignee = assignee.id
 
-      $http.post('/case/open/', data, DEFAULT_POST_OPTS)
+      $http.post('/case/open/', toFormData(params), DEFAULT_POST_OPTS)
       .success((data) ->
         callback(data['case'], data['is_new'])
       ).error(DEFAULT_ERR_HANDLER)
@@ -331,10 +349,9 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
     # Adds a note to a case
     #----------------------------------------------------------------------------
     noteCase: (caseObj, note, callback) ->
-      data = new FormData()
-      data.append('note', note)
+      params = {note: note}
 
-      $http.post('/case/note/' + caseObj.id + '/', data, DEFAULT_POST_OPTS)
+      $http.post('/case/note/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS)
       .success(() ->
         if callback
           callback()
@@ -344,10 +361,9 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
     # Re-assigns a case
     #----------------------------------------------------------------------------
     reassignCase: (caseObj, assignee, callback) ->
-      data = new FormData()
-      data.append('assignee_id', assignee.id)
+      params = {assignee: assignee.id}
 
-      $http.post('/case/reassign/' + caseObj.id + '/', data, DEFAULT_POST_OPTS)
+      $http.post('/case/reassign/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS)
       .success(() ->
         if callback
           callback()
@@ -357,10 +373,9 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
     # Closes a case
     #----------------------------------------------------------------------------
     closeCase: (caseObj, note, callback) ->
-      data = new FormData()
-      data.append('note', note)
+      params = {note: note}
 
-      $http.post('/case/close/' + caseObj.id + '/', data, DEFAULT_POST_OPTS)
+      $http.post('/case/close/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS)
       .success(() ->
         caseObj.is_closed = true
         if callback
@@ -371,10 +386,9 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
     # Re-opens a case
     #----------------------------------------------------------------------------
     reopenCase: (caseObj, note, callback) ->
-      data = new FormData()
-      data.append('note', note)
+      params = {note: note}
 
-      $http.post('/case/reopen/' + caseObj.id + '/', data, DEFAULT_POST_OPTS)
+      $http.post('/case/reopen/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS)
       .success(() ->
         caseObj.is_closed = false
         if callback
@@ -385,10 +399,11 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
     # Re-labels a case
     #----------------------------------------------------------------------------
     relabelCase: (caseObj, labels, callback) ->
-      data = new FormData()
-      data.append('labels', (l.id for l in labels))
+      params = {
+        labels: (l.id for l in labels)
+      }
 
-      $http.post('/case/label/' + caseObj.id + '/', data, DEFAULT_POST_OPTS)
+      $http.post('/case/label/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS)
       .success(() ->
         caseObj.labels = labels
         if callback
@@ -399,10 +414,9 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
     # Updates a case's summary
     #----------------------------------------------------------------------------
     updateCaseSummary: (caseObj, summary, callback) ->
-      data = new FormData()
-      data.append('summary', summary)
+      params = {summary: summary}
 
-      $http.post('/case/update_summary/' + caseObj.id + '/', data, DEFAULT_POST_OPTS)
+      $http.post('/case/update_summary/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS)
       .success(() ->
         caseObj.summary = summary
         if callback

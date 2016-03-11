@@ -116,7 +116,7 @@ class CaseCRUDL(SmartCRUDL):
         permission = 'cases.case_update'
 
         def post(self, request, *args, **kwargs):
-            assignee = Partner.get_all(request.org).get(pk=request.POST['assignee_id'])
+            assignee = Partner.get_all(request.org).get(pk=request.POST['assignee'])
             case = self.get_object()
             case.reassign(request.user, assignee)
             return HttpResponse(status=204)
