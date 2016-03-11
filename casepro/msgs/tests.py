@@ -15,7 +15,7 @@ from django.utils.timezone import now
 from mock import patch, call
 from temba_client.utils import format_iso8601
 from xlrd import open_workbook
-from .models import Label, Message, MessageAction, Outgoing, MessageExport
+from .models import Label, Message, MessageAction, MessageExport, MessageFolder, Outgoing
 from .tasks import handle_messages, pull_messages
 
 
@@ -275,6 +275,84 @@ class MessageTest(BaseCasesTest):
         important = Label.objects.get(org=self.unicef, uuid="L-003", name="Important")
 
         self.assertEqual(set(message.labels.all()), {feedback, important})
+
+    def test_search(self):
+        eric = self.create_contact(self.nyaruka, 'C-101', "Nic")
+
+        # unlabelled
+        msg1 = self.create_message(self.unicef, 101, self.ann, "Hello 1", is_handled=True)
+        msg2 = self.create_message(self.unicef, 102, self.ann, "Hello 2", is_handled=True)
+
+        # unlabelled + flagged
+        msg3 = self.create_message(self.unicef, 103, self.ann, "Hello 3", is_handled=True,
+                                   is_flagged=True)
+
+        # unlabelled + archived
+        msg4 = self.create_message(self.unicef, 104, self.ann, "Hello 4", is_handled=True,
+                                   is_archived=True)
+
+        # labelled
+        msg5 = self.create_message(self.unicef, 105, self.ann, "Hello 5", [self.aids], is_handled=True)
+        msg6 = self.create_message(self.unicef, 106, self.ann, "Hello 6", [self.pregnancy], is_handled=True)
+
+        # labelled + flagged
+        msg7 = self.create_message(self.unicef, 107, self.ann, "Hello 7", [self.aids], is_handled=True,
+                                   is_flagged=True)
+        msg8 = self.create_message(self.unicef, 108, self.ann, "Hello 8", [self.pregnancy], is_handled=True,
+                                   is_flagged=True)
+
+        # labelled + archived
+        msg9 = self.create_message(self.unicef, 109, self.ann, "Hello 9", [self.aids], is_handled=True,
+                                   is_archived=True)
+        msg10 = self.create_message(self.unicef, 110, self.ann, "Hello 10", [self.pregnancy], is_handled=True,
+                                    is_archived=True)
+
+        # labelled + flagged + archived
+        msg11 = self.create_message(self.unicef, 111, self.ann, "Hello 11", [self.aids], is_handled=True,
+                                    is_flagged=True, is_archived=True)
+
+        # unhandled or inactive or other org
+        self.create_message(self.unicef, 201, self.ann, "Unhandled", is_handled=False)
+        self.create_message(self.unicef, 202, self.ann, "Deleted", is_active=False)
+        self.create_message(self.nyaruka, 301, eric, "Wrong org", is_handled=True)
+
+        def assert_search(user, params, results):
+            self.assertEqual(list(Message.search(self.unicef, user, params)), results)
+
+        # inbox as admin shows all non-archived labelled
+        assert_search(self.admin, {'folder': MessageFolder.inbox}, [msg8, msg7, msg6, msg5])
+
+        # inbox with label as admin shows all non-archived with that label
+        assert_search(self.admin, {'folder': MessageFolder.inbox, 'label': self.aids.pk}, [msg7, msg5])
+        assert_search(self.admin, {'folder': MessageFolder.inbox, 'label': self.pregnancy.pk}, [msg8, msg6])
+
+        # flagged as admin shows all non-archived flagged
+        assert_search(self.admin, {'folder': MessageFolder.flagged}, [msg8, msg7, msg3])
+
+        # archived as admin shows all archived
+        assert_search(self.admin, {'folder': MessageFolder.archived}, [msg11, msg10, msg9, msg4])
+
+        # unlabelled as admin shows all non-archived unlabelled
+        assert_search(self.admin, {'folder': MessageFolder.unlabelled}, [msg3, msg2, msg1])
+
+        # inbox as user shows all non-archived with their labels
+        assert_search(self.user1, {'folder': MessageFolder.inbox}, [msg8, msg7, msg6, msg5])
+        assert_search(self.user3, {'folder': MessageFolder.inbox}, [msg7, msg5])
+
+        # inbox with label as user shows all non-archived with that label.. if user can see that label
+        assert_search(self.user1, {'folder': MessageFolder.inbox, 'label': self.pregnancy.pk}, [msg8, msg6])
+        assert_search(self.user3, {'folder': MessageFolder.inbox, 'label': self.pregnancy.pk}, [])
+
+        # flagged as user shows all non-archived flagged with their labels
+        assert_search(self.user1, {'folder': MessageFolder.flagged}, [msg8, msg7])
+        assert_search(self.user3, {'folder': MessageFolder.flagged}, [msg7])
+
+        # archived as user shows all archived with their labels
+        assert_search(self.user1, {'folder': MessageFolder.archived}, [msg11, msg10, msg9])
+        assert_search(self.user3, {'folder': MessageFolder.archived}, [msg11, msg9])
+
+        # unlabelled as user throws exception
+        self.assertRaises(ValueError, Message.search, self.unicef, self.user1, {'folder': MessageFolder.unlabelled})
 
     @patch('casepro.test.TestBackend.label_messages')
     @patch('casepro.test.TestBackend.unlabel_messages')
