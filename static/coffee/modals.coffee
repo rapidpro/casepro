@@ -30,6 +30,8 @@ modals.controller 'NoteModalController', ['$scope', '$modalInstance', 'title', '
   $scope.fields = {note: {val: '', maxLength: maxLength}}
 
   $scope.ok = () ->
+    $scope.form.submitted = true
+
     if $scope.form.$valid
       $modalInstance.close($scope.fields.note.val)
 
@@ -60,7 +62,6 @@ modals.controller('ReplyModalController', ['$scope', '$modalInstance', 'maxLengt
 
   $scope.ok = () ->
     $scope.form.submitted = true
-
     if $scope.form.$valid
       $modalInstance.close($scope.fields.text.val)
 
@@ -80,7 +81,6 @@ modals.controller 'NewCaseModalController', ['$scope', '$modalInstance', 'messag
 
   $scope.ok = () ->
     $scope.form.submitted = true
-
     if $scope.form.$valid
       $modalInstance.close({summary: $scope.fields.summary.val, assignee: $scope.fields.assignee.val})
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
