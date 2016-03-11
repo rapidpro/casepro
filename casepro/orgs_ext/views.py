@@ -40,7 +40,7 @@ class OrgExtCRUDL(SmartCRUDL):
         fields = ('name', 'language', 'timezone', 'subdomain', 'api_token', 'logo', 'administrators', 'is_active')
 
     class List(OrgCRUDL.List):
-        pass
+        default_order = ('name',)
 
     class Home(OrgCRUDL.Home):
         fields = ('name', 'timezone', 'api_token', 'contact_fields', 'administrators')
