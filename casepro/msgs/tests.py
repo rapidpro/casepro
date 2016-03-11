@@ -200,6 +200,30 @@ class MessageTest(BaseCasesTest):
         self.msg4 = self.create_message(self.unicef, 104, self.ann, "Flagged", is_flagged=True)
         self.msg5 = self.create_message(self.unicef, 105, self.ann, "Inactive", is_active=False)
 
+    def test_triggers(self):
+        msg = self.create_message(self.unicef, 101, self.ann, "Normal")
+        self.assertFalse(msg.has_labels)
+
+        msg.labels.add(self.aids)
+        msg.refresh_from_db()
+        self.assertTrue(msg.has_labels)
+
+        msg.labels.add(self.pregnancy)
+        msg.refresh_from_db()
+        self.assertTrue(msg.has_labels)
+
+        msg.labels.remove(self.aids)
+        msg.refresh_from_db()
+        self.assertTrue(msg.has_labels)
+
+        msg.labels.remove(self.pregnancy)
+        msg.refresh_from_db()
+        self.assertFalse(msg.has_labels)
+
+        msg.labels.add(self.aids, self.pregnancy)  # add multiple
+        msg.refresh_from_db()
+        self.assertTrue(msg.has_labels)
+
     def test_save(self):
         # start with no labels or contacts
         Label.objects.all().delete()

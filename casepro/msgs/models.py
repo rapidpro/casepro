@@ -130,6 +130,8 @@ class Message(models.Model):
 
     labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this message"), related_name='messages')
 
+    has_labels = models.BooleanField(default=False)  # maintained via db triggers
+
     is_flagged = models.BooleanField(default=False)
 
     is_archived = models.BooleanField(default=False)
