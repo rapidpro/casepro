@@ -277,7 +277,7 @@ class MessageTest(BaseCasesTest):
         self.assertEqual(set(message.labels.all()), {feedback, important})
 
     def test_search(self):
-        eric = self.create_contact(self.nyaruka, 'C-101', "Nic")
+        eric = self.create_contact(self.nyaruka, 'C-101', "Eric")
 
         # unlabelled
         msg1 = self.create_message(self.unicef, 101, self.ann, "Hello 1", is_handled=True)
