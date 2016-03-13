@@ -130,6 +130,8 @@ class Message(models.Model):
 
     labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this message"), related_name='messages')
 
+    has_labels = models.BooleanField(default=False)  # maintained via db triggers
+
     is_flagged = models.BooleanField(default=False)
 
     is_archived = models.BooleanField(default=False)
@@ -163,54 +165,68 @@ class Message(models.Model):
         """
         Search for messages
         """
-        labels = Label.get_all(org, user)
+        folder = search.get('folder')
+        label_id = search.get('label')
+        include_archived = search.get('include_archived')
+        text = search.get('text')
+        contact_uuid = search.get('contact')
+        group_uuids = search.get('groups')
+        after = search.get('after')
+        before = search.get('before')
 
         # only show non-deleted handled messages
         queryset = org.incoming_messages.filter(is_active=True, is_handled=True)
+        all_label_access = user.can_administer(org)
 
-        # filter by user labels.. or exclude them for the unlabelled view
-        if search['folder'] == MessageFolder.unlabelled:
-            queryset = queryset.filter(type=Message.TYPE_INBOX)
-
-            # TODO need a trigger based has_labels flag on Message to speed up this view and the inbox view for admins
-            # For now we just return all messages, and let angular remove the labelled ones
-
-            # queryset = queryset.exclude(labels__in=labels)  # too slow...
-            pass
+        if all_label_access:
+            if folder == MessageFolder.inbox:
+                if label_id:
+                    label = Label.get_all(org, user).filter(pk=label_id).first()
+                    queryset = queryset.filter(labels=label)
+                else:
+                    queryset = queryset.filter(has_labels=True)
+            elif folder == MessageFolder.unlabelled:
+                # only show inbox messages in unlabelled
+                queryset = queryset.filter(type=Message.TYPE_INBOX, has_labels=False)
         else:
-            if search['label']:
-                labels = labels.filter(pk=search['label'])
+            labels = Label.get_all(org, user)
+
+            if label_id:
+                labels = labels.filter(pk=label_id)
             else:
                 # if not filtering by a single label, need distinct to avoid duplicates
                 queryset = queryset.distinct()
 
-            queryset = queryset.filter(labels__in=list(labels))
+            queryset = queryset.filter(has_labels=True, labels__in=list(labels))
+
+            if folder == MessageFolder.unlabelled:
+                raise ValueError("Unlabelled folder is only accessible to administrators")
+
+        # only show flagged messages in flagged folder
+        if folder == MessageFolder.flagged:
+            queryset = queryset.filter(is_flagged=True)
 
         # archived messages can be implicitly or explicitly included depending on folder
-        if search['folder'] == MessageFolder.archived:
+        if folder == MessageFolder.archived:
             queryset = queryset.filter(is_archived=True)
-        elif search['folder'] == MessageFolder.flagged:
-            if not search['include_archived']:
+        elif folder == MessageFolder.flagged:
+            if not include_archived:
                 queryset = queryset.filter(is_archived=False)
         else:
             queryset = queryset.filter(is_archived=False)
 
-        # only show flagged messages in flagged folder
-        if search['folder'] == MessageFolder.flagged:
-            queryset = queryset.filter(is_flagged=True)
+        if text:
+            queryset = queryset.filter(text__icontains=text)
 
-        if search['text']:
-            queryset = queryset.filter(text__icontains=search['text'])
+        if contact_uuid:
+            queryset = queryset.filter(contact__uuid=contact_uuid)
+        if group_uuids:
+            queryset = queryset.filter(contact__groups__uuid__in=group_uuids).distinct()
 
-        if search['contact']:
-            queryset = queryset.filter(contact__uuid=search['contact'])
-        if search['groups']:
-            queryset = queryset.filter(contact__groups__uuid__in=search['groups']).distinct()
-
-        if search['after']:
-            queryset = queryset.filter(created_on__gt=search['after'])
-        if search['before']:
-            queryset = queryset.filter(created_on__lt=search['before'])
+        if after:
+            queryset = queryset.filter(created_on__gt=after)
+        if before:
+            queryset = queryset.filter(created_on__lt=before)
 
         queryset = queryset.select_related('contact').prefetch_related('labels', 'case__assignee')
 
