@@ -33,9 +33,6 @@ class ContactSyncer(BaseSyncer):
     prefetch_related = ('groups',)
 
     def local_kwargs(self, org, remote):
-        if remote.blocked:  # we don't keep blocked contacts
-            return None
-
         # groups and fields are updated via a post save signal handler
         groups = [(g.uuid, g.name) for g in remote.groups]
         fields = {k: v for k, v in six.iteritems(remote.fields) if v is not None}  # don't include none values
@@ -45,6 +42,7 @@ class ContactSyncer(BaseSyncer):
             'uuid': remote.uuid,
             'name': remote.name,
             'language': remote.language,
+            'is_blocked': remote.blocked,
             'is_stub': False,
             'fields': fields,
             SAVE_GROUPS_ATTR: groups,
