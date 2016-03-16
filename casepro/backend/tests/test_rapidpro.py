@@ -38,6 +38,7 @@ class ContactSyncerTest(BaseCasesTest):
             'uuid': "C-001",
             'name': "Bob McFlow",
             'language': "eng",
+            'is_blocked': False,
             'is_stub': False,
             'fields': {'age': "34"},
             '__data__groups': [("G-001", "Customers")],
@@ -55,6 +56,7 @@ class ContactSyncerTest(BaseCasesTest):
             groups=[],
             fields={},
             language=None,
+            blocked=False,
             modified_on=now()
         ), {}))
 
@@ -72,6 +74,7 @@ class ContactSyncerTest(BaseCasesTest):
             groups=[ObjectRef.create(uuid='G-003', name="Reporters")],
             fields={'chat_name': "ann", 'age': None},
             language='eng',
+            blocked=False,
             modified_on=now()
         ), {}))
 
@@ -83,6 +86,7 @@ class ContactSyncerTest(BaseCasesTest):
             groups=[ObjectRef.create(uuid='G-003', name="Reporters")],
             fields={'chat_name': "ann"},
             language='eng',
+            blocked=False,
             modified_on=now()
         ), {}))
 
@@ -93,7 +97,9 @@ class ContactSyncerTest(BaseCasesTest):
             urns=['tel:1234'],
             groups=[ObjectRef.create(uuid='G-002', name="Females")],
             fields={'chat_name': "ann"},
-            language='eng', modified_on=now()
+            language='eng',
+            blocked=False,
+            modified_on=now()
         ), {}))
 
         # field value change
@@ -103,7 +109,9 @@ class ContactSyncerTest(BaseCasesTest):
             urns=['tel:1234'],
             groups=[ObjectRef.create(uuid='G-003', name="Reporters")],
             fields={'chat_name': "ann8111"},
-            language='eng', modified_on=now()
+            language='eng',
+            blocked=False,
+            modified_on=now()
         ), {}))
 
         # new field
@@ -113,7 +121,9 @@ class ContactSyncerTest(BaseCasesTest):
             urns=['tel:1234'],
             groups=[ObjectRef.create(uuid='G-003', name="Reporters")],
             fields={'chat_name': "ann", 'age': "35"},
-            language='eng', modified_on=now()
+            language='eng',
+            blocked=False,
+            modified_on=now()
         ), {}))
 
 
@@ -301,26 +311,6 @@ class RapidProBackendTest(BaseCasesTest):
 
         self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, ann})
         self.assertEqual(set(Contact.objects.filter(is_active=False)), {jim})
-
-        mock_get_contacts.side_effect = [
-            # first call to get active contacts will show one contact is now blocked
-            MockClientQuery(
-                [
-                    TembaContact.create(
-                        uuid="C-001", name="Bob McFlough", language="fre", urns=["twitter:bobflow"],
-                        groups=[ObjectRef.create(uuid="G-002", name="Spammers")],
-                        fields={'age': 35}, failed=True, blocked=True
-                    )
-                ]
-            ),
-            MockClientQuery([])
-        ]
-
-        with self.assertNumQueries(5):
-            self.assertEqual(self.backend.pull_contacts(self.unicef, None, None), (0, 0, 1, 0))  # blocked = deleted
-
-        self.assertEqual(set(Contact.objects.filter(is_active=True)), {ann})
-        self.assertEqual(set(Contact.objects.filter(is_active=False)), {bob, jim})
 
     @patch('dash.orgs.models.TembaClient2.get_fields')
     def test_pull_fields(self, mock_get_fields):

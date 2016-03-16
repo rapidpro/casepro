@@ -128,6 +128,8 @@ class Contact(models.Model):
 
     is_active = models.BooleanField(default=True, help_text="Whether this contact is active")
 
+    is_blocked = models.BooleanField(default=False, help_text="Whether this contact is blocked")
+
     is_stub = models.BooleanField(default=False, help_text="Whether this contact is just a stub")
 
     suspended_groups = models.ManyToManyField(Group, help_text=_("Groups this contact has been suspended from"))
