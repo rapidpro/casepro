@@ -32,7 +32,6 @@ class BaseBackend(object):
         :param progress_callback: callable that will be called from time to time with number of contacts pulled
         :return: tuple of the number of contacts created, updated, deleted and ignored
         """
-        pass
 
     @abstractmethod
     def pull_fields(self, org):
@@ -42,7 +41,6 @@ class BaseBackend(object):
         :param org: the org
         :return: tuple of the number of fields created, updated, deleted and ignored
         """
-        pass
 
     @abstractmethod
     def pull_groups(self, org):
@@ -52,7 +50,6 @@ class BaseBackend(object):
         :param org: the org
         :return: tuple of the number of groups created, updated, deleted and ignored
         """
-        pass
 
     @abstractmethod
     def pull_labels(self, org):
@@ -62,7 +59,6 @@ class BaseBackend(object):
         :param org: the org
         :return: tuple of the number of labels created, updated, deleted and ignored
         """
-        pass
 
     @abstractmethod
     def pull_messages(self, org, modified_after, modified_before, as_handled=False, progress_callback=None):
@@ -76,7 +72,6 @@ class BaseBackend(object):
         :param progress_callback: callable that will be called from time to time with number of messages pulled
         :return: tuple of the number of messages created, updated, deleted and ignored
         """
-        pass
 
     @abstractmethod
     def create_label(self, org, name):
@@ -87,7 +82,6 @@ class BaseBackend(object):
         :param name: the name, e.g. "Spam"
         :return: the backend label UUID
         """
-        pass
 
     @abstractmethod
     def create_outgoing(self, org, text, contacts, urns):
@@ -100,7 +94,6 @@ class BaseBackend(object):
         :param urns: the raw URN recipients
         :return: tuple of the broadcast id and it's timestamp
         """
-        pass
 
     @abstractmethod
     def add_to_group(self, org, contact, group):
@@ -111,7 +104,6 @@ class BaseBackend(object):
         :param contact: the contact
         :param group: the group
         """
-        pass
 
     @abstractmethod
     def remove_from_group(self, org, contact, group):
@@ -122,7 +114,6 @@ class BaseBackend(object):
         :param contact: the contact
         :param group: the group
         """
-        pass
 
     @abstractmethod
     def stop_runs(self, org, contact):
@@ -132,7 +123,6 @@ class BaseBackend(object):
         :param org: the org
         :param contact: the contact
         """
-        pass
 
     @abstractmethod
     def label_messages(self, org, messages, label):
@@ -143,7 +133,6 @@ class BaseBackend(object):
         :param messages: the messages
         :param label: the label
         """
-        pass
 
     @abstractmethod
     def unlabel_messages(self, org, messages, label):
@@ -154,7 +143,6 @@ class BaseBackend(object):
         :param messages: the messages
         :param label: the label
         """
-        pass
 
     @abstractmethod
     def archive_messages(self, org, messages):
@@ -164,7 +152,6 @@ class BaseBackend(object):
         :param org: the org
         :param messages: the messages
         """
-        pass
 
     @abstractmethod
     def archive_contact_messages(self, org, contact):
@@ -174,7 +161,6 @@ class BaseBackend(object):
         :param org: the org
         :param contact: the contact
         """
-        pass
 
     @abstractmethod
     def restore_messages(self, org, messages):
@@ -184,7 +170,6 @@ class BaseBackend(object):
         :param org: the org
         :param messages: the messages
         """
-        pass
 
     @abstractmethod
     def flag_messages(self, org, messages):
@@ -194,7 +179,6 @@ class BaseBackend(object):
         :param org: the org
         :param messages: the messages
         """
-        pass
 
     @abstractmethod
     def unflag_messages(self, org, messages):
@@ -204,7 +188,6 @@ class BaseBackend(object):
         :param org: the org
         :param messages: the messages
         """
-        pass
 
     @abstractmethod
     def fetch_contact_messages(self, org, contact, created_after, created_before):
@@ -217,4 +200,3 @@ class BaseBackend(object):
         :param created_before: include messages created before this time
         :return: the messages as JSON objects in reverse chronological order
         """
-        pass

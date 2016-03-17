@@ -441,6 +441,8 @@ class Outgoing(models.Model):
     def create(cls, org, user, activity, text, contacts, urns, case=None):
         if not text:
             raise ValueError("Message text cannot be empty")
+        if not contacts and not urns:
+            raise ValueError("Message must have at least one recipient")
 
         backend_id, backend_created_on = get_backend().create_outgoing(org, text, list(contacts), urns)
 

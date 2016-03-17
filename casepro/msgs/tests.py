@@ -252,6 +252,7 @@ class MessageTest(BaseCasesTest):
         self.assertEqual(message.is_flagged, True)
         self.assertEqual(message.is_archived, False)
         self.assertEqual(message.created_on, d1)
+        self.assertEqual(six.text_type(message), "I have lots of questions!")
 
         spam = Label.objects.get(org=self.unicef, uuid="L-001", name="Spam")
 
@@ -276,12 +277,20 @@ class MessageTest(BaseCasesTest):
 
         self.assertEqual(set(message.labels.all()), {feedback, important})
 
+    def test_release(self):
+        msg = self.create_message(self.unicef, 101, self.ann, "Hi", [self.pregnancy, self.aids])
+        msg.release()
+
+        self.assertEqual(msg.is_active, False)
+        self.assertEqual(msg.labels.count(), 0)
+
     def test_search(self):
+        bob = self.create_contact(self.nyaruka, 'C-002', "Bob", [self.reporters])
         eric = self.create_contact(self.nyaruka, 'C-101', "Eric")
 
         # unlabelled
         msg1 = self.create_message(self.unicef, 101, self.ann, "Hello 1", is_handled=True)
-        msg2 = self.create_message(self.unicef, 102, self.ann, "Hello 2", is_handled=True)
+        msg2 = self.create_message(self.unicef, 102, bob, "Hello 2", is_handled=True)
 
         # unlabelled + flagged
         msg3 = self.create_message(self.unicef, 103, self.ann, "Hello 3", is_handled=True,
@@ -293,18 +302,18 @@ class MessageTest(BaseCasesTest):
 
         # labelled
         msg5 = self.create_message(self.unicef, 105, self.ann, "Hello 5", [self.aids], is_handled=True)
-        msg6 = self.create_message(self.unicef, 106, self.ann, "Hello 6", [self.pregnancy], is_handled=True)
+        msg6 = self.create_message(self.unicef, 106, bob, "Hello 6", [self.pregnancy], is_handled=True)
 
         # labelled + flagged
         msg7 = self.create_message(self.unicef, 107, self.ann, "Hello 7", [self.aids], is_handled=True,
                                    is_flagged=True)
-        msg8 = self.create_message(self.unicef, 108, self.ann, "Hello 8", [self.pregnancy], is_handled=True,
+        msg8 = self.create_message(self.unicef, 108, bob, "Hello 8", [self.pregnancy], is_handled=True,
                                    is_flagged=True)
 
         # labelled + archived
         msg9 = self.create_message(self.unicef, 109, self.ann, "Hello 9", [self.aids], is_handled=True,
                                    is_archived=True)
-        msg10 = self.create_message(self.unicef, 110, self.ann, "Hello 10", [self.pregnancy], is_handled=True,
+        msg10 = self.create_message(self.unicef, 110, bob, "Hello 10", [self.pregnancy], is_handled=True,
                                     is_archived=True)
 
         # labelled + flagged + archived
@@ -326,8 +335,11 @@ class MessageTest(BaseCasesTest):
         assert_search(self.admin, {'folder': MessageFolder.inbox, 'label': self.aids.pk}, [msg7, msg5])
         assert_search(self.admin, {'folder': MessageFolder.inbox, 'label': self.pregnancy.pk}, [msg8, msg6])
 
-        # flagged as admin shows all non-archived flagged
+        # flagged with archived included flag, as admin shows all flagged
         assert_search(self.admin, {'folder': MessageFolder.flagged}, [msg8, msg7, msg3])
+
+        # flagged as admin shows all non-archived flagged
+        assert_search(self.admin, {'folder': MessageFolder.flagged, 'include_archived': True}, [msg11, msg8, msg7, msg3])
 
         # archived as admin shows all archived
         assert_search(self.admin, {'folder': MessageFolder.archived}, [msg11, msg10, msg9, msg4])
@@ -353,6 +365,15 @@ class MessageTest(BaseCasesTest):
 
         # unlabelled as user throws exception
         self.assertRaises(ValueError, Message.search, self.unicef, self.user1, {'folder': MessageFolder.unlabelled})
+
+        # by contact in the inbox
+        assert_search(self.admin, {'folder': MessageFolder.inbox, 'contact': bob.uuid}, [msg8, msg6])
+
+        # by contact group in the inbox
+        assert_search(self.admin, {'folder': MessageFolder.inbox, 'groups': [self.reporters.uuid]}, [msg8, msg6])
+
+        # by text
+        assert_search(self.admin, {'folder': MessageFolder.inbox, 'text': "LO 5"}, [msg5])
 
     @patch('casepro.test.TestBackend.label_messages')
     @patch('casepro.test.TestBackend.unlabel_messages')
@@ -702,10 +723,18 @@ class OutgoingTest(BaseCasesTest):
         self.assertEqual(outgoing.org, self.unicef)
         self.assertEqual(outgoing.activity, Outgoing.BULK_REPLY)
         self.assertEqual(outgoing.backend_id, 201)
+        self.assertEqual(outgoing.text, "That's great")
         self.assertEqual(outgoing.recipient_count, 3)
         self.assertEqual(outgoing.created_by, self.user1)
         self.assertEqual(outgoing.created_on, d1)
         self.assertEqual(outgoing.case, None)
+        self.assertEqual(six.text_type(outgoing), "That's great")
+
+        # can't create an outgoing message with no text
+        self.assertRaises(ValueError, Outgoing.create, self.unicef, self.user1, Outgoing.BULK_REPLY, "", [ann], [])
+
+        # can't create an outgoing message with no recipients
+        self.assertRaises(ValueError, Outgoing.create, self.unicef, self.user1, Outgoing.BULK_REPLY, "Hi", [], [])
 
 
 class TasksTest(BaseCasesTest):
