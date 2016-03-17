@@ -339,7 +339,8 @@ class MessageTest(BaseCasesTest):
         assert_search(self.admin, {'folder': MessageFolder.flagged}, [msg8, msg7, msg3])
 
         # flagged as admin shows all non-archived flagged
-        assert_search(self.admin, {'folder': MessageFolder.flagged, 'include_archived': True}, [msg11, msg8, msg7, msg3])
+        assert_search(self.admin, {'folder': MessageFolder.flagged, 'include_archived': True},
+                      [msg11, msg8, msg7, msg3])
 
         # archived as admin shows all archived
         assert_search(self.admin, {'folder': MessageFolder.archived}, [msg11, msg10, msg9, msg4])
