@@ -68,9 +68,9 @@ class RuleTest(BaseCasesTest):
         msg6 = self.create_message(self.unicef, 106, self.ann, "pregnancy + AIDS")
         all_messages = [msg1, msg2, msg3, msg4, msg5, msg6]
 
-        rule1 = Rule(ContainsAnyTest(["aids", "hiv"]), [LabelAction(self.aids)])
-        rule2 = Rule(ContainsAnyTest(["sida"]), [LabelAction(self.aids)])
-        rule3 = Rule(ContainsAnyTest(["pregnant", "pregnancy"]), [LabelAction(self.pregnancy)])
+        rule1 = Rule([ContainsAnyTest(["aids", "hiv"])], [LabelAction(self.aids)])
+        rule2 = Rule([ContainsAnyTest(["sida"])], [LabelAction(self.aids)])
+        rule3 = Rule([ContainsAnyTest(["pregnant", "pregnancy"])], [LabelAction(self.pregnancy)])
 
         processor = Rule.BatchProcessor(self.unicef, [rule1, rule2, rule3])
 

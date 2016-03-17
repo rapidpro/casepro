@@ -32,7 +32,6 @@ class Test(object):
     def from_json(cls, json_obj, context):
         if not cls.CLASS_BY_TYPE:
             cls.CLASS_BY_TYPE = {
-                AndTest.TYPE: AndTest,
                 ContainsAnyTest.TYPE: ContainsAnyTest,
                 ContactInAnyGroupTest.TYPE: ContactInAnyGroupTest,
             }
@@ -49,29 +48,6 @@ class Test(object):
         """
         Subclasses must implement this to return a boolean.
         """
-
-
-class AndTest(Test):
-    """
-    Test which returns the AND'ed result of other tests
-    """
-    TYPE = 'and'
-
-    def __init__(self, tests):
-        self.tests = tests
-
-    @classmethod
-    def from_json(cls, json_obj, context):
-        return AndTest([Test.from_json(t, context) for t in json_obj['tests']])
-
-    def to_json(self):
-        return {'type': self.TYPE, 'tests': [t.to_json() for t in self.tests]}
-
-    def matches(self, message):
-        for test in self.tests:
-            if not test.matches(message):
-                return False
-        return True
 
 
 class ContainsAnyTest(Test):
@@ -186,18 +162,22 @@ class Rule(object):
     At some point this we'll likely separate rules from labels and this will become an actual model. For now we generate
     a rule for each label on the fly.
     """
-    def __init__(self, test, actions):
-        self.test = test
+    def __init__(self, tests, actions):
+        self.tests = tests
         self.actions = actions
 
     @classmethod
     def from_label(cls, label):
-        test = ContainsAnyTest(label.get_keywords())
-        actions = [LabelAction(label)]
-        return cls(test, actions)
+        return cls([ContainsAnyTest(label.get_keywords())], [LabelAction(label)])
 
     def matches(self, message):
-        return self.test.matches(message)
+        """
+        Returns whether this rule matches the given message, i.e. all of its tests match the message
+        """
+        for test in self.tests:
+            if not test.matches(message):
+                return False
+        return True
 
     class BatchProcessor(object):
         """
