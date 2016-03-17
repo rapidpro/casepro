@@ -5,9 +5,19 @@ import six
 
 from abc import ABCMeta, abstractmethod
 from casepro.backend import get_backend
+from casepro.contacts.models import Group
 from casepro.msgs.models import Label
 from casepro.utils import normalize
 from collections import defaultdict
+from dash.utils import intersection
+
+
+class DeserializationContext(object):
+    """
+    Context object passed to all test or action from_json methods
+    """
+    def __init__(self, org):
+        self.org = org
 
 
 class Test(object):
@@ -19,11 +29,12 @@ class Test(object):
     CLASS_BY_TYPE = None  # lazily initialized below
 
     @classmethod
-    def from_json(cls, json_obj):
+    def from_json(cls, json_obj, context):
         if not cls.CLASS_BY_TYPE:
             cls.CLASS_BY_TYPE = {
                 AndTest.TYPE: AndTest,
                 ContainsAnyTest.TYPE: ContainsAnyTest,
+                ContactInAnyGroupTest.TYPE: ContactInAnyGroupTest,
             }
 
         test_type = json_obj['type']
@@ -31,7 +42,7 @@ class Test(object):
         if not test_cls:  # pragma: no cover
             raise ValueError("Unknown test type: %s" % test_type)
 
-        return test_cls.from_json(json_obj)
+        return test_cls.from_json(json_obj, context)
 
     @abstractmethod
     def matches(self, message):
@@ -50,8 +61,8 @@ class AndTest(Test):
         self.tests = tests
 
     @classmethod
-    def from_json(cls, json_obj):
-        return AndTest([Test.from_json(t) for t in json_obj['tests']])
+    def from_json(cls, json_obj, context):
+        return AndTest([Test.from_json(t, context) for t in json_obj['tests']])
 
     def to_json(self):
         return {'type': self.TYPE, 'tests': [t.to_json() for t in self.tests]}
@@ -73,7 +84,7 @@ class ContainsAnyTest(Test):
         self.keywords = [normalize(word) for word in keywords]
 
     @classmethod
-    def from_json(cls, json_obj):
+    def from_json(cls, json_obj, context):
         return cls(json_obj['keywords'])
 
     def to_json(self):
@@ -85,6 +96,27 @@ class ContainsAnyTest(Test):
             if regex.search(r'\b' + keyword + r'\b', norm_text, flags=regex.UNICODE | regex.V0):
                 return True
         return False
+
+
+class ContactInAnyGroupTest(Test):
+    """
+    Test that returns whether the message was sent from a contact in any of the given groups
+    """
+    TYPE = 'groups_any'
+
+    def __init__(self, groups):
+        self.groups = groups
+
+    @classmethod
+    def from_json(cls, json_obj, context):
+        return cls(list(Group.objects.filter(org=context.org, uuid__in=json_obj['groups']).order_by('pk')))
+
+    def to_json(self):
+        return {'type': self.TYPE, 'groups': [g.uuid for g in self.groups]}
+
+    def matches(self, message):
+        contact_groups = set(message.contact.groups.all())
+        return bool(intersection(self.groups, contact_groups))
 
 
 class Action(object):
@@ -131,7 +163,7 @@ class LabelAction(Action):
 
     @classmethod
     def from_json(cls, json_obj, context):
-        return cls(Label.objects.get(org=context['org'], uuid=json_obj['label']))
+        return cls(Label.objects.get(org=context.org, uuid=json_obj['label']))
 
     def to_json(self):
         return {'type': self.TYPE, 'label': self.label.uuid}
