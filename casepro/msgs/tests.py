@@ -38,13 +38,6 @@ class LabelTest(BaseCasesTest):
         self.assertEqual(set(Label.get_all(self.unicef, self.user1)), {self.aids, self.pregnancy})  # MOH user
         self.assertEqual(set(Label.get_all(self.unicef, self.user3)), {self.aids})  # WHO user
 
-    def test_get_keyword_map(self):
-        self.assertEqual(Label.get_keyword_map(self.unicef), {'aids': self.aids,
-                                                              'hiv': self.aids,
-                                                              'pregnant': self.pregnancy,
-                                                              'pregnancy': self.pregnancy})
-        self.assertEqual(Label.get_keyword_map(self.nyaruka), {'java': self.code, 'python': self.code, 'go': self.code})
-
     def test_release(self):
         self.aids.release()
         self.assertFalse(self.aids.is_active)
@@ -795,8 +788,8 @@ class TasksTest(BaseCasesTest):
         self.assertEqual(set(msg3.labels.all()), {self.pregnancy})
 
         mock_label_messages.assert_has_calls([
-            call(self.unicef, [msg1, msg2], self.aids),
-            call(self.unicef, [msg3], self.pregnancy)
+            call(self.unicef, {msg1, msg2}, self.aids),
+            call(self.unicef, {msg3}, self.pregnancy)
         ], any_order=True)
 
         # check msg 5 was added to the case and archived
@@ -807,9 +800,9 @@ class TasksTest(BaseCasesTest):
 
         # check task result
         task_state = self.unicef.get_task_state('message-handle')
-        self.assertEqual(task_state.get_last_results(), {'messages': 5, 'labelled': 3, 'case_replies': 1})
+        self.assertEqual(task_state.get_last_results(), {'handled': 5, 'case_replies': 1, 'rules_matched': 3})
 
         # check calling again...
         handle_messages(self.unicef.pk)
         task_state = self.unicef.get_task_state('message-handle')
-        self.assertEqual(task_state.get_last_results(), {'messages': 0, 'labelled': 0, 'case_replies': 0})
+        self.assertEqual(task_state.get_last_results(), {'handled': 0, 'case_replies': 0, 'rules_matched': 0})

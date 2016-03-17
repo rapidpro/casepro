@@ -1,11 +1,10 @@
 from __future__ import unicode_literals
 
 import regex
-import six
 
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact
-from casepro.utils import normalize, parse_csv
+from casepro.utils import parse_csv
 from casepro.utils.export import BaseExport
 from dash.orgs.models import Org
 from dash.utils import chunks
@@ -67,19 +66,6 @@ class Label(models.Model):
 
         partner = user.get_partner()
         return partner.get_labels() if partner else cls.objects.none()
-
-    @classmethod
-    def get_keyword_map(cls, org):
-        """
-        Gets a map of all keywords to their corresponding labels
-        :param org: the org
-        :return: map of keywords to labels
-        """
-        labels_by_keyword = {}
-        for label in Label.get_all(org):
-            for keyword in label.get_keywords():
-                labels_by_keyword[keyword] = label
-        return labels_by_keyword
 
     @classmethod
     def lock(cls, org, uuid):
@@ -231,21 +217,6 @@ class Message(models.Model):
         queryset = queryset.select_related('contact').prefetch_related('labels', 'case__assignee')
 
         return queryset.order_by('-created_on')
-
-    def auto_label(self, labels_by_keyword):
-        """
-        Applies the auto-label matcher to this message
-        :param labels_by_keyword: a map of labels by each keyword
-        :return: the set of matching labels
-        """
-        norm_text = normalize(self.text)
-        matches = set()
-
-        for keyword, label in six.iteritems(labels_by_keyword):
-            if regex.search(r'\b' + keyword + r'\b', norm_text, flags=regex.IGNORECASE | regex.UNICODE | regex.V0):
-                matches.add(label)
-
-        return matches
 
     def get_history(self):
         """

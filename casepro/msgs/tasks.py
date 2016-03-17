@@ -1,8 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-import six
-
-from collections import defaultdict
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from dash.orgs.tasks import org_task
@@ -36,21 +33,27 @@ def pull_messages(org, since, until):
 @org_task('message-handle')
 def handle_messages(org, since, until):
     from casepro.backend import get_backend
-    from casepro.cases.models import Case, Label
-    from .models import Message
+    from casepro.cases.models import Case
+    from casepro.rules.models import Rule
+    from .models import Label, Message
     backend = get_backend()
 
-    labelled, unlabelled, case_replies = [], [], []
+    case_replies = []
+    num_rules_matched = 0
 
     # fetch all unhandled messages who now have full contacts
-    unhandled = list(Message.get_unhandled(org).filter(contact__is_stub=False).select_related('contact'))
+    unhandled = Message.get_unhandled(org).filter(contact__is_stub=False)
+    unhandled = list(unhandled.select_related('contact').prefetch_related('contact__groups'))
+
     if unhandled:
-        labels_by_keyword = Label.get_keyword_map(org)
-        label_matches = defaultdict(list)  # messages that match each label
+        # load all org labels and convert to rules
+        rules = [Rule.from_label(label) for label in Label.get_all(org)]
+        rule_processor = Rule.BatchProcessor(org, rules)
 
         for msg in unhandled:
             open_case = Case.get_open_for_contact_on(org, msg.contact, msg.created_on)
 
+            # only apply rules if there isn't a currently open case for this contact
             if open_case:
                 msg.case = open_case
                 msg.is_archived = True
@@ -58,33 +61,19 @@ def handle_messages(org, since, until):
 
                 case_replies.append(msg)
             else:
-                # only apply labels if there isn't a currently open case for this contact
-                matched_labels = msg.auto_label(labels_by_keyword)
-                if matched_labels:
-                    labelled.append(msg)
-                    for label in matched_labels:
-                        label_matches[label].append(msg)
-                else:
-                    unlabelled.append(msg)
-
-        # add labels to matching messages
-        for label, matched_msgs in six.iteritems(label_matches):
-            if matched_msgs:
-                # TODO check for pointless re-labelling
-
-                for msg in matched_msgs:
-                    msg.labels.add(label)
-
-                backend.label_messages(org, matched_msgs, label)
+                rules_matched, actions_deferred = rule_processor.include_messages(msg)
+                num_rules_matched += rules_matched
 
         # archive messages which are case replies on the backend
         if case_replies:
             backend.archive_messages(org, case_replies)
 
+        rule_processor.apply_actions()
+
         # mark all of these messages as handled
         Message.objects.filter(pk__in=[m.pk for m in unhandled]).update(is_handled=True)
 
-    return {'messages': len(unhandled), 'labelled': len(labelled), 'case_replies': len(case_replies)}
+    return {'handled': len(unhandled), 'rules_matched': num_rules_matched, 'case_replies': len(case_replies)}
 
 
 @shared_task
