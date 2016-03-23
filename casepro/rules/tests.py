@@ -2,35 +2,81 @@ from __future__ import unicode_literals
 
 from casepro.test import BaseCasesTest
 from mock import patch, call
-from .models import Test, ContainsAnyTest, Action, LabelAction, Rule, DeserializationContext
+from .models import Test, ContainsTest, Action, LabelAction, Rule, DeserializationContext, Quantifier
 
 
 class TestsTest(BaseCasesTest):
+    last_backend_id = 0
+
     def setUp(self):
         super(TestsTest, self).setUp()
 
         self.context = DeserializationContext(self.unicef)
-        self.ann = self.create_contact(self.unicef, 'C-001', "Ann", [self.females])
-        self.bob = self.create_contact(self.unicef, 'C-002', "Bob", [self.males])
+        self.ann = self.create_contact(self.unicef, 'C-001', "Ann", [self.females], {'city': "Kigali"})
+        self.bob = self.create_contact(self.unicef, 'C-002', "Bob", [self.males], {'city': "Seattle"})
+        self.cat = self.create_contact(self.unicef, 'C-003', "Cat", [self.females, self.reporters], {})
 
-    def test_contains_any(self):
-        test = Test.from_json({'type': 'contains_any', 'keywords': ["RED", "Blue"]}, self.context)
-        self.assertEqual(test.TYPE, 'contains_any')
+    def assertTest(self, test, message_contact, message_text, result):
+        self.last_backend_id += 1
+        msg = self.create_message(self.unicef, self.last_backend_id, message_contact, message_text)
+        self.assertEqual(test.matches(msg), result)
+
+    def test_contains(self):
+        test = Test.from_json({'type': 'contains', 'keywords': ["RED", "Blue"], 'quantifier': 'any'}, self.context)
+        self.assertEqual(test.TYPE, 'contains')
         self.assertEqual(test.keywords, ["red", "blue"])
-        self.assertEqual(test.to_json(), {'type': 'contains_any', 'keywords': ["red", "blue"]})
+        self.assertEqual(test.quantifier, Quantifier.ANY)
+        self.assertEqual(test.to_json(), {'type': 'contains', 'keywords': ["red", "blue"], 'quantifier': 'any'})
 
-        self.assertFalse(test.matches(self.create_message(self.unicef, 101, self.ann, "Fred Blueth")))
-        self.assertTrue(test.matches(self.create_message(self.unicef, 102, self.ann, "red")))
-        self.assertTrue(test.matches(self.create_message(self.unicef, 103, self.ann, "tis Blue")))
+        self.assertTest(test, self.ann, "Fred Blueth", False)
+        self.assertTest(test, self.ann, "red", True)
+        self.assertTest(test, self.ann, "tis Blue", True)
 
-    def test_contact_in_any_group(self):
-        test = Test.from_json({'type': 'groups_any', 'groups': ["G-002", "G-003"]}, self.context)
-        self.assertEqual(test.TYPE, 'groups_any')
+        test.quantifier = Quantifier.ALL
+
+        self.assertTest(test, self.ann, "Fred Blueth", False)
+        self.assertTest(test, self.ann, "red", False)
+        self.assertTest(test, self.ann, "yo RED Blue", True)
+
+        test.quantifier = Quantifier.NONE
+
+        self.assertTest(test, self.ann, "Fred Blueth", True)
+        self.assertTest(test, self.ann, "red", False)
+        self.assertTest(test, self.ann, "yo RED Blue", False)
+
+    def test_groups(self):
+        test = Test.from_json({'type': 'groups', 'groups': ["G-002", "G-003"], 'quantifier': 'any'}, self.context)
+        self.assertEqual(test.TYPE, 'groups')
         self.assertEqual(set(test.groups), {self.females, self.reporters})
-        self.assertEqual(test.to_json(), {'type': 'groups_any', 'groups': ["G-002", "G-003"]})
+        self.assertEqual(test.quantifier, Quantifier.ANY)
+        self.assertEqual(test.to_json(), {'type': 'groups', 'groups': ["G-002", "G-003"], 'quantifier': 'any'})
 
-        self.assertTrue(test.matches(self.create_message(self.unicef, 101, self.ann, "Yes")))
-        self.assertFalse(test.matches(self.create_message(self.unicef, 102, self.bob, "Yes")))
+        self.assertTest(test, self.ann, "Yes", True)
+        self.assertTest(test, self.bob, "Yes", False)
+        self.assertTest(test, self.cat, "Yes", True)
+
+        test.quantifier = Quantifier.ALL
+
+        self.assertTest(test, self.ann, "Yes", False)
+        self.assertTest(test, self.bob, "Yes", False)
+        self.assertTest(test, self.cat, "Yes", True)
+
+        test.quantifier = Quantifier.NONE
+
+        self.assertTest(test, self.ann, "Yes", False)
+        self.assertTest(test, self.bob, "Yes", True)
+        self.assertTest(test, self.cat, "Yes", False)
+
+    def test_field(self):
+        test = Test.from_json({'type': 'field', 'key': "city", 'values': ["Kigali", "Lusaka"]}, self.context)
+        self.assertEqual(test.TYPE, 'field')
+        self.assertEqual(test.key, "city")
+        self.assertEqual(test.values, ["kigali", "lusaka"])
+        self.assertEqual(test.to_json(), {'type': 'field', 'key': "city", 'values': ["kigali", "lusaka"]})
+
+        self.assertTest(test, self.ann, "Yes", True)
+        self.assertTest(test, self.bob, "Yes", False)
+        self.assertTest(test, self.cat, "Yes", False)
 
 
 class ActionsTest(BaseCasesTest):
@@ -68,9 +114,9 @@ class RuleTest(BaseCasesTest):
         msg6 = self.create_message(self.unicef, 106, self.ann, "pregnancy + AIDS")
         all_messages = [msg1, msg2, msg3, msg4, msg5, msg6]
 
-        rule1 = Rule([ContainsAnyTest(["aids", "hiv"])], [LabelAction(self.aids)])
-        rule2 = Rule([ContainsAnyTest(["sida"])], [LabelAction(self.aids)])
-        rule3 = Rule([ContainsAnyTest(["pregnant", "pregnancy"])], [LabelAction(self.pregnancy)])
+        rule1 = Rule([ContainsTest(["aids", "hiv"], Quantifier.ANY)], [LabelAction(self.aids)])
+        rule2 = Rule([ContainsTest(["sida"], Quantifier.ANY)], [LabelAction(self.aids)])
+        rule3 = Rule([ContainsTest(["pregnant", "pregnancy"], Quantifier.ANY)], [LabelAction(self.pregnancy)])
 
         processor = Rule.BatchProcessor(self.unicef, [rule1, rule2, rule3])
 

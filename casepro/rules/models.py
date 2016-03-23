@@ -9,7 +9,40 @@ from casepro.contacts.models import Group
 from casepro.msgs.models import Label
 from casepro.utils import normalize
 from collections import defaultdict
-from dash.utils import intersection
+from enum import Enum
+
+
+class Quantifier(Enum):
+    """
+    Tests are typically composed of multiple conditions, e.g. contains ANY of X, Y or Z.
+    """
+    NONE = 1
+    ANY = 2
+    ALL = 3
+
+    @classmethod
+    def from_json(cls, val):
+        return cls[val.upper()]
+
+    def to_json(self):
+        return self.name.lower()
+
+    def evaluate(self, callables):
+        if self == Quantifier.NONE:
+            for callable in callables:
+                if callable():
+                    return False
+            return True
+        elif self == Quantifier.ANY:
+            for callable in callables:
+                if callable():
+                    return True
+            return False
+        elif self == Quantifier.ALL:
+            for callable in callables:
+                if not callable():
+                    return False
+            return True
 
 
 class DeserializationContext(object):
@@ -32,8 +65,9 @@ class Test(object):
     def from_json(cls, json_obj, context):
         if not cls.CLASS_BY_TYPE:
             cls.CLASS_BY_TYPE = {
-                ContainsAnyTest.TYPE: ContainsAnyTest,
-                ContactInAnyGroupTest.TYPE: ContactInAnyGroupTest,
+                ContainsTest.TYPE: ContainsTest,
+                GroupsTest.TYPE: GroupsTest,
+                FieldTest.TYPE: FieldTest,
             }
 
         test_type = json_obj['type']
@@ -50,49 +84,87 @@ class Test(object):
         """
 
 
-class ContainsAnyTest(Test):
+class ContainsTest(Test):
     """
-    Test that returns whether the message text contains any of the given keywords
+    Test that returns whether the message text contains or doesn't contain the given keywords
     """
-    TYPE = 'contains_any'
+    TYPE = 'contains'
 
-    def __init__(self, keywords):
+    def __init__(self, keywords, quantifier):
         self.keywords = [normalize(word) for word in keywords]
+        self.quantifier = quantifier
 
     @classmethod
     def from_json(cls, json_obj, context):
-        return cls(json_obj['keywords'])
+        return cls(json_obj['keywords'], Quantifier.from_json(json_obj['quantifier']))
 
     def to_json(self):
-        return {'type': self.TYPE, 'keywords': self.keywords}
+        return {'type': self.TYPE, 'keywords': self.keywords, 'quantifier': self.quantifier.to_json()}
 
     def matches(self, message):
-        norm_text = normalize(message.text)
-        for keyword in self.keywords:
-            if regex.search(r'\b' + keyword + r'\b', norm_text, flags=regex.UNICODE | regex.V0):
-                return True
-        return False
+        text = normalize(message.text)
+
+        def keyword_check(w):
+            return lambda: bool(regex.search(r'\b' + w + r'\b', text, flags=regex.UNICODE | regex.V0))
+
+        checks = [keyword_check(keyword) for keyword in self.keywords]
+
+        return self.quantifier.evaluate(checks)
 
 
-class ContactInAnyGroupTest(Test):
+class GroupsTest(Test):
     """
-    Test that returns whether the message was sent from a contact in any of the given groups
+    Test that returns whether the message was sent from the given contact groups
     """
-    TYPE = 'groups_any'
+    TYPE = 'groups'
 
-    def __init__(self, groups):
+    def __init__(self, groups, quantifier):
         self.groups = groups
+        self.quantifier = quantifier
 
     @classmethod
     def from_json(cls, json_obj, context):
-        return cls(list(Group.objects.filter(org=context.org, uuid__in=json_obj['groups']).order_by('pk')))
+        groups = list(Group.objects.filter(org=context.org, uuid__in=json_obj['groups']).order_by('pk'))
+        return cls(groups, Quantifier.from_json(json_obj['quantifier']))
 
     def to_json(self):
-        return {'type': self.TYPE, 'groups': [g.uuid for g in self.groups]}
+        return {'type': self.TYPE, 'groups': [g.uuid for g in self.groups], 'quantifier': self.quantifier.to_json()}
 
     def matches(self, message):
         contact_groups = set(message.contact.groups.all())
-        return bool(intersection(self.groups, contact_groups))
+
+        def group_check(g):
+            return lambda: g in contact_groups
+
+        checks = [group_check(group) for group in self.groups]
+
+        return self.quantifier.evaluate(checks)
+
+
+class FieldTest(Test):
+    """
+    Test that returns whether the message was sent from a contact with the given field value
+    """
+    TYPE = 'field'
+
+    def __init__(self, key, values):
+        self.key = key
+        self.values = [normalize(v) for v in values]
+
+    @classmethod
+    def from_json(cls, json_obj, context):
+        return cls(json_obj['key'], json_obj['values'])
+
+    def to_json(self):
+        return {'type': self.TYPE, 'key': self.key, 'values': self.values}
+
+    def matches(self, message):
+        contact_value = normalize(message.contact.fields.get(self.key, ""))
+
+        for value in self.values:
+            if value == contact_value:
+                return True
+        return False
 
 
 class Action(object):
@@ -168,7 +240,10 @@ class Rule(object):
 
     @classmethod
     def from_label(cls, label):
-        return cls([ContainsAnyTest(label.get_keywords())], [LabelAction(label)])
+        return cls(
+            [ContainsTest(label.get_keywords(), Quantifier.ANY)],
+            [LabelAction(label)]
+        )
 
     def matches(self, message):
         """
