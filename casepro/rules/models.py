@@ -6,7 +6,7 @@ import six
 from abc import ABCMeta, abstractmethod
 from casepro.backend import get_backend
 from casepro.contacts.models import Group
-from casepro.msgs.models import Label
+from casepro.msgs.models import Label, Message
 from casepro.utils import normalize
 from collections import defaultdict
 from enum import Enum
@@ -27,20 +27,20 @@ class Quantifier(Enum):
     def to_json(self):
         return self.name.lower()
 
-    def evaluate(self, callables):
+    def evaluate(self, condition_callables):
         if self == Quantifier.NONE:
-            for callable in callables:
-                if callable():
+            for condition in condition_callables:
+                if condition():
                     return False
             return True
         elif self == Quantifier.ANY:
-            for callable in callables:
-                if callable():
+            for condition in condition_callables:
+                if condition():
                     return True
             return False
         elif self == Quantifier.ALL:
-            for callable in callables:
-                if not callable():
+            for condition in condition_callables:
+                if not condition():
                     return False
             return True
 
@@ -181,6 +181,8 @@ class Action(object):
         if not cls.CLASS_BY_TYPE:
             cls.CLASS_BY_TYPE = {
                 LabelAction.TYPE: LabelAction,
+                FlagAction.TYPE: FlagAction,
+                ArchiveAction.TYPE: ArchiveAction,
             }
 
         action_type = json_obj['type']
@@ -227,6 +229,44 @@ class LabelAction(Action):
 
     def __hash__(self):
         return hash(self.TYPE + self.label.uuid)
+
+
+class FlagAction(Action):
+    """
+    Flags the message
+    """
+    TYPE = 'flag'
+
+    @classmethod
+    def from_json(cls, json_obj, context):
+        return cls()
+
+    def to_json(self):
+        return {'type': self.TYPE}
+
+    def apply_to(self, org, messages):
+        Message.objects.filter(pk__in=[m.pk for m in messages]).update(is_flagged=True)
+
+        get_backend().flag_messages(org, messages)
+
+
+class ArchiveAction(Action):
+    """
+    Archives the message
+    """
+    TYPE = 'archive'
+
+    @classmethod
+    def from_json(cls, json_obj, context):
+        return cls()
+
+    def to_json(self):
+        return {'type': self.TYPE}
+
+    def apply_to(self, org, messages):
+        Message.objects.filter(pk__in=[m.pk for m in messages]).update(is_archived=True)
+
+        get_backend().archive_messages(org, messages)
 
 
 class Rule(object):

@@ -1,8 +1,10 @@
 from __future__ import unicode_literals
 
+from casepro.msgs.models import Message
 from casepro.test import BaseCasesTest
 from mock import patch, call
-from .models import Test, ContainsTest, Action, LabelAction, Rule, DeserializationContext, Quantifier
+from .models import Action, LabelAction, ArchiveAction, FlagAction
+from .models import Test, ContainsTest, Rule, DeserializationContext, Quantifier
 
 
 class TestsTest(BaseCasesTest):
@@ -97,6 +99,28 @@ class ActionsTest(BaseCasesTest):
 
         self.assertEqual(set(msg.labels.all()), {self.aids})
 
+    def test_flag(self):
+        action = Action.from_json({'type': 'flag'}, self.context)
+        self.assertEqual(action.TYPE, 'flag')
+        self.assertEqual(action.to_json(), {'type': 'flag'})
+
+        msg = self.create_message(self.unicef, 102, self.ann, "red")
+        action.apply_to(self.unicef, [msg])
+
+        msg.refresh_from_db()
+        self.assertTrue(msg.is_flagged)
+
+    def test_archive(self):
+        action = Action.from_json({'type': 'archive'}, self.context)
+        self.assertEqual(action.TYPE, 'archive')
+        self.assertEqual(action.to_json(), {'type': 'archive'})
+
+        msg = self.create_message(self.unicef, 102, self.ann, "red")
+        action.apply_to(self.unicef, [msg])
+
+        msg.refresh_from_db()
+        self.assertTrue(msg.is_archived)
+
 
 class RuleTest(BaseCasesTest):
     def setUp(self):
@@ -105,7 +129,9 @@ class RuleTest(BaseCasesTest):
         self.ann = self.create_contact(self.unicef, 'C-001', "Ann")
 
     @patch('casepro.test.TestBackend.label_messages')
-    def test_batch_processor(self, mock_label_messages):
+    @patch('casepro.test.TestBackend.flag_messages')
+    @patch('casepro.test.TestBackend.archive_messages')
+    def test_batch_processor(self, mock_archive_messages, mock_flag_messages, mock_label_messages):
         msg1 = self.create_message(self.unicef, 101, self.ann, "What is AIDS?")
         msg2 = self.create_message(self.unicef, 102, self.ann, "I like barmaids")
         msg3 = self.create_message(self.unicef, 103, self.ann, "C'est Sida?")
@@ -114,13 +140,13 @@ class RuleTest(BaseCasesTest):
         msg6 = self.create_message(self.unicef, 106, self.ann, "pregnancy + AIDS")
         all_messages = [msg1, msg2, msg3, msg4, msg5, msg6]
 
-        rule1 = Rule([ContainsTest(["aids", "hiv"], Quantifier.ANY)], [LabelAction(self.aids)])
-        rule2 = Rule([ContainsTest(["sida"], Quantifier.ANY)], [LabelAction(self.aids)])
+        rule1 = Rule([ContainsTest(["aids", "hiv"], Quantifier.ANY)], [LabelAction(self.aids), FlagAction()])
+        rule2 = Rule([ContainsTest(["sida"], Quantifier.ANY)], [LabelAction(self.aids), ArchiveAction()])
         rule3 = Rule([ContainsTest(["pregnant", "pregnancy"], Quantifier.ANY)], [LabelAction(self.pregnancy)])
 
         processor = Rule.BatchProcessor(self.unicef, [rule1, rule2, rule3])
 
-        self.assertEqual(processor.include_messages(*all_messages), (7, 7))
+        self.assertEqual(processor.include_messages(*all_messages), (7, 12))
 
         processor.apply_actions()
 
@@ -131,3 +157,11 @@ class RuleTest(BaseCasesTest):
 
         self.assertEqual(set(self.aids.messages.all()), {msg1, msg3, msg4, msg6})
         self.assertEqual(set(self.pregnancy.messages.all()), {msg5, msg6})
+
+        mock_flag_messages.assert_called_once_with(self.unicef, {msg1, msg4, msg6})
+
+        self.assertEqual(set(Message.objects.filter(is_flagged=True)), {msg1, msg4, msg6})
+
+        mock_archive_messages.assert_called_once_with(self.unicef, {msg3, msg4})
+
+        self.assertEqual(set(Message.objects.filter(is_archived=True)), {msg3, msg4})
