@@ -65,7 +65,7 @@ class Label(models.Model):
         if not user or user.can_administer(org):
             return cls.objects.filter(org=org, is_active=True)
 
-        partner = user.get_partner()
+        partner = user.get_partner(org)
         return partner.get_labels() if partner else cls.objects.none()
 
     @classmethod

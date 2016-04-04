@@ -107,7 +107,7 @@ class UserFieldsMixin(object):
         return obj.profile.full_name
 
     def get_partner(self, obj):
-        partner = obj.get_partner()
+        partner = obj.get_partner(self.request.org)
         return partner if partner else ''
 
 
@@ -299,7 +299,7 @@ class UserCRUDL(SmartCRUDL):
 
         def lookup_field_link(self, context, field, obj):
             if field == 'partner':
-                partner = obj.get_partner()
+                partner = obj.get_partner(self.request.org)
                 return reverse('cases.partner_read', args=[partner.pk]) if partner else None
             else:
                 return super(UserCRUDL.List, self).lookup_field_link(context, field, obj)

@@ -87,7 +87,10 @@ class CaseCRUDL(SmartCRUDL):
             summary = request.POST['summary']
 
             assignee_id = request.POST.get('assignee', None)
-            assignee = Partner.get_all(request.org).get(pk=assignee_id) if assignee_id else request.user.get_partner()
+            if assignee_id:
+                assignee = Partner.get_all(request.org).get(pk=assignee_id)
+            else:
+                assignee = request.user.get_partner(self.request.org)
 
             message_id = int(request.POST['message'])
             message = Message.objects.get(org=request.org, backend_id=message_id)
@@ -354,7 +357,7 @@ class BaseHomeView(OrgPermsMixin, SmartTemplateView):
         context = super(BaseHomeView, self).get_context_data(**kwargs)
         org = self.request.org
         user = self.request.user
-        partner = user.get_partner()
+        partner = user.get_partner(org)
 
         labels = Label.get_all(org, user).order_by('name')
         partners = Partner.get_all(org).order_by('name')

@@ -136,7 +136,7 @@ class Case(models.Model):
 
         # if user is not an org admin, we should only return cases with partner labels or assignment
         if user and not user.can_administer(org):
-            partner = user.get_partner()
+            partner = user.get_partner(org)
             if partner:
                 qs = qs.filter(Q(labels__in=list(partner.get_labels())) | Q(assignee=partner))
             else:
