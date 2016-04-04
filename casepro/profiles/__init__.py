@@ -76,8 +76,14 @@ def _user_get_full_name(user):
     return user.profile.full_name if user.has_profile() else " ".join([user.first_name, user.last_name]).strip()
 
 
-def _user_get_partner(user):
-    return user.profile.partner if user.has_profile() else None
+def _user_get_partner(user, org):
+    """
+    Gets the partner org for this user in the given org
+    """
+    if user.has_profile() and user.profile.partner and user.profile.partner.org == org:
+        return user.profile.partner
+    else:
+        return None
 
 
 def _user_can_administer(user, org):
@@ -91,10 +97,12 @@ def _user_can_manage(user, partner):
     """
     Whether this user can manage the given partner org
     """
-    if user.can_administer(partner.org):
+    org = partner.org
+
+    if user.can_administer(org):
         return True
 
-    return user.get_partner() == partner and partner.org.editors.filter(pk=user.pk).exists()
+    return user.get_partner(org) == partner and org.editors.filter(pk=user.pk).exists()
 
 
 def _user_can_edit(user, org, other):
@@ -111,7 +119,7 @@ def _user_can_edit(user, org, other):
     if user.can_administer(org):
         return True
 
-    other_partner = other.get_partner()
+    other_partner = other.get_partner(org)
     return other_partner and user.can_manage(other_partner)  # manager can edit users in same partner org
 
 

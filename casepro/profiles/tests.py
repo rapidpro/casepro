@@ -147,7 +147,7 @@ class UserCRUDLTest(BaseCasesTest):
         user = User.objects.get(email='mcadmin@casely.com')
         self.assertEqual(user.get_full_name(), "McAdmin")
         self.assertEqual(user.username, "mcadmin@casely.com")
-        self.assertIsNone(user.get_partner())
+        self.assertIsNone(user.get_partner(self.unicef))
         self.assertFalse(user.can_administer(self.unicef))
 
         # log in as an org administrator

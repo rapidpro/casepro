@@ -84,12 +84,3 @@ def message_export(export_id):
 
     export = MessageExport.objects.get(pk=export_id)
     export.do_export()
-
-
-@shared_task
-def delete_old_messages():
-    """
-    We don't keep incoming messages forever unless they're labelled or associated with a case
-    """
-    # TODO
-    pass

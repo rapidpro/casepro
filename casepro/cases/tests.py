@@ -699,7 +699,7 @@ class PartnerTest(BaseCasesTest):
         self.who.release()
         self.assertFalse(self.who.is_active)
 
-        self.assertIsNone(User.objects.get(pk=self.user3.pk).get_partner())  # user will have been detached
+        self.assertIsNone(User.objects.get(pk=self.user3.pk).get_partner(self.unicef))  # user will have been detached
 
 
 class PartnerCRUDLTest(BaseCasesTest):
