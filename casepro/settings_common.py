@@ -4,7 +4,6 @@ import djcelery
 import os
 import sys
 
-from celery.schedules import crontab
 from datetime import timedelta
 from django.utils.translation import ugettext_lazy as _
 
@@ -406,17 +405,17 @@ CELERY_RESULT_BACKEND = BROKER_URL
 CELERYBEAT_SCHEDULE = {
     'message-pull': {
         'task': 'dash.orgs.tasks.trigger_org_task',
-        'schedule': crontab(minute=[0, 10, 20, 30, 40, 50]),
+        'schedule': timedelta(minutes=1),
         'args': ('casepro.msgs.tasks.pull_messages', 'sync')
     },
     'contact-pull': {
         'task': 'dash.orgs.tasks.trigger_org_task',
-        'schedule': crontab(minute=[5, 15, 25, 35, 45, 55]),
+        'schedule': timedelta(minutes=3),
         'args': ('casepro.contacts.tasks.pull_contacts', 'sync')
     },
     'message-handle': {
         'task': 'dash.orgs.tasks.trigger_org_task',
-        'schedule': timedelta(minutes=3),
+        'schedule': timedelta(minutes=1),
         'args': ('casepro.msgs.tasks.handle_messages', 'sync')
     },
 }

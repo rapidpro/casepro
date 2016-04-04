@@ -13,8 +13,6 @@ HOSTNAME = 'localhost:8000'
 
 SITE_API_HOST = 'http://localhost:8001/'
 
-UNLABELLED_LIMIT_DAYS = 40
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -28,8 +26,3 @@ DATABASES = {
         }
     }
 }
-
-# speed up the background tasks
-CELERYBEAT_SCHEDULE['message-pull']['schedule'] = crontab(minute='*/2')         # every even minute
-CELERYBEAT_SCHEDULE['contact-pull']['schedule'] = crontab(minute='1-59/2')      # every odd minute
-CELERYBEAT_SCHEDULE['message-handle']['schedule'] = timedelta(minutes=1)
