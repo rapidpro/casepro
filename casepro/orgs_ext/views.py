@@ -1,30 +1,16 @@
-from __future__ import absolute_import, unicode_literals
+from __future__ import unicode_literals
 
-from casepro.contacts.models import Field, Group
 from dash.orgs.models import Org
 from dash.orgs.views import OrgCRUDL, TaskCRUDL, InferOrgMixin, OrgPermsMixin
 from django import forms
-from django.conf import settings
-from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCRUDL, SmartUpdateView
 from timezones.forms import TimeZoneField
 
+from casepro.contacts.models import Field, Group
 
-class OrgForm(forms.ModelForm):
-    language = forms.ChoiceField(required=False, choices=[('', '')] + list(settings.LANGUAGES))
-    timezone = TimeZoneField()
-
-    def __init__(self, *args, **kwargs):
-        super(OrgForm, self).__init__(*args, **kwargs)
-        administrators = User.objects.exclude(profile=None).order_by('profile__full_name')
-
-        self.fields['administrators'].queryset = administrators
-
-    class Meta:
-        model = Org
-        fields = forms.ALL_FIELDS
+from .forms import OrgForm
 
 
 class OrgExtCRUDL(SmartCRUDL):
