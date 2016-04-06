@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import json
+
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django.db.transaction import non_atomic_requests
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
@@ -11,7 +13,8 @@ from smartmin.views import SmartListView, SmartCreateView, SmartUpdateView, Smar
 from temba_client.utils import parse_iso8601
 
 from casepro.cases.models import Case
-from casepro.contacts.models import Contact
+from casepro.contacts.models import Contact, Group
+from casepro.rules.models import ContainsTest, GroupsTest, FieldTest, Quantifier
 from casepro.utils import parse_csv, str_to_bool
 from casepro.utils.export import BaseDownloadView
 
@@ -20,38 +23,77 @@ from .models import Label, Message, MessageExport, MessageFolder, Outgoing
 from .tasks import message_export
 
 
+class LabelFormMixin(object):
+    @staticmethod
+    def construct_tests(data):
+        keywords = parse_csv(data['keywords'])
+        groups = data['groups']
+        field_test = data['field_test']
+        tests = []
+        if keywords:
+            tests.append(ContainsTest(keywords, Quantifier.ANY))
+        if groups:
+            tests.append(GroupsTest(groups, Quantifier.ANY))
+        if field_test:
+            tests.append(FieldTest(field_test[0], field_test[1]))
+
+        return tests
+
+
 class LabelCRUDL(SmartCRUDL):
     actions = ('create', 'update', 'delete', 'list')
     model = Label
 
-    class Create(OrgPermsMixin, SmartCreateView):
+    class Create(LabelFormMixin, OrgPermsMixin, SmartCreateView):
         form_class = LabelForm
 
         def get_form_kwargs(self):
             kwargs = super(LabelCRUDL.Create, self).get_form_kwargs()
+            kwargs['org'] = self.request.org
             kwargs['is_create'] = True
             return kwargs
 
         def save(self, obj):
             data = self.form.cleaned_data
-            org = self.request.user.get_org()
+            org = self.request.org
             name = data['name']
             description = data['description']
-            keywords = parse_csv(data['keywords'])
-            self.object = Label.create(org, name, description, keywords)
+            tests = self.construct_tests(data)
 
-    class Update(OrgObjPermsMixin, SmartUpdateView):
+            self.object = Label.create(org, name, description, tests)
+
+    class Update(LabelFormMixin, OrgObjPermsMixin, SmartUpdateView):
         form_class = LabelForm
 
         def get_form_kwargs(self):
             kwargs = super(LabelCRUDL.Update, self).get_form_kwargs()
+            kwargs['org'] = self.request.org
             kwargs['is_create'] = False
             return kwargs
 
         def derive_initial(self):
             initial = super(LabelCRUDL.Update, self).derive_initial()
-            initial['keywords'] = ', '.join(self.object.get_keywords())
+
+            tests_by_type = {t['type']: t for t in self.object.get_tests()}
+
+            if 'contains' in tests_by_type:
+                initial['keywords'] = ", ".join(tests_by_type['contains']['keywords'])
+
+            if 'groups' in tests_by_type:
+                initial['groups'] = Group.get_all(self.object.org).filter(uuid__in=tests_by_type['groups']['groups'])
+
+            if 'field' in tests_by_type:
+                initial['field_test'] = tests_by_type['field']['key'], ", ".join(tests_by_type['field']['values'])
+
             return initial
+
+        def pre_save(self, obj):
+            obj = super(LabelCRUDL.Update, self).pre_save(obj)
+
+            tests = self.construct_tests(self.form.cleaned_data)
+            obj.tests = json.dumps(tests) if tests else ""
+
+            return obj
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
         cancel_url = '@msgs.label_list'

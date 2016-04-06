@@ -4,10 +4,11 @@ from __future__ import unicode_literals
 import pytz
 
 from datetime import date, datetime
+from enum import Enum
 
 from casepro.test import BaseCasesTest
 
-from . import safe_max, normalize, match_keywords, truncate, str_to_bool
+from . import safe_max, normalize, match_keywords, truncate, str_to_bool, json_encode
 from . import datetime_to_microseconds, microseconds_to_datetime
 
 
@@ -56,3 +57,20 @@ class UtilsTest(BaseCasesTest):
         ms = datetime_to_microseconds(d1)
         d2 = microseconds_to_datetime(ms)
         self.assertEqual(d2, datetime(2015, 10, 9, 14, 48, 30, 123456, tzinfo=pytz.utc))
+
+    def test_encode_json(self):
+        class MyEnum(Enum):
+            bar = 1
+
+        class MyClass(object):
+            def to_json(self):
+                return dict(bar='X')
+
+        data = [
+            "string",
+            datetime(2015, 10, 9, 14, 48, 30, 123456, tzinfo=pytz.utc).astimezone(pytz.timezone("Africa/Kigali")),
+            MyEnum.bar,
+            MyClass()
+        ]
+
+        self.assertEqual(json_encode(data), '["string", "???", "bar", {"bar": "X"}]')

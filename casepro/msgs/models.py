@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import json
 import regex
 
 from dash.orgs.models import Org
@@ -13,7 +14,6 @@ from redis_cache import get_redis_connection
 
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact
-from casepro.utils import parse_csv
 from casepro.utils.export import BaseExport
 
 SAVE_CONTACT_ATTR = '__data__contact'
@@ -35,8 +35,6 @@ class Label(models.Model):
     """
     Corresponds to a message label in RapidPro. Used for determining visibility of messages to different partners.
     """
-    KEYWORD_MIN_LENGTH = 3
-
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='labels')
 
     uuid = models.CharField(max_length=36, unique=True)
@@ -45,19 +43,15 @@ class Label(models.Model):
 
     description = models.CharField(verbose_name=_("Description"), null=True, max_length=255)
 
-    keywords = models.CharField(verbose_name=_("Keywords"), null=True, blank=True, max_length=1024)
+    tests = models.TextField(blank=True)
 
     is_active = models.BooleanField(default=True, help_text="Whether this label is active")
 
     @classmethod
-    def create(cls, org, name, description, keywords):
-        remote_uuid = get_backend().create_label(org, name)
+    def create(cls, org, name, description, tests):
+        backend_uuid = get_backend().create_label(org, name)
 
-        return cls.objects.create(org=org,
-                                  uuid=remote_uuid,
-                                  name=name,
-                                  description=description,
-                                  keywords=','.join(keywords))
+        return cls.objects.create(org=org, uuid=backend_uuid, name=name, description=description, tests=tests)
 
     @classmethod
     def get_all(cls, org, user=None):
@@ -71,8 +65,8 @@ class Label(models.Model):
     def lock(cls, org, uuid):
         return get_redis_connection().lock(LABEL_LOCK_KEY % (org.pk, uuid), timeout=60)
 
-    def get_keywords(self):
-        return parse_csv(self.keywords) if self.keywords else []
+    def get_tests(self):
+        return json.loads(self.tests) if self.tests else []
 
     def get_partners(self):
         return self.partners.filter(is_active=True)
@@ -83,10 +77,6 @@ class Label(models.Model):
 
     def as_json(self):
         return {'id': self.pk, 'name': self.name}
-
-    @classmethod
-    def is_valid_keyword(cls, keyword):
-        return len(keyword) >= cls.KEYWORD_MIN_LENGTH and regex.match(r'^\w[\w\- ]*\w$', keyword)
 
     def __str__(self):
         return self.name

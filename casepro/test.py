@@ -5,6 +5,8 @@ from casepro.cases.models import Case, Partner
 from casepro.contacts.models import Contact, Group, Field
 from casepro.msgs.models import Label, Message, Outgoing
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
+from casepro.rules.models import ContainsTest, Quantifier
+from casepro.utils import json_encode
 from dash.test import DashTest
 from datetime import datetime
 from django.contrib.auth.models import User
@@ -80,7 +82,8 @@ class BaseCasesTest(DashTest):
         return User.create(org, partner, role, full_name, email, password=email, change_password=False)
 
     def create_label(self, org, uuid, name, description, keywords):
-        return Label.objects.create(org=org, uuid=uuid, name=name, description=description, keywords=','.join(keywords))
+        tests = json_encode([ContainsTest(keywords, Quantifier.ANY)])
+        return Label.objects.create(org=org, uuid=uuid, name=name, description=description, tests=tests)
 
     def create_contact(self, org, uuid, name, groups=(), fields=None, is_stub=False):
         contact = Contact.objects.create(org=org, uuid=uuid, name=name, is_stub=is_stub, fields=fields, language="eng")

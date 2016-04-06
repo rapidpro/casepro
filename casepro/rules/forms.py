@@ -23,12 +23,14 @@ class FieldTestWidget(forms.widgets.MultiWidget):
         else:
             return None, ''
 
-    def render(self, name, value, attrs=None):
-        return mark_safe(''.join([
-            '<div class="field-test-widget">',
-            super(FieldTestWidget, self).render(name, value, attrs),
+    def format_output(self, rendered_widgets):
+        return mark_safe(
+            '<div class="field-test-widget">' +
+            rendered_widgets[0] +
+            '<span class="control-label"> is equal to </span>' +
+            rendered_widgets[1] +
             '</div>'
-        ]))
+        )
 
 
 class FieldTestField(forms.fields.MultiValueField):
@@ -38,13 +40,13 @@ class FieldTestField(forms.fields.MultiValueField):
         org_fields = Field.get_all(org).order_by('label')
 
         fields = (
-            forms.ModelChoiceField(queryset=org_fields),
+            forms.ModelChoiceField(queryset=org_fields, required=False),
             forms.CharField(max_length=64)
         )
 
         super(FieldTestField, self).__init__(fields, *args, **kwargs)
 
-        org_field_choices = [(f.label, f.key) for f in org_fields]
+        org_field_choices = [(f.pk, f.label) for f in org_fields]
 
         self.widget = FieldTestWidget(field_choices=org_field_choices)
 

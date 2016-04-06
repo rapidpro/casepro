@@ -11,6 +11,12 @@ from casepro.utils import normalize
 from collections import defaultdict
 from enum import Enum
 
+KEYWORD_MIN_LENGTH = 3
+
+
+def is_valid_keyword(keyword):
+    return len(keyword) >= KEYWORD_MIN_LENGTH and regex.match(r'^\w[\w\- ]*\w$', keyword)
+
 
 class Quantifier(Enum):
     """
