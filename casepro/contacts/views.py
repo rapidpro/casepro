@@ -5,6 +5,7 @@ from django import forms
 from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCRUDL, SmartListView, SmartFormView
+
 from .models import Contact, Group, Field
 
 

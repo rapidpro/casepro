@@ -3,8 +3,10 @@ from __future__ import absolute_import, unicode_literals
 from django.contrib.auth.models import User, Group
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
-from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
+
 from casepro.test import BaseCasesTest
+
+from . import ROLE_ANALYST, ROLE_MANAGER
 
 
 class UserPatchTest(BaseCasesTest):

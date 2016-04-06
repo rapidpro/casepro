@@ -1,24 +1,26 @@
 from __future__ import absolute_import, unicode_literals
 
-from casepro.contacts.models import Group
-from casepro.msgs.models import Message, MessageFolder, Label
-from casepro.utils import parse_csv, json_encode, datetime_to_microseconds, microseconds_to_datetime
-from casepro.utils.export import BaseDownloadView
 from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from datetime import timedelta
-from django import forms
 from django.core.cache import cache
 from django.db.transaction import non_atomic_requests
-from el_pagination.paginators import LazyPaginator
 from django.http import HttpResponse, JsonResponse
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
+from el_pagination.paginators import LazyPaginator
 from smartmin.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView
 from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
+
+from casepro.contacts.models import Group
+from casepro.msgs.models import Message, MessageFolder, Label
+from casepro.utils import parse_csv, json_encode, datetime_to_microseconds, microseconds_to_datetime
+from casepro.utils.export import BaseDownloadView
+
 from . import MAX_MESSAGE_CHARS
+from .forms import PartnerForm
 from .models import AccessLevel, Case, CaseFolder, CaseExport, Partner
 from .tasks import case_export
 
@@ -268,20 +270,6 @@ class CaseExportCRUDL(SmartCRUDL):
     class Read(BaseDownloadView):
         title = _("Download Cases")
         filename = 'case_export.xls'
-
-
-class PartnerForm(forms.ModelForm):
-    labels = forms.ModelMultipleChoiceField(label=_("Can Access"), queryset=Label.objects.none(), required=False)
-
-    def __init__(self, *args, **kwargs):
-        org = kwargs.pop('org')
-        super(PartnerForm, self).__init__(*args, **kwargs)
-
-        self.fields['labels'].queryset = Label.get_all(org)
-
-    class Meta:
-        model = Partner
-        fields = ('name', 'logo', 'labels')
 
 
 class PartnerFormMixin(object):

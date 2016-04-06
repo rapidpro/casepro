@@ -2,10 +2,6 @@ from __future__ import unicode_literals
 
 import regex
 
-from casepro.backend import get_backend
-from casepro.contacts.models import Contact
-from casepro.utils import parse_csv
-from casepro.utils.export import BaseExport
 from dash.orgs.models import Org
 from dash.utils import chunks
 from django.contrib.auth.models import User
@@ -15,6 +11,10 @@ from django.utils.translation import ugettext_lazy as _
 from enum import Enum
 from redis_cache import get_redis_connection
 
+from casepro.backend import get_backend
+from casepro.contacts.models import Contact
+from casepro.utils import parse_csv
+from casepro.utils.export import BaseExport
 
 SAVE_CONTACT_ATTR = '__data__contact'
 SAVE_LABELS_ATTR = '__data__labels'

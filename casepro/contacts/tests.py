@@ -1,9 +1,11 @@
 # coding=utf-8
 from __future__ import unicode_literals
 
-from casepro.test import BaseCasesTest
 from dash.orgs.models import TaskState
 from mock import patch
+
+from casepro.test import BaseCasesTest
+
 from .models import Contact, Group, Field
 from .tasks import pull_contacts
 

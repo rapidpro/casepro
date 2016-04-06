@@ -1,12 +1,13 @@
 from __future__ import unicode_literals
 
-from casepro.backend import get_backend
 from dash.orgs.models import Org
 from django.contrib.postgres.fields import HStoreField
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from redis_cache import get_redis_connection
+
+from casepro.backend import get_backend
 
 SAVE_GROUPS_ATTR = '__data__groups'
 
