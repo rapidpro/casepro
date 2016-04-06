@@ -4,8 +4,6 @@ from __future__ import unicode_literals
 import pytz
 import six
 
-from casepro.contacts.models import Contact
-from casepro.test import BaseCasesTest
 from dash.orgs.models import TaskState
 from datetime import datetime
 from django.conf import settings
@@ -15,6 +13,10 @@ from django.utils.timezone import now
 from mock import patch, call
 from temba_client.utils import format_iso8601
 from xlrd import open_workbook
+
+from casepro.contacts.models import Contact
+from casepro.test import BaseCasesTest
+
 from .models import Label, Message, MessageAction, MessageExport, MessageFolder, Outgoing
 from .tasks import handle_messages, pull_messages
 

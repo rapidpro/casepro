@@ -1,9 +1,10 @@
 from __future__ import absolute_import, unicode_literals
 
-from casepro.backend import get_backend
 from dash.orgs.models import Org
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
+
+from casepro.backend import get_backend
 
 
 class Command(BaseCommand):

@@ -3,8 +3,10 @@ from __future__ import unicode_literals
 
 import pytz
 
-from casepro.test import BaseCasesTest
 from datetime import date, datetime
+
+from casepro.test import BaseCasesTest
+
 from . import safe_max, normalize, match_keywords, truncate, str_to_bool
 from . import datetime_to_microseconds, microseconds_to_datetime
 

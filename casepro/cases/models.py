@@ -1,9 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-from casepro.backend import get_backend
-from casepro.contacts.models import Contact
-from casepro.msgs.models import Label, Message
-from casepro.utils.export import BaseExport
 from dash.orgs.models import Org
 from dash.utils import intersection, chunks
 from django.contrib.auth.models import User
@@ -15,6 +11,11 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from enum import Enum, IntEnum
 from redis_cache import get_redis_connection
+
+from casepro.backend import get_backend
+from casepro.contacts.models import Contact
+from casepro.msgs.models import Label, Message
+from casepro.utils.export import BaseExport
 
 
 CASE_LOCK_KEY = 'org:%d:case_lock:%s'

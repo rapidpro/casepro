@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from django.conf.urls import url
+
 from .views import CaseCRUDL, CaseExportCRUDL, PartnerCRUDL
 from .views import InboxView, FlaggedView, OpenCasesView, ClosedCasesView, ArchivedView, UnlabelledView
 from .views import StatusView, PingView

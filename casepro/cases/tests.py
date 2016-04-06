@@ -4,12 +4,6 @@ from __future__ import absolute_import, unicode_literals
 import pytz
 import six
 
-from casepro.contacts.models import Contact
-from casepro.msgs.models import Message, Outgoing
-from casepro.msgs.tasks import handle_messages
-from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
-from casepro.test import BaseCasesTest
-from casepro.utils import datetime_to_microseconds, microseconds_to_datetime
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -19,6 +13,14 @@ from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch
 from xlrd import open_workbook
+
+from casepro.contacts.models import Contact
+from casepro.msgs.models import Message, Outgoing
+from casepro.msgs.tasks import handle_messages
+from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
+from casepro.test import BaseCasesTest
+from casepro.utils import datetime_to_microseconds, microseconds_to_datetime
+
 from .context_processors import contact_ext_url, sentry_dsn
 from .models import AccessLevel, Case, CaseAction, CaseExport, Partner
 
