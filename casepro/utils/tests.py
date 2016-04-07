@@ -73,4 +73,4 @@ class UtilsTest(BaseCasesTest):
             MyClass()
         ]
 
-        self.assertEqual(json_encode(data), '["string", "???", "bar", {"bar": "X"}]')
+        self.assertEqual(json_encode(data), '["string", "2015-10-09T14:48:30.123456", "bar", {"bar": "X"}]')

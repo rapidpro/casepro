@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-import json
-
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django.db.transaction import non_atomic_requests
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
@@ -15,7 +13,7 @@ from temba_client.utils import parse_iso8601
 from casepro.cases.models import Case
 from casepro.contacts.models import Contact, Group
 from casepro.rules.models import ContainsTest, GroupsTest, FieldTest, Quantifier
-from casepro.utils import parse_csv, str_to_bool
+from casepro.utils import parse_csv, str_to_bool, json_encode
 from casepro.utils.export import BaseDownloadView
 
 from .forms import LabelForm
@@ -29,13 +27,14 @@ class LabelFormMixin(object):
         keywords = parse_csv(data['keywords'])
         groups = data['groups']
         field_test = data['field_test']
+
         tests = []
         if keywords:
             tests.append(ContainsTest(keywords, Quantifier.ANY))
         if groups:
             tests.append(GroupsTest(groups, Quantifier.ANY))
         if field_test:
-            tests.append(FieldTest(field_test[0], field_test[1]))
+            tests.append(field_test)
 
         return tests
 
@@ -74,16 +73,19 @@ class LabelCRUDL(SmartCRUDL):
         def derive_initial(self):
             initial = super(LabelCRUDL.Update, self).derive_initial()
 
-            tests_by_type = {t['type']: t for t in self.object.get_tests()}
+            tests_by_type = {t.TYPE: t for t in self.object.get_tests()}
+            contains_test = tests_by_type.get('contains')
+            groups_test = tests_by_type.get('groups')
+            field_test = tests_by_type.get('field')
 
-            if 'contains' in tests_by_type:
-                initial['keywords'] = ", ".join(tests_by_type['contains']['keywords'])
+            if contains_test:
+                initial['keywords'] = ", ".join(contains_test.keywords)
 
-            if 'groups' in tests_by_type:
-                initial['groups'] = Group.get_all(self.object.org).filter(uuid__in=tests_by_type['groups']['groups'])
+            if groups_test:
+                initial['groups'] = groups_test.groups
 
-            if 'field' in tests_by_type:
-                initial['field_test'] = tests_by_type['field']['key'], ", ".join(tests_by_type['field']['values'])
+            if field_test:
+                initial['field_test'] = field_test
 
             return initial
 
@@ -91,7 +93,7 @@ class LabelCRUDL(SmartCRUDL):
             obj = super(LabelCRUDL.Update, self).pre_save(obj)
 
             tests = self.construct_tests(self.form.cleaned_data)
-            obj.tests = json.dumps(tests) if tests else ""
+            obj.tests = json_encode(tests) if tests else ""
 
             return obj
 

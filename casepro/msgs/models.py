@@ -66,7 +66,10 @@ class Label(models.Model):
         return get_redis_connection().lock(LABEL_LOCK_KEY % (org.pk, uuid), timeout=60)
 
     def get_tests(self):
-        return json.loads(self.tests) if self.tests else []
+        from casepro.rules.models import Test, DeserializationContext
+
+        tests_json = json.loads(self.tests) if self.tests else []
+        return [Test.from_json(t, DeserializationContext(self.org)) for t in tests_json]
 
     def get_partners(self):
         return self.partners.filter(is_active=True)

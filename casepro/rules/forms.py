@@ -4,24 +4,18 @@ from django import forms
 from django.utils.safestring import mark_safe
 
 from casepro.contacts.models import Field
+from casepro.utils import parse_csv
+
+from .models import FieldTest
 
 
 class FieldTestWidget(forms.widgets.MultiWidget):
 
-    def __init__(self, *args, **kwargs):
-        field_choices = kwargs.pop('field_choices')
-        widgets = (
-            forms.Select(choices=field_choices),
-            forms.TextInput(attrs={'maxlength': 64})
-        )
-
-        super(FieldTestWidget, self).__init__(widgets, *args, **kwargs)
-
-    def decompress(self, value):
-        if value:
-            return value.split(':', 1)
+    def decompress(self, test):
+        if test:
+            return test.key, ", ".join(test.values)
         else:
-            return None, ''
+            return None, ""
 
     def format_output(self, rendered_widgets):
         return mark_safe(
@@ -40,15 +34,17 @@ class FieldTestField(forms.fields.MultiValueField):
         org_fields = Field.get_all(org).order_by('label')
 
         fields = (
-            forms.ModelChoiceField(queryset=org_fields, required=False),
+            forms.ModelChoiceField(queryset=org_fields, required=False, to_field_name='key'),
             forms.CharField(max_length=64)
         )
 
         super(FieldTestField, self).__init__(fields, *args, **kwargs)
 
-        org_field_choices = [(f.pk, f.label) for f in org_fields]
-
-        self.widget = FieldTestWidget(field_choices=org_field_choices)
+        self.widget = FieldTestWidget([fields[0].widget, fields[1].widget])
 
     def compress(self, values):
-        return '%s:%s' % (values[0], values[1])
+        field, values_csv = values if values else (None, "")
+        if field:
+            return FieldTest(field.key, parse_csv(values[1]))
+        else:
+            return None
