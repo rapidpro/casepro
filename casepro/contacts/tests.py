@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from dash.orgs.models import TaskState
+from django.core.urlresolvers import reverse
 from mock import patch
 
 from casepro.test import BaseCasesTest
@@ -80,6 +81,45 @@ class ContactTest(BaseCasesTest):
         self.assertEqual(contact.as_json(full=True), {'uuid': 'C-001',
                                                       'name': "Richard",
                                                       'fields': {'nickname': None, 'age': "32"}})
+
+
+class ContactCRUDLTest(BaseCasesTest):
+    def setUp(self):
+        super(ContactCRUDLTest, self).setUp()
+
+        self.jean = self.create_contact(self.unicef, "C-001", "Jean", [self.reporters], {'age': "32"})
+
+    def test_list(self):
+        url = reverse('contacts.contact_list')
+
+        # log in as a non-superuser
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 302)
+
+        self.login(self.superuser)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context['object_list']), [self.jean])
+
+    def test_read(self):
+        url = reverse('contacts.contact_read', args=["C-001"])
+
+        # log in as a non-superuser
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 302)
+
+        self.login(self.superuser)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Jean")
+        self.assertContains(response, "Reporters")
+        self.assertContains(response, "age=32")
 
 
 class TasksTest(BaseCasesTest):

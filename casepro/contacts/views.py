@@ -1,23 +1,53 @@
 from __future__ import unicode_literals
 
-from dash.orgs.views import OrgPermsMixin
+import six
+
+from dash.orgs.views import OrgObjPermsMixin, OrgPermsMixin
 from django import forms
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, Http404
 from django.utils.translation import ugettext_lazy as _
-from smartmin.views import SmartCRUDL, SmartListView, SmartFormView
+from smartmin.views import SmartCRUDL, SmartReadView, SmartListView, SmartFormView
 
 from .models import Contact, Group, Field
 
 
 class ContactCRUDL(SmartCRUDL):
+    """
+    Simple contact CRUDL for debugging by superusers, i.e. not exposed to regular users for now
+    """
     model = Contact
-    actions = ('list',)
+    actions = ('list', 'read')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('uuid', 'name', 'language', 'created_on')
 
         def get_queryset(self, **kwargs):
             return self.model.objects.filter(org=self.request.org)
+
+    class Read(OrgObjPermsMixin, SmartReadView):
+        fields = ('uuid', 'name', 'language', 'groups', 'contact_fields', 'created_on', 'is_blocked', 'is_active')
+
+        @classmethod
+        def derive_url_pattern(cls, path, action):
+            return r'^%s/%s/(?P<uuid>[^/]+)/$' % (path, action)
+
+        def get_object(self, queryset=None):
+            uuid = self.kwargs.get('uuid')
+            contact = self.model.objects.filter(uuid=uuid, org=self.request.org).first()
+
+            if contact is None:
+                raise Http404("No contact with that UUID")
+
+            return contact
+
+        def get_queryset(self, **kwargs):
+            return self.model.objects.filter(org=self.request.org, uuid=kwargs['uuid'])
+
+        def get_groups(self, obj):
+            return ", ".join([g.name for g in obj.groups.all()])
+
+        def get_contact_fields(self, obj):
+            return '<br/>'.join(["%s=%s" % (key, val) for key, val in six.iteritems(obj.get_fields())])
 
 
 class GroupCRUDL(SmartCRUDL):
@@ -29,7 +59,7 @@ class GroupCRUDL(SmartCRUDL):
         default_order = ('name',)
 
         def derive_queryset(self, **kwargs):
-            return Group.get_all(self.request.org, visible=True)
+            return self.model.get_all(self.request.org, visible=True)
 
         def get_contacts(self, obj):
             return obj.count if obj.count is not None else "..."
