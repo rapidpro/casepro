@@ -330,7 +330,6 @@ GROUP_PERMISSIONS = {
         'cases.caseexport.*',
         'cases.partner.*',
 
-        'contacts.contact.*',
         'contacts.group.*',
         'contacts.field.*',
 
