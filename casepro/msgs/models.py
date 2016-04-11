@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 import json
-import regex
 
 from dash.orgs.models import Org
 from dash.utils import chunks
@@ -14,6 +13,7 @@ from redis_cache import get_redis_connection
 
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact
+from casepro.utils import json_encode
 from casepro.utils.export import BaseExport
 
 SAVE_CONTACT_ATTR = '__data__contact'
@@ -50,8 +50,9 @@ class Label(models.Model):
     @classmethod
     def create(cls, org, name, description, tests):
         backend_uuid = get_backend().create_label(org, name)
+        tests_json = json_encode(tests)
 
-        return cls.objects.create(org=org, uuid=backend_uuid, name=name, description=description, tests=tests)
+        return cls.objects.create(org=org, uuid=backend_uuid, name=name, description=description, tests=tests_json)
 
     @classmethod
     def get_all(cls, org, user=None):
@@ -70,6 +71,12 @@ class Label(models.Model):
 
         tests_json = json.loads(self.tests) if self.tests else []
         return [Test.from_json(t, DeserializationContext(self.org)) for t in tests_json]
+
+    def get_rule(self):
+        from casepro.rules.models import Rule, LabelAction
+
+        tests = self.get_tests()
+        return Rule(tests, [LabelAction(self)]) if tests else None
 
     def get_partners(self):
         return self.partners.filter(is_active=True)

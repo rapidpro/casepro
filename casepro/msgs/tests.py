@@ -15,6 +15,7 @@ from temba_client.utils import format_iso8601
 from xlrd import open_workbook
 
 from casepro.contacts.models import Contact
+from casepro.rules.models import ContainsTest, GroupsTest, FieldTest, Quantifier
 from casepro.test import BaseCasesTest
 
 from .models import Label, Message, MessageAction, MessageExport, MessageFolder, Outgoing
@@ -26,14 +27,14 @@ class LabelTest(BaseCasesTest):
     def test_create(self, mock_create_label):
         mock_create_label.return_value = "L-010"
 
-        ebola = Label.create(self.unicef, "Ebola", "Msgs about ebola", ['ebola', 'fever'])
-        self.assertEqual(ebola.uuid, 'L-010')
-        self.assertEqual(ebola.org, self.unicef)
-        self.assertEqual(ebola.name, "Ebola")
-        self.assertEqual(ebola.description, "Msgs about ebola")
-        self.assertEqual(ebola.keywords, 'ebola,fever')
-        self.assertEqual(ebola.get_keywords(), ['ebola', 'fever'])
-        self.assertEqual(six.text_type(ebola), "Ebola")
+        tests = [ContainsTest(['ebola', 'fever'], Quantifier.ALL), GroupsTest([self.reporters], Quantifier.ANY)]
+        label = Label.create(self.unicef, "Ebola", "Msgs about ebola", tests)
+        self.assertEqual(label.uuid, 'L-010')
+        self.assertEqual(label.org, self.unicef)
+        self.assertEqual(label.name, "Ebola")
+        self.assertEqual(label.description, "Msgs about ebola")
+        self.assertEqual(label.get_tests(), tests)
+        self.assertEqual(six.text_type(label), "Ebola")
 
     def test_get_all(self):
         self.assertEqual(set(Label.get_all(self.unicef)), {self.aids, self.pregnancy})
@@ -43,18 +44,6 @@ class LabelTest(BaseCasesTest):
     def test_release(self):
         self.aids.release()
         self.assertFalse(self.aids.is_active)
-
-    def test_is_valid_keyword(self):
-        self.assertTrue(Label.is_valid_keyword('kit'))
-        self.assertTrue(Label.is_valid_keyword('kit-kat'))
-        self.assertTrue(Label.is_valid_keyword('kit kat'))
-        self.assertTrue(Label.is_valid_keyword('kit-kat wrapper'))
-
-        self.assertFalse(Label.is_valid_keyword('it'))  # too short
-        self.assertFalse(Label.is_valid_keyword(' kitkat'))  # can't start with a space
-        self.assertFalse(Label.is_valid_keyword('-kit'))  # can't start with a dash
-        self.assertFalse(Label.is_valid_keyword('kat '))  # can't end with a space
-        self.assertFalse(Label.is_valid_keyword('kat-'))  # can't end with a dash
 
 
 class LabelCRUDLTest(BaseCasesTest):
@@ -103,9 +92,14 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertFormError(response, 'form', 'keywords', "Invalid keyword: ebol@?")
 
         # submit again with valid data
-        response = self.url_post('unicef', url, {'name': "Ebola",
-                                                 'description': "Msgs about ebola",
-                                                 'keywords': "Ebola,fever"})
+        response = self.url_post('unicef', url, {
+            'name': "Ebola",
+            'description': "Msgs about ebola",
+            'keywords': "Ebola,fever",
+            'groups': '%d' % self.reporters.pk,
+            'field_test_0': "state",
+            'field_test_1': "Kigali,Lusaka"
+        })
 
         self.assertEqual(response.status_code, 302)
 
@@ -114,8 +108,11 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(ebola.org, self.unicef)
         self.assertEqual(ebola.name, "Ebola")
         self.assertEqual(ebola.description, "Msgs about ebola")
-        self.assertEqual(ebola.keywords, 'ebola,fever')
-        self.assertEqual(ebola.get_keywords(), ['ebola', 'fever'])
+        self.assertEqual(ebola.get_tests(), [
+            ContainsTest(['ebola', 'fever'], Quantifier.ANY),
+            GroupsTest([self.reporters], Quantifier.ANY),
+            FieldTest('state', ["Kigali", "Lusaka"])
+        ])
 
     def test_update(self):
         url = reverse('msgs.label_update', args=[self.pregnancy.pk])
@@ -139,9 +136,14 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertFormError(response, 'form', 'description', 'This field is required.')
 
         # submit again with valid data
-        response = self.url_post('unicef', url, {'name': "Pregnancy",
-                                                 'description': "Msgs about maternity",
-                                                 'keywords': "pregnancy, maternity"})
+        response = self.url_post('unicef', url, {
+            'name': "Pregnancy",
+            'description': "Msgs about maternity",
+            'keywords': "pregnancy, maternity",
+            'groups': '%d' % self.males.pk,
+            'field_test_0': "age",
+            'field_test_1': "18,19,20"
+        })
 
         self.assertEqual(response.status_code, 302)
 
@@ -150,8 +152,11 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(label.org, self.unicef)
         self.assertEqual(label.name, "Pregnancy")
         self.assertEqual(label.description, "Msgs about maternity")
-        self.assertEqual(label.keywords, 'pregnancy,maternity')
-        self.assertEqual(label.get_keywords(), ['pregnancy', 'maternity'])
+        self.assertEqual(label.get_tests(), [
+            ContainsTest(['pregnancy', 'maternity'], Quantifier.ANY),
+            GroupsTest([self.males], Quantifier.ANY),
+            FieldTest('age', ["18", "19", "20"])
+        ])
 
     def test_list(self):
         url = reverse('msgs.label_list')

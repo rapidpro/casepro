@@ -51,18 +51,18 @@ class LabelForm(forms.ModelForm):
         return name
 
     def clean_keywords(self):
-        from casepro.rules.models import KEYWORD_MIN_LENGTH, is_valid_keyword
+        from casepro.rules.models import ContainsTest
 
         keywords = parse_csv(self.cleaned_data['keywords'])
         clean_keywords = []
         for keyword in keywords:
             clean_keyword = normalize(keyword)
 
-            if len(keyword) < KEYWORD_MIN_LENGTH:
+            if len(keyword) < ContainsTest.KEYWORD_MIN_LENGTH:
                 raise forms.ValidationError(_("Keywords must be at least %d characters long")
-                                            % KEYWORD_MIN_LENGTH)
+                                            % ContainsTest.KEYWORD_MIN_LENGTH)
 
-            if not is_valid_keyword(keyword):
+            if not ContainsTest.is_valid_keyword(keyword):
                 raise forms.ValidationError(_("Invalid keyword: %s") % keyword)
 
             clean_keywords.append(clean_keyword)

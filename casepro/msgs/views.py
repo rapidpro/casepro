@@ -11,8 +11,8 @@ from smartmin.views import SmartListView, SmartCreateView, SmartUpdateView, Smar
 from temba_client.utils import parse_iso8601
 
 from casepro.cases.models import Case
-from casepro.contacts.models import Contact, Group
-from casepro.rules.models import ContainsTest, GroupsTest, FieldTest, Quantifier
+from casepro.contacts.models import Contact
+from casepro.rules.models import ContainsTest, GroupsTest, Quantifier
 from casepro.utils import parse_csv, str_to_bool, json_encode
 from casepro.utils.export import BaseDownloadView
 

@@ -11,12 +11,6 @@ from casepro.utils import normalize
 from collections import defaultdict
 from enum import Enum
 
-KEYWORD_MIN_LENGTH = 3
-
-
-def is_valid_keyword(keyword):
-    return len(keyword) >= KEYWORD_MIN_LENGTH and regex.match(r'^\w[\w\- ]*\w$', keyword)
-
 
 class Quantifier(Enum):
     """
@@ -65,6 +59,7 @@ class Test(object):
     """
     __metaclass__ = ABCMeta
 
+    TYPE = None
     CLASS_BY_TYPE = None  # lazily initialized below
 
     @classmethod
@@ -89,12 +84,20 @@ class Test(object):
         Subclasses must implement this to return a boolean.
         """
 
+    def __eq__(self, other):
+        return other and self.TYPE == other.TYPE
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 class ContainsTest(Test):
     """
     Test that returns whether the message text contains or doesn't contain the given keywords
     """
     TYPE = 'contains'
+
+    KEYWORD_MIN_LENGTH = 3
 
     def __init__(self, keywords, quantifier):
         self.keywords = [normalize(word) for word in keywords]
@@ -116,6 +119,14 @@ class ContainsTest(Test):
         checks = [keyword_check(keyword) for keyword in self.keywords]
 
         return self.quantifier.evaluate(checks)
+
+    @classmethod
+    def is_valid_keyword(cls, keyword):
+        return len(keyword) >= cls.KEYWORD_MIN_LENGTH and regex.match(r'^\w[\w\- ]*\w$', keyword)
+
+    def __eq__(self, other):
+        return other and self.TYPE == other.TYPE \
+               and self.keywords == other.keywords and self.quantifier == other.quantifier
 
 
 class GroupsTest(Test):
@@ -146,6 +157,9 @@ class GroupsTest(Test):
 
         return self.quantifier.evaluate(checks)
 
+    def __eq__(self, other):
+        return other and self.TYPE == other.TYPE and self.groups == other.groups and self.quantifier == other.quantifier
+
 
 class FieldTest(Test):
     """
@@ -171,6 +185,9 @@ class FieldTest(Test):
             if value == contact_value:
                 return True
         return False
+
+    def __eq__(self, other):
+        return other and self.TYPE == other.TYPE and self.key == other.key and self.values == other.values
 
 
 class Action(object):
@@ -283,13 +300,6 @@ class Rule(object):
     def __init__(self, tests, actions):
         self.tests = tests
         self.actions = actions
-
-    @classmethod
-    def from_label(cls, label):
-        return cls(
-            [ContainsTest(label.get_keywords(), Quantifier.ANY)],
-            [LabelAction(label)]
-        )
 
     def matches(self, message):
         """

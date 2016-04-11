@@ -47,7 +47,12 @@ def handle_messages(org, since, until):
 
     if unhandled:
         # load all org labels and convert to rules
-        rules = [Rule.from_label(label) for label in Label.get_all(org)]
+        rules = []
+        for label in Label.get_all(org):
+            rule = label.get_rule()
+            if rule:
+                rules.append(rule)
+
         rule_processor = Rule.BatchProcessor(org, rules)
 
         for msg in unhandled:
