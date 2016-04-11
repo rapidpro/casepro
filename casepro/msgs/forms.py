@@ -39,7 +39,7 @@ class LabelForm(forms.ModelForm):
 
         self.fields['field_test'] = FieldTestField(
             org=org, label=_("Field criteria"), required=False,
-            help_text=_("Match messages where contact's field value is equal to one of these values")
+            help_text=_("Match messages where contact field value is equal to any of these values (comma separated)")
         )
 
     def clean_name(self):
