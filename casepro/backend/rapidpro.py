@@ -118,6 +118,11 @@ class LabelSyncer(BaseSyncer):
         if remote.name == SYSTEM_LABEL_FLAGGED:
             return None
 
+        # don't create locally if there's an non-synced label with same name
+        # for l in org.labels.all():
+        #    if l.name == remote.name and not l.is_synced:
+        #        return None
+
         return {
             'org': org,
             'uuid': remote.uuid,

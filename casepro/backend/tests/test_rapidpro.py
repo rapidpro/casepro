@@ -4,9 +4,7 @@ from __future__ import unicode_literals
 import pytz
 import time
 
-from casepro.contacts.models import Contact, Field, Group
-from casepro.msgs.models import Label, Message
-from casepro.test import BaseCasesTest
+from dash.orgs.models import Org
 from dash.test import MockClientQuery
 from datetime import datetime, timedelta
 from django.utils.timezone import now
@@ -15,6 +13,11 @@ from temba_client.v1.types import Broadcast as TembaBroadcast
 from temba_client.v2.types import Group as TembaGroup, Field as TembaField, Label as TembaLabel, ObjectRef
 from temba_client.v2.types import Contact as TembaContact, Message as TembaMessage
 from unittest import skip
+
+from casepro.contacts.models import Contact, Field, Group
+from casepro.msgs.models import Label, Message
+from casepro.test import BaseCasesTest
+
 from ..rapidpro import RapidProBackend, ContactSyncer, MessageSyncer
 
 
@@ -398,6 +401,8 @@ class RapidProBackendTest(BaseCasesTest):
             TembaLabel.create(uuid="L-002", name="Feedback", count=32),
             TembaLabel.create(uuid="L-009", name="Flagged", count=21),  # should be ignored
         ])
+
+        self.unicef = Org.objects.prefetch_related('labels').get(pk=self.unicef.pk)
 
         with self.assertNumQueries(6):
             num_created, num_updated, num_deleted, num_ignored = self.backend.pull_labels(self.unicef)
