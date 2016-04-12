@@ -21,6 +21,7 @@ class LabelForm(forms.ModelForm):
         queryset=Group.objects.none(), label=_("Groups"), required=False,
         help_text=_("Match messages from these groups (select none to include all groups)")
     )
+    field_test = forms.CharField()  # switched below in __init__
     is_synced = forms.BooleanField(
         label=_("Is synced"), required=False,
         help_text=_("Whether label should be kept synced with backend")
@@ -72,4 +73,4 @@ class LabelForm(forms.ModelForm):
 
     class Meta:
         model = Label
-        fields = ('name', 'description', 'keywords', 'groups', 'is_synced')
+        fields = ('name', 'description', 'keywords', 'groups', 'field_test', 'is_synced')
