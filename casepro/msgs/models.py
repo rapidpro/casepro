@@ -16,9 +16,6 @@ from casepro.contacts.models import Contact
 from casepro.utils import json_encode
 from casepro.utils.export import BaseExport
 
-SAVE_CONTACT_ATTR = '__data__contact'
-SAVE_LABELS_ATTR = '__data__labels'
-
 LABEL_LOCK_KEY = 'lock:label:%d:%s'
 MESSAGE_LOCK_KEY = 'lock:message:%d:%d'
 
@@ -37,7 +34,7 @@ class Label(models.Model):
     """
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='labels')
 
-    uuid = models.CharField(max_length=36, unique=True)
+    uuid = models.CharField(max_length=36, unique=True, null=True)
 
     name = models.CharField(verbose_name=_("Name"), max_length=32, help_text=_("Name of this label"))
 
@@ -54,12 +51,8 @@ class Label(models.Model):
 
     @classmethod
     def create(cls, org, name, description, tests, is_synced):
-        tests_json = json_encode(tests)
-
-        uuid = get_backend().create_label(org, name)
-
-        return cls.objects.create(org=org, uuid=uuid, name=name, description=description,
-                                  tests=tests_json, is_synced=is_synced)
+        return cls.objects.create(org=org, name=name, description=description,
+                                  tests=json_encode(tests), is_synced=is_synced)
 
     @classmethod
     def get_all(cls, org, user=None):
@@ -111,6 +104,9 @@ class Message(models.Model):
 
     DIRECTION = 'I'
 
+    SAVE_CONTACT_ATTR = '__data__contact'
+    SAVE_LABELS_ATTR = '__data__labels'
+
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='incoming_messages')
 
     backend_id = models.IntegerField(unique=True, help_text=_("Backend identifier for this message"))
@@ -138,10 +134,10 @@ class Message(models.Model):
     case = models.ForeignKey('cases.Case', null=True, related_name="incoming_messages")
 
     def __init__(self, *args, **kwargs):
-        if SAVE_CONTACT_ATTR in kwargs:
-            setattr(self, SAVE_CONTACT_ATTR, kwargs.pop(SAVE_CONTACT_ATTR))
-        if SAVE_LABELS_ATTR in kwargs:
-            setattr(self, SAVE_LABELS_ATTR, kwargs.pop(SAVE_LABELS_ATTR))
+        if self.SAVE_CONTACT_ATTR in kwargs:
+            setattr(self, self.SAVE_CONTACT_ATTR, kwargs.pop(self.SAVE_CONTACT_ATTR))
+        if self.SAVE_LABELS_ATTR in kwargs:
+            setattr(self, self.SAVE_LABELS_ATTR, kwargs.pop(self.SAVE_LABELS_ATTR))
 
         super(Message, self).__init__(*args, **kwargs)
 

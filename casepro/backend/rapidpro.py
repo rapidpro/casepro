@@ -6,8 +6,8 @@ from dash.utils import is_dict_equal
 from dash.utils.sync import BaseSyncer, sync_local_to_set, sync_local_to_changes
 from django.utils.timezone import now
 
-from casepro.contacts.models import Contact, Group, Field, SAVE_GROUPS_ATTR
-from casepro.msgs.models import Label, Message, Outgoing, SAVE_CONTACT_ATTR, SAVE_LABELS_ATTR
+from casepro.contacts.models import Contact, Group, Field
+from casepro.msgs.models import Label, Message, Outgoing
 
 from . import BaseBackend
 
@@ -47,7 +47,7 @@ class ContactSyncer(BaseSyncer):
             'is_blocked': remote.blocked,
             'is_stub': False,
             'fields': fields,
-            SAVE_GROUPS_ATTR: groups,
+            Contact.SAVE_GROUPS_ATTR: groups,
         }
 
     def update_required(self, local, remote, remote_as_kwargs):
@@ -156,8 +156,8 @@ class MessageSyncer(BaseSyncer):
             'is_flagged': remote_message_is_flagged(remote),
             'is_archived': remote_message_is_archived(remote),
             'created_on': remote.created_on,
-            SAVE_CONTACT_ATTR: (remote.contact.uuid, remote.contact.name),
-            SAVE_LABELS_ATTR: labels,
+            Message.SAVE_CONTACT_ATTR: (remote.contact.uuid, remote.contact.name),
+            Message.SAVE_LABELS_ATTR: labels,
         }
 
         # if syncer is set explicitly or message is too old, save as handled already

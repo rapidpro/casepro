@@ -24,18 +24,28 @@ from .tasks import handle_messages, pull_messages
 
 class LabelTest(BaseCasesTest):
     @patch('casepro.test.TestBackend.create_label')
-    def test_create(self, mock_create_label):
-        mock_create_label.return_value = "L-010"
-
+    def test_save(self, mock_create_label):
+        # create un-synced label
         tests = [ContainsTest(['ebola', 'fever'], Quantifier.ALL), GroupsTest([self.reporters], Quantifier.ANY)]
         label = Label.create(self.unicef, "Ebola", "Msgs about ebola", tests, is_synced=False)
-        self.assertEqual(label.uuid, 'L-010')
+        self.assertEqual(label.uuid, None)
         self.assertEqual(label.org, self.unicef)
         self.assertEqual(label.name, "Ebola")
         self.assertEqual(label.description, "Msgs about ebola")
         self.assertEqual(label.get_tests(), tests)
         self.assertEqual(label.is_synced, False)
         self.assertEqual(six.text_type(label), "Ebola")
+
+        mock_create_label.assert_not_called()
+        mock_create_label.return_value = "L-010"
+
+        # update it to be synced
+        label.is_synced = True
+        label.save()
+        label.refresh_from_db()
+
+        self.assertEqual(label.uuid, 'L-010')
+        self.assertEqual(label.is_synced, True)
 
     def test_get_all(self):
         self.assertEqual(set(Label.get_all(self.unicef)), {self.aids, self.pregnancy})
@@ -48,10 +58,7 @@ class LabelTest(BaseCasesTest):
 
 
 class LabelCRUDLTest(BaseCasesTest):
-    @patch('casepro.test.TestBackend.create_label')
-    def test_create(self, mock_create_label):
-        mock_create_label.return_value = "L-010"
-
+    def test_create(self):
         url = reverse('msgs.label_create')
 
         # log in as a non-administrator
@@ -105,7 +112,7 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 302)
 
         label = Label.objects.get(name="Ebola")
-        self.assertEqual(label.uuid, 'L-010')
+        self.assertEqual(label.uuid, None)
         self.assertEqual(label.org, self.unicef)
         self.assertEqual(label.name, "Ebola")
         self.assertEqual(label.description, "Msgs about ebola")
@@ -262,7 +269,8 @@ class MessageTest(BaseCasesTest):
 
         self.assertEqual(set(message.labels.all()), {spam})
 
-        message = Message.objects.select_related('org').prefetch_related('labels').get(backend_id=123456789)
+        message = Message.objects.select_related('org').prefetch_related('labels', 'org__labels')\
+            .get(backend_id=123456789)
 
         # check there are no extra db hits when saving without change, assuming appropriate pre-fetches (as above)
         with self.assertNumQueries(1):
@@ -270,7 +278,7 @@ class MessageTest(BaseCasesTest):
             message.save()
 
         # check removing a group and adding new ones
-        with self.assertNumQueries(7):
+        with self.assertNumQueries(6):
             setattr(message, '__data__labels', [("L-002", "Feedback"), ("L-003", "Important")])
             message.save()
 
@@ -282,13 +290,21 @@ class MessageTest(BaseCasesTest):
         self.assertEqual(set(message.labels.all()), {feedback, important})
 
         # create a non-synced label
-        local_label = self.create_label(self.unicef, "L-004", "Local", "Hmm", ["stuff"], is_synced=False)
+        local_label = self.create_label(self.unicef, None, "Local", "Hmm", ["stuff"], is_synced=False)
         message.labels.add(local_label)
 
         setattr(message, '__data__labels', [])
         message.save()
 
         self.assertEqual(set(message.labels.all()), {local_label})  # non-synced label remains
+
+        message.labels.remove(local_label)
+
+        setattr(message, '__data__labels', [("L-004", "Local")])
+        message.save()
+
+        self.assertEqual(set(message.labels.all()), set())  # non-synced label not added
+        self.assertEqual(Label.objects.filter(name="Local").count(), 1)  # or created
 
     def test_release(self):
         msg = self.create_message(self.unicef, 101, self.ann, "Hi", [self.pregnancy, self.aids])

@@ -5,7 +5,7 @@ import six
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from .models import Contact, SAVE_GROUPS_ATTR
+from .models import Contact
 
 
 @receiver(post_save, sender=Contact)
@@ -13,12 +13,12 @@ def update_contact_groups(sender, instance, created, **kwargs):
     """
     Save signal handler to update the contact groups when groups are specified as attribute on the contact object
     """
-    if not hasattr(instance, SAVE_GROUPS_ATTR):
+    if not hasattr(instance, Contact.SAVE_GROUPS_ATTR):
         return
 
     org = instance.org
 
-    new_groups_by_uuid = {g[0]: g[1] for g in getattr(instance, SAVE_GROUPS_ATTR)}
+    new_groups_by_uuid = {g[0]: g[1] for g in getattr(instance, Contact.SAVE_GROUPS_ATTR)}
 
     cur_groups_by_uuid = {} if created else {g.uuid: g for g in instance.groups.all()}
 
@@ -46,4 +46,4 @@ def update_contact_groups(sender, instance, created, **kwargs):
 
         instance.groups.add(*add_to_groups)
 
-    delattr(instance, SAVE_GROUPS_ATTR)
+    delattr(instance, Contact.SAVE_GROUPS_ATTR)

@@ -9,8 +9,6 @@ from redis_cache import get_redis_connection
 
 from casepro.backend import get_backend
 
-SAVE_GROUPS_ATTR = '__data__groups'
-
 FIELD_LOCK_KEY = 'lock:field:%d:%s'
 GROUP_LOCK_KEY = 'lock:group:%d:%s'
 CONTACT_LOCK_KEY = 'lock:contact:%d:%s'
@@ -113,6 +111,8 @@ class Contact(models.Model):
     """
     A contact in RapidPro
     """
+    SAVE_GROUPS_ATTR = '__data__groups'
+
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="contacts")
 
     uuid = models.CharField(max_length=36, unique=True)
@@ -138,8 +138,8 @@ class Contact(models.Model):
     created_on = models.DateTimeField(auto_now_add=True, help_text=_("When this contact was created"))
 
     def __init__(self, *args, **kwargs):
-        if SAVE_GROUPS_ATTR in kwargs:
-            setattr(self, SAVE_GROUPS_ATTR, kwargs.pop(SAVE_GROUPS_ATTR))
+        if self.SAVE_GROUPS_ATTR in kwargs:
+            setattr(self, self.SAVE_GROUPS_ATTR, kwargs.pop(self.SAVE_GROUPS_ATTR))
 
         super(Contact, self).__init__(*args, **kwargs)
 
