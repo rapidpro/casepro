@@ -245,7 +245,8 @@ class LabelAction(Action):
         for msg in messages:
             msg.labels.add(self.label)
 
-        get_backend().label_messages(org, messages, self.label)
+        if self.label.is_synced:
+            get_backend().label_messages(org, messages, self.label)
 
     def __eq__(self, other):
         return self.TYPE == other.TYPE and self.label == other.label

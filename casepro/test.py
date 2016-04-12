@@ -81,9 +81,10 @@ class BaseCasesTest(DashTest):
     def create_user(self, org, partner, role, full_name, email):
         return User.create(org, partner, role, full_name, email, password=email, change_password=False)
 
-    def create_label(self, org, uuid, name, description, keywords):
+    def create_label(self, org, uuid, name, description, keywords, **kwargs):
         tests = json_encode([ContainsTest(keywords, Quantifier.ANY)])
-        return Label.objects.create(org=org, uuid=uuid, name=name, description=description, tests=tests)
+        return Label.objects.create(org=org, uuid=uuid, name=name, description=description,
+                                    tests=tests, **kwargs)
 
     def create_contact(self, org, uuid, name, groups=(), fields=None, is_stub=False):
         contact = Contact.objects.create(org=org, uuid=uuid, name=name, is_stub=is_stub, fields=fields, language="eng")

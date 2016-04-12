@@ -2,11 +2,13 @@ from __future__ import unicode_literals
 
 import six
 
-from casepro.contacts.models import Contact, Group, Field, SAVE_GROUPS_ATTR
-from casepro.msgs.models import Label, Message, Outgoing, SAVE_CONTACT_ATTR, SAVE_LABELS_ATTR
 from dash.utils import is_dict_equal
 from dash.utils.sync import BaseSyncer, sync_local_to_set, sync_local_to_changes
 from django.utils.timezone import now
+
+from casepro.contacts.models import Contact, Group, Field, SAVE_GROUPS_ATTR
+from casepro.msgs.models import Label, Message, Outgoing, SAVE_CONTACT_ATTR, SAVE_LABELS_ATTR
+
 from . import BaseBackend
 
 

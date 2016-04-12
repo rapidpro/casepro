@@ -45,14 +45,21 @@ class Label(models.Model):
 
     tests = models.TextField(blank=True)
 
+    is_synced = models.BooleanField(
+        default=True,
+        help_text="Whether this label should be synced with the backend"
+    )
+
     is_active = models.BooleanField(default=True, help_text="Whether this label is active")
 
     @classmethod
-    def create(cls, org, name, description, tests):
-        backend_uuid = get_backend().create_label(org, name)
+    def create(cls, org, name, description, tests, is_synced):
         tests_json = json_encode(tests)
 
-        return cls.objects.create(org=org, uuid=backend_uuid, name=name, description=description, tests=tests_json)
+        uuid = get_backend().create_label(org, name)
+
+        return cls.objects.create(org=org, uuid=uuid, name=name, description=description,
+                                  tests=tests_json, is_synced=is_synced)
 
     @classmethod
     def get_all(cls, org, user=None):
@@ -276,7 +283,8 @@ class Message(models.Model):
             for msg in messages:
                 msg.labels.add(label)
 
-            get_backend().label_messages(org, messages, label)
+            if label.is_synced:
+                get_backend().label_messages(org, messages, label)
 
             MessageAction.create(org, user, messages, MessageAction.LABEL, label)
 

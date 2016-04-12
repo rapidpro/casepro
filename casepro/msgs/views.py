@@ -52,14 +52,21 @@ class LabelCRUDL(SmartCRUDL):
             kwargs['is_create'] = True
             return kwargs
 
+        def derive_initial(self):
+            # label created manually in casepro aren't synced by default
+            initial = super(LabelCRUDL.Create, self).derive_initial()
+            initial['is_synced'] = False
+            return initial
+
         def save(self, obj):
             data = self.form.cleaned_data
             org = self.request.org
             name = data['name']
             description = data['description']
             tests = self.construct_tests(data)
+            is_synced = data['is_synced']
 
-            self.object = Label.create(org, name, description, tests)
+            self.object = Label.create(org, name, description, tests, is_synced)
 
     class Update(LabelFormMixin, OrgObjPermsMixin, SmartUpdateView):
         form_class = LabelForm

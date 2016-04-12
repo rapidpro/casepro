@@ -12,17 +12,18 @@ from .models import Label
 
 class LabelForm(forms.ModelForm):
     name = forms.CharField(label=_("Name"), max_length=128)
-
     description = forms.CharField(label=_("Description"), max_length=255, widget=forms.Textarea)
-
     keywords = forms.CharField(
         label=_("Keywords"), widget=forms.Textarea, required=False,
         help_text=_("Match messages containing any of these words (comma separated)")
     )
-
     groups = forms.ModelMultipleChoiceField(
         queryset=Group.objects.none(), label=_("Groups"), required=False,
         help_text=_("Match messages from these groups (select none to include all groups)")
+    )
+    is_synced = forms.BooleanField(
+        label=_("Is synced"), required=False,
+        help_text=_("Whether label should be kept synced with backend")
     )
 
     def __init__(self, *args, **kwargs):
@@ -71,4 +72,4 @@ class LabelForm(forms.ModelForm):
 
     class Meta:
         model = Label
-        fields = ('name', 'description', 'keywords')
+        fields = ('name', 'description', 'keywords', 'groups', 'is_synced')

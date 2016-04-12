@@ -28,12 +28,13 @@ class LabelTest(BaseCasesTest):
         mock_create_label.return_value = "L-010"
 
         tests = [ContainsTest(['ebola', 'fever'], Quantifier.ALL), GroupsTest([self.reporters], Quantifier.ANY)]
-        label = Label.create(self.unicef, "Ebola", "Msgs about ebola", tests)
+        label = Label.create(self.unicef, "Ebola", "Msgs about ebola", tests, is_synced=False)
         self.assertEqual(label.uuid, 'L-010')
         self.assertEqual(label.org, self.unicef)
         self.assertEqual(label.name, "Ebola")
         self.assertEqual(label.description, "Msgs about ebola")
         self.assertEqual(label.get_tests(), tests)
+        self.assertEqual(label.is_synced, False)
         self.assertEqual(six.text_type(label), "Ebola")
 
     def test_get_all(self):
@@ -98,21 +99,22 @@ class LabelCRUDLTest(BaseCasesTest):
             'keywords': "Ebola,fever",
             'groups': '%d' % self.reporters.pk,
             'field_test_0': "state",
-            'field_test_1': "Kigali,Lusaka"
+            'field_test_1': "Kigali,Lusaka",
         })
 
         self.assertEqual(response.status_code, 302)
 
-        ebola = Label.objects.get(name="Ebola")
-        self.assertEqual(ebola.uuid, 'L-010')
-        self.assertEqual(ebola.org, self.unicef)
-        self.assertEqual(ebola.name, "Ebola")
-        self.assertEqual(ebola.description, "Msgs about ebola")
-        self.assertEqual(ebola.get_tests(), [
+        label = Label.objects.get(name="Ebola")
+        self.assertEqual(label.uuid, 'L-010')
+        self.assertEqual(label.org, self.unicef)
+        self.assertEqual(label.name, "Ebola")
+        self.assertEqual(label.description, "Msgs about ebola")
+        self.assertEqual(label.get_tests(), [
             ContainsTest(['ebola', 'fever'], Quantifier.ANY),
             GroupsTest([self.reporters], Quantifier.ANY),
             FieldTest('state', ["Kigali", "Lusaka"])
         ])
+        self.assertEqual(label.is_synced, False)
 
     def test_update(self):
         url = reverse('msgs.label_update', args=[self.pregnancy.pk])
@@ -142,7 +144,8 @@ class LabelCRUDLTest(BaseCasesTest):
             'keywords': "pregnancy, maternity",
             'groups': '%d' % self.males.pk,
             'field_test_0': "age",
-            'field_test_1': "18,19,20"
+            'field_test_1': "18,19,20",
+            'is_synced': "1"
         })
 
         self.assertEqual(response.status_code, 302)
@@ -157,6 +160,7 @@ class LabelCRUDLTest(BaseCasesTest):
             GroupsTest([self.males], Quantifier.ANY),
             FieldTest('age', ["18", "19", "20"])
         ])
+        self.assertEqual(label.is_synced, True)
 
     def test_list(self):
         url = reverse('msgs.label_list')
@@ -254,7 +258,7 @@ class MessageTest(BaseCasesTest):
         self.assertEqual(message.created_on, d1)
         self.assertEqual(six.text_type(message), "I have lots of questions!")
 
-        spam = Label.objects.get(org=self.unicef, uuid="L-001", name="Spam")
+        spam = Label.objects.get(org=self.unicef, uuid="L-001", name="Spam", is_synced=True)
 
         self.assertEqual(set(message.labels.all()), {spam})
 
@@ -272,10 +276,19 @@ class MessageTest(BaseCasesTest):
 
         message = Message.objects.get(backend_id=123456789)
 
-        feedback = Label.objects.get(org=self.unicef, uuid="L-002", name="Feedback")
-        important = Label.objects.get(org=self.unicef, uuid="L-003", name="Important")
+        feedback = Label.objects.get(org=self.unicef, uuid="L-002", name="Feedback", is_synced=True)
+        important = Label.objects.get(org=self.unicef, uuid="L-003", name="Important", is_synced=True)
 
         self.assertEqual(set(message.labels.all()), {feedback, important})
+
+        # create a non-synced label
+        local_label = self.create_label(self.unicef, "L-004", "Local", "Hmm", ["stuff"], is_synced=False)
+        message.labels.add(local_label)
+
+        setattr(message, '__data__labels', [])
+        message.save()
+
+        self.assertEqual(set(message.labels.all()), {local_label})  # non-synced label remains
 
     def test_release(self):
         msg = self.create_message(self.unicef, 101, self.ann, "Hi", [self.pregnancy, self.aids])
