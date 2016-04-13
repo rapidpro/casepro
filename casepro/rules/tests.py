@@ -140,6 +140,14 @@ class RuleTest(BaseCasesTest):
 
         self.ann = self.create_contact(self.unicef, 'C-001', "Ann")
 
+    def test_get_all(self):
+        rules = Rule.get_all(self.unicef)
+        self.assertEqual(len(rules), 2)
+        self.assertEqual(rules[0].tests, [ContainsTest(["aids", "hiv"], Quantifier.ANY)])
+        self.assertEqual(rules[0].actions, [LabelAction(self.aids)])
+        self.assertEqual(rules[1].tests, [ContainsTest(["pregnant", "pregnancy"], Quantifier.ANY)])
+        self.assertEqual(rules[1].actions, [LabelAction(self.pregnancy)])
+
     @patch('casepro.test.TestBackend.label_messages')
     @patch('casepro.test.TestBackend.flag_messages')
     @patch('casepro.test.TestBackend.archive_messages')

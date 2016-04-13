@@ -72,12 +72,6 @@ class Label(models.Model):
         tests_json = json.loads(self.tests) if self.tests else []
         return [Test.from_json(t, DeserializationContext(self.org)) for t in tests_json]
 
-    def get_rule(self):
-        from casepro.rules.models import Rule, LabelAction
-
-        tests = self.get_tests()
-        return Rule(tests, [LabelAction(self)]) if tests else None
-
     def get_partners(self):
         return self.partners.filter(is_active=True)
 

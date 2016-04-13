@@ -42,10 +42,10 @@ class BaseCasesTest(DashTest):
         self.norbert = self.create_admin(self.nyaruka, "Norbert Kwizera", "norbert@nyaruka.com")
 
         # some message labels
-        self.aids = self.create_label(self.unicef, 'L-001', "AIDS", 'Messages about AIDS', ['aids', 'hiv'])
-        self.pregnancy = self.create_label(self.unicef, 'L-002', "Pregnancy", 'Messages about pregnancy',
-                                           ['pregnant', 'pregnancy'])
-        self.code = self.create_label(self.nyaruka, 'L-003', "Code", 'Messages about code', ['java', 'python', 'go'])
+        self.aids = self.create_label(self.unicef, "L-001", "AIDS", 'Messages about AIDS', ["aids", "hiv"])
+        self.pregnancy = self.create_label(self.unicef, "L-002", "Pregnancy", 'Messages about pregnancy',
+                                           ["pregnant", "pregnancy"])
+        self.code = self.create_label(self.nyaruka, "L-003", "Code", 'Messages about code', ["java", "python", "go"])
 
         # some partners
         self.moh = self.create_partner(self.unicef, "MOH", [self.aids, self.pregnancy])
@@ -59,10 +59,10 @@ class BaseCasesTest(DashTest):
         self.user4 = self.create_user(self.nyaruka, self.klab, ROLE_ANALYST, "Bosco", "bosco@klab.rw")
 
         # some groups
-        self.males = self.create_group(self.unicef, 'G-001', 'Males')
-        self.females = self.create_group(self.unicef, 'G-002', 'Females')
-        self.reporters = self.create_group(self.unicef, 'G-003', 'Reporters', suspend_from=True)
-        self.coders = self.create_group(self.nyaruka, 'G-004', 'Coders')
+        self.males = self.create_group(self.unicef, "G-001", "Males")
+        self.females = self.create_group(self.unicef, "G-002", "Females")
+        self.reporters = self.create_group(self.unicef, "G-003", "Reporters", suspend_from=True)
+        self.coders = self.create_group(self.nyaruka, "G-004", 'Coders')
 
         # some fields
         self.nickname = self.create_field(self.unicef, 'nickname', "Nickname", value_type='T')

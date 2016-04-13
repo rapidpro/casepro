@@ -296,11 +296,29 @@ class ArchiveAction(Action):
 class Rule(object):
     """
     At some point this we'll likely separate rules from labels and this will become an actual model. For now we generate
-    a rule for each label on the fly.
+    rules from labels on the fly.
     """
     def __init__(self, tests, actions):
         self.tests = tests
         self.actions = actions
+
+    @classmethod
+    def get_all(cls, org):
+        # load all org labels and converts them to rules
+        rules = []
+        for label in Label.get_all(org):
+            rule = cls.from_label(label)
+            if rule:
+                rules.append(rule)
+        return rules
+
+    @classmethod
+    def from_label(cls, label):
+        """
+        Converts a label to a rule. Returns none if label doesn't have any tests so can't be a rule.
+        """
+        tests = label.get_tests()
+        return Rule(tests, [LabelAction(label)]) if tests else None
 
     def matches(self, message):
         """

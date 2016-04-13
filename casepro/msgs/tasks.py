@@ -35,7 +35,7 @@ def handle_messages(org):
     from casepro.backend import get_backend
     from casepro.cases.models import Case
     from casepro.rules.models import Rule
-    from .models import Label, Message
+    from .models import Message
     backend = get_backend()
 
     case_replies = []
@@ -46,13 +46,7 @@ def handle_messages(org):
     unhandled = list(unhandled.select_related('contact').prefetch_related('contact__groups'))
 
     if unhandled:
-        # load all org labels and convert to rules
-        rules = []
-        for label in Label.get_all(org):
-            rule = label.get_rule()
-            if rule:
-                rules.append(rule)
-
+        rules = Rule.get_all(org)
         rule_processor = Rule.BatchProcessor(org, rules)
 
         for msg in unhandled:
