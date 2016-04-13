@@ -4,14 +4,15 @@ __pycache__/
 *~
 
 sitestatic/
-config/gen
-config/settings.py
+config
 db/
 dash
 deploy
 celerybeat-schedule.db
 src/
 casepro/settings.py
+fabfile.py
+fabconfig.py
 
 .idea/
 .DS_Store
