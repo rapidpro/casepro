@@ -1,4 +1,4 @@
--e git+https://github.com/rapidpro/dash.git@org_task_tweaks#egg=dash-master
+-e git+https://github.com/rapidpro/dash.git@master#egg=dash-master
 -e git+https://github.com/nyaruka/smartmin.git@master#egg=smartmin-master
 boto
 celery[redis]

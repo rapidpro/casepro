@@ -8,7 +8,7 @@ from datetime import timedelta
 logger = get_task_logger(__name__)
 
 
-@org_task('message-pull', prefetch_related=('labels',))
+@org_task('message-pull')
 def pull_messages(org, since, until):
     """
     Pulls new unsolicited messages for an org
