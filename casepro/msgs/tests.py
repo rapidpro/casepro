@@ -48,7 +48,7 @@ class LabelTest(BaseCasesTest):
         self.assertEqual(label.is_synced, True)
 
     def test_get_all(self):
-        self.assertEqual(set(Label.get_all(self.unicef)), {self.aids, self.pregnancy})
+        self.assertEqual(set(Label.get_all(self.unicef)), {self.aids, self.pregnancy, self.tea})
         self.assertEqual(set(Label.get_all(self.unicef, self.user1)), {self.aids, self.pregnancy})  # MOH user
         self.assertEqual(set(Label.get_all(self.unicef, self.user3)), {self.aids})  # WHO user
 
@@ -177,7 +177,7 @@ class LabelCRUDLTest(BaseCasesTest):
 
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(list(response.context['object_list']), [self.aids, self.pregnancy])
+        self.assertEqual(list(response.context['object_list']), [self.aids, self.pregnancy, self.tea])
 
     def test_delete(self):
         url = reverse('msgs.label_delete', args=[self.pregnancy.pk])
@@ -205,7 +205,7 @@ class MessageTest(BaseCasesTest):
         self.ann = self.create_contact(self.unicef, 'C-001', "Ann")
 
     def create_test_messages(self):
-        self.msg1 = self.create_message(self.unicef, 101, self.ann, "Normal", [self.aids, self.pregnancy])
+        self.msg1 = self.create_message(self.unicef, 101, self.ann, "Normal", [self.aids, self.pregnancy, self.tea])
         self.msg2 = self.create_message(self.unicef, 102, self.ann, "Flow", type='F')
         self.msg3 = self.create_message(self.unicef, 103, self.ann, "Archived", is_archived=True)
         self.msg4 = self.create_message(self.unicef, 104, self.ann, "Flagged", is_flagged=True)
@@ -417,6 +417,7 @@ class MessageTest(BaseCasesTest):
         mock_unlabel_messages.assert_called_once_with(self.unicef, [self.msg1], self.aids)
 
         actions = list(MessageAction.objects.order_by('pk'))
+        self.assertEqual(len(actions), 3)
         self.assertEqual(actions[0].action, MessageAction.LABEL)
         self.assertEqual(actions[0].created_by, self.user1)
         self.assertEqual(set(actions[0].messages.all()), {self.msg1})
@@ -424,7 +425,10 @@ class MessageTest(BaseCasesTest):
         self.assertEqual(actions[1].action, MessageAction.UNLABEL)
         self.assertEqual(actions[1].created_by, self.user1)
         self.assertEqual(set(actions[1].messages.all()), {self.msg1})
-        self.assertEqual(actions[1].label, self.aids)
+
+        # order of labels isn't deterministic
+        self.assertIn(actions[1].label, [self.aids, self.tea])
+        self.assertIn(actions[2].label, [self.aids, self.tea])
 
     @patch('casepro.test.TestBackend.flag_messages')
     def test_bulk_flag(self, mock_flag_messages):
@@ -460,14 +464,23 @@ class MessageTest(BaseCasesTest):
     def test_bulk_label(self, mock_label_messages):
         self.create_test_messages()
 
-        Message.bulk_label(self.unicef, self.user1, [self.msg1, self.msg2], self.aids)
+        # try with un-synced label
+        Message.bulk_label(self.unicef, self.user1, [self.msg1, self.msg2], self.tea)
 
-        mock_label_messages.assert_called_once_with(self.unicef, [self.msg1, self.msg2], self.aids)
+        self.assertNotCalled(mock_label_messages)
 
         action = MessageAction.objects.get()
         self.assertEqual(action.action, MessageAction.LABEL)
         self.assertEqual(action.created_by, self.user1)
+        self.assertEqual(action.label, self.tea)
         self.assertEqual(set(action.messages.all()), {self.msg1, self.msg2})
+
+        self.assertEqual(self.tea.messages.count(), 2)
+
+        # try with synced label
+        Message.bulk_label(self.unicef, self.user1, [self.msg1, self.msg2], self.aids)
+
+        mock_label_messages.assert_called_once_with(self.unicef, [self.msg1, self.msg2], self.aids)
 
         self.assertEqual(self.aids.messages.count(), 2)
 
@@ -475,14 +488,23 @@ class MessageTest(BaseCasesTest):
     def test_bulk_unlabel(self, mock_unlabel_messages):
         self.create_test_messages()
 
-        Message.bulk_unlabel(self.unicef, self.user1, [self.msg1, self.msg2], self.aids)
+        # try with un-synced label
+        Message.bulk_unlabel(self.unicef, self.user1, [self.msg1, self.msg2], self.tea)
 
-        mock_unlabel_messages.assert_called_once_with(self.unicef, [self.msg1, self.msg2], self.aids)
+        self.assertNotCalled(mock_unlabel_messages)
 
         action = MessageAction.objects.get()
         self.assertEqual(action.action, MessageAction.UNLABEL)
         self.assertEqual(action.created_by, self.user1)
+        self.assertEqual(action.label, self.tea)
         self.assertEqual(set(action.messages.all()), {self.msg1, self.msg2})
+
+        self.assertEqual(self.tea.messages.count(), 0)
+
+        # try with synced label
+        Message.bulk_unlabel(self.unicef, self.user1, [self.msg1, self.msg2], self.aids)
+
+        mock_unlabel_messages.assert_called_once_with(self.unicef, [self.msg1, self.msg2], self.aids)
 
         self.assertEqual(self.aids.messages.count(), 0)
 

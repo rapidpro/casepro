@@ -285,7 +285,8 @@ class Message(models.Model):
             for msg in messages:
                 msg.labels.remove(label)
 
-            get_backend().unlabel_messages(org, messages, label)
+            if label.is_synced:
+                get_backend().unlabel_messages(org, messages, label)
 
             MessageAction.create(org, user, messages, MessageAction.UNLABEL, label)
 

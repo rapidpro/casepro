@@ -142,7 +142,7 @@ class RuleTest(BaseCasesTest):
 
     def test_get_all(self):
         rules = Rule.get_all(self.unicef)
-        self.assertEqual(len(rules), 2)
+        self.assertEqual(len(rules), 3)
         self.assertEqual(rules[0].tests, [ContainsTest(["aids", "hiv"], Quantifier.ANY)])
         self.assertEqual(rules[0].actions, [LabelAction(self.aids)])
         self.assertEqual(rules[1].tests, [ContainsTest(["pregnant", "pregnancy"], Quantifier.ANY)])

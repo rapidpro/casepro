@@ -535,7 +535,7 @@ class RapidProBackendTest(BaseCasesTest):
         # check when label exists
         self.assertEqual(self.backend.create_label(self.unicef, "Ebola"), "L-012")
 
-        mock_create_label.assert_not_called()
+        self.assertNotCalled(mock_create_label)
 
         # check when label doesn't exist
         mock_get_labels.return_value = []
@@ -583,7 +583,7 @@ class RapidProBackendTest(BaseCasesTest):
         # empty message list shouldn't make API call
         self.backend.label_messages(self.unicef, [], self.aids)
 
-        mock_label_messages.assert_not_called()
+        self.assertNotCalled(mock_label_messages)
 
         msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
         msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")
@@ -597,7 +597,7 @@ class RapidProBackendTest(BaseCasesTest):
         # empty message list shouldn't make API call
         self.backend.unlabel_messages(self.unicef, [], self.aids)
 
-        mock_unlabel_messages.assert_not_called()
+        self.assertNotCalled(mock_unlabel_messages)
 
         msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
         msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")
@@ -611,7 +611,7 @@ class RapidProBackendTest(BaseCasesTest):
         # empty message list shouldn't make API call
         self.backend.archive_messages(self.unicef, [])
 
-        mock_archive_messages.assert_not_called()
+        self.assertNotCalled(mock_archive_messages)
 
         msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
         msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")
@@ -631,7 +631,7 @@ class RapidProBackendTest(BaseCasesTest):
         # empty message list shouldn't make API call
         self.backend.restore_messages(self.unicef, [])
 
-        mock_unarchive_messages.assert_not_called()
+        self.assertNotCalled(mock_unarchive_messages)
 
         msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
         msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")
@@ -645,7 +645,7 @@ class RapidProBackendTest(BaseCasesTest):
         # empty message list shouldn't make API call
         self.backend.flag_messages(self.unicef, [])
 
-        mock_label_messages.assert_not_called()
+        self.assertNotCalled(mock_label_messages)
 
         msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
         msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")
@@ -659,7 +659,7 @@ class RapidProBackendTest(BaseCasesTest):
         # empty message list shouldn't make API call
         self.backend.unflag_messages(self.unicef, [])
 
-        mock_unlabel_messages.assert_not_called()
+        self.assertNotCalled(mock_unlabel_messages)
 
         msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
         msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")

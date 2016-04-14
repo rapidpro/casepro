@@ -45,7 +45,8 @@ class BaseCasesTest(DashTest):
         self.aids = self.create_label(self.unicef, "L-001", "AIDS", 'Messages about AIDS', ["aids", "hiv"])
         self.pregnancy = self.create_label(self.unicef, "L-002", "Pregnancy", 'Messages about pregnancy',
                                            ["pregnant", "pregnancy"])
-        self.code = self.create_label(self.nyaruka, "L-003", "Code", 'Messages about code', ["java", "python", "go"])
+        self.tea = self.create_label(self.unicef, None, "Tea", 'Messages about tea', ["tea", "chai"], is_synced=False)
+        self.code = self.create_label(self.nyaruka, "L-101", "Code", 'Messages about code', ["java", "python", "go"])
 
         # some partners
         self.moh = self.create_partner(self.unicef, "MOH", [self.aids, self.pregnancy])
@@ -133,6 +134,9 @@ class BaseCasesTest(DashTest):
         message.save(update_fields=('case',))
 
         return case
+
+    def assertNotCalled(self, mock):
+        self.assertEqual(len(mock.mock_calls), 0, "Expected no calls, called %d times" % len(mock.mock_calls))
 
     def assertExcelRow(self, sheet, row_num, values, tz=None):
         """
