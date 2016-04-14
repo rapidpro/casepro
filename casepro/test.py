@@ -5,6 +5,8 @@ from casepro.cases.models import Case, Partner
 from casepro.contacts.models import Contact, Group, Field
 from casepro.msgs.models import Label, Message, Outgoing
 from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
+from casepro.rules.models import ContainsTest, Quantifier
+from casepro.utils import json_encode
 from dash.test import DashTest
 from datetime import datetime
 from django.contrib.auth.models import User
@@ -40,10 +42,11 @@ class BaseCasesTest(DashTest):
         self.norbert = self.create_admin(self.nyaruka, "Norbert Kwizera", "norbert@nyaruka.com")
 
         # some message labels
-        self.aids = self.create_label(self.unicef, 'L-001', "AIDS", 'Messages about AIDS', ['aids', 'hiv'])
-        self.pregnancy = self.create_label(self.unicef, 'L-002', "Pregnancy", 'Messages about pregnancy',
-                                           ['pregnant', 'pregnancy'])
-        self.code = self.create_label(self.nyaruka, 'L-003', "Code", 'Messages about code', ['java', 'python', 'go'])
+        self.aids = self.create_label(self.unicef, "L-001", "AIDS", 'Messages about AIDS', ["aids", "hiv"])
+        self.pregnancy = self.create_label(self.unicef, "L-002", "Pregnancy", 'Messages about pregnancy',
+                                           ["pregnant", "pregnancy"])
+        self.tea = self.create_label(self.unicef, None, "Tea", 'Messages about tea', ["tea", "chai"], is_synced=False)
+        self.code = self.create_label(self.nyaruka, "L-101", "Code", 'Messages about code', ["java", "python", "go"])
 
         # some partners
         self.moh = self.create_partner(self.unicef, "MOH", [self.aids, self.pregnancy])
@@ -57,10 +60,10 @@ class BaseCasesTest(DashTest):
         self.user4 = self.create_user(self.nyaruka, self.klab, ROLE_ANALYST, "Bosco", "bosco@klab.rw")
 
         # some groups
-        self.males = self.create_group(self.unicef, 'G-001', 'Males')
-        self.females = self.create_group(self.unicef, 'G-002', 'Females')
-        self.reporters = self.create_group(self.unicef, 'G-003', 'Reporters', suspend_from=True)
-        self.coders = self.create_group(self.nyaruka, 'G-004', 'Coders')
+        self.males = self.create_group(self.unicef, "G-001", "Males")
+        self.females = self.create_group(self.unicef, "G-002", "Females")
+        self.reporters = self.create_group(self.unicef, "G-003", "Reporters", suspend_from=True)
+        self.coders = self.create_group(self.nyaruka, "G-004", 'Coders')
 
         # some fields
         self.nickname = self.create_field(self.unicef, 'nickname', "Nickname", value_type='T')
@@ -79,8 +82,10 @@ class BaseCasesTest(DashTest):
     def create_user(self, org, partner, role, full_name, email):
         return User.create(org, partner, role, full_name, email, password=email, change_password=False)
 
-    def create_label(self, org, uuid, name, description, keywords):
-        return Label.objects.create(org=org, uuid=uuid, name=name, description=description, keywords=','.join(keywords))
+    def create_label(self, org, uuid, name, description, keywords, **kwargs):
+        tests = json_encode([ContainsTest(keywords, Quantifier.ANY)])
+        return Label.objects.create(org=org, uuid=uuid, name=name, description=description,
+                                    tests=tests, **kwargs)
 
     def create_contact(self, org, uuid, name, groups=(), fields=None, is_stub=False):
         contact = Contact.objects.create(org=org, uuid=uuid, name=name, is_stub=is_stub, fields=fields, language="eng")
@@ -129,6 +134,9 @@ class BaseCasesTest(DashTest):
         message.save(update_fields=('case',))
 
         return case
+
+    def assertNotCalled(self, mock):
+        self.assertEqual(len(mock.mock_calls), 0, "Expected no calls, called %d times" % len(mock.mock_calls))
 
     def assertExcelRow(self, sheet, row_num, values, tz=None):
         """

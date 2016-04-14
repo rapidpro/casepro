@@ -230,11 +230,12 @@ INSTALLED_APPS = (
     'dash.utils',
 
     # custom
-    'casepro.cases',
+    'casepro.orgs_ext',
+    'casepro.profiles',
     'casepro.contacts',
     'casepro.msgs',
-    'casepro.orgs_ext',
-    'casepro.profiles'
+    'casepro.rules',
+    'casepro.cases',
 )
 
 LOGGING = {

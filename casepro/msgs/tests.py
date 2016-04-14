@@ -15,6 +15,7 @@ from temba_client.utils import format_iso8601
 from xlrd import open_workbook
 
 from casepro.contacts.models import Contact
+from casepro.rules.models import ContainsTest, GroupsTest, FieldTest, Quantifier
 from casepro.test import BaseCasesTest
 
 from .models import Label, Message, MessageAction, MessageExport, MessageFolder, Outgoing
@@ -23,52 +24,41 @@ from .tasks import handle_messages, pull_messages
 
 class LabelTest(BaseCasesTest):
     @patch('casepro.test.TestBackend.create_label')
-    def test_create(self, mock_create_label):
+    def test_save(self, mock_create_label):
+        # create un-synced label
+        tests = [ContainsTest(['ebola', 'fever'], Quantifier.ALL), GroupsTest([self.reporters], Quantifier.ANY)]
+        label = Label.create(self.unicef, "Ebola", "Msgs about ebola", tests, is_synced=False)
+        self.assertEqual(label.uuid, None)
+        self.assertEqual(label.org, self.unicef)
+        self.assertEqual(label.name, "Ebola")
+        self.assertEqual(label.description, "Msgs about ebola")
+        self.assertEqual(label.get_tests(), tests)
+        self.assertEqual(label.is_synced, False)
+        self.assertEqual(six.text_type(label), "Ebola")
+
+        mock_create_label.assert_not_called()
         mock_create_label.return_value = "L-010"
 
-        ebola = Label.create(self.unicef, "Ebola", "Msgs about ebola", ['ebola', 'fever'])
-        self.assertEqual(ebola.uuid, 'L-010')
-        self.assertEqual(ebola.org, self.unicef)
-        self.assertEqual(ebola.name, "Ebola")
-        self.assertEqual(ebola.description, "Msgs about ebola")
-        self.assertEqual(ebola.keywords, 'ebola,fever')
-        self.assertEqual(ebola.get_keywords(), ['ebola', 'fever'])
-        self.assertEqual(six.text_type(ebola), "Ebola")
+        # update it to be synced
+        label.is_synced = True
+        label.save()
+        label.refresh_from_db()
+
+        self.assertEqual(label.uuid, 'L-010')
+        self.assertEqual(label.is_synced, True)
 
     def test_get_all(self):
-        self.assertEqual(set(Label.get_all(self.unicef)), {self.aids, self.pregnancy})
+        self.assertEqual(set(Label.get_all(self.unicef)), {self.aids, self.pregnancy, self.tea})
         self.assertEqual(set(Label.get_all(self.unicef, self.user1)), {self.aids, self.pregnancy})  # MOH user
         self.assertEqual(set(Label.get_all(self.unicef, self.user3)), {self.aids})  # WHO user
-
-    def test_get_keyword_map(self):
-        self.assertEqual(Label.get_keyword_map(self.unicef), {'aids': self.aids,
-                                                              'hiv': self.aids,
-                                                              'pregnant': self.pregnancy,
-                                                              'pregnancy': self.pregnancy})
-        self.assertEqual(Label.get_keyword_map(self.nyaruka), {'java': self.code, 'python': self.code, 'go': self.code})
 
     def test_release(self):
         self.aids.release()
         self.assertFalse(self.aids.is_active)
 
-    def test_is_valid_keyword(self):
-        self.assertTrue(Label.is_valid_keyword('kit'))
-        self.assertTrue(Label.is_valid_keyword('kit-kat'))
-        self.assertTrue(Label.is_valid_keyword('kit kat'))
-        self.assertTrue(Label.is_valid_keyword('kit-kat wrapper'))
-
-        self.assertFalse(Label.is_valid_keyword('it'))  # too short
-        self.assertFalse(Label.is_valid_keyword(' kitkat'))  # can't start with a space
-        self.assertFalse(Label.is_valid_keyword('-kit'))  # can't start with a dash
-        self.assertFalse(Label.is_valid_keyword('kat '))  # can't end with a space
-        self.assertFalse(Label.is_valid_keyword('kat-'))  # can't end with a dash
-
 
 class LabelCRUDLTest(BaseCasesTest):
-    @patch('casepro.test.TestBackend.create_label')
-    def test_create(self, mock_create_label):
-        mock_create_label.return_value = "L-010"
-
+    def test_create(self):
         url = reverse('msgs.label_create')
 
         # log in as a non-administrator
@@ -110,19 +100,28 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertFormError(response, 'form', 'keywords', "Invalid keyword: ebol@?")
 
         # submit again with valid data
-        response = self.url_post('unicef', url, {'name': "Ebola",
-                                                 'description': "Msgs about ebola",
-                                                 'keywords': "Ebola,fever"})
+        response = self.url_post('unicef', url, {
+            'name': "Ebola",
+            'description': "Msgs about ebola",
+            'keywords': "Ebola,fever",
+            'groups': '%d' % self.reporters.pk,
+            'field_test_0': "state",
+            'field_test_1': "Kigali,Lusaka",
+        })
 
         self.assertEqual(response.status_code, 302)
 
-        ebola = Label.objects.get(name="Ebola")
-        self.assertEqual(ebola.uuid, 'L-010')
-        self.assertEqual(ebola.org, self.unicef)
-        self.assertEqual(ebola.name, "Ebola")
-        self.assertEqual(ebola.description, "Msgs about ebola")
-        self.assertEqual(ebola.keywords, 'ebola,fever')
-        self.assertEqual(ebola.get_keywords(), ['ebola', 'fever'])
+        label = Label.objects.get(name="Ebola")
+        self.assertEqual(label.uuid, None)
+        self.assertEqual(label.org, self.unicef)
+        self.assertEqual(label.name, "Ebola")
+        self.assertEqual(label.description, "Msgs about ebola")
+        self.assertEqual(label.get_tests(), [
+            ContainsTest(['ebola', 'fever'], Quantifier.ANY),
+            GroupsTest([self.reporters], Quantifier.ANY),
+            FieldTest('state', ["Kigali", "Lusaka"])
+        ])
+        self.assertEqual(label.is_synced, False)
 
     def test_update(self):
         url = reverse('msgs.label_update', args=[self.pregnancy.pk])
@@ -146,9 +145,15 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertFormError(response, 'form', 'description', 'This field is required.')
 
         # submit again with valid data
-        response = self.url_post('unicef', url, {'name': "Pregnancy",
-                                                 'description': "Msgs about maternity",
-                                                 'keywords': "pregnancy, maternity"})
+        response = self.url_post('unicef', url, {
+            'name': "Pregnancy",
+            'description': "Msgs about maternity",
+            'keywords': "pregnancy, maternity",
+            'groups': '%d' % self.males.pk,
+            'field_test_0': "age",
+            'field_test_1': "18,19,20",
+            'is_synced': "1"
+        })
 
         self.assertEqual(response.status_code, 302)
 
@@ -157,8 +162,12 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(label.org, self.unicef)
         self.assertEqual(label.name, "Pregnancy")
         self.assertEqual(label.description, "Msgs about maternity")
-        self.assertEqual(label.keywords, 'pregnancy,maternity')
-        self.assertEqual(label.get_keywords(), ['pregnancy', 'maternity'])
+        self.assertEqual(label.get_tests(), [
+            ContainsTest(['pregnancy', 'maternity'], Quantifier.ANY),
+            GroupsTest([self.males], Quantifier.ANY),
+            FieldTest('age', ["18", "19", "20"])
+        ])
+        self.assertEqual(label.is_synced, True)
 
     def test_list(self):
         url = reverse('msgs.label_list')
@@ -168,7 +177,7 @@ class LabelCRUDLTest(BaseCasesTest):
 
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(list(response.context['object_list']), [self.aids, self.pregnancy])
+        self.assertEqual(list(response.context['object_list']), [self.aids, self.pregnancy, self.tea])
 
     def test_delete(self):
         url = reverse('msgs.label_delete', args=[self.pregnancy.pk])
@@ -196,7 +205,7 @@ class MessageTest(BaseCasesTest):
         self.ann = self.create_contact(self.unicef, 'C-001', "Ann")
 
     def create_test_messages(self):
-        self.msg1 = self.create_message(self.unicef, 101, self.ann, "Normal", [self.aids, self.pregnancy])
+        self.msg1 = self.create_message(self.unicef, 101, self.ann, "Normal", [self.aids, self.pregnancy, self.tea])
         self.msg2 = self.create_message(self.unicef, 102, self.ann, "Flow", type='F')
         self.msg3 = self.create_message(self.unicef, 103, self.ann, "Archived", is_archived=True)
         self.msg4 = self.create_message(self.unicef, 104, self.ann, "Flagged", is_flagged=True)
@@ -256,11 +265,12 @@ class MessageTest(BaseCasesTest):
         self.assertEqual(message.created_on, d1)
         self.assertEqual(six.text_type(message), "I have lots of questions!")
 
-        spam = Label.objects.get(org=self.unicef, uuid="L-001", name="Spam")
+        spam = Label.objects.get(org=self.unicef, uuid="L-001", name="Spam", is_synced=True)
 
         self.assertEqual(set(message.labels.all()), {spam})
 
-        message = Message.objects.select_related('org').prefetch_related('labels').get(backend_id=123456789)
+        message = Message.objects.select_related('org').prefetch_related('labels', 'org__labels')\
+            .get(backend_id=123456789)
 
         # check there are no extra db hits when saving without change, assuming appropriate pre-fetches (as above)
         with self.assertNumQueries(1):
@@ -268,16 +278,33 @@ class MessageTest(BaseCasesTest):
             message.save()
 
         # check removing a group and adding new ones
-        with self.assertNumQueries(7):
+        with self.assertNumQueries(6):
             setattr(message, '__data__labels', [("L-002", "Feedback"), ("L-003", "Important")])
             message.save()
 
         message = Message.objects.get(backend_id=123456789)
 
-        feedback = Label.objects.get(org=self.unicef, uuid="L-002", name="Feedback")
-        important = Label.objects.get(org=self.unicef, uuid="L-003", name="Important")
+        feedback = Label.objects.get(org=self.unicef, uuid="L-002", name="Feedback", is_synced=True)
+        important = Label.objects.get(org=self.unicef, uuid="L-003", name="Important", is_synced=True)
 
         self.assertEqual(set(message.labels.all()), {feedback, important})
+
+        # create a non-synced label
+        local_label = self.create_label(self.unicef, None, "Local", "Hmm", ["stuff"], is_synced=False)
+        message.labels.add(local_label)
+
+        setattr(message, '__data__labels', [])
+        message.save()
+
+        self.assertEqual(set(message.labels.all()), {local_label})  # non-synced label remains
+
+        message.labels.remove(local_label)
+
+        setattr(message, '__data__labels', [("L-004", "Local")])
+        message.save()
+
+        self.assertEqual(set(message.labels.all()), set())  # non-synced label not added
+        self.assertEqual(Label.objects.filter(name="Local").count(), 1)  # or created
 
     def test_release(self):
         msg = self.create_message(self.unicef, 101, self.ann, "Hi", [self.pregnancy, self.aids])
@@ -390,6 +417,7 @@ class MessageTest(BaseCasesTest):
         mock_unlabel_messages.assert_called_once_with(self.unicef, [self.msg1], self.aids)
 
         actions = list(MessageAction.objects.order_by('pk'))
+        self.assertEqual(len(actions), 3)
         self.assertEqual(actions[0].action, MessageAction.LABEL)
         self.assertEqual(actions[0].created_by, self.user1)
         self.assertEqual(set(actions[0].messages.all()), {self.msg1})
@@ -397,7 +425,10 @@ class MessageTest(BaseCasesTest):
         self.assertEqual(actions[1].action, MessageAction.UNLABEL)
         self.assertEqual(actions[1].created_by, self.user1)
         self.assertEqual(set(actions[1].messages.all()), {self.msg1})
-        self.assertEqual(actions[1].label, self.aids)
+
+        # order of labels isn't deterministic
+        self.assertIn(actions[1].label, [self.aids, self.tea])
+        self.assertIn(actions[2].label, [self.aids, self.tea])
 
     @patch('casepro.test.TestBackend.flag_messages')
     def test_bulk_flag(self, mock_flag_messages):
@@ -433,14 +464,23 @@ class MessageTest(BaseCasesTest):
     def test_bulk_label(self, mock_label_messages):
         self.create_test_messages()
 
-        Message.bulk_label(self.unicef, self.user1, [self.msg1, self.msg2], self.aids)
+        # try with un-synced label
+        Message.bulk_label(self.unicef, self.user1, [self.msg1, self.msg2], self.tea)
 
-        mock_label_messages.assert_called_once_with(self.unicef, [self.msg1, self.msg2], self.aids)
+        self.assertNotCalled(mock_label_messages)
 
         action = MessageAction.objects.get()
         self.assertEqual(action.action, MessageAction.LABEL)
         self.assertEqual(action.created_by, self.user1)
+        self.assertEqual(action.label, self.tea)
         self.assertEqual(set(action.messages.all()), {self.msg1, self.msg2})
+
+        self.assertEqual(self.tea.messages.count(), 2)
+
+        # try with synced label
+        Message.bulk_label(self.unicef, self.user1, [self.msg1, self.msg2], self.aids)
+
+        mock_label_messages.assert_called_once_with(self.unicef, [self.msg1, self.msg2], self.aids)
 
         self.assertEqual(self.aids.messages.count(), 2)
 
@@ -448,14 +488,23 @@ class MessageTest(BaseCasesTest):
     def test_bulk_unlabel(self, mock_unlabel_messages):
         self.create_test_messages()
 
-        Message.bulk_unlabel(self.unicef, self.user1, [self.msg1, self.msg2], self.aids)
+        # try with un-synced label
+        Message.bulk_unlabel(self.unicef, self.user1, [self.msg1, self.msg2], self.tea)
 
-        mock_unlabel_messages.assert_called_once_with(self.unicef, [self.msg1, self.msg2], self.aids)
+        self.assertNotCalled(mock_unlabel_messages)
 
         action = MessageAction.objects.get()
         self.assertEqual(action.action, MessageAction.UNLABEL)
         self.assertEqual(action.created_by, self.user1)
+        self.assertEqual(action.label, self.tea)
         self.assertEqual(set(action.messages.all()), {self.msg1, self.msg2})
+
+        self.assertEqual(self.tea.messages.count(), 0)
+
+        # try with synced label
+        Message.bulk_unlabel(self.unicef, self.user1, [self.msg1, self.msg2], self.aids)
+
+        mock_unlabel_messages.assert_called_once_with(self.unicef, [self.msg1, self.msg2], self.aids)
 
         self.assertEqual(self.aids.messages.count(), 0)
 
@@ -797,8 +846,8 @@ class TasksTest(BaseCasesTest):
         self.assertEqual(set(msg3.labels.all()), {self.pregnancy})
 
         mock_label_messages.assert_has_calls([
-            call(self.unicef, [msg1, msg2], self.aids),
-            call(self.unicef, [msg3], self.pregnancy)
+            call(self.unicef, {msg1, msg2}, self.aids),
+            call(self.unicef, {msg3}, self.pregnancy)
         ], any_order=True)
 
         # check msg 5 was added to the case and archived
@@ -809,9 +858,9 @@ class TasksTest(BaseCasesTest):
 
         # check task result
         task_state = self.unicef.get_task_state('message-handle')
-        self.assertEqual(task_state.get_last_results(), {'messages': 5, 'labelled': 3, 'case_replies': 1})
+        self.assertEqual(task_state.get_last_results(), {'handled': 5, 'case_replies': 1, 'rules_matched': 3})
 
         # check calling again...
         handle_messages(self.unicef.pk)
         task_state = self.unicef.get_task_state('message-handle')
-        self.assertEqual(task_state.get_last_results(), {'messages': 0, 'labelled': 0, 'case_replies': 0})
+        self.assertEqual(task_state.get_last_results(), {'handled': 0, 'case_replies': 0, 'rules_matched': 0})

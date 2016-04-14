@@ -87,6 +87,8 @@ class JSONEncoder(json.JSONEncoder):
             return format_iso8601(val)
         elif isinstance(val, Enum):
             return val.name
+        elif hasattr(val, 'to_json') and callable(val.to_json):
+            return val.to_json()
 
         return json.JSONEncoder.default(self, val)
 

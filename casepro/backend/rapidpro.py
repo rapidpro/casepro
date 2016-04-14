@@ -2,11 +2,13 @@ from __future__ import unicode_literals
 
 import six
 
-from casepro.contacts.models import Contact, Group, Field, SAVE_GROUPS_ATTR
-from casepro.msgs.models import Label, Message, Outgoing, SAVE_CONTACT_ATTR, SAVE_LABELS_ATTR
 from dash.utils import is_dict_equal
 from dash.utils.sync import BaseSyncer, sync_local_to_set, sync_local_to_changes
 from django.utils.timezone import now
+
+from casepro.contacts.models import Contact, Group, Field
+from casepro.msgs.models import Label, Message, Outgoing
+
 from . import BaseBackend
 
 
@@ -45,7 +47,7 @@ class ContactSyncer(BaseSyncer):
             'is_blocked': remote.blocked,
             'is_stub': False,
             'fields': fields,
-            SAVE_GROUPS_ATTR: groups,
+            Contact.SAVE_GROUPS_ATTR: groups,
         }
 
     def update_required(self, local, remote, remote_as_kwargs):
@@ -116,6 +118,11 @@ class LabelSyncer(BaseSyncer):
         if remote.name == SYSTEM_LABEL_FLAGGED:
             return None
 
+        # don't create locally if there's an non-synced label with same name or UUID
+        for l in org.labels.all():
+            if not l.is_synced and (l.name == remote.name or l.uuid == remote.uuid):
+                return None
+
         return {
             'org': org,
             'uuid': remote.uuid,
@@ -124,6 +131,9 @@ class LabelSyncer(BaseSyncer):
 
     def update_required(self, local, remote, remote_as_kwargs):
         return local.name != remote.name
+
+    def fetch_all(self, org):
+        return super(LabelSyncer, self).fetch_all(org).filter(is_synced=True)
 
 
 class MessageSyncer(BaseSyncer):
@@ -154,8 +164,8 @@ class MessageSyncer(BaseSyncer):
             'is_flagged': remote_message_is_flagged(remote),
             'is_archived': remote_message_is_archived(remote),
             'created_on': remote.created_on,
-            SAVE_CONTACT_ATTR: (remote.contact.uuid, remote.contact.name),
-            SAVE_LABELS_ATTR: labels,
+            Message.SAVE_CONTACT_ATTR: (remote.contact.uuid, remote.contact.name),
+            Message.SAVE_LABELS_ATTR: labels,
         }
 
         # if syncer is set explicitly or message is too old, save as handled already

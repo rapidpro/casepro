@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
-import regex
-import six
+import json
 
 from dash.orgs.models import Org
 from dash.utils import chunks
@@ -14,11 +13,8 @@ from redis_cache import get_redis_connection
 
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact
-from casepro.utils import normalize, parse_csv
+from casepro.utils import json_encode
 from casepro.utils.export import BaseExport
-
-SAVE_CONTACT_ATTR = '__data__contact'
-SAVE_LABELS_ATTR = '__data__labels'
 
 LABEL_LOCK_KEY = 'lock:label:%d:%s'
 MESSAGE_LOCK_KEY = 'lock:message:%d:%d'
@@ -36,29 +32,27 @@ class Label(models.Model):
     """
     Corresponds to a message label in RapidPro. Used for determining visibility of messages to different partners.
     """
-    KEYWORD_MIN_LENGTH = 3
-
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='labels')
 
-    uuid = models.CharField(max_length=36, unique=True)
+    uuid = models.CharField(max_length=36, unique=True, null=True)
 
     name = models.CharField(verbose_name=_("Name"), max_length=32, help_text=_("Name of this label"))
 
     description = models.CharField(verbose_name=_("Description"), null=True, max_length=255)
 
-    keywords = models.CharField(verbose_name=_("Keywords"), null=True, blank=True, max_length=1024)
+    tests = models.TextField(blank=True)
+
+    is_synced = models.BooleanField(
+        default=True,
+        help_text="Whether this label should be synced with the backend"
+    )
 
     is_active = models.BooleanField(default=True, help_text="Whether this label is active")
 
     @classmethod
-    def create(cls, org, name, description, keywords):
-        remote_uuid = get_backend().create_label(org, name)
-
-        return cls.objects.create(org=org,
-                                  uuid=remote_uuid,
-                                  name=name,
-                                  description=description,
-                                  keywords=','.join(keywords))
+    def create(cls, org, name, description, tests, is_synced):
+        return cls.objects.create(org=org, name=name, description=description,
+                                  tests=json_encode(tests), is_synced=is_synced)
 
     @classmethod
     def get_all(cls, org, user=None):
@@ -69,24 +63,14 @@ class Label(models.Model):
         return partner.get_labels() if partner else cls.objects.none()
 
     @classmethod
-    def get_keyword_map(cls, org):
-        """
-        Gets a map of all keywords to their corresponding labels
-        :param org: the org
-        :return: map of keywords to labels
-        """
-        labels_by_keyword = {}
-        for label in Label.get_all(org):
-            for keyword in label.get_keywords():
-                labels_by_keyword[keyword] = label
-        return labels_by_keyword
-
-    @classmethod
     def lock(cls, org, uuid):
         return get_redis_connection().lock(LABEL_LOCK_KEY % (org.pk, uuid), timeout=60)
 
-    def get_keywords(self):
-        return parse_csv(self.keywords) if self.keywords else []
+    def get_tests(self):
+        from casepro.rules.models import Test, DeserializationContext
+
+        tests_json = json.loads(self.tests) if self.tests else []
+        return [Test.from_json(t, DeserializationContext(self.org)) for t in tests_json]
 
     def get_partners(self):
         return self.partners.filter(is_active=True)
@@ -97,10 +81,6 @@ class Label(models.Model):
 
     def as_json(self):
         return {'id': self.pk, 'name': self.name}
-
-    @classmethod
-    def is_valid_keyword(cls, keyword):
-        return len(keyword) >= cls.KEYWORD_MIN_LENGTH and regex.match(r'^\w[\w\- ]*\w$', keyword)
 
     def __str__(self):
         return self.name
@@ -117,6 +97,9 @@ class Message(models.Model):
     TYPE_CHOICES = ((TYPE_INBOX, _("Inbox")), (TYPE_FLOW, _("Flow")))
 
     DIRECTION = 'I'
+
+    SAVE_CONTACT_ATTR = '__data__contact'
+    SAVE_LABELS_ATTR = '__data__labels'
 
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='incoming_messages')
 
@@ -145,10 +128,10 @@ class Message(models.Model):
     case = models.ForeignKey('cases.Case', null=True, related_name="incoming_messages")
 
     def __init__(self, *args, **kwargs):
-        if SAVE_CONTACT_ATTR in kwargs:
-            setattr(self, SAVE_CONTACT_ATTR, kwargs.pop(SAVE_CONTACT_ATTR))
-        if SAVE_LABELS_ATTR in kwargs:
-            setattr(self, SAVE_LABELS_ATTR, kwargs.pop(SAVE_LABELS_ATTR))
+        if self.SAVE_CONTACT_ATTR in kwargs:
+            setattr(self, self.SAVE_CONTACT_ATTR, kwargs.pop(self.SAVE_CONTACT_ATTR))
+        if self.SAVE_LABELS_ATTR in kwargs:
+            setattr(self, self.SAVE_LABELS_ATTR, kwargs.pop(self.SAVE_LABELS_ATTR))
 
         super(Message, self).__init__(*args, **kwargs)
 
@@ -232,21 +215,6 @@ class Message(models.Model):
 
         return queryset.order_by('-created_on')
 
-    def auto_label(self, labels_by_keyword):
-        """
-        Applies the auto-label matcher to this message
-        :param labels_by_keyword: a map of labels by each keyword
-        :return: the set of matching labels
-        """
-        norm_text = normalize(self.text)
-        matches = set()
-
-        for keyword, label in six.iteritems(labels_by_keyword):
-            if regex.search(r'\b' + keyword + r'\b', norm_text, flags=regex.IGNORECASE | regex.UNICODE | regex.V0):
-                matches.add(label)
-
-        return matches
-
     def get_history(self):
         """
         Gets the actions for this message in reverse chronological order
@@ -305,7 +273,8 @@ class Message(models.Model):
             for msg in messages:
                 msg.labels.add(label)
 
-            get_backend().label_messages(org, messages, label)
+            if label.is_synced:
+                get_backend().label_messages(org, messages, label)
 
             MessageAction.create(org, user, messages, MessageAction.LABEL, label)
 
@@ -316,7 +285,8 @@ class Message(models.Model):
             for msg in messages:
                 msg.labels.remove(label)
 
-            get_backend().unlabel_messages(org, messages, label)
+            if label.is_synced:
+                get_backend().unlabel_messages(org, messages, label)
 
             MessageAction.create(org, user, messages, MessageAction.UNLABEL, label)
 

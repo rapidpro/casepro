@@ -4,9 +4,7 @@ from __future__ import unicode_literals
 import pytz
 import time
 
-from casepro.contacts.models import Contact, Field, Group
-from casepro.msgs.models import Label, Message
-from casepro.test import BaseCasesTest
+from dash.orgs.models import Org
 from dash.test import MockClientQuery
 from datetime import datetime, timedelta
 from django.utils.timezone import now
@@ -15,6 +13,11 @@ from temba_client.v1.types import Broadcast as TembaBroadcast
 from temba_client.v2.types import Group as TembaGroup, Field as TembaField, Label as TembaLabel, ObjectRef
 from temba_client.v2.types import Contact as TembaContact, Message as TembaMessage
 from unittest import skip
+
+from casepro.contacts.models import Contact, Field, Group
+from casepro.msgs.models import Label, Message
+from casepro.test import BaseCasesTest
+
 from ..rapidpro import RapidProBackend, ContactSyncer, MessageSyncer
 
 
@@ -390,20 +393,25 @@ class RapidProBackendTest(BaseCasesTest):
 
     @patch('dash.orgs.models.TembaClient2.get_labels')
     def test_pull_labels(self, mock_get_labels):
-        # start with no labels
+        # start with one un-synced label
         Label.objects.all().delete()
+        self.create_label(self.unicef, None, "Local", "Desc", ['local'], is_synced=False)
 
         mock_get_labels.return_value = MockClientQuery([
             TembaLabel.create(uuid="L-001", name="Requests", count=45),
             TembaLabel.create(uuid="L-002", name="Feedback", count=32),
             TembaLabel.create(uuid="L-009", name="Flagged", count=21),  # should be ignored
+            TembaLabel.create(uuid="L-010", name="Local", count=0),  # should be ignored
         ])
 
-        with self.assertNumQueries(6):
+        self.unicef = Org.objects.prefetch_related('labels').get(pk=self.unicef.pk)
+
+        with self.assertNumQueries(7):
             num_created, num_updated, num_deleted, num_ignored = self.backend.pull_labels(self.unicef)
 
-        self.assertEqual((num_created, num_updated, num_deleted, num_ignored), (2, 0, 0, 1))
+        self.assertEqual((num_created, num_updated, num_deleted, num_ignored), (2, 0, 0, 2))
 
+        Label.objects.get(uuid=None, name="Local", is_active=True)
         Label.objects.get(uuid="L-001", name="Requests", is_active=True)
         Label.objects.get(uuid="L-002", name="Feedback", is_active=True)
 
@@ -419,6 +427,7 @@ class RapidProBackendTest(BaseCasesTest):
 
         self.assertEqual((num_created, num_updated, num_deleted, num_ignored), (1, 1, 1, 0))
 
+        Label.objects.get(uuid=None, name="Local", is_active=True)
         Label.objects.get(uuid="L-001", name="Requests", is_active=False)
         Label.objects.get(uuid="L-002", name="Complaints", is_active=True)
         Label.objects.get(uuid="L-003", name="Spam", is_active=True)
@@ -526,7 +535,7 @@ class RapidProBackendTest(BaseCasesTest):
         # check when label exists
         self.assertEqual(self.backend.create_label(self.unicef, "Ebola"), "L-012")
 
-        mock_create_label.assert_not_called()
+        self.assertNotCalled(mock_create_label)
 
         # check when label doesn't exist
         mock_get_labels.return_value = []
@@ -574,7 +583,7 @@ class RapidProBackendTest(BaseCasesTest):
         # empty message list shouldn't make API call
         self.backend.label_messages(self.unicef, [], self.aids)
 
-        mock_label_messages.assert_not_called()
+        self.assertNotCalled(mock_label_messages)
 
         msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
         msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")
@@ -588,7 +597,7 @@ class RapidProBackendTest(BaseCasesTest):
         # empty message list shouldn't make API call
         self.backend.unlabel_messages(self.unicef, [], self.aids)
 
-        mock_unlabel_messages.assert_not_called()
+        self.assertNotCalled(mock_unlabel_messages)
 
         msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
         msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")
@@ -602,7 +611,7 @@ class RapidProBackendTest(BaseCasesTest):
         # empty message list shouldn't make API call
         self.backend.archive_messages(self.unicef, [])
 
-        mock_archive_messages.assert_not_called()
+        self.assertNotCalled(mock_archive_messages)
 
         msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
         msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")
@@ -622,7 +631,7 @@ class RapidProBackendTest(BaseCasesTest):
         # empty message list shouldn't make API call
         self.backend.restore_messages(self.unicef, [])
 
-        mock_unarchive_messages.assert_not_called()
+        self.assertNotCalled(mock_unarchive_messages)
 
         msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
         msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")
@@ -636,7 +645,7 @@ class RapidProBackendTest(BaseCasesTest):
         # empty message list shouldn't make API call
         self.backend.flag_messages(self.unicef, [])
 
-        mock_label_messages.assert_not_called()
+        self.assertNotCalled(mock_label_messages)
 
         msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
         msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")
@@ -650,7 +659,7 @@ class RapidProBackendTest(BaseCasesTest):
         # empty message list shouldn't make API call
         self.backend.unflag_messages(self.unicef, [])
 
-        mock_unlabel_messages.assert_not_called()
+        self.assertNotCalled(mock_unlabel_messages)
 
         msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
         msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")

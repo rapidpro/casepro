@@ -12,7 +12,8 @@ from temba_client.utils import parse_iso8601
 
 from casepro.cases.models import Case
 from casepro.contacts.models import Contact
-from casepro.utils import parse_csv, str_to_bool
+from casepro.rules.models import ContainsTest, GroupsTest, Quantifier
+from casepro.utils import parse_csv, str_to_bool, json_encode
 from casepro.utils.export import BaseDownloadView
 
 from .forms import LabelForm
@@ -20,38 +21,88 @@ from .models import Label, Message, MessageExport, MessageFolder, Outgoing
 from .tasks import message_export
 
 
+class LabelFormMixin(object):
+    @staticmethod
+    def construct_tests(data):
+        keywords = parse_csv(data['keywords'])
+        groups = data['groups']
+        field_test = data['field_test']
+
+        tests = []
+        if keywords:
+            tests.append(ContainsTest(keywords, Quantifier.ANY))
+        if groups:
+            tests.append(GroupsTest(groups, Quantifier.ANY))
+        if field_test:
+            tests.append(field_test)
+
+        return tests
+
+
 class LabelCRUDL(SmartCRUDL):
     actions = ('create', 'update', 'delete', 'list')
     model = Label
 
-    class Create(OrgPermsMixin, SmartCreateView):
+    class Create(LabelFormMixin, OrgPermsMixin, SmartCreateView):
         form_class = LabelForm
 
         def get_form_kwargs(self):
             kwargs = super(LabelCRUDL.Create, self).get_form_kwargs()
+            kwargs['org'] = self.request.org
             kwargs['is_create'] = True
             return kwargs
 
+        def derive_initial(self):
+            # label created manually in casepro aren't synced by default
+            initial = super(LabelCRUDL.Create, self).derive_initial()
+            initial['is_synced'] = False
+            return initial
+
         def save(self, obj):
             data = self.form.cleaned_data
-            org = self.request.user.get_org()
+            org = self.request.org
             name = data['name']
             description = data['description']
-            keywords = parse_csv(data['keywords'])
-            self.object = Label.create(org, name, description, keywords)
+            tests = self.construct_tests(data)
+            is_synced = data['is_synced']
 
-    class Update(OrgObjPermsMixin, SmartUpdateView):
+            self.object = Label.create(org, name, description, tests, is_synced)
+
+    class Update(LabelFormMixin, OrgObjPermsMixin, SmartUpdateView):
         form_class = LabelForm
 
         def get_form_kwargs(self):
             kwargs = super(LabelCRUDL.Update, self).get_form_kwargs()
+            kwargs['org'] = self.request.org
             kwargs['is_create'] = False
             return kwargs
 
         def derive_initial(self):
             initial = super(LabelCRUDL.Update, self).derive_initial()
-            initial['keywords'] = ', '.join(self.object.get_keywords())
+
+            tests_by_type = {t.TYPE: t for t in self.object.get_tests()}
+            contains_test = tests_by_type.get('contains')
+            groups_test = tests_by_type.get('groups')
+            field_test = tests_by_type.get('field')
+
+            if contains_test:
+                initial['keywords'] = ", ".join(contains_test.keywords)
+
+            if groups_test:
+                initial['groups'] = groups_test.groups
+
+            if field_test:
+                initial['field_test'] = field_test
+
             return initial
+
+        def pre_save(self, obj):
+            obj = super(LabelCRUDL.Update, self).pre_save(obj)
+
+            tests = self.construct_tests(self.form.cleaned_data)
+            obj.tests = json_encode(tests) if tests else ""
+
+            return obj
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
         cancel_url = '@msgs.label_list'
