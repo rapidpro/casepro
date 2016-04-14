@@ -118,10 +118,10 @@ class LabelSyncer(BaseSyncer):
         if remote.name == SYSTEM_LABEL_FLAGGED:
             return None
 
-        # don't create locally if there's an non-synced label with same name
-        # for l in org.labels.all():
-        #    if l.name == remote.name and not l.is_synced:
-        #        return None
+        # don't create locally if there's an non-synced label with same name or UUID
+        for l in org.labels.all():
+            if not l.is_synced and (l.name == remote.name or l.uuid == remote.uuid):
+                return None
 
         return {
             'org': org,
@@ -131,6 +131,9 @@ class LabelSyncer(BaseSyncer):
 
     def update_required(self, local, remote, remote_as_kwargs):
         return local.name != remote.name
+
+    def fetch_all(self, org):
+        return super(LabelSyncer, self).fetch_all(org).filter(is_synced=True)
 
 
 class MessageSyncer(BaseSyncer):

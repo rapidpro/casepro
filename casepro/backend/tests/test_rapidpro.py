@@ -393,22 +393,25 @@ class RapidProBackendTest(BaseCasesTest):
 
     @patch('dash.orgs.models.TembaClient2.get_labels')
     def test_pull_labels(self, mock_get_labels):
-        # start with no labels
+        # start with one un-synced label
         Label.objects.all().delete()
+        self.create_label(self.unicef, None, "Local", "Desc", ['local'], is_synced=False)
 
         mock_get_labels.return_value = MockClientQuery([
             TembaLabel.create(uuid="L-001", name="Requests", count=45),
             TembaLabel.create(uuid="L-002", name="Feedback", count=32),
             TembaLabel.create(uuid="L-009", name="Flagged", count=21),  # should be ignored
+            TembaLabel.create(uuid="L-010", name="Local", count=0),  # should be ignored
         ])
 
         self.unicef = Org.objects.prefetch_related('labels').get(pk=self.unicef.pk)
 
-        with self.assertNumQueries(6):
+        with self.assertNumQueries(7):
             num_created, num_updated, num_deleted, num_ignored = self.backend.pull_labels(self.unicef)
 
-        self.assertEqual((num_created, num_updated, num_deleted, num_ignored), (2, 0, 0, 1))
+        self.assertEqual((num_created, num_updated, num_deleted, num_ignored), (2, 0, 0, 2))
 
+        Label.objects.get(uuid=None, name="Local", is_active=True)
         Label.objects.get(uuid="L-001", name="Requests", is_active=True)
         Label.objects.get(uuid="L-002", name="Feedback", is_active=True)
 
@@ -424,6 +427,7 @@ class RapidProBackendTest(BaseCasesTest):
 
         self.assertEqual((num_created, num_updated, num_deleted, num_ignored), (1, 1, 1, 0))
 
+        Label.objects.get(uuid=None, name="Local", is_active=True)
         Label.objects.get(uuid="L-001", name="Requests", is_active=False)
         Label.objects.get(uuid="L-002", name="Complaints", is_active=True)
         Label.objects.get(uuid="L-003", name="Spam", is_active=True)
