@@ -4,21 +4,27 @@ import regex
 import six
 
 from abc import ABCMeta, abstractmethod
+from collections import defaultdict
+from django.utils.translation import ugettext_lazy as _
+from enum import Enum
+
 from casepro.backend import get_backend
 from casepro.contacts.models import Group
 from casepro.msgs.models import Label, Message
 from casepro.utils import normalize
-from collections import defaultdict
-from enum import Enum
 
 
 class Quantifier(Enum):
     """
     Tests are typically composed of multiple conditions, e.g. contains ANY of X, Y or Z.
     """
-    NONE = 1
-    ANY = 2
-    ALL = 3
+    NONE = (1, _("none of"))
+    ANY = (2, _("any of"))
+    ALL = (3, _("all of"))
+
+    def __init__(self, val, text):
+        self.val = val
+        self.text = text
 
     @classmethod
     def from_json(cls, val):
@@ -43,6 +49,9 @@ class Quantifier(Enum):
                 if not condition():
                     return False
             return True
+
+    def __unicode__(self):
+        return unicode(self.text)
 
 
 class DeserializationContext(object):
@@ -90,6 +99,9 @@ class Test(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def __str__(self):
+        return str(unicode(self))
+
 
 class ContainsTest(Test):
     """
@@ -128,6 +140,10 @@ class ContainsTest(Test):
         return other and self.TYPE == other.TYPE \
                and self.keywords == other.keywords and self.quantifier == other.quantifier
 
+    def __unicode__(self):
+        quoted_keywords = ['"%s"' % w for w in self.keywords]
+        return "message contains %s %s" % (six.text_type(self.quantifier), ", ".join(quoted_keywords))
+
 
 class GroupsTest(Test):
     """
@@ -141,11 +157,11 @@ class GroupsTest(Test):
 
     @classmethod
     def from_json(cls, json_obj, context):
-        groups = list(Group.objects.filter(org=context.org, uuid__in=json_obj['groups']).order_by('pk'))
+        groups = list(Group.objects.filter(org=context.org, pk__in=json_obj['groups']).order_by('pk'))
         return cls(groups, Quantifier.from_json(json_obj['quantifier']))
 
     def to_json(self):
-        return {'type': self.TYPE, 'groups': [g.uuid for g in self.groups], 'quantifier': self.quantifier.to_json()}
+        return {'type': self.TYPE, 'groups': [g.pk for g in self.groups], 'quantifier': self.quantifier.to_json()}
 
     def matches(self, message):
         contact_groups = set(message.contact.groups.all())
@@ -159,6 +175,10 @@ class GroupsTest(Test):
 
     def __eq__(self, other):
         return other and self.TYPE == other.TYPE and self.groups == other.groups and self.quantifier == other.quantifier
+
+    def __unicode__(self):
+        group_names = [g.name for g in self.groups]
+        return "contact belongs to %s %s" % (six.text_type(self.quantifier), ", ".join(group_names))
 
 
 class FieldTest(Test):
@@ -188,6 +208,10 @@ class FieldTest(Test):
 
     def __eq__(self, other):
         return other and self.TYPE == other.TYPE and self.key == other.key and self.values == other.values
+
+    def __unicode__(self):
+        quoted_values = ['"%s"' % v for v in self.values]
+        return "contact.%s is %s %s" % (self.key, Quantifier.ANY, ", ".join(quoted_values))
 
 
 class Action(object):
@@ -236,10 +260,10 @@ class LabelAction(Action):
 
     @classmethod
     def from_json(cls, json_obj, context):
-        return cls(Label.objects.get(org=context.org, uuid=json_obj['label']))
+        return cls(Label.objects.get(org=context.org, pk=json_obj['label']))
 
     def to_json(self):
-        return {'type': self.TYPE, 'label': self.label.uuid}
+        return {'type': self.TYPE, 'label': self.label.pk}
 
     def apply_to(self, org, messages):
         for msg in messages:
@@ -304,9 +328,11 @@ class Rule(object):
 
     @classmethod
     def get_all(cls, org):
-        # load all org labels and converts them to rules
+        """
+        Loads all org labels and converts them to rules
+        """
         rules = []
-        for label in Label.get_all(org):
+        for label in Label.get_all(org).order_by('pk'):
             rule = cls.from_label(label)
             if rule:
                 rules.append(rule)
@@ -328,6 +354,9 @@ class Rule(object):
             if not test.matches(message):
                 return False
         return True
+
+    def get_tests_description(self):
+        return _(" and ").join([six.text_type(t) for t in self.tests])
 
     class BatchProcessor(object):
         """

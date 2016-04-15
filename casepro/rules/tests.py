@@ -1,10 +1,14 @@
 from __future__ import unicode_literals
 
+import six
+
+from mock import patch, call
+
 from casepro.msgs.models import Message
 from casepro.test import BaseCasesTest
-from mock import patch, call
+
 from .models import Action, LabelAction, ArchiveAction, FlagAction
-from .models import Test, ContainsTest, Rule, DeserializationContext, Quantifier
+from .models import Test, ContainsTest, GroupsTest, FieldTest, Rule, DeserializationContext, Quantifier
 
 
 class TestsTest(BaseCasesTest):
@@ -29,6 +33,7 @@ class TestsTest(BaseCasesTest):
         self.assertEqual(test.keywords, ["red", "blue"])
         self.assertEqual(test.quantifier, Quantifier.ANY)
         self.assertEqual(test.to_json(), {'type': 'contains', 'keywords': ["red", "blue"], 'quantifier': 'any'})
+        self.assertEqual(six.text_type(test), 'message contains any of "red", "blue"')
 
         self.assertTest(test, self.ann, "Fred Blueth", False)
         self.assertTest(test, self.ann, "red", True)
@@ -47,11 +52,17 @@ class TestsTest(BaseCasesTest):
         self.assertTest(test, self.ann, "yo RED Blue", False)
 
     def test_groups(self):
-        test = Test.from_json({'type': 'groups', 'groups': ["G-002", "G-003"], 'quantifier': 'any'}, self.context)
+        test = Test.from_json(
+            {'type': 'groups', 'groups': [self.females.pk, self.reporters.pk], 'quantifier': 'any'},
+            self.context
+        )
         self.assertEqual(test.TYPE, 'groups')
         self.assertEqual(set(test.groups), {self.females, self.reporters})
         self.assertEqual(test.quantifier, Quantifier.ANY)
-        self.assertEqual(test.to_json(), {'type': 'groups', 'groups': ["G-002", "G-003"], 'quantifier': 'any'})
+        self.assertEqual(test.to_json(), {
+            'type': 'groups', 'groups': [self.females.pk, self.reporters.pk], 'quantifier': 'any'
+        })
+        self.assertEqual(six.text_type(test), 'contact belongs to any of Females, Reporters')
 
         self.assertTest(test, self.ann, "Yes", True)
         self.assertTest(test, self.bob, "Yes", False)
@@ -75,6 +86,7 @@ class TestsTest(BaseCasesTest):
         self.assertEqual(test.key, "city")
         self.assertEqual(test.values, ["kigali", "lusaka"])
         self.assertEqual(test.to_json(), {'type': 'field', 'key': "city", 'values': ["kigali", "lusaka"]})
+        self.assertEqual(six.text_type(test), 'contact.city is any of "kigali", "lusaka"')
 
         self.assertTest(test, self.ann, "Yes", True)
         self.assertTest(test, self.bob, "Yes", False)
@@ -101,10 +113,10 @@ class ActionsTest(BaseCasesTest):
         self.ann = self.create_contact(self.unicef, 'C-001', "Ann")
 
     def test_label(self):
-        action = Action.from_json({'type': 'label', 'label': 'L-001'}, self.context)
+        action = Action.from_json({'type': 'label', 'label': self.aids.pk}, self.context)
         self.assertEqual(action.TYPE, 'label')
         self.assertEqual(action.label, self.aids)
-        self.assertEqual(action.to_json(), {'type': 'label', 'label': 'L-001'})
+        self.assertEqual(action.to_json(), {'type': 'label', 'label': self.aids.pk})
 
         msg = self.create_message(self.unicef, 102, self.ann, "red")
         action.apply_to(self.unicef, [msg])
@@ -147,6 +159,17 @@ class RuleTest(BaseCasesTest):
         self.assertEqual(rules[0].actions, [LabelAction(self.aids)])
         self.assertEqual(rules[1].tests, [ContainsTest(["pregnant", "pregnancy"], Quantifier.ANY)])
         self.assertEqual(rules[1].actions, [LabelAction(self.pregnancy)])
+
+    def test_get_tests_description(self):
+        rule = Rule([
+            ContainsTest(["aids", "HIV"], Quantifier.ANY),
+            GroupsTest([self.females, self.reporters], Quantifier.ALL),
+            FieldTest("city", ["Kigali", "Lusaka"])
+        ], [])
+
+        self.assertEqual(rule.get_tests_description(), 'message contains any of "aids", "hiv" '
+                                                       'and contact belongs to all of Females, Reporters '
+                                                       'and contact.city is any of "kigali", "lusaka"')
 
     @patch('casepro.test.TestBackend.label_messages')
     @patch('casepro.test.TestBackend.flag_messages')

@@ -136,6 +136,9 @@ class BaseCasesTest(DashTest):
         return case
 
     def assertNotCalled(self, mock):
+        """
+        Because mock.assert_not_called doesn't exist in Python 2
+        """
         self.assertEqual(len(mock.mock_calls), 0, "Expected no calls, called %d times" % len(mock.mock_calls))
 
     def assertExcelRow(self, sheet, row_num, values, tz=None):
