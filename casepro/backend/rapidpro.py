@@ -257,11 +257,19 @@ class RapidProBackend(BaseBackend):
 
     def add_to_group(self, org, contact, group):
         client = self._get_client(org, 1)
-        client.add_contacts([contact.uuid], group_uuid=group.uuid)
+        # TODO until we know which groups are dynamic, we should assume this call might fail
+        try:
+            client.add_contacts([contact.uuid], group_uuid=group.uuid)
+        except Exception:
+            pass
 
     def remove_from_group(self, org, contact, group):
         client = self._get_client(org, 1)
-        client.remove_contacts([contact.uuid], group_uuid=group.uuid)
+        # TODO as above
+        try:
+            client.remove_contacts([contact.uuid], group_uuid=group.uuid)
+        except Exception:
+            pass
 
     def stop_runs(self, org, contact):
         client = self._get_client(org, 1)
