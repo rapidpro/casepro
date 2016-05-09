@@ -276,7 +276,7 @@ class LabelAction(Action):
         return self.TYPE == other.TYPE and self.label == other.label
 
     def __hash__(self):
-        return hash(self.TYPE + self.label.uuid)
+        return hash(self.TYPE + six.text_type(self.label.pk))
 
 
 class FlagAction(Action):
