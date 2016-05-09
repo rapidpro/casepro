@@ -190,7 +190,7 @@ class UserCRUDL(SmartCRUDL):
             org = self.request.org
             if org:
                 # only allow access to active users attached to this org
-                queryset = queryset.filter(Q(org_admins=org) | Q(org_editors=org) | Q(org_viewers=org))
+                queryset = queryset.filter(Q(org_admins=org) | Q(org_editors=org) | Q(org_viewers=org)).distinct()
 
             return queryset.filter(is_active=True)
 
