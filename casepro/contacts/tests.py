@@ -122,6 +122,28 @@ class ContactCRUDLTest(BaseCasesTest):
         self.assertContains(response, "age=32")
 
 
+class GroupTest(BaseCasesTest):
+    def test_model(self):
+        invisible = self.create_group(self.unicef, "G-006", "Invisible", count=12, is_visible=False)
+
+        self.assertEqual(set(Group.get_all(self.unicef)),
+                         {self.males, self.females, self.reporters, self.registered, invisible})
+
+        self.assertEqual(set(Group.get_all(self.unicef, visible=True)),
+                         {self.males, self.females, self.reporters, self.registered})
+
+        self.assertEqual(set(Group.get_all(self.unicef, dynamic=False)),
+                         {self.males, self.females, self.reporters, invisible})
+
+        self.assertEqual(invisible.as_json(), {
+            'id': invisible.pk,
+            'uuid': "G-006",
+            'name': "Invisible",
+            'count': 12,
+            'is_dynamic': False
+        })
+
+
 class TasksTest(BaseCasesTest):
     @patch('casepro.test.TestBackend.pull_fields')
     @patch('casepro.test.TestBackend.pull_groups')

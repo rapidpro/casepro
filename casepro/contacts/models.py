@@ -27,6 +27,8 @@ class Group(models.Model):
 
     count = models.IntegerField(null=True)
 
+    is_dynamic = models.BooleanField(default=False, help_text=_("Whether this group is dynamic"))
+
     created_on = models.DateTimeField(auto_now_add=True, help_text=_("When this group was created"))
 
     is_active = models.BooleanField(default=True, help_text=_("Whether this group is active"))
@@ -38,22 +40,32 @@ class Group(models.Model):
     )
 
     @classmethod
-    def get_all(cls, org, visible=None):
+    def get_all(cls, org, visible=None, dynamic=None):
         qs = cls.objects.filter(org=org, is_active=True)
+
         if visible is not None:
             qs = qs.filter(is_visible=visible)
+        if dynamic is not None:
+            qs = qs.filter(is_dynamic=dynamic)
+
         return qs
 
     @classmethod
     def get_suspend_from(cls, org):
-        return cls.get_all(org).filter(suspend_from=True)
+        return cls.get_all(org, dynamic=False).filter(suspend_from=True)
 
     @classmethod
     def lock(cls, org, uuid):
         return get_redis_connection().lock(GROUP_LOCK_KEY % (org.pk, uuid), timeout=60)
 
     def as_json(self):
-        return {'id': self.pk, 'uuid': self.uuid, 'name': self.name, 'count': self.count}
+        return {
+            'id': self.pk,
+            'uuid': self.uuid,
+            'name': self.name,
+            'count': self.count,
+            'is_dynamic': self.is_dynamic
+        }
 
     def __str__(self):
         return self.name

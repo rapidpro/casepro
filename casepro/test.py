@@ -63,7 +63,8 @@ class BaseCasesTest(DashTest):
         self.males = self.create_group(self.unicef, "G-001", "Males")
         self.females = self.create_group(self.unicef, "G-002", "Females")
         self.reporters = self.create_group(self.unicef, "G-003", "Reporters", suspend_from=True)
-        self.coders = self.create_group(self.nyaruka, "G-004", 'Coders')
+        self.registered = self.create_group(self.unicef, "G-004", "Registered (Dynamic)", is_dynamic=True)
+        self.coders = self.create_group(self.nyaruka, "G-005", 'Coders')
 
         # some fields
         self.nickname = self.create_field(self.unicef, 'nickname', "Nickname", value_type='T')
@@ -92,8 +93,9 @@ class BaseCasesTest(DashTest):
         contact.groups.add(*groups)
         return contact
 
-    def create_group(self, org, uuid, name, is_visible=True, suspend_from=False):
-        return Group.objects.create(org=org, uuid=uuid, name=name, is_visible=is_visible, suspend_from=suspend_from)
+    def create_group(self, org, uuid, name, count=None, is_dynamic=False, is_visible=True, suspend_from=False):
+        return Group.objects.create(org=org, uuid=uuid, name=name, count=count,
+                                    is_dynamic=is_dynamic, is_visible=is_visible, suspend_from=suspend_from)
 
     def create_field(self, org, key, label, value_type='T', is_visible=True):
         return Field.objects.create(org=org, key=key, label=label, value_type=value_type, is_visible=is_visible)

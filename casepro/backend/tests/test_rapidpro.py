@@ -359,8 +359,8 @@ class RapidProBackendTest(BaseCasesTest):
         Group.objects.all().delete()
 
         mock_get_groups.return_value = MockClientQuery([
-            TembaGroup.create(uuid="G-001", name="Customers", count=45),
-            TembaGroup.create(uuid="G-002", name="Developers", count=32),
+            TembaGroup.create(uuid="G-001", name="Customers", query=None, count=45),
+            TembaGroup.create(uuid="G-002", name="Developers", query="isdev=yes", count=32),
         ])
 
         with self.assertNumQueries(5):
@@ -368,12 +368,12 @@ class RapidProBackendTest(BaseCasesTest):
 
         self.assertEqual((num_created, num_updated, num_deleted, num_ignored), (2, 0, 0, 0))
 
-        Group.objects.get(uuid="G-001", name="Customers", count=45, is_active=True)
-        Group.objects.get(uuid="G-002", name="Developers", count=32, is_active=True)
+        Group.objects.get(uuid="G-001", name="Customers", count=45, is_dynamic=False, is_active=True)
+        Group.objects.get(uuid="G-002", name="Developers", count=32, is_dynamic=True, is_active=True)
 
         mock_get_groups.return_value = MockClientQuery([
-            TembaGroup.create(uuid="G-002", name="Devs", count=32),
-            TembaGroup.create(uuid="G-003", name="Spammers", count=13),
+            TembaGroup.create(uuid="G-002", name="Devs", query="isdev=yes", count=32),
+            TembaGroup.create(uuid="G-003", name="Spammers", query=None, count=13),
         ])
 
         with self.assertNumQueries(6):
@@ -381,9 +381,9 @@ class RapidProBackendTest(BaseCasesTest):
 
         self.assertEqual((num_created, num_updated, num_deleted, num_ignored), (1, 1, 1, 0))
 
-        Group.objects.get(uuid="G-001", name="Customers", count=45, is_active=False)
-        Group.objects.get(uuid="G-002", name="Devs", count=32, is_active=True)
-        Group.objects.get(uuid="G-003", name="Spammers", count=13, is_active=True)
+        Group.objects.get(uuid="G-001", name="Customers", count=45, is_dynamic=False, is_active=False)
+        Group.objects.get(uuid="G-002", name="Devs", count=32, is_dynamic=True, is_active=True)
+        Group.objects.get(uuid="G-003", name="Spammers", count=13, is_dynamic=False, is_active=True)
 
         # check that no changes means no updates
         with self.assertNumQueries(3):

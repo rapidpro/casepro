@@ -76,11 +76,11 @@ class OrgExtCRUDL(SmartCRUDL):
                 self.fields['contact_fields'].initial = [f.pk for f in Field.get_all(org, visible=True)]
 
                 group_choices = []
-                for group in Group.get_all(org).order_by('name'):
+                for group in Group.get_all(org, dynamic=False).order_by('name'):
                     group_choices.append((group.pk, group.name))
 
                 self.fields['suspend_groups'].choices = group_choices
-                self.fields['suspend_groups'].initial = [g.pk for g in Group.get_all(org).filter(suspend_from=True)]
+                self.fields['suspend_groups'].initial = [g.pk for g in Group.get_suspend_from(org)]
 
             class Meta:
                 model = Org

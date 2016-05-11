@@ -101,10 +101,13 @@ class GroupSyncer(BaseSyncer):
             'uuid': remote.uuid,
             'name': remote.name,
             'count': remote.count,
+            'is_dynamic': remote.query is not None
         }
 
     def update_required(self, local, remote, remote_as_kwargs):
-        return local.name != remote.name or local.count != remote.count
+        return local.name != remote.name \
+               or local.count != remote.count \
+               or local.is_dynamic != remote_as_kwargs['is_dynamic']
 
 
 class LabelSyncer(BaseSyncer):
