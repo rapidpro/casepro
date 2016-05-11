@@ -2,15 +2,13 @@ from __future__ import unicode_literals
 
 from dash.orgs.models import Org
 from dash.orgs.views import OrgCRUDL, TaskCRUDL, InferOrgMixin, OrgPermsMixin
-from django import forms
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCRUDL, SmartUpdateView
-from timezones.forms import TimeZoneField
 
 from casepro.contacts.models import Field, Group
 
-from .forms import OrgForm
+from .forms import OrgForm, OrgEditForm
 
 
 class OrgExtCRUDL(SmartCRUDL):
@@ -44,52 +42,10 @@ class OrgExtCRUDL(SmartCRUDL):
             return '<br/>'.join([unicode(u) for u in admins])
 
     class Edit(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
-        class OrgExtForm(forms.ModelForm):
-            name = forms.CharField(label=_("Organization"),
-                                   help_text=_("The name of this organization"))
-
-            timezone = TimeZoneField(help_text=_("The timezone your organization is in"))
-
-            banner_text = forms.CharField(label=_("Banner text"), widget=forms.Textarea,
-                                          help_text=_("Banner text displayed to all users"), required=False)
-
-            contact_fields = forms.MultipleChoiceField(choices=(), label=_("Contact fields"),
-                                                       help_text=_("Contact fields to display"), required=False)
-
-            suspend_groups = forms.MultipleChoiceField(
-                choices=(), label=_("Suspend groups"),
-                help_text=_("Groups to remove contacts from when creating cases"),
-                required=False
-            )
-
-            def __init__(self, *args, **kwargs):
-                org = kwargs.pop('org')
-                super(OrgExtCRUDL.Edit.OrgExtForm, self).__init__(*args, **kwargs)
-
-                self.fields['banner_text'].initial = org.get_banner_text()
-
-                field_choices = []
-                for field in Field.objects.filter(org=org, is_active=True).order_by('label'):
-                    field_choices.append((field.pk, "%s (%s)" % (field.label, field.key)))
-
-                self.fields['contact_fields'].choices = field_choices
-                self.fields['contact_fields'].initial = [f.pk for f in Field.get_all(org, visible=True)]
-
-                group_choices = []
-                for group in Group.get_all(org, dynamic=False).order_by('name'):
-                    group_choices.append((group.pk, group.name))
-
-                self.fields['suspend_groups'].choices = group_choices
-                self.fields['suspend_groups'].initial = [g.pk for g in Group.get_suspend_from(org)]
-
-            class Meta:
-                model = Org
-                fields = ('name', 'timezone', 'banner_text', 'contact_fields', 'suspend_groups', 'logo')
-
         permission = 'orgs.org_edit'
         title = _("Edit My Organization")
         success_url = '@orgs_ext.org_home'
-        form_class = OrgExtForm
+        form_class = OrgEditForm
 
         def get_form_kwargs(self):
             kwargs = super(OrgExtCRUDL.Edit, self).get_form_kwargs()

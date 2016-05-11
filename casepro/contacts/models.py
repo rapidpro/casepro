@@ -203,10 +203,10 @@ class Contact(models.Model):
                 raise ValueError("Can't suspend from groups as contact is already suspended from groups")
 
             cur_groups = list(self.groups.all())
-            suspend_group_pks = {g.pk for g in Group.get_suspend_from(self.org)}
+            suspend_groups = set(Group.get_suspend_from(self.org))
 
             for group in cur_groups:
-                if group.pk in suspend_group_pks:
+                if group in suspend_groups:
                     self.groups.remove(group)
                     self.suspended_groups.add(group)
 
@@ -215,10 +215,11 @@ class Contact(models.Model):
     def restore_groups(self):
         with self.lock(self.org, self.uuid):
             for group in list(self.suspended_groups.all()):
-                self.groups.add(group)
-                self.suspended_groups.remove(group)
+                if not group.is_dynamic:
+                    self.groups.add(group)
+                    get_backend().add_to_group(self.org, self, group)
 
-                get_backend().add_to_group(self.org, self, group)
+                self.suspended_groups.remove(group)
 
     def expire_flows(self):
         get_backend().stop_runs(self.org, self)
