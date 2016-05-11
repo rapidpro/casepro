@@ -148,7 +148,8 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(actions[2].created_on, d3)
 
         # check that contacts groups were restored
-        self.assertEqual(set(Contact.objects.get(pk=self.ann.pk).groups.all()), {self.females, self.reporters, self.registered})
+        self.assertEqual(set(Contact.objects.get(pk=self.ann.pk).groups.all()),
+                         {self.females, self.reporters, self.registered})
         self.assertEqual(set(Contact.objects.get(pk=self.ann.pk).suspended_groups.all()), set())
 
         mock_add_to_group.assert_called_once_with(self.unicef, self.ann, self.reporters)
