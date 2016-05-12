@@ -325,6 +325,7 @@ GROUP_PERMISSIONS = {
         'orgs.org_inbox',
 
         'msgs.label.*',
+        'msgs.message.*',
         'msgs.messageexport.*',
 
         'cases.case.*',
@@ -339,6 +340,8 @@ GROUP_PERMISSIONS = {
     "Editors": (
         'orgs.org_inbox',
 
+        'msgs.message_bulk_reply',
+        'msgs.message_forward',
         'msgs.messageexport_create',
         'msgs.messageexport_read',
 
@@ -357,6 +360,8 @@ GROUP_PERMISSIONS = {
     "Viewers": (
         'orgs.org_inbox',
 
+        'msgs.message_bulk_reply',
+        'msgs.message_forward',
         'msgs.messageexport_create',
         'msgs.messageexport_read',
 

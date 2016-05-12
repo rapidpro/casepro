@@ -10,8 +10,6 @@ from smartmin.views import SmartCRUDL, SmartTemplateView
 from smartmin.views import SmartListView, SmartCreateView, SmartUpdateView, SmartDeleteView
 from temba_client.utils import parse_iso8601
 
-from casepro.cases.models import Case
-from casepro.contacts.models import Contact
 from casepro.rules.models import ContainsTest, GroupsTest, Quantifier
 from casepro.utils import parse_csv, str_to_bool, json_encode
 from casepro.utils.export import BaseDownloadView
@@ -152,7 +150,7 @@ class MessageSearchMixin(object):
 
 
 class MessageCRUDL(SmartCRUDL):
-    actions = ('search', 'action', 'label', 'send', 'history')
+    actions = ('search', 'action', 'label', 'bulk_reply', 'forward', 'history')
     model = Message
 
     class Search(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
@@ -245,29 +243,36 @@ class MessageCRUDL(SmartCRUDL):
 
             return HttpResponse(status=204)
 
-    class Send(OrgPermsMixin, View):
+    class BulkReply(OrgPermsMixin, View):
         """
-        JSON endpoint for message sending. Takes a list of contact UUIDs or URNs
+        JSON endpoint for bulk messages replies
         """
-        permission = 'orgs.org_inbox'
-
         @classmethod
         def derive_url_pattern(cls, path, action):
-            return r'^message/send/$'
+            return r'^message/bulk_reply/$'
 
         def post(self, request, *args, **kwargs):
-            activity = request.POST['activity']
             text = request.POST['text']
-            urns = parse_csv(request.POST.get('urns', ''), as_ints=False)
+            message_ids = parse_csv(request.POST.get('messages', ''), as_ints=False)
+            messages = Message.objects.filter(org=request.org, backend_id__in=message_ids).select_related('contact')
 
-            contact_uuids = parse_csv(request.POST.get('contacts', ''), as_ints=False)
-            contacts = Contact.objects.filter(org=request.org, uuid__in=contact_uuids)
+            outgoing = Outgoing.create_bulk_reply(request.org, request.user, text, messages)
+            return JsonResponse({'id': outgoing.pk})
 
-            case_id = request.POST.get('case', None)
-            case = Case.objects.get(org=request.org, pk=case_id) if case_id else None
+    class Forward(OrgPermsMixin, View):
+        """
+        JSON endpoint for forwarding a message to a URN
+        """
+        @classmethod
+        def derive_url_pattern(cls, path, action):
+            return r'^message/forward/(?P<id>\d+)/$'
 
-            outgoing = Outgoing.create(request.org, request.user, activity, text, contacts, urns, case)
+        def post(self, request, *args, **kwargs):
+            text = request.POST['text']
+            message = Message.objects.get(org=request.org, backend_id=int(kwargs['id']))
+            urns = parse_csv(request.POST['urns'], as_ints=False)
 
+            outgoing = Outgoing.create_forward(request.org, request.user, text, urns, message)
             return JsonResponse({'id': outgoing.pk})
 
     class History(OrgPermsMixin, View):

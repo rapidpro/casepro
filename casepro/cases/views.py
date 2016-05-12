@@ -45,7 +45,7 @@ class CaseSearchMixin(object):
 
 class CaseCRUDL(SmartCRUDL):
     model = Case
-    actions = ('read', 'open', 'update_summary', 'fetch', 'search', 'timeline',
+    actions = ('read', 'open', 'update_summary', 'reply', 'fetch', 'search', 'timeline',
                'note', 'reassign', 'close', 'reopen', 'label')
 
     class Read(OrgObjPermsMixin, SmartReadView):
@@ -177,6 +177,17 @@ class CaseCRUDL(SmartCRUDL):
             summary = request.POST['summary']
             case.update_summary(request.user, summary)
             return HttpResponse(status=204)
+
+    class Reply(OrgObjPermsMixin, SmartUpdateView):
+        """
+        JSON endpoint for replying in a case
+        """
+        permission = 'cases.case_update'
+
+        def post(self, request, *args, **kwargs):
+            case = self.get_object()
+            outgoing = case.reply(request.user, request.POST['text'])
+            return JsonResponse({'id': outgoing.pk})
 
     class Fetch(OrgPermsMixin, SmartReadView):
         """

@@ -320,7 +320,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
       maxLength: () -> OUTGOING_TEXT_MAX_LEN,
     }})
     .result.then((data) ->
-      MessageService.forwardToUrn(data.text, data.urn, () ->
+      MessageService.forwardMessage(message, data.text, data.urn, () ->
         UtilsService.displayAlert('success', "Message forwarded to " + data.urn.path)
       )
     )
@@ -459,7 +459,7 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
     $scope.sending = true
 
     try
-      MessageService.replyInCase($scope.newMessage, $scope.caseObj, () ->
+      CaseService.replyToCase($scope.caseObj, $scope.newMessage, () ->
         $scope.newMessage = ''
         $scope.sending = false
         $scope.$broadcast('timelineChanged')

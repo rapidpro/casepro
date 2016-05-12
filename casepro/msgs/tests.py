@@ -540,24 +540,28 @@ class MessageTest(BaseCasesTest):
 
 
 class MessageCRUDLTest(BaseCasesTest):
+    def setUp(self):
+        super(MessageCRUDLTest, self).setUp()
+
+        self.ann = self.create_contact(self.unicef, 'C-001', "Ann")
+        self.bob = self.create_contact(self.unicef, 'C-002', "Bob")
+
     def test_search(self):
         url = reverse('msgs.message_search')
 
-        ann = self.create_contact(self.unicef, 'C-001', "Ann")
-        bob = self.create_contact(self.unicef, 'C-002', "Bob")
         cat = self.create_contact(self.unicef, 'C-003', "Cat")
         don = self.create_contact(self.unicef, 'C-004', "Don")
         nic = self.create_contact(self.nyaruka, 'C-101', "Nic")
 
         # labelled but not cased
-        self.create_message(self.unicef, 101, ann, "What is HIV?", [self.aids], is_handled=True)
-        self.create_message(self.unicef, 102, bob, "I ♡ RapidPro", [self.pregnancy], is_handled=True)
+        self.create_message(self.unicef, 101, self.ann, "What is HIV?", [self.aids], is_handled=True)
+        self.create_message(self.unicef, 102, self.bob, "I ♡ RapidPro", [self.pregnancy], is_handled=True)
 
         # labelled and flagged
-        self.create_message(self.unicef, 103, bob, "HELP!", [self.pregnancy], is_handled=True, is_flagged=True)
+        self.create_message(self.unicef, 103, self.bob, "HELP!", [self.pregnancy], is_handled=True, is_flagged=True)
 
         # labelled and cased/archived
-        self.create_message(self.unicef, 104, bob, "raids", [self.aids], is_handled=True, is_archived=True)
+        self.create_message(self.unicef, 104, self.bob, "raids", [self.aids], is_handled=True, is_archived=True)
         msg5 = self.create_message(self.unicef, 105, cat, "AIDS??", [self.aids], is_handled=True, is_archived=True)
         case = self.create_case(self.unicef, cat, self.moh, msg5)
 
@@ -607,10 +611,9 @@ class MessageCRUDLTest(BaseCasesTest):
         def get_url(action):
             return reverse('msgs.message_action', kwargs={'action': action})
 
-        ann = self.create_contact(self.unicef, 'C-001', "Ann")
-        self.create_message(self.unicef, 101, ann, "Normal", [self.aids, self.pregnancy])
-        msg2 = self.create_message(self.unicef, 102, ann, "Flow", type='F')
-        msg3 = self.create_message(self.unicef, 103, ann, "Archived", is_archived=True)
+        self.create_message(self.unicef, 101, self.ann, "Normal", [self.aids, self.pregnancy])
+        msg2 = self.create_message(self.unicef, 102, self.ann, "Flow", type='F')
+        msg3 = self.create_message(self.unicef, 103, self.ann, "Archived", is_archived=True)
 
         # log in as a non-administrator
         self.login(self.user1)
@@ -642,8 +645,7 @@ class MessageCRUDLTest(BaseCasesTest):
     @patch('casepro.test.TestBackend.label_messages')
     @patch('casepro.test.TestBackend.unlabel_messages')
     def test_label(self, mock_unlabel_messages, mock_label_messages):
-        ann = self.create_contact(self.unicef, 'C-001', "Ann")
-        msg1 = self.create_message(self.unicef, 101, ann, "Normal", [self.aids])
+        msg1 = self.create_message(self.unicef, 101, self.ann, "Normal", [self.aids])
 
         url = reverse('msgs.message_label', kwargs={'id': 101})
 
@@ -659,10 +661,62 @@ class MessageCRUDLTest(BaseCasesTest):
         msg1.refresh_from_db()
         self.assertEqual(set(msg1.labels.all()), {self.pregnancy})
 
+    @patch('casepro.test.TestBackend.create_outgoing')
+    def test_bulk_reply(self, mock_create_outgoing):
+        self.create_message(self.unicef, 101, self.ann, "Hello")
+        self.create_message(self.unicef, 102, self.ann, "Goodbye")
+        self.create_message(self.unicef, 103, self.bob, "Bonjour")
+
+        url = reverse('msgs.message_bulk_reply')
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=pytz.UTC)
+        mock_create_outgoing.return_value = (201, d1)
+
+        response = self.url_post('unicef', url, {'text': "That's fine", 'messages': "101,103"})
+        outgoing = Outgoing.objects.get(pk=response.json['id'])
+
+        mock_create_outgoing.assert_called_once_with(self.unicef, "That's fine", [self.ann, self.bob], [])
+
+        self.assertEqual(outgoing.org, self.unicef)
+        self.assertEqual(outgoing.activity, Outgoing.BULK_REPLY)
+        self.assertEqual(outgoing.backend_id, 201)
+        self.assertEqual(outgoing.recipient_count, 2)
+        self.assertEqual(outgoing.created_by, self.user1)
+        self.assertEqual(outgoing.created_on, d1)
+        self.assertEqual(outgoing.case, None)
+
+    @patch('casepro.test.TestBackend.create_outgoing')
+    def test_forward(self, mock_create_outgoing):
+        self.create_message(self.unicef, 101, self.ann, "Hello")
+        self.create_message(self.unicef, 102, self.ann, "Goodbye")
+
+        url = reverse('msgs.message_forward', kwargs={'id': 102})
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=pytz.UTC)
+        mock_create_outgoing.return_value = (201, d1)
+
+        response = self.url_post('unicef', url, {'text': "Check this out", 'urns': "tel:+2501234567"})
+        outgoing = Outgoing.objects.get(pk=response.json['id'])
+
+        mock_create_outgoing.assert_called_once_with(self.unicef, "Check this out", [], ["tel:+2501234567"])
+
+        self.assertEqual(outgoing.org, self.unicef)
+        self.assertEqual(outgoing.activity, Outgoing.FORWARD)
+        self.assertEqual(outgoing.backend_id, 201)
+        self.assertEqual(outgoing.recipient_count, 1)
+        self.assertEqual(outgoing.created_by, self.user1)
+        self.assertEqual(outgoing.created_on, d1)
+        self.assertEqual(outgoing.case, None)
+
     def test_history(self):
-        ann = self.create_contact(self.unicef, 'C-001', "Ann")
-        msg1 = self.create_message(self.unicef, 101, ann, "Hello")
-        msg2 = self.create_message(self.unicef, 102, ann, "Goodbye")
+        msg1 = self.create_message(self.unicef, 101, self.ann, "Hello")
+        msg2 = self.create_message(self.unicef, 102, self.ann, "Goodbye")
 
         url = reverse('msgs.message_history', kwargs={'id': 102})
 
@@ -681,35 +735,6 @@ class MessageCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['actions'][0]['created_by']['id'], self.user2.pk)
         self.assertEqual(response.json['actions'][1]['action'], 'F')
         self.assertEqual(response.json['actions'][1]['created_by']['id'], self.user1.pk)
-
-    @patch('casepro.test.TestBackend.create_outgoing')
-    def test_send(self, mock_create_outgoing):
-        url = reverse('msgs.message_send')
-
-        # log in as a non-administrator
-        self.login(self.user1)
-
-        self.create_contact(self.unicef, "C-001", "Ann")
-        self.create_contact(self.unicef, "C-002", "Bob")
-
-        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=pytz.UTC)
-        mock_create_outgoing.return_value = (201, d1)
-
-        response = self.url_post('unicef', url, {
-            'activity': 'B',
-            'text': "That's fine",
-            'contacts': "C-001,C-002",
-            'urns': "tel:+260964153686"
-        })
-        outgoing = Outgoing.objects.get(pk=response.json['id'])
-
-        self.assertEqual(outgoing.org, self.unicef)
-        self.assertEqual(outgoing.activity, Outgoing.BULK_REPLY)
-        self.assertEqual(outgoing.backend_id, 201)
-        self.assertEqual(outgoing.recipient_count, 3)
-        self.assertEqual(outgoing.created_by, self.user1)
-        self.assertEqual(outgoing.created_on, d1)
-        self.assertEqual(outgoing.case, None)
 
 
 class MessageExportCRUDLTest(BaseCasesTest):

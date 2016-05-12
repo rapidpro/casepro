@@ -408,6 +408,19 @@ class Outgoing(models.Model):
     case = models.ForeignKey('cases.Case', null=True, related_name="outgoing_messages")
 
     @classmethod
+    def create_case_reply(cls, org, user, text, case):
+        return cls.create(org, user, cls.CASE_REPLY, text, [case.contact], [], case)
+
+    @classmethod
+    def create_bulk_reply(cls, org, user, text, messages):
+        contacts = [m.contact for m in messages]
+        return cls.create(org, user, cls.BULK_REPLY, text, contacts, [], None)
+
+    @classmethod
+    def create_forward(cls, org, user, text, urns, original_message):
+        return cls.create(org, user, cls.FORWARD, text, [], urns, None)
+
+    @classmethod
     def create(cls, org, user, activity, text, contacts, urns, case=None):
         if not text:
             raise ValueError("Message text cannot be empty")

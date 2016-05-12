@@ -14,7 +14,7 @@ from redis_cache import get_redis_connection
 
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact
-from casepro.msgs.models import Label, Message
+from casepro.msgs.models import Label, Message, Outgoing
 from casepro.utils.export import BaseExport
 
 
@@ -308,6 +308,10 @@ class Case(models.Model):
         self.labels.add(label)
 
         CaseAction.create(self, user, CaseAction.LABEL, label=label)
+
+    @case_action()
+    def reply(self, user, text):
+        return Outgoing.create_case_reply(self.org, user, text, self)
 
     @case_action()
     def unlabel(self, user, label):
