@@ -235,7 +235,7 @@ class Case(models.Model):
             backend = get_backend()
             backend_messages = backend.fetch_contact_messages(self.org, self.contact, after, before)
 
-            local_by_backend_id = {o.backend_id: o for o in local_outgoing}
+            local_by_backend_id = {o.backend_id: o for o in local_outgoing if o.backend_id}
 
             for msg in backend_messages:
                 # annotate with sender from local message if there is one

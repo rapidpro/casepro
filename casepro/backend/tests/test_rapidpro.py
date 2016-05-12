@@ -15,7 +15,7 @@ from temba_client.v2.types import Contact as TembaContact, Message as TembaMessa
 from unittest import skip
 
 from casepro.contacts.models import Contact, Field, Group
-from casepro.msgs.models import Label, Message
+from casepro.msgs.models import Label, Message, Outgoing
 from casepro.test import BaseCasesTest
 
 from ..rapidpro import RapidProBackend, ContactSyncer, MessageSyncer
@@ -546,19 +546,34 @@ class RapidProBackendTest(BaseCasesTest):
         mock_create_label.assert_called_once_with(name="Ebola")
 
     @patch('dash.orgs.models.TembaClient1.create_broadcast')
-    def test_create_outgoing(self, mock_create_broadcast):
-        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=pytz.UTC)
-        mock_create_broadcast.return_value = TembaBroadcast.create(id=201,
-                                                                   text="That's great",
-                                                                   urns=["tel:+250783935665"],
-                                                                   contacts=["C-001"],
-                                                                   created_on=d1)
+    def test_push_outgoing(self, mock_create_broadcast):
+        msg1 = self.create_message(self.unicef, 101, self.ann, "Hello")
+        msg2 = self.create_message(self.unicef, 102, self.bob, "Bonjour")
 
-        res = self.backend.create_outgoing(self.unicef, "That's great", [self.ann], ["tel:+250783935665"])
+        mock_create_broadcast.return_value = TembaBroadcast.create(id=201, text="That's great",
+                                                                   urns=[], contacts=["C-001", "C-002"])
 
-        self.assertEqual(res, (201, d1))
-        mock_create_broadcast.assert_called_once_with(text="That's great", contacts=["C-001"],
-                                                      urns=["tel:+250783935665"])
+        # test with bulk reply
+        out1 = Outgoing.create_bulk_reply(self.unicef, self.user1, "That's great", [msg1, msg2])
+        self.backend.push_outgoing(self.unicef, out1)
+
+        mock_create_broadcast.assert_called_once_with(text="That's great", contacts=["C-001", "C-002"], urns=[])
+        mock_create_broadcast.reset_mock()
+
+        out1.refresh_from_db()
+        self.assertEqual(out1.backend_id, 201)
+
+        mock_create_broadcast.return_value = TembaBroadcast.create(id=202, text="That's great",
+                                                                   urns=["tel:+250783935665"], contacts=[])
+
+        # test with forward
+        out2 = Outgoing.create_forward(self.unicef, self.user1, "That's great", ["tel:+250783935665"], msg1)
+        self.backend.push_outgoing(self.unicef, out2)
+
+        mock_create_broadcast.assert_called_once_with(text="That's great", contacts=[], urns=["tel:+250783935665"])
+
+        out2.refresh_from_db()
+        self.assertEqual(out2.backend_id, 202)
 
     @patch('dash.orgs.models.TembaClient1.add_contacts')
     def test_add_to_group(self, mock_add_contacts):

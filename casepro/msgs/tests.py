@@ -661,8 +661,8 @@ class MessageCRUDLTest(BaseCasesTest):
         msg1.refresh_from_db()
         self.assertEqual(set(msg1.labels.all()), {self.pregnancy})
 
-    @patch('casepro.test.TestBackend.create_outgoing')
-    def test_bulk_reply(self, mock_create_outgoing):
+    @patch('casepro.test.TestBackend.push_outgoing')
+    def test_bulk_reply(self, mock_push_outgoing):
         self.create_message(self.unicef, 101, self.ann, "Hello")
         self.create_message(self.unicef, 102, self.ann, "Goodbye")
         self.create_message(self.unicef, 103, self.bob, "Bonjour")
@@ -672,24 +672,19 @@ class MessageCRUDLTest(BaseCasesTest):
         # log in as a non-administrator
         self.login(self.user1)
 
-        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=pytz.UTC)
-        mock_create_outgoing.return_value = (201, d1)
-
         response = self.url_post('unicef', url, {'text': "That's fine", 'messages': "101,103"})
         outgoing = Outgoing.objects.get(pk=response.json['id'])
 
-        mock_create_outgoing.assert_called_once_with(self.unicef, "That's fine", [self.ann, self.bob], [])
+        mock_push_outgoing.assert_called_once_with(self.unicef, outgoing)
 
         self.assertEqual(outgoing.org, self.unicef)
         self.assertEqual(outgoing.activity, Outgoing.BULK_REPLY)
-        self.assertEqual(outgoing.backend_id, 201)
         self.assertEqual(outgoing.recipient_count, 2)
         self.assertEqual(outgoing.created_by, self.user1)
-        self.assertEqual(outgoing.created_on, d1)
         self.assertEqual(outgoing.case, None)
 
-    @patch('casepro.test.TestBackend.create_outgoing')
-    def test_forward(self, mock_create_outgoing):
+    @patch('casepro.test.TestBackend.push_outgoing')
+    def test_forward(self, mock_push_outgoing):
         self.create_message(self.unicef, 101, self.ann, "Hello")
         self.create_message(self.unicef, 102, self.ann, "Goodbye")
 
@@ -698,20 +693,15 @@ class MessageCRUDLTest(BaseCasesTest):
         # log in as a non-administrator
         self.login(self.user1)
 
-        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=pytz.UTC)
-        mock_create_outgoing.return_value = (201, d1)
-
         response = self.url_post('unicef', url, {'text': "Check this out", 'urns': "tel:+2501234567"})
         outgoing = Outgoing.objects.get(pk=response.json['id'])
 
-        mock_create_outgoing.assert_called_once_with(self.unicef, "Check this out", [], ["tel:+2501234567"])
+        mock_push_outgoing.assert_called_once_with(self.unicef, outgoing)
 
         self.assertEqual(outgoing.org, self.unicef)
         self.assertEqual(outgoing.activity, Outgoing.FORWARD)
-        self.assertEqual(outgoing.backend_id, 201)
         self.assertEqual(outgoing.recipient_count, 1)
         self.assertEqual(outgoing.created_by, self.user1)
-        self.assertEqual(outgoing.created_on, d1)
         self.assertEqual(outgoing.case, None)
 
     def test_history(self):
@@ -784,34 +774,30 @@ class MessageExportCRUDLTest(BaseCasesTest):
 
 
 class OutgoingTest(BaseCasesTest):
-    @patch('casepro.test.TestBackend.create_outgoing')
-    def test_create(self, mock_create_outgoing):
+    @patch('casepro.test.TestBackend.push_outgoing')
+    def test_create_bulk_reply(self, mock_push_outgoing):
         ann = self.create_contact(self.unicef, "C-001", "Ann")
         bob = self.create_contact(self.unicef, "C-002", "Bob")
-        d1 = datetime(2014, 1, 2, 6, 0, tzinfo=pytz.UTC)
-        mock_create_outgoing.return_value = (201, d1)
+        msg1 = self.create_message(self.unicef, 101, ann, "Hello")
+        msg2 = self.create_message(self.unicef, 102, bob, "Bonjour")
 
-        # create bulk reply
-        outgoing = Outgoing.create(self.unicef, self.user1, Outgoing.BULK_REPLY, "That's great",
-                                   [ann, bob], ["twitter:rick123"])
+        outgoing = Outgoing.create_bulk_reply(self.unicef, self.user1, "That's great", [msg1, msg2])
 
-        mock_create_outgoing.assert_called_once_with(self.unicef, "That's great", [ann, bob], ["twitter:rick123"])
+        mock_push_outgoing.assert_called_once_with(self.unicef, outgoing)
 
         self.assertEqual(outgoing.org, self.unicef)
         self.assertEqual(outgoing.activity, Outgoing.BULK_REPLY)
-        self.assertEqual(outgoing.backend_id, 201)
         self.assertEqual(outgoing.text, "That's great")
-        self.assertEqual(outgoing.recipient_count, 3)
+        self.assertEqual(outgoing.recipient_count, 2)
         self.assertEqual(outgoing.created_by, self.user1)
-        self.assertEqual(outgoing.created_on, d1)
         self.assertEqual(outgoing.case, None)
         self.assertEqual(six.text_type(outgoing), "That's great")
 
-        # can't create an outgoing message with no text
-        self.assertRaises(ValueError, Outgoing.create, self.unicef, self.user1, Outgoing.BULK_REPLY, "", [ann], [])
+        # can't create a bulk reply with no text
+        self.assertRaises(ValueError, Outgoing.create_bulk_reply, self.unicef, self.user1, "", [msg1])
 
-        # can't create an outgoing message with no recipients
-        self.assertRaises(ValueError, Outgoing.create, self.unicef, self.user1, Outgoing.BULK_REPLY, "Hi", [], [])
+        # can't create a bulk reply with no recipients
+        self.assertRaises(ValueError, Outgoing.create_bulk_reply, self.unicef, self.user1, "Hi", [])
 
 
 class TasksTest(BaseCasesTest):

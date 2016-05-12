@@ -358,8 +358,8 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 200)
 
     @patch('casepro.test.TestBackend.fetch_contact_messages')
-    @patch('casepro.test.TestBackend.create_outgoing')
-    def test_timeline(self, mock_create_outgoing, mock_fetch_contact_messages):
+    @patch('casepro.test.TestBackend.push_outgoing')
+    def test_timeline(self, mock_push_outgoing, mock_fetch_contact_messages):
         d0 = datetime(2014, 1, 2, 12, 0, tzinfo=pytz.UTC)
         d1 = datetime(2014, 1, 2, 13, 0, tzinfo=pytz.UTC)
         d2 = datetime(2014, 1, 2, 14, 0, tzinfo=pytz.UTC)
@@ -446,8 +446,9 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # user sends an outgoing message
         d3 = timezone.now()
-        mock_create_outgoing.return_value = (202, d3)
-        Outgoing.create(self.unicef, self.user1, Outgoing.CASE_REPLY, "It's bad", ['C-001'], [], case)
+        outgoing = Outgoing.create_case_reply(self.unicef, self.user1, "It's bad", case)
+        outgoing.backend_id = 202
+        outgoing.save()
 
         # page again looks for new timeline activity
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t2)))
