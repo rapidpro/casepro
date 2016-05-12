@@ -11,6 +11,8 @@ deploy
 celerybeat-schedule.db
 src/
 casepro/settings.py
+casepro/settings.py.prod
+casepro/settings.py.staging
 fabfile.py
 fabconfig.py
 
