@@ -31,7 +31,7 @@ class CaseTest(BaseCasesTest):
 
         self.ann = self.create_contact(self.unicef, 'C-001', "Ann",
                                        fields={'age': "34"},
-                                       groups=[self.females, self.reporters])
+                                       groups=[self.females, self.reporters, self.registered])
 
     @patch('casepro.test.TestBackend.archive_contact_messages')
     @patch('casepro.test.TestBackend.archive_messages')
@@ -89,7 +89,7 @@ class CaseTest(BaseCasesTest):
         mock_remove_from_group.reset_mock()
 
         # check that contacts groups were suspended
-        self.assertEqual(set(Contact.objects.get(pk=self.ann.pk).groups.all()), {self.females})
+        self.assertEqual(set(Contact.objects.get(pk=self.ann.pk).groups.all()), {self.females, self.registered})
         self.assertEqual(set(Contact.objects.get(pk=self.ann.pk).suspended_groups.all()), {self.reporters})
 
         # check that contact's runs were expired
@@ -148,7 +148,8 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(actions[2].created_on, d3)
 
         # check that contacts groups were restored
-        self.assertEqual(set(Contact.objects.get(pk=self.ann.pk).groups.all()), {self.females, self.reporters})
+        self.assertEqual(set(Contact.objects.get(pk=self.ann.pk).groups.all()),
+                         {self.females, self.reporters, self.registered})
         self.assertEqual(set(Contact.objects.get(pk=self.ann.pk).suspended_groups.all()), set())
 
         mock_add_to_group.assert_called_once_with(self.unicef, self.ann, self.reporters)

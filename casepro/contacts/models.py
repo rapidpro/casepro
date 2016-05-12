@@ -27,6 +27,8 @@ class Group(models.Model):
 
     count = models.IntegerField(null=True)
 
+    is_dynamic = models.BooleanField(default=False, help_text=_("Whether this group is dynamic"))
+
     created_on = models.DateTimeField(auto_now_add=True, help_text=_("When this group was created"))
 
     is_active = models.BooleanField(default=True, help_text=_("Whether this group is active"))
@@ -38,22 +40,32 @@ class Group(models.Model):
     )
 
     @classmethod
-    def get_all(cls, org, visible=None):
+    def get_all(cls, org, visible=None, dynamic=None):
         qs = cls.objects.filter(org=org, is_active=True)
+
         if visible is not None:
             qs = qs.filter(is_visible=visible)
+        if dynamic is not None:
+            qs = qs.filter(is_dynamic=dynamic)
+
         return qs
 
     @classmethod
     def get_suspend_from(cls, org):
-        return cls.get_all(org).filter(suspend_from=True)
+        return cls.get_all(org, dynamic=False).filter(suspend_from=True)
 
     @classmethod
     def lock(cls, org, uuid):
         return get_redis_connection().lock(GROUP_LOCK_KEY % (org.pk, uuid), timeout=60)
 
     def as_json(self):
-        return {'id': self.pk, 'uuid': self.uuid, 'name': self.name, 'count': self.count}
+        return {
+            'id': self.pk,
+            'uuid': self.uuid,
+            'name': self.name,
+            'count': self.count,
+            'is_dynamic': self.is_dynamic
+        }
 
     def __str__(self):
         return self.name
@@ -191,10 +203,10 @@ class Contact(models.Model):
                 raise ValueError("Can't suspend from groups as contact is already suspended from groups")
 
             cur_groups = list(self.groups.all())
-            suspend_group_pks = {g.pk for g in Group.get_suspend_from(self.org)}
+            suspend_groups = set(Group.get_suspend_from(self.org))
 
             for group in cur_groups:
-                if group.pk in suspend_group_pks:
+                if group in suspend_groups:
                     self.groups.remove(group)
                     self.suspended_groups.add(group)
 
@@ -203,10 +215,11 @@ class Contact(models.Model):
     def restore_groups(self):
         with self.lock(self.org, self.uuid):
             for group in list(self.suspended_groups.all()):
-                self.groups.add(group)
-                self.suspended_groups.remove(group)
+                if not group.is_dynamic:
+                    self.groups.add(group)
+                    get_backend().add_to_group(self.org, self, group)
 
-                get_backend().add_to_group(self.org, self, group)
+                self.suspended_groups.remove(group)
 
     def expire_flows(self):
         get_backend().stop_runs(self.org, self)
