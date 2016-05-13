@@ -685,19 +685,33 @@ class RapidProBackendTest(BaseCasesTest):
 
     @patch('dash.orgs.models.TembaClient2.get_messages')
     def test_fetch_contact_messages(self, mock_get_messages):
+        msg = self.create_message(self.unicef, 123, self.bob, "Hello")
+        outgoing = Outgoing.create_bulk_reply(self.unicef, self.user1, "OK", [msg])
+
         d1 = datetime(2015, 1, 2, 13, 0, tzinfo=pytz.UTC)
         d2 = datetime(2015, 1, 2, 14, 0, tzinfo=pytz.UTC)
         d3 = datetime(2015, 1, 2, 15, 0, tzinfo=pytz.UTC)
 
         mock_get_messages.return_value = MockClientQuery([
             TembaMessage.create(
-                id=101,
+                id=102,
                 broadcast=201,
                 contact=ObjectRef.create(uuid="C-001", name="Ann"),
-                text="What is AIDS?",
+                text="Welcome",
+                type='inbox',
+                direction='out',
+                visibility='visible',
+                labels=[],
+                created_on=d3
+            ),
+            TembaMessage.create(
+                id=101,
+                broadcast=None,
+                contact=ObjectRef.create(uuid="C-001", name="Ann"),
+                text="Hello",
                 type='inbox',
                 direction='in',
-                visibility='visible',
+                visibility='archived',
                 labels=[ObjectRef.create(uuid="L-001", name="AIDS"), ObjectRef.create(uuid="L-111", name="Flagged")],
                 created_on=d2
             )
@@ -705,19 +719,21 @@ class RapidProBackendTest(BaseCasesTest):
 
         messages = self.backend.fetch_contact_messages(self.unicef, self.ann, d1, d3)
 
-        self.assertEqual(messages, [{
-            'id': 101,
-            'contact': {'uuid': "C-001", 'name': "Ann"},
-            'text': "What is AIDS?",
-            'time': d2,
-            'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
-            'flagged': True,
-            'archived': False,
-            'direction': 'I',
-            'flow': False,
-            'sender': None,
-            'broadcast': 201
-        }])
+        # check that JSON schemas match local outgoing model
+        self.assertEqual(messages[0].keys(), outgoing.as_json().keys())
+
+        self.assertEqual(messages, [
+            {
+                'id': 201,  # id is the broadcast id
+                'contacts': [{'uuid': "C-001", 'name': "Ann"}],
+                'urns': [],
+                'text': "Welcome",
+                'time': d3,
+                'direction': 'O',
+                'case': None,
+                'sender': None,
+            }
+        ])
 
 
 @skip

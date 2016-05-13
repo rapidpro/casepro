@@ -241,7 +241,7 @@ class Contact(models.Model):
         self.is_active = False
         self.save(update_fields=('is_active',))
 
-    def as_json(self, full=False):
+    def as_json(self, full=True):
         """
         Prepares a contact for JSON serialization
         """

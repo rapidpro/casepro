@@ -316,26 +316,26 @@ class RapidProBackend(BaseBackend):
             client.unlabel_messages(messages=[m.backend_id for m in messages], label=SYSTEM_LABEL_FLAGGED)
 
     def fetch_contact_messages(self, org, contact, created_after, created_before):
-        contact_json = contact.as_json()
-        label_map = {l.uuid: l for l in Label.get_all(org)}
+        """
+        Used to grab messages sent to the contact from RapidPro that we won't have in CasePro
+        """
+        contact_json = contact.as_json(full=False)
 
         # fetch remote messages for contact
         client = self._get_client(org, 2)
         remote_messages = client.get_messages(contact=contact.uuid, after=created_after, before=created_before).all()
 
         def remote_as_json(msg):
+            # should match schema of Outgoing.as_json()
             return {
-                'id': msg.id,
-                'contact': contact_json,
+                'id': msg.broadcast,
+                'contacts': [contact_json],
+                'urns': [],
                 'text': msg.text,
                 'time': msg.created_on,
-                'labels': [label_map.get(l.uuid).as_json() for l in msg.labels if l.uuid in label_map],
-                'flagged': remote_message_is_flagged(msg),
-                'archived': remote_message_is_archived(msg),
-                'direction': Message.DIRECTION if msg.direction == 'in' else Outgoing.DIRECTION,
-                'flow': msg.type == 'flow',
-                'sender': None,
-                'broadcast': msg.broadcast
+                'direction': Outgoing.DIRECTION,
+                'case': None,
+                'sender': None
             }
 
-        return [remote_as_json(m) for m in remote_messages]
+        return [remote_as_json(m) for m in remote_messages if m.direction == 'out']
