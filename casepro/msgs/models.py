@@ -316,11 +316,9 @@ class Message(models.Model):
         """
         Prepares this message for JSON serialization
         """
-        case_json = {'id': self.case.pk, 'assignee': self.case.assignee.as_json()} if self.case else None
-
         return {
             'id': self.backend_id,
-            'contact': self.contact.as_json(),
+            'contact': self.contact.as_json(full=False),
             'text': self.text,
             'time': self.created_on,
             'labels': [l.as_json() for l in self.labels.all()],
@@ -328,8 +326,7 @@ class Message(models.Model):
             'archived': self.is_archived,
             'direction': self.DIRECTION,
             'flow': self.type == self.TYPE_FLOW,
-            'case': case_json,
-            'sender': None
+            'case': self.case.as_json(full=False) if self.case else None
         }
 
     def __str__(self):
@@ -395,6 +392,8 @@ class Outgoing(models.Model):
 
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='outgoing_messages')
 
+    partner = models.ForeignKey('cases.Partner', null=True, related_name='outgoing_messages')
+
     activity = models.CharField(max_length=1, choices=ACTIVITY_CHOICES)
 
     text = models.TextField(max_length=640, null=True)
@@ -436,6 +435,7 @@ class Outgoing(models.Model):
             raise ValueError("Message must have at least one recipient")
 
         outgoing = cls.objects.create(org=org,
+                                      partner=user.get_partner(org),
                                       activity=activity,
                                       text=text,
                                       urns=urns,
@@ -452,17 +452,16 @@ class Outgoing(models.Model):
 
     def as_json(self):
         """
-        Prepares this message for JSON serialization
+        Prepares this outgoing message for JSON serialization
         """
         return {
             'id': self.pk,
-            'contact': self.case.contact.as_json(),
+            'contacts': [c.as_json(full=False) for c in self.contacts.all()],
+            'urns': self.urns,
             'text': self.text,
             'time': self.created_on,
-            'labels': [],
-            'flagged': False,
-            'archived': False,
             'direction': self.DIRECTION,
+            'case': self.case.as_json() if self.case else None,
             'sender': self.created_by.as_json()
         }
 

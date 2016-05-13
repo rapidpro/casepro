@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from enum import Enum, IntEnum
+from itertools import chain
 from redis_cache import get_redis_connection
 
 from casepro.backend import get_backend
@@ -225,37 +226,28 @@ class Case(models.Model):
         return case
 
     def get_timeline(self, after, before, merge_from_backend):
-        messages = []
-
         local_outgoing = self.outgoing_messages.filter(created_on__gte=after, created_on__lte=before)
-        local_outgoing = local_outgoing.select_related('case__contact')
+        local_outgoing = local_outgoing.select_related('case__contact').order_by('-created_on')
+
+        local_incoming = self.incoming_messages.filter(created_on__gte=after, created_on__lte=before)
+        local_incoming = local_incoming.select_related('contact').order_by('-created_on')
+
+        # merge local incoming and outgoing
+        local_messages = chain(local_outgoing, local_incoming)
+        messages = [{'time': msg.created_on, 'type': 'M', 'item': msg.as_json()} for msg in local_messages]
 
         if merge_from_backend:
             # if this is the initial request, get a more complete timeline from the backend
             backend = get_backend()
             backend_messages = backend.fetch_contact_messages(self.org, self.contact, after, before)
 
-            local_by_backend_id = {o.backend_id: o for o in local_outgoing if o.backend_id}
+            # add any backend messages that don't exist locally
+            if backend_messages:
+                local_backend_ids = {o.backend_id for o in local_outgoing if o.backend_id}
 
-            for msg in backend_messages:
-                # annotate with sender from local message if there is one
-                local = local_by_backend_id.pop(msg['broadcast'], None)
-                msg['sender'] = local.created_by.as_json() if local else None
-
-                messages.append({'time': msg['time'], 'type': 'M', 'item': msg})
-
-            for msg in local_by_backend_id.values():
-                messages.append({'time': msg.created_on, 'type': 'M', 'item': msg.as_json()})
-        else:
-            # otherwise just merge local outgoing and incoming messages
-            for msg in local_outgoing:
-                messages.append({'time': msg.created_on, 'type': 'M', 'item': msg.as_json()})
-
-            local_incoming = self.incoming_messages.filter(created_on__gte=after, created_on__lte=before)
-            local_incoming = local_incoming.select_related('contact')
-
-            for msg in local_incoming:
-                messages.append({'time': msg.created_on, 'type': 'M', 'item': msg.as_json()})
+                for msg in backend_messages:
+                    if msg['id'] not in local_backend_ids:
+                        messages.append({'time': msg['time'], 'type': 'M', 'item': msg})
 
         # fetch actions in chronological order
         actions = self.actions.filter(created_on__gte=after, created_on__lte=before)
@@ -354,16 +346,22 @@ class Case(models.Model):
     def is_closed(self):
         return self.closed_on is not None
 
-    def as_json(self, full_contact=False):
-        return {
-            'id': self.pk,
-            'contact': self.contact.as_json(full_contact),
-            'assignee': self.assignee.as_json(),
-            'labels': [l.as_json() for l in self.labels.all()],
-            'summary': self.summary,
-            'opened_on': self.opened_on,
-            'is_closed': self.is_closed
-        }
+    def as_json(self, full=True, full_contact=False):
+        if full:
+            return {
+                'id': self.pk,
+                'assignee': self.assignee.as_json(),
+                'contact': self.contact.as_json(full_contact),
+                'labels': [l.as_json() for l in self.labels.all()],
+                'summary': self.summary,
+                'opened_on': self.opened_on,
+                'is_closed': self.is_closed
+            }
+        else:
+            return {
+                'id': self.pk,
+                'assignee': self.assignee.as_json(),
+            }
 
     def __str__(self):
         return '#%d' % self.pk

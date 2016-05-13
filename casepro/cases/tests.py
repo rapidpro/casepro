@@ -568,38 +568,26 @@ class CaseCRUDLTest(BaseCasesTest):
         d1 = datetime(2014, 1, 2, 13, 0, tzinfo=pytz.UTC)
         d2 = datetime(2014, 1, 2, 14, 0, tzinfo=pytz.UTC)
 
+        # local message before case time window
         self.create_message(self.unicef, 100, self.ann, "Unrelated", [], created_on=d0)
+
+        # create and open case
         msg1 = self.create_message(self.unicef, 101, self.ann, "What is AIDS?", [self.aids], created_on=d1)
-
-        mock_fetch_contact_messages.return_value = [
-            {
-                'id': 102,
-                'contact': {'uuid': "C-001", 'name': "Ann"},
-                'text': "Unrelated message from backend...",
-                'time': d2,
-                'labels': [],
-                'flagged': False,
-                'archived': False,
-                'direction': 'O',
-                'sender': None,
-                'broadcast': 201
-            },
-            {
-                'id': 101,
-                'contact': {'uuid': "C-001", 'name': "Ann"},
-                'text': "What is AIDS?",
-                'time': d1,
-                'labels': [{'id': self.aids.pk, 'uuid': "L-001", 'name': "AIDS"}],
-                'flagged': False,
-                'archived': False,
-                'direction': 'I',
-                'sender': None,
-                'broadcast': None
-            }
-        ]
-
         case = self.create_case(self.unicef, self.ann, self.moh, msg1)
         CaseAction.create(case, self.user1, CaseAction.OPEN, assignee=self.moh)
+
+        # backend has a message in the case time window that we don't have locally
+        remote_message1 = {
+            'id': 102,
+            'contacts': [{'uuid': "C-001", 'name': "Ann"}],
+            'urns': [],
+            'text': "Unrelated message from backend...",
+            'time': d2,
+            'direction': 'O',
+            'case': None,
+            'sender': None,
+        }
+        mock_fetch_contact_messages.return_value = [remote_message1]
 
         timeline_url = reverse('cases.case_timeline', args=[case.pk])
 
@@ -617,7 +605,7 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'][0]['item']['direction'], 'I')
         self.assertEqual(response.json['results'][1]['type'], 'M')
         self.assertEqual(response.json['results'][1]['item']['text'], "Unrelated message from backend...")
-        self.assertEqual(response.json['results'][1]['item']['contact'], {'uuid': "C-001", 'name': "Ann"})
+        self.assertEqual(response.json['results'][1]['item']['contacts'], [{'uuid': "C-001", 'name': "Ann"}])
         self.assertEqual(response.json['results'][1]['item']['direction'], 'O')
         self.assertEqual(response.json['results'][2]['type'], 'A')
         self.assertEqual(response.json['results'][2]['item']['action'], 'O')
@@ -633,7 +621,7 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(len(response.json['results']), 0)
 
         # messages won't have been fetched from the backend this time
-        mock_fetch_contact_messages.assert_not_called()
+        self.assertNotCalled(mock_fetch_contact_messages)
 
         # another user adds a note
         case.add_note(self.user2, "Looks interesting")
@@ -642,7 +630,7 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t1)))
         t2 = microseconds_to_datetime(response.json['max_time'])
 
-        mock_fetch_contact_messages.assert_not_called()
+        self.assertNotCalled(mock_fetch_contact_messages)
 
         self.assertEqual(len(response.json['results']), 1)
         self.assertEqual(response.json['results'][0]['type'], 'A')
@@ -663,8 +651,6 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'][0]['item']['text'], "It's bad")
         self.assertEqual(response.json['results'][0]['item']['direction'], 'O')
 
-        mock_fetch_contact_messages.assert_not_called()
-
         # contact sends a reply
         d4 = timezone.now()
         self.create_message(self.unicef, 104, self.ann, "OK thanks", created_on=d4)
@@ -679,14 +665,10 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'][0]['item']['text'], "OK thanks")
         self.assertEqual(response.json['results'][0]['item']['direction'], 'I')
 
-        mock_fetch_contact_messages.assert_not_called()
-
         # page again looks for new timeline activity
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t4)))
         t5 = microseconds_to_datetime(response.json['max_time'])
         self.assertEqual(len(response.json['results']), 0)
-
-        mock_fetch_contact_messages.assert_not_called()
 
         # user closes case
         case.close(self.user1)
@@ -700,9 +682,6 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t5)))
         t6 = microseconds_to_datetime(response.json['max_time'])
 
-        mock_fetch_contact_messages.assert_not_called()
-        mock_fetch_contact_messages.reset_mock()
-
         # should show the close action but not the message after it
         self.assertEqual(len(response.json['results']), 1)
         self.assertEqual(response.json['results'][0]['type'], 'A')
@@ -715,55 +694,20 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(len(response.json['results']), 0)
 
         # user now refreshes page...
+
+        # backend has the message sent during the case as well as the unrelated message
         mock_fetch_contact_messages.return_value = [
             {
-                'id': 104,
-                'contact': {'uuid': "C-001", 'name': "Ann"},
-                'text': "OK thanks",
-                'time': d4,
-                'labels': [],
-                'flagged': False,
-                'archived': False,
-                'direction': 'I',
-                'sender': None,
-                'broadcast': None
-            },
-            {
-                'id': 103,
-                'contact': {'uuid': "C-001", 'name': "Ann"},
+                'id': 202,
+                'contacts': [{'uuid': "C-001", 'name': "Ann"}],
+                'urns': [],
                 'text': "It's bad",
                 'time': d3,
-                'labels': [],
-                'flagged': False,
-                'archived': False,
                 'direction': 'O',
+                'case': None,
                 'sender': None,
-                'broadcast': 202
             },
-            {
-                'id': 102,
-                'contact': {'uuid': "C-001", 'name': "Ann"},
-                'text': "Unrelated message from backend...",
-                'time': d2,
-                'labels': [],
-                'flagged': False,
-                'archived': False,
-                'direction': 'O',
-                'sender': None,
-                'broadcast': 201
-            },
-            {
-                'id': 101,
-                'contact': {'uuid': "C-001", 'name': "Ann"},
-                'text': "What is AIDS?",
-                'time': d1,
-                'labels': [{'id': self.aids.pk, 'uuid': "L-001", 'name': "AIDS"}],
-                'flagged': False,
-                'archived': False,
-                'direction': 'I',
-                'sender': None,
-                'broadcast': None
-            }
+            remote_message1
         ]
 
         # which requests all of the timeline up to now
@@ -777,7 +721,7 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(items[0]['item']['direction'], 'I')
         self.assertEqual(items[1]['type'], 'M')
         self.assertEqual(items[1]['item']['text'], "Unrelated message from backend...")
-        self.assertEqual(items[1]['item']['contact'], {'uuid': "C-001", 'name': "Ann"})
+        self.assertEqual(items[1]['item']['contacts'], [{'uuid': "C-001", 'name': "Ann"}])
         self.assertEqual(items[1]['item']['direction'], 'O')
         self.assertEqual(items[1]['item']['sender'], None)
         self.assertEqual(items[2]['type'], 'A')
