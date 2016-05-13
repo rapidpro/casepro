@@ -11,7 +11,7 @@ from smartmin.views import SmartListView, SmartCreateView, SmartUpdateView, Smar
 from temba_client.utils import parse_iso8601
 
 from casepro.rules.models import ContainsTest, GroupsTest, Quantifier
-from casepro.utils import parse_csv, str_to_bool, json_encode
+from casepro.utils import parse_csv, str_to_bool, json_encode, JSONEncoder
 from casepro.utils.export import BaseDownloadView
 
 from .forms import LabelForm
@@ -178,7 +178,7 @@ class MessageCRUDL(SmartCRUDL):
             return JsonResponse({
                 'results': [m.as_json() for m in context['object_list']],
                 'has_more': context['has_more']
-            })
+            }, encoder=JSONEncoder)
 
     class Action(OrgPermsMixin, View):
         """
@@ -288,7 +288,7 @@ class MessageCRUDL(SmartCRUDL):
         def get(self, request, *args, **kwargs):
             message = Message.objects.get(org=request.org, backend_id=int(kwargs['id']))
             actions = [a.as_json() for a in message.get_history()]
-            return JsonResponse({'actions': actions})
+            return JsonResponse({'actions': actions}, encoder=JSONEncoder)
 
 
 class MessageExportCRUDL(SmartCRUDL):

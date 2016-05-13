@@ -102,7 +102,7 @@ class case_action(object):
         def wrapped(case, user, *args, **kwargs):
             access = case.access_level(user)
             if (access == AccessLevel.update) or (not self.require_update and access == AccessLevel.read):
-                func(case, user, *args, **kwargs)
+                return func(case, user, *args, **kwargs)
             else:
                 raise PermissionDenied()
         return wrapped
