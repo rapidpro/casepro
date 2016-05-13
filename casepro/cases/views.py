@@ -16,7 +16,7 @@ from temba_client.utils import parse_iso8601
 
 from casepro.contacts.models import Group
 from casepro.msgs.models import Message, MessageFolder, Label
-from casepro.utils import parse_csv, json_encode, datetime_to_microseconds, microseconds_to_datetime
+from casepro.utils import parse_csv, json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder
 from casepro.utils.export import BaseDownloadView
 
 from . import MAX_MESSAGE_CHARS
@@ -45,7 +45,7 @@ class CaseSearchMixin(object):
 
 class CaseCRUDL(SmartCRUDL):
     model = Case
-    actions = ('read', 'open', 'update_summary', 'fetch', 'search', 'timeline',
+    actions = ('read', 'open', 'update_summary', 'reply', 'fetch', 'search', 'timeline',
                'note', 'reassign', 'close', 'reopen', 'label')
 
     class Read(OrgObjPermsMixin, SmartReadView):
@@ -99,7 +99,7 @@ class CaseCRUDL(SmartCRUDL):
 
             case = Case.get_or_open(request.org, request.user, message, summary, assignee)
 
-            return JsonResponse({'case': case.as_json(), 'is_new': case.is_new})
+            return JsonResponse({'case': case.as_json(), 'is_new': case.is_new}, encoder=JSONEncoder)
 
     class Note(OrgObjPermsMixin, SmartUpdateView):
         """
@@ -178,6 +178,17 @@ class CaseCRUDL(SmartCRUDL):
             case.update_summary(request.user, summary)
             return HttpResponse(status=204)
 
+    class Reply(OrgObjPermsMixin, SmartUpdateView):
+        """
+        JSON endpoint for replying in a case
+        """
+        permission = 'cases.case_update'
+
+        def post(self, request, *args, **kwargs):
+            case = self.get_object()
+            outgoing = case.reply(request.user, request.POST['text'])
+            return JsonResponse({'id': outgoing.pk})
+
     class Fetch(OrgPermsMixin, SmartReadView):
         """
         JSON endpoint for fetching a single case
@@ -185,7 +196,7 @@ class CaseCRUDL(SmartCRUDL):
         permission = 'cases.case_read'
 
         def render_to_response(self, context, **response_kwargs):
-            return JsonResponse(self.object.as_json())
+            return JsonResponse(self.object.as_json(), encoder=JSONEncoder)
 
     class Search(OrgPermsMixin, CaseSearchMixin, SmartTemplateView):
         """
@@ -212,7 +223,7 @@ class CaseCRUDL(SmartCRUDL):
             return JsonResponse({
                 'results': [c.as_json() for c in context['object_list']],
                 'has_more': context['has_more']
-            })
+            }, encoder=JSONEncoder)
 
     class Timeline(OrgPermsMixin, SmartReadView):
         """
@@ -250,7 +261,7 @@ class CaseCRUDL(SmartCRUDL):
             return context
 
         def render_to_response(self, context, **response_kwargs):
-            return JsonResponse({'results': context['timeline'], 'max_time': context['max_time']})
+            return JsonResponse({'results': context['timeline'], 'max_time': context['max_time']}, encoder=JSONEncoder)
 
 
 class CaseExportCRUDL(SmartCRUDL):
@@ -451,7 +462,11 @@ class StatusView(View):
         for org in Org.objects.filter(is_active=True):
             old_unhandled += Message.get_unhandled(org).filter(created_on__lt=an_hour_ago).count()
 
-        return JsonResponse({'cache': cache_status, 'org_tasks': org_tasks, 'unhandled': old_unhandled})
+        return JsonResponse({
+            'cache': cache_status,
+            'org_tasks': org_tasks,
+            'unhandled': old_unhandled
+        }, encoder=JSONEncoder)
 
 
 class PingView(View):

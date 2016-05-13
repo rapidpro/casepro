@@ -106,16 +106,16 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     # Reply-to messages
     #----------------------------------------------------------------------------
     replyToMessages: (messages, text, callback) ->
-      # it's generally better to send via URNs but anon orgs won't have them
-      urns = []
-      contacts = []
-      for msg in messages
-        if msg.urn
-          urns.push(msg.urn)
-        else
-          contacts.push(msg.contact.uuid)
+      params = {
+        text: text,
+        messages: (m.id for m in messages)
+      }
 
-      @_messagesSend('B', text, urns, contacts, null, callback)
+      $http.post('/message/bulk_reply/', toFormData(params), DEFAULT_POST_OPTS)
+      .success((data) =>
+        if callback
+          callback()
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Flag or un-flag messages
@@ -180,16 +180,18 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
-    # Reply to a contact in a case
-    #----------------------------------------------------------------------------
-    replyInCase: (text, caseObj, callback) ->
-      @_messagesSend('C', text, [], [caseObj.contact.uuid], caseObj, callback)
-
-    #----------------------------------------------------------------------------
     # Forward a message to a URN
     #----------------------------------------------------------------------------
-    forwardToUrn: (text, urn, callback) ->
-        @_messagesSend('F', text, [urn.urn], [], null, callback)
+    forwardMessage: (message, text, urn, callback) ->
+      params = {
+        text: text,
+        urns: [urn.urn]
+      }
+
+      $http.post('/message/forward/' + message.id + '/', toFormData(params), DEFAULT_POST_OPTS)
+      .success((data) =>
+        callback()
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Convert search object to URL params
@@ -220,24 +222,6 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       .success(() =>
         if callback
           callback()
-      ).error(DEFAULT_ERR_HANDLER)
-
-    #----------------------------------------------------------------------------
-    # POSTs to the messages send endpoint and returns new broadcast id
-    #----------------------------------------------------------------------------
-    _messagesSend: (activity, text, urns, contacts, caseObj, callback) ->
-      params = {
-        activity: activity,
-        text: text,
-        urns: urns,
-        contacts: contacts
-      }
-      if caseObj
-        params.case = caseObj.id
-
-      $http.post('/message/send/', toFormData(params), DEFAULT_POST_OPTS)
-      .success((data) =>
-        callback()
       ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
@@ -419,6 +403,18 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
       $http.post('/case/update_summary/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS)
       .success(() ->
         caseObj.summary = summary
+        if callback
+          callback()
+      ).error(DEFAULT_ERR_HANDLER)
+
+    #----------------------------------------------------------------------------
+    # Reply in a case
+    #----------------------------------------------------------------------------
+    replyToCase: (caseObj, text, callback) ->
+      params = {text: text}
+
+      $http.post('/case/reply/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS)
+      .success(() ->
         if callback
           callback()
       ).error(DEFAULT_ERR_HANDLER)

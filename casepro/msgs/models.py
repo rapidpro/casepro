@@ -5,9 +5,11 @@ import json
 from dash.orgs.models import Org
 from dash.utils import chunks
 from django.contrib.auth.models import User
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
+from django.utils.timezone import now
 from enum import Enum
 from redis_cache import get_redis_connection
 
@@ -397,7 +399,11 @@ class Outgoing(models.Model):
 
     text = models.TextField(max_length=640, null=True)
 
-    backend_id = models.IntegerField(unique=True, help_text=_("Broadcast id from the backend"))
+    backend_id = models.IntegerField(null=True, unique=True, help_text=_("Broadcast id from the backend"))
+
+    contacts = models.ManyToManyField(Contact, related_name='outgoing_messages')
+
+    urns = ArrayField(base_field=models.CharField(max_length=255), default=list)
 
     recipient_count = models.PositiveIntegerField()
 
@@ -408,21 +414,41 @@ class Outgoing(models.Model):
     case = models.ForeignKey('cases.Case', null=True, related_name="outgoing_messages")
 
     @classmethod
+    def create_case_reply(cls, org, user, text, case):
+        return cls.create(org, user, cls.CASE_REPLY, text, [case.contact], [], case)
+
+    @classmethod
+    def create_bulk_reply(cls, org, user, text, messages):
+        contacts = [m.contact for m in messages]
+        return cls.create(org, user, cls.BULK_REPLY, text, contacts, [], None)
+
+    @classmethod
+    def create_forward(cls, org, user, text, urns, original_message):
+        # TODO store reference to original message ?
+
+        return cls.create(org, user, cls.FORWARD, text, [], urns, None)
+
+    @classmethod
     def create(cls, org, user, activity, text, contacts, urns, case=None):
         if not text:
             raise ValueError("Message text cannot be empty")
         if not contacts and not urns:
             raise ValueError("Message must have at least one recipient")
 
-        backend_id, backend_created_on = get_backend().create_outgoing(org, text, list(contacts), urns)
+        outgoing = cls.objects.create(org=org,
+                                      activity=activity,
+                                      text=text,
+                                      urns=urns,
+                                      recipient_count=len(contacts) + len(urns),
+                                      case=case,
+                                      created_by=user,
+                                      created_on=now())
 
-        return cls.objects.create(org=org,
-                                  backend_id=backend_id,
-                                  recipient_count=len(contacts) + len(urns),
-                                  activity=activity, case=case,
-                                  text=text,
-                                  created_by=user,
-                                  created_on=backend_created_on)
+        outgoing.contacts.add(*contacts)
+
+        get_backend().push_outgoing(org, outgoing)
+
+        return outgoing
 
     def as_json(self):
         """

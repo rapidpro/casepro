@@ -136,7 +136,7 @@ modals.controller('ComposeModalController', ['$scope', '$modalInstance', 'title'
 
     if $scope.form.$valid
       urn = {scheme: $scope.fields.urn.scheme, path: $scope.fields.urn.path, urn: ($scope.fields.urn.scheme + ':' + $scope.fields.urn.path)}
-      $modalInstance.close({text: $scope.fields.text, urn: urn})
+      $modalInstance.close({text: $scope.fields.text.val, urn: urn})
 
   $scope.cancel = () -> $modalInstance.dismiss('cancel')
 

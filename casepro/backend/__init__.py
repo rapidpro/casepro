@@ -84,15 +84,12 @@ class BaseBackend(object):
         """
 
     @abstractmethod
-    def create_outgoing(self, org, text, contacts, urns):
+    def push_outgoing(self, org, outgoing):
         """
-        Creates an outgoing broadcast message
+        Pushes (i.e. sends) an outgoing broadcast message
 
         :param org: the org
-        :param text: the message text
-        :param contacts: the contact recipients
-        :param urns: the raw URN recipients
-        :return: tuple of the broadcast id and it's timestamp
+        :param outgoing: the outgoing message
         """
 
     @abstractmethod

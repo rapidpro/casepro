@@ -14,7 +14,7 @@ from redis_cache import get_redis_connection
 
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact
-from casepro.msgs.models import Label, Message
+from casepro.msgs.models import Label, Message, Outgoing
 from casepro.utils.export import BaseExport
 
 
@@ -102,7 +102,7 @@ class case_action(object):
         def wrapped(case, user, *args, **kwargs):
             access = case.access_level(user)
             if (access == AccessLevel.update) or (not self.require_update and access == AccessLevel.read):
-                func(case, user, *args, **kwargs)
+                return func(case, user, *args, **kwargs)
             else:
                 raise PermissionDenied()
         return wrapped
@@ -235,7 +235,7 @@ class Case(models.Model):
             backend = get_backend()
             backend_messages = backend.fetch_contact_messages(self.org, self.contact, after, before)
 
-            local_by_backend_id = {o.backend_id: o for o in local_outgoing}
+            local_by_backend_id = {o.backend_id: o for o in local_outgoing if o.backend_id}
 
             for msg in backend_messages:
                 # annotate with sender from local message if there is one
@@ -308,6 +308,10 @@ class Case(models.Model):
         self.labels.add(label)
 
         CaseAction.create(self, user, CaseAction.LABEL, label=label)
+
+    @case_action()
+    def reply(self, user, text):
+        return Outgoing.create_case_reply(self.org, user, text, self)
 
     @case_action()
     def unlabel(self, user, label):
