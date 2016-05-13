@@ -29,6 +29,10 @@ class MessageFolder(Enum):
     unlabelled = 4
 
 
+class OutgoingFolder(Enum):
+    sent = 1
+
+
 @python_2_unicode_compatible
 class Label(models.Model):
     """
@@ -449,6 +453,23 @@ class Outgoing(models.Model):
         get_backend().push_outgoing(org, outgoing)
 
         return outgoing
+
+    @classmethod
+    def search(cls, org, user, search):
+        text = search.get('text')
+
+        queryset = org.outgoing_messages.all()
+
+        partner = user.get_partner(org)
+        if partner:
+            queryset = queryset.filter(partner=partner)
+
+        if text:
+            queryset = queryset.filter(text__icontains=text)
+
+        queryset = queryset.select_related('partner').prefetch_related('contacts', 'case__assignee')
+
+        return queryset.order_by('-created_on')
 
     def as_json(self):
         """

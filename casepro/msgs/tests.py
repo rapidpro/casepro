@@ -18,7 +18,7 @@ from casepro.contacts.models import Contact
 from casepro.rules.models import ContainsTest, GroupsTest, FieldTest, Quantifier
 from casepro.test import BaseCasesTest
 
-from .models import Label, Message, MessageAction, MessageExport, MessageFolder, Outgoing
+from .models import Label, Message, MessageAction, MessageExport, MessageFolder, Outgoing, OutgoingFolder
 from .tasks import handle_messages, pull_messages
 
 
@@ -819,6 +819,33 @@ class OutgoingTest(BaseCasesTest):
         # can't create a bulk reply with no recipients
         self.assertRaises(ValueError, Outgoing.create_bulk_reply, self.unicef, self.user1, "Hi", [])
 
+    def test_search(self):
+        msg1 = self.create_message(self.unicef, 101, self.ann, "What's for dinner?")
+        case = self.create_case(self.unicef, self.ann, self.moh, msg1)
+
+        out1 = Outgoing.create_bulk_reply(self.unicef, self.admin, "Hello 1", [msg1])
+        out2 = Outgoing.create_bulk_reply(self.unicef, self.user1, "Hello 2", [msg1])
+        out3 = Outgoing.create_case_reply(self.unicef, self.admin, "Hello 3", case)
+        out4 = Outgoing.create_case_reply(self.unicef, self.user1, "Hello 4", case)
+        out5 = Outgoing.create_forward(self.unicef, self.admin, "Hello 5", ["tel:12345"], msg1)
+
+        # other org
+        ned = self.create_contact(self.nyaruka, "C-003", "Ned")
+        msg2 = self.create_message(self.nyaruka, 102, ned, "Bonjour")
+        Outgoing.create_bulk_reply(self.nyaruka, self.user4, "Hello", [msg2])
+
+        def assert_search(user, params, results):
+            self.assertEqual(list(Outgoing.search(self.unicef, user, params)), results)
+
+        assert_search(self.admin, {'folder': OutgoingFolder.sent}, [out5, out4, out3, out2, out1])
+
+        # by partner user
+        assert_search(self.user1, {'folder': OutgoingFolder.sent}, [out4, out2])
+        assert_search(self.user3, {'folder': OutgoingFolder.sent}, [])
+
+        # by text
+        assert_search(self.admin, {'folder': OutgoingFolder.sent, 'text': "LO 5"}, [out5])
+
     def test_as_json(self):
         msg1 = self.create_message(self.unicef, 101, self.ann, "Hello")
         msg2 = self.create_message(self.unicef, 102, self.bob, "Bonjour")
@@ -835,6 +862,48 @@ class OutgoingTest(BaseCasesTest):
             'case': None,
             'sender': {'id': self.user1.pk, 'name': "Evan"}
         })
+
+
+class OutgoingCRUDLTest(BaseCasesTest):
+    def setUp(self):
+        super(OutgoingCRUDLTest, self).setUp()
+
+        self.ann = self.create_contact(self.unicef, "C-001", "Ann")
+        self.bob = self.create_contact(self.unicef, "C-002", "Bob")
+
+    def test_search(self):
+        url = reverse('msgs.outgoing_search')
+
+        msg = self.create_message(self.unicef, 101, self.ann, "What's for dinner?")
+        out1 = Outgoing.create_bulk_reply(self.unicef, self.admin, "Hello 1", [msg])
+        out2 = Outgoing.create_bulk_reply(self.unicef, self.user1, "Hello 2", [msg])
+
+        # test as org administrator
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url, {'folder': 'sent'})
+        self.assertEqual(response.json['results'], [
+            {
+                'id': out2.pk,
+                'contacts': [{'name': "Ann", 'uuid': "C-001"}],
+                'urns': [],
+                'text': "Hello 2",
+                'direction': 'O',
+                'case': None,
+                'sender': {'id': self.user1.pk, 'name': "Evan"},
+                'time': format_iso8601(out2.created_on)
+            },
+            {
+                'id': out1.pk,
+                'contacts': [{'name': "Ann", 'uuid': "C-001"}],
+                'urns': [],
+                'text': "Hello 1",
+                'direction': 'O',
+                'case': None,
+                'sender': {'id': self.admin.pk, 'name': "Kidus"},
+                'time': format_iso8601(out1.created_on)
+            }
+        ])
 
 
 class TasksTest(BaseCasesTest):

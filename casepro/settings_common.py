@@ -303,9 +303,13 @@ PERMISSIONS = {
 
     'orgs.org': ('create', 'update', 'list', 'edit', 'home', 'inbox'),
 
-    'msgs.label': ('create', 'update', 'list', 'unlabelled'),
+    'msgs.label': ('create', 'update', 'list'),
+
+    'msgs.message': ('unlabelled',),
 
     'msgs.messageexport': ('create', 'read'),
+
+    'msgs.outgoing': ('sent',),
 
     'cases.case': ('create', 'read', 'update', 'list'),
 
@@ -327,6 +331,7 @@ GROUP_PERMISSIONS = {
         'msgs.label.*',
         'msgs.message.*',
         'msgs.messageexport.*',
+        'msgs.outgoing.*',
 
         'cases.case.*',
         'cases.caseexport.*',

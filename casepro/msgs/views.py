@@ -15,7 +15,7 @@ from casepro.utils import parse_csv, str_to_bool, json_encode, JSONEncoder
 from casepro.utils.export import BaseDownloadView
 
 from .forms import LabelForm
-from .models import Label, Message, MessageExport, MessageFolder, Outgoing
+from .models import Label, Message, MessageExport, MessageFolder, Outgoing, OutgoingFolder
 from .tasks import message_export
 
 
@@ -155,7 +155,7 @@ class MessageCRUDL(SmartCRUDL):
 
     class Search(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
         """
-        JSON endpoint for fetching messages
+        JSON endpoint for fetching incoming messages
         """
         permission = 'orgs.org_inbox'
 
@@ -308,3 +308,41 @@ class MessageExportCRUDL(SmartCRUDL):
     class Read(BaseDownloadView):
         title = _("Download Messages")
         filename = 'message_export.xls'
+
+
+class OutgoingCRUDL(SmartCRUDL):
+    actions = ('search',)
+    model = Outgoing
+
+    class Search(OrgPermsMixin, SmartTemplateView):
+        """
+        JSON endpoint for fetching outgoing messages
+        """
+        permission = 'orgs.org_inbox'
+
+        def derive_search(self):
+            folder = OutgoingFolder[self.request.GET['folder']]
+            text = self.request.GET.get('text', None)
+
+            return {'folder': folder, 'text': text}
+
+        def get_context_data(self, **kwargs):
+            context = super(OutgoingCRUDL.Search, self).get_context_data(**kwargs)
+
+            org = self.request.org
+            user = self.request.user
+            page = int(self.request.GET.get('page', 1))
+
+            search = self.derive_search()
+            messages = Outgoing.search(org, user, search)
+            paginator = LazyPaginator(messages, per_page=50)
+
+            context['object_list'] = paginator.page(page)
+            context['has_more'] = paginator.num_pages > page
+            return context
+
+        def render_to_response(self, context, **response_kwargs):
+            return JsonResponse({
+                'results': [m.as_json() for m in context['object_list']],
+                'has_more': context['has_more']
+            }, encoder=JSONEncoder)

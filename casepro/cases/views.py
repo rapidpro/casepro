@@ -15,7 +15,7 @@ from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
 
 from casepro.contacts.models import Group
-from casepro.msgs.models import Message, MessageFolder, Label
+from casepro.msgs.models import Label, Message, MessageFolder, OutgoingFolder
 from casepro.utils import parse_csv, json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder
 from casepro.utils.export import BaseDownloadView
 
@@ -416,6 +416,16 @@ class UnlabelledView(BaseHomeView):
     folder = MessageFolder.unlabelled
     folder_icon = 'glyphicon-bullhorn'
     template_name = 'cases/home_messages.haml'
+
+
+class SentView(BaseHomeView):
+    """
+    Outgoing messages view
+    """
+    title = _("Sent")
+    folder = OutgoingFolder.sent
+    folder_icon = 'glyphicon-send'
+    template_name = 'cases/home_outgoing.haml'
 
 
 class OpenCasesView(BaseHomeView):

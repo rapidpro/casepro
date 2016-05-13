@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals
 from django.conf.urls import url
 
 from .views import CaseCRUDL, CaseExportCRUDL, PartnerCRUDL
-from .views import InboxView, FlaggedView, OpenCasesView, ClosedCasesView, ArchivedView, UnlabelledView
+from .views import InboxView, FlaggedView, OpenCasesView, ClosedCasesView, ArchivedView, SentView, UnlabelledView
 from .views import StatusView, PingView
 
 
@@ -16,6 +16,7 @@ urlpatterns += [
     url(r'^flagged/$', FlaggedView.as_view(), name='cases.flagged'),
     url(r'^archived/$', ArchivedView.as_view(), name='cases.archived'),
     url(r'^unlabelled/$', UnlabelledView.as_view(), name='cases.unlabelled'),
+    url(r'^sent/$', SentView.as_view(), name='cases.sent'),
     url(r'^open/$', OpenCasesView.as_view(), name='cases.open'),
     url(r'^closed/$', ClosedCasesView.as_view(), name='cases.closed'),
     url(r'^status$', StatusView.as_view(), name='internal.status'),
