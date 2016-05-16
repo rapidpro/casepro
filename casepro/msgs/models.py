@@ -406,29 +406,32 @@ class Outgoing(models.Model):
 
     recipient_count = models.PositiveIntegerField()
 
+    reply_to = models.ManyToManyField(Message, related_name='replies')
+
+    case = models.ForeignKey('cases.Case', null=True, related_name="outgoing_messages")
+
     created_by = models.ForeignKey(User, related_name="outgoing_messages")
 
     created_on = models.DateTimeField()
 
-    case = models.ForeignKey('cases.Case', null=True, related_name="outgoing_messages")
-
     @classmethod
     def create_case_reply(cls, org, user, text, case):
-        return cls.create(org, user, cls.CASE_REPLY, text, [case.contact], [], case)
+        last_incoming = Message.objects.filter(case=case).order_by('-created_on').first()
+        reply_to = [last_incoming] if last_incoming else []
+
+        return cls.create(org, user, cls.CASE_REPLY, text, [case.contact], [], reply_to, case)
 
     @classmethod
     def create_bulk_reply(cls, org, user, text, messages):
-        contacts = [m.contact for m in messages]
-        return cls.create(org, user, cls.BULK_REPLY, text, contacts, [], None)
+        contacts = set([m.contact for m in messages])
+        return cls.create(org, user, cls.BULK_REPLY, text, contacts, [], messages)
 
     @classmethod
     def create_forward(cls, org, user, text, urns, original_message):
-        # TODO store reference to original message ?
-
-        return cls.create(org, user, cls.FORWARD, text, [], urns, None)
+        return cls.create(org, user, cls.FORWARD, text, [], urns, [original_message])
 
     @classmethod
-    def create(cls, org, user, activity, text, contacts, urns, case=None):
+    def create(cls, org, user, activity, text, contacts, urns, reply_to, case=None):
         if not text:
             raise ValueError("Message text cannot be empty")
         if not contacts and not urns:
@@ -445,6 +448,7 @@ class Outgoing(models.Model):
                                       created_on=now())
 
         outgoing.contacts.add(*contacts)
+        outgoing.reply_to.add(*reply_to)
 
         get_backend().push_outgoing(org, outgoing)
 
