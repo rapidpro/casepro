@@ -20,6 +20,10 @@
         .message-sender
           %a{ ng-href:"/user/read/[[ item.sender.id ]]/" }><
             [[ item.sender.name ]]
+          %br
+          to
+          <ng-pluralize count="item.contacts.length + item.urns.length" when="{'one': '1 recipient', 'other': '{} recipients'}">
+          </ng-pluralize>
         .message-text
           %span.label-container{ ng-if:"item.case" }
             %span.label.label-warning
