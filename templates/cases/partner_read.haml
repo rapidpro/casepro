@@ -11,8 +11,8 @@
     var contextData = {{ context_data_json|safe }};
 
   .ng-cloak{ ng-controller:"PartnerController", ng-cloak:"" }
-    .page-header.clearfix
-      .clearfix
+    .page-header.clearfix{ style:"border-bottom: none" }
+      .clearfix{ style:"margin-bottom: 10px" }
         .page-header-buttons
           - if can_manage
             %a.btn.btn-default{ href:"{% url 'profiles.user_create_in' object.pk %}" }
@@ -29,73 +29,68 @@
             {% thumbnail object.logo "200x80" format="PNG" as im %}
             %img.logo{ src:"{{ im.url }}", alt:"{{ partner.name }}"}
             {% endthumbnail %}
+        %h2
+          {{ object.name }}
+
+      .header-details
+        - if partner.get_labels
+          - for label in partner.get_labels
+            %span.label-container
+              %span.label.label-success
+                {{ label.name }}
+              &nbsp;
         - else
-          %h2
-            {{ object.name }}
+          %i
+            - trans "No labels"
 
-      %ul.header-details
-        - if object.logo
-          %li
-            %strong><
-              - trans "Name"
-            :
-            {{ object.name }}
-        %li
-          %strong><
-            - trans "Labels"
-          :
-          - if partner.get_labels
-            - for label in partner.get_labels
-              %span.label-container
-                %span.label.label-success
-                  {{ label.name }}
-                &nbsp;
-          - else
-            %i
-              - trans "None"
+    <tabset active="active">
+      <tab index="0">
+        <tab-heading>
+          <i class="glyphicon glyphicon-dashboard"></i> Summary
+        </tab-heading>
+        Number of open cases: xxxxx<br/>
+        Number of replies (last 30 days): yyyy<br/>
+        Number of replies (total): zzzz<br/>
 
-    .row
-      .col-md-6
-        .partner-user-section
-          %h3
-            - trans "Managers"
-          - for user in managers
-            .partner-user.stackitem.hoverable{ ng-click:"onClickUser({{ user.pk }})" }
-              .partner-user-name
-                %span.glyphicon.glyphicon-user
-                {{ user.profile.full_name }}
-              .partner-user-email
-                {{ user.email }}
-          - if not managers
-            .none
-              - trans "None"
-      .col-md-6
-        .partner-user-section
-          %h3
-            - trans "Data Analysts"
-          - for user in analysts
-            .partner-user.stackitem.hoverable{ ng-click:"onClickUser({{ user.pk }})" }
-              .partner-user-name
-                %span.glyphicon.glyphicon-user
-                {{ user.profile.full_name }}
-              .partner-user-email
-                {{ user.email }}
-          - if not analysts
-            .none
-              - trans "None"
+      </tab>
+      <tab index="1">
+        <tab-heading>
+          <i class="glyphicon glyphicon-user"></i> Users
+        </tab-heading>
+        - if users
+          %table.table.table-striped
+            %thead
+              %th
+                - trans "Name"
+              %th
+                - trans "Replies (total)"
+              %th
+                - trans "Replies (last 30 days)"
+            %tbody
+              - for user in users
+                %tr
+                  %td
+                    %a{ ng-href:"/user/read/{{ user.id }}/" }><
+                      {{ user.profile.full_name }}
+                  %td
+                    x
+                  %td
+                    y
+        - else
+          .none
+            - trans "None"
+
+      </tab>
+    </tabset>
+
 
 - block extra-style
   {{ block.super }}
   :css
     .partner-logo {
-      padding: 15px 20px 0 0
+      margin: 15px 20px 0 0;
+      border: 1px solid #BBB;
     }
-    .partner-user, .partner-label {
+    .partner-label {
       margin-left: 1em
-    }
-    .partner-user-name, .partner-label {
-      font-size: 1.2em;
-    }
-    .partner-user .glyphicon, .label-name .glyphicon {
-      padding-right: 6px;
     }

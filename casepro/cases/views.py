@@ -323,8 +323,7 @@ class PartnerCRUDL(SmartCRUDL):
 
             context['can_manage'] = self.request.user.can_manage(self.object)
             context['labels'] = self.object.get_labels()
-            context['managers'] = self.object.get_managers()
-            context['analysts'] = self.object.get_analysts()
+            context['users'] = self.object.get_users().order_by('profile__full_name')
             return context
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
