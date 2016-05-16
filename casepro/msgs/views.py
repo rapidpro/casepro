@@ -4,7 +4,6 @@ from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django.db.transaction import non_atomic_requests
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.utils.translation import ugettext_lazy as _
-from django.views.generic import View
 from el_pagination.paginators import LazyPaginator
 from smartmin.views import SmartCRUDL, SmartTemplateView
 from smartmin.views import SmartListView, SmartCreateView, SmartUpdateView, SmartDeleteView
@@ -157,8 +156,6 @@ class MessageCRUDL(SmartCRUDL):
         """
         JSON endpoint for fetching incoming messages
         """
-        permission = 'orgs.org_inbox'
-
         def get_context_data(self, **kwargs):
             context = super(MessageCRUDL.Search, self).get_context_data(**kwargs)
 
@@ -180,12 +177,10 @@ class MessageCRUDL(SmartCRUDL):
                 'has_more': context['has_more']
             }, encoder=JSONEncoder)
 
-    class Action(OrgPermsMixin, View):
+    class Action(OrgPermsMixin, SmartTemplateView):
         """
         AJAX endpoint for bulk message actions. Takes a list of message ids.
         """
-        permission = 'orgs.org_inbox'
-
         @classmethod
         def derive_url_pattern(cls, path, action):
             return r'^message/action/(?P<action>\w+)/$'
@@ -219,12 +214,10 @@ class MessageCRUDL(SmartCRUDL):
 
             return HttpResponse(status=204)
 
-    class Label(OrgPermsMixin, View):
+    class Label(OrgPermsMixin, SmartTemplateView):
         """
         AJAX endpoint for labelling a message.
         """
-        permission = 'orgs.org_inbox'
-
         @classmethod
         def derive_url_pattern(cls, path, action):
             return r'^message/label/(?P<id>\d+)/$'
@@ -243,7 +236,7 @@ class MessageCRUDL(SmartCRUDL):
 
             return HttpResponse(status=204)
 
-    class BulkReply(OrgPermsMixin, View):
+    class BulkReply(OrgPermsMixin, SmartTemplateView):
         """
         JSON endpoint for bulk messages replies
         """
@@ -259,7 +252,7 @@ class MessageCRUDL(SmartCRUDL):
             outgoing = Outgoing.create_bulk_reply(request.org, request.user, text, messages)
             return JsonResponse({'id': outgoing.pk})
 
-    class Forward(OrgPermsMixin, View):
+    class Forward(OrgPermsMixin, SmartTemplateView):
         """
         JSON endpoint for forwarding a message to a URN
         """
@@ -275,12 +268,10 @@ class MessageCRUDL(SmartCRUDL):
             outgoing = Outgoing.create_forward(request.org, request.user, text, urns, message)
             return JsonResponse({'id': outgoing.pk})
 
-    class History(OrgPermsMixin, View):
+    class History(OrgPermsMixin, SmartTemplateView):
         """
         JSON endpoint for fetching message history. Takes a message backend id
         """
-        permission = 'orgs.org_inbox'
-
         @classmethod
         def derive_url_pattern(cls, path, action):
             return r'^message/history/(?P<id>\d+)/$'
@@ -318,8 +309,6 @@ class OutgoingCRUDL(SmartCRUDL):
         """
         JSON endpoint for fetching outgoing messages
         """
-        permission = 'orgs.org_inbox'
-
         def derive_search(self):
             folder = OutgoingFolder[self.request.GET['folder']]
             text = self.request.GET.get('text', None)

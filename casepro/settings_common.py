@@ -305,11 +305,11 @@ PERMISSIONS = {
 
     'msgs.label': ('create', 'update', 'list'),
 
-    'msgs.message': ('unlabelled',),
+    'msgs.message': ('action', 'bulk_reply', 'forward', 'label', 'history', 'search', 'unlabelled'),
 
     'msgs.messageexport': ('create', 'read'),
 
-    'msgs.outgoing': ('sent',),
+    'msgs.outgoing': ('search',),
 
     'cases.case': ('create', 'read', 'update', 'list'),
 
@@ -345,10 +345,15 @@ GROUP_PERMISSIONS = {
     "Editors": (
         'orgs.org_inbox',
 
+        'msgs.message_action',
         'msgs.message_bulk_reply',
         'msgs.message_forward',
+        'msgs.message_history',
+        'msgs.message_label',
+        'msgs.message_search',
         'msgs.messageexport_create',
         'msgs.messageexport_read',
+        'msgs.outgoing_search',
 
         'cases.case_create',
         'cases.case_read',
@@ -365,10 +370,15 @@ GROUP_PERMISSIONS = {
     "Viewers": (
         'orgs.org_inbox',
 
+        'msgs.message_action',
         'msgs.message_bulk_reply',
         'msgs.message_forward',
+        'msgs.message_history',
+        'msgs.message_label',
+        'msgs.message_search',
         'msgs.messageexport_create',
         'msgs.messageexport_read',
+        'msgs.outgoing_search',
 
         'cases.case_create',
         'cases.case_read',

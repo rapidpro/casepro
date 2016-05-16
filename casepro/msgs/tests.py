@@ -587,6 +587,10 @@ class MessageCRUDLTest(BaseCasesTest):
         # different org
         self.create_message(self.nyaruka, 201, nic, "Moar codes", is_handled=True)
 
+        # try unauthenticated
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
         # log in as a non-administrator
         self.login(self.user1)
 
@@ -725,6 +729,10 @@ class MessageCRUDLTest(BaseCasesTest):
         msg2 = self.create_message(self.unicef, 102, self.ann, "Goodbye")
 
         url = reverse('msgs.message_history', kwargs={'id': 102})
+
+        # try unauthenticated
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
 
         # log in as a non-administrator
         self.login(self.user1)
@@ -878,6 +886,10 @@ class OutgoingCRUDLTest(BaseCasesTest):
         out1 = Outgoing.create_bulk_reply(self.unicef, self.admin, "Hello 1", [msg])
         out2 = Outgoing.create_bulk_reply(self.unicef, self.user1, "Hello 2", [msg])
 
+        # try unauthenticated
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
         # test as org administrator
         self.login(self.admin)
 
@@ -902,6 +914,23 @@ class OutgoingCRUDLTest(BaseCasesTest):
                 'case': None,
                 'sender': {'id': self.admin.pk, 'name': "Kidus"},
                 'time': format_iso8601(out1.created_on)
+            }
+        ])
+
+        # test as partner user
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url, {'folder': 'sent'})
+        self.assertEqual(response.json['results'], [
+            {
+                'id': out2.pk,
+                'contacts': [{'name': "Ann", 'uuid': "C-001"}],
+                'urns': [],
+                'text': "Hello 2",
+                'direction': 'O',
+                'case': None,
+                'sender': {'id': self.user1.pk, 'name': "Evan"},
+                'time': format_iso8601(out2.created_on)
             }
         ])
 
