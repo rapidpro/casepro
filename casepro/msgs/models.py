@@ -400,7 +400,7 @@ class Outgoing(models.Model):
 
     activity = models.CharField(max_length=1, choices=ACTIVITY_CHOICES)
 
-    text = models.TextField(max_length=640, null=True)
+    text = models.TextField(max_length=640)
 
     backend_id = models.IntegerField(null=True, unique=True, help_text=_("Broadcast id from the backend"))
 
