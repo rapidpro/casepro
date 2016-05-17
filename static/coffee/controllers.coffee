@@ -180,7 +180,7 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
 
 
 #============================================================================
-# Messages controller
+# Incoming messages controller
 #============================================================================
 controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '$controller', 'MessageService', 'CaseService', 'UtilsService', ($scope, $timeout, $modal, $controller, MessageService, CaseService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
@@ -351,6 +351,36 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     $modal.open({templateUrl: 'messageHistory.html', controller: 'MessageHistoryModalController', resolve: {
       message: () -> message
     }})
+]
+
+
+#============================================================================
+# Outgoing messages controller
+#============================================================================
+controllers.controller 'OutgoingController', [ '$scope', '$controller', 'OutgoingService', ($scope, $controller, OutgoingService) ->
+  $controller('BaseItemsController', {$scope: $scope})
+
+  $scope.init = () ->
+    $scope.searchFields = $scope.searchFieldDefaults()
+    $scope.activeSearch = $scope.buildSearch()
+
+    $scope.$on('activeLabelChange', () ->
+      $scope.onResetSearch()
+    )
+
+  $scope.getItemFilter = () ->
+    return (item) -> true
+
+  $scope.buildSearch = () ->
+    search = angular.copy($scope.searchFields)
+    search.folder = $scope.folder
+    search.timeCode = Date.now()
+    return search
+
+  $scope.searchFieldDefaults = () -> { text: null }
+
+  $scope.fetchOldItems = (callback) ->
+    OutgoingService.fetchOld($scope.activeSearch, $scope.startTime, $scope.oldItemsPage, callback)
 ]
 
 
