@@ -59,10 +59,14 @@
             %li{ class:"{% if_url 'cases.archived' 'active' '' %}" }
               %a{ href:"{% url 'cases.archived' %}" }
                 - trans "Archived"
-            - if perms.msgs.label_unlabelled or org_perms.msgs.label_unlabelled
+            - if perms.msgs.message_unlabelled or org_perms.msgs.message_unlabelled
               %li{ class:"{% if_url 'cases.unlabelled' 'active' '' %}" }
                 %a{ href:"{% url 'cases.unlabelled' %}" }
                   - trans "Unlabelled"
+            - if perms.msgs.outgoing_sent or org_perms.msgs.outgoing_sent
+              %li{ class:"{% if_url 'cases.sent' 'active' '' %}" }
+                %a{ href:"{% url 'cases.sent' %}" }
+                  - trans "Sent"
 
           %h3
             %span.glyphicon.glyphicon-briefcase

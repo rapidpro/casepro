@@ -1,0 +1,55 @@
+- extends "cases/home_base.html"
+- load smartmin i18n
+
+- block home-items
+  .{ ng-controller:"OutgoingController", ng-init:"init()" }
+
+    .search-toolbar
+      %form.clearfix
+        .btn-group.pull-away
+          %button.btn.btn-default{ type:"button", ng-click:"onSearch()" }
+            %span.glyphicon.glyphicon-search
+            - trans "Search"
+
+        %input.form-control{ ng-model:"searchFields.text", type:"text", placeholder:"Search", style:"width: 400px" }
+
+    .messages{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"!isInfiniteScrollEnabled()" }
+      .stackitem.clearfix.hoverable{ ng-repeat:"item in items | filter: getItemFilter()" }
+        .message-time
+          [[ item.time | autodate ]]
+        .message-sender
+          %a{ ng-href:"/user/read/[[ item.sender.id ]]/" }><
+            [[ item.sender.name ]]
+          %br
+          to
+          <ng-pluralize count="item.contacts.length + item.urns.length" when="{'one': '1 recipient', 'other': '{} recipients'}">
+          </ng-pluralize>
+        .message-text
+          %span.label-container{ ng-if:"item.case" }
+            %span.label.label-warning
+              [[ item.case.assignee.name ]]
+            &nbsp;
+          [[ item.text ]]
+
+      .loading{ ng-if:"oldItemsLoading" }
+      .none{ ng-hide:"oldItemsLoading || items.length > 0" }
+        - trans "No messages"
+      .none{ ng-hide:"oldItemsLoading || !hasTooManyItemsToDisplay()" }
+        - trans "Search returned more items than can be displayed"
+
+- block extra-style
+  {{ block.super }}
+  :css
+    .message-time {
+      float: right;
+      font-size: 0.7em;
+      margin-left: 3px;
+      margin-bottom: 3px;
+    }
+    .message-sender {
+      float: left;
+      width: 125px;
+    }
+    .message-text {
+      margin-left: 130px;
+    }
