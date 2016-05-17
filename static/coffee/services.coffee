@@ -36,7 +36,7 @@ toFormData = (params) ->
   return data
 
 #=====================================================================
-# Message service
+# Incoming message service
 #=====================================================================
 
 services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) ->
@@ -229,16 +229,57 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     _processMessages: (messages) ->
       for msg in messages
-        # parse datetime string
-        msg.time = parseIso8601(msg.time)
+        msg.time = parseIso8601(msg.time)  # parse datetime string
 
     #----------------------------------------------------------------------------
     # Processes incoming message actions
     #----------------------------------------------------------------------------
     _processMessageActions: (actions) ->
       for action in actions
-        action.created_on = parseIso8601(action.created_on)
+        action.created_on = parseIso8601(action.created_on)  # parse datetime string
 ]
+
+
+#=====================================================================
+# Incoming message service
+#=====================================================================
+
+services.factory 'OutgoingService', ['$rootScope', '$http', ($rootScope, $http) ->
+  new class OutgoingService
+
+    #----------------------------------------------------------------------------
+    # Fetches old outgoing messages for the given search
+    #----------------------------------------------------------------------------
+    fetchOld: (search, before, page, callback) ->
+      params = @_searchToParams(search)
+      if !search.before
+        params.before = formatIso8601(before)
+      params.page = page
+
+      $http.get('/outgoing/search/?' + $.param(params))
+      .success((data) =>
+        @_processMessages(data.results)
+
+        callback(data.results, data.has_more)
+      ).error(DEFAULT_ERR_HANDLER)
+
+    #----------------------------------------------------------------------------
+    # Convert search object to URL params
+    #----------------------------------------------------------------------------
+    _searchToParams: (search) ->
+      return {
+        folder: search.folder,
+        text: search.text
+      }
+
+    #----------------------------------------------------------------------------
+    # Processes outgoing messages
+    #----------------------------------------------------------------------------
+    _processMessages: (messages) ->
+      for msg in messages
+        msg.time = parseIso8601(msg.time)  # parse datetime string
+]
+
 
 #=====================================================================
 # Label service
