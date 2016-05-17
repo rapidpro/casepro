@@ -805,42 +805,44 @@ class OutgoingTest(BaseCasesTest):
         self.bob = self.create_contact(self.unicef, "C-002", "Bob")
 
     @patch('casepro.test.TestBackend.push_outgoing')
-    def test_create_bulk_reply(self, mock_push_outgoing):
+    def test_create_bulk_replies(self, mock_push_outgoing):
         msg1 = self.create_message(self.unicef, 101, self.ann, "Hello")
         msg2 = self.create_message(self.unicef, 102, self.bob, "Bonjour")
 
-        outgoing = Outgoing.create_bulk_reply(self.unicef, self.user1, "That's great", [msg1, msg2])
+        outgoing = Outgoing.create_bulk_replies(self.unicef, self.user1, "That's great", [msg1, msg2])
 
-        mock_push_outgoing.assert_called_once_with(self.unicef, outgoing)
+        mock_push_outgoing.assert_called_once_with(self.unicef, outgoing, as_broadcast=True)
 
-        self.assertEqual(outgoing.org, self.unicef)
-        self.assertEqual(outgoing.activity, Outgoing.BULK_REPLY)
-        self.assertEqual(outgoing.text, "That's great")
-        self.assertEqual(outgoing.recipient_count, 2)
-        self.assertEqual(outgoing.created_by, self.user1)
-        self.assertEqual(outgoing.case, None)
-        self.assertEqual(six.text_type(outgoing), "That's great")
+        self.assertEqual(len(outgoing), 2)
+        self.assertEqual(outgoing[0].org, self.unicef)
+        self.assertEqual(outgoing[0].partner, self.moh)
+        self.assertEqual(outgoing[0].activity, Outgoing.BULK_REPLY)
+        self.assertEqual(outgoing[0].text, "That's great")
+        self.assertEqual(outgoing[0].contact, self.ann)
+        self.assertEqual(outgoing[0].urns, ())
+        self.assertEqual(outgoing[0].reply_to, msg1)
+        self.assertEqual(outgoing[0].case, None)
+        self.assertEqual(outgoing[0].created_by, self.user1)
+        self.assertEqual(six.text_type(outgoing[0]), "That's great")
+        self.assertEqual(outgoing[1].contact, self.bob)
+        self.assertEqual(outgoing[1].reply_to, msg2)
 
-        # can't create a bulk reply with no text
-        self.assertRaises(ValueError, Outgoing.create_bulk_reply, self.unicef, self.user1, "", [msg1])
+        # can't create bulk replies with no text
+        self.assertRaises(ValueError, Outgoing.create_bulk_replies, self.unicef, self.user1, "", [msg1])
 
-        # can't create a bulk reply with no recipients
-        self.assertRaises(ValueError, Outgoing.create_bulk_reply, self.unicef, self.user1, "Hi", [])
+        # can't create bulk replies with no recipients
+        self.assertRaises(ValueError, Outgoing.create_bulk_replies, self.unicef, self.user1, "Hi", [])
 
     def test_search(self):
-        msg1 = self.create_message(self.unicef, 101, self.ann, "What's for dinner?")
-        case = self.create_case(self.unicef, self.ann, self.moh, msg1)
-
-        out1 = Outgoing.create_bulk_reply(self.unicef, self.admin, "Hello 1", [msg1])
-        out2 = Outgoing.create_bulk_reply(self.unicef, self.user1, "Hello 2", [msg1])
-        out3 = Outgoing.create_case_reply(self.unicef, self.admin, "Hello 3", case)
-        out4 = Outgoing.create_case_reply(self.unicef, self.user1, "Hello 4", case)
-        out5 = Outgoing.create_forward(self.unicef, self.admin, "Hello 5", ["tel:12345"], msg1)
+        out1 = self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello 1", self.ann)
+        out2 = self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann, partner=self.moh)
+        out3 = self.create_outgoing(self.unicef, self.admin, 203, 'C', "Hello 3", self.ann)
+        out4 = self.create_outgoing(self.unicef, self.user1, 204, 'C', "Hello 4", self.ann, partner=self.moh)
+        out5 = self.create_outgoing(self.unicef, self.admin, 205, 'F', "Hello 5", None)
 
         # other org
         ned = self.create_contact(self.nyaruka, "C-003", "Ned")
-        msg2 = self.create_message(self.nyaruka, 102, ned, "Bonjour")
-        Outgoing.create_bulk_reply(self.nyaruka, self.user4, "Hello", [msg2])
+        self.create_outgoing(self.nyaruka, self.user4, 201, 'B', "Hello", ned)
 
         def assert_search(user, params, results):
             self.assertEqual(list(Outgoing.search(self.unicef, user, params)), results)
@@ -856,13 +858,11 @@ class OutgoingTest(BaseCasesTest):
 
     def test_as_json(self):
         msg1 = self.create_message(self.unicef, 101, self.ann, "Hello")
-        msg2 = self.create_message(self.unicef, 102, self.bob, "Bonjour")
-
-        outgoing = Outgoing.create_bulk_reply(self.unicef, self.user1, "That's great", [msg1, msg2])
+        outgoing = self.create_outgoing(self.unicef, self.user1, 201, 'B', "That's great", self.ann, reply_to=msg1)
 
         self.assertEqual(outgoing.as_json(), {
             'id': outgoing.pk,
-            'contacts': [{'uuid': "C-001", 'name': "Ann"}, {'uuid': "C-002", 'name': "Bob"}],
+            'contact': {'uuid': "C-001", 'name': "Ann"},
             'urns': [],
             'text': "That's great",
             'time': outgoing.created_on,
