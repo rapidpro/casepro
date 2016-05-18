@@ -197,16 +197,16 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     # Convert search object to URL params
     #----------------------------------------------------------------------------
     _searchToParams: (search) ->
-      params = {}
-      params.folder = search.folder
-      params.text = search.text
-      params.after = formatIso8601(search.after)
-      params.before = formatIso8601(search.before)
-      params.groups = (g.uuid for g in search.groups).join(',')
-      params.contact = if search.contact then search.contact.uuid else null
-      params.label = if search.label then search.label.id else null
-      params.archived = if search.archived then 1 else 0
-      return params
+      return {
+        folder: search.folder,
+        text: search.text,
+        after: formatIso8601(search.after),
+        before: formatIso8601(search.before),
+        groups: (g.uuid for g in search.groups).join(','),
+        contact: if search.contact then search.contact.uuid else null,
+        label: if search.label then search.label.id else null,
+        archived: if search.archived then 1 else 0
+      }
 
     #----------------------------------------------------------------------------
     # POSTs to the messages action endpoint
