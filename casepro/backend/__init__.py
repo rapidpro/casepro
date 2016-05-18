@@ -90,7 +90,7 @@ class BaseBackend(object):
 
         :param org: the org
         :param outgoing: the outgoing messages
-        :param as_broadcast: whether the outgoing messages differ only by recipient and so can be sent as single broadcast
+        :param as_broadcast: whether outgoing messages differ only by recipient and so can be sent as single broadcast
         """
 
     @abstractmethod
