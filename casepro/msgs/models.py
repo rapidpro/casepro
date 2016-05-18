@@ -477,7 +477,7 @@ class Outgoing(models.Model):
         if contact_uuid:
             queryset = queryset.filter(contact__uuid=contact_uuid)
 
-        queryset = queryset.select_related('partner', 'contact', 'case__assignee')
+        queryset = queryset.select_related('partner', 'contact', 'case__assignee', 'created_by__profile')
 
         return queryset.order_by('-created_on')
 
@@ -492,7 +492,7 @@ class Outgoing(models.Model):
             'text': self.text,
             'time': self.created_on,
             'direction': self.DIRECTION,
-            'case': self.case.as_json() if self.case else None,
+            'case': self.case.as_json(full=False) if self.case else None,
             'sender': self.created_by.as_json()
         }
 
