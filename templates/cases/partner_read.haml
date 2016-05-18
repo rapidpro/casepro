@@ -10,7 +10,7 @@
   %script{ type:"text/javascript" }
     var contextData = {{ context_data_json|safe }};
 
-  .ng-cloak{ ng-controller:"PartnerController", ng-cloak:"" }
+  .ng-cloak{ ng-controller:"PartnerController", ng-init:"init()", ng-cloak:"" }
     .page-header.clearfix{ style:"border-bottom: none" }
       .clearfix{ style:"margin-bottom: 10px" }
         .page-header-buttons
@@ -63,19 +63,26 @@
               %th
                 - trans "Name"
               %th
-                - trans "Replies (total)"
+                - trans "Role"
               %th
-                - trans "Replies (last 30 days)"
+                - trans "Replies (this month)"
+              %th
+                - trans "Replies (last month)"
+              %th
+                - trans "Replies (total)"
             %tbody
-              - for user in users
-                %tr
-                  %td
-                    %a{ ng-href:"/user/read/{{ user.id }}/" }><
-                      {{ user.profile.full_name }}
-                  %td
-                    x
-                  %td
-                    y
+              %tr{ ng-repeat:"user in users" }
+                %td
+                  %a{ ng-href:"/user/read/[[ user.id ]]/" }><
+                    [[ user.name ]]
+                %td
+                  [[ user.role ]]
+                %td
+                  [[ user.replies.this_month ]]
+                %td
+                  [[ user.replies.last_month ]]
+                %td
+                  [[ user.replies.total ]]
         - else
           .none
             - trans "None"

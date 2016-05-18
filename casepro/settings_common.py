@@ -313,7 +313,7 @@ PERMISSIONS = {
 
     'cases.case': ('create', 'read', 'update', 'list'),
 
-    'cases.partner': ('create', 'read', 'delete', 'list'),
+    'cases.partner': ('create', 'read', 'delete', 'list', 'users'),
 
     'contacts.group': ('select', 'list'),
 
@@ -363,6 +363,7 @@ GROUP_PERMISSIONS = {
         'cases.caseexport_read',
         'cases.partner_list',
         'cases.partner_read',
+        'cases.partner_users',
 
         'profiles.profile_user_create',
         'profiles.profile_user_read',
@@ -388,6 +389,7 @@ GROUP_PERMISSIONS = {
         'cases.caseexport_read',
         'cases.partner_list',
         'cases.partner_read',
+        'cases.partner_users',
 
         'profiles.profile_user_read',
     ),

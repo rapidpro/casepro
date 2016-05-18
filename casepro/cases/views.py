@@ -4,6 +4,7 @@ from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from datetime import timedelta
 from django.core.cache import cache
+from django.db.models import Count
 from django.db.transaction import non_atomic_requests
 from django.http import HttpResponse, JsonResponse
 from django.utils.timezone import now
@@ -15,8 +16,9 @@ from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
 
 from casepro.contacts.models import Group
-from casepro.msgs.models import Label, Message, MessageFolder, OutgoingFolder
+from casepro.msgs.models import Label, Message, MessageFolder, Outgoing, OutgoingFolder
 from casepro.utils import parse_csv, json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder
+from casepro.utils import month_range
 from casepro.utils.export import BaseDownloadView
 
 from . import MAX_MESSAGE_CHARS
@@ -291,7 +293,7 @@ class PartnerFormMixin(object):
 
 
 class PartnerCRUDL(SmartCRUDL):
-    actions = ('create', 'read', 'update', 'delete', 'list')
+    actions = ('create', 'read', 'update', 'delete', 'list', 'users')
     model = Partner
 
     class Create(OrgPermsMixin, PartnerFormMixin, SmartCreateView):
@@ -339,6 +341,46 @@ class PartnerCRUDL(SmartCRUDL):
 
         def get_queryset(self, **kwargs):
             return Partner.get_all(self.request.org).order_by('name')
+
+    class Users(OrgPermsMixin, SmartReadView):
+        """
+        JSON endpoint to fetch partner users with their activity information
+        """
+        permission = 'cases.partner_read'
+
+        def calculate_user_counts(self, partner, since, until):
+            replies = Outgoing.objects.filter(org=partner.org, partner=partner)
+            if since:
+                replies = replies.filter(created_on__gte=since)
+            if until:
+                replies = replies.filter(created_on__lt=until)
+
+            counts = replies.values('created_by').annotate(replies=Count('pk'))
+            return {c['created_by']: c['replies'] for c in counts}
+
+        def get(self, request, *args, **kwargs):
+            partner = self.get_object()
+            managers = set(partner.get_managers())
+            all_users = list(partner.get_users().order_by('profile__full_name'))
+
+            # get reply statistics
+            total = self.calculate_user_counts(partner, None, None)
+            this_month = self.calculate_user_counts(partner, *month_range(0))
+            last_month = self.calculate_user_counts(partner, *month_range(-1))
+
+            def user_as_json(user):
+                obj = user.as_json()
+                obj.update({
+                    'role': "Manager" if user in managers else "Analyst",
+                    'replies': {
+                        'this_month': this_month.get(user.pk, 0),
+                        'last_month': last_month.get(user.pk, 0),
+                        'total': total.get(user.pk, 0)
+                    }
+                })
+                return obj
+
+            return JsonResponse({'users': [user_as_json(u) for u in all_users]})
 
 
 class BaseHomeView(OrgPermsMixin, SmartTemplateView):

@@ -7,6 +7,7 @@ import pytz
 import re
 import unicodedata
 
+from dateutil.relativedelta import relativedelta
 from enum import Enum
 from temba_client.utils import format_iso8601
 
@@ -106,3 +107,16 @@ def microseconds_to_datetime(ms):
     Converts a microsecond accuracy timestamp to a datetime
     """
     return datetime.datetime.utcfromtimestamp(ms / 1000000.0).replace(tzinfo=pytz.utc)
+
+
+def month_range(offset, now=None):
+    """
+    Gets the UTC start and end (exclusive) of a month
+    :param offset: 0 = this month, -1 last month, 1 = next month etc
+    :return: the start and end datetimes as a tuple
+    """
+    now = now.astimezone(pytz.UTC) if now else datetime.datetime.utcnow()
+
+    start_of_this_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    return start_of_this_month + relativedelta(months=offset), start_of_this_month + relativedelta(months=offset + 1)

@@ -9,7 +9,7 @@ from enum import Enum
 from casepro.test import BaseCasesTest
 
 from . import safe_max, normalize, match_keywords, truncate, str_to_bool, json_encode
-from . import datetime_to_microseconds, microseconds_to_datetime
+from . import datetime_to_microseconds, microseconds_to_datetime, month_range
 
 
 class UtilsTest(BaseCasesTest):
@@ -74,3 +74,13 @@ class UtilsTest(BaseCasesTest):
         ]
 
         self.assertEqual(json_encode(data), '["string", "2015-10-09T14:48:30.123456", "bar", {"bar": "X"}]')
+
+    def test_month_range(self):
+        d1 = datetime(2015, 10, 9, 14, 48, 30, 123456, tzinfo=pytz.utc).astimezone(pytz.timezone("Africa/Kigali"))
+
+        self.assertEqual(month_range(0, now=d1), (datetime(2015, 10, 1, 0, 0, 0, 0, pytz.UTC),
+                                                  datetime(2015, 11, 1, 0, 0, 0, 0, pytz.UTC)))
+        self.assertEqual(month_range(1, now=d1), (datetime(2015, 11, 1, 0, 0, 0, 0, pytz.UTC),
+                                                  datetime(2015, 12, 1, 0, 0, 0, 0, pytz.UTC)))
+        self.assertEqual(month_range(-1, now=d1), (datetime(2015, 9, 1, 0, 0, 0, 0, pytz.UTC),
+                                                   datetime(2015, 10, 1, 0, 0, 0, 0, pytz.UTC)))

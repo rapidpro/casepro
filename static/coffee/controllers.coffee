@@ -571,9 +571,12 @@ controllers.controller 'CaseTimelineController', [ '$scope', '$timeout', 'CaseSe
 controllers.controller 'PartnerController', [ '$scope', '$window', 'UtilsService', 'PartnerService', ($scope, $window, UtilsService, PartnerService) ->
 
   $scope.partner = $window.contextData.partner
+  $scope.users = []
 
-  $scope.onClickUser = (userId) ->
-    UtilsService.navigate('/user/read/' + userId + '/')
+  $scope.init = () ->
+    PartnerService.fetchUsers($scope.partner, (users) ->
+      $scope.users = users
+    )
 
   $scope.onDeletePartner = () ->
     UtilsService.confirmModal("Remove this partner organization?", 'danger', () ->
