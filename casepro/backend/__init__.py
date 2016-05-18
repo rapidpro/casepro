@@ -84,12 +84,13 @@ class BaseBackend(object):
         """
 
     @abstractmethod
-    def push_outgoing(self, org, outgoing):
+    def push_outgoing(self, org, outgoing, as_broadcast=False):
         """
-        Pushes (i.e. sends) an outgoing broadcast message
+        Pushes (i.e. sends) outgoing messages
 
         :param org: the org
-        :param outgoing: the outgoing message
+        :param outgoing: the outgoing messages
+        :param as_broadcast: whether outgoing messages differ only by recipient and so can be sent as single broadcast
         """
 
     @abstractmethod

@@ -8,14 +8,14 @@ from dash.orgs.models import Org
 from dash.test import MockClientQuery
 from datetime import datetime, timedelta
 from django.utils.timezone import now
-from mock import patch
+from mock import call, patch
 from temba_client.v1.types import Broadcast as TembaBroadcast
 from temba_client.v2.types import Group as TembaGroup, Field as TembaField, Label as TembaLabel, ObjectRef
 from temba_client.v2.types import Contact as TembaContact, Message as TembaMessage
 from unittest import skip
 
 from casepro.contacts.models import Contact, Field, Group
-from casepro.msgs.models import Label, Message, Outgoing
+from casepro.msgs.models import Label, Message
 from casepro.test import BaseCasesTest
 
 from ..rapidpro import RapidProBackend, ContactSyncer, MessageSyncer
@@ -547,33 +547,56 @@ class RapidProBackendTest(BaseCasesTest):
 
     @patch('dash.orgs.models.TembaClient1.create_broadcast')
     def test_push_outgoing(self, mock_create_broadcast):
-        msg1 = self.create_message(self.unicef, 101, self.ann, "Hello")
-        msg2 = self.create_message(self.unicef, 102, self.bob, "Bonjour")
+        # test with replies sent separately
+        mock_create_broadcast.side_effect = [
+            TembaBroadcast.create(id=201, text="That's great", urns=[], contacts=["C-001"]),
+            TembaBroadcast.create(id=202, text="That's great", urns=[], contacts=["C-002"]),
+        ]
 
-        mock_create_broadcast.return_value = TembaBroadcast.create(id=201, text="That's great",
-                                                                   urns=[], contacts=["C-001", "C-002"])
+        out1 = self.create_outgoing(self.unicef, self.user1, None, 'B', "That's great", self.ann)
+        out2 = self.create_outgoing(self.unicef, self.user1, None, 'B', "That's great", self.bob)
+        self.backend.push_outgoing(self.unicef, [out1, out2])
 
-        # test with bulk reply
-        out1 = Outgoing.create_bulk_reply(self.unicef, self.user1, "That's great", [msg1, msg2])
-        self.backend.push_outgoing(self.unicef, out1)
-
-        mock_create_broadcast.assert_called_once_with(text="That's great", contacts=["C-001", "C-002"], urns=[])
+        mock_create_broadcast.assert_has_calls([
+            call(text="That's great", urns=[], contacts=["C-001"]),
+            call(text="That's great", urns=[], contacts=["C-002"])
+        ])
         mock_create_broadcast.reset_mock()
 
         out1.refresh_from_db()
-        self.assertEqual(out1.backend_id, 201)
-
-        mock_create_broadcast.return_value = TembaBroadcast.create(id=202, text="That's great",
-                                                                   urns=["tel:+250783935665"], contacts=[])
-
-        # test with forward
-        out2 = Outgoing.create_forward(self.unicef, self.user1, "That's great", ["tel:+250783935665"], msg1)
-        self.backend.push_outgoing(self.unicef, out2)
-
-        mock_create_broadcast.assert_called_once_with(text="That's great", contacts=[], urns=["tel:+250783935665"])
-
         out2.refresh_from_db()
-        self.assertEqual(out2.backend_id, 202)
+        self.assertEqual(out1.backend_broadcast_id, 201)
+        self.assertEqual(out2.backend_broadcast_id, 202)
+
+        # test with replies sent as single broadcast
+        mock_create_broadcast.side_effect = [
+            TembaBroadcast.create(id=203, text="That's great", urns=[], contacts=["C-001", "C-002"])
+        ]
+
+        out3 = self.create_outgoing(self.unicef, self.user1, None, 'B', "Hello", self.ann)
+        out4 = self.create_outgoing(self.unicef, self.user1, None, 'B', "Hello", self.bob)
+        self.backend.push_outgoing(self.unicef, [out3, out4], as_broadcast=True)
+
+        mock_create_broadcast.assert_called_once_with(text="Hello", contacts=["C-001", "C-002"], urns=[])
+        mock_create_broadcast.reset_mock()
+
+        out3.refresh_from_db()
+        out4.refresh_from_db()
+        self.assertEqual(out3.backend_broadcast_id, 203)
+        self.assertEqual(out4.backend_broadcast_id, 203)
+
+        # test with a forward
+        mock_create_broadcast.side_effect = [
+            TembaBroadcast.create(id=204, text="FYI", urns=["tel:+250783935665"], contacts=[])
+        ]
+
+        out5 = self.create_outgoing(self.unicef, self.user1, None, 'F', "FYI", None, urns=["tel:+250783935665"])
+        self.backend.push_outgoing(self.unicef, [out5])
+
+        mock_create_broadcast.assert_called_once_with(text="FYI", contacts=[], urns=["tel:+250783935665"])
+
+        out5.refresh_from_db()
+        self.assertEqual(out5.backend_broadcast_id, 204)
 
     @patch('dash.orgs.models.TembaClient1.add_contacts')
     def test_add_to_group(self, mock_add_contacts):
@@ -685,9 +708,6 @@ class RapidProBackendTest(BaseCasesTest):
 
     @patch('dash.orgs.models.TembaClient2.get_messages')
     def test_fetch_contact_messages(self, mock_get_messages):
-        msg = self.create_message(self.unicef, 123, self.bob, "Hello")
-        outgoing = Outgoing.create_bulk_reply(self.unicef, self.user1, "OK", [msg])
-
         d1 = datetime(2015, 1, 2, 13, 0, tzinfo=pytz.UTC)
         d2 = datetime(2015, 1, 2, 14, 0, tzinfo=pytz.UTC)
         d3 = datetime(2015, 1, 2, 15, 0, tzinfo=pytz.UTC)
@@ -719,13 +739,10 @@ class RapidProBackendTest(BaseCasesTest):
 
         messages = self.backend.fetch_contact_messages(self.unicef, self.ann, d1, d3)
 
-        # check that JSON schemas match local outgoing model
-        self.assertEqual(messages[0].keys(), outgoing.as_json().keys())
-
         self.assertEqual(messages, [
             {
                 'id': 201,  # id is the broadcast id
-                'contacts': [{'uuid': "C-001", 'name': "Ann"}],
+                'contact': {'uuid': "C-001", 'name': "Ann"},
                 'urns': [],
                 'text': "Welcome",
                 'time': d3,
@@ -734,6 +751,10 @@ class RapidProBackendTest(BaseCasesTest):
                 'sender': None,
             }
         ])
+
+        # check that JSON schemas match local outgoing model
+        outgoing = self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello", self.ann)
+        self.assertEqual(messages[0].keys(), outgoing.as_json().keys())
 
 
 @skip

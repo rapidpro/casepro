@@ -110,17 +110,12 @@ class BaseCasesTest(DashTest):
         msg.labels.add(*labels)
         return msg
 
-    def create_outgoing(self, org, user, backend_id, activity, text, case, **kwargs):
-        if 'recipient_count' not in kwargs:
-            kwargs['recipient_count'] = 0
-        if 'created_on' not in kwargs:
-            kwargs['created_on'] = now()
-
+    def create_outgoing(self, org, user, broadcast_id, activity, text, contact, **kwargs):
         return Outgoing.objects.create(org=org,
-                                       backend_id=backend_id,
+                                       backend_broadcast_id=broadcast_id,
                                        activity=activity,
                                        text=text,
-                                       case=case,
+                                       contact=contact,
                                        created_by=user,
                                        **kwargs)
 

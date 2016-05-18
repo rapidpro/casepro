@@ -558,8 +558,7 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 200)
 
     @patch('casepro.test.TestBackend.fetch_contact_messages')
-    @patch('casepro.test.TestBackend.push_outgoing')
-    def test_timeline(self, mock_push_outgoing, mock_fetch_contact_messages):
+    def test_timeline(self, mock_fetch_contact_messages):
         CaseAction.objects.all().delete()
         Case.objects.all().delete()
         Message.objects.all().delete()
@@ -579,9 +578,9 @@ class CaseCRUDLTest(BaseCasesTest):
         # backend has a message in the case time window that we don't have locally
         remote_message1 = {
             'id': 102,
-            'contacts': [{'uuid': "C-001", 'name': "Ann"}],
+            'contact': {'uuid': "C-001", 'name': "Ann"},
             'urns': [],
-            'text': "Unrelated message from backend...",
+            'text': "Non casepro message...",
             'time': d2,
             'direction': 'O',
             'case': None,
@@ -604,8 +603,8 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'][0]['item']['contact'], {'uuid': "C-001", 'name': "Ann"})
         self.assertEqual(response.json['results'][0]['item']['direction'], 'I')
         self.assertEqual(response.json['results'][1]['type'], 'M')
-        self.assertEqual(response.json['results'][1]['item']['text'], "Unrelated message from backend...")
-        self.assertEqual(response.json['results'][1]['item']['contacts'], [{'uuid': "C-001", 'name': "Ann"}])
+        self.assertEqual(response.json['results'][1]['item']['text'], "Non casepro message...")
+        self.assertEqual(response.json['results'][1]['item']['contact'], {'uuid': "C-001", 'name': "Ann"})
         self.assertEqual(response.json['results'][1]['item']['direction'], 'O')
         self.assertEqual(response.json['results'][2]['type'], 'A')
         self.assertEqual(response.json['results'][2]['item']['action'], 'O')
@@ -639,7 +638,7 @@ class CaseCRUDLTest(BaseCasesTest):
         # user sends an outgoing message
         d3 = timezone.now()
         outgoing = Outgoing.create_case_reply(self.unicef, self.user1, "It's bad", case)
-        outgoing.backend_id = 202
+        outgoing.backend_broadcast_id = 202
         outgoing.save()
 
         # page again looks for new timeline activity
@@ -699,7 +698,7 @@ class CaseCRUDLTest(BaseCasesTest):
         mock_fetch_contact_messages.return_value = [
             {
                 'id': 202,
-                'contacts': [{'uuid': "C-001", 'name': "Ann"}],
+                'contact': {'uuid': "C-001", 'name': "Ann"},
                 'urns': [],
                 'text': "It's bad",
                 'time': d3,
@@ -720,8 +719,8 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(items[0]['item']['contact'], {'uuid': "C-001", 'name': "Ann"})
         self.assertEqual(items[0]['item']['direction'], 'I')
         self.assertEqual(items[1]['type'], 'M')
-        self.assertEqual(items[1]['item']['text'], "Unrelated message from backend...")
-        self.assertEqual(items[1]['item']['contacts'], [{'uuid': "C-001", 'name': "Ann"}])
+        self.assertEqual(items[1]['item']['text'], "Non casepro message...")
+        self.assertEqual(items[1]['item']['contact'], {'uuid': "C-001", 'name': "Ann"})
         self.assertEqual(items[1]['item']['direction'], 'O')
         self.assertEqual(items[1]['item']['sender'], None)
         self.assertEqual(items[2]['type'], 'A')
@@ -761,9 +760,9 @@ class CaseExportCRUDLTest(BaseCasesTest):
         case4.close(self.user1)
 
         # add some messages to first case
-        self.create_outgoing(self.unicef, self.user1, 201, Outgoing.CASE_REPLY, "Good question", case=case1)
+        self.create_outgoing(self.unicef, self.user1, 201, Outgoing.CASE_REPLY, "Good question", ann, case=case1)
         self.create_message(self.unicef, 105, ann, "I know", case=case1)
-        self.create_outgoing(self.unicef, self.user1, 202, Outgoing.CASE_REPLY, "It's bad", case=case1)
+        self.create_outgoing(self.unicef, self.user1, 202, Outgoing.CASE_REPLY, "It's bad", ann, case=case1)
         self.create_message(self.unicef, 106, ann, "Ok", case=case1)
         self.create_message(self.unicef, 107, ann, "U-Report rocks!", case=case1)
 

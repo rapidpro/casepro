@@ -218,7 +218,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     search = angular.copy($scope.searchFields)
     search.folder = $scope.folder
     search.label = $scope.activeLabel
-    search.contact = if $scope.activeContact then $scope.activeContact.uuid else null
+    search.contact = $scope.activeContact
     search.timeCode = Date.now()
     return search
 
@@ -367,6 +367,9 @@ controllers.controller 'OutgoingController', [ '$scope', '$controller', 'Outgoin
     $scope.$on('activeLabelChange', () ->
       $scope.onResetSearch()
     )
+    $scope.$on('activeContactChange', () ->
+      $scope.onResetSearch()
+    )
 
   $scope.getItemFilter = () ->
     return (item) -> true
@@ -374,6 +377,7 @@ controllers.controller 'OutgoingController', [ '$scope', '$controller', 'Outgoin
   $scope.buildSearch = () ->
     search = angular.copy($scope.searchFields)
     search.folder = $scope.folder
+    search.contact = $scope.activeContact
     search.timeCode = Date.now()
     return search
 

@@ -402,65 +402,68 @@ class Outgoing(models.Model):
 
     text = models.TextField(max_length=640)
 
-    backend_id = models.IntegerField(null=True, unique=True, help_text=_("Broadcast id from the backend"))
+    backend_broadcast_id = models.IntegerField(null=True, help_text=_("Broadcast id from the backend"))
 
-    contacts = models.ManyToManyField(Contact, related_name='outgoing_messages')
+    contact = models.ForeignKey(Contact, null=True, related_name='outgoing_messages')  # used for case and bulk replies
 
-    urns = ArrayField(base_field=models.CharField(max_length=255), default=list)
+    urns = ArrayField(base_field=models.CharField(max_length=255), default=list)  # used for forwards
 
-    recipient_count = models.PositiveIntegerField()
+    reply_to = models.ForeignKey(Message, null=True, related_name='replies')
 
-    reply_to = models.ManyToManyField(Message, related_name='replies')
+    case = models.ForeignKey('cases.Case', null=True, related_name='outgoing_messages')
 
-    case = models.ForeignKey('cases.Case', null=True, related_name="outgoing_messages")
+    created_by = models.ForeignKey(User, related_name='outgoing_messages')
 
-    created_by = models.ForeignKey(User, related_name="outgoing_messages")
+    created_on = models.DateTimeField(default=now)
 
-    created_on = models.DateTimeField()
+    @classmethod
+    def create_bulk_replies(cls, org, user, text, messages):
+        if not messages:
+            raise ValueError("Must specify at least one message to reply to")
+
+        replies = []
+        for incoming in messages:
+            reply = cls._create(org, user, cls.BULK_REPLY, text, incoming, contact=incoming.contact, push=False)
+            replies.append(reply)
+
+        # push together as a single broadcast
+        get_backend().push_outgoing(org, replies, as_broadcast=True)
+
+        return replies
 
     @classmethod
     def create_case_reply(cls, org, user, text, case):
-        last_incoming = Message.objects.filter(case=case).order_by('-created_on').first()
-        reply_to = [last_incoming] if last_incoming else []
+        # will be a reply to the last message from the contact
+        last_incoming = case.incoming_messages.order_by('-created_on').first()
 
-        return cls.create(org, user, cls.CASE_REPLY, text, [case.contact], [], reply_to, case)
-
-    @classmethod
-    def create_bulk_reply(cls, org, user, text, messages):
-        contacts = set([m.contact for m in messages])
-        return cls.create(org, user, cls.BULK_REPLY, text, contacts, [], messages)
+        return cls._create(org, user, cls.CASE_REPLY, text, last_incoming, contact=case.contact, case=case)
 
     @classmethod
     def create_forward(cls, org, user, text, urns, original_message):
-        return cls.create(org, user, cls.FORWARD, text, [], urns, [original_message])
+        return cls._create(org, user, cls.FORWARD, text, original_message, urns=urns)
 
     @classmethod
-    def create(cls, org, user, activity, text, contacts, urns, reply_to, case=None):
+    def _create(cls, org, user, activity, text, reply_to, contact=None, urns=(), case=None, push=True):
         if not text:
             raise ValueError("Message text cannot be empty")
-        if not contacts and not urns:
+        if not contact and not urns:
             raise ValueError("Message must have at least one recipient")
 
-        outgoing = cls.objects.create(org=org,
-                                      partner=user.get_partner(org),
-                                      activity=activity,
-                                      text=text,
-                                      urns=urns,
-                                      recipient_count=len(contacts) + len(urns),
-                                      case=case,
-                                      created_by=user,
-                                      created_on=now())
+        msg = cls.objects.create(org=org, partner=user.get_partner(org),
+                                 activity=activity, text=text,
+                                 contact=contact, urns=urns,
+                                 reply_to=reply_to, case=case,
+                                 created_by=user)
 
-        outgoing.contacts.add(*contacts)
-        outgoing.reply_to.add(*reply_to)
+        if push:
+            get_backend().push_outgoing(org, [msg])
 
-        get_backend().push_outgoing(org, outgoing)
-
-        return outgoing
+        return msg
 
     @classmethod
     def search(cls, org, user, search):
         text = search.get('text')
+        contact_uuid = search.get('contact')
 
         queryset = org.outgoing_messages.all()
 
@@ -471,7 +474,10 @@ class Outgoing(models.Model):
         if text:
             queryset = queryset.filter(text__icontains=text)
 
-        queryset = queryset.select_related('partner').prefetch_related('contacts', 'case__assignee')
+        if contact_uuid:
+            queryset = queryset.filter(contact__uuid=contact_uuid)
+
+        queryset = queryset.select_related('partner', 'contact', 'case__assignee', 'created_by__profile')
 
         return queryset.order_by('-created_on')
 
@@ -481,12 +487,12 @@ class Outgoing(models.Model):
         """
         return {
             'id': self.pk,
-            'contacts': [c.as_json(full=False) for c in self.contacts.all()],
+            'contact': self.contact.as_json(full=False) if self.contact else None,
             'urns': self.urns,
             'text': self.text,
             'time': self.created_on,
             'direction': self.DIRECTION,
-            'case': self.case.as_json() if self.case else None,
+            'case': self.case.as_json(full=False) if self.case else None,
             'sender': self.created_by.as_json()
         }
 
