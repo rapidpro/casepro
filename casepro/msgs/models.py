@@ -417,20 +417,14 @@ class Outgoing(models.Model):
     created_on = models.DateTimeField(default=now)
 
     @classmethod
-    def create_case_reply(cls, org, user, text, case):
-        last_incoming = Message.objects.filter(case=case).order_by('-created_on').first()
-        reply_to = [last_incoming] if last_incoming else []
-
-        return cls.create(org, user, cls.CASE_REPLY, text, reply_to, contact=case.contact, case=case)
-
-    @classmethod
     def create_bulk_replies(cls, org, user, text, messages):
         if not messages:
             raise ValueError("Must specify at least one message to reply to")
 
         replies = []
         for incoming in messages:
-            replies.append(cls.create(org, user, cls.BULK_REPLY, text, incoming, contact=incoming.contact, push=False))
+            reply = cls._create(org, user, cls.BULK_REPLY, text, incoming, contact=incoming.contact, push=False)
+            replies.append(reply)
 
         # push together as a single broadcast
         get_backend().push_outgoing(org, replies, as_broadcast=True)
@@ -438,35 +432,38 @@ class Outgoing(models.Model):
         return replies
 
     @classmethod
-    def create_forward(cls, org, user, text, urns, original_message):
-        return cls.create(org, user, cls.FORWARD, text, original_message, urns=urns)
+    def create_case_reply(cls, org, user, text, case):
+        # will be a reply to the last message from the contact
+        last_incoming = case.incoming_messages.order_by('-created_on').first()
+
+        return cls._create(org, user, cls.CASE_REPLY, text, last_incoming, contact=case.contact, case=case)
 
     @classmethod
-    def create(cls, org, user, activity, text, reply_to, contact=None, urns=(), case=None, push=True):
+    def create_forward(cls, org, user, text, urns, original_message):
+        return cls._create(org, user, cls.FORWARD, text, original_message, urns=urns)
+
+    @classmethod
+    def _create(cls, org, user, activity, text, reply_to, contact=None, urns=(), case=None, push=True):
         if not text:
             raise ValueError("Message text cannot be empty")
         if not contact and not urns:
             raise ValueError("Message must have at least one recipient")
 
-        outgoing = cls.objects.create(org=org,
-                                      partner=user.get_partner(org),
-                                      activity=activity,
-                                      text=text,
-                                      contact=contact,
-                                      urns=urns,
-                                      reply_to=reply_to,
-                                      case=case,
-                                      created_by=user,
-                                      created_on=now())
+        msg = cls.objects.create(org=org, partner=user.get_partner(org),
+                                 activity=activity, text=text,
+                                 contact=contact, urns=urns,
+                                 reply_to=reply_to, case=case,
+                                 created_by=user)
 
         if push:
-            get_backend().push_outgoing(org, [outgoing])
+            get_backend().push_outgoing(org, [msg])
 
-        return outgoing
+        return msg
 
     @classmethod
     def search(cls, org, user, search):
         text = search.get('text')
+        contact_uuid = search.get('contact')
 
         queryset = org.outgoing_messages.all()
 
@@ -476,6 +473,9 @@ class Outgoing(models.Model):
 
         if text:
             queryset = queryset.filter(text__icontains=text)
+
+        if contact_uuid:
+            queryset = queryset.filter(contact__uuid=contact_uuid)
 
         queryset = queryset.select_related('partner', 'contact', 'case__assignee')
 

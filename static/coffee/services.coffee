@@ -203,7 +203,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       params.after = formatIso8601(search.after)
       params.before = formatIso8601(search.before)
       params.groups = (g.uuid for g in search.groups).join(',')
-      params.contact = search.contact
+      params.contact = if search.contact then search.contact.uuid else null
       params.label = if search.label then search.label.id else null
       params.archived = if search.archived then 1 else 0
       return params
@@ -269,7 +269,8 @@ services.factory 'OutgoingService', ['$rootScope', '$http', ($rootScope, $http) 
     _searchToParams: (search) ->
       return {
         folder: search.folder,
-        text: search.text
+        text: search.text,
+        contact: if search.contact then search.contact.uuid else null
       }
 
     #----------------------------------------------------------------------------

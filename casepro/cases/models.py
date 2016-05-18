@@ -227,26 +227,27 @@ class Case(models.Model):
 
     def get_timeline(self, after, before, merge_from_backend):
         local_outgoing = self.outgoing_messages.filter(created_on__gte=after, created_on__lte=before)
-        local_outgoing = local_outgoing.select_related('case__contact').order_by('-created_on')
+        local_outgoing = local_outgoing.select_related('case', 'contact', 'created_by').order_by('-created_on')
 
         local_incoming = self.incoming_messages.filter(created_on__gte=after, created_on__lte=before)
-        local_incoming = local_incoming.select_related('contact').order_by('-created_on')
+        local_incoming = local_incoming.select_related('case', 'contact').prefetch_related('labels')
+        local_incoming = local_incoming.order_by('-created_on')
 
         # merge local incoming and outgoing
         local_messages = chain(local_outgoing, local_incoming)
         messages = [{'time': msg.created_on, 'type': 'M', 'item': msg.as_json()} for msg in local_messages]
 
         if merge_from_backend:
-            # if this is the initial request, get a more complete timeline from the backend
+            # if this is the initial request, fetch additional messages from the backend
             backend = get_backend()
             backend_messages = backend.fetch_contact_messages(self.org, self.contact, after, before)
 
             # add any backend messages that don't exist locally
             if backend_messages:
-                local_backend_ids = {o.backend_id for o in local_outgoing if o.backend_id}
+                local_broadcast_ids = {o.backend_broadcast_id for o in local_outgoing if o.backend_broadcast_id}
 
                 for msg in backend_messages:
-                    if msg['id'] not in local_backend_ids:
+                    if msg['id'] not in local_broadcast_ids:
                         messages.append({'time': msg['time'], 'type': 'M', 'item': msg})
 
         # fetch actions in chronological order
