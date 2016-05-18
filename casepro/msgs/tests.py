@@ -873,11 +873,14 @@ class OutgoingTest(BaseCasesTest):
         self.assertEqual(out.case, None)
         self.assertEqual(out.created_by, self.user1)
 
+        # can't create with no URNs
+        self.assertRaises(ValueError, Outgoing.create_forward, self.unicef, self.user1, "Hi", [], msg2)
+
     def test_search(self):
         out1 = self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello 1", self.ann)
         out2 = self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann, partner=self.moh)
-        out3 = self.create_outgoing(self.unicef, self.admin, 203, 'C', "Hello 3", self.ann)
-        out4 = self.create_outgoing(self.unicef, self.user1, 204, 'C', "Hello 4", self.ann, partner=self.moh)
+        out3 = self.create_outgoing(self.unicef, self.admin, 203, 'C', "Hello 3", self.bob)
+        out4 = self.create_outgoing(self.unicef, self.user1, 204, 'C', "Hello 4", self.bob, partner=self.moh)
         out5 = self.create_outgoing(self.unicef, self.admin, 205, 'F', "Hello 5", None)
 
         # other org
@@ -895,6 +898,9 @@ class OutgoingTest(BaseCasesTest):
 
         # by text
         assert_search(self.admin, {'folder': OutgoingFolder.sent, 'text': "LO 5"}, [out5])
+
+        # by contact
+        assert_search(self.admin, {'folder': OutgoingFolder.sent, 'contact': self.ann.uuid}, [out2, out1])
 
     def test_as_json(self):
         msg1 = self.create_message(self.unicef, 101, self.ann, "Hello")
