@@ -35,16 +35,17 @@
         .message-time
           [[ item.time | autodate ]]
         .message-sender
-          .{ ng-if:"item.contact" }
-            %a{ ng-click:"activateContact(item.contact)", title:"View all to contact" }><
-              %span.glyphicon.glyphicon-phone>
-              [[ item.contact.uuid | limitTo:6 | uppercase ]]
-          .{ ng-if:"item.urns.length" }
-            <ng-pluralize count="item.urns.length" when="{'one': '1 recipient', 'other': '{} recipients'}">
-            </ng-pluralize>
-          from&nbsp;
           %a{ ng-href:"/user/read/[[ item.sender.id ]]/" }><
             [[ item.sender.name ]]
+          %br
+          to
+          %span{ ng-if:"item.contact" }
+            %a{ ng-click:"activateContact(item.contact)", title:"View all to contact", style:"white-space: nowrap;" }><
+              %span.glyphicon.glyphicon-phone>
+              [[ item.contact.uuid | limitTo:6 | uppercase ]]
+          %span{ ng-if:"item.urns.length" }
+            <ng-pluralize count="item.urns.length" when="{'one': '1 recipient', 'other': '{} recipients'}">
+            </ng-pluralize>
 
         .message-text
           %span.label-container{ ng-if:"item.case" }
