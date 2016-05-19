@@ -253,29 +253,39 @@ class RapidProBackend(BaseBackend):
 
         return remote.uuid
 
-    def push_outgoing(self, org, outgoing):
+    def push_outgoing(self, org, outgoing, as_broadcast=False):
         client = self._get_client(org, 1)
-        contact_uuids = [c.uuid for c in outgoing.contacts.all()]
-        broadcast = client.create_broadcast(text=outgoing.text, contacts=contact_uuids, urns=list(outgoing.urns))
 
-        outgoing.backend_id = broadcast.id
-        outgoing.save(update_fields=('backend_id',))
+        if as_broadcast:
+            contact_uuids = []
+            urns = []
+            for msg in outgoing:
+                if msg.contact:
+                    contact_uuids.append(msg.contact.uuid)
+                if msg.urns:
+                    urns.extend(msg.urns)
+            text = outgoing[0].text
+            broadcast = client.create_broadcast(text=text, contacts=contact_uuids, urns=urns)
+
+            for msg in outgoing:
+                msg.backend_broadcast_id = broadcast.id
+
+            Outgoing.objects.filter(pk__in=[o.id for o in outgoing]).update(backend_broadcast_id=broadcast.id)
+        else:
+            for msg in outgoing:
+                contact_uuids = [msg.contact.uuid] if msg.contact else []
+                broadcast = client.create_broadcast(text=msg.text, contacts=contact_uuids, urns=msg.urns)
+
+                msg.backend_broadcast_id = broadcast.id
+                msg.save(update_fields=('backend_broadcast_id',))
 
     def add_to_group(self, org, contact, group):
         client = self._get_client(org, 1)
-        # TODO until we know which groups are dynamic, we should assume this call might fail
-        try:
-            client.add_contacts([contact.uuid], group_uuid=group.uuid)
-        except Exception:
-            pass
+        client.add_contacts([contact.uuid], group_uuid=group.uuid)
 
     def remove_from_group(self, org, contact, group):
         client = self._get_client(org, 1)
-        # TODO as above
-        try:
-            client.remove_contacts([contact.uuid], group_uuid=group.uuid)
-        except Exception:
-            pass
+        client.remove_contacts([contact.uuid], group_uuid=group.uuid)
 
     def stop_runs(self, org, contact):
         client = self._get_client(org, 1)
@@ -329,7 +339,7 @@ class RapidProBackend(BaseBackend):
             # should match schema of Outgoing.as_json()
             return {
                 'id': msg.broadcast,
-                'contacts': [contact_json],
+                'contact': contact_json,
                 'urns': [],
                 'text': msg.text,
                 'time': msg.created_on,

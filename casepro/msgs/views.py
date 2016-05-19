@@ -1,5 +1,8 @@
 from __future__ import unicode_literals
 
+import six
+
+from collections import defaultdict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django.db.transaction import non_atomic_requests
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
@@ -249,8 +252,19 @@ class MessageCRUDL(SmartCRUDL):
             message_ids = parse_csv(request.POST.get('messages', ''), as_ints=False)
             messages = Message.objects.filter(org=request.org, backend_id__in=message_ids).select_related('contact')
 
-            outgoing = Outgoing.create_bulk_reply(request.org, request.user, text, messages)
-            return JsonResponse({'id': outgoing.pk})
+            # organize messages by contact
+            messages_by_contact = defaultdict(list)
+            for msg in messages:
+                messages_by_contact[msg.contact].append(msg)
+
+            # the actual message that will be replied to is the oldest selected message for each contact
+            reply_tos = []
+            for contact, contact_messages in six.iteritems(messages_by_contact):
+                contact_messages = sorted(contact_messages, key=lambda m: m.created_on, reverse=True)
+                reply_tos.append(contact_messages[0])
+
+            outgoing = Outgoing.create_bulk_replies(request.org, request.user, text, reply_tos)
+            return JsonResponse({'messages': len(outgoing)})
 
     class Forward(OrgPermsMixin, SmartTemplateView):
         """
@@ -265,8 +279,8 @@ class MessageCRUDL(SmartCRUDL):
             message = Message.objects.get(org=request.org, backend_id=int(kwargs['id']))
             urns = parse_csv(request.POST['urns'], as_ints=False)
 
-            outgoing = Outgoing.create_forward(request.org, request.user, text, urns, message)
-            return JsonResponse({'id': outgoing.pk})
+            out = Outgoing.create_forward(request.org, request.user, text, urns, message)
+            return JsonResponse({'id': out.pk})
 
     class History(OrgPermsMixin, SmartTemplateView):
         """
@@ -312,8 +326,9 @@ class OutgoingCRUDL(SmartCRUDL):
         def derive_search(self):
             folder = OutgoingFolder[self.request.GET['folder']]
             text = self.request.GET.get('text', None)
+            contact = self.request.GET.get('contact', None)
 
-            return {'folder': folder, 'text': text}
+            return {'folder': folder, 'text': text, 'contact': contact}
 
         def get_context_data(self, **kwargs):
             context = super(OutgoingCRUDL.Search, self).get_context_data(**kwargs)

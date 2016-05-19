@@ -4,7 +4,24 @@
 - block home-items
   .{ ng-controller:"OutgoingController", ng-init:"init()" }
 
-    .search-toolbar
+    .contact-toolbar{ ng-if:"activeContact" }
+      .row
+        .col-md-12
+          %span.contact-info
+            Messages for contact
+            %strong
+              [[ activeContact.uuid | limitTo:6 | uppercase ]]
+
+            - if user_is_admin
+              &nbsp;
+              %a{ ng-href:'[[ "{{ contact_ext_url }}" | replace:"{}":activeContact.uuid ]]', target:"_blank" }
+                %span.glyphicon.glyphicon-new-window
+                - trans "View"
+          .pull-away
+            %button.btn.btn-default{ type:"button", ng-click:"activateContact(null)" }
+              - trans "Back"
+
+    .search-toolbar{ ng-if:"!activeContact" }
       %form.clearfix
         .btn-group.pull-away
           %button.btn.btn-default{ type:"button", ng-click:"onSearch()" }
@@ -22,8 +39,14 @@
             [[ item.sender.name ]]
           %br
           to
-          <ng-pluralize count="item.contacts.length + item.urns.length" when="{'one': '1 recipient', 'other': '{} recipients'}">
-          </ng-pluralize>
+          %span{ ng-if:"item.contact" }
+            %a{ ng-click:"activateContact(item.contact)", title:"View all to contact", style:"white-space: nowrap;" }><
+              %span.glyphicon.glyphicon-phone>
+              [[ item.contact.uuid | limitTo:6 | uppercase ]]
+          %span{ ng-if:"item.urns.length" }
+            <ng-pluralize count="item.urns.length" when="{'one': '1 recipient', 'other': '{} recipients'}">
+            </ng-pluralize>
+
         .message-text
           %span.label-container{ ng-if:"item.case" }
             %span.label.label-warning
@@ -48,8 +71,8 @@
     }
     .message-sender {
       float: left;
-      width: 125px;
+      width: 145px;
     }
     .message-text {
-      margin-left: 130px;
+      margin-left: 150px;
     }
