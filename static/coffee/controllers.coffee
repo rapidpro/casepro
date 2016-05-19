@@ -556,7 +556,7 @@ controllers.controller 'CaseTimelineController', [ '$scope', '$timeout', 'CaseSe
   $scope.refreshItems = (repeat) ->
 
     CaseService.fetchTimeline($scope.caseObj, $scope.itemsMaxTime, (events, maxTime) ->
-      $scope.timeline = $scope.timeline.concat events
+      $scope.timeline = $scope.timeline.concat(events)
       $scope.itemsMaxTime = maxTime
 
       if repeat
@@ -583,6 +583,22 @@ controllers.controller 'PartnerController', [ '$scope', '$window', 'UtilsService
       PartnerService.deletePartner($scope.partner, () ->
         UtilsService.navigate('/partner/')
       )
+    )
+]
+
+
+#============================================================================
+# Partner replies controller
+#============================================================================
+controllers.controller 'PartnerRepliesController', [ '$scope', '$window', 'UtilsService', 'PartnerService', ($scope, $window, UtilsService, PartnerService) ->
+
+  $scope.replies = []
+
+  $scope.init = (partner) ->
+    $scope.partner = partner
+
+    PartnerService.fetchReplies($scope.partner, (replies) ->
+      $scope.replies = $scope.replies.concat(replies)
     )
 ]
 

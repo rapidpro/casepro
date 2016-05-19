@@ -293,7 +293,7 @@ class PartnerFormMixin(object):
 
 
 class PartnerCRUDL(SmartCRUDL):
-    actions = ('create', 'read', 'update', 'delete', 'list', 'users')
+    actions = ('create', 'read', 'update', 'delete', 'list', 'replies', 'users')
     model = Partner
 
     class Create(OrgPermsMixin, PartnerFormMixin, SmartCreateView):
@@ -342,6 +342,33 @@ class PartnerCRUDL(SmartCRUDL):
         def get_queryset(self, **kwargs):
             return Partner.get_all(self.request.org).order_by('name')
 
+    class Replies(OrgPermsMixin, SmartReadView):
+        """
+        JSON endpoint to fetch replies made by partner users
+        """
+        permission = 'cases.partner_read'
+
+        def get(self, request, *args, **kwargs):
+            partner = self.get_object()
+            before = parse_iso8601(self.request.GET.get('before'))
+
+            outgoing = Outgoing.objects.filter(org=partner.org, partner=partner).exclude(reply_to=None)
+
+            if before:
+                outgoing = outgoing.filter(created_on__lt=before)
+
+            outgoing = outgoing.select_related('contact', 'reply_to', 'case__assignee', 'created_by')
+            outgoing = outgoing.order_by('-created_on')[:100]
+
+            def as_json(msg):
+                obj = msg.as_json()
+                obj.update({
+                    'reply_to': {'text': msg.reply_to.text, 'created_on': msg.reply_to.created_on}
+                })
+                return obj
+
+            return JsonResponse({'replies': [as_json(o) for o in outgoing]})
+
     class Users(OrgPermsMixin, SmartReadView):
         """
         JSON endpoint to fetch partner users with their activity information
@@ -368,7 +395,7 @@ class PartnerCRUDL(SmartCRUDL):
             this_month = self.calculate_user_counts(partner, *month_range(0))
             last_month = self.calculate_user_counts(partner, *month_range(-1))
 
-            def user_as_json(user):
+            def as_json(user):
                 obj = user.as_json()
                 obj.update({
                     'role': "Manager" if user in managers else "Analyst",
@@ -380,7 +407,7 @@ class PartnerCRUDL(SmartCRUDL):
                 })
                 return obj
 
-            return JsonResponse({'users': [user_as_json(u) for u in all_users]})
+            return JsonResponse({'users': [as_json(u) for u in all_users]})
 
 
 class BaseHomeView(OrgPermsMixin, SmartTemplateView):

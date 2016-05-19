@@ -518,12 +518,17 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
 services.factory 'PartnerService', ['$http', ($http) ->
   new class PartnerService
 
+    fetchReplies: (partner, callback) ->
+      $http.get('/partner/replies/' + partner.id + '/')
+      .success((data) =>
+        callback(data.replies)
+      ).error(DEFAULT_ERR_HANDLER)
+
     fetchUsers: (partner, callback) ->
       $http.get('/partner/users/' + partner.id + '/')
       .success((data) =>
         callback(data.users)
       ).error(DEFAULT_ERR_HANDLER)
-
 
     #----------------------------------------------------------------------------
     # Delete the given partner
