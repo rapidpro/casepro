@@ -608,12 +608,11 @@ controllers.controller 'PartnerRepliesController', [ '$scope', '$window', 'Utils
 #============================================================================
 controllers.controller 'UserController', [ '$scope', '$window', 'UtilsService', 'UserService', ($scope, $window, UtilsService, UserService) ->
 
-  $scope.init = (userId) ->
-    $scope.userId = userId
+  $scope.user = $window.contextData.user
 
   $scope.onDeleteUser = () ->
     UtilsService.confirmModal("Delete this user?", 'danger', () ->
-      UserService.deleteUser($scope.userId, () ->
+      UserService.deleteUser($scope.user.id, () ->
         UtilsService.navigateBack()
       )
     )
