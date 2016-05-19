@@ -8,6 +8,7 @@ from django.db.models import Count
 from django.db.transaction import non_atomic_requests
 from django.http import HttpResponse, JsonResponse
 from django.utils.timezone import now
+from django.utils.timesince import timesince
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
 from el_pagination.paginators import LazyPaginator
@@ -363,7 +364,8 @@ class PartnerCRUDL(SmartCRUDL):
             def as_json(msg):
                 obj = msg.as_json()
                 obj.update({
-                    'reply_to': {'text': msg.reply_to.text, 'created_on': msg.reply_to.created_on}
+                    'reply_to': {'text': msg.reply_to.text, 'flagged': msg.reply_to.is_flagged},
+                    'response_time': timesince(msg.reply_to.created_on, now=msg.created_on)
                 })
                 return obj
 

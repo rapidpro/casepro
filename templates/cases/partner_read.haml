@@ -68,6 +68,8 @@
                 - trans "User"
               %th
                 - trans "Reply"
+              %th
+                - trans "Time"
             %tbody
               %tr{ ng-repeat:"reply in replies" }
                 %td{ nowrap:"" }
@@ -80,6 +82,8 @@
                     [[ reply.sender.name ]]
                 %td
                   [[ reply.text ]]
+                %td
+                  [[ reply.response_time ]]
       </tab>
       <tab index="2">
         <tab-heading>
