@@ -1,8 +1,8 @@
 from __future__ import absolute_import, unicode_literals
-
+from calendar import month_name
 from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
-from datetime import timedelta
+from datetime import date, timedelta
 from django.core.cache import cache
 from django.db.models import Count
 from django.db.transaction import non_atomic_requests
@@ -322,12 +322,43 @@ class PartnerCRUDL(SmartCRUDL):
             # angular app requires context data in JSON format
             context['context_data_json'] = json_encode({
                 'partner': self.object.as_json(),
+                'replies_by_month': self.get_replies_by_month(self.object)
             })
 
             context['can_manage'] = self.request.user.can_manage(self.object)
             context['labels'] = self.object.get_labels()
-            context['users'] = self.object.get_users().order_by('profile__full_name')
+
+            context['summary'] = self.get_summary(self.object)
             return context
+
+        def get_summary(self, partner):
+            return {
+                'total_replies': Outgoing.objects.filter(org=partner.org, partner=partner).count(),
+                'cases_open': Case.objects.filter(org=partner.org, assignee=partner, closed_on=None).count(),
+                'cases_closed': Case.objects.filter(org=partner.org, assignee=partner).exclude(closed_on=None).count()
+            }
+
+        def get_replies_by_month(self, partner):
+            since = month_range(-5)[0]  # last six months ago including this month
+
+            outgoing = Outgoing.objects.filter(org=partner.org, partner=partner, created_on__gte=since)
+            outgoing = outgoing.extra(select={'month': 'EXTRACT(month FROM created_on)'})
+            outgoing = outgoing.values('month').annotate(replies=Count('created_on'))
+
+            replies_by_month = {int(c['month']): c['replies'] for c in outgoing}
+
+            # generate labels and series over last six months
+            labels = []
+            series = []
+            this_month = date.today().month
+            for m in reversed(range(0, -6, -1)):
+                month = this_month + m
+                if month < 1:
+                    month += 12
+                labels.append(month_name[month])
+                series.append(replies_by_month.get(month, 0))
+
+            return labels, series
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
         cancel_url = '@cases.partner_list'
