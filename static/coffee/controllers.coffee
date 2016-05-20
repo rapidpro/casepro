@@ -87,7 +87,7 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
   $scope.startTime = new Date()
   $scope.oldItemsLoading = false
   $scope.oldItemsPage = 0
-  $scope.oldItemsMore = false
+  $scope.oldItemsMore = true
   $scope.newItemsMaxTime = null
   $scope.selection = []
 
@@ -364,15 +364,9 @@ controllers.controller 'OutgoingController', [ '$scope', '$controller', 'Outgoin
     $scope.searchFields = $scope.searchFieldDefaults()
     $scope.activeSearch = $scope.buildSearch()
 
-    $scope.$on('activeLabelChange', () ->
-      $scope.onResetSearch()
-    )
     $scope.$on('activeContactChange', () ->
       $scope.onResetSearch()
     )
-
-  $scope.getItemFilter = () ->
-    return (item) -> true
 
   $scope.buildSearch = () ->
     search = angular.copy($scope.searchFields)
@@ -590,16 +584,11 @@ controllers.controller 'PartnerController', [ '$scope', '$window', 'UtilsService
 #============================================================================
 # Partner replies controller
 #============================================================================
-controllers.controller 'PartnerRepliesController', [ '$scope', '$window', 'UtilsService', 'PartnerService', ($scope, $window, UtilsService, PartnerService) ->
+controllers.controller 'PartnerRepliesController', [ '$scope', '$window', '$controller', 'UtilsService', 'PartnerService', ($scope, $window, $controller, UtilsService, PartnerService) ->
+  $controller('BaseItemsController', {$scope: $scope})
 
-  $scope.replies = []
-
-  $scope.init = (partner) ->
-    $scope.partner = partner
-
-    PartnerService.fetchReplies($scope.partner, (replies) ->
-      $scope.replies = $scope.replies.concat(replies)
-    )
+  $scope.fetchOldItems = (callback) ->
+    PartnerService.fetchReplies($scope.partner, $scope.oldItemsPage, callback)
 ]
 
 

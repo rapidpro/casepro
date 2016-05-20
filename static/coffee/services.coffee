@@ -258,8 +258,6 @@ services.factory 'OutgoingService', ['$rootScope', '$http', ($rootScope, $http) 
 
       $http.get('/outgoing/search/?' + $.param(params))
       .success((data) =>
-        @_processMessages(data.results)
-
         callback(data.results, data.has_more)
       ).error(DEFAULT_ERR_HANDLER)
 
@@ -272,13 +270,6 @@ services.factory 'OutgoingService', ['$rootScope', '$http', ($rootScope, $http) 
         text: search.text,
         contact: if search.contact then search.contact.uuid else null
       }
-
-    #----------------------------------------------------------------------------
-    # Processes outgoing messages
-    #----------------------------------------------------------------------------
-    _processMessages: (messages) ->
-      for msg in messages
-        msg.time = parseIso8601(msg.time)  # parse datetime string
 ]
 
 
@@ -518,10 +509,10 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
 services.factory 'PartnerService', ['$http', ($http) ->
   new class PartnerService
 
-    fetchReplies: (partner, callback) ->
-      $http.get('/partner/replies/' + partner.id + '/')
+    fetchReplies: (partner, page, callback) ->
+      $http.get('/partner/replies/' + partner.id + '/?' + $.param({page: page}))
       .success((data) =>
-        callback(data.replies)
+        callback(data.replies, data.has_more)
       ).error(DEFAULT_ERR_HANDLER)
 
     fetchUsers: (partner, callback) ->

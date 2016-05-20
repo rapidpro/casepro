@@ -351,15 +351,15 @@ class PartnerCRUDL(SmartCRUDL):
 
         def get(self, request, *args, **kwargs):
             partner = self.get_object()
-            before = parse_iso8601(self.request.GET.get('before'))
+            page = int(self.request.GET.get('page', 1))
 
             outgoing = Outgoing.objects.filter(org=partner.org, partner=partner).exclude(reply_to=None)
-
-            if before:
-                outgoing = outgoing.filter(created_on__lt=before)
-
             outgoing = outgoing.select_related('contact', 'reply_to', 'case__assignee', 'created_by')
-            outgoing = outgoing.order_by('-created_on')[:100]
+            outgoing = outgoing.order_by('-created_on')
+
+            paginator = LazyPaginator(outgoing, 50)
+            outgoing = paginator.page(page)
+            has_more = paginator.num_pages > page
 
             def as_json(msg):
                 obj = msg.as_json()
@@ -369,7 +369,7 @@ class PartnerCRUDL(SmartCRUDL):
                 })
                 return obj
 
-            return JsonResponse({'replies': [as_json(o) for o in outgoing]})
+            return JsonResponse({'replies': [as_json(o) for o in outgoing], 'has_more': has_more})
 
     class Users(OrgPermsMixin, SmartReadView):
         """
