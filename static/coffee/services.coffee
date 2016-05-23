@@ -554,7 +554,7 @@ services.factory 'UserService', ['$http', ($http) ->
 #=====================================================================
 # Utils service
 #=====================================================================
-services.factory 'UtilsService', ['$window', '$modal', ($window, $modal) ->
+services.factory 'UtilsService', ['$window', '$uibModal', ($window, $uibModal) ->
   new class UtilsService
 
     displayAlert: (type, message) ->
@@ -572,31 +572,31 @@ services.factory 'UtilsService', ['$window', '$modal', ($window, $modal) ->
 
     confirmModal: (prompt, style, callback) ->
       resolve = {prompt: (() -> prompt), style: (() -> style)}
-      $modal.open({templateUrl: 'confirmModal.html', controller: 'ConfirmModalController', resolve: resolve})
+      $uibModal.open({templateUrl: 'confirmModal.html', controller: 'ConfirmModalController', resolve: resolve})
       .result.then () ->
         callback()
 
     editModal: (title, initial, maxLength, callback) ->
       resolve = {title: (() -> title), initial: (() -> initial), maxLength: (() -> maxLength)}
-      $modal.open({templateUrl: 'editModal.html', controller: 'EditModalController', resolve: resolve})
+      $uibModal.open({templateUrl: 'editModal.html', controller: 'EditModalController', resolve: resolve})
       .result.then (text) ->
         callback(text)
 
     assignModal: (title, prompt, partners, callback) ->
       resolve = {title: (() -> title), prompt: (() -> prompt), partners: (() -> partners)}
-      $modal.open({templateUrl: 'assignModal.html', controller: 'AssignModalController', resolve: resolve})
+      $uibModal.open({templateUrl: 'assignModal.html', controller: 'AssignModalController', resolve: resolve})
       .result.then (assignee) ->
         callback(assignee)
 
     noteModal: (title, prompt, style, maxLength, callback) ->
       resolve = {title: (() -> title), prompt: (() -> prompt), style: (() -> style), maxLength: (() -> maxLength)}
-      $modal.open({templateUrl: 'noteModal.html', controller: 'NoteModalController', resolve: resolve})
+      $uibModal.open({templateUrl: 'noteModal.html', controller: 'NoteModalController', resolve: resolve})
       .result.then (note) ->
         callback(note)
 
     labelModal: (title, prompt, labels, initial, callback) ->
       resolve = {title: (() -> title), prompt: (() -> prompt), labels: (() -> labels), initial: (() -> initial)}
-      $modal.open({templateUrl: 'labelModal.html', controller: 'LabelModalController', resolve: resolve})
+      $uibModal.open({templateUrl: 'labelModal.html', controller: 'LabelModalController', resolve: resolve})
       .result.then (selectedLabels) ->
         callback(selectedLabels)
 ]

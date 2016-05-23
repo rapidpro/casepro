@@ -19,7 +19,7 @@ def send_email(to_email, subject, template, context):
     html = html_template.render(Context(context))
     text = text_template.render(Context(context))
 
-    if getattr(settings, 'SEND_EMAILS', False):
+    if getattr(settings, 'SEND_EMAILS', False):  # pragma: no cover
         message = EmailMultiAlternatives(subject, text, from_email, [to_email])
         message.attach_alternative(html, "text/html")
         message.send()
