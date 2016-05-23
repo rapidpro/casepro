@@ -10,20 +10,20 @@ URN_SCHEMES = {tel: "Phone", twitter: "Twitter"}
 #=====================================================================
 # Simple confirmation modal
 #=====================================================================
-modals.controller 'ConfirmModalController', ['$scope', '$modalInstance', 'prompt', 'style', ($scope, $modalInstance, prompt, style) ->
+modals.controller 'ConfirmModalController', ['$scope', '$uibModalInstance', 'prompt', 'style', ($scope, $uibModalInstance, prompt, style) ->
   $scope.title = "Confirm"
   $scope.prompt = prompt
   $scope.style = style or 'primary'
 
-  $scope.ok = () -> $modalInstance.close(true)
-  $scope.cancel = () -> $modalInstance.dismiss('cancel')
+  $scope.ok = () -> $uibModalInstance.close(true)
+  $scope.cancel = () -> $uibModalInstance.dismiss('cancel')
 ]
 
 
 #=====================================================================
 # Confirm with note modal
 #=====================================================================
-modals.controller 'NoteModalController', ['$scope', '$modalInstance', 'title', 'prompt', 'style', 'maxLength', ($scope, $modalInstance, title, prompt, style, maxLength) ->
+modals.controller 'NoteModalController', ['$scope', '$uibModalInstance', 'title', 'prompt', 'style', 'maxLength', ($scope, $uibModalInstance, title, prompt, style, maxLength) ->
   $scope.title = title
   $scope.prompt = prompt
   $scope.style = style or 'primary'
@@ -33,46 +33,46 @@ modals.controller 'NoteModalController', ['$scope', '$modalInstance', 'title', '
     $scope.form.submitted = true
 
     if $scope.form.$valid
-      $modalInstance.close($scope.fields.note.val)
+      $uibModalInstance.close($scope.fields.note.val)
 
-  $scope.cancel = () -> $modalInstance.dismiss('cancel')
+  $scope.cancel = () -> $uibModalInstance.dismiss('cancel')
 ]
 
 
 #=====================================================================
 # Edit text modal
 #=====================================================================
-modals.controller 'EditModalController', ['$scope', '$modalInstance', 'title', 'initial', 'maxLength', ($scope, $modalInstance, title, initial, maxLength) ->
+modals.controller 'EditModalController', ['$scope', '$uibModalInstance', 'title', 'initial', 'maxLength', ($scope, $uibModalInstance, title, initial, maxLength) ->
   $scope.title = title
   $scope.fields = {text: {val: initial, maxLength: maxLength}}
 
   $scope.ok = () ->
     if $scope.form.$valid
-      $modalInstance.close($scope.fields.text.val)
+      $uibModalInstance.close($scope.fields.text.val)
 
-  $scope.cancel = () -> $modalInstance.dismiss('cancel')
+  $scope.cancel = () -> $uibModalInstance.dismiss('cancel')
 ]
 
 
 #=====================================================================
 # Reply to contacts modal
 #=====================================================================
-modals.controller('ReplyModalController', ['$scope', '$modalInstance', 'maxLength', ($scope, $modalInstance, maxLength) ->
+modals.controller('ReplyModalController', ['$scope', '$uibModalInstance', 'maxLength', ($scope, $uibModalInstance, maxLength) ->
   $scope.fields = {text: {val: '', maxLength: maxLength}}
 
   $scope.ok = () ->
     $scope.form.submitted = true
     if $scope.form.$valid
-      $modalInstance.close($scope.fields.text.val)
+      $uibModalInstance.close($scope.fields.text.val)
 
-  $scope.cancel = () -> $modalInstance.dismiss('cancel')
+  $scope.cancel = () -> $uibModalInstance.dismiss('cancel')
 ])
 
 
 #=====================================================================
 # Open new case modal
 #=====================================================================
-modals.controller 'NewCaseModalController', ['$scope', '$modalInstance', 'message', 'summaryMaxLength', 'partners', ($scope, $modalInstance, message, summaryMaxLength, partners) ->
+modals.controller 'NewCaseModalController', ['$scope', '$uibModalInstance', 'message', 'summaryMaxLength', 'partners', ($scope, $uibModalInstance, message, summaryMaxLength, partners) ->
   $scope.partners = partners
   $scope.fields = {
     summary: {val: message.text, maxLength: summaryMaxLength},
@@ -82,45 +82,45 @@ modals.controller 'NewCaseModalController', ['$scope', '$modalInstance', 'messag
   $scope.ok = () ->
     $scope.form.submitted = true
     if $scope.form.$valid
-      $modalInstance.close({summary: $scope.fields.summary.val, assignee: $scope.fields.assignee.val})
-  $scope.cancel = () -> $modalInstance.dismiss('cancel')
+      $uibModalInstance.close({summary: $scope.fields.summary.val, assignee: $scope.fields.assignee.val})
+  $scope.cancel = () -> $uibModalInstance.dismiss('cancel')
 ]
 
 
 #=====================================================================
 # Assign to partner modal
 #=====================================================================
-modals.controller 'AssignModalController', ['$scope', '$modalInstance', 'title', 'prompt', 'partners', ($scope, $modalInstance, title, prompt, partners) ->
+modals.controller 'AssignModalController', ['$scope', '$uibModalInstance', 'title', 'prompt', 'partners', ($scope, $uibModalInstance, title, prompt, partners) ->
   $scope.title = title
   $scope.prompt = prompt
   $scope.partners = partners
   $scope.fields = { assignee: partners[0] }
 
-  $scope.ok = () -> $modalInstance.close($scope.fields.assignee)
-  $scope.cancel = () -> $modalInstance.dismiss('cancel')
+  $scope.ok = () -> $uibModalInstance.close($scope.fields.assignee)
+  $scope.cancel = () -> $uibModalInstance.dismiss('cancel')
 ]
 
 
 #=====================================================================
 # Edit item labels modal
 #=====================================================================
-modals.controller('LabelModalController', ['$scope', '$modalInstance', 'title', 'prompt', 'labels', 'initial', ($scope, $modalInstance, title, prompt, labels, initial) ->
+modals.controller('LabelModalController', ['$scope', '$uibModalInstance', 'title', 'prompt', 'labels', 'initial', ($scope, $uibModalInstance, title, prompt, labels, initial) ->
   $scope.title = title
   $scope.prompt = prompt
   $scope.selection = ({label: l, selected: (l.id in (i.id for i in initial))} for l in labels)
 
   $scope.ok = () ->
     selectedLabels = (item.label for item in $scope.selection when item.selected)
-    $modalInstance.close(selectedLabels)
+    $uibModalInstance.close(selectedLabels)
 
-  $scope.cancel = () -> $modalInstance.dismiss('cancel')
+  $scope.cancel = () -> $uibModalInstance.dismiss('cancel')
 ])
 
 
 #=====================================================================
 # Compose message to URN modal
 #=====================================================================
-modals.controller('ComposeModalController', ['$scope', '$modalInstance', 'title', 'initialText', 'maxLength', ($scope, $modalInstance, title, initialText, maxLength) ->
+modals.controller('ComposeModalController', ['$scope', '$uibModalInstance', 'title', 'initialText', 'maxLength', ($scope, $uibModalInstance, title, initialText, maxLength) ->
   $scope.title = title
   $scope.fields = {
     urn: {scheme: null, path: ''},
@@ -136,9 +136,9 @@ modals.controller('ComposeModalController', ['$scope', '$modalInstance', 'title'
 
     if $scope.form.$valid
       urn = {scheme: $scope.fields.urn.scheme, path: $scope.fields.urn.path, urn: ($scope.fields.urn.scheme + ':' + $scope.fields.urn.path)}
-      $modalInstance.close({text: $scope.fields.text.val, urn: urn})
+      $uibModalInstance.close({text: $scope.fields.text.val, urn: urn})
 
-  $scope.cancel = () -> $modalInstance.dismiss('cancel')
+  $scope.cancel = () -> $uibModalInstance.dismiss('cancel')
 
   $scope.setScheme('tel')
 ])
@@ -147,7 +147,7 @@ modals.controller('ComposeModalController', ['$scope', '$modalInstance', 'title'
 #=====================================================================
 # Message history modal
 #=====================================================================
-modals.controller('MessageHistoryModalController', ['$scope', '$modalInstance', 'MessageService', 'message', ($scope, $modalInstance, MessageService, message) ->
+modals.controller('MessageHistoryModalController', ['$scope', '$uibModalInstance', 'MessageService', 'message', ($scope, $uibModalInstance, MessageService, message) ->
   $scope.message = message
   $scope.loading = true
 
@@ -156,5 +156,5 @@ modals.controller('MessageHistoryModalController', ['$scope', '$modalInstance', 
     $scope.loading = false
   )
 
-  $scope.close = () -> $modalInstance.dismiss('close')
+  $scope.close = () -> $uibModalInstance.dismiss('close')
 ])
