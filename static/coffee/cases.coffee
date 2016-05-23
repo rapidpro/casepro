@@ -1,5 +1,6 @@
 app = angular.module('cases', [
   'ngSanitize',
+  'ngAnimate',
   'ui.bootstrap',
   'ui.select',
   'infinite-scroll',

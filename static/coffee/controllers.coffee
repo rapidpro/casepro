@@ -182,7 +182,7 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
 #============================================================================
 # Incoming messages controller
 #============================================================================
-controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '$controller', 'MessageService', 'CaseService', 'UtilsService', ($scope, $timeout, $modal, $controller, MessageService, CaseService, UtilsService) ->
+controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal', '$controller', 'MessageService', 'CaseService', 'UtilsService', ($scope, $timeout, $uibModal, $controller, MessageService, CaseService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
   $scope.advancedSearch = false
@@ -276,7 +276,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     )
 
   $scope.onReplyToSelection = () ->
-    $modal.open({templateUrl: 'replyModal.html', controller: 'ReplyModalController', resolve: {maxLength: (() -> OUTGOING_TEXT_MAX_LEN)}})
+    $uibModal.open({templateUrl: 'replyModal.html', controller: 'ReplyModalController', resolve: {maxLength: (() -> OUTGOING_TEXT_MAX_LEN)}})
     .result.then((text) ->
       MessageService.replyToMessages($scope.selection, text, () ->
         MessageService.archiveMessages($scope.selection, () ->
@@ -314,7 +314,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
   $scope.onForwardMessage = (message) ->
     initialText = '"' + message.text + '"'
 
-    $modal.open({templateUrl: 'composeModal.html', controller: 'ComposeModalController', resolve: {
+    $uibModal.open({templateUrl: 'composeModal.html', controller: 'ComposeModalController', resolve: {
       title: () -> "Forward",
       initialText: () -> initialText,
       maxLength: () -> OUTGOING_TEXT_MAX_LEN,
@@ -332,7 +332,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
 
     partners = if $scope.user.partner then null else $scope.partners
     resolve = {message: (() -> message), summaryMaxLength: (() -> CASE_SUMMARY_MAX_LEN), partners: (() -> partners)}
-    $modal.open({templateUrl: 'newCaseModal.html', controller: 'NewCaseModalController', resolve: resolve})
+    $uibModal.open({templateUrl: 'newCaseModal.html', controller: 'NewCaseModalController', resolve: resolve})
     .result.then((result) ->
       CaseService.openCase(message, result.summary, result.assignee, (caseObj, isNew) ->
           withAlert = if !isNew then 'open_found_existing' else null
@@ -348,7 +348,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$modal', '
     )
 
   $scope.onShowMessageHistory = (message) ->
-    $modal.open({templateUrl: 'messageHistory.html', controller: 'MessageHistoryModalController', resolve: {
+    $uibModal.open({templateUrl: 'messageHistory.html', controller: 'MessageHistoryModalController', resolve: {
       message: () -> message
     }})
 ]
@@ -606,11 +606,10 @@ controllers.controller 'UserController', [ '$scope', '$window', 'UtilsService', 
 #============================================================================
 controllers.controller 'DateRangeController', [ '$scope', ($scope) ->
   $scope.afterOpen = false
-  $scope.afterMin = null
-  $scope.afterMax = new Date()
+  $scope.afterOptions = { minDate: null, maxDate: new Date() }
   $scope.beforeOpen = false
-  $scope.beforeMin = null
-  $scope.beforeMax = new Date()
+  $scope.beforeOptions = { minDate: null, maxDate: new Date() }
+
   $scope.format = 'MMM dd, yyyy'
 
   $scope.openAfter = ($event) ->
@@ -625,9 +624,9 @@ controllers.controller 'DateRangeController', [ '$scope', ($scope) ->
 
   $scope.onAfterChange = () ->
     # don't allow before to be less than after
-    $scope.beforeMin = $scope.searchFields.after
+    $scope.beforeOptions.minDate = $scope.searchFields.after
 
   $scope.onBeforeChange = () ->
     # don't allow after to be more than before
-    $scope.afterMax = $scope.searchFields.before
+    $scope.afterOptions.maxDate = $scope.searchFields.before
 ]
