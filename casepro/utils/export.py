@@ -6,6 +6,7 @@ import pytz
 from dash.orgs.models import Org
 from dash.orgs.views import OrgObjPermsMixin
 from dash.utils import random_string
+from datetime import datetime
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.files import File
@@ -89,6 +90,19 @@ class BaseExport(models.Model):
         Child classes implement this to populate the Excel book
         """
         pass
+
+    def write_row(self, sheet, row, values):
+        for col, value in enumerate(values):
+            self.write_value(sheet, row, col, value)
+
+    def write_value(self, sheet, row, col, value):
+        if isinstance(value, bool):
+            sheet.write(row, col, "Yes" if value else "No")
+        elif isinstance(value, datetime):
+            value = value.astimezone(pytz.UTC).replace(tzinfo=None) if value else None
+            sheet.write(row, col, value, self.DATE_STYLE)
+        else:
+            sheet.write(row, col, value)
 
     @staticmethod
     def excel_datetime(value):

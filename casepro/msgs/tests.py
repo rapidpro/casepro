@@ -18,7 +18,7 @@ from casepro.contacts.models import Contact
 from casepro.rules.models import ContainsTest, GroupsTest, FieldTest, Quantifier
 from casepro.test import BaseCasesTest
 
-from .models import Label, Message, MessageAction, MessageExport, MessageFolder, Outgoing, OutgoingFolder
+from .models import Label, Message, MessageAction, MessageExport, MessageFolder, Outgoing, OutgoingFolder, ReplyExport
 from .tasks import handle_messages, pull_messages
 
 
@@ -978,6 +978,58 @@ class OutgoingCRUDLTest(BaseCasesTest):
                 'time': format_iso8601(out2.created_on)
             }
         ])
+
+
+class ReplyExportCRUDLTest(BaseCasesTest):
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    def test_create_and_read(self):
+        ann = self.create_contact(self.unicef, "C-001", "Ann", fields={'nickname': "Annie", 'age': "28", 'state': "WA"})
+        bob = self.create_contact(self.unicef, "C-002", "Bob", fields={'nickname': "Bobby", 'age': "32", 'state': "IN"})
+
+        d1 = datetime(2015, 12, 25, 13, 0, 0, 0, pytz.UTC)
+        d2 = datetime(2015, 12, 25, 14, 0, 0, 0, pytz.UTC)
+
+        msg1 = self.create_message(self.unicef, 101, ann, "What is HIV?", [self.aids], created_on=d1)
+        msg2 = self.create_message(self.unicef, 102, bob, "I ♡ SMS", [self.pregnancy], created_on=d2, is_flagged=True)
+        self.create_message(self.unicef, 103, bob, "Hello", [], created_on=d2)  # no labels
+
+        case = self.create_case(self.unicef, ann, self.moh, msg1)
+
+        self.create_outgoing(self.unicef, self.user1, 201, 'C', "It's bad", ann, case=case, reply_to=msg1)
+        self.create_outgoing(self.unicef, self.user2, 202, 'B', "That's nice", bob, reply_to=msg2)
+        self.create_outgoing(self.unicef, self.user3, 203, 'B', "Welcome", bob, reply_to=msg2)
+
+        # log in as a administrator
+        self.login(self.admin)
+
+        response = self.url_post('unicef', reverse('msgs.replyexport_create'))
+        self.assertEqual(response.status_code, 200)
+
+        export = ReplyExport.objects.get()
+        self.assertEqual(export.created_by, self.admin)
+
+        filename = "%s/%s" % (settings.MEDIA_ROOT, export.filename)
+        workbook = open_workbook(filename, 'rb')
+        sheet = workbook.sheets()[0]
+
+        self.assertEqual(sheet.nrows, 4)
+        self.assertExcelRow(sheet, 0, ["Contact", "Message", "Flagged", "Case Assignee", "Labels", "User", "Reply",
+                                       "Sent On", "Response Time", "Nickname", "Age"])
+        self.assertExcelRow(sheet, 1, ["C-002", "I ♡ SMS", "Yes", "", ""], pytz.UTC)
+        self.assertExcelRow(sheet, 1, ["C-002", "I ♡ SMS", "Yes", "", "Pregnancy"], pytz.UTC)
+        self.assertExcelRow(sheet, 2, ["C-001", "What is HIV?", "No", "MOH", "AIDS"], pytz.UTC)
+
+        read_url = reverse('msgs.replyexport_read', args=[export.pk])
+
+        response = self.url_get('unicef', read_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['download_url'], "/messageexport/download/%d/?download=1" % export.pk)
+
+        # user from another org can't access this download
+        self.login(self.norbert)
+
+        response = self.url_get('unicef', read_url)
+        self.assertEqual(response.status_code, 302)
 
 
 class TasksTest(BaseCasesTest):

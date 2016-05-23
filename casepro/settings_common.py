@@ -309,9 +309,13 @@ PERMISSIONS = {
 
     'msgs.messageexport': ('create', 'read'),
 
-    'msgs.outgoing': ('search',),
+    'msgs.outgoing': ('search', 'search_replies'),
+
+    'msgs.replyexport': ('create', 'read'),
 
     'cases.case': ('create', 'read', 'update', 'list'),
+
+    'case.caseexport': ('create', 'read'),
 
     'cases.partner': ('create', 'read', 'delete', 'list', 'users'),
 
@@ -332,6 +336,7 @@ GROUP_PERMISSIONS = {
         'msgs.message.*',
         'msgs.messageexport.*',
         'msgs.outgoing.*',
+        'msgs.replyexport.*',
 
         'cases.case.*',
         'cases.caseexport.*',
@@ -354,11 +359,15 @@ GROUP_PERMISSIONS = {
         'msgs.messageexport_create',
         'msgs.messageexport_read',
         'msgs.outgoing_search',
+        'msgs.outgoing_search_replies',
+        'msgs.replyexport_create',
+        'msgs.replyexport_read',
 
         'cases.case_create',
         'cases.case_read',
         'cases.case_update',
         'cases.case_list',
+        'cases.case_replies',
         'cases.caseexport_create',
         'cases.caseexport_read',
         'cases.partner_list',
@@ -380,15 +389,20 @@ GROUP_PERMISSIONS = {
         'msgs.messageexport_create',
         'msgs.messageexport_read',
         'msgs.outgoing_search',
+        'msgs.outgoing_search_replies',
+        'msgs.replyexport_create',
+        'msgs.replyexport_read',
 
         'cases.case_create',
         'cases.case_read',
         'cases.case_update',
         'cases.case_list',
+        'cases.case_replies',
         'cases.caseexport_create',
         'cases.caseexport_read',
         'cases.partner_list',
         'cases.partner_read',
+        'cases.partner_replies',
         'cases.partner_users',
 
         'profiles.profile_user_read',

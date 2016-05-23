@@ -66,7 +66,16 @@
         <uib-tab-heading>
           <i class="glyphicon glyphicon-comment"></i> {% trans "Replies" %}
         </uib-tab-heading>
-        <div class="ng-cloak" ng-controller="PartnerRepliesController">
+        <div class="ng-cloak" ng-controller="PartnerRepliesController" ng-init="init()">
+          <div class="tab-controls">
+            {% if perms.msgs.replyexport_create or org_perms.msgs.replyexport_create %}
+            <div class="pull-away">
+              <button class="btn btn-default" type="button" ng-click="onExportSearch()">
+                <span class="glyphicon glyphicon-save"></span> {% trans "Export..." %}
+              </button>
+            </div>
+            {% endif %}
+          </div>
           <div infinite-scroll="loadOldItems(false)" infinite-scroll-disabled="!isInfiniteScrollEnabled()">
             %table.table.table-striped
               %thead
@@ -124,12 +133,12 @@
         <uib-tab-heading>
           <i class="glyphicon glyphicon-user"></i> Users
         </uib-tab-heading>
-        <div class="tab-header">
+        <div class="tab-controls">
           Total of <strong>[[ users.length ]]</strong> users
             {% if can_manage %}
-              <div class="pull-away">
-                <a class="btn btn-default" href="{% url 'profiles.user_create_in' object.pk %}">{% trans "New..." %}</a>
-              </div>
+            <div class="pull-away">
+              <a class="btn btn-default" href="{% url 'profiles.user_create_in' object.pk %}">{% trans "New..." %}</a>
+            </div>
             {% endif %}
         </div>
         %table.table.table-striped
@@ -190,7 +199,7 @@
     .partner-label {
       margin-left: 1em
     }
-    .tab-header {
+    .tab-controls {
       padding: 10px 0;
     }
     .chart {

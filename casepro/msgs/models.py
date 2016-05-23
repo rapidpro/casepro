@@ -9,12 +9,13 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
+from django.utils.timesince import timesince
 from django.utils.timezone import now
 from enum import Enum
 from redis_cache import get_redis_connection
 
 from casepro.backend import get_backend
-from casepro.contacts.models import Contact
+from casepro.contacts.models import Contact, Field
 from casepro.utils import json_encode
 from casepro.utils.export import BaseExport
 
@@ -481,6 +482,34 @@ class Outgoing(models.Model):
 
         return queryset.order_by('-created_on')
 
+    @classmethod
+    def search_replies(cls, org, user, search):
+        partner_id = search.get('partner')
+        after = search.get('after')
+        before = search.get('before')
+
+        queryset = org.outgoing_messages.exclude(reply_to=None)
+
+        if partner_id:
+            # if searching by partner, check current user can access messages from that partner
+            from casepro.cases.models import Partner
+            partner = Partner.objects.get(pk=partner_id)
+            user_partner = user.get_partner(org)
+            if user_partner and user_partner != partner:
+                queryset = queryset.none()
+            else:
+                queryset = queryset.filter(partner=partner)
+
+        if after:
+            queryset = queryset.filter(created_on__gt=after)
+        if before:
+            queryset = queryset.filter(created_on__lt=before)
+
+        queryset = queryset.select_related('contact', 'case__assignee', 'created_by__profile')
+        queryset = queryset.prefetch_related('reply_to__labels')
+
+        return queryset.order_by('-created_on')
+
     def as_json(self):
         """
         Prepares this outgoing message for JSON serialization
@@ -553,6 +582,64 @@ class MessageExport(BaseExport):
                         contact_field = contact_fields[cf]
                         current_sheet.write(row, len(base_fields) + cf, fields.get(contact_field.key, None))
 
+                    row += 1
+
+                sheet_number += 1
+
+        return book
+
+
+class ReplyExport(BaseExport):
+    """
+    An export of replies
+    """
+    directory = 'reply_exports'
+    download_view = 'msgs.replyexport_read'
+    email_templates = 'msgs/email/reply_export'
+
+    def render_book(self, book, search):
+        base_fields = [
+            "Contact", "Message", "Flagged", "Case Assignee", "Labels", "User", "Reply", "Sent On", "Response Time"
+        ]
+        contact_fields = Field.get_all(self.org, visible=True)
+        all_fields = base_fields + [f.label for f in contact_fields]
+
+        # load all messages to be exported
+        items = Outgoing.search_replies(self.org, self.created_by, search)
+
+        def add_sheet(num):
+            sheet = book.add_sheet(unicode(_("Replies %d" % num)))
+            self.write_row(sheet, 0, all_fields)
+            return sheet
+
+        # even if there are no cases - still add a sheet
+        if not items:
+            add_sheet(1)
+        else:
+            sheet_number = 1
+            for item_chunk in chunks(items, 65535):
+                current_sheet = add_sheet(sheet_number)
+
+                row = 1
+                for item in item_chunk:
+                    values = [
+                        item.contact.uuid,
+                        item.reply_to.text,
+                        item.reply_to.is_flagged,
+                        item.case.assignee.name if item.case else "",
+                        ', '.join([l.name for l in item.reply_to.labels.all()]),
+                        item.created_by.email,
+                        item.text,
+                        item.created_on,
+                        timesince(item.reply_to.created_on, now=item.created_on)
+                    ]
+
+                    fields = item.contact.get_fields()
+
+                    for field in contact_fields:
+                        values.append(fields.get(field.key, ""))
+
+                    self.write_row(current_sheet, row, values)
                     row += 1
 
                 sheet_number += 1

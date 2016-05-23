@@ -4,7 +4,7 @@
 {% blocktrans with link=link %}
 Hi there!
 
-Your export of cases is ready and can be downloaded by clicking on the following link:
+Your export of replies is ready and can be downloaded by clicking on the following link:
 
 {{ link }}
 

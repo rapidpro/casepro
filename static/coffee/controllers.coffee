@@ -587,11 +587,29 @@ controllers.controller 'PartnerController', [ '$scope', '$window', 'UtilsService
 #============================================================================
 # Partner replies controller
 #============================================================================
-controllers.controller 'PartnerRepliesController', [ '$scope', '$window', '$controller', 'UtilsService', 'PartnerService', ($scope, $window, $controller, UtilsService, PartnerService) ->
+controllers.controller 'PartnerRepliesController', [ '$scope', '$window', '$controller', 'UtilsService', 'OutgoingService', ($scope, $window, $controller, UtilsService, OutgoingService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
+  $scope.init = () ->
+    $scope.searchFields = $scope.searchFieldDefaults()
+    $scope.activeSearch = $scope.buildSearch()
+
+  $scope.buildSearch = () ->
+    search = angular.copy($scope.searchFields)
+    search.partner = $scope.partner
+    return search
+
+  $scope.searchFieldDefaults = () -> { after: null, before: null }
+
   $scope.fetchOldItems = (callback) ->
-    PartnerService.fetchReplies($scope.partner, $scope.oldItemsPage, callback)
+    OutgoingService.fetchReplies($scope.activeSearch, $scope.startTime, $scope.oldItemsPage, callback)
+
+  $scope.onExportSearch = () ->
+    UtilsService.confirmModal("Export the current search?", null, () ->
+      OutgoingService.startReplyExport($scope.activeSearch, () ->
+        UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
+      )
+    )
 ]
 
 

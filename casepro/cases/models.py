@@ -78,12 +78,6 @@ class Partner(models.Model):
     def get_analysts(self):
         return self.get_users().filter(org_viewers=self.org_id)
 
-    def get_replies(self):
-        outgoing = Outgoing.objects.filter(org=self.org, partner=self).exclude(reply_to=None)
-        outgoing = outgoing.select_related('contact', 'case__assignee', 'created_by__profile')
-        outgoing = outgoing.prefetch_related('reply_to__labels')
-        return outgoing.order_by('-created_on')
-
     def release(self):
         # detach all users
         self.user_profiles.update(partner=None)

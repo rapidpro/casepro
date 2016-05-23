@@ -4,7 +4,7 @@
 {% blocktrans with link=link %}
 Hi there!
 
-Your message export is ready and can be downloaded by clicking on the following link:
+Your export of messages is ready and can be downloaded by clicking on the following link:
 
 {{ link }}
 
