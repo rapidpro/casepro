@@ -15,8 +15,6 @@
       .clearfix{ style:"margin-bottom: 10px" }
         .page-header-buttons
           - if can_manage
-            %a.btn.btn-default{ href:"{% url 'profiles.user_create_in' object.pk %}" }
-              - trans "New User"
             .btn-group
               %a.btn.btn-default{ href:"{% url 'cases.partner_update' object.pk %}", tooltip:"Edit Partner" }
                 %span.glyphicon.glyphicon-pencil
@@ -121,6 +119,15 @@
         <tab-heading>
           <i class="glyphicon glyphicon-user"></i> Users
         </tab-heading>
+        <div class="tab-header">
+          Total of <strong>[[ users.length ]]</strong> users
+            - if can_manage
+            <div class="pull-away">
+              <a class="btn btn-default" href="{% url 'profiles.user_create_in' object.pk %}">
+                - trans "New..."
+              </a>
+            </div>
+        </div>
         %table.table.table-striped
           %thead
             %th
@@ -178,6 +185,9 @@
     }
     .partner-label {
       margin-left: 1em
+    }
+    .tab-header {
+      padding: 10px 0;
     }
     .chart {
       width: 100%;
