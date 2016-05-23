@@ -565,12 +565,15 @@ controllers.controller 'CaseTimelineController', [ '$scope', '$timeout', 'CaseSe
 controllers.controller 'PartnerController', [ '$scope', '$window', 'UtilsService', 'PartnerService', ($scope, $window, UtilsService, PartnerService) ->
 
   $scope.partner = $window.contextData.partner
+  $scope.usersFetched = false
   $scope.users = []
 
-  $scope.init = () ->
-    PartnerService.fetchUsers($scope.partner, (users) ->
-      $scope.users = users
-    )
+  $scope.onTabSelect = (tab) ->
+    if tab == 'users' and not $scope.usersFetched
+      PartnerService.fetchUsers($scope.partner, (users) ->
+        $scope.usersFetched = true
+        $scope.users = users
+      )
 
   $scope.onDeletePartner = () ->
     UtilsService.confirmModal("Remove this partner organization?", 'danger', () ->
