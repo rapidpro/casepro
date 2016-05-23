@@ -72,9 +72,9 @@
                 %th
                   - trans "Contact"
                 %th
-                  - trans "Message"
-                %th
                   %span.glyphicon.glyphicon-flag
+                %th
+                  - trans "Message"
                 %th
                   - trans "User"
                 %th
@@ -89,9 +89,17 @@
                     %span.glyphicon.glyphicon-phone>
                     [[ item.contact.uuid | limitTo:6 | uppercase ]]
                   %td
-                    [[ item.reply_to.text ]]
-                  %td
                     %span.glyphicon.glyphicon-flag{ ng-if:"item.reply_to.flagged" }
+                  %td
+                    %span.label-container{ ng-if:"item.case" }
+                      %span.label.label-warning
+                        [[ item.case.assignee.name ]]
+                      &nbsp;
+                    %span.label-container{ ng-repeat:"label in item.reply_to.labels" }
+                      %span.label.label-success
+                        [[ label.name ]]
+                      &nbsp;
+                    [[ item.reply_to.text ]]
                   %td
                     %a{ ng-href:"/user/read/[[ item.sender.id ]]/" }><
                       [[ item.sender.name ]]

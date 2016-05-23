@@ -384,9 +384,7 @@ class PartnerCRUDL(SmartCRUDL):
             partner = self.get_object()
             page = int(self.request.GET.get('page', 1))
 
-            outgoing = Outgoing.objects.filter(org=partner.org, partner=partner).exclude(reply_to=None)
-            outgoing = outgoing.select_related('contact', 'reply_to', 'case__assignee', 'created_by')
-            outgoing = outgoing.order_by('-created_on')
+            outgoing = partner.get_replies()
 
             paginator = LazyPaginator(outgoing, 50)
             outgoing = paginator.page(page)
@@ -395,7 +393,11 @@ class PartnerCRUDL(SmartCRUDL):
             def as_json(msg):
                 obj = msg.as_json()
                 obj.update({
-                    'reply_to': {'text': msg.reply_to.text, 'flagged': msg.reply_to.is_flagged},
+                    'reply_to': {
+                        'text': msg.reply_to.text,
+                        'flagged': msg.reply_to.is_flagged,
+                        'labels': [l.as_json() for l in msg.reply_to.labels.all()],
+                    },
                     'response_time': timesince(msg.reply_to.created_on, now=msg.created_on)
                 })
                 return obj
