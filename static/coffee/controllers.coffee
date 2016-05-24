@@ -220,6 +220,11 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
     search.label = $scope.activeLabel
     search.contact = $scope.activeContact
     search.timeCode = Date.now()
+
+    # searching up to a date means including anything on the date
+    if search.before
+      search.before.setHours(23, 59, 59, 999)
+
     return search
 
   $scope.searchFieldDefaults = () -> { text: null, groups: [], after: null, before: null, archived: false }
@@ -594,9 +599,19 @@ controllers.controller 'PartnerRepliesController', [ '$scope', '$window', '$cont
     $scope.searchFields = $scope.searchFieldDefaults()
     $scope.activeSearch = $scope.buildSearch()
 
+    # trigger search if date range is changed
+    $scope.$watchGroup(['searchFields.after', 'searchFields.before'], () ->
+      $scope.onSearch()
+    )
+
   $scope.buildSearch = () ->
     search = angular.copy($scope.searchFields)
     search.partner = $scope.partner
+
+    # searching up to a date means including anything on the date
+    if search.before
+      search.before.setHours(23, 59, 59, 999)
+
     return search
 
   $scope.searchFieldDefaults = () -> { after: null, before: null }

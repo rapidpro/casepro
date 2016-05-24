@@ -45,104 +45,116 @@
 
       <uib-tab index="0" select="onTabSelect('summary')">
         <uib-tab-heading>
-          <i class="glyphicon glyphicon-dashboard"></i> {% trans "Summary" %}
+          %span.glyphicon.glyphicon-dashboard
+          - trans "Summary"
         </uib-tab-heading>
-        <br/>
-        <div class="row">
-          <div class="col-md-4">
-            <ul>
-              <li>Total replies: <strong>{{ summary.total_replies }}</strong></li>
-              <li>Number of open cases: <strong>{{ summary.cases_open }}</strong></li>
-              <li>Number of closed cases: <strong>{{ summary.cases_closed }}</strong></li>
-            </ul>
-          </div>
-          <div class="col-md-8">
-            <div class="chart chart-replies-by-month"></div>
-          </div>
-        </div>
+        %br
+        .row
+          .col-md-4
+            %ul
+              %li
+                Total replies: <strong>{{ summary.total_replies }}</strong>
+              %li
+                Number of open cases: <strong>{{ summary.cases_open }}</strong>
+              %li
+                Number of closed cases: <strong>{{ summary.cases_closed }}</strong>
+          .col-md-8
+            .chart.chart-replies-by-month
       </uib-tab>
 
-      {% if can_view_replies %}
-      <uib-tab index="1" select="onTabSelect('replies')">
-        <uib-tab-heading>
-          <i class="glyphicon glyphicon-comment"></i> {% trans "Replies" %}
-        </uib-tab-heading>
-        <div class="ng-cloak" ng-controller="PartnerRepliesController" ng-init="init()">
-          <div class="tab-controls">
-            {% if perms.msgs.replyexport_create or org_perms.msgs.replyexport_create %}
-            <div class="pull-away">
-              <button class="btn btn-default" type="button" ng-click="onExportSearch()">
-                <span class="glyphicon glyphicon-save"></span> {% trans "Export..." %}
-              </button>
-            </div>
-            {% endif %}
-          </div>
-          <div infinite-scroll="loadOldItems(false)" infinite-scroll-disabled="!isInfiniteScrollEnabled()">
-            %table.table.table-striped
-              %thead
-                %th
-                  - trans "Contact"
-                %th
-                  %span.glyphicon.glyphicon-flag
-                %th
-                  - trans "Message"
-                %th
-                  - trans "User"
-                %th
-                  - trans "Reply"
-                %th
-                  - trans "On"
-                %th
-                  - trans "Delay"
-              %tbody
-                %tr{ ng-repeat:"item in items" }
-                  %td{ nowrap:"" }
-                    %span.glyphicon.glyphicon-phone>
-                    [[ item.contact.uuid | limitTo:6 | uppercase ]]
-                  %td
-                    %span.glyphicon.glyphicon-flag{ ng-if:"item.reply_to.flagged" }
-                  %td
-                    %span.label-container{ ng-if:"item.case" }
-                      %span.label.label-warning
-                        [[ item.case.assignee.name ]]
-                      &nbsp;
-                    %span.label-container{ ng-repeat:"label in item.reply_to.labels" }
-                      %span.label.label-success
-                        [[ label.name ]]
-                      &nbsp;
-                    [[ item.reply_to.text ]]
-                  %td
-                    %a{ ng-href:"/user/read/[[ item.sender.id ]]/" }><
-                      [[ item.sender.name ]]
-                  %td
-                    [[ item.text ]]
-                  %td{ nowrap:"" }
-                    [[ item.time | autodate ]]
-                  %td
-                    <span ng-class="{'time-warning': item.response.warning}">[[ item.response.delay ]]</span>
-          </div>
+      - if can_view_replies
+        <uib-tab index="1" select="onTabSelect('replies')">
+          <uib-tab-heading>
+            %span.glyphicon.glyphicon-comment
+            - trans "Replies"
+          </uib-tab-heading>
+          .ng-cloak{ ng-controller:"PartnerRepliesController", ng-init:"init()" }
+            .search-toolbar.clearfix
+              - if perms.msgs.replyexport_create or org_perms.msgs.replyexport_create
+                .pull-away
+                  %button.btn.btn-default{ type:"button", ng-click:"onExportSearch()" }
+                    %span.glyphicon.glyphicon-save
+                    - trans "Export..."
 
-          .loading{ ng-if:"oldItemsLoading" }
-          .none{ ng-hide:"oldItemsLoading || items.length > 0" }
-            - trans "None"
-          .none{ ng-hide:"oldItemsLoading || !hasTooManyItemsToDisplay()" }
-            - trans "More items than can be displayed"
-        </div>
-      </uib-tab>
-      {% endif %}
+              %form.form-horizontal
+                %span.date-range{ ng-controller:"DateRangeController" }
+                  .input-group.date-picker
+                    %input.form-control{ type:"text", uib-datepicker-popup:"[[ format ]]", ng-model:"searchFields.after", is-open:"afterOpen", datepicker-options:"afterOptions", ng-change:"onAfterChange()" }
+                    %span.input-group-btn
+                      %button.btn.btn-default{ type:"button", ng-click:"openAfter($event)" }
+                        %i.glyphicon.glyphicon-calendar
+                  %label.control-label
+                    - trans "Until"
+                  .input-group.date-picker
+                    %input.form-control{ type:"text", uib-datepicker-popup:"[[ format ]]", ng-model:"searchFields.before", is-open:"beforeOpen", datepicker-options:"beforeOptions", ng-change:"onBeforeChange()" }
+                    %span.input-group-btn
+                      %button.btn.btn-default{ type:"button", ng-click:"openBefore($event)" }
+                        %i.glyphicon.glyphicon-calendar
+
+            .{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"!isInfiniteScrollEnabled()" }
+              %table.table.table-striped
+                %thead
+                  %th
+                    - trans "Contact"
+                  %th
+                    %span.glyphicon.glyphicon-flag
+                  %th
+                    - trans "Message"
+                  %th
+                    - trans "User"
+                  %th
+                    - trans "Reply"
+                  %th
+                    - trans "On"
+                  %th
+                    - trans "Delay"
+                %tbody
+                  %tr{ ng-repeat:"item in items" }
+                    %td{ nowrap:"" }
+                      %span.glyphicon.glyphicon-phone>
+                      [[ item.contact.uuid | limitTo:6 | uppercase ]]
+                    %td
+                      %span.glyphicon.glyphicon-flag{ ng-if:"item.reply_to.flagged" }
+                    %td
+                      %span.label-container{ ng-if:"item.case" }
+                        %span.label.label-warning
+                          [[ item.case.assignee.name ]]
+                        &nbsp;
+                      %span.label-container{ ng-repeat:"label in item.reply_to.labels" }
+                        %span.label.label-success
+                          [[ label.name ]]
+                        &nbsp;
+                      [[ item.reply_to.text ]]
+                    %td
+                      %a{ ng-href:"/user/read/[[ item.sender.id ]]/" }><
+                        [[ item.sender.name ]]
+                    %td
+                      [[ item.text ]]
+                    %td{ nowrap:"" }
+                      [[ item.time | autodate ]]
+                    %td
+                      <span ng-class="{'time-warning': item.response.warning}">[[ item.response.delay ]]</span>
+
+            .loading{ ng-if:"oldItemsLoading" }
+            .none{ ng-hide:"oldItemsLoading || items.length > 0" }
+              - trans "None"
+            .none{ ng-hide:"oldItemsLoading || !hasTooManyItemsToDisplay()" }
+              - trans "More items than can be displayed"
+        </uib-tab>
 
       <uib-tab index="2" select="onTabSelect('users')">
         <uib-tab-heading>
-          <i class="glyphicon glyphicon-user"></i> Users
+          %span.glyphicon.glyphicon-user
+          - trans "Users"
         </uib-tab-heading>
-        <div class="tab-controls">
-          Total of <strong>[[ users.length ]]</strong> users
-            {% if can_manage %}
-            <div class="pull-away">
-              <a class="btn btn-default" href="{% url 'profiles.user_create_in' object.pk %}">{% trans "New..." %}</a>
-            </div>
-            {% endif %}
-        </div>
+        .search-toolbar.clearfix
+          - if can_manage
+          .pull-away
+            <a class="btn btn-default" href="{% url 'profiles.user_create_in' object.pk %}">{% trans "New..." %}</a>
+
+          .{ style:"margin-top: 5px" }
+            Total of <strong>[[ users.length ]]</strong> users
+
         %table.table.table-striped
           %thead
             %th
@@ -201,8 +213,16 @@
     .partner-label {
       margin-left: 1em
     }
-    .tab-controls {
-      padding: 10px 0;
+    .search-toolbar {
+      padding: 7px;
+      background-color: #f7f7f7;
+      margin-top: 7px;
+    }
+    .search-toolbar .date-range .input-group, .date-range label {
+      float: left;
+    }
+    .search-toolbar .date-range label {
+      padding: 5px 1em 0 1em;
     }
     .time-warning {
       color: #922
