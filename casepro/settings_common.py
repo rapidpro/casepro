@@ -54,6 +54,7 @@ SITE_ALLOW_NO_ORG = ('orgs_ext.org_create', 'orgs_ext.org_update', 'orgs_ext.org
                      'profiles.user_create', 'profiles.user_update', 'profiles.user_read', 'profiles.user_list',
                      'internal.status', 'internal.ping')
 SITE_ORGS_STORAGE_ROOT = 'orgs'
+SITE_EXTERNAL_CONTACT_URL = 'http://localhost:8001/contact/read/%s/'
 SITE_BACKEND = 'casepro.backend.rapidpro.RapidProBackend'
 
 
@@ -166,7 +167,6 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'dash.orgs.context_processors.user_group_perms_processor',
     'dash.orgs.context_processors.set_org_processor',
     'dash.context_processors.lang_direction',
-    'casepro.cases.context_processors.contact_ext_url',
     'casepro.cases.context_processors.sentry_dsn',
     'casepro.cases.context_processors.server_time',
     'casepro.profiles.context_processors.user_is_admin',
@@ -319,6 +319,8 @@ PERMISSIONS = {
 
     'cases.partner': ('create', 'read', 'delete', 'list', 'users'),
 
+    'contacts.contact': ('read', 'list'),
+
     'contacts.group': ('select', 'list'),
 
     # can't create profiles.user.* permissions because we don't own User
@@ -342,6 +344,7 @@ GROUP_PERMISSIONS = {
         'cases.caseexport.*',
         'cases.partner.*',
 
+        'contacts.contact_read',
         'contacts.group.*',
         'contacts.field.*',
 
@@ -374,6 +377,8 @@ GROUP_PERMISSIONS = {
         'cases.partner_read',
         'cases.partner_users',
 
+        'contacts.contact_read',
+
         'profiles.profile_user_create',
         'profiles.profile_user_read',
     ),
@@ -403,6 +408,8 @@ GROUP_PERMISSIONS = {
         'cases.partner_list',
         'cases.partner_read',
         'cases.partner_users',
+
+        'contacts.contact_read',
 
         'profiles.profile_user_read',
     ),

@@ -42,7 +42,7 @@ class ContactSyncer(BaseSyncer):
         return {
             'org': org,
             'uuid': remote.uuid,
-            'name': remote.name,
+            'name': remote.uuid[:6].upper(),  # we don't display contact names
             'language': remote.language,
             'is_blocked': remote.blocked,
             'is_stub': False,
@@ -52,9 +52,6 @@ class ContactSyncer(BaseSyncer):
 
     def update_required(self, local, remote, remote_as_kwargs):
         if local.is_stub:
-            return True
-
-        if local.name != remote.name:
             return True
 
         if local.language != remote.language:

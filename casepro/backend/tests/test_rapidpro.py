@@ -742,7 +742,7 @@ class RapidProBackendTest(BaseCasesTest):
         self.assertEqual(messages, [
             {
                 'id': 201,  # id is the broadcast id
-                'contact': {'uuid': "C-001", 'name': "Ann"},
+                'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'urns': [],
                 'text': "Welcome",
                 'time': d3,

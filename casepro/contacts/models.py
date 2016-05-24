@@ -245,7 +245,7 @@ class Contact(models.Model):
         """
         Prepares a contact for JSON serialization
         """
-        result = {'uuid': self.uuid, 'name': self.name}
+        result = {'id': self.pk, 'name': self.name}
 
         if full:
             result['fields'] = self.get_fields(visible=True)

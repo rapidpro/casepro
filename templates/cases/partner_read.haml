@@ -97,8 +97,9 @@
               %tbody
                 %tr{ ng-repeat:"item in items" }
                   %td{ nowrap:"" }
-                    %span.glyphicon.glyphicon-phone>
-                    [[ item.contact.uuid | limitTo:6 | uppercase ]]
+                    %a{ ng-href:"/contact/read/[[ item.contact.id ]]" }><
+                      %span.glyphicon.glyphicon-phone>
+                      [[ item.contact.name ]]
                   %td
                     %span.glyphicon.glyphicon-flag{ ng-if:"item.reply_to.flagged" }
                   %td

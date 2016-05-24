@@ -1,0 +1,19 @@
+- extends "smartmin/read.html"
+- load smartmin i18n thumbnail
+
+- block pre-content
+  .page-header.clearfix{ style:"border-bottom: none" }
+    .page-header-buttons
+      - if user_is_admin
+        %a.btn.btn-default{ href:"{{ backend_url }}", target:"_blank" }
+          %span.glyphicon.glyphicon-new-window
+          - trans "View External"
+
+    %h2
+      %span.glyphicon.glyphicon-phone
+      {{ title }}
+
+  <uib-tabset active="active">
+    <uib-tab index="0" heading="{% trans "Summary" %}"></uib-tab>
+  </uib-tabset>
+  <br/>

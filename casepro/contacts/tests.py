@@ -75,10 +75,10 @@ class ContactTest(BaseCasesTest):
     def test_as_json(self):
         contact = self.create_contact(self.unicef, 'C-001', "Richard", fields={'age': "32", 'state': "WA"})
 
-        self.assertEqual(contact.as_json(full=False), {'uuid': 'C-001', 'name': "Richard"})
+        self.assertEqual(contact.as_json(full=False), {'id': contact.pk, 'name': "Richard"})
 
         # full=True means include visible contact fields
-        self.assertEqual(contact.as_json(full=True), {'uuid': 'C-001',
+        self.assertEqual(contact.as_json(full=True), {'id': contact.pk,
                                                       'name': "Richard",
                                                       'fields': {'nickname': None, 'age': "32"}})
 
@@ -87,7 +87,7 @@ class ContactCRUDLTest(BaseCasesTest):
     def setUp(self):
         super(ContactCRUDLTest, self).setUp()
 
-        self.jean = self.create_contact(self.unicef, "C-001", "Jean", [self.reporters], {'age': "32"})
+        self.ann = self.create_contact(self.unicef, "C-001", "Ann", [self.reporters], {'age': "32"})
 
     def test_list(self):
         url = reverse('contacts.contact_list')
@@ -102,24 +102,32 @@ class ContactCRUDLTest(BaseCasesTest):
 
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(list(response.context['object_list']), [self.jean])
+        self.assertEqual(list(response.context['object_list']), [self.ann])
 
     def test_read(self):
-        url = reverse('contacts.contact_read', args=["C-001"])
+        url = reverse('contacts.contact_read', args=[self.ann.pk])
 
-        # log in as a non-superuser
-        self.login(self.admin)
-
-        response = self.url_get('unicef', url)
-        self.assertEqual(response.status_code, 302)
-
-        self.login(self.superuser)
-
+        # log in as regular user
+        self.login(self.user1)
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Jean")
-        self.assertContains(response, "Reporters")
-        self.assertContains(response, "age=32")
+        self.assertContains(response, "Age")
+
+        # administrators get button linking to backend
+        self.login(self.admin)
+        response = self.url_get('unicef', url)
+        self.assertContains(response, "View External")
+
+        # superusers see extra fields
+        self.login(self.superuser)
+        response = self.url_get('unicef', url)
+        self.assertContains(response, "Is Blocked")
+        self.assertContains(response, "Is Active")
+
+        # users from other orgs get nothing
+        self.login(self.user4)
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
 
 
 class GroupTest(BaseCasesTest):

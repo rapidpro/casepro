@@ -141,11 +141,11 @@
           .panel-heading
             - trans "Contact"
             %strong
-              [[ caseObj.contact.uuid | limitTo:6 | uppercase ]]
+              [[ caseObj.contact.name ]]
 
             - if user_is_admin
               &nbsp;
-              %a{ ng-href:'[[ "{{ contact_ext_url }}" | replace:"{}":caseObj.contact.uuid ]]', target:"_blank" }
+              %a{ ng-href:ng-href:"/contact/read/[[ caseObj.contact.id ]]/" }
                 %span.glyphicon.glyphicon-new-window
                 - trans "View"
           .panel-body
