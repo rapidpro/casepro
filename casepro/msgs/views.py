@@ -22,6 +22,9 @@ from .models import Label, Message, MessageExport, MessageFolder, Outgoing, Outg
 from .tasks import message_export, reply_export
 
 
+RESPONSE_DELAY_WARN_SECONDS = 24 * 60 * 60  # show response delays > 1 day as warning
+
+
 class LabelFormMixin(object):
     @staticmethod
     def construct_tests(data):
@@ -382,6 +385,7 @@ class OutgoingCRUDL(SmartCRUDL):
             has_more = paginator.num_pages > page
 
             def as_json(msg):
+                delay = (msg.created_on - msg.reply_to.created_on).total_seconds()
                 obj = msg.as_json()
                 obj.update({
                     'reply_to': {
@@ -389,7 +393,10 @@ class OutgoingCRUDL(SmartCRUDL):
                         'flagged': msg.reply_to.is_flagged,
                         'labels': [l.as_json() for l in msg.reply_to.labels.all()],
                     },
-                    'response_time': timesince(msg.reply_to.created_on, now=msg.created_on)
+                    'response': {
+                        'delay': timesince(msg.reply_to.created_on, now=msg.created_on),
+                        'warning': delay > RESPONSE_DELAY_WARN_SECONDS
+                    }
                 })
                 return obj
 

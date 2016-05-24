@@ -1012,7 +1012,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
 
         d1 = datetime(2016, 5, 24, 9, 0, tzinfo=pytz.UTC)
         d2 = datetime(2016, 5, 24, 10, 0, tzinfo=pytz.UTC)
-        d3 = datetime(2016, 5, 24, 11, 0, tzinfo=pytz.UTC)
+        d3 = datetime(2016, 5, 26, 11, 0, tzinfo=pytz.UTC)
 
         msg1 = self.create_message(self.unicef, 101, self.ann, "Hello?", [self.aids], created_on=d1)
         case = self.create_case(self.unicef, self.ann, self.moh, msg1)
@@ -1045,7 +1045,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
                     'flagged': False,
                     'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
                 },
-                'response_time': "2\xA0hours"
+                'response': {'delay': "2\xA0days, 2\xA0hours", 'warning': True}
             },
             {
                 'id': out1.pk,
@@ -1061,7 +1061,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
                     'flagged': False,
                     'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
                 },
-                'response_time': "1\xA0hour"
+                'response': {'delay': "1\xA0hour", 'warning': False}
             }
         ])
 

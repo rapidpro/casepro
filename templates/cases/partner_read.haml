@@ -93,7 +93,7 @@
                 %th
                   - trans "On"
                 %th
-                  - trans "Time"
+                  - trans "Delay"
               %tbody
                 %tr{ ng-repeat:"item in items" }
                   %td{ nowrap:"" }
@@ -119,7 +119,7 @@
                   %td{ nowrap:"" }
                     [[ item.time | autodate ]]
                   %td
-                    [[ item.response_time ]]
+                    <span ng-class="{'time-warning': item.response.warning}">[[ item.response.delay ]]</span>
           </div>
 
           .loading{ ng-if:"oldItemsLoading" }
@@ -203,6 +203,9 @@
     }
     .tab-controls {
       padding: 10px 0;
+    }
+    .time-warning {
+      color: #922
     }
     .chart {
       width: 100%;
