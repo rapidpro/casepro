@@ -63,10 +63,9 @@
               %li{ class:"{% if_url 'cases.unlabelled' 'active' '' %}" }
                 %a{ href:"{% url 'cases.unlabelled' %}" }
                   - trans "Unlabelled"
-            - if perms.msgs.outgoing_sent or org_perms.msgs.outgoing_sent
-              %li{ class:"{% if_url 'cases.sent' 'active' '' %}" }
-                %a{ href:"{% url 'cases.sent' %}" }
-                  - trans "Sent"
+            %li{ class:"{% if_url 'cases.sent' 'active' '' %}" }
+              %a{ href:"{% url 'cases.sent' %}" }
+                - trans "Sent"
 
           %h3
             %span.glyphicon.glyphicon-briefcase

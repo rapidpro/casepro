@@ -320,9 +320,11 @@ class PartnerCRUDL(SmartCRUDL):
                 'replies_by_month': self.get_replies_by_month(self.object)
             })
 
-            context['can_manage'] = self.request.user.can_manage(self.object)
-            context['labels'] = self.object.get_labels()
+            user_partner = self.request.user.get_partner(self.object.org)
 
+            context['can_manage'] = self.request.user.can_manage(self.object)
+            context['can_view_replies'] = not user_partner or user_partner == self.object
+            context['labels'] = self.object.get_labels()
             context['summary'] = self.get_summary(self.object)
             return context
 
@@ -373,8 +375,6 @@ class PartnerCRUDL(SmartCRUDL):
         """
         JSON endpoint to fetch partner users with their activity information
         """
-        permission = 'cases.partner_read'
-
         def calculate_user_counts(self, partner, since, until):
             replies = Outgoing.objects.filter(org=partner.org, partner=partner)
             if since:

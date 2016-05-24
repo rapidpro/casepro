@@ -62,6 +62,7 @@
         </div>
       </uib-tab>
 
+      {% if can_view_replies %}
       <uib-tab index="1" select="onTabSelect('replies')">
         <uib-tab-heading>
           <i class="glyphicon glyphicon-comment"></i> {% trans "Replies" %}
@@ -128,6 +129,7 @@
             - trans "More items than can be displayed"
         </div>
       </uib-tab>
+      {% endif %}
 
       <uib-tab index="2" select="onTabSelect('users')">
         <uib-tab-heading>

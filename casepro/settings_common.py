@@ -327,7 +327,7 @@ PERMISSIONS = {
 
 # assigns the permissions that each group should have
 GROUP_PERMISSIONS = {
-    "Administrators": (
+    "Administrators": (  # Org users: Administrators
         'orgs.org_home',
         'orgs.org_edit',
         'orgs.org_inbox',
@@ -347,7 +347,7 @@ GROUP_PERMISSIONS = {
 
         'profiles.profile.*',
     ),
-    "Editors": (
+    "Editors": (  # Partner users: Managers
         'orgs.org_inbox',
 
         'msgs.message_action',
@@ -377,7 +377,7 @@ GROUP_PERMISSIONS = {
         'profiles.profile_user_create',
         'profiles.profile_user_read',
     ),
-    "Viewers": (
+    "Viewers": (  # Partner users: Data Analysts
         'orgs.org_inbox',
 
         'msgs.message_action',
@@ -402,7 +402,6 @@ GROUP_PERMISSIONS = {
         'cases.caseexport_read',
         'cases.partner_list',
         'cases.partner_read',
-        'cases.partner_replies',
         'cases.partner_users',
 
         'profiles.profile_user_read',

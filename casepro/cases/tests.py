@@ -858,10 +858,25 @@ class PartnerCRUDLTest(BaseCasesTest):
     def test_read(self):
         url = reverse('cases.partner_read', args=[self.moh.pk])
 
-        # user from different partner but same org can see it
+        # manager user from same partner gets full view of their own partner org
+        self.login(self.user1)
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['can_manage'], True)
+        self.assertEqual(response.context['can_view_replies'], True)
+
+        # data-analyst user from same partner gets can't edit users
+        self.login(self.user2)
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.context['can_manage'], False)
+        self.assertEqual(response.context['can_view_replies'], True)
+
+        # user from different partner but same org has limited view
         self.login(self.user3)
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['can_manage'], False)
+        self.assertEqual(response.context['can_view_replies'], False)
 
         # user from different org can't
         self.login(self.user4)
