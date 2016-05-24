@@ -61,7 +61,8 @@ class BaseExport(models.Model):
         book.save(temp)
         temp.flush()
 
-        filename = 'orgs/%d/%s/%s.xls' % (self.org_id, self.directory, random_string(20))
+        org_root = getattr(settings, 'SITE_ORGS_STORAGE_ROOT', 'orgs')
+        filename = '%s/%d/%s/%s.xls' % (org_root, self.org_id, self.directory, random_string(20))
         default_storage.save(filename, File(temp))
 
         self.filename = filename
@@ -103,10 +104,6 @@ class BaseExport(models.Model):
             sheet.write(row, col, value, self.DATE_STYLE)
         else:
             sheet.write(row, col, value)
-
-    @staticmethod
-    def excel_datetime(value):
-        return value.astimezone(pytz.UTC).replace(tzinfo=None) if value else None
 
     class Meta:
         abstract = True

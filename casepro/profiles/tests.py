@@ -305,7 +305,7 @@ class UserCRUDLTest(BaseCasesTest):
 
         # try giving user someone else's email address
         data = {'full_name': "Morris", 'partner': self.moh.pk, 'role': ROLE_ANALYST,
-                'email': "bob@unicef.org", 'password': "Qwerty123", 'confirm_password': "Qwerty123"}
+                'email': "rick@unicef.org", 'password': "Qwerty123", 'confirm_password': "Qwerty123"}
         response = self.url_post('unicef', url, data)
         self.assertFormError(response, 'form', None, "Email address already taken.")
 

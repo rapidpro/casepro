@@ -53,7 +53,7 @@ SITE_ALLOW_NO_ORG = ('orgs_ext.org_create', 'orgs_ext.org_update', 'orgs_ext.org
                      'orgs_ext.task_list',
                      'profiles.user_create', 'profiles.user_update', 'profiles.user_read', 'profiles.user_list',
                      'internal.status', 'internal.ping')
-
+SITE_ORGS_STORAGE_ROOT = 'orgs'
 SITE_BACKEND = 'casepro.backend.rapidpro.RapidProBackend'
 
 

@@ -488,22 +488,21 @@ class Outgoing(models.Model):
         after = search.get('after')
         before = search.get('before')
 
-        queryset = org.outgoing_messages.exclude(reply_to=None)
+        queryset = org.outgoing_messages.filter(activity__in=(Outgoing.BULK_REPLY, Outgoing.CASE_REPLY))
+
+        user_partner = user.get_partner(org)
+        if user_partner:
+            queryset = queryset.filter(partner=user_partner)
 
         if partner_id:
-            # if searching by partner, check current user can access messages from that partner
             from casepro.cases.models import Partner
             partner = Partner.objects.get(pk=partner_id)
-            user_partner = user.get_partner(org)
-            if user_partner and user_partner != partner:
-                queryset = queryset.none()
-            else:
-                queryset = queryset.filter(partner=partner)
+            queryset = queryset.filter(partner=partner)
 
         if after:
-            queryset = queryset.filter(created_on__gt=after)
+            queryset = queryset.filter(created_on__gte=after)
         if before:
-            queryset = queryset.filter(created_on__lt=before)
+            queryset = queryset.filter(created_on__lte=before)
 
         queryset = queryset.select_related('contact', 'case__assignee', 'created_by__profile')
         queryset = queryset.prefetch_related('reply_to__labels')
@@ -550,38 +549,37 @@ class MessageExport(BaseExport):
         all_fields = base_fields + [f.label for f in contact_fields]
 
         # load all messages to be exported
-        messages = Message.search(self.org, self.created_by, search)
+        items = Message.search(self.org, self.created_by, search)
 
         def add_sheet(num):
             sheet = book.add_sheet(unicode(_("Messages %d" % num)))
-            for col in range(len(all_fields)):
-                field = all_fields[col]
-                sheet.write(0, col, unicode(field))
+            self.write_row(sheet, 0, all_fields)
             return sheet
 
         # even if there are no messages - still add a sheet
-        if not messages:
+        if not items:
             add_sheet(1)
         else:
             sheet_number = 1
-            for msg_chunk in chunks(messages, 65535):
+            for item_chunk in chunks(items, 65535):
                 current_sheet = add_sheet(sheet_number)
 
                 row = 1
-                for msg in msg_chunk:
-                    current_sheet.write(row, 0, self.excel_datetime(msg.created_on), self.DATE_STYLE)
-                    current_sheet.write(row, 1, msg.backend_id)
-                    current_sheet.write(row, 2, 'Yes' if msg.is_flagged else 'No')
-                    current_sheet.write(row, 3, ', '.join([l.name for l in msg.labels.all()]))
-                    current_sheet.write(row, 4, msg.text)
-                    current_sheet.write(row, 5, msg.contact.uuid)
+                for item in item_chunk:
+                    values = [
+                        item.created_on,
+                        item.backend_id,
+                        item.is_flagged,
+                        ', '.join([l.name for l in item.labels.all()]),
+                        item.text,
+                        item.contact.uuid
+                    ]
 
-                    fields = msg.contact.get_fields()
+                    fields = item.contact.get_fields()
+                    for field in contact_fields:
+                        values.append(fields.get(field.key, ""))
 
-                    for cf in range(len(contact_fields)):
-                        contact_field = contact_fields[cf]
-                        current_sheet.write(row, len(base_fields) + cf, fields.get(contact_field.key, None))
-
+                    self.write_row(current_sheet, row, values)
                     row += 1
 
                 sheet_number += 1
@@ -599,7 +597,7 @@ class ReplyExport(BaseExport):
 
     def render_book(self, book, search):
         base_fields = [
-            "Contact", "Message", "Flagged", "Case Assignee", "Labels", "User", "Reply", "Sent On", "Response Time"
+            "Message", "Flagged", "Case Assignee", "Labels", "User", "Reply", "Sent On", "Response Time", "Contact"
         ]
         contact_fields = Field.get_all(self.org, visible=True)
         all_fields = base_fields + [f.label for f in contact_fields]
@@ -623,7 +621,6 @@ class ReplyExport(BaseExport):
                 row = 1
                 for item in item_chunk:
                     values = [
-                        item.contact.uuid,
                         item.reply_to.text,
                         item.reply_to.is_flagged,
                         item.case.assignee.name if item.case else "",
@@ -631,11 +628,11 @@ class ReplyExport(BaseExport):
                         item.created_by.email,
                         item.text,
                         item.created_on,
-                        timesince(item.reply_to.created_on, now=item.created_on)
+                        timesince(item.reply_to.created_on, now=item.created_on),
+                        item.contact.uuid
                     ]
 
                     fields = item.contact.get_fields()
-
                     for field in contact_fields:
                         values.append(fields.get(field.key, ""))
 

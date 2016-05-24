@@ -269,7 +269,7 @@ services.factory 'OutgoingService', ['$rootScope', '$http', ($rootScope, $http) 
     startReplyExport: (search, callback) ->
       params = @_replySearchToParams(search, null, null)
 
-      $http.get('/replyexport/create/?' + $.param(params))
+      $http.post('/replyexport/create/?' + $.param(params))
       .success((data) =>
         callback(data.results, data.has_more)
       ).error(DEFAULT_ERR_HANDLER)

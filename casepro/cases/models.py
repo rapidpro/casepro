@@ -444,48 +444,47 @@ class CaseExport(BaseExport):
         all_fields = base_fields + [f.label for f in contact_fields]
 
         # load all messages to be exported
-        cases = Case.search(self.org, self.created_by, search)
+        items = Case.search(self.org, self.created_by, search)
 
-        cases = cases.select_related('initial_message')  # need for "Message On"
+        items = items.select_related('initial_message')  # need for "Message On"
 
-        cases = cases.annotate(
+        items = items.annotate(
             incoming_count=Count('incoming_messages', distinct=True),
             outgoing_count=Count('outgoing_messages', distinct=True)
         )
 
         def add_sheet(num):
             sheet = book.add_sheet(unicode(_("Cases %d" % num)))
-            for col in range(len(all_fields)):
-                field = all_fields[col]
-                sheet.write(0, col, unicode(field))
+            self.write_row(sheet, 0, all_fields)
             return sheet
 
         # even if there are no cases - still add a sheet
-        if not cases:
+        if not items:
             add_sheet(1)
         else:
             sheet_number = 1
-            for case_chunk in chunks(cases, 65535):
+            for item_chunk in chunks(items, 65535):
                 current_sheet = add_sheet(sheet_number)
 
                 row = 1
-                for case in case_chunk:
-                    current_sheet.write(row, 0, self.excel_datetime(case.initial_message.created_on), self.DATE_STYLE)
-                    current_sheet.write(row, 1, self.excel_datetime(case.opened_on), self.DATE_STYLE)
-                    current_sheet.write(row, 2, self.excel_datetime(case.closed_on), self.DATE_STYLE)
-                    current_sheet.write(row, 3, case.assignee.name, self.DATE_STYLE)
-                    current_sheet.write(row, 4, ', '.join([l.name for l in case.labels.all()]))
-                    current_sheet.write(row, 5, case.summary)
-                    current_sheet.write(row, 6, case.outgoing_count)
-                    current_sheet.write(row, 7, case.incoming_count - 1)  # subtract 1 for the initial messages
-                    current_sheet.write(row, 8, case.contact.uuid)
+                for item in item_chunk:
+                    values = [
+                        item.initial_message.created_on,
+                        item.opened_on,
+                        item.closed_on,
+                        item.assignee.name,
+                        ', '.join([l.name for l in item.labels.all()]),
+                        item.summary,
+                        item.outgoing_count,
+                        item.incoming_count - 1, # subtract 1 for the initial messages
+                        item.contact.uuid
+                    ]
 
-                    fields = case.contact.get_fields()
+                    fields = item.contact.get_fields()
+                    for field in contact_fields:
+                        values.append(fields.get(field.key, ""))
 
-                    for cf in range(len(contact_fields)):
-                        contact_field = contact_fields[cf]
-                        current_sheet.write(row, len(base_fields) + cf, fields.get(contact_field.key, None))
-
+                    self.write_row(current_sheet, row, values)
                     row += 1
 
                 sheet_number += 1

@@ -55,7 +55,7 @@ class BaseCasesTest(DashTest):
 
         # some users in those partners
         self.user1 = self.create_user(self.unicef, self.moh, ROLE_MANAGER, "Evan", "evan@unicef.org")
-        self.user2 = self.create_user(self.unicef, self.moh, ROLE_ANALYST, "Bob", "bob@unicef.org")
+        self.user2 = self.create_user(self.unicef, self.moh, ROLE_ANALYST, "Rick", "rick@unicef.org")
         self.user3 = self.create_user(self.unicef, self.who, ROLE_MANAGER, "Carol", "carol@unicef.org")
         self.user4 = self.create_user(self.nyaruka, self.klab, ROLE_ANALYST, "Bosco", "bosco@klab.rw")
 
