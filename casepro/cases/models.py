@@ -476,7 +476,7 @@ class CaseExport(BaseExport):
                         ', '.join([l.name for l in item.labels.all()]),
                         item.summary,
                         item.outgoing_count,
-                        item.incoming_count - 1, # subtract 1 for the initial messages
+                        item.incoming_count - 1,  # subtract 1 for the initial messages
                         item.contact.uuid
                     ]
 
