@@ -95,26 +95,30 @@
               %table.table.table-striped
                 %thead
                   %th
-                    - trans "Contact"
-                  %th
-                    %span.glyphicon.glyphicon-flag
-                  %th
-                    - trans "Message"
+                    - trans "On"
                   %th
                     - trans "User"
                   %th
-                    - trans "Reply"
-                  %th
-                    - trans "On"
+                    - trans "Message"
                   %th
                     - trans "Delay"
+                  %th
+                    - trans "Reply to"
+                  %th
+                    %span.glyphicon.glyphicon-flag
+                  %th
+                    - trans "Contact"
                 %tbody
                   %tr{ ng-repeat:"item in items" }
                     %td{ nowrap:"" }
-                      %span.glyphicon.glyphicon-phone>
-                      [[ item.contact.uuid | limitTo:6 | uppercase ]]
+                      [[ item.time | autodate ]]
                     %td
-                      %span.glyphicon.glyphicon-flag{ ng-if:"item.reply_to.flagged" }
+                      %a{ ng-href:"/user/read/[[ item.sender.id ]]/" }><
+                        [[ item.sender.name ]]
+                    %td
+                      [[ item.text ]]
+                    %td
+                      <span ng-class="{'time-warning': item.response.warning}">[[ item.response.delay ]]</span>
                     %td
                       %span.label-container{ ng-if:"item.case" }
                         %span.label.label-warning
@@ -126,14 +130,10 @@
                         &nbsp;
                       [[ item.reply_to.text ]]
                     %td
-                      %a{ ng-href:"/user/read/[[ item.sender.id ]]/" }><
-                        [[ item.sender.name ]]
-                    %td
-                      [[ item.text ]]
+                      %span.glyphicon.glyphicon-flag{ ng-if:"item.reply_to.flagged" }
                     %td{ nowrap:"" }
-                      [[ item.time | autodate ]]
-                    %td
-                      <span ng-class="{'time-warning': item.response.warning}">[[ item.response.delay ]]</span>
+                      %span.glyphicon.glyphicon-phone>
+                      [[ item.contact.uuid | limitTo:6 | uppercase ]]
 
             .loading{ ng-if:"oldItemsLoading" }
             .none{ ng-hide:"oldItemsLoading || items.length > 0" }

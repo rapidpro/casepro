@@ -597,7 +597,7 @@ class ReplyExport(BaseExport):
 
     def render_book(self, book, search):
         base_fields = [
-            "Message", "Flagged", "Case Assignee", "Labels", "User", "Reply", "Sent On", "Response Time", "Contact"
+            "Sent On", "User", "Message", "Delay", "Reply to", "Flagged", "Case Assignee", "Labels", "Contact"
         ]
         contact_fields = Field.get_all(self.org, visible=True)
         all_fields = base_fields + [f.label for f in contact_fields]
@@ -621,14 +621,14 @@ class ReplyExport(BaseExport):
                 row = 1
                 for item in item_chunk:
                     values = [
+                        item.created_on,
+                        item.created_by.email,
+                        item.text,
+                        timesince(item.reply_to.created_on, now=item.created_on),
                         item.reply_to.text,
                         item.reply_to.is_flagged,
                         item.case.assignee.name if item.case else "",
                         ', '.join([l.name for l in item.reply_to.labels.all()]),
-                        item.created_by.email,
-                        item.text,
-                        item.created_on,
-                        timesince(item.reply_to.created_on, now=item.created_on),
                         item.contact.uuid
                     ]
 

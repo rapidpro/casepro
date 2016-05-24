@@ -1107,14 +1107,18 @@ class ReplyExportCRUDLTest(BaseCasesTest):
         sheet = workbook.sheets()[0]
 
         self.assertEqual(sheet.nrows, 4)
-        self.assertExcelRow(sheet, 0, ["Message", "Flagged", "Case Assignee", "Labels", "User", "Reply",
-                                       "Sent On", "Response Time", "Contact", "Nickname", "Age"])
-        self.assertExcelRow(sheet, 1, ["I ♡ SMS", "Yes", "", "Pregnancy", "carol@unicef.org", "Welcome",
-                                       d6, "4\xa0hours", "C-002", "Bobby", "32"], pytz.UTC)
-        self.assertExcelRow(sheet, 2, ["I ♡ SMS", "Yes", "", "Pregnancy", "rick@unicef.org", "That's nice",
-                                       d5, "3\xa0hours", "C-002", "Bobby", "32"], pytz.UTC)
-        self.assertExcelRow(sheet, 3, ["Hello?", "No", "MOH", "AIDS", "evan@unicef.org", "Bonjour",
-                                       d4, "3\xa0hours", "C-001", "Annie", "28"], pytz.UTC)
+        self.assertExcelRow(sheet, 0, ["Sent On", "User", "Message", "Delay",
+                                       "Reply to", "Flagged", "Case Assignee", "Labels",
+                                       "Contact", "Nickname", "Age"])
+        self.assertExcelRow(sheet, 1, [d6, "carol@unicef.org", "Welcome", "4\xa0hours",
+                                       "I ♡ SMS", "Yes", "", "Pregnancy",
+                                       "C-002", "Bobby", "32"], pytz.UTC)
+        self.assertExcelRow(sheet, 2, [d5, "rick@unicef.org", "That's nice", "3\xa0hours",
+                                       "I ♡ SMS", "Yes", "", "Pregnancy",
+                                       "C-002", "Bobby", "32"], pytz.UTC)
+        self.assertExcelRow(sheet, 3, [d4, "evan@unicef.org", "Bonjour", "3\xa0hours",
+                                       "Hello?", "No", "MOH", "AIDS",
+                                       "C-001", "Annie", "28"], pytz.UTC)
 
         read_url = reverse('msgs.replyexport_read', args=[export.pk])
 
