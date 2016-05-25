@@ -78,6 +78,8 @@
 
               %form.form-horizontal
                 %span.date-range{ ng-controller:"DateRangeController" }
+                  %label.control-label{ style:"padding-left: 0" }
+                    - trans "From"
                   .input-group.date-picker
                     %input.form-control{ type:"text", uib-datepicker-popup:"[[ format ]]", ng-model:"searchFields.after", is-open:"afterOpen", datepicker-options:"afterOptions", ng-change:"onAfterChange()" }
                     %span.input-group-btn
@@ -152,7 +154,7 @@
           .pull-away
             <a class="btn btn-default" href="{% url 'profiles.user_create_in' object.pk %}">{% trans "New..." %}</a>
 
-          .{ style:"margin-top: 5px" }
+          .{ style:"margin-top: 7px" }
             Total of <strong>[[ users.length ]]</strong> users
 
         %table.table.table-striped
@@ -222,7 +224,7 @@
       float: left;
     }
     .search-toolbar .date-range label {
-      padding: 5px 1em 0 1em;
+      padding: 7px 1em 0 1em;
     }
     .time-warning {
       color: #922
