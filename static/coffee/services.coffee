@@ -203,7 +203,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
         after: formatIso8601(search.after),
         before: formatIso8601(search.before),
         groups: (g.uuid for g in search.groups).join(','),
-        contact: if search.contact then search.contact.uuid else null,
+        contact: if search.contact then search.contact.id else null,
         label: if search.label then search.label.id else null,
         archived: if search.archived then 1 else 0
       }
@@ -281,7 +281,7 @@ services.factory 'OutgoingService', ['$rootScope', '$http', ($rootScope, $http) 
       return {
         folder: search.folder,
         text: search.text,
-        contact: if search.contact then search.contact.uuid else null,
+        contact: if search.contact then search.contact.id else null,
         before: formatIso8601(startTime),
         page: page
       }

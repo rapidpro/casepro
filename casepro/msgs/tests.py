@@ -397,7 +397,7 @@ class MessageTest(BaseCasesTest):
         self.assertRaises(ValueError, Message.search, self.unicef, self.user1, {'folder': MessageFolder.unlabelled})
 
         # by contact in the inbox
-        assert_search(self.admin, {'folder': MessageFolder.inbox, 'contact': bob.uuid}, [msg8, msg6])
+        assert_search(self.admin, {'folder': MessageFolder.inbox, 'contact': bob.pk}, [msg8, msg6])
 
         # by contact group in the inbox
         assert_search(self.admin, {'folder': MessageFolder.inbox, 'groups': [self.reporters.uuid]}, [msg8, msg6])
@@ -901,7 +901,7 @@ class OutgoingTest(BaseCasesTest):
         assert_search(self.admin, {'folder': OutgoingFolder.sent, 'text': "LO 5"}, [out5])
 
         # by contact
-        assert_search(self.admin, {'folder': OutgoingFolder.sent, 'contact': self.ann.uuid}, [out2, out1])
+        assert_search(self.admin, {'folder': OutgoingFolder.sent, 'contact': self.ann.pk}, [out2, out1])
 
     def test_search_replies(self):
         out1 = self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello 1", self.ann)
