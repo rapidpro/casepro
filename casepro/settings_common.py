@@ -53,9 +53,12 @@ SITE_ALLOW_NO_ORG = ('orgs_ext.org_create', 'orgs_ext.org_update', 'orgs_ext.org
                      'orgs_ext.task_list',
                      'profiles.user_create', 'profiles.user_update', 'profiles.user_read', 'profiles.user_list',
                      'internal.status', 'internal.ping')
+
+# casepro configuration
 SITE_ORGS_STORAGE_ROOT = 'orgs'
 SITE_EXTERNAL_CONTACT_URL = 'http://localhost:8001/contact/read/%s/'
 SITE_BACKEND = 'casepro.backend.rapidpro.RapidProBackend'
+SITE_ANON_CONTACTS = False
 
 
 # On Unix systems, a value of None will cause Django to use the same

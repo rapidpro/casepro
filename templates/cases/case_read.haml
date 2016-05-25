@@ -140,14 +140,8 @@
         .panel.panel-default{ ng-if:"caseObj.contact" }
           .panel-heading
             - trans "Contact"
-            %strong
+            %a{ ng-href:"/contact/read/[[ caseObj.contact.id ]]/" }
               [[ caseObj.contact.name ]]
-
-            - if user_is_admin
-              &nbsp;
-              %a{ ng-href:ng-href:"/contact/read/[[ caseObj.contact.id ]]/" }
-                %span.glyphicon.glyphicon-new-window
-                - trans "View"
           .panel-body
             .contact-details
               .none{ ng-if:"!caseObj.contact.fields" }
