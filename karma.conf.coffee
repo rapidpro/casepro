@@ -24,7 +24,8 @@ module.exports = (config) ->
       'static/coffee/*.coffee',
 
       # our test files
-      'karma/test-filters.coffee'
+      'karma/test-filters.coffee',
+      'karma/test-services.coffee'
     ]
 
     # list of files to exclude

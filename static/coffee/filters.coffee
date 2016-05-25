@@ -12,9 +12,9 @@ filters.filter('autodate', (dateFilter) ->
     if isToday
       return dateFilter(date, 'HH:mm')
     else if date.getFullYear() == now.getFullYear()
-      return dateFilter(date, 'MMM dd')
+      return dateFilter(date, 'MMM d')
     else
-      return dateFilter(date, 'MMM dd, yyyy')
+      return dateFilter(date, 'MMM d, yyyy')
 )
 
 #----------------------------------------------------------------------------
