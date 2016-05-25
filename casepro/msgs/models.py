@@ -7,6 +7,7 @@ from dash.utils import chunks
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
+from django.db.models import Count
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timesince import timesince
@@ -509,6 +510,25 @@ class Outgoing(models.Model):
 
         return queryset.order_by('-created_on')
 
+    @classmethod
+    def get_user_reply_counts(cls, org, partner, since, until):
+        """
+        Calculates aggregated counts of replies by user
+        """
+        # TODO db triggers to pre-calculate these for performance
+
+        replies = cls.objects.filter(org=org, activity__in=(Outgoing.BULK_REPLY, Outgoing.CASE_REPLY))
+
+        if partner:
+            replies = replies.filter(partner=partner)
+        if since:
+            replies = replies.filter(created_on__gte=since)
+        if until:
+            replies = replies.filter(created_on__lt=until)
+
+        counts = replies.values('created_by').annotate(replies=Count('pk'))
+        return {c['created_by']: c['replies'] for c in counts}
+
     def as_json(self):
         """
         Prepares this outgoing message for JSON serialization
@@ -597,7 +617,7 @@ class ReplyExport(BaseExport):
 
     def render_book(self, book, search):
         base_fields = [
-            "Message", "Flagged", "Case Assignee", "Labels", "User", "Reply", "Sent On", "Response Time", "Contact"
+            "Sent On", "User", "Message", "Delay", "Reply to", "Flagged", "Case Assignee", "Labels", "Contact"
         ]
         contact_fields = Field.get_all(self.org, visible=True)
         all_fields = base_fields + [f.label for f in contact_fields]
@@ -621,14 +641,14 @@ class ReplyExport(BaseExport):
                 row = 1
                 for item in item_chunk:
                     values = [
+                        item.created_on,
+                        item.created_by.email,
+                        item.text,
+                        timesince(item.reply_to.created_on, now=item.created_on),
                         item.reply_to.text,
                         item.reply_to.is_flagged,
                         item.case.assignee.name if item.case else "",
                         ', '.join([l.name for l in item.reply_to.labels.all()]),
-                        item.created_by.email,
-                        item.text,
-                        item.created_on,
-                        timesince(item.reply_to.created_on, now=item.created_on),
                         item.contact.uuid
                     ]
 

@@ -538,7 +538,7 @@ services.factory 'PartnerService', ['$http', ($http) ->
     fetchUsers: (partner, callback) ->
       $http.get('/partner/users/' + partner.id + '/')
       .success((data) =>
-        callback(data.users)
+        callback(data.results)
       ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------

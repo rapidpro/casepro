@@ -928,6 +928,29 @@ class OutgoingTest(BaseCasesTest):
         assert_search(self.admin, {'after': format_iso8601(out3.created_on)}, [out4, out3])
         assert_search(self.admin, {'before': format_iso8601(out3.created_on)}, [out3, out2, out1])
 
+    def test_get_user_reply_counts(self):
+        self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello 1", self.ann,
+                             created_on=datetime(2016, 5, 20, 9, 0, tzinfo=pytz.UTC))  # May 20th
+        self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann, partner=self.moh,
+                             created_on=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC))  # April 20th
+        self.create_outgoing(self.unicef, self.user1, 203, 'C', "Hello 3", self.bob, partner=self.moh,
+                             created_on=datetime(2016, 3, 20, 9, 0, tzinfo=pytz.UTC))  # Mar 20th
+        self.create_outgoing(self.unicef, self.admin, 205, 'F', "Hello 5", None)  # forwards are ignored
+
+        self.assertEqual(Outgoing.get_user_reply_counts(self.unicef, None, None, None), {
+            self.admin.pk: 1,
+            self.user1.pk: 2
+        })
+
+        self.assertEqual(Outgoing.get_user_reply_counts(self.unicef, self.moh, None, None), {
+            self.user1.pk: 2
+        })
+
+        since, until = datetime(2016, 3, 1, 0, 0, tzinfo=pytz.UTC), datetime(2016, 4, 30, 23, 59, tzinfo=pytz.UTC)
+        self.assertEqual(Outgoing.get_user_reply_counts(self.unicef, None, since, until), {
+            self.user1.pk: 2
+        })
+
     def test_as_json(self):
         msg1 = self.create_message(self.unicef, 101, self.ann, "Hello")
         outgoing = self.create_outgoing(self.unicef, self.user1, 201, 'B', "That's great", self.ann, reply_to=msg1)
@@ -1107,14 +1130,18 @@ class ReplyExportCRUDLTest(BaseCasesTest):
         sheet = workbook.sheets()[0]
 
         self.assertEqual(sheet.nrows, 4)
-        self.assertExcelRow(sheet, 0, ["Message", "Flagged", "Case Assignee", "Labels", "User", "Reply",
-                                       "Sent On", "Response Time", "Contact", "Nickname", "Age"])
-        self.assertExcelRow(sheet, 1, ["I ♡ SMS", "Yes", "", "Pregnancy", "carol@unicef.org", "Welcome",
-                                       d6, "4\xa0hours", "C-002", "Bobby", "32"], pytz.UTC)
-        self.assertExcelRow(sheet, 2, ["I ♡ SMS", "Yes", "", "Pregnancy", "rick@unicef.org", "That's nice",
-                                       d5, "3\xa0hours", "C-002", "Bobby", "32"], pytz.UTC)
-        self.assertExcelRow(sheet, 3, ["Hello?", "No", "MOH", "AIDS", "evan@unicef.org", "Bonjour",
-                                       d4, "3\xa0hours", "C-001", "Annie", "28"], pytz.UTC)
+        self.assertExcelRow(sheet, 0, ["Sent On", "User", "Message", "Delay",
+                                       "Reply to", "Flagged", "Case Assignee", "Labels",
+                                       "Contact", "Nickname", "Age"])
+        self.assertExcelRow(sheet, 1, [d6, "carol@unicef.org", "Welcome", "4\xa0hours",
+                                       "I ♡ SMS", "Yes", "", "Pregnancy",
+                                       "C-002", "Bobby", "32"], pytz.UTC)
+        self.assertExcelRow(sheet, 2, [d5, "rick@unicef.org", "That's nice", "3\xa0hours",
+                                       "I ♡ SMS", "Yes", "", "Pregnancy",
+                                       "C-002", "Bobby", "32"], pytz.UTC)
+        self.assertExcelRow(sheet, 3, [d4, "evan@unicef.org", "Bonjour", "3\xa0hours",
+                                       "Hello?", "No", "MOH", "AIDS",
+                                       "C-001", "Annie", "28"], pytz.UTC)
 
         read_url = reverse('msgs.replyexport_read', args=[export.pk])
 
