@@ -928,7 +928,7 @@ class PartnerCRUDLTest(BaseCasesTest):
     def test_list(self):
         url = reverse('cases.partner_list')
 
-        # try again as regular user
+        # try as regular user
         self.login(self.user2)
 
         response = self.url_get('unicef', url)
@@ -938,6 +938,35 @@ class PartnerCRUDLTest(BaseCasesTest):
         self.assertEqual(len(partners), 2)
         self.assertEqual(partners[0].name, "MOH")
         self.assertEqual(partners[1].name, "WHO")
+
+    def test_users(self):
+        url = reverse('cases.partner_users', args=[self.moh.pk])
+
+        ann = self.create_contact(self.unicef, "C-001", "Ann")
+        self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", ann, partner=self.moh,
+                             created_on=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC))  # April 20th
+        self.create_outgoing(self.unicef, self.user1, 203, 'C', "Hello 3", ann, partner=self.moh,
+                             created_on=datetime(2016, 3, 20, 9, 0, tzinfo=pytz.UTC))  # Mar 20th
+
+        # try as regular user
+        self.login(self.user2)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json['results'], [
+            {
+                'id': self.user1.pk,
+                'name': "Evan",
+                'replies': {'last_month': 1, 'this_month': 0, 'total': 2},
+                'role': "Manager"
+            },
+            {
+                'id': self.user2.pk,
+                'name': "Rick",
+                'replies': {'last_month': 0, 'this_month': 0, 'total': 0},
+                'role': "Analyst"
+            }
+        ])
 
 
 class ContextProcessorsTest(BaseCasesTest):

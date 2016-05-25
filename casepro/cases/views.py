@@ -375,25 +375,15 @@ class PartnerCRUDL(SmartCRUDL):
         """
         JSON endpoint to fetch partner users with their activity information
         """
-        def calculate_user_counts(self, partner, since, until):
-            replies = Outgoing.objects.filter(org=partner.org, partner=partner)
-            if since:
-                replies = replies.filter(created_on__gte=since)
-            if until:
-                replies = replies.filter(created_on__lt=until)
-
-            counts = replies.values('created_by').annotate(replies=Count('pk'))
-            return {c['created_by']: c['replies'] for c in counts}
-
         def get(self, request, *args, **kwargs):
             partner = self.get_object()
             managers = set(partner.get_managers())
             all_users = list(partner.get_users().order_by('profile__full_name'))
 
             # get reply statistics
-            total = self.calculate_user_counts(partner, None, None)
-            this_month = self.calculate_user_counts(partner, *month_range(0))
-            last_month = self.calculate_user_counts(partner, *month_range(-1))
+            total = Outgoing.get_user_reply_counts(partner.org, partner, None, None)
+            this_month = Outgoing.get_user_reply_counts(partner.org, partner, *month_range(0))
+            last_month = Outgoing.get_user_reply_counts(partner.org, partner, *month_range(-1))
 
             def as_json(user):
                 obj = user.as_json()
@@ -407,7 +397,7 @@ class PartnerCRUDL(SmartCRUDL):
                 })
                 return obj
 
-            return JsonResponse({'users': [as_json(u) for u in all_users]})
+            return JsonResponse({'results': [as_json(u) for u in all_users]})
 
 
 class BaseHomeView(OrgPermsMixin, SmartTemplateView):
