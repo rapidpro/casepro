@@ -298,7 +298,7 @@ class PartnerCRUDL(SmartCRUDL):
         def save(self, obj):
             data = self.form.cleaned_data
             org = self.request.user.get_org()
-            restricted = data['restricted']
+            restricted = data['is_restricted']
             labels = data['labels'] if restricted else []
 
             self.object = Partner.create(org, data['name'], restricted, labels, data['logo'])

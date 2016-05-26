@@ -86,3 +86,17 @@ class OrgExtCRUDLTest(BaseCasesTest):
 
         self.assertEqual(set(Group.get_suspend_from(self.unicef)), {self.males})
         self.assertEqual(set(Field.get_all(self.unicef, visible=True)), {self.state})
+
+
+class TaskExtCRUDLTest(BaseCasesTest):
+    def test_list(self):
+        url = reverse('orgs_ext.task_list')
+
+        # not accessible to org users
+        self.login(self.admin)
+        self.assertLoginRedirect(self.url_get('unicef', url), 'unicef', url)
+
+        # accessible to superusers
+        self.login(self.superuser)
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)

@@ -904,6 +904,38 @@ class PartnerTest(BaseCasesTest):
 
 
 class PartnerCRUDLTest(BaseCasesTest):
+    def test_create(self):
+        url = reverse('cases.partner_create')
+
+        # can't access as partner user
+        self.login(self.user1)
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        self.login(self.admin)
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['form'].fields.keys(), ['name', 'logo', 'is_restricted', 'labels', 'loc'])
+
+        # create label restricted partner
+        response = self.url_post('unicef', url, {'name': "Helpers", 'logo': None,
+                                                 'is_restricted': True, 'labels': [self.tea.pk]})
+        self.assertEqual(response.status_code, 302)
+
+        helpers = Partner.objects.get(name="Helpers")
+        self.assertTrue(helpers.is_restricted)
+        self.assertEqual(set(helpers.get_labels()), {self.tea})
+
+        # create unrestricted partner
+        response = self.url_post('unicef', url, {'name': "Internal", 'logo': None,
+                                                 'is_restricted': False, 'labels': [self.tea.pk]})
+        self.assertEqual(response.status_code, 302)
+
+        internal = Partner.objects.get(name="Internal")
+        self.assertFalse(internal.is_restricted)
+        self.assertEqual(set(internal.labels.all()), set())  # submitted labels are ignored
+        self.assertEqual(set(internal.get_labels()), {self.aids, self.pregnancy, self.tea})
+
     def test_read(self):
         url = reverse('cases.partner_read', args=[self.moh.pk])
 
