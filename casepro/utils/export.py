@@ -30,6 +30,8 @@ class BaseExport(models.Model):
     """
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='%(class)ss')
 
+    partner = models.ForeignKey('cases.Partner', related_name='%(class)ss', null=True)
+
     search = models.TextField()
 
     filename = models.CharField(max_length=512)
@@ -38,6 +40,7 @@ class BaseExport(models.Model):
 
     created_on = models.DateTimeField(auto_now_add=True)
 
+    # overridden by subclasses
     directory = None
     download_view = None
     email_templates = None
@@ -47,7 +50,7 @@ class BaseExport(models.Model):
 
     @classmethod
     def create(cls, org, user, search):
-        return cls.objects.create(org=org, created_by=user, search=json_encode(search))
+        return cls.objects.create(org=org, partner=user.get_partner(org), created_by=user, search=json_encode(search))
 
     def do_export(self):
         """
@@ -119,6 +122,16 @@ class BaseDownloadView(OrgObjPermsMixin, SmartReadView):
     @classmethod
     def derive_url_pattern(cls, path, action):
         return r'%s/download/(?P<pk>\d+)/' % path
+
+    def has_permission(self, request, *args, **kwargs):
+        if not super(BaseDownloadView, self).has_permission(request, *args, **kwargs):
+            return False
+
+        obj = self.get_object()
+
+        # if users is partner user, check this export is for their partner org
+        user_partner = self.request.user.get_partner(obj.org)
+        return not user_partner or user_partner == obj.partner
 
     def derive_title(self):
         return self.title

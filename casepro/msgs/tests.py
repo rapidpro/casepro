@@ -776,10 +776,11 @@ class MessageExportCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 200)
 
         export = MessageExport.objects.get()
+        self.assertEqual(export.org, self.unicef)
+        self.assertEqual(export.partner, self.moh)
         self.assertEqual(export.created_by, self.user1)
 
-        filename = "%s/%s" % (settings.MEDIA_ROOT, export.filename)
-        workbook = open_workbook(filename, 'rb')
+        workbook = open_workbook("%s/%s" % (settings.MEDIA_ROOT, export.filename), 'rb')
         sheet = workbook.sheets()[0]
 
         self.assertEqual(sheet.nrows, 3)
@@ -793,11 +794,27 @@ class MessageExportCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['download_url'], "/messageexport/download/%d/?download=1" % export.pk)
 
-        # user from another org can't access this download
-        self.login(self.norbert)
+        # download as Excel
+        response = self.url_get('unicef', read_url + '?download=1')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/vnd.ms-excel')
+        self.assertEqual(response['Content-Disposition'], 'attachment; filename=message_export.xls')
 
-        response = self.url_get('unicef', read_url)
-        self.assertEqual(response.status_code, 302)
+        # another partner user from same partner can access this export
+        self.login(self.user2)
+        self.assertEqual(self.url_get('unicef', read_url).status_code, 200)
+
+        # partner user from different partner can't
+        self.login(self.user3)
+        self.assertLoginRedirect(self.url_get('unicef', read_url), 'unicef', read_url)
+
+        # admin user from same org can
+        self.login(self.admin)
+        self.assertEqual(self.url_get('unicef', read_url).status_code, 200)
+
+        # user from another org can't
+        self.login(self.norbert)
+        self.assertLoginRedirect(self.url_get('unicef', read_url), 'unicef', read_url)
 
 
 class OutgoingTest(BaseCasesTest):
