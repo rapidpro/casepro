@@ -62,7 +62,7 @@ class BaseCasesTest(DashTest):
         # some groups
         self.males = self.create_group(self.unicef, "G-001", "Males")
         self.females = self.create_group(self.unicef, "G-002", "Females")
-        self.reporters = self.create_group(self.unicef, "G-003", "Reporters", suspend_from=True)
+        self.reporters = self.create_group(self.unicef, "G-003", "Reporters", suspend_from=True, is_visible=False)
         self.registered = self.create_group(self.unicef, "G-004", "Registered (Dynamic)", is_dynamic=True)
         self.coders = self.create_group(self.nyaruka, "G-005", 'Coders')
 

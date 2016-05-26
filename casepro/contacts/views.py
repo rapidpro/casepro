@@ -56,10 +56,11 @@ class GroupCRUDL(SmartCRUDL):
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('name', 'contacts')
-        default_order = ('name',)
+        default_order = 'name'
 
-        def derive_queryset(self, **kwargs):
-            return self.model.get_all(self.request.org, visible=True)
+        def get_queryset(self, **kwargs):
+            queryset = super(GroupCRUDL.List, self).get_queryset(**kwargs)
+            return queryset.filter(org=self.request.org, is_visible=True)
 
         def get_contacts(self, obj):
             return obj.count if obj.count is not None else "..."
@@ -105,7 +106,12 @@ class FieldCRUDL(SmartCRUDL):
     actions = ('list',)
 
     class List(OrgPermsMixin, SmartListView):
-        fields = ('key', 'label', 'value_type')
+        """
+        Basic list view mostly for debugging
+        """
+        fields = ('key', 'label', 'value_type', 'is_visible')
+        default_order = 'key'
 
         def get_queryset(self, **kwargs):
-            return self.model.objects.filter(org=self.request.org)
+            queryset = super(FieldCRUDL.List, self).get_queryset(**kwargs)
+            return queryset.filter(org=self.request.org)

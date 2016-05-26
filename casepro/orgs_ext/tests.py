@@ -12,6 +12,30 @@ class OrgExtCRUDLTest(BaseCasesTest):
 
         self.unicef.set_banner_text("Howdy (U)Partner!")
 
+    def test_create(self):
+        url = reverse('orgs_ext.org_create')
+
+        # not accessible to org users
+        self.login(self.admin)
+        self.assertLoginRedirect(self.url_get('unicef', url), 'unicef', url)
+
+        # accessible to superusers
+        self.login(self.superuser)
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_update(self):
+        url = reverse('orgs_ext.org_update', args=[self.unicef.pk])
+
+        # not accessible to org users
+        self.login(self.admin)
+        self.assertLoginRedirect(self.url_get('unicef', url), 'unicef', url)
+
+        # accessible to superusers
+        self.login(self.superuser)
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
     def test_home(self):
         url = reverse('orgs_ext.org_home')
 

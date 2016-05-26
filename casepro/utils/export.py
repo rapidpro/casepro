@@ -86,7 +86,7 @@ class BaseExport(models.Model):
             search['before'] = parse_iso8601(search['before'])
         return search
 
-    def render_book(self, book, search):
+    def render_book(self, book, search):  # pragma: no cover
         """
         Child classes implement this to populate the Excel book
         """

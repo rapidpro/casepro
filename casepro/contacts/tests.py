@@ -122,6 +122,21 @@ class ContactCRUDLTest(BaseCasesTest):
         self.assertContains(response, "age=32")
 
 
+class FieldCRUDLTest(BaseCasesTest):
+    def test_list(self):
+        url = reverse('contacts.field_list')
+
+        # partner users can't access this
+        self.login(self.user1)
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # org admins can
+        self.login(self.admin)
+        response = self.url_get('unicef', url)
+        self.assertEqual(list(response.context['object_list']), [self.age, self.nickname, self.state])
+
+
 class GroupTest(BaseCasesTest):
     def test_model(self):
         invisible = self.create_group(self.unicef, "G-006", "Invisible", count=12, is_visible=False)
@@ -130,7 +145,7 @@ class GroupTest(BaseCasesTest):
                          {self.males, self.females, self.reporters, self.registered, invisible})
 
         self.assertEqual(set(Group.get_all(self.unicef, visible=True)),
-                         {self.males, self.females, self.reporters, self.registered})
+                         {self.males, self.females, self.registered})
 
         self.assertEqual(set(Group.get_all(self.unicef, dynamic=False)),
                          {self.males, self.females, self.reporters, invisible})
@@ -142,6 +157,42 @@ class GroupTest(BaseCasesTest):
             'count': 12,
             'is_dynamic': False
         })
+
+
+class GroupCRUDLTest(BaseCasesTest):
+    def test_list(self):
+        url = reverse('contacts.group_list')
+
+        # partner users can't access this
+        self.login(self.user1)
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # org admins can
+        self.login(self.admin)
+        response = self.url_get('unicef', url)
+        self.assertEqual(list(response.context['object_list']), [self.females, self.males, self.registered])
+
+    def test_select(self):
+        url = reverse('contacts.group_select')
+
+        # partner users can't access this
+        self.login(self.user1)
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # org admins can
+        self.login(self.admin)
+        response = self.url_get('unicef', url)
+        self.assertEqual(set(response.context['form']['groups'].field.initial),
+                         {self.females.pk, self.males.pk, self.registered.pk})
+
+        # change the visible groups
+        response = self.url_post('unicef', url, {'groups': [self.females.pk, self.reporters.pk]})
+        self.assertRedirects(response, 'http://unicef.localhost/group/', fetch_redirect_response=False)
+
+        self.assertEqual(set(Group.get_all(self.unicef, visible=True)), {self.females, self.reporters})
+        self.assertEqual(set(Group.get_all(self.unicef, visible=False)), {self.males, self.registered})
 
 
 class TasksTest(BaseCasesTest):

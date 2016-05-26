@@ -1143,6 +1143,7 @@ class ReplyExportCRUDLTest(BaseCasesTest):
                                        "Hello?", "No", "MOH", "AIDS",
                                        "C-001", "Annie", "28"], pytz.UTC)
 
+        # can now view this download
         read_url = reverse('msgs.replyexport_read', args=[export.pk])
 
         response = self.url_get('unicef', read_url)
