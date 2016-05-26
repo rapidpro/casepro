@@ -875,11 +875,11 @@ class HomeViewsTest(BaseCasesTest):
 
 class PartnerTest(BaseCasesTest):
     def test_create(self):
-        wfp = Partner.create(self.unicef, "WFP", [self.aids, self.code], None)
+        wfp = Partner.create(self.unicef, "WFP", True, [self.aids, self.pregnancy])
         self.assertEqual(wfp.org, self.unicef)
         self.assertEqual(wfp.name, "WFP")
         self.assertEqual(six.text_type(wfp), "WFP")
-        self.assertEqual(set(wfp.get_labels()), {self.aids, self.code})
+        self.assertEqual(set(wfp.get_labels()), {self.aids, self.pregnancy})
 
         # create some users for this partner
         jim = self.create_user(self.unicef, wfp, ROLE_MANAGER, "Jim", "jim@wfp.org")
@@ -888,6 +888,13 @@ class PartnerTest(BaseCasesTest):
         self.assertEqual(set(wfp.get_users()), {jim, kim})
         self.assertEqual(set(wfp.get_managers()), {jim})
         self.assertEqual(set(wfp.get_analysts()), {kim})
+
+        # create a partner which is not restricted by labels
+        internal = Partner.create(self.unicef, "Internal", False, [])
+        self.assertEqual(set(internal.get_labels()), {self.aids, self.pregnancy, self.tea})
+
+        # can't create an unrestricted partner with labels
+        self.assertRaises(ValueError, Partner.create, self.unicef, "Testers", False, [self.aids])
 
     def test_release(self):
         self.who.release()

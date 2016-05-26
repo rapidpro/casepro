@@ -30,16 +30,17 @@
         %h2
           {{ object.name }}
 
-      .header-details
-        - if partner.get_labels
-          - for label in partner.get_labels
-            %span.label-container
-              %span.label.label-success
-                {{ label.name }}
-              &nbsp;
-        - else
-          %i
-            - trans "No labels"
+      - if object.is_restricted
+        .header-details
+          - if labels
+            - for label in labels
+              %span.label-container
+                %span.label.label-success
+                  {{ label.name }}
+                &nbsp;
+          - else
+            %i
+              - trans "No labels"
 
     <uib-tabset active="active">
 

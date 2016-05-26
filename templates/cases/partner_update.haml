@@ -1,0 +1,14 @@
+- extends "smartmin/update.html"
+
+- block extra-script
+  {{ block.super }}
+  :javascript
+    $(function() {
+      function onToggleRestricted() {
+        $('#id_labels input[type="checkbox"]').prop("disabled", !$('#id_is_restricted').prop('checked'));
+      }
+      // if is_restricted is checked, enable label checkboxes
+      $('#id_is_restricted').on('change', onToggleRestricted);
+
+      onToggleRestricted();
+    });
