@@ -12,5 +12,4 @@ def case_export(export_id):
 
     logger.info("Starting case export #%d..." % export_id)
 
-    export = CaseExport.objects.get(pk=export_id)
-    export.do_export()
+    CaseExport.objects.get(pk=export_id).do_export()

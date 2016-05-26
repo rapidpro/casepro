@@ -7,14 +7,16 @@ from dash.utils import chunks
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
+from django.db.models import Count
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
+from django.utils.timesince import timesince
 from django.utils.timezone import now
 from enum import Enum
 from redis_cache import get_redis_connection
 
 from casepro.backend import get_backend
-from casepro.contacts.models import Contact
+from casepro.contacts.models import Contact, Field
 from casepro.utils import json_encode
 from casepro.utils.export import BaseExport
 
@@ -481,6 +483,52 @@ class Outgoing(models.Model):
 
         return queryset.order_by('-created_on')
 
+    @classmethod
+    def search_replies(cls, org, user, search):
+        partner_id = search.get('partner')
+        after = search.get('after')
+        before = search.get('before')
+
+        queryset = org.outgoing_messages.filter(activity__in=(Outgoing.BULK_REPLY, Outgoing.CASE_REPLY))
+
+        user_partner = user.get_partner(org)
+        if user_partner:
+            queryset = queryset.filter(partner=user_partner)
+
+        if partner_id:
+            from casepro.cases.models import Partner
+            partner = Partner.objects.get(pk=partner_id)
+            queryset = queryset.filter(partner=partner)
+
+        if after:
+            queryset = queryset.filter(created_on__gte=after)
+        if before:
+            queryset = queryset.filter(created_on__lte=before)
+
+        queryset = queryset.select_related('contact', 'case__assignee', 'created_by__profile')
+        queryset = queryset.prefetch_related('reply_to__labels')
+
+        return queryset.order_by('-created_on')
+
+    @classmethod
+    def get_user_reply_counts(cls, org, partner, since, until):
+        """
+        Calculates aggregated counts of replies by user
+        """
+        # TODO db triggers to pre-calculate these for performance
+
+        replies = cls.objects.filter(org=org, activity__in=(Outgoing.BULK_REPLY, Outgoing.CASE_REPLY))
+
+        if partner:
+            replies = replies.filter(partner=partner)
+        if since:
+            replies = replies.filter(created_on__gte=since)
+        if until:
+            replies = replies.filter(created_on__lt=until)
+
+        counts = replies.values('created_by').annotate(replies=Count('pk'))
+        return {c['created_by']: c['replies'] for c in counts}
+
     def as_json(self):
         """
         Prepares this outgoing message for JSON serialization
@@ -521,38 +569,94 @@ class MessageExport(BaseExport):
         all_fields = base_fields + [f.label for f in contact_fields]
 
         # load all messages to be exported
-        messages = Message.search(self.org, self.created_by, search)
+        items = Message.search(self.org, self.created_by, search)
 
         def add_sheet(num):
             sheet = book.add_sheet(unicode(_("Messages %d" % num)))
-            for col in range(len(all_fields)):
-                field = all_fields[col]
-                sheet.write(0, col, unicode(field))
+            self.write_row(sheet, 0, all_fields)
             return sheet
 
         # even if there are no messages - still add a sheet
-        if not messages:
+        if not items:
             add_sheet(1)
         else:
             sheet_number = 1
-            for msg_chunk in chunks(messages, 65535):
+            for item_chunk in chunks(items, 65535):
                 current_sheet = add_sheet(sheet_number)
 
                 row = 1
-                for msg in msg_chunk:
-                    current_sheet.write(row, 0, self.excel_datetime(msg.created_on), self.DATE_STYLE)
-                    current_sheet.write(row, 1, msg.backend_id)
-                    current_sheet.write(row, 2, 'Yes' if msg.is_flagged else 'No')
-                    current_sheet.write(row, 3, ', '.join([l.name for l in msg.labels.all()]))
-                    current_sheet.write(row, 4, msg.text)
-                    current_sheet.write(row, 5, msg.contact.uuid)
+                for item in item_chunk:
+                    values = [
+                        item.created_on,
+                        item.backend_id,
+                        item.is_flagged,
+                        ', '.join([l.name for l in item.labels.all()]),
+                        item.text,
+                        item.contact.uuid
+                    ]
 
-                    fields = msg.contact.get_fields()
+                    fields = item.contact.get_fields()
+                    for field in contact_fields:
+                        values.append(fields.get(field.key, ""))
 
-                    for cf in range(len(contact_fields)):
-                        contact_field = contact_fields[cf]
-                        current_sheet.write(row, len(base_fields) + cf, fields.get(contact_field.key, None))
+                    self.write_row(current_sheet, row, values)
+                    row += 1
 
+                sheet_number += 1
+
+        return book
+
+
+class ReplyExport(BaseExport):
+    """
+    An export of replies
+    """
+    directory = 'reply_exports'
+    download_view = 'msgs.replyexport_read'
+    email_templates = 'msgs/email/reply_export'
+
+    def render_book(self, book, search):
+        base_fields = [
+            "Sent On", "User", "Message", "Delay", "Reply to", "Flagged", "Case Assignee", "Labels", "Contact"
+        ]
+        contact_fields = Field.get_all(self.org, visible=True)
+        all_fields = base_fields + [f.label for f in contact_fields]
+
+        # load all messages to be exported
+        items = Outgoing.search_replies(self.org, self.created_by, search)
+
+        def add_sheet(num):
+            sheet = book.add_sheet(unicode(_("Replies %d" % num)))
+            self.write_row(sheet, 0, all_fields)
+            return sheet
+
+        # even if there are no cases - still add a sheet
+        if not items:
+            add_sheet(1)
+        else:
+            sheet_number = 1
+            for item_chunk in chunks(items, 65535):
+                current_sheet = add_sheet(sheet_number)
+
+                row = 1
+                for item in item_chunk:
+                    values = [
+                        item.created_on,
+                        item.created_by.email,
+                        item.text,
+                        timesince(item.reply_to.created_on, now=item.created_on),
+                        item.reply_to.text,
+                        item.reply_to.is_flagged,
+                        item.case.assignee.name if item.case else "",
+                        ', '.join([l.name for l in item.reply_to.labels.all()]),
+                        item.contact.uuid
+                    ]
+
+                    fields = item.contact.get_fields()
+                    for field in contact_fields:
+                        values.append(fields.get(field.key, ""))
+
+                    self.write_row(current_sheet, row, values)
                     row += 1
 
                 sheet_number += 1

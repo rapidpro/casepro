@@ -87,7 +87,7 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
   $scope.startTime = new Date()
   $scope.oldItemsLoading = false
   $scope.oldItemsPage = 0
-  $scope.oldItemsMore = false
+  $scope.oldItemsMore = true
   $scope.newItemsMaxTime = null
   $scope.selection = []
 
@@ -220,6 +220,11 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
     search.label = $scope.activeLabel
     search.contact = $scope.activeContact
     search.timeCode = Date.now()
+
+    # searching up to a date means including anything on the date
+    if search.before
+      search.before.setHours(23, 59, 59, 999)
+
     return search
 
   $scope.searchFieldDefaults = () -> { text: null, groups: [], after: null, before: null, archived: false }
@@ -364,15 +369,9 @@ controllers.controller 'OutgoingController', [ '$scope', '$controller', 'Outgoin
     $scope.searchFields = $scope.searchFieldDefaults()
     $scope.activeSearch = $scope.buildSearch()
 
-    $scope.$on('activeLabelChange', () ->
-      $scope.onResetSearch()
-    )
     $scope.$on('activeContactChange', () ->
       $scope.onResetSearch()
     )
-
-  $scope.getItemFilter = () ->
-    return (item) -> true
 
   $scope.buildSearch = () ->
     search = angular.copy($scope.searchFields)
@@ -556,7 +555,7 @@ controllers.controller 'CaseTimelineController', [ '$scope', '$timeout', 'CaseSe
   $scope.refreshItems = (repeat) ->
 
     CaseService.fetchTimeline($scope.caseObj, $scope.itemsMaxTime, (events, maxTime) ->
-      $scope.timeline = $scope.timeline.concat events
+      $scope.timeline = $scope.timeline.concat(events)
       $scope.itemsMaxTime = maxTime
 
       if repeat
@@ -571,9 +570,15 @@ controllers.controller 'CaseTimelineController', [ '$scope', '$timeout', 'CaseSe
 controllers.controller 'PartnerController', [ '$scope', '$window', 'UtilsService', 'PartnerService', ($scope, $window, UtilsService, PartnerService) ->
 
   $scope.partner = $window.contextData.partner
+  $scope.usersFetched = false
+  $scope.users = []
 
-  $scope.onClickUser = (userId) ->
-    UtilsService.navigate('/user/read/' + userId + '/')
+  $scope.onTabSelect = (tab) ->
+    if tab == 'users' and not $scope.usersFetched
+      PartnerService.fetchUsers($scope.partner, (users) ->
+        $scope.usersFetched = true
+        $scope.users = users
+      )
 
   $scope.onDeletePartner = () ->
     UtilsService.confirmModal("Remove this partner organization?", 'danger', () ->
@@ -585,16 +590,54 @@ controllers.controller 'PartnerController', [ '$scope', '$window', 'UtilsService
 
 
 #============================================================================
+# Partner replies controller
+#============================================================================
+controllers.controller 'PartnerRepliesController', [ '$scope', '$window', '$controller', 'UtilsService', 'OutgoingService', ($scope, $window, $controller, UtilsService, OutgoingService) ->
+  $controller('BaseItemsController', {$scope: $scope})
+
+  $scope.init = () ->
+    $scope.searchFields = $scope.searchFieldDefaults()
+    $scope.activeSearch = $scope.buildSearch()
+
+    # trigger search if date range is changed
+    $scope.$watchGroup(['searchFields.after', 'searchFields.before'], () ->
+      $scope.onSearch()
+    )
+
+  $scope.buildSearch = () ->
+    search = angular.copy($scope.searchFields)
+    search.partner = $scope.partner
+
+    # searching up to a date means including anything on the date
+    if search.before
+      search.before.setHours(23, 59, 59, 999)
+
+    return search
+
+  $scope.searchFieldDefaults = () -> { after: null, before: null }
+
+  $scope.fetchOldItems = (callback) ->
+    OutgoingService.fetchReplies($scope.activeSearch, $scope.startTime, $scope.oldItemsPage, callback)
+
+  $scope.onExportSearch = () ->
+    UtilsService.confirmModal("Export the current search?", null, () ->
+      OutgoingService.startReplyExport($scope.activeSearch, () ->
+        UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
+      )
+    )
+]
+
+
+#============================================================================
 # User view controller
 #============================================================================
 controllers.controller 'UserController', [ '$scope', '$window', 'UtilsService', 'UserService', ($scope, $window, UtilsService, UserService) ->
 
-  $scope.init = (userId) ->
-    $scope.userId = userId
+  $scope.user = $window.contextData.user
 
   $scope.onDeleteUser = () ->
     UtilsService.confirmModal("Delete this user?", 'danger', () ->
-      UserService.deleteUser($scope.userId, () ->
+      UserService.deleteUser($scope.user.id, () ->
         UtilsService.navigateBack()
       )
     )

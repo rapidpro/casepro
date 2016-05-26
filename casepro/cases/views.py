@@ -1,9 +1,10 @@
 from __future__ import absolute_import, unicode_literals
-
+from calendar import month_name
 from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
-from datetime import timedelta
+from datetime import date, timedelta
 from django.core.cache import cache
+from django.db.models import Count
 from django.db.transaction import non_atomic_requests
 from django.http import HttpResponse, JsonResponse
 from django.utils.timezone import now
@@ -15,8 +16,9 @@ from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
 
 from casepro.contacts.models import Group
-from casepro.msgs.models import Label, Message, MessageFolder, OutgoingFolder
+from casepro.msgs.models import Label, Message, MessageFolder, Outgoing, OutgoingFolder
 from casepro.utils import parse_csv, json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder
+from casepro.utils import month_range
 from casepro.utils.export import BaseDownloadView
 
 from . import MAX_MESSAGE_CHARS
@@ -30,17 +32,13 @@ class CaseSearchMixin(object):
         """
         Collects and prepares case search parameters into JSON serializable dict
         """
-        folder = CaseFolder[self.request.GET['folder']]
-        assignee = self.request.GET.get('assignee', None)
-        after = parse_iso8601(self.request.GET.get('after', None))
-        before = parse_iso8601(self.request.GET.get('before', None))
+        params = self.request.GET
+        folder = CaseFolder[params['folder']]
+        assignee = params.get('assignee')
+        after = parse_iso8601(params.get('after'))
+        before = parse_iso8601(params.get('before'))
 
-        return {
-            'folder': folder,
-            'assignee': assignee,
-            'after': after,
-            'before': before
-        }
+        return {'folder': folder, 'assignee': assignee, 'after': after, 'before': before}
 
 
 class CaseCRUDL(SmartCRUDL):
@@ -291,7 +289,7 @@ class PartnerFormMixin(object):
 
 
 class PartnerCRUDL(SmartCRUDL):
-    actions = ('create', 'read', 'update', 'delete', 'list')
+    actions = ('create', 'read', 'update', 'delete', 'list', 'users')
     model = Partner
 
     class Create(OrgPermsMixin, PartnerFormMixin, SmartCreateView):
@@ -319,13 +317,45 @@ class PartnerCRUDL(SmartCRUDL):
             # angular app requires context data in JSON format
             context['context_data_json'] = json_encode({
                 'partner': self.object.as_json(),
+                'replies_by_month': self.get_replies_by_month(self.object)
             })
 
+            user_partner = self.request.user.get_partner(self.object.org)
+
             context['can_manage'] = self.request.user.can_manage(self.object)
+            context['can_view_replies'] = not user_partner or user_partner == self.object
             context['labels'] = self.object.get_labels()
-            context['managers'] = self.object.get_managers()
-            context['analysts'] = self.object.get_analysts()
+            context['summary'] = self.get_summary(self.object)
             return context
+
+        def get_summary(self, partner):
+            return {
+                'total_replies': Outgoing.objects.filter(org=partner.org, partner=partner).count(),
+                'cases_open': Case.objects.filter(org=partner.org, assignee=partner, closed_on=None).count(),
+                'cases_closed': Case.objects.filter(org=partner.org, assignee=partner).exclude(closed_on=None).count()
+            }
+
+        def get_replies_by_month(self, partner):
+            since = month_range(-5)[0]  # last six months ago including this month
+
+            outgoing = Outgoing.objects.filter(org=partner.org, partner=partner, created_on__gte=since)
+            outgoing = outgoing.extra(select={'month': 'EXTRACT(month FROM created_on)'})
+            outgoing = outgoing.values('month').annotate(replies=Count('created_on'))
+
+            replies_by_month = {int(c['month']): c['replies'] for c in outgoing}
+
+            # generate labels and series over last six months
+            labels = []
+            series = []
+            this_month = date.today().month
+            for m in reversed(range(0, -6, -1)):
+                month = this_month + m
+                if month < 1:
+                    month += 12
+                labels.append(month_name[month])
+                series.append(replies_by_month.get(month, 0))
+
+            return labels, series
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
         cancel_url = '@cases.partner_list'
@@ -340,6 +370,34 @@ class PartnerCRUDL(SmartCRUDL):
 
         def get_queryset(self, **kwargs):
             return Partner.get_all(self.request.org).order_by('name')
+
+    class Users(OrgPermsMixin, SmartReadView):
+        """
+        JSON endpoint to fetch partner users with their activity information
+        """
+        def get(self, request, *args, **kwargs):
+            partner = self.get_object()
+            managers = set(partner.get_managers())
+            all_users = list(partner.get_users().order_by('profile__full_name'))
+
+            # get reply statistics
+            total = Outgoing.get_user_reply_counts(partner.org, partner, None, None)
+            this_month = Outgoing.get_user_reply_counts(partner.org, partner, *month_range(0))
+            last_month = Outgoing.get_user_reply_counts(partner.org, partner, *month_range(-1))
+
+            def as_json(user):
+                obj = user.as_json()
+                obj.update({
+                    'role': "Manager" if user in managers else "Analyst",
+                    'replies': {
+                        'this_month': this_month.get(user.pk, 0),
+                        'last_month': last_month.get(user.pk, 0),
+                        'total': total.get(user.pk, 0)
+                    }
+                })
+                return obj
+
+            return JsonResponse({'results': [as_json(u) for u in all_users]})
 
 
 class BaseHomeView(OrgPermsMixin, SmartTemplateView):

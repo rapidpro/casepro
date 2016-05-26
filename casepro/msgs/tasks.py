@@ -81,5 +81,13 @@ def message_export(export_id):
 
     logger.info("Starting message export #%d..." % export_id)
 
-    export = MessageExport.objects.get(pk=export_id)
-    export.do_export()
+    MessageExport.objects.get(pk=export_id).do_export()
+
+
+@shared_task
+def reply_export(export_id):
+    from .models import ReplyExport
+
+    logger.info("Starting replies export #%d..." % export_id)
+
+    ReplyExport.objects.get(pk=export_id).do_export()

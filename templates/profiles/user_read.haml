@@ -5,7 +5,10 @@
 
   - include 'modals.haml'
 
-  .{ ng-controller:"UserController", ng-init:"init({{ object.pk }})" }
+  %script{ type:"text/javascript" }
+    var contextData = {{ context_data_json|safe }};
+
+  .ng-cloak{ ng-controller:"UserController", ng-cloak:"" }
     .page-header.clearfix
       .page-header-buttons
         - if edit_button_url
@@ -19,6 +22,6 @@
       %h2
         %span.glyphicon.glyphicon-user
         &nbsp;
-        {{ title }}
+        [[ user.name ]]
 
 - block read-buttons

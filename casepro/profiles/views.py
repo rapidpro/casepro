@@ -10,6 +10,7 @@ from smartmin.views import SmartCreateView, SmartListView, SmartDeleteView, Smar
 from smartmin.views import SmartCRUDL
 
 from casepro.cases.models import Partner
+from casepro.utils import json_encode
 
 from . import ROLE_ANALYST, ROLE_MANAGER
 from .forms import UserForm
@@ -209,6 +210,7 @@ class UserCRUDL(SmartCRUDL):
                 edit_button_url = None
                 can_delete = False
 
+            context['context_data_json'] = json_encode({'user': self.object.as_json()})
             context['edit_button_url'] = edit_button_url
             context['can_delete'] = can_delete
             return context

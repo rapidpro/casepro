@@ -31,7 +31,7 @@
         %input.form-control{ ng-model:"searchFields.text", type:"text", placeholder:"Search", style:"width: 400px" }
 
     .messages{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"!isInfiniteScrollEnabled()" }
-      .stackitem.clearfix.hoverable{ ng-repeat:"item in items | filter: getItemFilter()" }
+      .stackitem.clearfix.hoverable{ ng-repeat:"item in items" }
         .message-time
           [[ item.time | autodate ]]
         .message-sender

@@ -250,35 +250,52 @@ services.factory 'OutgoingService', ['$rootScope', '$http', ($rootScope, $http) 
     #----------------------------------------------------------------------------
     # Fetches old outgoing messages for the given search
     #----------------------------------------------------------------------------
-    fetchOld: (search, before, page, callback) ->
-      params = @_searchToParams(search)
-      if !search.before
-        params.before = formatIso8601(before)
-      params.page = page
+    fetchOld: (search, startTime, page, callback) ->
+      params = @_outboxSearchToParams(search, startTime, page)
 
       $http.get('/outgoing/search/?' + $.param(params))
       .success((data) =>
-        @_processMessages(data.results)
+        callback(data.results, data.has_more)
+      ).error(DEFAULT_ERR_HANDLER)
 
+    fetchReplies: (search, startTime, page, callback) ->
+      params = @_replySearchToParams(search, startTime, page)
+
+      $http.get('/outgoing/search_replies/?' + $.param(params))
+      .success((data) =>
+        callback(data.results, data.has_more)
+      ).error(DEFAULT_ERR_HANDLER)
+
+    startReplyExport: (search, callback) ->
+      params = @_replySearchToParams(search, null, null)
+
+      $http.post('/replyexport/create/?' + $.param(params))
+      .success((data) =>
         callback(data.results, data.has_more)
       ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
-    # Convert search object to URL params
+    # Convert a regular outbox search object to URL params
     #----------------------------------------------------------------------------
-    _searchToParams: (search) ->
+    _outboxSearchToParams: (search, startTime, page) ->
       return {
         folder: search.folder,
         text: search.text,
-        contact: if search.contact then search.contact.uuid else null
+        contact: if search.contact then search.contact.uuid else null,
+        before: formatIso8601(startTime),
+        page: page
       }
 
     #----------------------------------------------------------------------------
-    # Processes outgoing messages
+    # Convert a reply search object to URL params
     #----------------------------------------------------------------------------
-    _processMessages: (messages) ->
-      for msg in messages
-        msg.time = parseIso8601(msg.time)  # parse datetime string
+    _replySearchToParams: (search, startTime, page) ->
+      return {
+        partner: search.partner.id,
+        after: formatIso8601(search.after),
+        before: if search.before then formatIso8601(search.before) else formatIso8601(startTime),
+        page: page
+      }
 ]
 
 
@@ -517,6 +534,12 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
 #=====================================================================
 services.factory 'PartnerService', ['$http', ($http) ->
   new class PartnerService
+
+    fetchUsers: (partner, callback) ->
+      $http.get('/partner/users/' + partner.id + '/')
+      .success((data) =>
+        callback(data.results)
+      ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Delete the given partner

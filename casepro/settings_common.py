@@ -53,7 +53,7 @@ SITE_ALLOW_NO_ORG = ('orgs_ext.org_create', 'orgs_ext.org_update', 'orgs_ext.org
                      'orgs_ext.task_list',
                      'profiles.user_create', 'profiles.user_update', 'profiles.user_read', 'profiles.user_list',
                      'internal.status', 'internal.ping')
-
+SITE_ORGS_STORAGE_ROOT = 'orgs'
 SITE_BACKEND = 'casepro.backend.rapidpro.RapidProBackend'
 
 
@@ -309,11 +309,15 @@ PERMISSIONS = {
 
     'msgs.messageexport': ('create', 'read'),
 
-    'msgs.outgoing': ('search',),
+    'msgs.outgoing': ('search', 'search_replies'),
+
+    'msgs.replyexport': ('create', 'read'),
 
     'cases.case': ('create', 'read', 'update', 'list'),
 
-    'cases.partner': ('create', 'read', 'delete', 'list'),
+    'case.caseexport': ('create', 'read'),
+
+    'cases.partner': ('create', 'read', 'delete', 'list', 'users'),
 
     'contacts.group': ('select', 'list'),
 
@@ -323,7 +327,7 @@ PERMISSIONS = {
 
 # assigns the permissions that each group should have
 GROUP_PERMISSIONS = {
-    "Administrators": (
+    "Administrators": (  # Org users: Administrators
         'orgs.org_home',
         'orgs.org_edit',
         'orgs.org_inbox',
@@ -332,6 +336,7 @@ GROUP_PERMISSIONS = {
         'msgs.message.*',
         'msgs.messageexport.*',
         'msgs.outgoing.*',
+        'msgs.replyexport.*',
 
         'cases.case.*',
         'cases.caseexport.*',
@@ -342,7 +347,7 @@ GROUP_PERMISSIONS = {
 
         'profiles.profile.*',
     ),
-    "Editors": (
+    "Editors": (  # Partner users: Managers
         'orgs.org_inbox',
 
         'msgs.message_action',
@@ -354,20 +359,25 @@ GROUP_PERMISSIONS = {
         'msgs.messageexport_create',
         'msgs.messageexport_read',
         'msgs.outgoing_search',
+        'msgs.outgoing_search_replies',
+        'msgs.replyexport_create',
+        'msgs.replyexport_read',
 
         'cases.case_create',
         'cases.case_read',
         'cases.case_update',
         'cases.case_list',
+        'cases.case_replies',
         'cases.caseexport_create',
         'cases.caseexport_read',
         'cases.partner_list',
         'cases.partner_read',
+        'cases.partner_users',
 
         'profiles.profile_user_create',
         'profiles.profile_user_read',
     ),
-    "Viewers": (
+    "Viewers": (  # Partner users: Data Analysts
         'orgs.org_inbox',
 
         'msgs.message_action',
@@ -379,15 +389,20 @@ GROUP_PERMISSIONS = {
         'msgs.messageexport_create',
         'msgs.messageexport_read',
         'msgs.outgoing_search',
+        'msgs.outgoing_search_replies',
+        'msgs.replyexport_create',
+        'msgs.replyexport_read',
 
         'cases.case_create',
         'cases.case_read',
         'cases.case_update',
         'cases.case_list',
+        'cases.case_replies',
         'cases.caseexport_create',
         'cases.caseexport_read',
         'cases.partner_list',
         'cases.partner_read',
+        'cases.partner_users',
 
         'profiles.profile_user_read',
     ),

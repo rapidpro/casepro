@@ -18,7 +18,7 @@ from casepro.contacts.models import Contact
 from casepro.rules.models import ContainsTest, GroupsTest, FieldTest, Quantifier
 from casepro.test import BaseCasesTest
 
-from .models import Label, Message, MessageAction, MessageExport, MessageFolder, Outgoing, OutgoingFolder
+from .models import Label, Message, MessageAction, MessageExport, MessageFolder, Outgoing, OutgoingFolder, ReplyExport
 from .tasks import handle_messages, pull_messages
 
 
@@ -754,7 +754,8 @@ class MessageCRUDLTest(BaseCasesTest):
 
 
 class MessageExportCRUDLTest(BaseCasesTest):
-    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @override_settings(SITE_ORGS_STORAGE_ROOT='test_orgs', CELERY_ALWAYS_EAGER=True,
+                       CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     def test_create_and_read(self):
         ann = self.create_contact(self.unicef, "C-001", "Ann", fields={'nickname': "Annie", 'age': "28", 'state': "WA"})
         bob = self.create_contact(self.unicef, "C-002", "Bob", fields={'nickname': "Bobby", 'age': "32", 'state': "IN"})
@@ -902,6 +903,54 @@ class OutgoingTest(BaseCasesTest):
         # by contact
         assert_search(self.admin, {'folder': OutgoingFolder.sent, 'contact': self.ann.uuid}, [out2, out1])
 
+    def test_search_replies(self):
+        out1 = self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello 1", self.ann)
+        out2 = self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann, partner=self.moh)
+        out3 = self.create_outgoing(self.unicef, self.admin, 203, 'C', "Hello 3", self.bob)
+        out4 = self.create_outgoing(self.unicef, self.user1, 204, 'C', "Hello 4", self.bob, partner=self.moh)
+        self.create_outgoing(self.unicef, self.admin, 205, 'F', "Hello 5", None)  # forwards are ignored
+
+        # other org
+        ned = self.create_contact(self.nyaruka, "C-003", "Ned")
+        self.create_outgoing(self.nyaruka, self.user4, 201, 'B', "Hello", ned)
+
+        def assert_search(user, params, results):
+            self.assertEqual(list(Outgoing.search_replies(self.unicef, user, params)), results)
+
+        assert_search(self.admin, {}, [out4, out3, out2, out1])
+        assert_search(self.admin, {'partner': self.moh.pk}, [out4, out2])
+
+        # by partner user
+        assert_search(self.user1, {}, [out4, out2])
+        assert_search(self.user1, {'partner': self.moh.pk}, [out4, out2])
+
+        # by date
+        assert_search(self.admin, {'after': format_iso8601(out3.created_on)}, [out4, out3])
+        assert_search(self.admin, {'before': format_iso8601(out3.created_on)}, [out3, out2, out1])
+
+    def test_get_user_reply_counts(self):
+        self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello 1", self.ann,
+                             created_on=datetime(2016, 5, 20, 9, 0, tzinfo=pytz.UTC))  # May 20th
+        self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann, partner=self.moh,
+                             created_on=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC))  # April 20th
+        self.create_outgoing(self.unicef, self.user1, 203, 'C', "Hello 3", self.bob, partner=self.moh,
+                             created_on=datetime(2016, 3, 20, 9, 0, tzinfo=pytz.UTC))  # Mar 20th
+        self.create_outgoing(self.unicef, self.admin, 205, 'F', "Hello 5", None)  # forwards are ignored
+
+        self.assertEqual(Outgoing.get_user_reply_counts(self.unicef, None, None, None), {
+            self.admin.pk: 1,
+            self.user1.pk: 2
+        })
+
+        self.assertEqual(Outgoing.get_user_reply_counts(self.unicef, self.moh, None, None), {
+            self.user1.pk: 2
+        })
+
+        since, until = datetime(2016, 3, 1, 0, 0, tzinfo=pytz.UTC), datetime(2016, 4, 30, 23, 59, tzinfo=pytz.UTC)
+        self.assertEqual(Outgoing.get_user_reply_counts(self.unicef, None, since, until), {
+            self.user1.pk: 2
+        })
+
     def test_as_json(self):
         msg1 = self.create_message(self.unicef, 101, self.ann, "Hello")
         outgoing = self.create_outgoing(self.unicef, self.user1, 201, 'B', "That's great", self.ann, reply_to=msg1)
@@ -924,6 +973,8 @@ class OutgoingCRUDLTest(BaseCasesTest):
 
         self.ann = self.create_contact(self.unicef, "C-001", "Ann")
         self.bob = self.create_contact(self.unicef, "C-002", "Bob")
+
+        self.maxDiff = None
 
     def test_search(self):
         url = reverse('msgs.outgoing_search')
@@ -978,6 +1029,131 @@ class OutgoingCRUDLTest(BaseCasesTest):
                 'time': format_iso8601(out2.created_on)
             }
         ])
+
+    def test_search_replies(self):
+        url = reverse('msgs.outgoing_search_replies')
+
+        d1 = datetime(2016, 5, 24, 9, 0, tzinfo=pytz.UTC)
+        d2 = datetime(2016, 5, 24, 10, 0, tzinfo=pytz.UTC)
+        d3 = datetime(2016, 5, 26, 11, 0, tzinfo=pytz.UTC)
+
+        msg1 = self.create_message(self.unicef, 101, self.ann, "Hello?", [self.aids], created_on=d1)
+        case = self.create_case(self.unicef, self.ann, self.moh, msg1)
+
+        out1 = self.create_outgoing(self.unicef, self.user1, 201, 'C', "Hello 1", self.ann, case=case,
+                                    reply_to=msg1, created_on=d2)
+        out2 = self.create_outgoing(self.unicef, self.admin, 202, 'B', "Hello 2", self.bob,
+                                    reply_to=msg1, created_on=d3)
+
+        # try unauthenticated
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # test as org administrator
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url, {'folder': 'sent'})
+        self.assertEqual(response.json['results'], [
+            {
+                'id': out2.pk,
+                'contact': {'name': "Bob", 'uuid': "C-002"},
+                'urns': [],
+                'text': "Hello 2",
+                'direction': 'O',
+                'case': None,
+                'sender': {'id': self.admin.pk, 'name': "Kidus"},
+                'time': format_iso8601(out2.created_on),
+                'reply_to': {
+                    'text': "Hello?",
+                    'flagged': False,
+                    'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
+                },
+                'response': {'delay': "2\xA0days, 2\xA0hours", 'warning': True}
+            },
+            {
+                'id': out1.pk,
+                'contact': {'name': "Ann", 'uuid': "C-001"},
+                'urns': [],
+                'text': "Hello 1",
+                'direction': 'O',
+                'case': {'id': case.pk, 'assignee': {'id': self.moh.pk, 'name': "MOH"}},
+                'sender': {'id': self.user1.pk, 'name': "Evan"},
+                'time': format_iso8601(out1.created_on),
+                'reply_to': {
+                    'text': "Hello?",
+                    'flagged': False,
+                    'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
+                },
+                'response': {'delay': "1\xA0hour", 'warning': False}
+            }
+        ])
+
+
+class ReplyExportCRUDLTest(BaseCasesTest):
+    @override_settings(SITE_ORGS_STORAGE_ROOT='test_orgs', CELERY_ALWAYS_EAGER=True,
+                       CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    def test_create_and_read(self):
+        ann = self.create_contact(self.unicef, "C-001", "Ann", fields={'nickname': "Annie", 'age': "28", 'state': "WA"})
+        bob = self.create_contact(self.unicef, "C-002", "Bob", fields={'nickname': "Bobby", 'age': "32", 'state': "IN"})
+
+        d1 = datetime(2016, 5, 24, 9, 0, tzinfo=pytz.UTC)
+        d2 = datetime(2016, 5, 24, 10, 0, tzinfo=pytz.UTC)
+        d3 = datetime(2016, 5, 24, 11, 0, tzinfo=pytz.UTC)
+        d4 = datetime(2016, 5, 24, 12, 0, tzinfo=pytz.UTC)
+        d5 = datetime(2016, 5, 24, 13, 0, tzinfo=pytz.UTC)
+        d6 = datetime(2016, 5, 24, 14, 0, tzinfo=pytz.UTC)
+
+        msg1 = self.create_message(self.unicef, 101, ann, "Hello?", [self.aids], created_on=d1)
+        msg2 = self.create_message(self.unicef, 102, bob, "I ♡ SMS", [self.pregnancy], is_flagged=True, created_on=d2)
+        self.create_message(self.unicef, 103, bob, "Hi", [], created_on=d3)  # no labels
+
+        case = self.create_case(self.unicef, ann, self.moh, msg1)
+
+        self.create_outgoing(self.unicef, self.user1, 201, 'C', "Bonjour", ann, case=case, reply_to=msg1,
+                             partner=self.moh, created_on=d4)
+        self.create_outgoing(self.unicef, self.user2, 202, 'B', "That's nice", bob, reply_to=msg2,
+                             partner=self.moh, created_on=d5)
+        self.create_outgoing(self.unicef, self.user3, 203, 'B', "Welcome", bob, reply_to=msg2,
+                             partner=self.who, created_on=d6)
+        self.create_outgoing(self.unicef, self.user3, 204, 'F', "FYI", None, reply_to=msg2,
+                             partner=self.who, created_on=d6)
+
+        # log in as a administrator
+        self.login(self.admin)
+
+        response = self.url_post('unicef', reverse('msgs.replyexport_create'))
+        self.assertEqual(response.status_code, 200)
+
+        export = ReplyExport.objects.get(created_by=self.admin)
+
+        workbook = open_workbook("%s/%s" % (settings.MEDIA_ROOT, export.filename), 'rb')
+        sheet = workbook.sheets()[0]
+
+        self.assertEqual(sheet.nrows, 4)
+        self.assertExcelRow(sheet, 0, ["Sent On", "User", "Message", "Delay",
+                                       "Reply to", "Flagged", "Case Assignee", "Labels",
+                                       "Contact", "Nickname", "Age"])
+        self.assertExcelRow(sheet, 1, [d6, "carol@unicef.org", "Welcome", "4\xa0hours",
+                                       "I ♡ SMS", "Yes", "", "Pregnancy",
+                                       "C-002", "Bobby", "32"], pytz.UTC)
+        self.assertExcelRow(sheet, 2, [d5, "rick@unicef.org", "That's nice", "3\xa0hours",
+                                       "I ♡ SMS", "Yes", "", "Pregnancy",
+                                       "C-002", "Bobby", "32"], pytz.UTC)
+        self.assertExcelRow(sheet, 3, [d4, "evan@unicef.org", "Bonjour", "3\xa0hours",
+                                       "Hello?", "No", "MOH", "AIDS",
+                                       "C-001", "Annie", "28"], pytz.UTC)
+
+        read_url = reverse('msgs.replyexport_read', args=[export.pk])
+
+        response = self.url_get('unicef', read_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['download_url'], "/replyexport/download/%d/?download=1" % export.pk)
+
+        # user from another org can't access this download
+        self.login(self.norbert)
+
+        response = self.url_get('unicef', read_url)
+        self.assertEqual(response.status_code, 302)
 
 
 class TasksTest(BaseCasesTest):

@@ -6,6 +6,7 @@ from collections import defaultdict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django.db.transaction import non_atomic_requests
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
+from django.utils.timesince import timesince
 from django.utils.translation import ugettext_lazy as _
 from el_pagination.paginators import LazyPaginator
 from smartmin.views import SmartCRUDL, SmartTemplateView
@@ -17,8 +18,11 @@ from casepro.utils import parse_csv, str_to_bool, json_encode, JSONEncoder
 from casepro.utils.export import BaseDownloadView
 
 from .forms import LabelForm
-from .models import Label, Message, MessageExport, MessageFolder, Outgoing, OutgoingFolder
-from .tasks import message_export
+from .models import Label, Message, MessageExport, MessageFolder, Outgoing, OutgoingFolder, ReplyExport
+from .tasks import message_export, reply_export
+
+
+RESPONSE_DELAY_WARN_SECONDS = 24 * 60 * 60  # show response delays > 1 day as warning
 
 
 class LabelFormMixin(object):
@@ -315,8 +319,21 @@ class MessageExportCRUDL(SmartCRUDL):
         filename = 'message_export.xls'
 
 
+class ReplySearchMixin(object):
+    def derive_search(self):
+        """
+        Collects and prepares reply search parameters into JSON serializable dict
+        """
+        params = self.request.GET
+        partner = params.get('partner')
+        after = parse_iso8601(params.get('after'))
+        before = parse_iso8601(params.get('before'))
+
+        return {'partner': partner, 'after': after, 'before': before}
+
+
 class OutgoingCRUDL(SmartCRUDL):
-    actions = ('search',)
+    actions = ('search', 'search_replies')
     model = Outgoing
 
     class Search(OrgPermsMixin, SmartTemplateView):
@@ -350,3 +367,56 @@ class OutgoingCRUDL(SmartCRUDL):
                 'results': [m.as_json() for m in context['object_list']],
                 'has_more': context['has_more']
             }, encoder=JSONEncoder)
+
+    class SearchReplies(OrgPermsMixin, ReplySearchMixin, SmartTemplateView):
+        """
+        JSON endpoint to fetch replies made by users
+        """
+        def get(self, request, *args, **kwargs):
+            org = self.request.org
+            user = self.request.user
+            page = int(self.request.GET.get('page', 1))
+
+            search = self.derive_search()
+            items = Outgoing.search_replies(org, user, search)
+
+            paginator = LazyPaginator(items, 50)
+            outgoing = paginator.page(page)
+            has_more = paginator.num_pages > page
+
+            def as_json(msg):
+                delay = (msg.created_on - msg.reply_to.created_on).total_seconds()
+                obj = msg.as_json()
+                obj.update({
+                    'reply_to': {
+                        'text': msg.reply_to.text,
+                        'flagged': msg.reply_to.is_flagged,
+                        'labels': [l.as_json() for l in msg.reply_to.labels.all()],
+                    },
+                    'response': {
+                        'delay': timesince(msg.reply_to.created_on, now=msg.created_on),
+                        'warning': delay > RESPONSE_DELAY_WARN_SECONDS
+                    }
+                })
+                return obj
+
+            return JsonResponse({'results': [as_json(o) for o in outgoing], 'has_more': has_more}, encoder=JSONEncoder)
+
+
+class ReplyExportCRUDL(SmartCRUDL):
+    model = ReplyExport
+    actions = ('create', 'read')
+
+    class Create(OrgPermsMixin, ReplySearchMixin, SmartCreateView):
+        @non_atomic_requests
+        def post(self, request, *args, **kwargs):
+            search = self.derive_search()
+            export = self.model.create(self.request.org, self.request.user, search)
+
+            reply_export.delay(export.pk)
+
+            return JsonResponse({'export_id': export.pk})
+
+    class Read(BaseDownloadView):
+        title = _("Download Replies")
+        filename = 'reply_export.xls'

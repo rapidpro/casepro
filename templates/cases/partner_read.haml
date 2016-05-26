@@ -10,13 +10,11 @@
   %script{ type:"text/javascript" }
     var contextData = {{ context_data_json|safe }};
 
-  .ng-cloak{ ng-controller:"PartnerController", ng-cloak:"" }
-    .page-header.clearfix
-      .clearfix
+  .ng-cloak{ ng-controller:"PartnerController", ng-init:"init()", ng-cloak:"" }
+    .page-header.clearfix{ style:"border-bottom: none" }
+      .clearfix{ style:"margin-bottom: 10px" }
         .page-header-buttons
           - if can_manage
-            %a.btn.btn-default{ href:"{% url 'profiles.user_create_in' object.pk %}" }
-              - trans "New User"
             .btn-group
               %a.btn.btn-default{ href:"{% url 'cases.partner_update' object.pk %}", tooltip:"Edit Partner" }
                 %span.glyphicon.glyphicon-pencil
@@ -29,73 +27,209 @@
             {% thumbnail object.logo "200x80" format="PNG" as im %}
             %img.logo{ src:"{{ im.url }}", alt:"{{ partner.name }}"}
             {% endthumbnail %}
+        %h2
+          {{ object.name }}
+
+      .header-details
+        - if partner.get_labels
+          - for label in partner.get_labels
+            %span.label-container
+              %span.label.label-success
+                {{ label.name }}
+              &nbsp;
         - else
-          %h2
-            {{ object.name }}
+          %i
+            - trans "No labels"
 
-      %ul.header-details
-        - if object.logo
-          %li
-            %strong><
+    <uib-tabset active="active">
+
+      <uib-tab index="0" select="onTabSelect('summary')">
+        <uib-tab-heading>
+          %span.glyphicon.glyphicon-dashboard
+          - trans "Summary"
+        </uib-tab-heading>
+        %br
+        .row
+          .col-md-4
+            %ul
+              %li
+                Total replies: <strong>{{ summary.total_replies }}</strong>
+              %li
+                Number of open cases: <strong>{{ summary.cases_open }}</strong>
+              %li
+                Number of closed cases: <strong>{{ summary.cases_closed }}</strong>
+          .col-md-8
+            .chart.chart-replies-by-month
+      </uib-tab>
+
+      - if can_view_replies
+        <uib-tab index="1" select="onTabSelect('replies')">
+          <uib-tab-heading>
+            %span.glyphicon.glyphicon-comment
+            - trans "Replies"
+          </uib-tab-heading>
+          .ng-cloak{ ng-controller:"PartnerRepliesController", ng-init:"init()" }
+            .search-toolbar.clearfix
+              - if perms.msgs.replyexport_create or org_perms.msgs.replyexport_create
+                .pull-away
+                  %button.btn.btn-default{ type:"button", ng-click:"onExportSearch()" }
+                    %span.glyphicon.glyphicon-save
+                    - trans "Export..."
+
+              %form.form-horizontal
+                %span.date-range{ ng-controller:"DateRangeController" }
+                  %label.control-label{ style:"padding-left: 0" }
+                    - trans "From"
+                  .input-group.date-picker
+                    %input.form-control{ type:"text", uib-datepicker-popup:"[[ format ]]", ng-model:"searchFields.after", is-open:"afterOpen", datepicker-options:"afterOptions", ng-change:"onAfterChange()" }
+                    %span.input-group-btn
+                      %button.btn.btn-default{ type:"button", ng-click:"openAfter($event)" }
+                        %i.glyphicon.glyphicon-calendar
+                  %label.control-label
+                    - trans "Until"
+                  .input-group.date-picker
+                    %input.form-control{ type:"text", uib-datepicker-popup:"[[ format ]]", ng-model:"searchFields.before", is-open:"beforeOpen", datepicker-options:"beforeOptions", ng-change:"onBeforeChange()" }
+                    %span.input-group-btn
+                      %button.btn.btn-default{ type:"button", ng-click:"openBefore($event)" }
+                        %i.glyphicon.glyphicon-calendar
+
+            .{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"!isInfiniteScrollEnabled()" }
+              %table.table.table-striped
+                %thead
+                  %th
+                    - trans "On"
+                  %th
+                    - trans "User"
+                  %th
+                    - trans "Message"
+                  %th
+                    - trans "Delay"
+                  %th
+                    - trans "Reply to"
+                  %th
+                    %span.glyphicon.glyphicon-flag
+                  %th
+                    - trans "Contact"
+                %tbody
+                  %tr{ ng-repeat:"item in items" }
+                    %td{ nowrap:"" }
+                      [[ item.time | autodate ]]
+                    %td
+                      %a{ ng-href:"/user/read/[[ item.sender.id ]]/" }><
+                        [[ item.sender.name ]]
+                    %td
+                      [[ item.text ]]
+                    %td
+                      <span ng-class="{'time-warning': item.response.warning}">[[ item.response.delay ]]</span>
+                    %td
+                      %span.label-container{ ng-if:"item.case" }
+                        %span.label.label-warning
+                          [[ item.case.assignee.name ]]
+                        &nbsp;
+                      %span.label-container{ ng-repeat:"label in item.reply_to.labels" }
+                        %span.label.label-success
+                          [[ label.name ]]
+                        &nbsp;
+                      [[ item.reply_to.text ]]
+                    %td
+                      %span.glyphicon.glyphicon-flag{ ng-if:"item.reply_to.flagged" }
+                    %td{ nowrap:"" }
+                      %span.glyphicon.glyphicon-phone>
+                      [[ item.contact.uuid | limitTo:6 | uppercase ]]
+
+            .loading{ ng-if:"oldItemsLoading" }
+            .none{ ng-hide:"oldItemsLoading || items.length > 0" }
+              - trans "None"
+            .none{ ng-hide:"oldItemsLoading || !hasTooManyItemsToDisplay()" }
+              - trans "More items than can be displayed"
+        </uib-tab>
+
+      <uib-tab index="2" select="onTabSelect('users')">
+        <uib-tab-heading>
+          %span.glyphicon.glyphicon-user
+          - trans "Users"
+        </uib-tab-heading>
+        .search-toolbar.clearfix
+          - if can_manage
+          .pull-away
+            <a class="btn btn-default" href="{% url 'profiles.user_create_in' object.pk %}">{% trans "New..." %}</a>
+
+          .{ style:"margin-top: 7px" }
+            Total of <strong>[[ users.length ]]</strong> users
+
+        %table.table.table-striped
+          %thead
+            %th
               - trans "Name"
-            :
-            {{ object.name }}
-        %li
-          %strong><
-            - trans "Labels"
-          :
-          - if partner.get_labels
-            - for label in partner.get_labels
-              %span.label-container
-                %span.label.label-success
-                  {{ label.name }}
-                &nbsp;
-          - else
-            %i
-              - trans "None"
+            %th
+              - trans "Role"
+            %th
+              - trans "Replies (this month)"
+            %th
+              - trans "Replies (last month)"
+            %th
+              - trans "Replies (total)"
+          %tbody
+            %tr{ ng-repeat:"user in users" }
+              %td
+                %a{ ng-href:"/user/read/[[ user.id ]]/" }><
+                  [[ user.name ]]
+              %td
+                [[ user.role ]]
+              %td
+                [[ user.replies.this_month ]]
+              %td
+                [[ user.replies.last_month ]]
+              %td
+                [[ user.replies.total ]]
+        .none{ ng-if:"!users" }
+          - trans "None"
 
-    .row
-      .col-md-6
-        .partner-user-section
-          %h3
-            - trans "Managers"
-          - for user in managers
-            .partner-user.stackitem.hoverable{ ng-click:"onClickUser({{ user.pk }})" }
-              .partner-user-name
-                %span.glyphicon.glyphicon-user
-                {{ user.profile.full_name }}
-              .partner-user-email
-                {{ user.email }}
-          - if not managers
-            .none
-              - trans "None"
-      .col-md-6
-        .partner-user-section
-          %h3
-            - trans "Data Analysts"
-          - for user in analysts
-            .partner-user.stackitem.hoverable{ ng-click:"onClickUser({{ user.pk }})" }
-              .partner-user-name
-                %span.glyphicon.glyphicon-user
-                {{ user.profile.full_name }}
-              .partner-user-email
-                {{ user.email }}
-          - if not analysts
-            .none
-              - trans "None"
+      </uib-tab>
+    </uib-tabset>
+
+
+- block extra-script
+  {{ block.super }}
+  :javascript
+    $(function() {
+      $('.chart-replies-by-month').highcharts({
+        chart: { type: 'column' },
+        title: { text: null },
+        xAxis: { categories: contextData.replies_by_month[0] },
+        yAxis: { min: 0, title: { text: 'Replies' }},
+        legend: { enabled: false },
+        series: [{ name: 'Replies', data: contextData.replies_by_month[1] }],
+        credits: { enabled: false }
+      });
+    });
+
 
 - block extra-style
   {{ block.super }}
   :css
     .partner-logo {
-      padding: 15px 20px 0 0
+      margin: 15px 20px 0 0;
+      border: 1px solid #BBB;
     }
-    .partner-user, .partner-label {
+    .partner-label {
       margin-left: 1em
     }
-    .partner-user-name, .partner-label {
-      font-size: 1.2em;
+    .search-toolbar {
+      padding: 7px;
+      background-color: #f7f7f7;
+      margin-top: 7px;
     }
-    .partner-user .glyphicon, .label-name .glyphicon {
-      padding-right: 6px;
+    .search-toolbar .date-range .input-group, .date-range label {
+      float: left;
+    }
+    .search-toolbar .date-range label {
+      padding: 7px 1em 0 1em;
+    }
+    .time-warning {
+      color: #922
+    }
+    .chart {
+      width: 100%;
+      height: 250px;
     }
