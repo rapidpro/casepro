@@ -11,31 +11,6 @@ DEFAULT_ERR_HANDLER = (data, status, headers, config) =>
   console.error("Request error (status = " + status + ")")
 
 #=====================================================================
-# Utilities
-#=====================================================================
-
-parseIso8601 = (str) ->
-  if str then new Date(Date.parse str) else null
-
-formatIso8601 = (date) ->
-  if date then date.toISOString() else null
-
-isArray = Array.isArray || (val) -> return {}.toString.call(val) is '[object Array]'
-
-toFormData = (params) ->
-  data = new FormData()
-  for own key, val of params
-    if isArray(val)
-      val = (item.toString() for item in val).join(',')
-    else if val
-      val = val.toString()  # required for https://bugzilla.mozilla.org/show_bug.cgi?id=819328
-
-    if val
-      data.append(key, val)
-
-  return data
-
-#=====================================================================
 # Incoming message service
 #=====================================================================
 
@@ -48,7 +23,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     fetchOld: (search, before, page, callback) ->
       params = @_searchToParams(search)
       if !search.before
-        params.before = formatIso8601(before)
+        params.before = utils.formatIso8601(before)
       params.page = page
 
       $http.get('/message/search/?' + $.param(params))
@@ -65,8 +40,8 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     fetchNew: (search, after, before, callback) ->
       params = @_searchToParams(search)
-      params.after = formatIso8601(after)
-      params.before = formatIso8601(before)
+      params.after = utils.formatIso8601(after)
+      params.before = utils.formatIso8601(before)
 
       $http.get('/message/?' + $.param(params))
       .success((data) =>
@@ -111,7 +86,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
         messages: (m.id for m in messages)
       }
 
-      $http.post('/message/bulk_reply/', toFormData(params), DEFAULT_POST_OPTS)
+      $http.post('/message/bulk_reply/', utils.toFormData(params), DEFAULT_POST_OPTS)
       .success((data) =>
         if callback
           callback()
@@ -168,7 +143,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     # Relabel the given message (removing labels if necessary)
     #----------------------------------------------------------------------------
     relabelMessage: (message, labels, callback) ->
-      data = toFormData({
+      data = utils.toFormData({
         labels: (l.id for l in labels)
       })
 
@@ -188,7 +163,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
         urns: [urn.urn]
       }
 
-      $http.post('/message/forward/' + message.id + '/', toFormData(params), DEFAULT_POST_OPTS)
+      $http.post('/message/forward/' + message.id + '/', utils.toFormData(params), DEFAULT_POST_OPTS)
       .success((data) =>
         callback()
       ).error(DEFAULT_ERR_HANDLER)
@@ -200,8 +175,8 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       return {
         folder: search.folder,
         text: search.text,
-        after: formatIso8601(search.after),
-        before: formatIso8601(search.before),
+        after: utils.formatIso8601(search.after),
+        before: utils.formatIso8601(search.before),
         groups: (g.uuid for g in search.groups).join(','),
         contact: if search.contact then search.contact.uuid else null,
         label: if search.label then search.label.id else null,
@@ -218,7 +193,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       if label
         params.label = label.id
 
-      $http.post('/message/action/' + action + '/', toFormData(params), DEFAULT_POST_OPTS)
+      $http.post('/message/action/' + action + '/', utils.toFormData(params), DEFAULT_POST_OPTS)
       .success(() =>
         if callback
           callback()
@@ -229,14 +204,14 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     _processMessages: (messages) ->
       for msg in messages
-        msg.time = parseIso8601(msg.time)  # parse datetime string
+        msg.time = utils.parseIso8601(msg.time)  # parse datetime string
 
     #----------------------------------------------------------------------------
     # Processes incoming message actions
     #----------------------------------------------------------------------------
     _processMessageActions: (actions) ->
       for action in actions
-        action.created_on = parseIso8601(action.created_on)  # parse datetime string
+        action.created_on = utils.parseIso8601(action.created_on)  # parse datetime string
 ]
 
 
@@ -282,7 +257,7 @@ services.factory 'OutgoingService', ['$rootScope', '$http', ($rootScope, $http) 
         folder: search.folder,
         text: search.text,
         contact: if search.contact then search.contact.uuid else null,
-        before: formatIso8601(startTime),
+        before: utils.formatIso8601(startTime),
         page: page
       }
 
@@ -292,28 +267,10 @@ services.factory 'OutgoingService', ['$rootScope', '$http', ($rootScope, $http) 
     _replySearchToParams: (search, startTime, page) ->
       return {
         partner: search.partner.id,
-        after: formatIso8601(search.after),
-        before: if search.before then formatIso8601(search.before) else formatIso8601(startTime),
+        after: utils.formatIso8601(search.after),
+        before: if search.before then utils.formatIso8601(search.before) else utils.formatIso8601(startTime),
         page: page
       }
-]
-
-
-#=====================================================================
-# Label service
-#=====================================================================
-
-services.factory 'LabelService', ['$http', ($http) ->
-  new class LabelService
-
-    #----------------------------------------------------------------------------
-    # Deletes a label
-    #----------------------------------------------------------------------------
-    deleteLabel: (label, callback) ->
-      $http.post('/label/delete/' + label.id + '/')
-      .success(() ->
-        callback()
-      ).error(DEFAULT_ERR_HANDLER)
 ]
 
 
@@ -329,7 +286,7 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
     #----------------------------------------------------------------------------
     fetchOld: (search, before, page, callback) ->
       params = @_searchToParams(search)
-      params.before = formatIso8601(before)
+      params.before = utils.formatIso8601(before)
       params.page = page
 
       $http.get('/case/search/?' + $.param(params))
@@ -343,8 +300,8 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
     #----------------------------------------------------------------------------
     fetchNew: (search, after, before, callback) ->
       params = @_searchToParams(search)
-      params.after = formatIso8601(after)
-      params.before = formatIso8601(before)
+      params.after = utils.formatIso8601(after)
+      params.before = utils.formatIso8601(before)
 
       $http.get('/case/search/?' + $.param(params))
       .success((data) =>
@@ -383,7 +340,7 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
       if assignee
         params.assignee = assignee.id
 
-      $http.post('/case/open/', toFormData(params), DEFAULT_POST_OPTS)
+      $http.post('/case/open/', utils.toFormData(params), DEFAULT_POST_OPTS)
       .success((data) ->
         callback(data['case'], data['is_new'])
       ).error(DEFAULT_ERR_HANDLER)
@@ -394,7 +351,7 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
     noteCase: (caseObj, note, callback) ->
       params = {note: note}
 
-      $http.post('/case/note/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS)
+      $http.post('/case/note/' + caseObj.id + '/', utils.toFormData(params), DEFAULT_POST_OPTS)
       .success(() ->
         if callback
           callback()
@@ -406,7 +363,7 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
     reassignCase: (caseObj, assignee, callback) ->
       params = {assignee: assignee.id}
 
-      $http.post('/case/reassign/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS)
+      $http.post('/case/reassign/' + caseObj.id + '/', utils.toFormData(params), DEFAULT_POST_OPTS)
       .success(() ->
         if callback
           callback()
@@ -418,7 +375,7 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
     closeCase: (caseObj, note, callback) ->
       params = {note: note}
 
-      $http.post('/case/close/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS)
+      $http.post('/case/close/' + caseObj.id + '/', utils.toFormData(params), DEFAULT_POST_OPTS)
       .success(() ->
         caseObj.is_closed = true
         if callback
@@ -431,7 +388,7 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
     reopenCase: (caseObj, note, callback) ->
       params = {note: note}
 
-      $http.post('/case/reopen/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS)
+      $http.post('/case/reopen/' + caseObj.id + '/', utils.toFormData(params), DEFAULT_POST_OPTS)
       .success(() ->
         caseObj.is_closed = false
         if callback
@@ -446,7 +403,7 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
         labels: (l.id for l in labels)
       }
 
-      $http.post('/case/label/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS)
+      $http.post('/case/label/' + caseObj.id + '/', utils.toFormData(params), DEFAULT_POST_OPTS)
       .success(() ->
         caseObj.labels = labels
         if callback
@@ -459,7 +416,7 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
     updateCaseSummary: (caseObj, summary, callback) ->
       params = {summary: summary}
 
-      $http.post('/case/update_summary/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS)
+      $http.post('/case/update_summary/' + caseObj.id + '/', utils.toFormData(params), DEFAULT_POST_OPTS)
       .success(() ->
         caseObj.summary = summary
         if callback
@@ -472,7 +429,7 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
     replyToCase: (caseObj, text, callback) ->
       params = {text: text}
 
-      $http.post('/case/reply/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS)
+      $http.post('/case/reply/' + caseObj.id + '/', utils.toFormData(params), DEFAULT_POST_OPTS)
       .success(() ->
         if callback
           callback()
@@ -514,7 +471,7 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
     #----------------------------------------------------------------------------
     _processCases: (cases) ->
       for c in cases
-        c.opened_on = parseIso8601(c.opened_on)
+        c.opened_on = utils.parseIso8601(c.opened_on)
 
     #----------------------------------------------------------------------------
     # Processes incoming case timeline items
@@ -522,10 +479,28 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
     _processTimeline: (events) ->
       for event in events
         # parse datetime string
-        event.time = parseIso8601(event.time)
+        event.time = utils.parseIso8601(event.time)
         event.is_action = event.type == 'A'
         event.is_message_in = event.type == 'M' and event.item.direction == 'I'
         event.is_message_out = event.type == 'M' and event.item.direction == 'O'
+]
+
+
+#=====================================================================
+# Label service
+#=====================================================================
+
+services.factory 'LabelService', ['$http', ($http) ->
+  new class LabelService
+
+    #----------------------------------------------------------------------------
+    # Deletes a label
+    #----------------------------------------------------------------------------
+    deleteLabel: (label, callback) ->
+      $http.post('/label/delete/' + label.id + '/')
+      .success(() ->
+        callback()
+      ).error(DEFAULT_ERR_HANDLER)
 ]
 
 
@@ -562,8 +537,8 @@ services.factory 'UserService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     # Delete the given user
     #----------------------------------------------------------------------------
-    deleteUser: (userId, callback) ->
-      $http.post('/user/delete/' + userId + '/', {}, DEFAULT_POST_OPTS)
+    deleteUser: (user, callback) ->
+      $http.post('/user/delete/' + user.id + '/', {}, DEFAULT_POST_OPTS)
       .success(() ->
         if callback
           callback()

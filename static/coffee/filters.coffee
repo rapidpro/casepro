@@ -1,17 +1,13 @@
 filters = angular.module('cases.filters', []);
 
 
-parseIso8601 = (str) ->
-  if str then new Date(Date.parse str) else null
-
-
 #----------------------------------------------------------------------------
 # Formats a date value in same style as GMail
 #----------------------------------------------------------------------------
 filters.filter('autodate', (dateFilter) ->
   (date) ->
     if angular.isString(date)
-      date = parseIso8601(date)
+      date = utils.parseIso8601(date)
 
     now = new Date()
     isToday = date.getDate() == now.getDate() and date.getMonth() == now.getMonth() and date.getFullYear() == now.getFullYear()

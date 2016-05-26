@@ -179,7 +179,8 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/highcharts.js"></script>
 
     {% compress js %}
-    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/cases.coffee" }
+    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/utils.coffee" }
+    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/app.coffee" }
     %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/services.coffee" }
     %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/controllers.coffee" }
     %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/modals.coffee" }

@@ -637,7 +637,7 @@ controllers.controller 'UserController', [ '$scope', '$window', 'UtilsService', 
 
   $scope.onDeleteUser = () ->
     UtilsService.confirmModal("Delete this user?", 'danger', () ->
-      UserService.deleteUser($scope.user.id, () ->
+      UserService.deleteUser($scope.user, () ->
         UtilsService.navigateBack()
       )
     )
