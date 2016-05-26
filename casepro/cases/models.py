@@ -171,20 +171,25 @@ class Case(models.Model):
         """
         Search for cases
         """
-        if search['folder'] == CaseFolder.open:
+        folder = search.get('folder')
+        assignee_id = search.get('assignee')
+        after = search.get('after')
+        before = search.get('before')
+
+        if folder == CaseFolder.open:
             queryset = Case.get_open(org, user)
-        elif search['folder'] == CaseFolder.closed:
+        elif folder == CaseFolder.closed:
             queryset = Case.get_closed(org, user)
         else:
             raise ValueError('Invalid folder for cases')
 
-        if search['assignee']:
-            queryset = queryset.filter(assignee__pk=search['assignee'])
+        if assignee_id:
+            queryset = queryset.filter(assignee__pk=assignee_id)
 
-        if search['after']:
-            queryset = queryset.filter(opened_on__gt=search['after'])
-        if search['before']:
-            queryset = queryset.filter(opened_on__lt=search['before'])
+        if after:
+            queryset = queryset.filter(opened_on__gte=after)
+        if before:
+            queryset = queryset.filter(opened_on__lte=before)
 
         queryset = queryset.select_related('contact', 'assignee')
 

@@ -1,0 +1,19 @@
+{
+  "name": "casepro",
+  "version": "1.0.0",
+  "repository": "git@github.com:rapidpro/casepro.git",
+  "license": "BSD-3-Clause",
+  "dependencies": {
+    "phantomjs-prebuilt": "2.1.7",
+    "coffee-script": "1.10.0",
+    "jasmine-core": "2.4.1",
+    "karma": "0.13.22",
+    "karma-coffee-preprocessor": "1.0.0",
+    "karma-chrome-launcher": "1.0.1",
+    "karma-phantomjs-launcher": "1.0.0",
+    "karma-coverage": "1.0.0",
+    "karma-coveralls": "1.1.2",
+    "karma-jasmine": "1.0.2",
+    "karma-cli": "1.0.0"
+  }
+}

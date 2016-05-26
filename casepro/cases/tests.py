@@ -23,7 +23,7 @@ from casepro.test import BaseCasesTest
 from casepro.utils import datetime_to_microseconds, microseconds_to_datetime
 
 from .context_processors import sentry_dsn
-from .models import AccessLevel, Case, CaseAction, CaseExport, Partner
+from .models import AccessLevel, Case, CaseAction, CaseExport, CaseFolder, Partner
 
 
 class CaseTest(BaseCasesTest):
@@ -297,6 +297,48 @@ class CaseTest(BaseCasesTest):
         # check case open on 20th
         open_case = Case.get_open_for_contact_on(self.unicef, self.ann, datetime(2014, 1, 16, 0, 0, tzinfo=pytz.UTC))
         self.assertEqual(open_case, case2)
+
+    def test_search(self):
+        d1 = datetime(2014, 1, 9, 0, 0, tzinfo=pytz.UTC)
+        d2 = datetime(2014, 1, 10, 0, 0, tzinfo=pytz.UTC)
+        d3 = datetime(2014, 1, 11, 0, 0, tzinfo=pytz.UTC)
+        d4 = datetime(2014, 1, 12, 0, 0, tzinfo=pytz.UTC)
+
+        bob = self.create_contact(self.unicef, 'C-002', "Bob")
+        cat = self.create_contact(self.unicef, 'C-003', "Cat")
+        nic = self.create_contact(self.nyaruka, "C-005", "Nic")
+
+        msg1 = self.create_message(self.unicef, 101, self.ann, "Hello 1")
+        msg2 = self.create_message(self.unicef, 102, self.ann, "Hello 2")
+        msg3 = self.create_message(self.unicef, 103, bob, "Hello 3")
+        msg4 = self.create_message(self.unicef, 104, cat, "Hello 4")
+
+        case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, opened_on=d1, closed_on=d2)
+        case2 = self.create_case(self.unicef, self.ann, self.moh, msg2, opened_on=d2)
+        case3 = self.create_case(self.unicef, bob, self.who, msg3, opened_on=d3)
+        case4 = self.create_case(self.unicef, cat, self.who, msg4, opened_on=d4)
+
+        # other org
+        msg5 = self.create_message(self.nyaruka, 105, nic, "Hello")
+        self.create_case(self.nyaruka, nic, self.klab, msg5)
+
+        def assert_search(user, params, results):
+            self.assertEqual(list(Case.search(self.unicef, user, params)), results)
+
+        # by org admin (sees all cases)
+        assert_search(self.admin, {'folder': CaseFolder.open}, [case4, case3, case2])
+        assert_search(self.admin, {'folder': CaseFolder.closed}, [case1])
+
+        # by partner user (sees only cases assigned to them)
+        assert_search(self.user1, {'folder': CaseFolder.open}, [case2])
+        assert_search(self.user1, {'folder': CaseFolder.closed}, [case1])
+
+        # by assignee
+        assert_search(self.user1, {'folder': CaseFolder.open, 'assignee': self.moh.pk}, [case2])
+
+        # by before/after
+        assert_search(self.admin, {'folder': CaseFolder.open, 'before': d2}, [case2])
+        assert_search(self.admin, {'folder': CaseFolder.open, 'after': d3}, [case4, case3])
 
 
 class CaseCRUDLTest(BaseCasesTest):
@@ -990,7 +1032,20 @@ class InternalViewsTest(BaseCasesTest):
         # check only message older than 1 hour counts
         self.assertEqual(response.json, {'cache': "OK", 'org_tasks': 'OK', 'unhandled': 1})
 
+        with patch('django.core.cache.cache.get') as mock_cache_get:
+            mock_cache_get.side_effect = ValueError("BOOM")
+
+            response = self.url_get('unicef', url)
+            self.assertEqual(response.json, {'cache': "ERROR", 'org_tasks': 'OK', 'unhandled': 1})
+
     def test_ping(self):
         url = reverse('internal.ping')
+
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
+
+        with patch('dash.orgs.models.Org.objects.first') as mock_org_first:
+            mock_org_first.side_effect = ValueError("BOOM")
+
+            response = self.url_get('unicef', url)
+            self.assertEqual(response.status_code, 500)

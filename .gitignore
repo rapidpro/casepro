@@ -10,6 +10,8 @@ dash
 deploy
 celerybeat-schedule.db
 src/
+node_modules/
+
 casepro/settings.py
 casepro/settings.py.prod
 casepro/settings.py.staging
@@ -55,8 +57,7 @@ htmlcov/
 .tox/
 .coverage
 .cache
-nosetests.xml
-coverage.xml
+js-coverage/
 
 # Translations
 *.mo
