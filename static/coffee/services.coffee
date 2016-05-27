@@ -221,13 +221,8 @@ services.factory 'OutgoingService', ['$rootScope', '$http', '$httpParamSerialize
         callback(data.results, data.has_more)
       ).error(DEFAULT_ERR_HANDLER)
 
-    startReplyExport: (search, callback) ->
-      params = @_replySearchToParams(search, null, null)
-
-      $http.post('/replyexport/create/?' + $httpParamSerializerJQLike(params))
-      .success((data) =>
-        callback(data.results, data.has_more)
-      ).error(DEFAULT_ERR_HANDLER)
+    startReplyExport: (search) ->
+      return $http.post('/replyexport/create/?' + $httpParamSerializerJQLike(@_replySearchToParams(search, null, null)))
 
     #----------------------------------------------------------------------------
     # Convert a regular outbox search object to URL params

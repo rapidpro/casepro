@@ -85,6 +85,23 @@ describe('services:', () ->
     )
   )
 
+  describe('OutgoingService', () ->
+    OutgoingService = null
+    testPartner = {id: 123, name: "McTest Partners Ltd"}
+
+    beforeEach(inject((_OutgoingService_) ->
+      OutgoingService = _OutgoingService_
+    ))
+
+    describe('startReplyExport', () ->
+      it('posts to export endpoint', () ->
+        $httpBackend.expectPOST('/replyexport/create/?partner=123').respond('')
+        OutgoingService.startReplyExport({partner: testPartner})
+        $httpBackend.flush()
+      )
+    )
+  )
+
   describe('PartnerService', () ->
     PartnerService = null
     testPartner = {id: 123, name: "McTest Partners Ltd"}

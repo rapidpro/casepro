@@ -621,7 +621,7 @@ controllers.controller 'PartnerRepliesController', [ '$scope', '$window', '$cont
 
   $scope.onExportSearch = () ->
     UtilsService.confirmModal("Export the current search?", null, () ->
-      OutgoingService.startReplyExport($scope.activeSearch, () ->
+      OutgoingService.startReplyExport($scope.activeSearch).then(() ->
         UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
       )
     )
