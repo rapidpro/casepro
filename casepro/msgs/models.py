@@ -160,7 +160,7 @@ class Message(models.Model):
         label_id = search.get('label')
         include_archived = search.get('include_archived')
         text = search.get('text')
-        contact_uuid = search.get('contact')
+        contact_id = search.get('contact')
         group_uuids = search.get('groups')
         after = search.get('after')
         before = search.get('before')
@@ -209,8 +209,8 @@ class Message(models.Model):
         if text:
             queryset = queryset.filter(text__icontains=text)
 
-        if contact_uuid:
-            queryset = queryset.filter(contact__uuid=contact_uuid)
+        if contact_id:
+            queryset = queryset.filter(contact__pk=contact_id)
         if group_uuids:
             queryset = queryset.filter(contact__groups__uuid__in=group_uuids).distinct()
 
@@ -465,7 +465,7 @@ class Outgoing(models.Model):
     @classmethod
     def search(cls, org, user, search):
         text = search.get('text')
-        contact_uuid = search.get('contact')
+        contact_id = search.get('contact')
 
         queryset = org.outgoing_messages.all()
 
@@ -476,8 +476,8 @@ class Outgoing(models.Model):
         if text:
             queryset = queryset.filter(text__icontains=text)
 
-        if contact_uuid:
-            queryset = queryset.filter(contact__uuid=contact_uuid)
+        if contact_id:
+            queryset = queryset.filter(contact__pk=contact_id)
 
         queryset = queryset.select_related('partner', 'contact', 'case__assignee', 'created_by__profile')
 
@@ -496,9 +496,7 @@ class Outgoing(models.Model):
             queryset = queryset.filter(partner=user_partner)
 
         if partner_id:
-            from casepro.cases.models import Partner
-            partner = Partner.objects.get(pk=partner_id)
-            queryset = queryset.filter(partner=partner)
+            queryset = queryset.filter(partner__pk=partner_id)
 
         if after:
             queryset = queryset.filter(created_on__gte=after)

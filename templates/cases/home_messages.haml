@@ -10,12 +10,11 @@
           %span.contact-info
             Messages for contact
             %strong
-              [[ activeContact.uuid | limitTo:6 | uppercase ]]
+              [[ activeContact.name ]]
 
             - if user_is_admin
               &nbsp;
-              %a{ ng-href:'[[ "{{ contact_ext_url }}" | replace:"{}":activeContact.uuid ]]', target:"_blank" }
-                %span.glyphicon.glyphicon-new-window
+              %a{ ng-href:"/contact/read/[[ activeContact.id ]]/" }
                 - trans "View"
           .pull-away
             %button.btn.btn-default{ type:"button", ng-click:"activateContact(null)" }
@@ -143,7 +142,7 @@
         .message-contact
           %a{ ng-click:"activateContact(message.contact)", title:"View all from contact" }><
             %span.glyphicon.glyphicon-phone>
-            [[ message.contact.uuid | limitTo:6 | uppercase ]]
+            [[ message.contact.name ]]
         .message-text{ ng-click:"onExpandMessage(message)" }
           %span.label-container{ ng-if:"message.flow" }
             %span.label.label-info

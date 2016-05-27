@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 from dash.orgs.models import TaskState
 from django.core.urlresolvers import reverse
+from django.test.utils import override_settings
 from mock import patch
 
 from casepro.test import BaseCasesTest
@@ -12,8 +13,15 @@ from .tasks import pull_contacts
 
 
 class ContactTest(BaseCasesTest):
+    def setUp(self):
+        super(ContactTest, self).setUp()
+
+        self.ann = self.create_contact(self.unicef, '7b7dd838-4947-4e85-9b5c-0e8b1794080b', "Ann", [self.reporters],
+                                       {'age': "32", 'state': "WA"})
+
     def test_save(self):
-        # start with no groups or fields
+        # start with no data
+        Contact.objects.all().delete()
         Group.objects.all().delete()
         Field.objects.all().delete()
 
@@ -55,39 +63,49 @@ class ContactTest(BaseCasesTest):
 
         self.assertEqual(set(contact.groups.all()), {spammers, boffins})
 
-    def test_get_fields(self):
-        contact = self.create_contact(self.unicef, 'C-001', "Jean", fields={'age': "32", 'state': "WA"})
+    def test_get_display_name(self):
+        self.assertEqual(self.ann.get_display_name(), "Ann")
 
-        self.assertEqual(contact.get_fields(), {'age': "32", 'state': "WA"})  # what is stored on the contact
-        self.assertEqual(contact.get_fields(visible=True), {'nickname': None, 'age': "32"})  # visible fields
+        # if site uses anon contacts then obscure this
+        with override_settings(SITE_ANON_CONTACTS=True):
+            self.assertEqual(self.ann.get_display_name(), "7B7DD8")
+
+        # likewise if name if empty
+        self.ann.name = ""
+        self.assertEqual(self.ann.get_display_name(), "7B7DD8")
+
+    def test_get_fields(self):
+        self.assertEqual(self.ann.get_fields(), {'age': "32", 'state': "WA"})  # what is stored on the contact
+        self.assertEqual(self.ann.get_fields(visible=True), {'nickname': None, 'age': "32"})  # visible fields
 
     def test_release(self):
-        contact = self.create_contact(self.unicef, 'C-001', "Jean", [self.reporters], {'age': "32"})
-        self.create_message(self.unicef, 101, contact, "Hello")
-        self.create_message(self.unicef, 102, contact, "Goodbye")
+        self.create_message(self.unicef, 101, self.ann, "Hello")
+        self.create_message(self.unicef, 102, self.ann, "Goodbye")
 
-        contact.release()
+        self.ann.release()
 
-        self.assertEqual(contact.groups.count(), 0)  # should be removed from groups
-        self.assertEqual(contact.incoming_messages.count(), 2)  # messages should be inactive and handled
-        self.assertEqual(contact.incoming_messages.filter(is_active=False, is_handled=True).count(), 2)
+        self.assertEqual(self.ann.groups.count(), 0)  # should be removed from groups
+        self.assertEqual(self.ann.incoming_messages.count(), 2)  # messages should be inactive and handled
+        self.assertEqual(self.ann.incoming_messages.filter(is_active=False, is_handled=True).count(), 2)
 
     def test_as_json(self):
-        contact = self.create_contact(self.unicef, 'C-001', "Richard", fields={'age': "32", 'state': "WA"})
-
-        self.assertEqual(contact.as_json(full=False), {'uuid': 'C-001', 'name': "Richard"})
+        self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "Ann"})
 
         # full=True means include visible contact fields
-        self.assertEqual(contact.as_json(full=True), {'uuid': 'C-001',
-                                                      'name': "Richard",
-                                                      'fields': {'nickname': None, 'age': "32"}})
+        self.assertEqual(self.ann.as_json(full=True), {'id': self.ann.pk,
+                                                       'name': "Ann",
+                                                       'fields': {'nickname': None, 'age': "32"}})
+
+        # if site uses anon contacts then name is obscured
+        with override_settings(SITE_ANON_CONTACTS=True):
+            self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "7B7DD8"})
 
 
 class ContactCRUDLTest(BaseCasesTest):
     def setUp(self):
         super(ContactCRUDLTest, self).setUp()
 
-        self.jean = self.create_contact(self.unicef, "C-001", "Jean", [self.reporters], {'age': "32"})
+        self.ann = self.create_contact(self.unicef, "C-001", "Ann", [self.reporters], {'age': "32"})
 
     def test_list(self):
         url = reverse('contacts.contact_list')
@@ -102,24 +120,32 @@ class ContactCRUDLTest(BaseCasesTest):
 
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(list(response.context['object_list']), [self.jean])
+        self.assertEqual(list(response.context['object_list']), [self.ann])
 
     def test_read(self):
-        url = reverse('contacts.contact_read', args=["C-001"])
+        url = reverse('contacts.contact_read', args=[self.ann.pk])
 
-        # log in as a non-superuser
-        self.login(self.admin)
-
-        response = self.url_get('unicef', url)
-        self.assertEqual(response.status_code, 302)
-
-        self.login(self.superuser)
-
+        # log in as regular user
+        self.login(self.user1)
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Jean")
-        self.assertContains(response, "Reporters")
-        self.assertContains(response, "age=32")
+        self.assertContains(response, "Age")
+
+        # administrators get button linking to backend
+        self.login(self.admin)
+        response = self.url_get('unicef', url)
+        self.assertContains(response, "View External")
+
+        # superusers see extra fields
+        self.login(self.superuser)
+        response = self.url_get('unicef', url)
+        self.assertContains(response, "Is Blocked")
+        self.assertContains(response, "Is Active")
+
+        # users from other orgs get nothing
+        self.login(self.user4)
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
 
 
 class FieldCRUDLTest(BaseCasesTest):

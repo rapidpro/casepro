@@ -1,10 +1,9 @@
 from __future__ import unicode_literals
 
-import six
-
 from dash.orgs.views import OrgObjPermsMixin, OrgPermsMixin
 from django import forms
-from django.http import HttpResponseRedirect, Http404
+from django.conf import settings
+from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCRUDL, SmartReadView, SmartListView, SmartFormView
 
@@ -25,29 +24,43 @@ class ContactCRUDL(SmartCRUDL):
             return self.model.objects.filter(org=self.request.org)
 
     class Read(OrgObjPermsMixin, SmartReadView):
-        fields = ('uuid', 'name', 'language', 'groups', 'contact_fields', 'created_on', 'is_blocked', 'is_active')
-
-        @classmethod
-        def derive_url_pattern(cls, path, action):
-            return r'^%s/%s/(?P<uuid>[^/]+)/$' % (path, action)
-
-        def get_object(self, queryset=None):
-            uuid = self.kwargs.get('uuid')
-            contact = self.model.objects.filter(uuid=uuid, org=self.request.org).first()
-
-            if contact is None:
-                raise Http404("No contact with that UUID")
-
-            return contact
+        base_fields = ['language', 'groups']
+        superuser_fields = ['uuid', 'created_on', 'is_blocked', 'is_active']
 
         def get_queryset(self, **kwargs):
-            return self.model.objects.filter(org=self.request.org, uuid=kwargs['uuid'])
+            contact_fields = Field.get_all(self.request.org, visible=True)
+            self.contact_field_keys = [f.key for f in contact_fields]
+            self.contact_field_labels = {f.key: f.label for f in contact_fields}
+
+            return self.model.objects.filter(org=self.request.org)
+
+        def derive_fields(self):
+            fields = self.base_fields + self.contact_field_keys
+
+            if self.request.user.is_superuser:
+                fields += self.superuser_fields
+
+            return fields
 
         def get_groups(self, obj):
             return ", ".join([g.name for g in obj.groups.all()])
 
-        def get_contact_fields(self, obj):
-            return '<br/>'.join(["%s=%s" % (key, val) for key, val in six.iteritems(obj.get_fields())])
+        def lookup_field_value(self, context, obj, field):
+            if field in self.base_fields or field in self.superuser_fields:
+                return super(ContactCRUDL.Read, self).lookup_field_value(context, obj, field)
+            else:
+                return obj.get_fields().get(field)
+
+        def lookup_field_label(self, context, field, default=None):
+            if field in self.base_fields or field in self.superuser_fields:
+                return super(ContactCRUDL.Read, self).lookup_field_label(context, field, default)
+            else:
+                return self.contact_field_labels.get(field, default)
+
+        def get_context_data(self, **kwargs):
+            context = super(ContactCRUDL.Read, self).get_context_data(**kwargs)
+            context['backend_url'] = settings.SITE_EXTERNAL_CONTACT_URL % self.object.uuid
+            return context
 
 
 class GroupCRUDL(SmartCRUDL):

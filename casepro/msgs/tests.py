@@ -397,7 +397,7 @@ class MessageTest(BaseCasesTest):
         self.assertRaises(ValueError, Message.search, self.unicef, self.user1, {'folder': MessageFolder.unlabelled})
 
         # by contact in the inbox
-        assert_search(self.admin, {'folder': MessageFolder.inbox, 'contact': bob.uuid}, [msg8, msg6])
+        assert_search(self.admin, {'folder': MessageFolder.inbox, 'contact': bob.pk}, [msg8, msg6])
 
         # by contact group in the inbox
         assert_search(self.admin, {'folder': MessageFolder.inbox, 'groups': [self.reporters.uuid]}, [msg8, msg6])
@@ -543,7 +543,7 @@ class MessageTest(BaseCasesTest):
 
         self.assertEqual(msg.as_json(), {
             'id': msg.backend_id,
-            'contact': {'uuid': "C-001", 'name': "Ann"},
+            'contact': {'id': self.ann.pk, 'name': "Ann"},
             'text': "Hello",
             'time': msg.created_on,
             'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
@@ -603,7 +603,7 @@ class MessageCRUDLTest(BaseCasesTest):
         self.assertEqual(len(response.json['results']), 3)
         self.assertEqual(response.json['results'][0]['id'], 103)
         self.assertEqual(response.json['results'][1]['id'], 102)
-        self.assertEqual(response.json['results'][1]['contact'], {'uuid': "C-002", 'name': "Bob"})
+        self.assertEqual(response.json['results'][1]['contact'], {'id': self.bob.pk, 'name': "Bob"})
         self.assertEqual(response.json['results'][1]['text'], "I ♡ RapidPro")
         self.assertEqual(response.json['results'][1]['labels'], [{'id': self.pregnancy.pk, 'name': "Pregnancy"}])
         self.assertEqual(response.json['results'][2]['id'], 101)
@@ -616,7 +616,7 @@ class MessageCRUDLTest(BaseCasesTest):
 
         self.assertEqual(len(response.json['results']), 2)
         self.assertEqual(response.json['results'][0]['id'], 105)
-        self.assertEqual(response.json['results'][0]['contact'], {'uuid': "C-003", 'name': "Cat"})
+        self.assertEqual(response.json['results'][0]['contact'], {'id': cat.pk, 'name': "Cat"})
         self.assertEqual(response.json['results'][0]['text'], "AIDS??")
         self.assertEqual(response.json['results'][0]['labels'], [{'id': self.aids.pk, 'name': "AIDS"}])
         self.assertEqual(response.json['results'][0]['case'], {'id': case.pk,
@@ -918,7 +918,7 @@ class OutgoingTest(BaseCasesTest):
         assert_search(self.admin, {'folder': OutgoingFolder.sent, 'text': "LO 5"}, [out5])
 
         # by contact
-        assert_search(self.admin, {'folder': OutgoingFolder.sent, 'contact': self.ann.uuid}, [out2, out1])
+        assert_search(self.admin, {'folder': OutgoingFolder.sent, 'contact': self.ann.pk}, [out2, out1])
 
     def test_search_replies(self):
         out1 = self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello 1", self.ann)
@@ -974,7 +974,7 @@ class OutgoingTest(BaseCasesTest):
 
         self.assertEqual(outgoing.as_json(), {
             'id': outgoing.pk,
-            'contact': {'uuid': "C-001", 'name': "Ann"},
+            'contact': {'id': self.ann.pk, 'name': "Ann"},
             'urns': [],
             'text': "That's great",
             'time': outgoing.created_on,
@@ -1010,7 +1010,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'], [
             {
                 'id': out2.pk,
-                'contact': {'name': "Ann", 'uuid': "C-001"},
+                'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'urns': [],
                 'text': "Hello 2",
                 'direction': 'O',
@@ -1020,7 +1020,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
             },
             {
                 'id': out1.pk,
-                'contact': {'name': "Ann", 'uuid': "C-001"},
+                'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'urns': [],
                 'text': "Hello 1",
                 'direction': 'O',
@@ -1037,7 +1037,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'], [
             {
                 'id': out2.pk,
-                'contact': {'name': "Ann", 'uuid': "C-001"},
+                'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'urns': [],
                 'text': "Hello 2",
                 'direction': 'O',
@@ -1073,7 +1073,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'], [
             {
                 'id': out2.pk,
-                'contact': {'name': "Bob", 'uuid': "C-002"},
+                'contact': {'id': self.bob.pk, 'name': "Bob"},
                 'urns': [],
                 'text': "Hello 2",
                 'direction': 'O',
@@ -1089,7 +1089,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
             },
             {
                 'id': out1.pk,
-                'contact': {'name': "Ann", 'uuid': "C-001"},
+                'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'urns': [],
                 'text': "Hello 1",
                 'direction': 'O',

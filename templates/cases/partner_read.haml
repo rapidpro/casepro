@@ -134,8 +134,9 @@
                     %td
                       %span.glyphicon.glyphicon-flag{ ng-if:"item.reply_to.flagged" }
                     %td{ nowrap:"" }
-                      %span.glyphicon.glyphicon-phone>
-                      [[ item.contact.uuid | limitTo:6 | uppercase ]]
+                      %a{ ng-href:"/contact/read/[[ item.contact.id ]]" }><
+                        %span.glyphicon.glyphicon-phone>
+                        [[ item.contact.name ]]
 
             .loading{ ng-if:"oldItemsLoading" }
             .none{ ng-hide:"oldItemsLoading || items.length > 0" }

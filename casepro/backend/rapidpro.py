@@ -51,13 +51,7 @@ class ContactSyncer(BaseSyncer):
         }
 
     def update_required(self, local, remote, remote_as_kwargs):
-        if local.is_stub:
-            return True
-
-        if local.name != remote.name:
-            return True
-
-        if local.language != remote.language:
+        if local.is_stub or local.name != remote.name or local.language != remote.language:
             return True
 
         if {g.uuid for g in local.groups.all()} != {g.uuid for g in remote.groups}:
