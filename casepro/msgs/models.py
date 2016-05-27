@@ -64,11 +64,12 @@ class Label(models.Model):
 
     @classmethod
     def get_all(cls, org, user=None):
-        if not user or user.can_administer(org):
-            return cls.objects.filter(org=org, is_active=True)
+        if user:
+            user_partner = user.get_partner(org)
+            if user_partner and user_partner.is_restricted:
+                return user_partner.get_labels()
 
-        partner = user.get_partner(org)
-        return partner.get_labels() if partner else cls.objects.none()
+        return org.labels.filter(is_active=True)
 
     @classmethod
     def lock(cls, org, uuid):

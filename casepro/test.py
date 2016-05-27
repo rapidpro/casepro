@@ -72,8 +72,8 @@ class BaseCasesTest(DashTest):
         self.state = self.create_field(self.unicef, 'state', "State", value_type='S', is_visible=False)
         self.motorbike = self.create_field(self.nyaruka, 'motorbike', "Moto", value_type='T')
 
-    def create_partner(self, org, name, labels=()):
-        return Partner.create(org, name, labels, None)
+    def create_partner(self, org, name, labels=(), restricted=True):
+        return Partner.create(org, name, restricted, labels, None)
 
     def create_admin(self, org, full_name, email):
         user = User.create(None, None, None, full_name, email, password=email, change_password=False)
