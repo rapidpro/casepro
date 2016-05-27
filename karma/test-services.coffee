@@ -13,10 +13,61 @@ describe('services:', () ->
 
   describe('CaseService', () ->
     CaseService = null
+    testCase = null
 
     beforeEach(inject((_CaseService_) ->
       CaseService = _CaseService_
+
+      testCase = {
+        id: 501,
+        summary: "Got tea?",
+        assignee: {id: 201, name: "McTest Partners Ltd"},
+        opened_on: utcdate(2016, 5, 27, 11, 0, 0, 0),
+        is_closed: false
+      }
     ))
+    
+    describe('addNote', () ->
+      it('posts to note endpoint', () ->
+        $httpBackend.expectPOST('/case/note/501/', 'note=Hello+there').respond('')
+        CaseService.addNote(testCase, "Hello there")
+        $httpBackend.flush()
+      )
+    )
+
+    describe('reassign', () ->
+      it('posts to reassign endpoint', () ->
+        newAssignee = {id: 202, name: "Helpers"}
+
+        $httpBackend.expectPOST('/case/reassign/501/', 'assignee=202').respond('')
+        CaseService.reassign(testCase, newAssignee).then(() ->
+          expect(testCase.assignee).toEqual(newAssignee)
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('close', () ->
+      it('posts to close endpoint and closes case', () ->
+        $httpBackend.expectPOST('/case/close/501/', 'note=Hello+there').respond('')
+        CaseService.close(testCase, "Hello there").then(() ->
+          expect(testCase.is_closed).toEqual(true)
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('reopen', () ->
+      it('posts to reopen endpoint and reopens case', () ->
+        testCase.is_closed = true
+
+        $httpBackend.expectPOST('/case/reopen/501/', 'note=Hello+there').respond('')
+        CaseService.reopen(testCase, "Hello there").then(() ->
+          expect(testCase.is_closed).toEqual(false)
+        )
+        $httpBackend.flush()
+      )
+    )
 
     describe('startExport', () ->
       it('posts to export endpoint', () ->
@@ -35,10 +86,10 @@ describe('services:', () ->
       LabelService = _LabelService_
     ))
 
-    describe('deleteLabel', () ->
+    describe('delete', () ->
       it('posts to delete endpoint', () ->
         $httpBackend.expectPOST('/label/delete/123/').respond("")
-        LabelService.deleteLabel(testLabel)
+        LabelService.delete(testLabel)
         $httpBackend.flush()
       )
     )
@@ -120,10 +171,10 @@ describe('services:', () ->
       )
     )
 
-    describe('deletePartner', () ->
+    describe('delete', () ->
       it('posts to delete endpoint', () ->
         $httpBackend.expectPOST('/partner/delete/123/').respond('')
-        PartnerService.deletePartner(testPartner)
+        PartnerService.delete(testPartner)
         $httpBackend.flush()
       )
     )
@@ -137,10 +188,10 @@ describe('services:', () ->
       UserService = _UserService_
     ))
 
-    describe('deleteUser', () ->
+    describe('delete', () ->
       it('posts to delete endpoint', () ->
         $httpBackend.expectPOST('/user/delete/123/').respond('')
-        UserService.deleteUser(testUser)
+        UserService.delete(testUser)
         $httpBackend.flush()
       )
     )

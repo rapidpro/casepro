@@ -65,7 +65,7 @@ controllers.controller 'HomeController', [ '$scope', '$window', '$location', 'La
 
   $scope.onDeleteLabel = () ->
     UtilsService.confirmModal('Delete the label <strong>' + $scope.activeLabel.name + '</strong>?', 'danger', () ->
-      LabelService.deleteLabel($scope.activeLabel).then(() ->
+      LabelService.delete($scope.activeLabel).then(() ->
         $scope.labels = (l for l in $scope.labels when l.id != $scope.activeLabel.id)
         $scope.activateLabel(null)
         UtilsService.displayAlert('success', "Label was deleted")
@@ -509,28 +509,28 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
 
   $scope.onAddNote = () ->
     UtilsService.noteModal("Add Note", null, null, CASE_NOTE_MAX_LEN, (note) ->
-      CaseService.noteCase($scope.caseObj, note, () ->
+      CaseService.addNote($scope.caseObj, note).then(() ->
         $scope.$broadcast('timelineChanged')
       )
     )
 
   $scope.onReassign = () ->
     UtilsService.assignModal("Re-assign", null, $scope.allPartners, (assignee) ->
-      CaseService.reassignCase($scope.caseObj, assignee, () ->
+      CaseService.reassign($scope.caseObj, assignee).then(() ->
         $scope.$broadcast('timelineChanged')
       )
     )
 
   $scope.onClose = () ->
     UtilsService.noteModal("Close", "Close this case?", 'danger', CASE_NOTE_MAX_LEN, (note) ->
-      CaseService.closeCase($scope.caseObj, note, () ->
+      CaseService.close($scope.caseObj, note).then(() ->
         UtilsService.navigate('/')
       )
     )
 
   $scope.onReopen = () ->
     UtilsService.noteModal("Re-open", "Re-open this case?", null, CASE_NOTE_MAX_LEN, (note) ->
-      CaseService.reopenCase($scope.caseObj, note, () ->
+      CaseService.reopen($scope.caseObj, note).then(() ->
         $scope.$broadcast('timelineChanged')
       )
     )
@@ -582,7 +582,7 @@ controllers.controller 'PartnerController', [ '$scope', '$window', 'UtilsService
 
   $scope.onDeletePartner = () ->
     UtilsService.confirmModal("Remove this partner organization?", 'danger', () ->
-      PartnerService.deletePartner($scope.partner).then(() ->
+      PartnerService.delete($scope.partner).then(() ->
         UtilsService.navigate('/partner/')
       )
     )
@@ -637,7 +637,7 @@ controllers.controller 'UserController', [ '$scope', '$window', 'UtilsService', 
 
   $scope.onDeleteUser = () ->
     UtilsService.confirmModal("Delete this user?", 'danger', () ->
-      UserService.deleteUser($scope.user).then(() ->
+      UserService.delete($scope.user).then(() ->
         UtilsService.navigateBack()
       )
     )

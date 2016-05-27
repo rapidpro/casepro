@@ -27,14 +27,4 @@ describe('utils:', () ->
       ])
     )
   )
-  
-  describe('toFormData', () ->
-    it('constructs a FormData from an object', () ->
-      data = utils.toFormData({a: 1, b: "x", c: [2, 3], d: null})
-
-      # TODO
-
-      # expect(Array.from(data.keys())).toEqual([])
-    )
-  )
 )

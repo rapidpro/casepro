@@ -6,6 +6,7 @@ services = angular.module('cases.services', ['cases.modals']);
 
 
 DEFAULT_POST_OPTS = {transformRequest: angular.identity, headers: {'Content-Type': undefined}}
+POST_DEFAULTS = {headers : {'Content-Type': 'application/x-www-form-urlencoded'}}
 
 DEFAULT_ERR_HANDLER = (data, status, headers, config) =>
   console.error("Request error (status = " + status + ")")
@@ -14,7 +15,7 @@ DEFAULT_ERR_HANDLER = (data, status, headers, config) =>
 # Incoming message service
 #=====================================================================
 
-services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializerJQLike', ($rootScope, $http, $httpParamSerializerJQLike) ->
+services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer', ($rootScope, $http, $httpParamSerializer) ->
   new class MessageService
 
     #----------------------------------------------------------------------------
@@ -26,7 +27,7 @@ services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer
         params.before = utils.formatIso8601(before)
       params.page = page
 
-      $http.get('/message/search/?' + $httpParamSerializerJQLike(params))
+      $http.get('/message/search/?' + $httpParamSerializer(params))
       .success((data) =>
         utils.parseDates(data.results, 'time')
 
@@ -41,7 +42,7 @@ services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer
       params.after = utils.formatIso8601(after)
       params.before = utils.formatIso8601(before)
 
-      $http.get('/message/?' + $httpParamSerializerJQLike(params))
+      $http.get('/message/?' + $httpParamSerializer(params))
       .success((data) =>
         utils.parseDates(data.results, 'time')
 
@@ -67,7 +68,7 @@ services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer
     # Starts a message export
     #----------------------------------------------------------------------------
     startExport: (search) ->
-      return $http.post('/messageexport/create/?' + $httpParamSerializerJQLike(@_searchToParams(search)))
+      return $http.post('/messageexport/create/?' + $httpParamSerializer(@_searchToParams(search)))
 
     #----------------------------------------------------------------------------
     # Reply-to messages
@@ -197,7 +198,7 @@ services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer
 # Incoming message service
 #=====================================================================
 
-services.factory 'OutgoingService', ['$rootScope', '$http', '$httpParamSerializerJQLike', ($rootScope, $http, $httpParamSerializerJQLike) ->
+services.factory 'OutgoingService', ['$rootScope', '$http', '$httpParamSerializer', ($rootScope, $http, $httpParamSerializer) ->
   new class OutgoingService
 
     #----------------------------------------------------------------------------
@@ -206,7 +207,7 @@ services.factory 'OutgoingService', ['$rootScope', '$http', '$httpParamSerialize
     fetchOld: (search, startTime, page, callback) ->
       params = @_outboxSearchToParams(search, startTime, page)
 
-      $http.get('/outgoing/search/?' + $httpParamSerializerJQLike(params))
+      $http.get('/outgoing/search/?' + $httpParamSerializer(params))
       .success((data) =>
         utils.parseDates(data.results, 'time')
         callback(data.results, data.has_more)
@@ -215,14 +216,14 @@ services.factory 'OutgoingService', ['$rootScope', '$http', '$httpParamSerialize
     fetchReplies: (search, startTime, page, callback) ->
       params = @_replySearchToParams(search, startTime, page)
 
-      $http.get('/outgoing/search_replies/?' + $httpParamSerializerJQLike(params))
+      $http.get('/outgoing/search_replies/?' + $httpParamSerializer(params))
       .success((data) =>
         utils.parseDates(data.results, 'time')
         callback(data.results, data.has_more)
       ).error(DEFAULT_ERR_HANDLER)
 
     startReplyExport: (search) ->
-      return $http.post('/replyexport/create/?' + $httpParamSerializerJQLike(@_replySearchToParams(search, null, null)))
+      return $http.post('/replyexport/create/?' + $httpParamSerializer(@_replySearchToParams(search, null, null)))
 
     #----------------------------------------------------------------------------
     # Convert a regular outbox search object to URL params
@@ -253,7 +254,7 @@ services.factory 'OutgoingService', ['$rootScope', '$http', '$httpParamSerialize
 # Case service
 #=====================================================================
 
-services.factory 'CaseService', ['$http', '$httpParamSerializerJQLike', '$window', ($http, $httpParamSerializerJQLike, $window) ->
+services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($http, $httpParamSerializer, $window) ->
   new class CaseService
 
     #----------------------------------------------------------------------------
@@ -264,7 +265,7 @@ services.factory 'CaseService', ['$http', '$httpParamSerializerJQLike', '$window
       params.before = utils.formatIso8601(before)
       params.page = page
 
-      $http.get('/case/search/?' + $httpParamSerializerJQLike(params))
+      $http.get('/case/search/?' + $httpParamSerializer(params))
       .success((data) =>
         utils.parseDates(data.results, 'opened_on')
         callback(data.results, data.has_more)
@@ -278,7 +279,7 @@ services.factory 'CaseService', ['$http', '$httpParamSerializerJQLike', '$window
       params.after = utils.formatIso8601(after)
       params.before = utils.formatIso8601(before)
 
-      $http.get('/case/search/?' + $httpParamSerializerJQLike(params))
+      $http.get('/case/search/?' + $httpParamSerializer(params))
       .success((data) =>
         utils.parseDates(data.results, 'opened_on')
         callback(data.results)
@@ -298,7 +299,7 @@ services.factory 'CaseService', ['$http', '$httpParamSerializerJQLike', '$window
     # Starts a case export
     #----------------------------------------------------------------------------
     startExport: (search) ->
-      return $http.post('/caseexport/create/?' + $httpParamSerializerJQLike(@_searchToParams(search)))
+      return $http.post('/caseexport/create/?' + $httpParamSerializer(@_searchToParams(search)))
 
     #----------------------------------------------------------------------------
     # Opens a new case
@@ -319,52 +320,37 @@ services.factory 'CaseService', ['$http', '$httpParamSerializerJQLike', '$window
     #----------------------------------------------------------------------------
     # Adds a note to a case
     #----------------------------------------------------------------------------
-    noteCase: (caseObj, note, callback) ->
-      params = {note: note}
-
-      $http.post('/case/note/' + caseObj.id + '/', utils.toFormData(params), DEFAULT_POST_OPTS)
-      .success(() ->
-        if callback
-          callback()
-      ).error(DEFAULT_ERR_HANDLER)
+    addNote: (caseObj, note) ->
+      return $http.post('/case/note/' + caseObj.id + '/', $httpParamSerializer({note: note}), POST_DEFAULTS)
 
     #----------------------------------------------------------------------------
     # Re-assigns a case
     #----------------------------------------------------------------------------
-    reassignCase: (caseObj, assignee, callback) ->
+    reassign: (caseObj, assignee) ->
       params = {assignee: assignee.id}
 
-      $http.post('/case/reassign/' + caseObj.id + '/', utils.toFormData(params), DEFAULT_POST_OPTS)
-      .success(() ->
-        if callback
-          callback()
-      ).error(DEFAULT_ERR_HANDLER)
+      return $http.post('/case/reassign/' + caseObj.id + '/', $httpParamSerializer(params), POST_DEFAULTS)
+      .then(() ->
+        caseObj.assignee = assignee
+      )
 
     #----------------------------------------------------------------------------
     # Closes a case
     #----------------------------------------------------------------------------
-    closeCase: (caseObj, note, callback) ->
-      params = {note: note}
-
-      $http.post('/case/close/' + caseObj.id + '/', utils.toFormData(params), DEFAULT_POST_OPTS)
-      .success(() ->
+    close: (caseObj, note) ->
+      return $http.post('/case/close/' + caseObj.id + '/', $httpParamSerializer({note: note}), POST_DEFAULTS)
+      .then(() ->
         caseObj.is_closed = true
-        if callback
-          callback()
-      ).error(DEFAULT_ERR_HANDLER)
+      )
 
     #----------------------------------------------------------------------------
     # Re-opens a case
     #----------------------------------------------------------------------------
-    reopenCase: (caseObj, note, callback) ->
-      params = {note: note}
-
-      $http.post('/case/reopen/' + caseObj.id + '/', utils.toFormData(params), DEFAULT_POST_OPTS)
-      .success(() ->
+    reopen: (caseObj, note) ->
+      return $http.post('/case/reopen/' + caseObj.id + '/', $httpParamSerializer({note: note}), POST_DEFAULTS)
+      .then(() ->
         caseObj.is_closed = false
-        if callback
-          callback()
-      ).error(DEFAULT_ERR_HANDLER)
+      )
 
     #----------------------------------------------------------------------------
     # Re-labels a case
@@ -421,7 +407,7 @@ services.factory 'CaseService', ['$http', '$httpParamSerializerJQLike', '$window
     fetchTimeline: (caseObj, after, callback) ->
       params = {after: after}
 
-      $http.get('/case/timeline/' + caseObj.id + '/?' + $httpParamSerializerJQLike(params))
+      $http.get('/case/timeline/' + caseObj.id + '/?' + $httpParamSerializer(params))
       .success((data) =>
         @_processTimeline(data.results)
         callback(data.results, data.max_time)
@@ -460,7 +446,7 @@ services.factory 'LabelService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     # Deletes a label
     #----------------------------------------------------------------------------
-    deleteLabel: (label) ->
+    delete: (label) ->
       return $http.post('/label/delete/' + label.id + '/')
 ]
 
@@ -480,7 +466,7 @@ services.factory 'PartnerService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     # Delete the given partner
     #----------------------------------------------------------------------------
-    deletePartner: (partner) ->
+    delete: (partner) ->
       return $http.post('/partner/delete/' + partner.id + '/')
 ]
 
@@ -494,7 +480,7 @@ services.factory 'UserService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     # Delete the given user
     #----------------------------------------------------------------------------
-    deleteUser: (user) ->
+    delete: (user) ->
       return $http.post('/user/delete/' + user.id + '/')
 ]
 
