@@ -65,7 +65,7 @@ controllers.controller 'HomeController', [ '$scope', '$window', '$location', 'La
 
   $scope.onDeleteLabel = () ->
     UtilsService.confirmModal('Delete the label <strong>' + $scope.activeLabel.name + '</strong>?', 'danger', () ->
-      LabelService.deleteLabel($scope.activeLabel, () ->
+      LabelService.deleteLabel($scope.activeLabel).then(() ->
         $scope.labels = (l for l in $scope.labels when l.id != $scope.activeLabel.id)
         $scope.activateLabel(null)
         UtilsService.displayAlert('success', "Label was deleted")
@@ -234,7 +234,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
 
   $scope.onExportSearch = () ->
     UtilsService.confirmModal("Export the current message search?", null, () ->
-      MessageService.startExport($scope.activeSearch, () ->
+      MessageService.startExport($scope.activeSearch).then(() ->
         UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
       )
     )
@@ -575,14 +575,14 @@ controllers.controller 'PartnerController', [ '$scope', '$window', 'UtilsService
 
   $scope.onTabSelect = (tab) ->
     if tab == 'users' and not $scope.usersFetched
-      PartnerService.fetchUsers($scope.partner, (users) ->
+      PartnerService.fetchUsers($scope.partner).then((users) ->
         $scope.usersFetched = true
         $scope.users = users
       )
 
   $scope.onDeletePartner = () ->
     UtilsService.confirmModal("Remove this partner organization?", 'danger', () ->
-      PartnerService.deletePartner($scope.partner, () ->
+      PartnerService.deletePartner($scope.partner).then(() ->
         UtilsService.navigate('/partner/')
       )
     )
@@ -637,9 +637,9 @@ controllers.controller 'UserController', [ '$scope', '$window', 'UtilsService', 
 
   $scope.onDeleteUser = () ->
     UtilsService.confirmModal("Delete this user?", 'danger', () ->
-      UserService.deleteUser($scope.user, () ->
+      UserService.deleteUser($scope.user).then(() ->
         UtilsService.navigateBack()
-      )
+      );
     )
 ]
 

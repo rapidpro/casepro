@@ -3,16 +3,12 @@
 describe('services:', () ->
   $httpBackend = null
 
-  test = { callback: () -> null }  # used to test any method that takes a callback
-
   beforeEach(() ->
     module('cases')
 
     inject((_$httpBackend_) ->
       $httpBackend = _$httpBackend_
     )
-
-    spyOn(test, 'callback')
   )
 
   describe('LabelService', () ->
@@ -26,10 +22,8 @@ describe('services:', () ->
     describe('deleteLabel', () ->
       it('posts to delete endpoint', () ->
         $httpBackend.expectPOST('/label/delete/123/').respond("")
-        LabelService.deleteLabel(testLabel, test.callback)
+        LabelService.deleteLabel(testLabel)
         $httpBackend.flush()
-
-        expect(test.callback).toHaveBeenCalled()
       )
     )
   )
@@ -47,11 +41,9 @@ describe('services:', () ->
 
     describe('flagMessages', () ->
       it('posts to delete endpoint', () ->
-        $httpBackend.expectPOST('/message/action/flag/').respond("")
-        MessageService.flagMessages(testMessages, true, test.callback)
+        $httpBackend.expectPOST('/message/action/flag/').respond('')
+        MessageService.flagMessages(testMessages, true, null)
         $httpBackend.flush()
-
-        expect(test.callback).toHaveBeenCalled()
 
         expect(testMessages[0].flagged).toEqual(true)
         expect(testMessages[1].flagged).toEqual(true)
@@ -67,13 +59,21 @@ describe('services:', () ->
       PartnerService = _PartnerService_
     ))
 
+    describe('fetchUsers', () ->
+      it('fetches from users endpoint', () ->
+        $httpBackend.expectGET('/partner/users/123/').respond('{"results":[{"id": 123, "name": "Tom McTest"}]}')
+        PartnerService.fetchUsers(testPartner).then((users) ->
+          expect(users).toEqual([{id: 123, name: "Tom McTest"}])
+        )
+        $httpBackend.flush()
+      )
+    )
+
     describe('deletePartner', () ->
       it('posts to delete endpoint', () ->
-        $httpBackend.expectPOST('/partner/delete/123/').respond("")
-        PartnerService.deletePartner(testPartner, test.callback)
+        $httpBackend.expectPOST('/partner/delete/123/').respond('')
+        PartnerService.deletePartner(testPartner)
         $httpBackend.flush()
-
-        expect(test.callback).toHaveBeenCalled()
       )
     )
   )
@@ -88,11 +88,9 @@ describe('services:', () ->
 
     describe('deleteUser', () ->
       it('posts to delete endpoint', () ->
-        $httpBackend.expectPOST('/user/delete/123/').respond("")
-        UserService.deleteUser(testUser, test.callback)
+        $httpBackend.expectPOST('/user/delete/123/').respond('')
+        UserService.deleteUser(testUser)
         $httpBackend.flush()
-
-        expect(test.callback).toHaveBeenCalled()
       )
     )
   )

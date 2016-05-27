@@ -25,13 +25,5 @@ filters.filter('autodate', (dateFilter) ->
 #----------------------------------------------------------------------------
 filters.filter('reverse', () ->
   (items) ->
-    items.slice().reverse()
-)
-
-#----------------------------------------------------------------------------
-# String regex replacement
-#----------------------------------------------------------------------------
-filters.filter("replace", () ->
- (str, pattern, replacement) ->
-    (str || '').replace(new RegExp(pattern, 'g'), (match, group) -> replacement)
+    return items.slice().reverse()
 )

@@ -4,12 +4,14 @@ describe('utils:', () ->
 
   describe('formatIso8601', () ->
     it('formats a date string', () ->
+      expect(utils.formatIso8601(null)).toEqual(null)
       expect(utils.formatIso8601(new Date(Date.UTC(2016, 4, 17, 8, 49, 13, 698)))).toEqual("2016-05-17T08:49:13.698Z")
     )
   )
 
   describe('parseIso8601', () ->
     it('parses a date string', () ->
+      expect(utils.parseIso8601(null)).toEqual(null)
       expect(utils.parseIso8601("2016-05-17T08:49:13.698")).toEqual(new Date(Date.UTC(2016, 4, 17, 8, 49, 13, 698)))
       expect(utils.parseIso8601("2016-05-17T08:49:13.698864")).toEqual(new Date(Date.UTC(2016, 4, 17, 8, 49, 13, 698)))
       expect(utils.parseIso8601("2016-05-17T08:49:13.698864Z")).toEqual(new Date(Date.UTC(2016, 4, 17, 8, 49, 13, 698)))

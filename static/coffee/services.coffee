@@ -70,12 +70,8 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     #----------------------------------------------------------------------------
     # Starts a message export
     #----------------------------------------------------------------------------
-    startExport: (search, callback) ->
-      params = @_searchToParams(search)
-      $http.post('/messageexport/create/?' + $.param(params))
-      .success(() =>
-        callback()
-      ).error(DEFAULT_ERR_HANDLER)
+    startExport: (search) ->
+      return $http.post('/messageexport/create/?' + $.param(@_searchToParams(search)))
 
     #----------------------------------------------------------------------------
     # Reply-to messages
@@ -177,7 +173,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
         text: search.text,
         after: utils.formatIso8601(search.after),
         before: utils.formatIso8601(search.before),
-        groups: (g.uuid for g in search.groups).join(','),
+        groups: if search.groups then (g.uuid for g in search.groups).join(',') else null,
         contact: if search.contact then search.contact.id else null,
         label: if search.label then search.label.id else null,
         archived: if search.archived then 1 else 0
@@ -496,11 +492,8 @@ services.factory 'LabelService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     # Deletes a label
     #----------------------------------------------------------------------------
-    deleteLabel: (label, callback) ->
-      $http.post('/label/delete/' + label.id + '/')
-      .success(() ->
-        callback()
-      ).error(DEFAULT_ERR_HANDLER)
+    deleteLabel: (label) ->
+      return $http.post('/label/delete/' + label.id + '/')
 ]
 
 
@@ -510,21 +503,17 @@ services.factory 'LabelService', ['$http', ($http) ->
 services.factory 'PartnerService', ['$http', ($http) ->
   new class PartnerService
 
-    fetchUsers: (partner, callback) ->
-      $http.get('/partner/users/' + partner.id + '/')
-      .success((data) =>
-        callback(data.results)
-      ).error(DEFAULT_ERR_HANDLER)
+    #----------------------------------------------------------------------------
+    # Fetches users with activity statistics for the given partner
+    #----------------------------------------------------------------------------
+    fetchUsers: (partner) ->
+      return $http.get('/partner/users/' + partner.id + '/').then((response) -> response.data.results)
 
     #----------------------------------------------------------------------------
     # Delete the given partner
     #----------------------------------------------------------------------------
-    deletePartner: (partner, callback) ->
-      $http.post('/partner/delete/' + partner.id + '/', {}, DEFAULT_POST_OPTS)
-      .success(() ->
-        if callback
-          callback()
-      ).error(DEFAULT_ERR_HANDLER)
+    deletePartner: (partner) ->
+      return $http.post('/partner/delete/' + partner.id + '/')
 ]
 
 
@@ -537,12 +526,8 @@ services.factory 'UserService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     # Delete the given user
     #----------------------------------------------------------------------------
-    deleteUser: (user, callback) ->
-      $http.post('/user/delete/' + user.id + '/', {}, DEFAULT_POST_OPTS)
-      .success(() ->
-        if callback
-          callback()
-      ).error(DEFAULT_ERR_HANDLER)
+    deleteUser: (user) ->
+      return $http.post('/user/delete/' + user.id + '/')
 ]
 
 
