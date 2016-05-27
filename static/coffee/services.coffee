@@ -14,7 +14,7 @@ DEFAULT_ERR_HANDLER = (data, status, headers, config) =>
 # Incoming message service
 #=====================================================================
 
-services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) ->
+services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializerJQLike', ($rootScope, $http, $httpParamSerializerJQLike) ->
   new class MessageService
 
     #----------------------------------------------------------------------------
@@ -26,7 +26,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
         params.before = utils.formatIso8601(before)
       params.page = page
 
-      $http.get('/message/search/?' + $.param(params))
+      $http.get('/message/search/?' + $httpParamSerializerJQLike(params))
       .success((data) =>
         @_processMessages(data.results)
 
@@ -43,7 +43,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
       params.after = utils.formatIso8601(after)
       params.before = utils.formatIso8601(before)
 
-      $http.get('/message/?' + $.param(params))
+      $http.get('/message/?' + $httpParamSerializerJQLike(params))
       .success((data) =>
         @_processMessages(data.results)
 
@@ -71,7 +71,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
     # Starts a message export
     #----------------------------------------------------------------------------
     startExport: (search) ->
-      return $http.post('/messageexport/create/?' + $.param(@_searchToParams(search)))
+      return $http.post('/messageexport/create/?' + $httpParamSerializerJQLike(@_searchToParams(search)))
 
     #----------------------------------------------------------------------------
     # Reply-to messages
@@ -215,7 +215,7 @@ services.factory 'MessageService', ['$rootScope', '$http', ($rootScope, $http) -
 # Incoming message service
 #=====================================================================
 
-services.factory 'OutgoingService', ['$rootScope', '$http', ($rootScope, $http) ->
+services.factory 'OutgoingService', ['$rootScope', '$http', '$httpParamSerializerJQLike', ($rootScope, $http, $httpParamSerializerJQLike) ->
   new class OutgoingService
 
     #----------------------------------------------------------------------------
@@ -224,7 +224,7 @@ services.factory 'OutgoingService', ['$rootScope', '$http', ($rootScope, $http) 
     fetchOld: (search, startTime, page, callback) ->
       params = @_outboxSearchToParams(search, startTime, page)
 
-      $http.get('/outgoing/search/?' + $.param(params))
+      $http.get('/outgoing/search/?' + $httpParamSerializerJQLike(params))
       .success((data) =>
         callback(data.results, data.has_more)
       ).error(DEFAULT_ERR_HANDLER)
@@ -232,7 +232,7 @@ services.factory 'OutgoingService', ['$rootScope', '$http', ($rootScope, $http) 
     fetchReplies: (search, startTime, page, callback) ->
       params = @_replySearchToParams(search, startTime, page)
 
-      $http.get('/outgoing/search_replies/?' + $.param(params))
+      $http.get('/outgoing/search_replies/?' + $httpParamSerializerJQLike(params))
       .success((data) =>
         callback(data.results, data.has_more)
       ).error(DEFAULT_ERR_HANDLER)
@@ -240,7 +240,7 @@ services.factory 'OutgoingService', ['$rootScope', '$http', ($rootScope, $http) 
     startReplyExport: (search, callback) ->
       params = @_replySearchToParams(search, null, null)
 
-      $http.post('/replyexport/create/?' + $.param(params))
+      $http.post('/replyexport/create/?' + $httpParamSerializerJQLike(params))
       .success((data) =>
         callback(data.results, data.has_more)
       ).error(DEFAULT_ERR_HANDLER)
@@ -274,7 +274,7 @@ services.factory 'OutgoingService', ['$rootScope', '$http', ($rootScope, $http) 
 # Case service
 #=====================================================================
 
-services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
+services.factory 'CaseService', ['$http', '$httpParamSerializerJQLike', '$window', ($http, $httpParamSerializerJQLike, $window) ->
   new class CaseService
 
     #----------------------------------------------------------------------------
@@ -285,7 +285,7 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
       params.before = utils.formatIso8601(before)
       params.page = page
 
-      $http.get('/case/search/?' + $.param(params))
+      $http.get('/case/search/?' + $httpParamSerializerJQLike(params))
       .success((data) =>
         @_processCases(data.results)
         callback(data.results, data.has_more)
@@ -299,7 +299,7 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
       params.after = utils.formatIso8601(after)
       params.before = utils.formatIso8601(before)
 
-      $http.get('/case/search/?' + $.param(params))
+      $http.get('/case/search/?' + $httpParamSerializerJQLike(params))
       .success((data) =>
         @_processCases(data.results)
         callback(data.results)
@@ -320,7 +320,7 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
     #----------------------------------------------------------------------------
     startExport: (search, callback) ->
       params = @_searchToParams(search)
-      $http.post('/caseexport/create/?' + $.param(params))
+      $http.post('/caseexport/create/?' + $httpParamSerializerJQLike(params))
       .success(() =>
         callback()
       ).error(DEFAULT_ERR_HANDLER)
@@ -446,7 +446,7 @@ services.factory 'CaseService', ['$http', '$window', ($http, $window) ->
     fetchTimeline: (caseObj, after, callback) ->
       params = {after: after}
 
-      $http.get('/case/timeline/' + caseObj.id + '/?' + $.param(params))
+      $http.get('/case/timeline/' + caseObj.id + '/?' + $httpParamSerializerJQLike(params))
       .success((data) =>
         @_processTimeline(data.results)
         callback(data.results, data.max_time)

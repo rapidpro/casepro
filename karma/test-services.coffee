@@ -49,6 +49,14 @@ describe('services:', () ->
         expect(testMessages[1].flagged).toEqual(true)
       )
     )
+
+    describe('startExport', () ->
+      it('posts to export endpoint', () ->
+        $httpBackend.expectPOST('/messageexport/create/?archived=0&folder=inbox').respond('')
+        MessageService.startExport({folder: "inbox"})
+        $httpBackend.flush()
+      )
+    )
   )
 
   describe('PartnerService', () ->
