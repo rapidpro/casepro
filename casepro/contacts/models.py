@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from dash.orgs.models import Org
+from django.conf import settings
 from django.contrib.postgres.fields import HStoreField
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
@@ -172,6 +173,16 @@ class Contact(models.Model):
     def lock(cls, org, uuid):
         return get_redis_connection().lock(CONTACT_LOCK_KEY % (org.pk, uuid), timeout=60)
 
+    def get_display_name(self):
+        """
+        Gets the display name of this contact. If name is empty or site uses anonymous contacts, this is generated from
+        the backend UUID.
+        """
+        if not self.name or getattr(settings, 'SITE_ANON_CONTACTS', False):
+            return self.uuid[:6].upper()
+        else:
+            return self.name
+
     def get_fields(self, visible=None):
         fields = self.fields if self.fields else {}
 
@@ -245,7 +256,7 @@ class Contact(models.Model):
         """
         Prepares a contact for JSON serialization
         """
-        result = {'uuid': self.uuid, 'name': self.name}
+        result = {'id': self.pk, 'name': self.get_display_name()}
 
         if full:
             result['fields'] = self.get_fields(visible=True)
@@ -253,4 +264,4 @@ class Contact(models.Model):
         return result
 
     def __str__(self):
-        return self.name if self.name else self.uuid
+        return self.get_display_name()

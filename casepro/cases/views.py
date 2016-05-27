@@ -124,7 +124,7 @@ class CaseCRUDL(SmartCRUDL):
             case.reassign(request.user, assignee)
             return HttpResponse(status=204)
 
-    class Close(OrgPermsMixin, SmartUpdateView):
+    class Close(OrgObjPermsMixin, SmartUpdateView):
         """
         JSON endpoint for closing a case
         """
@@ -187,7 +187,7 @@ class CaseCRUDL(SmartCRUDL):
             outgoing = case.reply(request.user, request.POST['text'])
             return JsonResponse({'id': outgoing.pk})
 
-    class Fetch(OrgPermsMixin, SmartReadView):
+    class Fetch(OrgObjPermsMixin, SmartReadView):
         """
         JSON endpoint for fetching a single case
         """
@@ -223,7 +223,7 @@ class CaseCRUDL(SmartCRUDL):
                 'has_more': context['has_more']
             }, encoder=JSONEncoder)
 
-    class Timeline(OrgPermsMixin, SmartReadView):
+    class Timeline(OrgObjPermsMixin, SmartReadView):
         """
         JSON endpoint for fetching case actions and messages
         """
@@ -298,7 +298,10 @@ class PartnerCRUDL(SmartCRUDL):
         def save(self, obj):
             data = self.form.cleaned_data
             org = self.request.user.get_org()
-            self.object = Partner.create(org, data['name'], data['labels'], data['logo'])
+            restricted = data['is_restricted']
+            labels = data['labels'] if restricted else []
+
+            self.object = Partner.create(org, data['name'], restricted, labels, data['logo'])
 
     class Update(OrgObjPermsMixin, PartnerFormMixin, SmartUpdateView):
         form_class = PartnerForm

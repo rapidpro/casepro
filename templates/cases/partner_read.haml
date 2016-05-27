@@ -30,16 +30,17 @@
         %h2
           {{ object.name }}
 
-      .header-details
-        - if partner.get_labels
-          - for label in partner.get_labels
-            %span.label-container
-              %span.label.label-success
-                {{ label.name }}
-              &nbsp;
-        - else
-          %i
-            - trans "No labels"
+      - if object.is_restricted
+        .header-details
+          - if labels
+            - for label in labels
+              %span.label-container
+                %span.label.label-success
+                  {{ label.name }}
+                &nbsp;
+          - else
+            %i
+              - trans "No labels"
 
     <uib-tabset active="active">
 
@@ -134,8 +135,9 @@
                     %td
                       %span.glyphicon.glyphicon-flag{ ng-if:"item.reply_to.flagged" }
                     %td{ nowrap:"" }
-                      %span.glyphicon.glyphicon-phone>
-                      [[ item.contact.uuid | limitTo:6 | uppercase ]]
+                      %a{ ng-href:"/contact/read/[[ item.contact.id ]]" }><
+                        %span.glyphicon.glyphicon-phone>
+                        [[ item.contact.name ]]
 
             .loading{ ng-if:"oldItemsLoading" }
             .none{ ng-hide:"oldItemsLoading || items.length > 0" }

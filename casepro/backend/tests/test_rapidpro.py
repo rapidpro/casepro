@@ -32,7 +32,7 @@ class ContactSyncerTest(BaseCasesTest):
                 urns=["twitter:bobflow"],
                 groups=[ObjectRef.create(uuid="G-001", name="Customers")],
                 fields={'age': "34"},
-                failed=False,
+                stopped=False,
                 blocked=False
         ))
 
@@ -211,19 +211,19 @@ class RapidProBackendTest(BaseCasesTest):
                     TembaContact.create(
                         uuid="C-001", name="Bob McFlow", language="eng", urns=["twitter:bobflow"],
                         groups=[ObjectRef.create(uuid="G-001", name="Customers")],
-                        fields={'age': "34"}, failed=False, blocked=False
+                        fields={'age': "34"}, stopped=False, blocked=False
                     ),
                     TembaContact.create(
                         uuid="C-002", name="Jim McMsg", language="fre", urns=["tel:+250783835665"],
                         groups=[ObjectRef.create(uuid="G-002", name="Spammers")],
-                        fields={'age': "67"}, failed=False, blocked=False
+                        fields={'age': "67"}, stopped=False, blocked=False
                     ),
                 ],
                 [
                     TembaContact.create(
                         uuid="C-003", name="Ann McPoll", language="eng", urns=["tel:+250783835664"],
                         groups=[],
-                        fields={'age': "35"}, failed=True, blocked=False
+                        fields={'age': "35"}, stopped=True, blocked=False
                     ),
                 ]
             ),
@@ -232,7 +232,7 @@ class RapidProBackendTest(BaseCasesTest):
                 [
                     TembaContact.create(
                         uuid="C-004", name=None, language=None, urns=[], groups=[],
-                        fields=None, failed=True, blocked=False
+                        fields=None, stopped=True, blocked=False
                     ),
                 ]
             )
@@ -266,7 +266,7 @@ class RapidProBackendTest(BaseCasesTest):
                     TembaContact.create(
                         uuid="C-001", name="Bob McFlough", language="fre", urns=["twitter:bobflow"],
                         groups=[ObjectRef.create(uuid="G-002", name="Spammers")],
-                        fields={'age': "35"}, failed=True, blocked=False
+                        fields={'age': "35"}, stopped=True, blocked=False
                     )
                 ]
             ),
@@ -275,7 +275,7 @@ class RapidProBackendTest(BaseCasesTest):
                 [
                     TembaContact.create(
                         uuid="C-002", name=None, language=None, urns=[], groups=[],
-                        fields=None, failed=True, blocked=False
+                        fields=None, stopped=True, blocked=False
                     ),
                 ]
             )
@@ -302,7 +302,7 @@ class RapidProBackendTest(BaseCasesTest):
                     TembaContact.create(
                         uuid="C-001", name="Bob McFlough", language="fre", urns=["twitter:bobflow22"],
                         groups=[ObjectRef.create(uuid="G-002", name="Spammers")],
-                        fields={'age': "35"}, failed=True, blocked=False
+                        fields={'age': "35"}, stopped=True, blocked=False
                     )
                 ]
             ),
@@ -742,7 +742,7 @@ class RapidProBackendTest(BaseCasesTest):
         self.assertEqual(messages, [
             {
                 'id': 201,  # id is the broadcast id
-                'contact': {'uuid': "C-001", 'name': "Ann"},
+                'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'urns': [],
                 'text': "Welcome",
                 'time': d3,
@@ -820,7 +820,7 @@ class PerfTest(BaseCasesTest):
                         for g in range(0, groups_in)
                     ],
                     fields={'custom_field_%d' % f: field_values[f % len(field_values)] for f in range(0, num_fields)},
-                    failed=False,
+                    stopped=False,
                     blocked=False
                 ))
             active_fetches.append(batch)

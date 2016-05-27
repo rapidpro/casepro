@@ -26,11 +26,12 @@
         .partner-name
           {{ partner.name }}
         .
-          - for label in partner.get_labels
-            %span.label-container
-              %span.label.label-success
-                {{ label.name }}
-              &nbsp;
+          - if partner.is_restricted
+            - for label in partner.get_labels
+              %span.label-container
+                %span.label.label-success
+                  {{ label.name }}
+                &nbsp;
 
 - block extra-style
   {{ block.super }}

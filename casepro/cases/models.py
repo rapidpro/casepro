@@ -46,6 +46,9 @@ class Partner(models.Model):
     name = models.CharField(verbose_name=_("Name"), max_length=128,
                             help_text=_("Name of this partner organization"))
 
+    is_restricted = models.BooleanField(default=True, verbose_name=_("Restricted Access"),
+                                        help_text=_("Whether this partner's access is restricted by labels"))
+
     labels = models.ManyToManyField(Label, verbose_name=_("Labels"), related_name='partners',
                                     help_text=_("Labels that this partner can access"))
 
@@ -54,11 +57,14 @@ class Partner(models.Model):
     is_active = models.BooleanField(default=True, help_text="Whether this partner is active")
 
     @classmethod
-    def create(cls, org, name, labels, logo):
-        partner = cls.objects.create(org=org, name=name, logo=logo)
+    def create(cls, org, name, restricted, labels, logo=None):
+        if labels and not restricted:
+            raise ValueError("Can't specify labels for a partner which is not restricted")
 
-        for label in labels:
-            partner.labels.add(label)
+        partner = cls.objects.create(org=org, name=name, logo=logo, is_restricted=restricted)
+
+        if restricted:
+            partner.labels.add(*labels)
 
         return partner
 
@@ -67,7 +73,7 @@ class Partner(models.Model):
         return cls.objects.filter(org=org, is_active=True)
 
     def get_labels(self):
-        return self.labels.filter(is_active=True)
+        return self.labels.filter(is_active=True) if self.is_restricted else Label.get_all(self.org)
 
     def get_users(self):
         return User.objects.filter(profile__partner=self, is_active=True)
@@ -134,20 +140,18 @@ class Case(models.Model):
 
     @classmethod
     def get_all(cls, org, user=None, label=None):
-        qs = cls.objects.filter(org=org)
+        queryset = cls.objects.filter(org=org)
 
-        # if user is not an org admin, we should only return cases with partner labels or assignment
-        if user and not user.can_administer(org):
-            partner = user.get_partner(org)
-            if partner:
-                qs = qs.filter(Q(labels__in=list(partner.get_labels())) | Q(assignee=partner))
-            else:
-                return cls.objects.none()
+        if user:
+            # if user is not an org admin, we should only return cases with partner labels or assignment
+            user_partner = user.get_partner(org)
+            if user_partner and user_partner.is_restricted:
+                queryset = queryset.filter(Q(labels__in=list(user_partner.get_labels())) | Q(assignee=user_partner))
 
         if label:
-            qs = qs.filter(labels=label)
+            queryset = queryset.filter(labels=label)
 
-        return qs.distinct()
+        return queryset.distinct()
 
     @classmethod
     def get_open(cls, org, user=None, label=None):
@@ -334,16 +338,21 @@ class Case(models.Model):
     def access_level(self, user):
         """
         A user can view a case if one of these conditions is met:
-            1) they are an administrator for the case org
-            2) their partner org is assigned to the case
-            3) their partner org can view a label assigned to the case
+            1) they are a non-partner user
+            2) partner user in partner which is not restricted
+            3) their partner org is assigned to the case
+            4) their partner org can view a label assigned to the case
 
-        They can additionally update the case if 1) or 2) is true
+        They can additionally update the case if 1, 2 or 3 is true
         """
-        if user.can_administer(self.org) or user.profile.partner == self.assignee:
+        if not self.org.get_user_org_group(user):
+            return False
+
+        user_partner = user.get_partner(self.org)
+
+        if not user_partner or not user_partner.is_restricted or user_partner == self.assignee:
             return AccessLevel.update
-        elif user.profile.partner and intersection(self.labels.filter(is_active=True),
-                                                   user.profile.partner.get_labels()):
+        elif user_partner and intersection(self.labels.filter(is_active=True), user_partner.get_labels()):
             return AccessLevel.read
         else:
             return AccessLevel.none

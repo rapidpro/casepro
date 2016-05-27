@@ -22,7 +22,7 @@ from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
 from casepro.utils import datetime_to_microseconds, microseconds_to_datetime
 
-from .context_processors import contact_ext_url, sentry_dsn
+from .context_processors import sentry_dsn
 from .models import AccessLevel, Case, CaseAction, CaseExport, CaseFolder, Partner
 
 
@@ -585,7 +585,7 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json, {
             'id': self.case.pk,
-            'contact': {'uuid': "C-001", 'name': "Ann"},
+            'contact': {'id': self.ann.pk, 'name': "Ann"},
             'assignee': {'id': self.moh.pk, 'name': "MOH"},
             'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
             'summary': "Summary",
@@ -620,7 +620,7 @@ class CaseCRUDLTest(BaseCasesTest):
         # backend has a message in the case time window that we don't have locally
         remote_message1 = {
             'id': 102,
-            'contact': {'uuid': "C-001", 'name': "Ann"},
+            'contact': {'id': self.ann.pk, 'name': "Ann"},
             'urns': [],
             'text': "Non casepro message...",
             'time': d2,
@@ -642,11 +642,11 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(len(response.json['results']), 3)
         self.assertEqual(response.json['results'][0]['type'], 'M')
         self.assertEqual(response.json['results'][0]['item']['text'], "What is AIDS?")
-        self.assertEqual(response.json['results'][0]['item']['contact'], {'uuid': "C-001", 'name': "Ann"})
+        self.assertEqual(response.json['results'][0]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
         self.assertEqual(response.json['results'][0]['item']['direction'], 'I')
         self.assertEqual(response.json['results'][1]['type'], 'M')
         self.assertEqual(response.json['results'][1]['item']['text'], "Non casepro message...")
-        self.assertEqual(response.json['results'][1]['item']['contact'], {'uuid': "C-001", 'name': "Ann"})
+        self.assertEqual(response.json['results'][1]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
         self.assertEqual(response.json['results'][1]['item']['direction'], 'O')
         self.assertEqual(response.json['results'][2]['type'], 'A')
         self.assertEqual(response.json['results'][2]['item']['action'], 'O')
@@ -740,7 +740,7 @@ class CaseCRUDLTest(BaseCasesTest):
         mock_fetch_contact_messages.return_value = [
             {
                 'id': 202,
-                'contact': {'uuid': "C-001", 'name': "Ann"},
+                'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'urns': [],
                 'text': "It's bad",
                 'time': d3,
@@ -758,11 +758,11 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(len(items), 7)
         self.assertEqual(items[0]['type'], 'M')
         self.assertEqual(items[0]['item']['text'], "What is AIDS?")
-        self.assertEqual(items[0]['item']['contact'], {'uuid': "C-001", 'name': "Ann"})
+        self.assertEqual(items[0]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
         self.assertEqual(items[0]['item']['direction'], 'I')
         self.assertEqual(items[1]['type'], 'M')
         self.assertEqual(items[1]['item']['text'], "Non casepro message...")
-        self.assertEqual(items[1]['item']['contact'], {'uuid': "C-001", 'name': "Ann"})
+        self.assertEqual(items[1]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
         self.assertEqual(items[1]['item']['direction'], 'O')
         self.assertEqual(items[1]['item']['sender'], None)
         self.assertEqual(items[2]['type'], 'A')
@@ -860,26 +860,20 @@ class HomeViewsTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
 
-        # should provide external contact links
-        self.assertContains(response, "http://localhost:8001/contact/read/{}/")
-
         # log in as regular user
         self.login(self.user1)
 
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
 
-        # should not provide external contact links
-        self.assertNotContains(response, "http://localhost:8001/contact/read/{}/")
-
 
 class PartnerTest(BaseCasesTest):
     def test_create(self):
-        wfp = Partner.create(self.unicef, "WFP", [self.aids, self.code], None)
+        wfp = Partner.create(self.unicef, "WFP", True, [self.aids, self.pregnancy])
         self.assertEqual(wfp.org, self.unicef)
         self.assertEqual(wfp.name, "WFP")
         self.assertEqual(six.text_type(wfp), "WFP")
-        self.assertEqual(set(wfp.get_labels()), {self.aids, self.code})
+        self.assertEqual(set(wfp.get_labels()), {self.aids, self.pregnancy})
 
         # create some users for this partner
         jim = self.create_user(self.unicef, wfp, ROLE_MANAGER, "Jim", "jim@wfp.org")
@@ -889,6 +883,13 @@ class PartnerTest(BaseCasesTest):
         self.assertEqual(set(wfp.get_managers()), {jim})
         self.assertEqual(set(wfp.get_analysts()), {kim})
 
+        # create a partner which is not restricted by labels
+        internal = Partner.create(self.unicef, "Internal", False, [])
+        self.assertEqual(set(internal.get_labels()), {self.aids, self.pregnancy, self.tea})
+
+        # can't create an unrestricted partner with labels
+        self.assertRaises(ValueError, Partner.create, self.unicef, "Testers", False, [self.aids])
+
     def test_release(self):
         self.who.release()
         self.assertFalse(self.who.is_active)
@@ -897,6 +898,38 @@ class PartnerTest(BaseCasesTest):
 
 
 class PartnerCRUDLTest(BaseCasesTest):
+    def test_create(self):
+        url = reverse('cases.partner_create')
+
+        # can't access as partner user
+        self.login(self.user1)
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        self.login(self.admin)
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['form'].fields.keys(), ['name', 'logo', 'is_restricted', 'labels', 'loc'])
+
+        # create label restricted partner
+        response = self.url_post('unicef', url, {'name': "Helpers", 'logo': None,
+                                                 'is_restricted': True, 'labels': [self.tea.pk]})
+        self.assertEqual(response.status_code, 302)
+
+        helpers = Partner.objects.get(name="Helpers")
+        self.assertTrue(helpers.is_restricted)
+        self.assertEqual(set(helpers.get_labels()), {self.tea})
+
+        # create unrestricted partner
+        response = self.url_post('unicef', url, {'name': "Internal", 'logo': None,
+                                                 'is_restricted': False, 'labels': [self.tea.pk]})
+        self.assertEqual(response.status_code, 302)
+
+        internal = Partner.objects.get(name="Internal")
+        self.assertFalse(internal.is_restricted)
+        self.assertEqual(set(internal.labels.all()), set())  # submitted labels are ignored
+        self.assertEqual(set(internal.get_labels()), {self.aids, self.pregnancy, self.tea})
+
     def test_read(self):
         url = reverse('cases.partner_read', args=[self.moh.pk])
 
@@ -1012,12 +1045,6 @@ class PartnerCRUDLTest(BaseCasesTest):
 
 
 class ContextProcessorsTest(BaseCasesTest):
-    def test_contact_ext_url(self):
-        with self.settings(SITE_API_HOST='http://localhost:8001/api/v1'):
-            self.assertEqual(contact_ext_url(None), {'contact_ext_url': 'http://localhost:8001/contact/read/{}/'})
-        with self.settings(SITE_API_HOST='rapidpro.io'):
-            self.assertEqual(contact_ext_url(None), {'contact_ext_url': 'https://rapidpro.io/contact/read/{}/'})
-
     def test_sentry_dsn(self):
         dsn = 'https://ir78h8v3mhz91lzgd2icxzaiwtmpsx10:58l883tax2o5cae05bj517f9xmq16a2h@app.getsentry.com/44864'
         with self.settings(SENTRY_DSN=dsn):
