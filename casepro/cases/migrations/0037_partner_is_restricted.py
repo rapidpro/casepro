@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cases', '0035_folder_indexes'),
+        ('cases', '0036_caseexport_partner'),
     ]
 
     operations = [
