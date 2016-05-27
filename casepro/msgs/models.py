@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 import json
 
 from dash.orgs.models import Org
-from dash.utils import chunks
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
