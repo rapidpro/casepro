@@ -25,8 +25,9 @@ module.exports = (config) ->
 
       # our test files
       'karma/helpers.coffee',
-      'karma/test-filters.coffee',
+      'karma/test-controllers.coffee',
       'karma/test-services.coffee',
+      'karma/test-filters.coffee',
       'karma/test-utils.coffee'
     ]
 

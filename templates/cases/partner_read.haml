@@ -78,18 +78,18 @@
                     - trans "Export..."
 
               %form.form-horizontal
-                %span.date-range{ ng-controller:"DateRangeController" }
+                %span.date-range{ ng-controller:"DateRangeController", ng-init:'init("searchFields.after", "searchFields.before")' }
                   %label.control-label{ style:"padding-left: 0" }
                     - trans "From"
                   .input-group.date-picker
-                    %input.form-control{ type:"text", uib-datepicker-popup:"[[ format ]]", ng-model:"searchFields.after", is-open:"afterOpen", datepicker-options:"afterOptions", ng-change:"onAfterChange()" }
+                    %input.form-control{ type:"text", uib-datepicker-popup:"[[ format ]]", ng-model:"searchFields.after", is-open:"afterOpen", datepicker-options:"afterOptions" }
                     %span.input-group-btn
                       %button.btn.btn-default{ type:"button", ng-click:"openAfter($event)" }
                         %i.glyphicon.glyphicon-calendar
                   %label.control-label
                     - trans "Until"
                   .input-group.date-picker
-                    %input.form-control{ type:"text", uib-datepicker-popup:"[[ format ]]", ng-model:"searchFields.before", is-open:"beforeOpen", datepicker-options:"beforeOptions", ng-change:"onBeforeChange()" }
+                    %input.form-control{ type:"text", uib-datepicker-popup:"[[ format ]]", ng-model:"searchFields.before", is-open:"beforeOpen", datepicker-options:"beforeOptions" }
                     %span.input-group-btn
                       %button.btn.btn-default{ type:"button", ng-click:"openBefore($event)" }
                         %i.glyphicon.glyphicon-calendar

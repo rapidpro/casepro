@@ -639,7 +639,7 @@ controllers.controller 'UserController', [ '$scope', '$window', 'UtilsService', 
     UtilsService.confirmModal("Delete this user?", 'danger', () ->
       UserService.deleteUser($scope.user).then(() ->
         UtilsService.navigateBack()
-      );
+      )
     )
 ]
 
@@ -647,13 +647,23 @@ controllers.controller 'UserController', [ '$scope', '$window', 'UtilsService', 
 #============================================================================
 # Date range controller
 #============================================================================
-controllers.controller 'DateRangeController', [ '$scope', ($scope) ->
+controllers.controller 'DateRangeController', ['$scope', ($scope) ->
   $scope.afterOpen = false
   $scope.afterOptions = { minDate: null, maxDate: new Date() }
   $scope.beforeOpen = false
   $scope.beforeOptions = { minDate: null, maxDate: new Date() }
 
   $scope.format = 'MMM dd, yyyy'
+
+  $scope.init = (afterModel, beforeModel) ->
+    $scope.$watch(afterModel, () ->
+      # don't allow before to be less than after
+      $scope.beforeOptions.minDate = $scope.$eval(afterModel)
+    )
+    $scope.$watch(beforeModel, () ->
+      # don't allow before to be less than after
+      $scope.afterOptions.maxDate = $scope.$eval(beforeModel)
+    )
 
   $scope.openAfter = ($event) ->
     $event.preventDefault()
@@ -664,12 +674,4 @@ controllers.controller 'DateRangeController', [ '$scope', ($scope) ->
     $event.preventDefault()
     $event.stopPropagation()
     $scope.beforeOpen = true
-
-  $scope.onAfterChange = () ->
-    # don't allow before to be less than after
-    $scope.beforeOptions.minDate = $scope.searchFields.after
-
-  $scope.onBeforeChange = () ->
-    # don't allow after to be more than before
-    $scope.afterOptions.maxDate = $scope.searchFields.before
 ]
