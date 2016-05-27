@@ -333,12 +333,13 @@ class Case(models.Model):
     def access_level(self, user):
         """
         A user can view a case if one of these conditions is met:
-            1) they are a non-partner user from same org
-            2) partner user in partner which is not restricted
-            3) their partner org is assigned to the case
-            4) their partner org can view a label assigned to the case
+            1) they're a superuser
+            2) they're a non-partner user from same org
+            3) they're a partner user in partner which is not restricted
+            4) their partner org is assigned to the case
+            5) their partner org can view a label assigned to the case
 
-        They can additionally update the case if 1, 2 or 3 is true
+        They can additionally update the case if one of 1-4 is true
         """
         if not user.is_superuser and not self.org.get_user_org_group(user):
             return AccessLevel.none
