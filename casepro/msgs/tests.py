@@ -627,7 +627,11 @@ class MessageCRUDLTest(BaseCasesTest):
     @patch('casepro.test.TestBackend.unflag_messages')
     @patch('casepro.test.TestBackend.archive_messages')
     @patch('casepro.test.TestBackend.restore_messages')
-    def test_action(self, mock_restore_messages, mock_archive_messages, mock_unflag_messages, mock_flag_messages):
+    @patch('casepro.test.TestBackend.label_messages')
+    @patch('casepro.test.TestBackend.unlabel_messages')
+    def test_action(self, mock_unlabel_messages, mock_label_messages,
+                    mock_restore_messages, mock_archive_messages,
+                    mock_unflag_messages, mock_flag_messages):
         def get_url(action):
             return reverse('msgs.message_action', kwargs={'action': action})
 
@@ -661,6 +665,18 @@ class MessageCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 204)
         mock_restore_messages.assert_called_once_with(self.unicef, [msg3])
         self.assertEqual(Message.objects.filter(is_archived=True).count(), 1)
+
+        response = self.url_post('unicef', get_url('label'), {'messages': "103", 'label': self.aids.pk})
+
+        self.assertEqual(response.status_code, 204)
+        mock_label_messages.assert_called_once_with(self.unicef, [msg3], self.aids)
+        self.assertEqual(Message.objects.filter(labels=self.aids).count(), 2)
+
+        response = self.url_post('unicef', get_url('unlabel'), {'messages': "103", 'label': self.aids.pk})
+
+        self.assertEqual(response.status_code, 204)
+        mock_unlabel_messages.assert_called_once_with(self.unicef, [msg3], self.aids)
+        self.assertEqual(Message.objects.filter(labels=self.aids).count(), 1)
 
     @patch('casepro.test.TestBackend.label_messages')
     @patch('casepro.test.TestBackend.unlabel_messages')

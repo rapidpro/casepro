@@ -58,7 +58,7 @@ class UtilsTest(BaseCasesTest):
         d2 = microseconds_to_datetime(ms)
         self.assertEqual(d2, datetime(2015, 10, 9, 14, 48, 30, 123456, tzinfo=pytz.utc))
 
-    def test_encode_json(self):
+    def test_json_encode(self):
         class MyEnum(Enum):
             bar = 1
 

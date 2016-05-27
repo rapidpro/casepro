@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 import json
 
 from dash.orgs.models import Org
-from dash.utils import chunks
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -575,33 +574,30 @@ class MessageExport(BaseExport):
             self.write_row(sheet, 0, all_fields)
             return sheet
 
-        # even if there are no messages - still add a sheet
-        if not items:
-            add_sheet(1)
-        else:
-            sheet_number = 1
-            for item_chunk in chunks(items, 65535):
-                current_sheet = add_sheet(sheet_number)
-
-                row = 1
-                for item in item_chunk:
-                    values = [
-                        item.created_on,
-                        item.backend_id,
-                        item.is_flagged,
-                        ', '.join([l.name for l in item.labels.all()]),
-                        item.text,
-                        item.contact.uuid
-                    ]
-
-                    fields = item.contact.get_fields()
-                    for field in contact_fields:
-                        values.append(fields.get(field.key, ""))
-
-                    self.write_row(current_sheet, row, values)
-                    row += 1
-
+        sheet = None
+        sheet_number = 0
+        row = 1
+        for item in items:
+            if not sheet or row > self.MAX_SHEET_ROWS:
                 sheet_number += 1
+                sheet = add_sheet(sheet_number)
+                row = 1
+
+            values = [
+                item.created_on,
+                item.backend_id,
+                item.is_flagged,
+                ', '.join([l.name for l in item.labels.all()]),
+                item.text,
+                item.contact.uuid
+            ]
+
+            fields = item.contact.get_fields()
+            for field in contact_fields:
+                values.append(fields.get(field.key, ""))
+
+            self.write_row(sheet, row, values)
+            row += 1
 
         return book
 
@@ -629,35 +625,32 @@ class ReplyExport(BaseExport):
             self.write_row(sheet, 0, all_fields)
             return sheet
 
-        # even if there are no cases - still add a sheet
-        if not items:
-            add_sheet(1)
-        else:
-            sheet_number = 1
-            for item_chunk in chunks(items, 65535):
-                current_sheet = add_sheet(sheet_number)
-
-                row = 1
-                for item in item_chunk:
-                    values = [
-                        item.created_on,
-                        item.created_by.email,
-                        item.text,
-                        timesince(item.reply_to.created_on, now=item.created_on),
-                        item.reply_to.text,
-                        item.reply_to.is_flagged,
-                        item.case.assignee.name if item.case else "",
-                        ', '.join([l.name for l in item.reply_to.labels.all()]),
-                        item.contact.uuid
-                    ]
-
-                    fields = item.contact.get_fields()
-                    for field in contact_fields:
-                        values.append(fields.get(field.key, ""))
-
-                    self.write_row(current_sheet, row, values)
-                    row += 1
-
+        sheet = None
+        sheet_number = 0
+        row = 1
+        for item in items:
+            if not sheet or row > self.MAX_SHEET_ROWS:
                 sheet_number += 1
+                sheet = add_sheet(sheet_number)
+                row = 1
+
+            values = [
+                item.created_on,
+                item.created_by.email,
+                item.text,
+                timesince(item.reply_to.created_on, now=item.created_on),
+                item.reply_to.text,
+                item.reply_to.is_flagged,
+                item.case.assignee.name if item.case else "",
+                ', '.join([l.name for l in item.reply_to.labels.all()]),
+                item.contact.uuid
+            ]
+
+            fields = item.contact.get_fields()
+            for field in contact_fields:
+                values.append(fields.get(field.key, ""))
+
+            self.write_row(sheet, row, values)
+            row += 1
 
         return book

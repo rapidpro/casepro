@@ -196,7 +196,7 @@ class Contact(models.Model):
         """
         Prepares this contact to be put in a case
         """
-        if self.is_stub:
+        if self.is_stub:  # pragma: no cover
             raise ValueError("Can't create a case for a stub contact")
 
         # suspend contact from groups while case is open
@@ -210,7 +210,7 @@ class Contact(models.Model):
 
     def suspend_groups(self):
         with self.lock(self.org, self.uuid):
-            if self.suspended_groups.all():
+            if self.suspended_groups.all():  # pragma: no cover
                 raise ValueError("Can't suspend from groups as contact is already suspended from groups")
 
             cur_groups = list(self.groups.all())
