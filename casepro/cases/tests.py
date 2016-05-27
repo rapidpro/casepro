@@ -97,12 +97,6 @@ class CaseTest(BaseCasesTest):
         mock_stop_runs.assert_called_once_with(self.unicef, self.ann)
         mock_stop_runs.reset_mock()
 
-        # check access to this case
-        self.assertEqual(case.access_level(self.user1), AccessLevel.update)  # user who opened it can view and update
-        self.assertEqual(case.access_level(self.user2), AccessLevel.update)  # user from same org can do likewise
-        self.assertEqual(case.access_level(self.user3), AccessLevel.read)  # user from other partner can read bc labels
-        self.assertEqual(case.access_level(self.user4), AccessLevel.none)  # user from different org
-
         # check that calling get_or_open again returns the same case (finds same case on message)
         case2 = Case.get_or_open(self.unicef, self.user1, msg2, "Summary", self.moh)
         self.assertFalse(case2.is_new)
@@ -339,6 +333,16 @@ class CaseTest(BaseCasesTest):
         # by before/after
         assert_search(self.admin, {'folder': CaseFolder.open, 'before': d2}, [case2])
         assert_search(self.admin, {'folder': CaseFolder.open, 'after': d3}, [case4, case3])
+
+    def test_access_level(self):
+        msg = self.create_message(self.unicef, 234, self.ann, "Hello")
+        case = self.create_case(self.unicef, self.ann, self.moh, msg, [self.aids])
+
+        self.assertEqual(case.access_level(self.superuser), AccessLevel.update)  # superusers can update
+        self.assertEqual(case.access_level(self.admin), AccessLevel.update)  # admins can update
+        self.assertEqual(case.access_level(self.user1), AccessLevel.update)  # user from assigned partner can update
+        self.assertEqual(case.access_level(self.user3), AccessLevel.read)  # user from other partner can read bc labels
+        self.assertEqual(case.access_level(self.user4), AccessLevel.none)  # user from different org
 
 
 class CaseCRUDLTest(BaseCasesTest):
