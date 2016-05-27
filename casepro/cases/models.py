@@ -184,7 +184,7 @@ class Case(models.Model):
             queryset = Case.get_open(org, user)
         elif folder == CaseFolder.closed:
             queryset = Case.get_closed(org, user)
-        else:
+        else:  # pragma: no cover
             raise ValueError('Invalid folder for cases')
 
         if assignee_id:
@@ -207,16 +207,12 @@ class Case(models.Model):
     def get_or_open(cls, org, user, message, summary, assignee):
         r = get_redis_connection()
         with r.lock(CASE_LOCK_KEY % (org.pk, message.contact.uuid)):
+            message.refresh_from_db()
+
             # if message is already associated with a case, return that
             if message.case:
                 message.case.is_new = False
                 return message.case
-
-            # if message contact has an open case, return that
-            existing_open = cls.get_open_for_contact_on(org, message.contact, timezone.now())
-            if existing_open:
-                existing_open.is_new = False
-                return existing_open
 
             # suspend from groups, expire flows and archive messages
             message.contact.prepare_for_case()
@@ -472,35 +468,32 @@ class CaseExport(BaseExport):
             self.write_row(sheet, 0, all_fields)
             return sheet
 
-        # even if there are no cases - still add a sheet
-        if not items:
-            add_sheet(1)
-        else:
-            sheet_number = 1
-            for item_chunk in chunks(items, 65535):
-                current_sheet = add_sheet(sheet_number)
-
-                row = 1
-                for item in item_chunk:
-                    values = [
-                        item.initial_message.created_on,
-                        item.opened_on,
-                        item.closed_on,
-                        item.assignee.name,
-                        ', '.join([l.name for l in item.labels.all()]),
-                        item.summary,
-                        item.outgoing_count,
-                        item.incoming_count - 1,  # subtract 1 for the initial messages
-                        item.contact.uuid
-                    ]
-
-                    fields = item.contact.get_fields()
-                    for field in contact_fields:
-                        values.append(fields.get(field.key, ""))
-
-                    self.write_row(current_sheet, row, values)
-                    row += 1
-
+        sheet = None
+        sheet_number = 0
+        row = 1
+        for item in items:
+            if not sheet or row > self.MAX_SHEET_ROWS:
                 sheet_number += 1
+                sheet = add_sheet(sheet_number)
+                row = 1
+
+            values = [
+                item.initial_message.created_on,
+                item.opened_on,
+                item.closed_on,
+                item.assignee.name,
+                ', '.join([l.name for l in item.labels.all()]),
+                item.summary,
+                item.outgoing_count,
+                item.incoming_count - 1,  # subtract 1 for the initial messages
+                item.contact.uuid
+            ]
+
+            fields = item.contact.get_fields()
+            for field in contact_fields:
+                values.append(fields.get(field.key, ""))
+
+            self.write_row(sheet, row, values)
+            row += 1
 
         return book

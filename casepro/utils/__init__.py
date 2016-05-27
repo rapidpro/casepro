@@ -31,6 +31,21 @@ def str_to_bool(text):
     return text and text.lower() in ['true', 'y', 'yes', '1']
 
 
+class JSONEncoder(json.JSONEncoder):
+    """
+    JSON encoder which encodes datetime values as strings
+    """
+    def default(self, val):
+        if isinstance(val, datetime.datetime):
+            return format_iso8601(val)
+        elif isinstance(val, Enum):
+            return val.name
+        elif hasattr(val, 'to_json') and callable(val.to_json):
+            return val.to_json()
+
+        return json.JSONEncoder.default(self, val)  # pragma: no cover
+
+
 def json_encode(data):
     """
     Encodes the given primitives as JSON using Django's encoder which can handle dates
@@ -77,21 +92,6 @@ def truncate(text, length=100, suffix='...'):
         return text[:length-len(suffix)] + suffix
     else:
         return text
-
-
-class JSONEncoder(json.JSONEncoder):
-    """
-    JsON encoder which encodes datetime values as strings
-    """
-    def default(self, val):
-        if isinstance(val, datetime.datetime):
-            return format_iso8601(val)
-        elif isinstance(val, Enum):
-            return val.name
-        elif hasattr(val, 'to_json') and callable(val.to_json):
-            return val.to_json()
-
-        return json.JSONEncoder.default(self, val)
 
 
 def datetime_to_microseconds(dt):

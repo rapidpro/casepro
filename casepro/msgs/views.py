@@ -216,7 +216,7 @@ class MessageCRUDL(SmartCRUDL):
                 Message.bulk_archive(org, user, messages)
             elif action == 'restore':
                 Message.bulk_restore(org, user, messages)
-            else:
+            else:  # pragma: no cover
                 return HttpResponseBadRequest("Invalid action: %s", action)
 
             return HttpResponse(status=204)

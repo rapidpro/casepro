@@ -48,6 +48,8 @@ class BaseExport(models.Model):
     DATE_STYLE = XFStyle()
     DATE_STYLE.num_format_str = 'DD-MM-YYYY HH:MM:SS'
 
+    MAX_SHEET_ROWS = 65535
+
     @classmethod
     def create(cls, org, user, search):
         return cls.objects.create(org=org, partner=user.get_partner(org), created_by=user, search=json_encode(search))
