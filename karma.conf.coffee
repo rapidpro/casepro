@@ -24,6 +24,7 @@ module.exports = (config) ->
       'static/coffee/*.coffee',
 
       # our test files
+      'karma/helpers.coffee',
       'karma/test-filters.coffee',
       'karma/test-services.coffee',
       'karma/test-utils.coffee'

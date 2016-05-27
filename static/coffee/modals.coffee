@@ -151,7 +151,7 @@ modals.controller('MessageHistoryModalController', ['$scope', '$uibModalInstance
   $scope.message = message
   $scope.loading = true
 
-  MessageService.fetchHistory($scope.message, (actions)->
+  MessageService.fetchHistory($scope.message).then((actions)->
     $scope.actions = actions
     $scope.loading = false
   )

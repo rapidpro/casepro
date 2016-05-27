@@ -14,6 +14,11 @@ namespace('utils', (exports) ->
       
   exports.parseIso8601 = (str) ->
     if str then new Date(Date.parse str) else null
+      
+  exports.parseDates = (objects, propName) ->
+    for obj in objects
+      obj[propName] = exports.parseIso8601(obj[propName])
+    return objects
 
   exports.toFormData = (params) ->
     data = new FormData()

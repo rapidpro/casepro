@@ -420,7 +420,7 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
 
   $scope.onExportSearch = () ->
     UtilsService.confirmModal("Export the current case search?", null, () ->
-      CaseService.startExport($scope.activeSearch, () ->
+      CaseService.startExport($scope.activeSearch).then(() ->
         UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
       )
     )

@@ -6,9 +6,6 @@ filters = angular.module('cases.filters', []);
 #----------------------------------------------------------------------------
 filters.filter('autodate', (dateFilter) ->
   (date) ->
-    if angular.isString(date)
-      date = utils.parseIso8601(date)
-
     now = new Date()
     isToday = date.getDate() == now.getDate() and date.getMonth() == now.getMonth() and date.getFullYear() == now.getFullYear()
 

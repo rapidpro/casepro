@@ -28,9 +28,7 @@ services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer
 
       $http.get('/message/search/?' + $httpParamSerializerJQLike(params))
       .success((data) =>
-        @_processMessages(data.results)
-
-        console.log("Fetched " + data.results.length + " old messages")
+        utils.parseDates(data.results, 'time')
 
         callback(data.results, data.has_more)
       ).error(DEFAULT_ERR_HANDLER)
@@ -45,7 +43,7 @@ services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer
 
       $http.get('/message/?' + $httpParamSerializerJQLike(params))
       .success((data) =>
-        @_processMessages(data.results)
+        utils.parseDates(data.results, 'time')
 
         if data.results.length > 0
           maxTime = data.results[0].time
@@ -60,12 +58,10 @@ services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer
     #----------------------------------------------------------------------------
     # Fetches history for a single message
     #----------------------------------------------------------------------------
-    fetchHistory: (message, callback) ->
-      $http.get('/message/history/' + message.id + '/')
-      .success((data) =>
-        @_processMessageActions(data.actions)
-        callback(data.actions)
-      ).error(DEFAULT_ERR_HANDLER)
+    fetchHistory: (message) ->
+      return $http.get('/message/history/' + message.id + '/').then((response) ->
+        return utils.parseDates(response.data.actions, 'created_on')
+      )
 
     #----------------------------------------------------------------------------
     # Starts a message export
@@ -194,20 +190,6 @@ services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer
         if callback
           callback()
       ).error(DEFAULT_ERR_HANDLER)
-
-    #----------------------------------------------------------------------------
-    # Processes incoming messages
-    #----------------------------------------------------------------------------
-    _processMessages: (messages) ->
-      for msg in messages
-        msg.time = utils.parseIso8601(msg.time)  # parse datetime string
-
-    #----------------------------------------------------------------------------
-    # Processes incoming message actions
-    #----------------------------------------------------------------------------
-    _processMessageActions: (actions) ->
-      for action in actions
-        action.created_on = utils.parseIso8601(action.created_on)  # parse datetime string
 ]
 
 
@@ -226,6 +208,7 @@ services.factory 'OutgoingService', ['$rootScope', '$http', '$httpParamSerialize
 
       $http.get('/outgoing/search/?' + $httpParamSerializerJQLike(params))
       .success((data) =>
+        utils.parseDates(data.results, 'time')
         callback(data.results, data.has_more)
       ).error(DEFAULT_ERR_HANDLER)
 
@@ -234,6 +217,7 @@ services.factory 'OutgoingService', ['$rootScope', '$http', '$httpParamSerialize
 
       $http.get('/outgoing/search_replies/?' + $httpParamSerializerJQLike(params))
       .success((data) =>
+        utils.parseDates(data.results, 'time')
         callback(data.results, data.has_more)
       ).error(DEFAULT_ERR_HANDLER)
 
@@ -287,7 +271,7 @@ services.factory 'CaseService', ['$http', '$httpParamSerializerJQLike', '$window
 
       $http.get('/case/search/?' + $httpParamSerializerJQLike(params))
       .success((data) =>
-        @_processCases(data.results)
+        utils.parseDates(data.results, 'opened_on')
         callback(data.results, data.has_more)
       ).error(DEFAULT_ERR_HANDLER)
 
@@ -301,7 +285,7 @@ services.factory 'CaseService', ['$http', '$httpParamSerializerJQLike', '$window
 
       $http.get('/case/search/?' + $httpParamSerializerJQLike(params))
       .success((data) =>
-        @_processCases(data.results)
+        utils.parseDates(data.results, 'opened_on')
         callback(data.results)
       ).error(DEFAULT_ERR_HANDLER)
 
@@ -311,19 +295,15 @@ services.factory 'CaseService', ['$http', '$httpParamSerializerJQLike', '$window
     fetchCase: (caseId, callback) ->
       $http.get('/case/fetch/' + caseId + '/')
       .success((caseObj) =>
-        @_processCases([caseObj])
+        utils.parseDates([caseObj], 'opened_on')
         callback(caseObj)
       ).error(DEFAULT_ERR_HANDLER)
 
     #----------------------------------------------------------------------------
     # Starts a case export
     #----------------------------------------------------------------------------
-    startExport: (search, callback) ->
-      params = @_searchToParams(search)
-      $http.post('/caseexport/create/?' + $httpParamSerializerJQLike(params))
-      .success(() =>
-        callback()
-      ).error(DEFAULT_ERR_HANDLER)
+    startExport: (search) ->
+      return $http.post('/caseexport/create/?' + $httpParamSerializerJQLike(@_searchToParams(search)))
 
     #----------------------------------------------------------------------------
     # Opens a new case
@@ -456,18 +436,11 @@ services.factory 'CaseService', ['$http', '$httpParamSerializerJQLike', '$window
     # Convert search object to URL params
     #----------------------------------------------------------------------------
     _searchToParams: (search) ->
-      params = {}
-      params.folder = search.folder
-      params.assignee = if search.assignee then search.assignee.id else null
-      params.label = if search.label then search.label.id else null
-      return params
-
-    #----------------------------------------------------------------------------
-    # Processes incoming cases
-    #----------------------------------------------------------------------------
-    _processCases: (cases) ->
-      for c in cases
-        c.opened_on = utils.parseIso8601(c.opened_on)
+      return {
+        folder: search.folder,
+        assignee: if search.assignee then search.assignee.id else null,
+        label: if search.label then search.label.id else null
+      }
 
     #----------------------------------------------------------------------------
     # Processes incoming case timeline items

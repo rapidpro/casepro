@@ -1,4 +1,4 @@
-# Unit tests for our Angular services
+# Unit tests for our Angular services (services listed A-Z)
 
 describe('services:', () ->
   $httpBackend = null
@@ -8,6 +8,22 @@ describe('services:', () ->
 
     inject((_$httpBackend_) ->
       $httpBackend = _$httpBackend_
+    )
+  )
+
+  describe('CaseService', () ->
+    CaseService = null
+
+    beforeEach(inject((_CaseService_) ->
+      CaseService = _CaseService_
+    ))
+
+    describe('startExport', () ->
+      it('posts to export endpoint', () ->
+        $httpBackend.expectPOST('/caseexport/create/?folder=open').respond('')
+        CaseService.startExport({folder: "open"})
+        $httpBackend.flush()
+      )
     )
   )
 
@@ -38,6 +54,16 @@ describe('services:', () ->
     beforeEach(inject((_MessageService_) ->
       MessageService = _MessageService_
     ))
+
+    describe('fetchHistory', () ->
+      it('fetches from history endpoint', () ->
+        $httpBackend.expectGET('/message/history/101/').respond('{"actions":[{"action":"archive","created_on":"2016-05-17T08:49:13.698864"}]}')
+        MessageService.fetchHistory(testMessages[0]).then((actions) ->
+          expect(actions).toEqual([{action: "archive", "created_on": utcdate(2016, 5, 17, 8, 49, 13, 698)}])
+        )
+        $httpBackend.flush()
+      )
+    )
 
     describe('flagMessages', () ->
       it('posts to delete endpoint', () ->
