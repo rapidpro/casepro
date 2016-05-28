@@ -11,10 +11,10 @@ module.exports = (config) ->
     # list of files / patterns to load in the browser
     files: [
       # dependencies
-      'static/js/angular.min.js',
-      'static/js/angular-animate.min.js',
-      'static/js/angular-sanitize.min.js',
-      'static/js/angular-mocks.js',
+      'static/js/angular-1.4.10/angular.min.js',
+      'static/js/angular-1.4.10/angular-animate.min.js',
+      'static/js/angular-1.4.10/angular-sanitize.min.js',
+      'static/js/angular-1.4.10/angular-mocks.js',
       'static/js/ng-infinite-scroll.min.js',
       'static/js/raven.min.js',
       'static/js/select.min.js',
