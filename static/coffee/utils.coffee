@@ -19,17 +19,4 @@ namespace('utils', (exports) ->
     for obj in objects
       obj[propName] = exports.parseIso8601(obj[propName])
     return objects
-
-  exports.toFormData = (params) ->
-    data = new FormData()
-    for own key, val of params
-      if angular.isArray(val)
-        val = (item.toString() for item in val).join(',')
-      else if val
-        val = val.toString()  # required for https://bugzilla.mozilla.org/show_bug.cgi?id=819328
-
-      if val
-        data.append(key, val)
-
-    return data
 )

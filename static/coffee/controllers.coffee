@@ -268,14 +268,14 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
 
   $scope.onLabelSelection = (label) ->
     UtilsService.confirmModal('Apply the label <strong>' + label.name + '</strong> to the selected messages?', null, () ->
-      MessageService.labelMessages($scope.selection, label, () ->
+      MessageService.bulkLabel($scope.selection, label).then(() ->
         $scope.updateItems()
       )
     )
 
   $scope.onFlagSelection = () ->
     UtilsService.confirmModal('Flag the selected messages?', null, () ->
-      MessageService.flagMessages($scope.selection, true, () ->
+      MessageService.bulkFlag($scope.selection, true).then(() ->
         $scope.updateItems()
       )
     )
@@ -283,8 +283,8 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
   $scope.onReplyToSelection = () ->
     $uibModal.open({templateUrl: 'replyModal.html', controller: 'ReplyModalController', resolve: {maxLength: (() -> OUTGOING_TEXT_MAX_LEN)}})
     .result.then((text) ->
-      MessageService.replyToMessages($scope.selection, text, () ->
-        MessageService.archiveMessages($scope.selection, () ->
+      MessageService.bulkReply($scope.selection, text).then(() ->
+        MessageService.bulkArchive($scope.selection).then(() ->
           UtilsService.displayAlert('success', "Reply sent and messages archived")
           $scope.updateItems()
         )
@@ -293,14 +293,14 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
 
   $scope.onArchiveSelection = () ->
     UtilsService.confirmModal('Archive the selected messages? This will remove them from your inbox.', null, () ->
-      MessageService.archiveMessages($scope.selection, () ->
+      MessageService.bulkArchive($scope.selection).then(() ->
         $scope.updateItems()
       )
     )
 
   $scope.onRestoreSelection = () ->
     UtilsService.confirmModal('Restore the selected messages? This will put them back in your inbox.', null, () ->
-      MessageService.restoreMessages($scope.selection, () ->
+      MessageService.bulkRestore($scope.selection).then(() ->
         $scope.updateItems()
       )
     )
@@ -312,7 +312,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
   $scope.onToggleMessageFlag = (message) ->
     prevState = message.flagged
     message.flagged = !prevState
-    MessageService.flagMessages([message], message.flagged, () ->
+    MessageService.bulkFlag([message], message.flagged).then(() ->
       $scope.updateItems()
     )
 
@@ -325,7 +325,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
       maxLength: () -> OUTGOING_TEXT_MAX_LEN,
     }})
     .result.then((data) ->
-      MessageService.forwardMessage(message, data.text, data.urn, () ->
+      MessageService.forward(message, data.text, data.urn).then(() ->
         UtilsService.displayAlert('success', "Message forwarded to " + data.urn.path)
       )
     )
@@ -339,15 +339,15 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
     resolve = {message: (() -> message), summaryMaxLength: (() -> CASE_SUMMARY_MAX_LEN), partners: (() -> partners)}
     $uibModal.open({templateUrl: 'newCaseModal.html', controller: 'NewCaseModalController', resolve: resolve})
     .result.then((result) ->
-      CaseService.openCase(message, result.summary, result.assignee, (caseObj, isNew) ->
-          withAlert = if !isNew then 'open_found_existing' else null
+      CaseService.open(message, result.summary, result.assignee).then((caseObj) ->
+          withAlert = if !caseObj.isNew then 'open_found_existing' else null
           CaseService.navigateToCase(caseObj, withAlert)
       )
     )
 
   $scope.onLabelMessage = (message) ->
     UtilsService.labelModal("Labels", "Update the labels for this message. This determines which other partner organizations can view this message.", $scope.labels, message.labels, (selectedLabels) ->
-      MessageService.relabelMessage(message, selectedLabels, () ->
+      MessageService.relabel(message, selectedLabels).then(() ->
         $scope.updateItems()
       )
     )
@@ -472,14 +472,14 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
 
   $scope.onEditLabels = ->
     UtilsService.labelModal("Labels", "Update the labels for this case. This determines which other partner organizations can view this case.", $scope.allLabels, $scope.caseObj.labels, (selectedLabels) ->
-      CaseService.relabelCase($scope.caseObj, selectedLabels, () ->
+      CaseService.relabel($scope.caseObj, selectedLabels).then(() ->
         $scope.$broadcast('timelineChanged')
       )
     )
 
   $scope.onEditSummary = ->
     UtilsService.editModal("Edit Summary", $scope.caseObj.summary, CASE_SUMMARY_MAX_LEN, (text) ->
-      CaseService.updateCaseSummary($scope.caseObj, text, () ->
+      CaseService.updateSummary($scope.caseObj, text).then(() ->
         $scope.$broadcast('timelineChanged')
       )
     )
@@ -492,7 +492,7 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
     $scope.sending = true
 
     try
-      CaseService.replyToCase($scope.caseObj, $scope.newMessage, () ->
+      CaseService.replyTo($scope.caseObj, $scope.newMessage).then(() ->
         $scope.newMessage = ''
         $scope.sending = false
         $scope.$broadcast('timelineChanged')

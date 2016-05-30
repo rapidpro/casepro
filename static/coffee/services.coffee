@@ -4,9 +4,23 @@
 
 services = angular.module('cases.services', ['cases.modals']);
 
+POST_DEFAULTS = {headers : {'Content-Type': 'application/x-www-form-urlencoded'}}
+
+# TODO switch POSTs to use url-encoded data ($httpParamSerializer/POST_DEFAULTS) and remove usage of toFormData/DEFAULT_POST_OPTS
+toFormData = (params) ->
+    data = new FormData()
+    for own key, val of params
+      if angular.isArray(val)
+        val = (item.toString() for item in val).join(',')
+      else if val
+        val = val.toString()  # required for https://bugzilla.mozilla.org/show_bug.cgi?id=819328
+
+      if val
+        data.append(key, val)
+
+    return data
 
 DEFAULT_POST_OPTS = {transformRequest: angular.identity, headers: {'Content-Type': undefined}}
-POST_DEFAULTS = {headers : {'Content-Type': 'application/x-www-form-urlencoded'}}
 
 DEFAULT_ERR_HANDLER = (data, status, headers, config) =>
   console.error("Request error (status = " + status + ")")
@@ -73,93 +87,77 @@ services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer
     #----------------------------------------------------------------------------
     # Reply-to messages
     #----------------------------------------------------------------------------
-    replyToMessages: (messages, text, callback) ->
+    bulkReply: (messages, text) ->
       params = {
         text: text,
         messages: (m.id for m in messages)
       }
 
-      $http.post('/message/bulk_reply/', utils.toFormData(params), DEFAULT_POST_OPTS)
-      .success((data) =>
-        if callback
-          callback()
-      ).error(DEFAULT_ERR_HANDLER)
+      return $http.post('/message/bulk_reply/', toFormData(params), DEFAULT_POST_OPTS)
 
     #----------------------------------------------------------------------------
     # Flag or un-flag messages
     #----------------------------------------------------------------------------
-    flagMessages: (messages, flagged, callback) ->
+    bulkFlag: (messages, flagged) ->
       action = if flagged then 'flag' else 'unflag'
-      @_messagesAction(messages, action, null, () ->
+
+      return @_bulkAction(messages, action, null).then(() ->
         for msg in messages
           msg.flagged = flagged
-        if callback
-          callback()
       )
 
     #----------------------------------------------------------------------------
     # Label messages with the given label
     #----------------------------------------------------------------------------
-    labelMessages: (messages, label, callback) ->
+    bulkLabel: (messages, label) ->
       without_label = []
       for msg in messages
-        if label.name not in msg.labels
+        if label not in msg.labels
           without_label.push(msg)
           msg.labels.push(label)
 
-      if without_label.length > 0
-        @_messagesAction(without_label, 'label', label, callback)
+      return @_bulkAction(without_label, 'label', label)
 
     #----------------------------------------------------------------------------
     # Archive messages
     #----------------------------------------------------------------------------
-    archiveMessages: (messages, callback) ->
-      @_messagesAction(messages, 'archive', null, () ->
+    bulkArchive: (messages) ->
+      return @_bulkAction(messages, 'archive', null).then(() ->
         for msg in messages
           msg.archived = true
-        if callback
-          callback()
       )
 
     #----------------------------------------------------------------------------
     # Restore (i.e. un-archive) messages
     #----------------------------------------------------------------------------
-    restoreMessages: (messages, callback) ->
-      @_messagesAction(messages, 'restore', null, () ->
+    bulkRestore: (messages) ->
+      return @_bulkAction(messages, 'restore', null).then(() ->
         for msg in messages
           msg.archived = false
-        if callback
-          callback()
       )
 
     #----------------------------------------------------------------------------
     # Relabel the given message (removing labels if necessary)
     #----------------------------------------------------------------------------
-    relabelMessage: (message, labels, callback) ->
-      data = utils.toFormData({
+    relabel: (message, labels) ->
+      data = toFormData({
         labels: (l.id for l in labels)
       })
 
-      $http.post('/message/label/' + message.id + '/', data, DEFAULT_POST_OPTS)
-      .success(() ->
+      return $http.post('/message/label/' + message.id + '/', data, DEFAULT_POST_OPTS).then(() ->
         message.labels = labels
-        if callback
-          callback()
-      ).error(DEFAULT_ERR_HANDLER)
+      )
 
     #----------------------------------------------------------------------------
     # Forward a message to a URN
     #----------------------------------------------------------------------------
-    forwardMessage: (message, text, urn, callback) ->
+    forward: (message, text, urn) ->
       params = {
         text: text,
         urns: [urn.urn]
       }
 
-      $http.post('/message/forward/' + message.id + '/', utils.toFormData(params), DEFAULT_POST_OPTS)
-      .success((data) =>
-        callback()
-      ).error(DEFAULT_ERR_HANDLER)
+      return $http.post('/message/forward/' + message.id + '/', toFormData(params), DEFAULT_POST_OPTS)
 
     #----------------------------------------------------------------------------
     # Convert search object to URL params
@@ -177,20 +175,16 @@ services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer
       }
 
     #----------------------------------------------------------------------------
-    # POSTs to the messages action endpoint
+    # POSTs to the messages bulk action endpoint
     #----------------------------------------------------------------------------
-    _messagesAction: (messages, action, label, callback) ->
+    _bulkAction: (messages, action, label) ->
       params = {
         messages: (m.id for m in messages)
       }
       if label
         params.label = label.id
 
-      $http.post('/message/action/' + action + '/', utils.toFormData(params), DEFAULT_POST_OPTS)
-      .success(() =>
-        if callback
-          callback()
-      ).error(DEFAULT_ERR_HANDLER)
+      return $http.post('/message/action/' + action + '/', toFormData(params), DEFAULT_POST_OPTS)
 ]
 
 
@@ -304,7 +298,7 @@ services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     #----------------------------------------------------------------------------
     # Opens a new case
     #----------------------------------------------------------------------------
-    openCase: (message, summary, assignee, callback) ->
+    open: (message, summary, assignee) ->
       params = {
         message: message.id,
         summary: summary
@@ -312,16 +306,17 @@ services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($h
       if assignee
         params.assignee = assignee.id
 
-      $http.post('/case/open/', utils.toFormData(params), DEFAULT_POST_OPTS)
-      .success((data) ->
-        callback(data['case'], data['is_new'])
-      ).error(DEFAULT_ERR_HANDLER)
+      return $http.post('/case/open/', toFormData(params), DEFAULT_POST_OPTS).then((response) ->
+        caseObj = response.data['case']
+        caseObj.isNew = response.data['is_new']
+        return caseObj
+      )
 
     #----------------------------------------------------------------------------
     # Adds a note to a case
     #----------------------------------------------------------------------------
     addNote: (caseObj, note) ->
-      return $http.post('/case/note/' + caseObj.id + '/', $httpParamSerializer({note: note}), POST_DEFAULTS)
+      return $http.post('/case/note/' + caseObj.id + '/', toFormData({note: note}), DEFAULT_POST_OPTS)
 
     #----------------------------------------------------------------------------
     # Re-assigns a case
@@ -329,7 +324,7 @@ services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     reassign: (caseObj, assignee) ->
       params = {assignee: assignee.id}
 
-      return $http.post('/case/reassign/' + caseObj.id + '/', $httpParamSerializer(params), POST_DEFAULTS)
+      return $http.post('/case/reassign/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS)
       .then(() ->
         caseObj.assignee = assignee
       )
@@ -338,7 +333,7 @@ services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     # Closes a case
     #----------------------------------------------------------------------------
     close: (caseObj, note) ->
-      return $http.post('/case/close/' + caseObj.id + '/', $httpParamSerializer({note: note}), POST_DEFAULTS)
+      return $http.post('/case/close/' + caseObj.id + '/', toFormData({note: note}), DEFAULT_POST_OPTS)
       .then(() ->
         caseObj.is_closed = true
       )
@@ -347,7 +342,7 @@ services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     # Re-opens a case
     #----------------------------------------------------------------------------
     reopen: (caseObj, note) ->
-      return $http.post('/case/reopen/' + caseObj.id + '/', $httpParamSerializer({note: note}), POST_DEFAULTS)
+      return $http.post('/case/reopen/' + caseObj.id + '/', toFormData({note: note}), DEFAULT_POST_OPTS)
       .then(() ->
         caseObj.is_closed = false
       )
@@ -355,42 +350,30 @@ services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     #----------------------------------------------------------------------------
     # Re-labels a case
     #----------------------------------------------------------------------------
-    relabelCase: (caseObj, labels, callback) ->
+    relabel: (caseObj, labels) ->
       params = {
         labels: (l.id for l in labels)
       }
 
-      $http.post('/case/label/' + caseObj.id + '/', utils.toFormData(params), DEFAULT_POST_OPTS)
-      .success(() ->
+      return $http.post('/case/label/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS).then(() ->
         caseObj.labels = labels
-        if callback
-          callback()
-      ).error(DEFAULT_ERR_HANDLER)
+      )
 
     #----------------------------------------------------------------------------
     # Updates a case's summary
     #----------------------------------------------------------------------------
-    updateCaseSummary: (caseObj, summary, callback) ->
+    updateSummary: (caseObj, summary) ->
       params = {summary: summary}
 
-      $http.post('/case/update_summary/' + caseObj.id + '/', utils.toFormData(params), DEFAULT_POST_OPTS)
-      .success(() ->
+      return $http.post('/case/update_summary/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS).then(() ->
         caseObj.summary = summary
-        if callback
-          callback()
-      ).error(DEFAULT_ERR_HANDLER)
+      )
 
     #----------------------------------------------------------------------------
     # Reply in a case
     #----------------------------------------------------------------------------
-    replyToCase: (caseObj, text, callback) ->
-      params = {text: text}
-
-      $http.post('/case/reply/' + caseObj.id + '/', utils.toFormData(params), DEFAULT_POST_OPTS)
-      .success(() ->
-        if callback
-          callback()
-      ).error(DEFAULT_ERR_HANDLER)
+    replyTo: (caseObj, text) ->
+      return $http.post('/case/reply/' + caseObj.id + '/', toFormData({text: text}), DEFAULT_POST_OPTS)
 
     #----------------------------------------------------------------------------
     # Navigates to the read page for the given case

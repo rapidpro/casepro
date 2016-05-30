@@ -2,6 +2,7 @@
 
 describe('services:', () ->
   $httpBackend = null
+  data = null
 
   beforeEach(() ->
     module('cases')
@@ -9,19 +10,35 @@ describe('services:', () ->
     inject((_$httpBackend_) ->
       $httpBackend = _$httpBackend_
     )
+
+    data = {
+      # users
+      user1: {id: 101, name: "Tom McTest"},
+
+      # labels
+      tea: {id: 201, name: "Tea"},
+      coffee: {id: 202, name: "Coffee"},
+
+      # partners
+      moh: {id: 301, name: "MOH"},
+      who: {id: 302, name: "WHO"}
+    }
   )
 
+  #=======================================================================
+  # Tests for CaseService
+  #=======================================================================
   describe('CaseService', () ->
     CaseService = null
-    testCase = null
 
     beforeEach(inject((_CaseService_) ->
       CaseService = _CaseService_
 
-      testCase = {
+      data.case1 = {
         id: 501,
         summary: "Got tea?",
-        assignee: {id: 201, name: "McTest Partners Ltd"},
+        labels: [data.tea],
+        assignee: data.moh,
         opened_on: utcdate(2016, 5, 27, 11, 0, 0, 0),
         is_closed: false
       }
@@ -29,19 +46,17 @@ describe('services:', () ->
     
     describe('addNote', () ->
       it('posts to note endpoint', () ->
-        $httpBackend.expectPOST('/case/note/501/', 'note=Hello+there').respond('')
-        CaseService.addNote(testCase, "Hello there")
+        $httpBackend.expectPOST('/case/note/501/').respond('')
+        CaseService.addNote(data.case1, "Hello there")
         $httpBackend.flush()
       )
     )
 
     describe('reassign', () ->
       it('posts to reassign endpoint', () ->
-        newAssignee = {id: 202, name: "Helpers"}
-
-        $httpBackend.expectPOST('/case/reassign/501/', 'assignee=202').respond('')
-        CaseService.reassign(testCase, newAssignee).then(() ->
-          expect(testCase.assignee).toEqual(newAssignee)
+        $httpBackend.expectPOST('/case/reassign/501/').respond('')
+        CaseService.reassign(data.case1, data.who).then(() ->
+          expect(data.case1.assignee).toEqual(data.who)
         )
         $httpBackend.flush()
       )
@@ -49,9 +64,30 @@ describe('services:', () ->
 
     describe('close', () ->
       it('posts to close endpoint and closes case', () ->
-        $httpBackend.expectPOST('/case/close/501/', 'note=Hello+there').respond('')
-        CaseService.close(testCase, "Hello there").then(() ->
-          expect(testCase.is_closed).toEqual(true)
+        $httpBackend.expectPOST('/case/close/501/').respond('')
+        CaseService.close(data.case1, "Hello there").then(() ->
+          expect(data.case1.is_closed).toEqual(true)
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('open', () ->
+      it('posts to open endpoint', () ->
+        $httpBackend.expectPOST('/case/open/').respond('{"case": {"id": 501}, "is_new": true}')
+        CaseService.open({id: 401, text: "Hi"}, "Hi", data.moh).then((caseObj) ->
+          expect(caseObj.id).toEqual(501)
+          expect(caseObj.isNew).toEqual(true)
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('relabel', () ->
+      it('posts to label endpoint', () ->
+        $httpBackend.expectPOST('/case/label/501/').respond('')
+        CaseService.relabel(data.case1, [data.coffee]).then(() ->
+          expect(data.case1.labels).toEqual([data.coffee])
         )
         $httpBackend.flush()
       )
@@ -59,12 +95,20 @@ describe('services:', () ->
 
     describe('reopen', () ->
       it('posts to reopen endpoint and reopens case', () ->
-        testCase.is_closed = true
+        data.case1.is_closed = true
 
-        $httpBackend.expectPOST('/case/reopen/501/', 'note=Hello+there').respond('')
-        CaseService.reopen(testCase, "Hello there").then(() ->
-          expect(testCase.is_closed).toEqual(false)
+        $httpBackend.expectPOST('/case/reopen/501/').respond('')
+        CaseService.reopen(data.case1, "Hello there").then(() ->
+          expect(data.case1.is_closed).toEqual(false)
         )
+        $httpBackend.flush()
+      )
+    )
+    
+    describe('replyTo', () ->
+      it('posts to reply endpoint', () ->
+        $httpBackend.expectPOST('/case/reply/501/').respond('')
+        CaseService.replyTo(data.case1, "Hello there")
         $httpBackend.flush()
       )
     )
@@ -76,11 +120,23 @@ describe('services:', () ->
         $httpBackend.flush()
       )
     )
+
+    describe('updateSummary', () ->
+      it('posts to update summary endpoint', () ->
+        $httpBackend.expectPOST('/case/update_summary/501/').respond('')
+        CaseService.updateSummary(data.case1, "Got coffee?").then(() ->
+          expect(data.case1.summary).toEqual("Got coffee?")
+        )
+        $httpBackend.flush()
+      )
+    )
   )
 
+  #=======================================================================
+  # Tests for LabelService
+  #=======================================================================
   describe('LabelService', () ->
     LabelService = null
-    testLabel = {id: 123, name: "Test Label"}
 
     beforeEach(inject((_LabelService_) ->
       LabelService = _LabelService_
@@ -88,42 +144,110 @@ describe('services:', () ->
 
     describe('delete', () ->
       it('posts to delete endpoint', () ->
-        $httpBackend.expectPOST('/label/delete/123/').respond("")
-        LabelService.delete(testLabel)
+        $httpBackend.expectPOST('/label/delete/201/').respond("")
+        LabelService.delete(data.tea)
         $httpBackend.flush()
       )
     )
   )
 
+  #=======================================================================
+  # Tests for MessageService
+  #=======================================================================
   describe('MessageService', () ->
     MessageService = null
-    testMessages = [
-      {id: 101, text: "Hello 1", flagged: true},
-      {id: 102, text: "Hello 2", flagged: false}
-    ]
 
     beforeEach(inject((_MessageService_) ->
       MessageService = _MessageService_
+
+      data.msg1 = {id: 101, text: "Hello 1", labels: [data.tea], flagged: true, archived: false}
+      data.msg2 = {id: 102, text: "Hello 2", labels: [data.coffee], flagged: false, archived: false}
     ))
 
     describe('fetchHistory', () ->
       it('fetches from history endpoint', () ->
         $httpBackend.expectGET('/message/history/101/').respond('{"actions":[{"action":"archive","created_on":"2016-05-17T08:49:13.698864"}]}')
-        MessageService.fetchHistory(testMessages[0]).then((actions) ->
+        MessageService.fetchHistory(data.msg1).then((actions) ->
           expect(actions).toEqual([{action: "archive", "created_on": utcdate(2016, 5, 17, 8, 49, 13, 698)}])
         )
         $httpBackend.flush()
       )
     )
 
-    describe('flagMessages', () ->
-      it('posts to delete endpoint', () ->
+    describe('bulkArchive', () ->
+      it('posts to bulk action endpoint', () ->
+        $httpBackend.expectPOST('/message/action/archive/').respond('')
+        MessageService.bulkArchive([data.msg1, data.msg2]).then(() ->
+          expect(data.msg1.archived).toEqual(true)
+          expect(data.msg2.archived).toEqual(true)
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('bulkFlag', () ->
+      it('posts to bulk action endpoint', () ->
         $httpBackend.expectPOST('/message/action/flag/').respond('')
-        MessageService.flagMessages(testMessages, true, null)
+        MessageService.bulkFlag([data.msg1, data.msg2], true).then(() ->
+          expect(data.msg1.flagged).toEqual(true)
+          expect(data.msg2.flagged).toEqual(true)
+        )
         $httpBackend.flush()
 
-        expect(testMessages[0].flagged).toEqual(true)
-        expect(testMessages[1].flagged).toEqual(true)
+        $httpBackend.expectPOST('/message/action/unflag/').respond('')
+        MessageService.bulkFlag([data.msg1, data.msg2], false).then(() ->
+          expect(data.msg1.flagged).toEqual(false)
+          expect(data.msg2.flagged).toEqual(false)
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('bulkLabel', () ->
+      it('posts to bulk action endpoint', () ->
+        $httpBackend.expectPOST('/message/action/label/').respond('')
+        MessageService.bulkLabel([data.msg1, data.msg2], data.tea).then(() ->
+          expect(data.msg1.labels).toEqual([data.tea])
+          expect(data.msg2.labels).toEqual([data.coffee, data.tea])
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('bulkReply', () ->
+      it('posts to bulk reply endpoint', () ->
+        $httpBackend.expectPOST('/message/bulk_reply/').respond('')
+        MessageService.bulkReply([data.msg1, data.msg2], "Welcome")
+        $httpBackend.flush()
+      )
+    )
+
+    describe('bulkRestore', () ->
+      it('posts to bulk action endpoint', () ->
+        $httpBackend.expectPOST('/message/action/restore/').respond('')
+        MessageService.bulkRestore([data.msg1, data.msg2]).then(() ->
+          expect(data.msg1.archived).toEqual(false)
+          expect(data.msg2.archived).toEqual(false)
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('forward', () ->
+      it('posts to forward endpoint', () ->
+        $httpBackend.expectPOST('/message/forward/101/').respond('')
+        MessageService.forward(data.msg1, "Welcome", {urn: "tel:+260964153686"})
+        $httpBackend.flush()
+      )
+    )
+
+    describe('relabel', () ->
+      it('posts to label endpoint', () ->
+        $httpBackend.expectPOST('/message/label/101/').respond('')
+        MessageService.relabel(data.msg1, [data.coffee]).then(() ->
+          expect(data.msg1.labels).toEqual([data.coffee])
+        )
+        $httpBackend.flush()
       )
     )
 
@@ -136,9 +260,11 @@ describe('services:', () ->
     )
   )
 
+  #=======================================================================
+  # Tests for OutgoingService
+  #=======================================================================
   describe('OutgoingService', () ->
     OutgoingService = null
-    testPartner = {id: 123, name: "McTest Partners Ltd"}
 
     beforeEach(inject((_OutgoingService_) ->
       OutgoingService = _OutgoingService_
@@ -146,16 +272,18 @@ describe('services:', () ->
 
     describe('startReplyExport', () ->
       it('posts to export endpoint', () ->
-        $httpBackend.expectPOST('/replyexport/create/?partner=123').respond('')
-        OutgoingService.startReplyExport({partner: testPartner})
+        $httpBackend.expectPOST('/replyexport/create/?partner=301').respond('')
+        OutgoingService.startReplyExport({partner: data.moh})
         $httpBackend.flush()
       )
     )
   )
 
+  #=======================================================================
+  # Tests for PartnerService
+  #=======================================================================
   describe('PartnerService', () ->
     PartnerService = null
-    testPartner = {id: 123, name: "McTest Partners Ltd"}
 
     beforeEach(inject((_PartnerService_) ->
       PartnerService = _PartnerService_
@@ -163,9 +291,9 @@ describe('services:', () ->
 
     describe('fetchUsers', () ->
       it('fetches from users endpoint', () ->
-        $httpBackend.expectGET('/partner/users/123/').respond('{"results":[{"id": 123, "name": "Tom McTest"}]}')
-        PartnerService.fetchUsers(testPartner).then((users) ->
-          expect(users).toEqual([{id: 123, name: "Tom McTest"}])
+        $httpBackend.expectGET('/partner/users/301/').respond('{"results":[{"id": 101, "name": "Tom McTest", "replies": {}}]}')
+        PartnerService.fetchUsers(data.moh).then((users) ->
+          expect(users).toEqual([{id: 101, name: "Tom McTest", replies: {}}])
         )
         $httpBackend.flush()
       )
@@ -173,16 +301,18 @@ describe('services:', () ->
 
     describe('delete', () ->
       it('posts to delete endpoint', () ->
-        $httpBackend.expectPOST('/partner/delete/123/').respond('')
-        PartnerService.delete(testPartner)
+        $httpBackend.expectPOST('/partner/delete/301/').respond('')
+        PartnerService.delete(data.moh)
         $httpBackend.flush()
       )
     )
   )
 
+  #=======================================================================
+  # Tests for UserService
+  #=======================================================================
   describe('UserService', () ->
     UserService = null
-    testUser = {id: 123, name: "Tom McTest"}
 
     beforeEach(inject((_UserService_) ->
       UserService = _UserService_
@@ -190,8 +320,8 @@ describe('services:', () ->
 
     describe('delete', () ->
       it('posts to delete endpoint', () ->
-        $httpBackend.expectPOST('/user/delete/123/').respond('')
-        UserService.delete(testUser)
+        $httpBackend.expectPOST('/user/delete/101/').respond('')
+        UserService.delete(data.user1)
         $httpBackend.flush()
       )
     )
