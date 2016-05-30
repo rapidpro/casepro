@@ -6,7 +6,6 @@ controllers = angular.module('cases.controllers', ['cases.services', 'cases.moda
 
 
 # Component refresh intervals
-INTERVAL_MESSAGES_NEW = 30000
 INTERVAL_CASES_NEW = 30000
 INTERVAL_CASE_INFO = 30000
 INTERVAL_CASE_TIMELINE = 30000
@@ -192,9 +191,6 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
     $scope.searchFields = $scope.searchFieldDefaults()
     $scope.activeSearch = $scope.buildSearch()
 
-    # TODO refresh new items but back off when page is inactive
-    # $scope.refreshNewItems()
-
     $scope.$on('activeLabelChange', () ->
       $scope.onResetSearch()
       $scope.setAdvancedSearch(false)
@@ -241,23 +237,6 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
 
   $scope.fetchOldItems = (search, startTime, page) ->
     return MessageService.fetchOld(search, startTime, page)
-
-  $scope.refreshNewItems = () ->
-    # if user has specified a max time then don't bother looking for new messages
-    if $scope.activeSearch.before
-      $timeout($scope.refreshNewItems, INTERVAL_MESSAGES_NEW)
-      return
-
-    timeCode = $scope.activeSearch.timeCode
-    afterTime = $scope.newItemsMaxTime or $scope.startTime
-    $scope.newItemsMaxTime = new Date()
-
-    MessageService.fetchNew $scope.activeSearch, afterTime, $scope.newItemsMaxTime, (items) ->
-      if timeCode == $scope.activeSearch.timeCode
-        $scope.items = items.concat($scope.items)
-
-      if items.length < INFINITE_SCROLL_MAX_ITEMS
-        $timeout($scope.refreshNewItems, INTERVAL_MESSAGES_NEW)
 
   $scope.onExpandMessage = (message) ->
     $scope.expandedMessageId = message.id

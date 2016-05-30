@@ -47,28 +47,6 @@ services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer
       )
 
     #----------------------------------------------------------------------------
-    # Fetches new messages for the given search
-    #----------------------------------------------------------------------------
-    fetchNew: (search, after, before, callback) ->
-      params = @_searchToParams(search)
-      params.after = utils.formatIso8601(after)
-      params.before = utils.formatIso8601(before)
-
-      $http.get('/message/?' + $httpParamSerializer(params))
-      .success((data) =>
-        utils.parseDates(data.results, 'time')
-
-        if data.results.length > 0
-          maxTime = data.results[0].time
-          maxId = data.results[0].id
-        else
-          maxTime = null
-          maxId = null
-
-        callback(data.results, maxTime, maxId)
-      ).error(DEFAULT_ERR_HANDLER)
-
-    #----------------------------------------------------------------------------
     # Fetches history for a single message
     #----------------------------------------------------------------------------
     fetchHistory: (message) ->
