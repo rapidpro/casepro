@@ -2,7 +2,7 @@
 
 describe('services:', () ->
   $httpBackend = null
-  data = null
+  test = null
 
   beforeEach(() ->
     module('cases')
@@ -11,7 +11,7 @@ describe('services:', () ->
       $httpBackend = _$httpBackend_
     )
 
-    data = {
+    test = {
       # users
       user1: {id: 101, name: "Tom McTest"},
 
@@ -34,11 +34,11 @@ describe('services:', () ->
     beforeEach(inject((_CaseService_) ->
       CaseService = _CaseService_
 
-      data.case1 = {
+      test.case1 = {
         id: 501,
         summary: "Got tea?",
-        labels: [data.tea],
-        assignee: data.moh,
+        labels: [test.tea],
+        assignee: test.moh,
         opened_on: utcdate(2016, 5, 27, 11, 0, 0, 0),
         is_closed: false
       }
@@ -47,7 +47,17 @@ describe('services:', () ->
     describe('addNote', () ->
       it('posts to note endpoint', () ->
         $httpBackend.expectPOST('/case/note/501/').respond('')
-        CaseService.addNote(data.case1, "Hello there")
+        CaseService.addNote(test.case1, "Hello there")
+        $httpBackend.flush()
+      )
+    )
+
+    describe('fetchNew', () ->
+      it('gets cases from search endpoint', () ->
+        $httpBackend.expectGET('/case/search/?folder=open').respond('{"results":[{"id":501,"opened_on":"2016-05-17T08:49:13.698864"}],"has_more":true}')
+        CaseService.fetchNew({folder: "open"}).then((data) ->
+          expect(data.results).toEqual([{id: 501, opened_on: utcdate(2016, 5, 17, 8, 49, 13, 698)}])
+        )
         $httpBackend.flush()
       )
     )
@@ -63,11 +73,38 @@ describe('services:', () ->
       )
     )
 
+    describe('fetchTimeline', () ->
+      it('gets cases from timeline endpoint', () ->
+        $httpBackend.expectGET('/case/timeline/501/?after=2016-05-28T09:00:00.000Z').respond('{"results":[{"id":501,"time":"2016-05-17T08:49:13.698864","type":"A"}]}')
+        CaseService.fetchTimeline(test.case1, utcdate(2016, 5, 28, 9, 0, 0, 0)).then((data) ->
+          expect(data.results).toEqual([{
+            id: 501,
+            time: utcdate(2016, 5, 17, 8, 49, 13, 698),
+            type: 'A',
+            is_action: true,
+            is_message_in: false,
+            is_message_out: false
+          }])
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('fetchSingle', () ->
+      it('gets case from fetch endpoint', () ->
+        $httpBackend.expectGET('/case/fetch/501/').respond('{"id":501,"opened_on":"2016-05-17T08:49:13.698864"}')
+        CaseService.fetchSingle(501).then((caseObj) ->
+          expect(caseObj).toEqual({id: 501, opened_on: utcdate(2016, 5, 17, 8, 49, 13, 698)})
+        )
+        $httpBackend.flush()
+      )
+    )
+
     describe('reassign', () ->
       it('posts to reassign endpoint', () ->
         $httpBackend.expectPOST('/case/reassign/501/').respond('')
-        CaseService.reassign(data.case1, data.who).then(() ->
-          expect(data.case1.assignee).toEqual(data.who)
+        CaseService.reassign(test.case1, test.who).then(() ->
+          expect(test.case1.assignee).toEqual(test.who)
         )
         $httpBackend.flush()
       )
@@ -76,8 +113,8 @@ describe('services:', () ->
     describe('close', () ->
       it('posts to close endpoint and closes case', () ->
         $httpBackend.expectPOST('/case/close/501/').respond('')
-        CaseService.close(data.case1, "Hello there").then(() ->
-          expect(data.case1.is_closed).toEqual(true)
+        CaseService.close(test.case1, "Hello there").then(() ->
+          expect(test.case1.is_closed).toEqual(true)
         )
         $httpBackend.flush()
       )
@@ -86,7 +123,7 @@ describe('services:', () ->
     describe('open', () ->
       it('posts to open endpoint', () ->
         $httpBackend.expectPOST('/case/open/').respond('{"case": {"id": 501}, "is_new": true}')
-        CaseService.open({id: 401, text: "Hi"}, "Hi", data.moh).then((caseObj) ->
+        CaseService.open({id: 401, text: "Hi"}, "Hi", test.moh).then((caseObj) ->
           expect(caseObj.id).toEqual(501)
           expect(caseObj.isNew).toEqual(true)
         )
@@ -97,8 +134,8 @@ describe('services:', () ->
     describe('relabel', () ->
       it('posts to label endpoint', () ->
         $httpBackend.expectPOST('/case/label/501/').respond('')
-        CaseService.relabel(data.case1, [data.coffee]).then(() ->
-          expect(data.case1.labels).toEqual([data.coffee])
+        CaseService.relabel(test.case1, [test.coffee]).then(() ->
+          expect(test.case1.labels).toEqual([test.coffee])
         )
         $httpBackend.flush()
       )
@@ -106,11 +143,11 @@ describe('services:', () ->
 
     describe('reopen', () ->
       it('posts to reopen endpoint and reopens case', () ->
-        data.case1.is_closed = true
+        test.case1.is_closed = true
 
         $httpBackend.expectPOST('/case/reopen/501/').respond('')
-        CaseService.reopen(data.case1, "Hello there").then(() ->
-          expect(data.case1.is_closed).toEqual(false)
+        CaseService.reopen(test.case1, "Hello there").then(() ->
+          expect(test.case1.is_closed).toEqual(false)
         )
         $httpBackend.flush()
       )
@@ -119,7 +156,7 @@ describe('services:', () ->
     describe('replyTo', () ->
       it('posts to reply endpoint', () ->
         $httpBackend.expectPOST('/case/reply/501/').respond('')
-        CaseService.replyTo(data.case1, "Hello there")
+        CaseService.replyTo(test.case1, "Hello there")
         $httpBackend.flush()
       )
     )
@@ -135,8 +172,8 @@ describe('services:', () ->
     describe('updateSummary', () ->
       it('posts to update summary endpoint', () ->
         $httpBackend.expectPOST('/case/update_summary/501/').respond('')
-        CaseService.updateSummary(data.case1, "Got coffee?").then(() ->
-          expect(data.case1.summary).toEqual("Got coffee?")
+        CaseService.updateSummary(test.case1, "Got coffee?").then(() ->
+          expect(test.case1.summary).toEqual("Got coffee?")
         )
         $httpBackend.flush()
       )
@@ -156,7 +193,7 @@ describe('services:', () ->
     describe('delete', () ->
       it('posts to delete endpoint', () ->
         $httpBackend.expectPOST('/label/delete/201/').respond("")
-        LabelService.delete(data.tea)
+        LabelService.delete(test.tea)
         $httpBackend.flush()
       )
     )
@@ -171,14 +208,14 @@ describe('services:', () ->
     beforeEach(inject((_MessageService_) ->
       MessageService = _MessageService_
 
-      data.msg1 = {id: 101, text: "Hello 1", labels: [data.tea], flagged: true, archived: false}
-      data.msg2 = {id: 102, text: "Hello 2", labels: [data.coffee], flagged: false, archived: false}
+      test.msg1 = {id: 101, text: "Hello 1", labels: [test.tea], flagged: true, archived: false}
+      test.msg2 = {id: 102, text: "Hello 2", labels: [test.coffee], flagged: false, archived: false}
     ))
 
     describe('fetchHistory', () ->
       it('gets actions from history endpoint', () ->
         $httpBackend.expectGET('/message/history/101/').respond('{"actions":[{"action":"archive","created_on":"2016-05-17T08:49:13.698864"}]}')
-        MessageService.fetchHistory(data.msg1).then((actions) ->
+        MessageService.fetchHistory(test.msg1).then((actions) ->
           expect(actions).toEqual([{action: "archive", "created_on": utcdate(2016, 5, 17, 8, 49, 13, 698)}])
         )
         $httpBackend.flush()
@@ -199,9 +236,9 @@ describe('services:', () ->
     describe('bulkArchive', () ->
       it('posts to bulk action endpoint', () ->
         $httpBackend.expectPOST('/message/action/archive/').respond('')
-        MessageService.bulkArchive([data.msg1, data.msg2]).then(() ->
-          expect(data.msg1.archived).toEqual(true)
-          expect(data.msg2.archived).toEqual(true)
+        MessageService.bulkArchive([test.msg1, test.msg2]).then(() ->
+          expect(test.msg1.archived).toEqual(true)
+          expect(test.msg2.archived).toEqual(true)
         )
         $httpBackend.flush()
       )
@@ -210,16 +247,16 @@ describe('services:', () ->
     describe('bulkFlag', () ->
       it('posts to bulk action endpoint', () ->
         $httpBackend.expectPOST('/message/action/flag/').respond('')
-        MessageService.bulkFlag([data.msg1, data.msg2], true).then(() ->
-          expect(data.msg1.flagged).toEqual(true)
-          expect(data.msg2.flagged).toEqual(true)
+        MessageService.bulkFlag([test.msg1, test.msg2], true).then(() ->
+          expect(test.msg1.flagged).toEqual(true)
+          expect(test.msg2.flagged).toEqual(true)
         )
         $httpBackend.flush()
 
         $httpBackend.expectPOST('/message/action/unflag/').respond('')
-        MessageService.bulkFlag([data.msg1, data.msg2], false).then(() ->
-          expect(data.msg1.flagged).toEqual(false)
-          expect(data.msg2.flagged).toEqual(false)
+        MessageService.bulkFlag([test.msg1, test.msg2], false).then(() ->
+          expect(test.msg1.flagged).toEqual(false)
+          expect(test.msg2.flagged).toEqual(false)
         )
         $httpBackend.flush()
       )
@@ -228,9 +265,9 @@ describe('services:', () ->
     describe('bulkLabel', () ->
       it('posts to bulk action endpoint', () ->
         $httpBackend.expectPOST('/message/action/label/').respond('')
-        MessageService.bulkLabel([data.msg1, data.msg2], data.tea).then(() ->
-          expect(data.msg1.labels).toEqual([data.tea])
-          expect(data.msg2.labels).toEqual([data.coffee, data.tea])
+        MessageService.bulkLabel([test.msg1, test.msg2], test.tea).then(() ->
+          expect(test.msg1.labels).toEqual([test.tea])
+          expect(test.msg2.labels).toEqual([test.coffee, test.tea])
         )
         $httpBackend.flush()
       )
@@ -239,7 +276,7 @@ describe('services:', () ->
     describe('bulkReply', () ->
       it('posts to bulk reply endpoint', () ->
         $httpBackend.expectPOST('/message/bulk_reply/').respond('')
-        MessageService.bulkReply([data.msg1, data.msg2], "Welcome")
+        MessageService.bulkReply([test.msg1, test.msg2], "Welcome")
         $httpBackend.flush()
       )
     )
@@ -247,9 +284,9 @@ describe('services:', () ->
     describe('bulkRestore', () ->
       it('posts to bulk action endpoint', () ->
         $httpBackend.expectPOST('/message/action/restore/').respond('')
-        MessageService.bulkRestore([data.msg1, data.msg2]).then(() ->
-          expect(data.msg1.archived).toEqual(false)
-          expect(data.msg2.archived).toEqual(false)
+        MessageService.bulkRestore([test.msg1, test.msg2]).then(() ->
+          expect(test.msg1.archived).toEqual(false)
+          expect(test.msg2.archived).toEqual(false)
         )
         $httpBackend.flush()
       )
@@ -258,7 +295,7 @@ describe('services:', () ->
     describe('forward', () ->
       it('posts to forward endpoint', () ->
         $httpBackend.expectPOST('/message/forward/101/').respond('')
-        MessageService.forward(data.msg1, "Welcome", {urn: "tel:+260964153686"})
+        MessageService.forward(test.msg1, "Welcome", {urn: "tel:+260964153686"})
         $httpBackend.flush()
       )
     )
@@ -266,8 +303,8 @@ describe('services:', () ->
     describe('relabel', () ->
       it('posts to label endpoint', () ->
         $httpBackend.expectPOST('/message/label/101/').respond('')
-        MessageService.relabel(data.msg1, [data.coffee]).then(() ->
-          expect(data.msg1.labels).toEqual([data.coffee])
+        MessageService.relabel(test.msg1, [test.coffee]).then(() ->
+          expect(test.msg1.labels).toEqual([test.coffee])
         )
         $httpBackend.flush()
       )
@@ -306,7 +343,7 @@ describe('services:', () ->
     describe('fetchReplies', () ->
       it('gets messages from replies endpoint', () ->
         $httpBackend.expectGET('/outgoing/search_replies/?partner=301').respond('{"results":[{"id":501,"time":"2016-05-17T08:49:13.698864"}],"has_more":true}')
-        OutgoingService.fetchReplies({partner: data.moh}).then((data) ->
+        OutgoingService.fetchReplies({partner: test.moh}).then((data) ->
           expect(data.results).toEqual([{id: 501, time: utcdate(2016, 5, 17, 8, 49, 13, 698)}])
           expect(data.hasMore).toEqual(true)
         )
@@ -317,7 +354,7 @@ describe('services:', () ->
     describe('startReplyExport', () ->
       it('posts to export endpoint', () ->
         $httpBackend.expectPOST('/replyexport/create/?partner=301').respond('')
-        OutgoingService.startReplyExport({partner: data.moh})
+        OutgoingService.startReplyExport({partner: test.moh})
         $httpBackend.flush()
       )
     )
@@ -336,7 +373,7 @@ describe('services:', () ->
     describe('fetchUsers', () ->
       it('fetches from users endpoint', () ->
         $httpBackend.expectGET('/partner/users/301/').respond('{"results":[{"id": 101, "name": "Tom McTest", "replies": {}}]}')
-        PartnerService.fetchUsers(data.moh).then((users) ->
+        PartnerService.fetchUsers(test.moh).then((users) ->
           expect(users).toEqual([{id: 101, name: "Tom McTest", replies: {}}])
         )
         $httpBackend.flush()
@@ -346,7 +383,7 @@ describe('services:', () ->
     describe('delete', () ->
       it('posts to delete endpoint', () ->
         $httpBackend.expectPOST('/partner/delete/301/').respond('')
-        PartnerService.delete(data.moh)
+        PartnerService.delete(test.moh)
         $httpBackend.flush()
       )
     )
@@ -365,7 +402,7 @@ describe('services:', () ->
     describe('delete', () ->
       it('posts to delete endpoint', () ->
         $httpBackend.expectPOST('/user/delete/101/').respond('')
-        UserService.delete(data.user1)
+        UserService.delete(test.user1)
         $httpBackend.flush()
       )
     )

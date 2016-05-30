@@ -412,7 +412,8 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
     afterTime = $scope.newItemsMaxTime or $scope.startTime
     $scope.newItemsMaxTime = new Date()
 
-    CaseService.fetchNew($scope.activeSearch, afterTime, $scope.newItemsMaxTime, (items) ->
+    CaseService.fetchNew($scope.activeSearch, afterTime, $scope.newItemsMaxTime).then((data) ->
+      items = data.results
       if timeCode == $scope.activeSearch.timeCode
         $scope.items = items.concat($scope.items)
 
@@ -442,7 +443,7 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
     $scope.refresh()
 
   $scope.refresh = () ->
-    CaseService.fetchCase($scope.caseObj.id, (caseObj) ->
+    CaseService.fetchSingle($scope.caseObj.id).then((caseObj) ->
       caseObj.contact = $scope.caseObj.contact  # refresh doesn't include contact
       $scope.caseObj = caseObj
 
@@ -533,9 +534,9 @@ controllers.controller 'CaseTimelineController', [ '$scope', '$timeout', 'CaseSe
 
   $scope.refreshItems = (repeat) ->
 
-    CaseService.fetchTimeline($scope.caseObj, $scope.itemsMaxTime, (events, maxTime) ->
-      $scope.timeline = $scope.timeline.concat(events)
-      $scope.itemsMaxTime = maxTime
+    CaseService.fetchTimeline($scope.caseObj, $scope.itemsMaxTime).then((data) ->
+      $scope.timeline = $scope.timeline.concat(data.results)
+      $scope.itemsMaxTime = data.maxTime
 
       if repeat
         $timeout((() -> $scope.refreshItems(true)), INTERVAL_CASE_TIMELINE)

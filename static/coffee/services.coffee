@@ -22,9 +22,6 @@ toFormData = (params) ->
 
 DEFAULT_POST_OPTS = {transformRequest: angular.identity, headers: {'Content-Type': undefined}}
 
-DEFAULT_ERR_HANDLER = (data, status, headers, config) =>
-  console.error("Request error (status = " + status + ")")
-
 #=====================================================================
 # Incoming message service
 #=====================================================================
@@ -241,26 +238,25 @@ services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     #----------------------------------------------------------------------------
     # Fetches new cases
     #----------------------------------------------------------------------------
-    fetchNew: (search, after, before, callback) ->
+    fetchNew: (search, after, before) ->
       params = @_searchToParams(search)
       params.after = utils.formatIso8601(after)
       params.before = utils.formatIso8601(before)
 
-      $http.get('/case/search/?' + $httpParamSerializer(params))
-      .success((data) =>
-        utils.parseDates(data.results, 'opened_on')
-        callback(data.results)
-      ).error(DEFAULT_ERR_HANDLER)
+      return $http.get('/case/search/?' + $httpParamSerializer(params)).then((response) ->
+        utils.parseDates(response.data.results, 'opened_on')
+        return {results: response.data.results}
+      )
 
     #----------------------------------------------------------------------------
-    # Fetches an existing case by it's id
+    # Fetches a single case by it's id
     #----------------------------------------------------------------------------
-    fetchCase: (caseId, callback) ->
-      $http.get('/case/fetch/' + caseId + '/')
-      .success((caseObj) =>
+    fetchSingle: (caseId) ->
+      return $http.get('/case/fetch/' + caseId + '/').then((response) ->
+        caseObj = response.data
         utils.parseDates([caseObj], 'opened_on')
-        callback(caseObj)
-      ).error(DEFAULT_ERR_HANDLER)
+        return caseObj
+      )
 
     #----------------------------------------------------------------------------
     # Starts a case export
@@ -360,14 +356,19 @@ services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     #----------------------------------------------------------------------------
     # Fetches timeline events
     #----------------------------------------------------------------------------
-    fetchTimeline: (caseObj, after, callback) ->
+    fetchTimeline: (caseObj, after) ->
       params = {after: after}
 
-      $http.get('/case/timeline/' + caseObj.id + '/?' + $httpParamSerializer(params))
-      .success((data) =>
-        @_processTimeline(data.results)
-        callback(data.results, data.max_time)
-      ).error(DEFAULT_ERR_HANDLER)
+      return $http.get('/case/timeline/' + caseObj.id + '/?' + $httpParamSerializer(params)).then((response) ->
+        for event in response.data.results
+          # parse datetime string
+          event.time = utils.parseIso8601(event.time)
+          event.is_action = event.type == 'A'
+          event.is_message_in = event.type == 'M' and event.item.direction == 'I'
+          event.is_message_out = event.type == 'M' and event.item.direction == 'O'
+
+        return {results: response.data.results, maxTime: response.data.max_time}
+      )
 
     #----------------------------------------------------------------------------
     # Convert search object to URL params
@@ -378,17 +379,6 @@ services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($h
         assignee: if search.assignee then search.assignee.id else null,
         label: if search.label then search.label.id else null
       }
-
-    #----------------------------------------------------------------------------
-    # Processes incoming case timeline items
-    #----------------------------------------------------------------------------
-    _processTimeline: (events) ->
-      for event in events
-        # parse datetime string
-        event.time = utils.parseIso8601(event.time)
-        event.is_action = event.type == 'A'
-        event.is_message_in = event.type == 'M' and event.item.direction == 'I'
-        event.is_message_out = event.type == 'M' and event.item.direction == 'O'
 ]
 
 
