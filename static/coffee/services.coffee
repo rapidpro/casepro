@@ -35,18 +35,16 @@ services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer
     #----------------------------------------------------------------------------
     # Fetches old messages for the given search
     #----------------------------------------------------------------------------
-    fetchOld: (search, before, page, callback) ->
+    fetchOld: (search, before, page) ->
       params = @_searchToParams(search)
       if !search.before
         params.before = utils.formatIso8601(before)
       params.page = page
 
-      $http.get('/message/search/?' + $httpParamSerializer(params))
-      .success((data) =>
-        utils.parseDates(data.results, 'time')
-
-        callback(data.results, data.has_more)
-      ).error(DEFAULT_ERR_HANDLER)
+      return $http.get('/message/search/?' + $httpParamSerializer(params)).then((response) ->
+        utils.parseDates(response.data.results, 'time')
+        return {results: response.data.results, hasMore: response.data.has_more}
+      )
 
     #----------------------------------------------------------------------------
     # Fetches new messages for the given search
@@ -198,23 +196,21 @@ services.factory 'OutgoingService', ['$rootScope', '$http', '$httpParamSerialize
     #----------------------------------------------------------------------------
     # Fetches old outgoing messages for the given search
     #----------------------------------------------------------------------------
-    fetchOld: (search, startTime, page, callback) ->
+    fetchOld: (search, startTime, page) ->
       params = @_outboxSearchToParams(search, startTime, page)
 
-      $http.get('/outgoing/search/?' + $httpParamSerializer(params))
-      .success((data) =>
-        utils.parseDates(data.results, 'time')
-        callback(data.results, data.has_more)
-      ).error(DEFAULT_ERR_HANDLER)
+      return $http.get('/outgoing/search/?' + $httpParamSerializer(params)).then((response) ->
+        utils.parseDates(response.data.results, 'time')
+        return {results: response.data.results, hasMore: response.data.has_more}
+      )
 
-    fetchReplies: (search, startTime, page, callback) ->
+    fetchReplies: (search, startTime, page) ->
       params = @_replySearchToParams(search, startTime, page)
 
-      $http.get('/outgoing/search_replies/?' + $httpParamSerializer(params))
-      .success((data) =>
-        utils.parseDates(data.results, 'time')
-        callback(data.results, data.has_more)
-      ).error(DEFAULT_ERR_HANDLER)
+      return $http.get('/outgoing/search_replies/?' + $httpParamSerializer(params)).then((response) ->
+        utils.parseDates(response.data.results, 'time')
+        return {results: response.data.results, hasMore: response.data.has_more}
+      )
 
     startReplyExport: (search) ->
       return $http.post('/replyexport/create/?' + $httpParamSerializer(@_replySearchToParams(search, null, null)))
@@ -254,16 +250,15 @@ services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     #----------------------------------------------------------------------------
     # Fetches old cases
     #----------------------------------------------------------------------------
-    fetchOld: (search, before, page, callback) ->
+    fetchOld: (search, before, page) ->
       params = @_searchToParams(search)
       params.before = utils.formatIso8601(before)
       params.page = page
 
-      $http.get('/case/search/?' + $httpParamSerializer(params))
-      .success((data) =>
-        utils.parseDates(data.results, 'opened_on')
-        callback(data.results, data.has_more)
-      ).error(DEFAULT_ERR_HANDLER)
+      return $http.get('/case/search/?' + $httpParamSerializer(params)).then((response) ->
+        utils.parseDates(response.data.results, 'opened_on')
+        return {results: response.data.results, hasMore: response.data.has_more}
+      )
 
     #----------------------------------------------------------------------------
     # Fetches new cases

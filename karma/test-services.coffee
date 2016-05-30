@@ -52,6 +52,17 @@ describe('services:', () ->
       )
     )
 
+    describe('fetchOld', () ->
+      it('gets cases from search endpoint', () ->
+        $httpBackend.expectGET('/case/search/?folder=open').respond('{"results":[{"id":501,"opened_on":"2016-05-17T08:49:13.698864"}],"has_more":true}')
+        CaseService.fetchOld({folder: "open"}).then((data) ->
+          expect(data.results).toEqual([{id: 501, opened_on: utcdate(2016, 5, 17, 8, 49, 13, 698)}])
+          expect(data.hasMore).toEqual(true)
+        )
+        $httpBackend.flush()
+      )
+    )
+
     describe('reassign', () ->
       it('posts to reassign endpoint', () ->
         $httpBackend.expectPOST('/case/reassign/501/').respond('')
@@ -165,10 +176,21 @@ describe('services:', () ->
     ))
 
     describe('fetchHistory', () ->
-      it('fetches from history endpoint', () ->
+      it('gets actions from history endpoint', () ->
         $httpBackend.expectGET('/message/history/101/').respond('{"actions":[{"action":"archive","created_on":"2016-05-17T08:49:13.698864"}]}')
         MessageService.fetchHistory(data.msg1).then((actions) ->
           expect(actions).toEqual([{action: "archive", "created_on": utcdate(2016, 5, 17, 8, 49, 13, 698)}])
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('fetchOld', () ->
+      it('gets messages from search endpoint', () ->
+        $httpBackend.expectGET('/message/search/?archived=0&folder=inbox').respond('{"results":[{"id":501,"time":"2016-05-17T08:49:13.698864"}],"has_more":true}')
+        MessageService.fetchOld({folder: "inbox"}).then((data) ->
+          expect(data.results).toEqual([{id: 501, time: utcdate(2016, 5, 17, 8, 49, 13, 698)}])
+          expect(data.hasMore).toEqual(true)
         )
         $httpBackend.flush()
       )
@@ -269,6 +291,28 @@ describe('services:', () ->
     beforeEach(inject((_OutgoingService_) ->
       OutgoingService = _OutgoingService_
     ))
+
+    describe('fetchOld', () ->
+      it('gets messages from search endpoint', () ->
+        $httpBackend.expectGET('/outgoing/search/?folder=sent').respond('{"results":[{"id":501,"time":"2016-05-17T08:49:13.698864"}],"has_more":true}')
+        OutgoingService.fetchOld({folder: "sent"}).then((data) ->
+          expect(data.results).toEqual([{id: 501, time: utcdate(2016, 5, 17, 8, 49, 13, 698)}])
+          expect(data.hasMore).toEqual(true)
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('fetchReplies', () ->
+      it('gets messages from replies endpoint', () ->
+        $httpBackend.expectGET('/outgoing/search_replies/?partner=301').respond('{"results":[{"id":501,"time":"2016-05-17T08:49:13.698864"}],"has_more":true}')
+        OutgoingService.fetchReplies({partner: data.moh}).then((data) ->
+          expect(data.results).toEqual([{id: 501, time: utcdate(2016, 5, 17, 8, 49, 13, 698)}])
+          expect(data.hasMore).toEqual(true)
+        )
+        $httpBackend.flush()
+      )
+    )
 
     describe('startReplyExport', () ->
       it('posts to export endpoint', () ->

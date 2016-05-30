@@ -158,9 +158,9 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
     $scope.oldItemsLoading = true
     $scope.oldItemsPage += 1
 
-    $scope.fetchOldItems((items, hasMore) ->
-      $scope.items = $scope.items.concat(items)
-      $scope.oldItemsMore = hasMore
+    $scope.fetchOldItems($scope.activeSearch, $scope.startTime, $scope.oldItemsPage).then((data) ->
+      $scope.items = $scope.items.concat(data.results)
+      $scope.oldItemsMore = data.hasMore
       $scope.oldItemsLoading = false
 
       if forSelectAll
@@ -192,7 +192,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
     $scope.searchFields = $scope.searchFieldDefaults()
     $scope.activeSearch = $scope.buildSearch()
 
-    # TODO temporarily disable auto-refresh of new items until refactor is complete
+    # TODO refresh new items but back off when page is inactive
     # $scope.refreshNewItems()
 
     $scope.$on('activeLabelChange', () ->
@@ -239,8 +239,8 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
       )
     )
 
-  $scope.fetchOldItems = (callback) ->
-    MessageService.fetchOld($scope.activeSearch, $scope.startTime, $scope.oldItemsPage, callback)
+  $scope.fetchOldItems = (search, startTime, page) ->
+    return MessageService.fetchOld(search, startTime, page)
 
   $scope.refreshNewItems = () ->
     # if user has specified a max time then don't bother looking for new messages
@@ -382,8 +382,8 @@ controllers.controller 'OutgoingController', [ '$scope', '$controller', 'Outgoin
 
   $scope.searchFieldDefaults = () -> { text: null }
 
-  $scope.fetchOldItems = (callback) ->
-    OutgoingService.fetchOld($scope.activeSearch, $scope.startTime, $scope.oldItemsPage, callback)
+  $scope.fetchOldItems = (search, startTime, page) ->
+    return OutgoingService.fetchOld(search, startTime, page)
 ]
 
 
@@ -425,8 +425,8 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
       )
     )
 
-  $scope.fetchOldItems = (callback) ->
-    CaseService.fetchOld($scope.activeSearch, $scope.startTime, $scope.oldItemsPage, callback)
+  $scope.fetchOldItems = (search, startTime, page) ->
+    return CaseService.fetchOld(search, startTime, page)
 
   $scope.refreshNewItems = () ->
     timeCode = $scope.activeSearch.timeCode
@@ -616,8 +616,8 @@ controllers.controller 'PartnerRepliesController', [ '$scope', '$window', '$cont
 
   $scope.searchFieldDefaults = () -> { after: null, before: null }
 
-  $scope.fetchOldItems = (callback) ->
-    OutgoingService.fetchReplies($scope.activeSearch, $scope.startTime, $scope.oldItemsPage, callback)
+  $scope.fetchOldItems = (search, startTime, page) ->
+    return OutgoingService.fetchReplies(search, startTime, page)
 
   $scope.onExportSearch = () ->
     UtilsService.confirmModal("Export the current search?", null, () ->
