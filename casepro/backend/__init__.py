@@ -199,3 +199,12 @@ class BaseBackend(object):
         :return: the messages as JSON objects in reverse chronological order. JSON format should match that returned by
                  Message.as_json() for incoming messages and Outgoing.as_json() for outgoing messages.
         """
+
+
+class NoopBackend(BaseBackend):
+    """
+    A stub backend which doesn't do anything
+    """
+    pass
+
+NoopBackend.__abstractmethods__ = set()

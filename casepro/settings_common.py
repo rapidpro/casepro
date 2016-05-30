@@ -57,7 +57,7 @@ SITE_ALLOW_NO_ORG = ('orgs_ext.org_create', 'orgs_ext.org_update', 'orgs_ext.org
 # casepro configuration
 SITE_ORGS_STORAGE_ROOT = 'orgs'
 SITE_EXTERNAL_CONTACT_URL = 'http://localhost:8001/contact/read/%s/'
-SITE_BACKEND = 'casepro.backend.rapidpro.RapidProBackend'
+SITE_BACKEND = 'casepro.backend.NoopBackend'
 SITE_ANON_CONTACTS = False
 
 

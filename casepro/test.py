@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from casepro.backend import BaseBackend
+from casepro.backend import NoopBackend
 from casepro.cases.models import Case, Partner
 from casepro.contacts.models import Contact, Group, Field
 from casepro.msgs.models import Label, Message, Outgoing
@@ -16,13 +16,11 @@ from xlrd import xldate_as_tuple
 from xlrd.sheet import XL_CELL_DATE
 
 
-class TestBackend(BaseBackend):
+class TestBackend(NoopBackend):
     """
     A stub backend which doesn't do anything but can be mocked
     """
     pass
-
-TestBackend.__abstractmethods__ = set()
 
 
 @override_settings(SITE_BACKEND='casepro.test.TestBackend')
