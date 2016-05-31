@@ -4,9 +4,10 @@ from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from datetime import date, timedelta
 from django.core.cache import cache
+from django.db import transaction
 from django.db.models import Count
-from django.db.transaction import non_atomic_requests
 from django.http import HttpResponse, JsonResponse
+from django.utils.decorators import method_decorator
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
@@ -267,7 +268,10 @@ class CaseExportCRUDL(SmartCRUDL):
     actions = ('create', 'read')
 
     class Create(OrgPermsMixin, CaseSearchMixin, SmartCreateView):
-        @non_atomic_requests
+        @method_decorator(transaction.non_atomic_requests)
+        def dispatch(self, request, *args, **kwargs):
+            return super(CaseExportCRUDL.Create, self).dispatch(request, *args, **kwargs)
+
         def post(self, request, *args, **kwargs):
             search = self.derive_search()
             export = self.model.create(self.request.org, self.request.user, search)

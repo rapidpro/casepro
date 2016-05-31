@@ -4,8 +4,9 @@ import six
 
 from collections import defaultdict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
-from django.db.transaction import non_atomic_requests
+from django.db import transaction
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
+from django.utils.decorators import method_decorator
 from django.utils.timesince import timesince
 from django.utils.translation import ugettext_lazy as _
 from el_pagination.paginators import LazyPaginator
@@ -305,7 +306,10 @@ class MessageExportCRUDL(SmartCRUDL):
     actions = ('create', 'read')
 
     class Create(OrgPermsMixin, MessageSearchMixin, SmartCreateView):
-        @non_atomic_requests
+        @method_decorator(transaction.non_atomic_requests)
+        def dispatch(self, request, *args, **kwargs):
+            return super(MessageExportCRUDL.Create, self).dispatch(request, *args, **kwargs)
+
         def post(self, request, *args, **kwargs):
             search = self.derive_search()
             export = MessageExport.create(self.request.org, self.request.user, search)
@@ -408,7 +412,10 @@ class ReplyExportCRUDL(SmartCRUDL):
     actions = ('create', 'read')
 
     class Create(OrgPermsMixin, ReplySearchMixin, SmartCreateView):
-        @non_atomic_requests
+        @method_decorator(transaction.non_atomic_requests)
+        def dispatch(self, request, *args, **kwargs):
+            return super(ReplyExportCRUDL.Create, self).dispatch(request, *args, **kwargs)
+
         def post(self, request, *args, **kwargs):
             search = self.derive_search()
             export = self.model.create(self.request.org, self.request.user, search)
