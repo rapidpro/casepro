@@ -5,7 +5,6 @@ from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from datetime import date, timedelta
 from django.core.cache import cache
 from django.db.models import Count
-from django.db.transaction import non_atomic_requests
 from django.http import HttpResponse, JsonResponse
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
@@ -20,6 +19,7 @@ from casepro.msgs.models import Label, Message, MessageFolder, Outgoing, Outgoin
 from casepro.utils import parse_csv, json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder
 from casepro.utils import month_range
 from casepro.utils.export import BaseDownloadView
+from casepro.utils.views import NonAtomicMixin
 
 from . import MAX_MESSAGE_CHARS
 from .forms import PartnerForm
@@ -266,8 +266,7 @@ class CaseExportCRUDL(SmartCRUDL):
     model = CaseExport
     actions = ('create', 'read')
 
-    class Create(OrgPermsMixin, CaseSearchMixin, SmartCreateView):
-        @non_atomic_requests
+    class Create(NonAtomicMixin, OrgPermsMixin, CaseSearchMixin, SmartCreateView):
         def post(self, request, *args, **kwargs):
             search = self.derive_search()
             export = self.model.create(self.request.org, self.request.user, search)
