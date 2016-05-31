@@ -710,7 +710,7 @@ class MessageCRUDLTest(BaseCasesTest):
         self.login(self.user1)
 
         # try replying to all three of Ann's messages and one of Bob's
-        response = self.url_post_json('unicef', url, {'text': "That's fine", 'messages': [102,103,101,104]})
+        response = self.url_post_json('unicef', url, {'text': "That's fine", 'messages': [102, 103, 101, 104]})
         self.assertEqual(response.json['messages'], 2)
 
         outgoing = Outgoing.objects.all().order_by('contact__pk')
