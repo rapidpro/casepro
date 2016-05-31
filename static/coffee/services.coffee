@@ -4,23 +4,6 @@
 
 services = angular.module('cases.services', ['cases.modals']);
 
-POST_DEFAULTS = {headers : {'Content-Type': 'application/x-www-form-urlencoded'}}
-
-# TODO switch POSTs to use url-encoded data ($httpParamSerializer/POST_DEFAULTS) and remove usage of toFormData/DEFAULT_POST_OPTS
-toFormData = (params) ->
-    data = new FormData()
-    for own key, val of params
-      if angular.isArray(val)
-        val = (item.toString() for item in val).join(',')
-      else if val
-        val = val.toString()  # required for https://bugzilla.mozilla.org/show_bug.cgi?id=819328
-
-      if val
-        data.append(key, val)
-
-    return data
-
-DEFAULT_POST_OPTS = {transformRequest: angular.identity, headers: {'Content-Type': undefined}}
 
 #=====================================================================
 # Incoming message service
@@ -61,12 +44,9 @@ services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer
     # Reply-to messages
     #----------------------------------------------------------------------------
     bulkReply: (messages, text) ->
-      params = {
-        text: text,
-        messages: (m.id for m in messages)
-      }
+      params = {text: text, messages: (m.id for m in messages)}
 
-      return $http.post('/message/bulk_reply/', toFormData(params), DEFAULT_POST_OPTS)
+      return $http.post('/message/bulk_reply/', params)
 
     #----------------------------------------------------------------------------
     # Flag or un-flag messages
@@ -83,13 +63,11 @@ services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer
     # Label messages with the given label
     #----------------------------------------------------------------------------
     bulkLabel: (messages, label) ->
-      without_label = []
-      for msg in messages
-        if label not in msg.labels
-          without_label.push(msg)
-          msg.labels.push(label)
-
-      return @_bulkAction(without_label, 'label', label)
+      return @_bulkAction(messages, 'label', label).then(() ->
+        for msg in messages
+          if label not in msg.labels
+            msg.labels.push(label)
+      )
 
     #----------------------------------------------------------------------------
     # Archive messages
@@ -113,11 +91,9 @@ services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer
     # Relabel the given message (removing labels if necessary)
     #----------------------------------------------------------------------------
     relabel: (message, labels) ->
-      data = toFormData({
-        labels: (l.id for l in labels)
-      })
+      params = {labels: (l.id for l in labels)}
 
-      return $http.post('/message/label/' + message.id + '/', data, DEFAULT_POST_OPTS).then(() ->
+      return $http.post('/message/label/' + message.id + '/', params).then(() ->
         message.labels = labels
       )
 
@@ -125,12 +101,9 @@ services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer
     # Forward a message to a URN
     #----------------------------------------------------------------------------
     forward: (message, text, urn) ->
-      params = {
-        text: text,
-        urns: [urn.urn]
-      }
+      params = {text: text, urns: [urn.urn]}
 
-      return $http.post('/message/forward/' + message.id + '/', toFormData(params), DEFAULT_POST_OPTS)
+      return $http.post('/message/forward/' + message.id + '/', params)
 
     #----------------------------------------------------------------------------
     # Convert search object to URL params
@@ -141,7 +114,7 @@ services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer
         text: search.text,
         after: utils.formatIso8601(search.after),
         before: utils.formatIso8601(search.before),
-        groups: if search.groups then (g.uuid for g in search.groups).join(',') else null,
+        groups: if search.groups then (g.uuid for g in search.groups) else null,
         contact: if search.contact then search.contact.id else null,
         label: if search.label then search.label.id else null,
         archived: if search.archived then 1 else 0
@@ -151,13 +124,11 @@ services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer
     # POSTs to the messages bulk action endpoint
     #----------------------------------------------------------------------------
     _bulkAction: (messages, action, label) ->
-      params = {
-        messages: (m.id for m in messages)
-      }
+      params = {messages: (m.id for m in messages)}
       if label
         params.label = label.id
 
-      return $http.post('/message/action/' + action + '/', toFormData(params), DEFAULT_POST_OPTS)
+      return $http.post('/message/action/' + action + '/', params)
 ]
 
 
@@ -268,14 +239,11 @@ services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     # Opens a new case
     #----------------------------------------------------------------------------
     open: (message, summary, assignee) ->
-      params = {
-        message: message.id,
-        summary: summary
-      }
+      params = {message: message.id, summary: summary}
       if assignee
         params.assignee = assignee.id
 
-      return $http.post('/case/open/', toFormData(params), DEFAULT_POST_OPTS).then((response) ->
+      return $http.post('/case/open/', params).then((response) ->
         caseObj = response.data['case']
         caseObj.isNew = response.data['is_new']
         return caseObj
@@ -285,15 +253,13 @@ services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     # Adds a note to a case
     #----------------------------------------------------------------------------
     addNote: (caseObj, note) ->
-      return $http.post('/case/note/' + caseObj.id + '/', toFormData({note: note}), DEFAULT_POST_OPTS)
+      return $http.post('/case/note/' + caseObj.id + '/', {note: note})
 
     #----------------------------------------------------------------------------
     # Re-assigns a case
     #----------------------------------------------------------------------------
     reassign: (caseObj, assignee) ->
-      params = {assignee: assignee.id}
-
-      return $http.post('/case/reassign/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS)
+      return $http.post('/case/reassign/' + caseObj.id + '/', {assignee: assignee.id})
       .then(() ->
         caseObj.assignee = assignee
       )
@@ -302,7 +268,7 @@ services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     # Closes a case
     #----------------------------------------------------------------------------
     close: (caseObj, note) ->
-      return $http.post('/case/close/' + caseObj.id + '/', toFormData({note: note}), DEFAULT_POST_OPTS)
+      return $http.post('/case/close/' + caseObj.id + '/', {note: note})
       .then(() ->
         caseObj.is_closed = true
       )
@@ -311,7 +277,7 @@ services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     # Re-opens a case
     #----------------------------------------------------------------------------
     reopen: (caseObj, note) ->
-      return $http.post('/case/reopen/' + caseObj.id + '/', toFormData({note: note}), DEFAULT_POST_OPTS)
+      return $http.post('/case/reopen/' + caseObj.id + '/', {note: note})
       .then(() ->
         caseObj.is_closed = false
       )
@@ -324,7 +290,7 @@ services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($h
         labels: (l.id for l in labels)
       }
 
-      return $http.post('/case/label/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS).then(() ->
+      return $http.post('/case/label/' + caseObj.id + '/', params).then(() ->
         caseObj.labels = labels
       )
 
@@ -332,9 +298,7 @@ services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     # Updates a case's summary
     #----------------------------------------------------------------------------
     updateSummary: (caseObj, summary) ->
-      params = {summary: summary}
-
-      return $http.post('/case/update_summary/' + caseObj.id + '/', toFormData(params), DEFAULT_POST_OPTS).then(() ->
+      return $http.post('/case/update_summary/' + caseObj.id + '/', {summary: summary}).then(() ->
         caseObj.summary = summary
       )
 
@@ -342,7 +306,7 @@ services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     # Reply in a case
     #----------------------------------------------------------------------------
     replyTo: (caseObj, text) ->
-      return $http.post('/case/reply/' + caseObj.id + '/', toFormData({text: text}), DEFAULT_POST_OPTS)
+      return $http.post('/case/reply/' + caseObj.id + '/', {text: text})
 
     #----------------------------------------------------------------------------
     # Navigates to the read page for the given case

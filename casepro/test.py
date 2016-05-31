@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import json
+
 from casepro.backend import NoopBackend
 from casepro.cases.models import Case, Partner
 from casepro.contacts.models import Contact, Group, Field
@@ -129,6 +131,9 @@ class BaseCasesTest(DashTest):
         message.save(update_fields=('case',))
 
         return case
+
+    def url_post_json(self, subdomain, url, data):
+        return self.url_post(subdomain, url, json.dumps(data), content_type="application/json")
 
     def assertNotCalled(self, mock):
         """

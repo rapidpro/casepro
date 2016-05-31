@@ -4,12 +4,14 @@ from __future__ import unicode_literals
 import pytz
 
 from datetime import date, datetime
+from django.http import HttpRequest
 from enum import Enum
 
 from casepro.test import BaseCasesTest
 
 from . import safe_max, normalize, match_keywords, truncate, str_to_bool, json_encode
 from . import datetime_to_microseconds, microseconds_to_datetime, month_range
+from .middleware import JSONMiddleware
 
 
 class UtilsTest(BaseCasesTest):
@@ -84,3 +86,28 @@ class UtilsTest(BaseCasesTest):
                                                   datetime(2015, 12, 1, 0, 0, 0, 0, pytz.UTC)))
         self.assertEqual(month_range(-1, now=d1), (datetime(2015, 9, 1, 0, 0, 0, 0, pytz.UTC),
                                                    datetime(2015, 10, 1, 0, 0, 0, 0, pytz.UTC)))
+
+
+class MiddlewareTest(BaseCasesTest):
+    def test_json(self):
+        middleware = JSONMiddleware()
+
+        # test with no content type header
+        request = HttpRequest()
+        request._body = '{"a":["b"]}'
+        middleware.process_request(request)
+        self.assertFalse(hasattr(request, 'json'))
+
+        # test with JSON content type header
+        request = HttpRequest()
+        request._body = '{"a":["b"]}'
+        request.META = {'CONTENT_TYPE': "application/json;charset=UTF-8"}
+        middleware.process_request(request)
+        self.assertEqual(request.json, {'a': ["b"]})
+
+        # test with non-JSON content type header
+        request = HttpRequest()
+        request._body = '<b></b>'
+        request.META = {'CONTENT_TYPE': "text/html"}
+        middleware.process_request(request)
+        self.assertFalse(hasattr(request, 'json'))

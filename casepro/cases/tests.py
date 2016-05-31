@@ -371,7 +371,7 @@ class CaseCRUDLTest(BaseCasesTest):
         # log in as an administrator
         self.login(self.admin)
 
-        response = self.url_post('unicef', url, {'message': 101, 'summary': "Summary", 'assignee': self.moh.pk})
+        response = self.url_post_json('unicef', url, {'message': 101, 'summary': "Summary", 'assignee': self.moh.pk})
         self.assertEqual(response.status_code, 200)
 
         self.assertTrue(response.json['is_new'])
@@ -390,7 +390,7 @@ class CaseCRUDLTest(BaseCasesTest):
         # log in as a non-administrator
         self.login(self.user1)
 
-        response = self.url_post('unicef', url, {'message': 102, 'summary': "Summary"})
+        response = self.url_post_json('unicef', url, {'message': 102, 'summary': "Summary"})
         self.assertEqual(response.status_code, 200)
 
         case2 = Case.objects.get(pk=response.json['case']['id'])
@@ -414,7 +414,7 @@ class CaseCRUDLTest(BaseCasesTest):
         # log in as manager user in assigned partner
         self.login(self.user1)
 
-        response = self.url_post('unicef', url, {'note': "This is a note"})
+        response = self.url_post_json('unicef', url, {'note': "This is a note"})
         self.assertEqual(response.status_code, 204)
 
         action = CaseAction.objects.get()
@@ -426,19 +426,19 @@ class CaseCRUDLTest(BaseCasesTest):
         # users from other partners with label access are allowed to add notes
         self.login(self.user3)
 
-        response = self.url_post('unicef', url, {'note': "This is another note"})
+        response = self.url_post_json('unicef', url, {'note': "This is another note"})
         self.assertEqual(response.status_code, 204)
 
         # but not if they lose label-based access
         self.case.update_labels(self.admin, [self.pregnancy])
 
-        response = self.url_post('unicef', url, {'note': "Yet another"})
+        response = self.url_post_json('unicef', url, {'note': "Yet another"})
         self.assertEqual(response.status_code, 403)
 
         # and users from other orgs certainly aren't allowed to
         self.login(self.user4)
 
-        response = self.url_post('unicef', url, {'note': "Hey guys"})
+        response = self.url_post_json('unicef', url, {'note': "Hey guys"})
         self.assertEqual(response.status_code, 302)
 
     def test_reassign(self):
@@ -447,7 +447,7 @@ class CaseCRUDLTest(BaseCasesTest):
         # log in as manager user in currently assigned partner
         self.login(self.user1)
 
-        response = self.url_post('unicef', url, {'assignee': self.who.pk})
+        response = self.url_post_json('unicef', url, {'assignee': self.who.pk})
         self.assertEqual(response.status_code, 204)
 
         action = CaseAction.objects.get()
@@ -459,7 +459,7 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(self.case.assignee, self.who)
 
         # only user from assigned partner can re-assign
-        response = self.url_post('unicef', url, {'assignee': self.moh.pk})
+        response = self.url_post_json('unicef', url, {'assignee': self.moh.pk})
         self.assertEqual(response.status_code, 403)
 
     def test_close(self):
@@ -468,7 +468,7 @@ class CaseCRUDLTest(BaseCasesTest):
         # log in as manager user in currently assigned partner
         self.login(self.user1)
 
-        response = self.url_post('unicef', url, {'note': "It's over"})
+        response = self.url_post_json('unicef', url, {'note': "It's over"})
         self.assertEqual(response.status_code, 204)
 
         action = CaseAction.objects.get()
@@ -484,7 +484,7 @@ class CaseCRUDLTest(BaseCasesTest):
 
         self.case.reopen(self.admin, "Because")
 
-        response = self.url_post('unicef', url, {'note': "It's over"})
+        response = self.url_post_json('unicef', url, {'note': "It's over"})
         self.assertEqual(response.status_code, 403)
 
     def test_reopen(self):
@@ -495,7 +495,7 @@ class CaseCRUDLTest(BaseCasesTest):
         # log in as manager user in currently assigned partner
         self.login(self.user1)
 
-        response = self.url_post('unicef', url, {'note': "Unfinished business"})
+        response = self.url_post_json('unicef', url, {'note': "Unfinished business"})
         self.assertEqual(response.status_code, 204)
 
         action = CaseAction.objects.get(created_by=self.user1)
@@ -510,7 +510,7 @@ class CaseCRUDLTest(BaseCasesTest):
 
         self.case.close(self.admin, "Done")
 
-        response = self.url_post('unicef', url, {'note': "Unfinished business"})
+        response = self.url_post_json('unicef', url, {'note': "Unfinished business"})
         self.assertEqual(response.status_code, 403)
 
     def test_label(self):
@@ -519,7 +519,7 @@ class CaseCRUDLTest(BaseCasesTest):
         # log in as manager user in currently assigned partner
         self.login(self.user1)
 
-        response = self.url_post('unicef', url, {'labels': "%s" % self.pregnancy.pk})
+        response = self.url_post_json('unicef', url, {'labels': [self.pregnancy.pk]})
         self.assertEqual(response.status_code, 204)
 
         actions = CaseAction.objects.filter(case=self.case).order_by('pk')
@@ -535,7 +535,7 @@ class CaseCRUDLTest(BaseCasesTest):
         # only user from assigned partner can label
         self.login(self.user3)
 
-        response = self.url_post('unicef', url, {'labels': "%s" % self.aids.pk})
+        response = self.url_post_json('unicef', url, {'labels': [self.aids.pk]})
         self.assertEqual(response.status_code, 403)
 
     def test_update_summary(self):
@@ -544,7 +544,7 @@ class CaseCRUDLTest(BaseCasesTest):
         # log in as manager user in currently assigned partner
         self.login(self.user1)
 
-        response = self.url_post('unicef', url, {'summary': "New summary"})
+        response = self.url_post_json('unicef', url, {'summary': "New summary"})
         self.assertEqual(response.status_code, 204)
 
         action = CaseAction.objects.get(case=self.case)
@@ -556,7 +556,7 @@ class CaseCRUDLTest(BaseCasesTest):
         # only user from assigned partner can change the summary
         self.login(self.user3)
 
-        response = self.url_post('unicef', url, {'summary': "Something else"})
+        response = self.url_post_json('unicef', url, {'summary': "Something else"})
         self.assertEqual(response.status_code, 403)
 
     def test_reply(self):
@@ -565,7 +565,7 @@ class CaseCRUDLTest(BaseCasesTest):
         # log in as manager user in currently assigned partner
         self.login(self.user1)
 
-        response = self.url_post('unicef', url, {'text': "We can help"})
+        response = self.url_post_json('unicef', url, {'text': "We can help"})
         self.assertEqual(response.status_code, 200)
 
         outgoing = Outgoing.objects.get()
@@ -576,7 +576,7 @@ class CaseCRUDLTest(BaseCasesTest):
         # only user from assigned partner can reply
         self.login(self.user3)
 
-        response = self.url_post('unicef', url, {'text': "Hi"})
+        response = self.url_post_json('unicef', url, {'text': "Hi"})
         self.assertEqual(response.status_code, 403)
 
     def test_fetch(self):

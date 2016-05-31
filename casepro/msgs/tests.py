@@ -642,37 +642,37 @@ class MessageCRUDLTest(BaseCasesTest):
         # log in as a non-administrator
         self.login(self.user1)
 
-        response = self.url_post('unicef', get_url('flag'), {'messages': "102,103"})
+        response = self.url_post_json('unicef', get_url('flag'), {'messages': [102, 103]})
 
         self.assertEqual(response.status_code, 204)
         mock_flag_messages.assert_called_once_with(self.unicef, [msg2, msg3])
         self.assertEqual(Message.objects.filter(is_flagged=True).count(), 2)
 
-        response = self.url_post('unicef', get_url('unflag'), {'messages': "102"})
+        response = self.url_post_json('unicef', get_url('unflag'), {'messages': [102]})
 
         self.assertEqual(response.status_code, 204)
         mock_unflag_messages.assert_called_once_with(self.unicef, [msg2])
         self.assertEqual(Message.objects.filter(is_flagged=True).count(), 1)
 
-        response = self.url_post('unicef', get_url('archive'), {'messages': "102"})
+        response = self.url_post_json('unicef', get_url('archive'), {'messages': [102]})
 
         self.assertEqual(response.status_code, 204)
         mock_archive_messages.assert_called_once_with(self.unicef, [msg2])
         self.assertEqual(Message.objects.filter(is_archived=True).count(), 2)
 
-        response = self.url_post('unicef', get_url('restore'), {'messages': "103"})
+        response = self.url_post_json('unicef', get_url('restore'), {'messages': [103]})
 
         self.assertEqual(response.status_code, 204)
         mock_restore_messages.assert_called_once_with(self.unicef, [msg3])
         self.assertEqual(Message.objects.filter(is_archived=True).count(), 1)
 
-        response = self.url_post('unicef', get_url('label'), {'messages': "103", 'label': self.aids.pk})
+        response = self.url_post_json('unicef', get_url('label'), {'messages': [103], 'label': self.aids.pk})
 
         self.assertEqual(response.status_code, 204)
         mock_label_messages.assert_called_once_with(self.unicef, [msg3], self.aids)
         self.assertEqual(Message.objects.filter(labels=self.aids).count(), 2)
 
-        response = self.url_post('unicef', get_url('unlabel'), {'messages': "103", 'label': self.aids.pk})
+        response = self.url_post_json('unicef', get_url('unlabel'), {'messages': [103], 'label': self.aids.pk})
 
         self.assertEqual(response.status_code, 204)
         mock_unlabel_messages.assert_called_once_with(self.unicef, [msg3], self.aids)
@@ -688,7 +688,7 @@ class MessageCRUDLTest(BaseCasesTest):
         # log in as a non-administrator
         self.login(self.user1)
 
-        response = self.url_post('unicef', url, {'labels': [self.pregnancy.pk]})
+        response = self.url_post_json('unicef', url, {'labels': [self.pregnancy.pk]})
         self.assertEqual(response.status_code, 204)
 
         mock_label_messages.assert_called_once_with(self.unicef, [msg1], self.pregnancy)
@@ -710,7 +710,7 @@ class MessageCRUDLTest(BaseCasesTest):
         self.login(self.user1)
 
         # try replying to all three of Ann's messages and one of Bob's
-        response = self.url_post('unicef', url, {'text': "That's fine", 'messages': "102,103,101,104"})
+        response = self.url_post_json('unicef', url, {'text': "That's fine", 'messages': [102,103,101,104]})
         self.assertEqual(response.json['messages'], 2)
 
         outgoing = Outgoing.objects.all().order_by('contact__pk')
@@ -734,7 +734,9 @@ class MessageCRUDLTest(BaseCasesTest):
         # log in as a non-administrator
         self.login(self.user1)
 
-        response = self.url_post('unicef', url, {'text': "Check this out", 'urns': "tel:+2501234567,twitter:bob"})
+        response = self.url_post_json('unicef', url, {
+            'text': "Check this out", 'urns': ["tel:+2501234567", "twitter:bob"]
+        })
         out = Outgoing.objects.get(pk=response.json['id'])
 
         self.assertEqual(out.org, self.unicef)
