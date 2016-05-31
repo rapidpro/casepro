@@ -2,13 +2,15 @@
 
 describe('services:', () ->
   $httpBackend = null
+  $window = null
   test = null
 
   beforeEach(() ->
     module('cases')
 
-    inject((_$httpBackend_) ->
+    inject((_$httpBackend_, _$window_) ->
       $httpBackend = _$httpBackend_
+      $window = _$window_
     )
 
     test = {
@@ -404,6 +406,101 @@ describe('services:', () ->
         $httpBackend.expectPOST('/user/delete/101/', null).respond('')
         UserService.delete(test.user1)
         $httpBackend.flush()
+      )
+    )
+  )
+
+  #=======================================================================
+  # Tests for UtilsService
+  #=======================================================================
+  describe('UtilsService', () ->
+    UtilsService = null
+    $uibModal = null
+
+    beforeEach(inject((_UtilsService_, _$uibModal_) ->
+      UtilsService = _UtilsService_
+      $uibModal = _$uibModal_
+
+      spyOn($uibModal, 'open').and.callThrough()
+    ))
+
+    describe('navigate', () ->
+      it('changes location of $window', () ->
+        spyOn($window.location, 'replace')
+
+        UtilsService.navigate("http://example.com")
+
+        expect($window.location.replace).toHaveBeenCalledWith("http://example.com")
+      )
+    )
+    
+    describe('navigateBack', () ->
+      it('calls history.back', () ->
+        spyOn($window.history, 'back')
+
+        UtilsService.navigateBack()
+
+        expect($window.history.back).toHaveBeenCalled()
+      )
+    )
+
+    describe('confirmModal', () ->
+      it('opens confirm modal', () ->
+        UtilsService.confirmModal("OK?")
+
+        modalOptions = $uibModal.open.calls.mostRecent().args[0]
+        expect(modalOptions.templateUrl).toEqual('confirmModal.html')
+        expect(modalOptions.resolve.prompt()).toEqual("OK?")
+      )
+    )
+
+    describe('editModal', () ->
+      it('opens confirm modal', () ->
+        UtilsService.editModal("Edit", "this...", 100)
+
+        modalOptions = $uibModal.open.calls.mostRecent().args[0]
+        expect(modalOptions.templateUrl).toEqual('editModal.html')
+        expect(modalOptions.resolve.title()).toEqual("Edit")
+        expect(modalOptions.resolve.initial()).toEqual("this...")
+        expect(modalOptions.resolve.maxLength()).toEqual(100)
+      )
+    )
+
+    describe('assignModal', () ->
+      it('opens assign modal', () ->
+        UtilsService.assignModal("Assign", "this...", [test.moh, test.who])
+
+        modalOptions = $uibModal.open.calls.mostRecent().args[0]
+        expect(modalOptions.templateUrl).toEqual('assignModal.html')
+        expect(modalOptions.resolve.title()).toEqual("Assign")
+        expect(modalOptions.resolve.prompt()).toEqual("this...")
+        expect(modalOptions.resolve.partners()).toEqual([test.moh, test.who])
+      )
+    )
+
+    describe('noteModal', () ->
+      it('opens note modal', () ->
+        UtilsService.noteModal("Note", "this...", 'danger', 100)
+
+        modalOptions = $uibModal.open.calls.mostRecent().args[0]
+        expect(modalOptions.templateUrl).toEqual('noteModal.html')
+        expect(modalOptions.resolve.title()).toEqual("Note")
+        expect(modalOptions.resolve.prompt()).toEqual("this...")
+        expect(modalOptions.resolve.style()).toEqual('danger')
+        expect(modalOptions.resolve.maxLength()).toEqual(100)
+      )
+    )
+
+    describe('labelModal', () ->
+      it('opens label modal', () ->
+        UtilsService.labelModal("Label", "this...", [test.tea, test.coffee], [test.tea])
+
+        modalOptions = $uibModal.open.calls.mostRecent().args[0]
+        expect(modalOptions.templateUrl).toEqual('labelModal.html')
+        expect(modalOptions.resolve.title()).toEqual("Label")
+        expect(modalOptions.resolve.prompt()).toEqual("this...")
+        expect(modalOptions.resolve.labels()).toEqual([test.tea, test.coffee])
+        expect(modalOptions.resolve.initial()).toEqual([test.tea])
       )
     )
   )
