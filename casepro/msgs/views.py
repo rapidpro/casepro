@@ -4,9 +4,7 @@ import six
 
 from collections import defaultdict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
-from django.db import transaction
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
-from django.utils.decorators import method_decorator
 from django.utils.timesince import timesince
 from django.utils.translation import ugettext_lazy as _
 from el_pagination.paginators import LazyPaginator
@@ -17,6 +15,7 @@ from temba_client.utils import parse_iso8601
 from casepro.rules.models import ContainsTest, GroupsTest, Quantifier
 from casepro.utils import parse_csv, str_to_bool, json_encode, JSONEncoder
 from casepro.utils.export import BaseDownloadView
+from casepro.utils.views import NonAtomicMixin
 
 from .forms import LabelForm
 from .models import Label, Message, MessageExport, MessageFolder, Outgoing, OutgoingFolder, ReplyExport
@@ -305,11 +304,7 @@ class MessageExportCRUDL(SmartCRUDL):
     model = MessageExport
     actions = ('create', 'read')
 
-    class Create(OrgPermsMixin, MessageSearchMixin, SmartCreateView):
-        @method_decorator(transaction.non_atomic_requests)
-        def dispatch(self, request, *args, **kwargs):
-            return super(MessageExportCRUDL.Create, self).dispatch(request, *args, **kwargs)
-
+    class Create(NonAtomicMixin, OrgPermsMixin, MessageSearchMixin, SmartCreateView):
         def post(self, request, *args, **kwargs):
             search = self.derive_search()
             export = MessageExport.create(self.request.org, self.request.user, search)
@@ -411,11 +406,7 @@ class ReplyExportCRUDL(SmartCRUDL):
     model = ReplyExport
     actions = ('create', 'read')
 
-    class Create(OrgPermsMixin, ReplySearchMixin, SmartCreateView):
-        @method_decorator(transaction.non_atomic_requests)
-        def dispatch(self, request, *args, **kwargs):
-            return super(ReplyExportCRUDL.Create, self).dispatch(request, *args, **kwargs)
-
+    class Create(NonAtomicMixin, OrgPermsMixin, ReplySearchMixin, SmartCreateView):
         def post(self, request, *args, **kwargs):
             search = self.derive_search()
             export = self.model.create(self.request.org, self.request.user, search)
