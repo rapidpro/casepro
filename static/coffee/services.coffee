@@ -406,41 +406,28 @@ services.factory 'UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
       $window.displayAlert(type, message)
 
     navigate: (url) ->
-      $window.location.href = url
+      $window.location.replace(url)
 
     navigateBack: () ->
       $window.history.back();
 
-    refresh: () ->
-      @navigate($window.location.href)
-
-    confirmModal: (prompt, style, callback) ->
+    confirmModal: (prompt, style) ->
       resolve = {prompt: (() -> prompt), style: (() -> style)}
-      $uibModal.open({templateUrl: 'confirmModal.html', controller: 'ConfirmModalController', resolve: resolve})
-      .result.then () ->
-        callback()
+      return $uibModal.open({templateUrl: 'confirmModal.html', controller: 'ConfirmModalController', resolve: resolve}).result
 
-    editModal: (title, initial, maxLength, callback) ->
+    editModal: (title, initial, maxLength) ->
       resolve = {title: (() -> title), initial: (() -> initial), maxLength: (() -> maxLength)}
-      $uibModal.open({templateUrl: 'editModal.html', controller: 'EditModalController', resolve: resolve})
-      .result.then (text) ->
-        callback(text)
+      return $uibModal.open({templateUrl: 'editModal.html', controller: 'EditModalController', resolve: resolve}).result
 
-    assignModal: (title, prompt, partners, callback) ->
+    assignModal: (title, prompt, partners) ->
       resolve = {title: (() -> title), prompt: (() -> prompt), partners: (() -> partners)}
-      $uibModal.open({templateUrl: 'assignModal.html', controller: 'AssignModalController', resolve: resolve})
-      .result.then (assignee) ->
-        callback(assignee)
+      return $uibModal.open({templateUrl: 'assignModal.html', controller: 'AssignModalController', resolve: resolve}).result
 
-    noteModal: (title, prompt, style, maxLength, callback) ->
+    noteModal: (title, prompt, style, maxLength) ->
       resolve = {title: (() -> title), prompt: (() -> prompt), style: (() -> style), maxLength: (() -> maxLength)}
-      $uibModal.open({templateUrl: 'noteModal.html', controller: 'NoteModalController', resolve: resolve})
-      .result.then (note) ->
-        callback(note)
+      return $uibModal.open({templateUrl: 'noteModal.html', controller: 'NoteModalController', resolve: resolve}).result
 
-    labelModal: (title, prompt, labels, initial, callback) ->
+    labelModal: (title, prompt, labels, initial) ->
       resolve = {title: (() -> title), prompt: (() -> prompt), labels: (() -> labels), initial: (() -> initial)}
-      $uibModal.open({templateUrl: 'labelModal.html', controller: 'LabelModalController', resolve: resolve})
-      .result.then (selectedLabels) ->
-        callback(selectedLabels)
+      return $uibModal.open({templateUrl: 'labelModal.html', controller: 'LabelModalController', resolve: resolve}).result
 ]

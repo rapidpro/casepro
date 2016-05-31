@@ -63,7 +63,7 @@ controllers.controller 'HomeController', [ '$scope', '$window', '$location', 'La
     $scope.$broadcast('activeContactChange')
 
   $scope.onDeleteLabel = () ->
-    UtilsService.confirmModal('Delete the label <strong>' + $scope.activeLabel.name + '</strong>?', 'danger', () ->
+    UtilsService.confirmModal('Delete the label <strong>' + $scope.activeLabel.name + '</strong>?', 'danger').then(() ->
       LabelService.delete($scope.activeLabel).then(() ->
         $scope.labels = (l for l in $scope.labels when l.id != $scope.activeLabel.id)
         $scope.activateLabel(null)
@@ -229,7 +229,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
     $scope.advancedSearch = state
 
   $scope.onExportSearch = () ->
-    UtilsService.confirmModal("Export the current message search?", null, () ->
+    UtilsService.confirmModal("Export the current message search?").then(() ->
       MessageService.startExport($scope.activeSearch).then(() ->
         UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
       )
@@ -246,14 +246,14 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
   #----------------------------------------------------------------------------
 
   $scope.onLabelSelection = (label) ->
-    UtilsService.confirmModal('Apply the label <strong>' + label.name + '</strong> to the selected messages?', null, () ->
+    UtilsService.confirmModal('Apply the label <strong>' + label.name + '</strong> to the selected messages?').then(() ->
       MessageService.bulkLabel($scope.selection, label).then(() ->
         $scope.updateItems()
       )
     )
 
   $scope.onFlagSelection = () ->
-    UtilsService.confirmModal('Flag the selected messages?', null, () ->
+    UtilsService.confirmModal('Flag the selected messages?').then(() ->
       MessageService.bulkFlag($scope.selection, true).then(() ->
         $scope.updateItems()
       )
@@ -271,14 +271,14 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
     )
 
   $scope.onArchiveSelection = () ->
-    UtilsService.confirmModal('Archive the selected messages? This will remove them from your inbox.', null, () ->
+    UtilsService.confirmModal('Archive the selected messages? This will remove them from your inbox.').then(() ->
       MessageService.bulkArchive($scope.selection).then(() ->
         $scope.updateItems()
       )
     )
 
   $scope.onRestoreSelection = () ->
-    UtilsService.confirmModal('Restore the selected messages? This will put them back in your inbox.', null, () ->
+    UtilsService.confirmModal('Restore the selected messages? This will put them back in your inbox.').then(() ->
       MessageService.bulkRestore($scope.selection).then(() ->
         $scope.updateItems()
       )
@@ -325,7 +325,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
     )
 
   $scope.onLabelMessage = (message) ->
-    UtilsService.labelModal("Labels", "Update the labels for this message. This determines which other partner organizations can view this message.", $scope.labels, message.labels, (selectedLabels) ->
+    UtilsService.labelModal("Labels", "Update the labels for this message. This determines which other partner organizations can view this message.", $scope.labels, message.labels).then((selectedLabels) ->
       MessageService.relabel(message, selectedLabels).then(() ->
         $scope.updateItems()
       )
@@ -398,7 +398,7 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
   $scope.searchFieldDefaults = () -> { assignee: $scope.user.partner }
 
   $scope.onExportSearch = () ->
-    UtilsService.confirmModal("Export the current case search?", null, () ->
+    UtilsService.confirmModal("Export the current case search?").then(() ->
       CaseService.startExport($scope.activeSearch).then(() ->
         UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
       )
@@ -451,14 +451,14 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
     )
 
   $scope.onEditLabels = ->
-    UtilsService.labelModal("Labels", "Update the labels for this case. This determines which other partner organizations can view this case.", $scope.allLabels, $scope.caseObj.labels, (selectedLabels) ->
+    UtilsService.labelModal("Labels", "Update the labels for this case. This determines which other partner organizations can view this case.", $scope.allLabels, $scope.caseObj.labels).then((selectedLabels) ->
       CaseService.relabel($scope.caseObj, selectedLabels).then(() ->
         $scope.$broadcast('timelineChanged')
       )
     )
 
   $scope.onEditSummary = ->
-    UtilsService.editModal("Edit Summary", $scope.caseObj.summary, CASE_SUMMARY_MAX_LEN, (text) ->
+    UtilsService.editModal("Edit Summary", $scope.caseObj.summary, CASE_SUMMARY_MAX_LEN).then((text) ->
       CaseService.updateSummary($scope.caseObj, text).then(() ->
         $scope.$broadcast('timelineChanged')
       )
@@ -488,28 +488,28 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
   #----------------------------------------------------------------------------
 
   $scope.onAddNote = () ->
-    UtilsService.noteModal("Add Note", null, null, CASE_NOTE_MAX_LEN, (note) ->
+    UtilsService.noteModal("Add Note", null, null, CASE_NOTE_MAX_LEN).then((note) ->
       CaseService.addNote($scope.caseObj, note).then(() ->
         $scope.$broadcast('timelineChanged')
       )
     )
 
   $scope.onReassign = () ->
-    UtilsService.assignModal("Re-assign", null, $scope.allPartners, (assignee) ->
+    UtilsService.assignModal("Re-assign", null, $scope.allPartners).then((assignee) ->
       CaseService.reassign($scope.caseObj, assignee).then(() ->
         $scope.$broadcast('timelineChanged')
       )
     )
 
   $scope.onClose = () ->
-    UtilsService.noteModal("Close", "Close this case?", 'danger', CASE_NOTE_MAX_LEN, (note) ->
+    UtilsService.noteModal("Close", "Close this case?", 'danger', CASE_NOTE_MAX_LEN).then((note) ->
       CaseService.close($scope.caseObj, note).then(() ->
         UtilsService.navigate('/')
       )
     )
 
   $scope.onReopen = () ->
-    UtilsService.noteModal("Re-open", "Re-open this case?", null, CASE_NOTE_MAX_LEN, (note) ->
+    UtilsService.noteModal("Re-open", "Re-open this case?", null, CASE_NOTE_MAX_LEN).then((note) ->
       CaseService.reopen($scope.caseObj, note).then(() ->
         $scope.$broadcast('timelineChanged')
       )
@@ -561,7 +561,7 @@ controllers.controller 'PartnerController', [ '$scope', '$window', 'UtilsService
       )
 
   $scope.onDeletePartner = () ->
-    UtilsService.confirmModal("Remove this partner organization?", 'danger', () ->
+    UtilsService.confirmModal("Remove this partner organization?", 'danger').then(() ->
       PartnerService.delete($scope.partner).then(() ->
         UtilsService.navigate('/partner/')
       )
@@ -600,7 +600,7 @@ controllers.controller 'PartnerRepliesController', [ '$scope', '$window', '$cont
     return OutgoingService.fetchReplies(search, startTime, page)
 
   $scope.onExportSearch = () ->
-    UtilsService.confirmModal("Export the current search?", null, () ->
+    UtilsService.confirmModal("Export the current search?").then(() ->
       OutgoingService.startReplyExport($scope.activeSearch).then(() ->
         UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
       )
@@ -616,7 +616,7 @@ controllers.controller 'UserController', [ '$scope', '$window', 'UtilsService', 
   $scope.user = $window.contextData.user
 
   $scope.onDeleteUser = () ->
-    UtilsService.confirmModal("Delete this user?", 'danger', () ->
+    UtilsService.confirmModal("Delete this user?", 'danger').then(() ->
       UserService.delete($scope.user).then(() ->
         UtilsService.navigateBack()
       )
