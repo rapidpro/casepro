@@ -9,6 +9,12 @@ describe('filters:', () ->
     inject((_$filter_) ->
       $filter = _$filter_
     )
+
+    jasmine.clock().install()
+  )
+
+  afterEach(() ->
+    jasmine.clock().uninstall()
   )
 
   describe('reverse', () ->
@@ -19,14 +25,14 @@ describe('filters:', () ->
   )
 
   describe('autodate', () ->
-    jasmine.clock().mockDate(new Date(2015, 0, 1));  # Jan 1 2015
-
     it('formats a date', () ->
+      jasmine.clock().mockDate(new Date(2015, 1, 1));  # Feb 1 2015
+      
       autodate = $filter('autodate')
-      expect(autodate(new Date(2015, 0, 1, 10, 0))).toEqual("10:00")  # same day
-      expect(autodate(new Date(2015, 1, 1, 10, 0))).toEqual("Feb 1")  # same year
-      expect(autodate(new Date(2014, 0, 1, 10, 0))).toEqual("Jan 1, 2014")
-      expect(autodate(new Date(2014, 11, 31, 10, 0))).toEqual("Dec 31, 2014")
+      expect(autodate(new Date(2015, 1, 1, 10, 0))).toEqual("10:00")  # same day
+      expect(autodate(new Date(2015, 2, 1, 11, 0))).toEqual("Mar 1")  # same year
+      expect(autodate(new Date(2014, 1, 1, 10, 0))).toEqual("Feb 1, 2014")  # year before
+      expect(autodate(new Date(2016, 1, 1, 10, 0))).toEqual("Feb 1, 2016")  # year after
     )
   )
 )
