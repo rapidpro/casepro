@@ -1030,7 +1030,10 @@ class PartnerCRUDLTest(BaseCasesTest):
         # try as regular user
         self.login(self.user2)
 
-        response = self.url_get('unicef', url)
+        # simulate making request in May
+        with patch.object(timezone, 'now', return_value=datetime(2016, 5, 20, 9, 0, tzinfo=pytz.UTC)):
+            response = self.url_get('unicef', url)
+
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json['results'], [
             {
