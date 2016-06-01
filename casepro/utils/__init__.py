@@ -8,6 +8,7 @@ import re
 import unicodedata
 
 from dateutil.relativedelta import relativedelta
+from django.utils import timezone
 from enum import Enum
 from temba_client.utils import format_iso8601
 
@@ -115,8 +116,10 @@ def month_range(offset, now=None):
     :param offset: 0 = this month, -1 last month, 1 = next month etc
     :return: the start and end datetimes as a tuple
     """
-    now = now.astimezone(pytz.UTC) if now else datetime.datetime.utcnow()
+    if not now:
+        now = timezone.now()
 
+    now = now.astimezone(pytz.UTC)
     start_of_this_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     return start_of_this_month + relativedelta(months=offset), start_of_this_month + relativedelta(months=offset + 1)
