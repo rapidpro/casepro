@@ -14,13 +14,13 @@
         - if edit_button_url
           .btn-group
             %a.btn.btn-default{ href:"{{ edit_button_url }}", tooltip:"Edit User" }
-              %span.glyphicon.glyphicon-pencil
-            - if perms.auth.user_mimic
-              %button.btn.btn-default{ type:"button", onclick:"becomeUser()" }
-                - trans "Become"
+              %i.glyphicon.glyphicon-pencil
             - if can_delete
               %a.btn.btn-default{ ng-click:"onDeleteUser()", tooltip:"Delete User" }
-                %span.glyphicon.glyphicon-trash
+                %i.glyphicon.glyphicon-trash
+            - if perms.auth.user_mimic
+              %button.btn.btn-danger{ type:"button", onclick:"becomeUser()" }
+                - trans "Become"
 
       %h2
         %span.glyphicon.glyphicon-user
