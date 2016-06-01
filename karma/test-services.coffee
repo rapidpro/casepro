@@ -54,16 +54,6 @@ describe('services:', () ->
       )
     )
 
-    describe('fetchNew', () ->
-      it('gets cases from search endpoint', () ->
-        $httpBackend.expectGET('/case/search/?folder=open').respond('{"results":[{"id":501,"opened_on":"2016-05-17T08:49:13.698864"}],"has_more":true}')
-        CaseService.fetchNew({folder: "open"}).then((data) ->
-          expect(data.results).toEqual([{id: 501, opened_on: utcdate(2016, 5, 17, 8, 49, 13, 698)}])
-        )
-        $httpBackend.flush()
-      )
-    )
-
     describe('fetchOld', () ->
       it('gets cases from search endpoint', () ->
         $httpBackend.expectGET('/case/search/?folder=open').respond('{"results":[{"id":501,"opened_on":"2016-05-17T08:49:13.698864"}],"has_more":true}')

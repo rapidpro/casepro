@@ -1,10 +1,9 @@
-# Unit tests for our Angular controllers (controllers listed A-Z)
+# Unit tests for our Angular controllers
 
 describe('controllers:', () ->
   $window = null
   $controller = null
   $rootScope = null
-  $scope = null
   $q = null
   UtilsService = null
   test = null
@@ -20,12 +19,11 @@ describe('controllers:', () ->
       UtilsService = _UtilsService_
     )
 
-    $scope = $rootScope.$new()  # each test gets a new scope
     jasmine.clock().install()
 
     test = {
       # users
-      user1: {id: 101, name: "Tom McTest"},
+      user1: {id: 101, name: "Tom McTest", partner: null},
 
       # labels
       tea: {id: 201, name: "Tea"},
@@ -33,14 +31,21 @@ describe('controllers:', () ->
 
       # partners
       moh: {id: 301, name: "MOH"},
-      who: {id: 302, name: "WHO"}
+      who: {id: 302, name: "WHO"},
+
+      # contacts
+      contact1: {id: 401, name: "Ann"},
+      contact2: {id: 402, name: "Bob"}
     }
   )
 
   afterEach(() ->
     jasmine.clock().uninstall()
   )
-  
+
+  #=======================================================================
+  # Tests for DateRangeController
+  #=======================================================================
   describe('DateRangeController', () ->
     it('should not allow min to be greater than max', () ->
       jasmine.clock().mockDate(utcdate(2016, 1, 1, 11, 0, 0, 0));  # now is Jan 1st 2016 11:00 UTC
@@ -70,12 +75,155 @@ describe('controllers:', () ->
     )
   )
 
+  #=======================================================================
+  # Tests for any controllers which must be children of HomeController
+  #=======================================================================
+  describe('home controllers:', () ->
+    $homeScope = null
+    $scope = null
+    serverTime = 1464775597109  # ~ Jun 1st 2016 10:06:37 UTC
+
+    beforeEach(() ->
+      $window.contextData = {user: test.user1, partners: [], labels: [], groups: []}
+
+      $homeScope = $rootScope.$new()
+      $controller('HomeController', {$scope: $homeScope})
+
+      $scope = $homeScope.$new()
+    )
+
+    #=======================================================================
+    # Tests for CasesController
+    #=======================================================================
+    describe('CasesController', () ->
+      CaseService = null
+
+      beforeEach(inject((_CaseService_) ->
+        CaseService = _CaseService_
+
+        $controller('CasesController', {$scope: $scope})
+
+        $homeScope.init('open', serverTime)
+        $scope.init()
+
+        # case test data
+        test.case1 = {id: 601, summary: "Hi", opened_on: utcdate(2016, 5, 28, 10, 0)}
+      ))
+
+      it('loadOldItems', () ->
+        fetchOld = spyOnPromise($q, $scope, CaseService, 'fetchOld')
+
+        $scope.loadOldItems()
+
+        expect(CaseService.fetchOld).toHaveBeenCalledWith({folder: 'open', assignee: null, label: null}, $scope.startTime, 1)
+
+        fetchOld.resolve({results: [test.case1], hasMore: true})
+
+        expect($scope.items).toEqual([test.case1])
+        expect($scope.oldItemsMore).toEqual(true)
+        expect($scope.isInfiniteScrollEnabled()).toEqual(true)
+      )
+
+      it('getItemFilter', () ->
+        filter = $scope.getItemFilter()
+        expect(filter({is_closed: false})).toEqual(true)
+        expect(filter({is_closed: true})).toEqual(false)
+
+        $scope.folder = 'closed'
+
+        filter = $scope.getItemFilter()
+        expect(filter({is_closed: false})).toEqual(false)
+        expect(filter({is_closed: true})).toEqual(true)
+      )
+
+      it('onExportSearch', () ->
+        confirmModal = spyOnPromise($q, $scope, UtilsService, 'confirmModal')
+        startExport = spyOnPromise($q, $scope, CaseService, 'startExport')
+        spyOn(UtilsService, 'displayAlert')
+
+        $scope.onExportSearch()
+
+        confirmModal.resolve()
+        startExport.resolve()
+
+        expect(CaseService.startExport).toHaveBeenCalledWith({folder: 'open', assignee: null, label: null})
+        expect(UtilsService.displayAlert).toHaveBeenCalled()
+      )
+    )
+
+    #=======================================================================
+    # Tests for OutgoingController
+    #=======================================================================
+    describe('OutgoingController', () ->
+      OutgoingService = null
+
+      beforeEach(inject((_OutgoingService_) ->
+        OutgoingService = _OutgoingService_
+
+        $controller('OutgoingController', {$scope: $scope})
+
+        $homeScope.init('sent', serverTime)
+        $scope.init()
+
+        # outgoing message test data
+        test.out1 = {id: 601, text: "Hi", time: utcdate(2016, 5, 28, 10, 0)}
+        test.out2 = {id: 602, text: "OK", time: utcdate(2016, 5, 27, 11, 0)}
+        test.out3 = {id: 603, text: "Sawa", time: utcdate(2016, 5, 27, 12, 0)}
+      ))
+
+      it('loadOldItems', () ->
+        fetchOld = spyOnPromise($q, $scope, OutgoingService, 'fetchOld')
+
+        $scope.loadOldItems()
+
+        expect(OutgoingService.fetchOld).toHaveBeenCalledWith({folder: 'sent', text: null, contact: null}, $scope.startTime, 1)
+
+        fetchOld.resolve({results: [test.out3, test.out2], hasMore: true})
+
+        expect($scope.items).toEqual([test.out3, test.out2])
+        expect($scope.oldItemsMore).toEqual(true)
+        expect($scope.isInfiniteScrollEnabled()).toEqual(true)
+
+        fetchOld.reset()
+        $scope.loadOldItems()
+
+        fetchOld.resolve({results: [test.out1], hasMore: false})
+
+        expect($scope.items).toEqual([test.out3, test.out2, test.out1])
+        expect($scope.oldItemsMore).toEqual(false)
+        expect($scope.isInfiniteScrollEnabled()).toEqual(false)
+      )
+
+      it('activateContact', () ->
+        fetchOld = spyOnPromise($q, $scope, OutgoingService, 'fetchOld')
+
+        $scope.activateContact(test.contact1)
+
+        expect(OutgoingService.fetchOld).toHaveBeenCalledWith({folder: 'sent', text: null, contact: test.contact1}, $scope.startTime, 1)
+      )
+
+      it('onSearch', () ->
+        fetchOld = spyOnPromise($q, $scope, OutgoingService, 'fetchOld')
+
+        $scope.searchFields.text = "test"
+        $scope.onSearch()
+
+        expect(OutgoingService.fetchOld).toHaveBeenCalledWith({folder: 'sent', text: "test", contact: null}, $scope.startTime, 1)
+      )
+    )
+  )
+
+  #=======================================================================
+  # Tests for PartnerController
+  #=======================================================================
   describe('PartnerController', () ->
     PartnerService = null
+    $scope = null
 
     beforeEach(inject((_PartnerService_) ->
       PartnerService = _PartnerService_
 
+      $scope = $rootScope.$new()
       $window.contextData = {partner: test.moh}
       $controller('PartnerController', {$scope: $scope})
     ))
@@ -116,12 +264,17 @@ describe('controllers:', () ->
     )
   )
 
+  #=======================================================================
+  # Tests for UserController
+  #=======================================================================
   describe('UserController', () ->
     UserService = null
+    $scope = null
 
     beforeEach(inject((_UserService_) ->
       UserService = _UserService_
 
+      $scope = $rootScope.$new()
       $window.contextData = {user: test.user1}
       $controller('UserController', {$scope: $scope})
     ))
