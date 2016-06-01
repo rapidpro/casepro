@@ -46,7 +46,7 @@ describe('services:', () ->
     
     describe('addNote', () ->
       it('posts to note endpoint', () ->
-        $httpBackend.expectPOST('/case/note/501/').respond('')
+        $httpBackend.expectPOST('/case/note/501/', {note: "Hello there"}).respond('')
         CaseService.addNote(test.case1, "Hello there")
         $httpBackend.flush()
       )
@@ -102,7 +102,7 @@ describe('services:', () ->
 
     describe('reassign', () ->
       it('posts to reassign endpoint', () ->
-        $httpBackend.expectPOST('/case/reassign/501/').respond('')
+        $httpBackend.expectPOST('/case/reassign/501/', {assignee: 302}).respond('')
         CaseService.reassign(test.case1, test.who).then(() ->
           expect(test.case1.assignee).toEqual(test.who)
         )
@@ -112,7 +112,7 @@ describe('services:', () ->
 
     describe('close', () ->
       it('posts to close endpoint and closes case', () ->
-        $httpBackend.expectPOST('/case/close/501/').respond('')
+        $httpBackend.expectPOST('/case/close/501/', {note: "Hello there"}).respond('')
         CaseService.close(test.case1, "Hello there").then(() ->
           expect(test.case1.is_closed).toEqual(true)
         )
@@ -122,7 +122,7 @@ describe('services:', () ->
 
     describe('open', () ->
       it('posts to open endpoint', () ->
-        $httpBackend.expectPOST('/case/open/').respond('{"case": {"id": 501}, "is_new": true}')
+        $httpBackend.expectPOST('/case/open/', {message: 401, summary: "Hi", assignee: 301}).respond('{"case": {"id": 501}, "is_new": true}')
         CaseService.open({id: 401, text: "Hi"}, "Hi", test.moh).then((caseObj) ->
           expect(caseObj.id).toEqual(501)
           expect(caseObj.isNew).toEqual(true)
@@ -133,7 +133,7 @@ describe('services:', () ->
 
     describe('relabel', () ->
       it('posts to label endpoint', () ->
-        $httpBackend.expectPOST('/case/label/501/').respond('')
+        $httpBackend.expectPOST('/case/label/501/', {labels: [202]}).respond('')
         CaseService.relabel(test.case1, [test.coffee]).then(() ->
           expect(test.case1.labels).toEqual([test.coffee])
         )
@@ -145,7 +145,7 @@ describe('services:', () ->
       it('posts to reopen endpoint and reopens case', () ->
         test.case1.is_closed = true
 
-        $httpBackend.expectPOST('/case/reopen/501/').respond('')
+        $httpBackend.expectPOST('/case/reopen/501/', {note: "Hello there"}).respond('')
         CaseService.reopen(test.case1, "Hello there").then(() ->
           expect(test.case1.is_closed).toEqual(false)
         )
@@ -155,7 +155,7 @@ describe('services:', () ->
     
     describe('replyTo', () ->
       it('posts to reply endpoint', () ->
-        $httpBackend.expectPOST('/case/reply/501/').respond('')
+        $httpBackend.expectPOST('/case/reply/501/', {text: "Hello there"}).respond('')
         CaseService.replyTo(test.case1, "Hello there")
         $httpBackend.flush()
       )
@@ -163,7 +163,7 @@ describe('services:', () ->
 
     describe('startExport', () ->
       it('posts to export endpoint', () ->
-        $httpBackend.expectPOST('/caseexport/create/?folder=open').respond('')
+        $httpBackend.expectPOST('/caseexport/create/?folder=open', null).respond('')
         CaseService.startExport({folder: "open"})
         $httpBackend.flush()
       )
@@ -171,7 +171,7 @@ describe('services:', () ->
 
     describe('updateSummary', () ->
       it('posts to update summary endpoint', () ->
-        $httpBackend.expectPOST('/case/update_summary/501/').respond('')
+        $httpBackend.expectPOST('/case/update_summary/501/', {summary: "Got coffee?"}).respond('')
         CaseService.updateSummary(test.case1, "Got coffee?").then(() ->
           expect(test.case1.summary).toEqual("Got coffee?")
         )
@@ -192,7 +192,7 @@ describe('services:', () ->
 
     describe('delete', () ->
       it('posts to delete endpoint', () ->
-        $httpBackend.expectPOST('/label/delete/201/').respond("")
+        $httpBackend.expectPOST('/label/delete/201/', null).respond("")
         LabelService.delete(test.tea)
         $httpBackend.flush()
       )
@@ -235,7 +235,7 @@ describe('services:', () ->
 
     describe('bulkArchive', () ->
       it('posts to bulk action endpoint', () ->
-        $httpBackend.expectPOST('/message/action/archive/').respond('')
+        $httpBackend.expectPOST('/message/action/archive/', {messages: [101, 102]}).respond('')
         MessageService.bulkArchive([test.msg1, test.msg2]).then(() ->
           expect(test.msg1.archived).toEqual(true)
           expect(test.msg2.archived).toEqual(true)
@@ -246,14 +246,14 @@ describe('services:', () ->
 
     describe('bulkFlag', () ->
       it('posts to bulk action endpoint', () ->
-        $httpBackend.expectPOST('/message/action/flag/').respond('')
+        $httpBackend.expectPOST('/message/action/flag/', {messages: [101, 102]}).respond('')
         MessageService.bulkFlag([test.msg1, test.msg2], true).then(() ->
           expect(test.msg1.flagged).toEqual(true)
           expect(test.msg2.flagged).toEqual(true)
         )
         $httpBackend.flush()
 
-        $httpBackend.expectPOST('/message/action/unflag/').respond('')
+        $httpBackend.expectPOST('/message/action/unflag/', {messages: [101, 102]}).respond('')
         MessageService.bulkFlag([test.msg1, test.msg2], false).then(() ->
           expect(test.msg1.flagged).toEqual(false)
           expect(test.msg2.flagged).toEqual(false)
@@ -264,7 +264,7 @@ describe('services:', () ->
 
     describe('bulkLabel', () ->
       it('posts to bulk action endpoint', () ->
-        $httpBackend.expectPOST('/message/action/label/').respond('')
+        $httpBackend.expectPOST('/message/action/label/', {messages: [101, 102], label: 201}).respond('')
         MessageService.bulkLabel([test.msg1, test.msg2], test.tea).then(() ->
           expect(test.msg1.labels).toEqual([test.tea])
           expect(test.msg2.labels).toEqual([test.coffee, test.tea])
@@ -275,7 +275,7 @@ describe('services:', () ->
 
     describe('bulkReply', () ->
       it('posts to bulk reply endpoint', () ->
-        $httpBackend.expectPOST('/message/bulk_reply/').respond('')
+        $httpBackend.expectPOST('/message/bulk_reply/', {messages: [101, 102], text: "Welcome"}).respond('')
         MessageService.bulkReply([test.msg1, test.msg2], "Welcome")
         $httpBackend.flush()
       )
@@ -283,7 +283,7 @@ describe('services:', () ->
 
     describe('bulkRestore', () ->
       it('posts to bulk action endpoint', () ->
-        $httpBackend.expectPOST('/message/action/restore/').respond('')
+        $httpBackend.expectPOST('/message/action/restore/', {messages: [101, 102]}).respond('')
         MessageService.bulkRestore([test.msg1, test.msg2]).then(() ->
           expect(test.msg1.archived).toEqual(false)
           expect(test.msg2.archived).toEqual(false)
@@ -294,7 +294,7 @@ describe('services:', () ->
 
     describe('forward', () ->
       it('posts to forward endpoint', () ->
-        $httpBackend.expectPOST('/message/forward/101/').respond('')
+        $httpBackend.expectPOST('/message/forward/101/', {text: "Welcome", urns: ["tel:+260964153686"]}).respond('')
         MessageService.forward(test.msg1, "Welcome", {urn: "tel:+260964153686"})
         $httpBackend.flush()
       )
@@ -302,7 +302,7 @@ describe('services:', () ->
 
     describe('relabel', () ->
       it('posts to label endpoint', () ->
-        $httpBackend.expectPOST('/message/label/101/').respond('')
+        $httpBackend.expectPOST('/message/label/101/', {labels: [202]}).respond('')
         MessageService.relabel(test.msg1, [test.coffee]).then(() ->
           expect(test.msg1.labels).toEqual([test.coffee])
         )
@@ -312,7 +312,7 @@ describe('services:', () ->
 
     describe('startExport', () ->
       it('posts to export endpoint', () ->
-        $httpBackend.expectPOST('/messageexport/create/?archived=0&folder=inbox').respond('')
+        $httpBackend.expectPOST('/messageexport/create/?archived=0&folder=inbox', null).respond('')
         MessageService.startExport({folder: "inbox"})
         $httpBackend.flush()
       )
@@ -353,7 +353,7 @@ describe('services:', () ->
 
     describe('startReplyExport', () ->
       it('posts to export endpoint', () ->
-        $httpBackend.expectPOST('/replyexport/create/?partner=301').respond('')
+        $httpBackend.expectPOST('/replyexport/create/?partner=301', null).respond('')
         OutgoingService.startReplyExport({partner: test.moh})
         $httpBackend.flush()
       )
@@ -382,7 +382,7 @@ describe('services:', () ->
 
     describe('delete', () ->
       it('posts to delete endpoint', () ->
-        $httpBackend.expectPOST('/partner/delete/301/').respond('')
+        $httpBackend.expectPOST('/partner/delete/301/', null).respond('')
         PartnerService.delete(test.moh)
         $httpBackend.flush()
       )
@@ -401,7 +401,7 @@ describe('services:', () ->
 
     describe('delete', () ->
       it('posts to delete endpoint', () ->
-        $httpBackend.expectPOST('/user/delete/101/').respond('')
+        $httpBackend.expectPOST('/user/delete/101/', null).respond('')
         UserService.delete(test.user1)
         $httpBackend.flush()
       )

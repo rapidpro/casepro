@@ -156,6 +156,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'dash.orgs.middleware.SetOrgMiddleware',
+    'casepro.utils.middleware.JSONMiddleware',
     'casepro.profiles.middleware.ForcePasswordChangeMiddleware',
 )
 

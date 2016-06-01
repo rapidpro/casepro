@@ -16,7 +16,7 @@ from temba_client.utils import parse_iso8601
 
 from casepro.contacts.models import Group
 from casepro.msgs.models import Label, Message, MessageFolder, Outgoing, OutgoingFolder
-from casepro.utils import parse_csv, json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder
+from casepro.utils import json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder
 from casepro.utils import month_range
 from casepro.utils.export import BaseDownloadView
 from casepro.utils.views import NonAtomicMixin
@@ -84,15 +84,15 @@ class CaseCRUDL(SmartCRUDL):
         permission = 'cases.case_create'
 
         def post(self, request, *args, **kwargs):
-            summary = request.POST['summary']
+            summary = request.json['summary']
 
-            assignee_id = request.POST.get('assignee', None)
+            assignee_id = request.json.get('assignee', None)
             if assignee_id:
                 assignee = Partner.get_all(request.org).get(pk=assignee_id)
             else:
                 assignee = request.user.get_partner(self.request.org)
 
-            message_id = int(request.POST['message'])
+            message_id = int(request.json['message'])
             message = Message.objects.get(org=request.org, backend_id=message_id)
 
             case = Case.get_or_open(request.org, request.user, message, summary, assignee)
@@ -107,7 +107,7 @@ class CaseCRUDL(SmartCRUDL):
 
         def post(self, request, *args, **kwargs):
             case = self.get_object()
-            note = request.POST['note']
+            note = request.json['note']
 
             case.add_note(request.user, note)
             return HttpResponse(status=204)
@@ -119,7 +119,7 @@ class CaseCRUDL(SmartCRUDL):
         permission = 'cases.case_update'
 
         def post(self, request, *args, **kwargs):
-            assignee = Partner.get_all(request.org).get(pk=request.POST['assignee'])
+            assignee = Partner.get_all(request.org).get(pk=request.json['assignee'])
             case = self.get_object()
             case.reassign(request.user, assignee)
             return HttpResponse(status=204)
@@ -132,7 +132,7 @@ class CaseCRUDL(SmartCRUDL):
 
         def post(self, request, *args, **kwargs):
             case = self.get_object()
-            note = request.POST.get('note', None)
+            note = request.json.get('note')
             case.close(request.user, note)
 
             return HttpResponse(status=204)
@@ -145,7 +145,7 @@ class CaseCRUDL(SmartCRUDL):
 
         def post(self, request, *args, **kwargs):
             case = self.get_object()
-            note = request.POST.get('note', None)
+            note = request.json.get('note')
 
             case.reopen(request.user, note)
             return HttpResponse(status=204)
@@ -158,7 +158,7 @@ class CaseCRUDL(SmartCRUDL):
 
         def post(self, request, *args, **kwargs):
             case = self.get_object()
-            label_ids = parse_csv(request.POST.get('labels', ''), as_ints=True)
+            label_ids = request.json['labels']
             labels = Label.get_all(request.org).filter(pk__in=label_ids)
 
             case.update_labels(request.user, labels)
@@ -172,7 +172,7 @@ class CaseCRUDL(SmartCRUDL):
 
         def post(self, request, *args, **kwargs):
             case = self.get_object()
-            summary = request.POST['summary']
+            summary = request.json['summary']
             case.update_summary(request.user, summary)
             return HttpResponse(status=204)
 
@@ -184,7 +184,7 @@ class CaseCRUDL(SmartCRUDL):
 
         def post(self, request, *args, **kwargs):
             case = self.get_object()
-            outgoing = case.reply(request.user, request.POST['text'])
+            outgoing = case.reply(request.user, request.json['text'])
             return JsonResponse({'id': outgoing.pk})
 
     class Fetch(OrgObjPermsMixin, SmartReadView):

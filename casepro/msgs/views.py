@@ -198,10 +198,10 @@ class MessageCRUDL(SmartCRUDL):
 
             action = kwargs['action']
 
-            message_ids = parse_csv(request.POST.get('messages', ''), as_ints=True)
+            message_ids = request.json['messages']
             messages = org.incoming_messages.filter(org=org, backend_id__in=message_ids)
 
-            label_id = int(request.POST.get('label', 0))
+            label_id = request.json.get('label')
             label = Label.get_all(org, user).get(pk=label_id) if label_id else None
 
             if action == 'flag':
@@ -236,7 +236,7 @@ class MessageCRUDL(SmartCRUDL):
             message_id = int(kwargs['id'])
             message = org.incoming_messages.filter(org=org, backend_id=message_id).first()
 
-            label_ids = parse_csv(self.request.POST.get('labels', ''), as_ints=True)
+            label_ids = request.json['labels']
             labels = Label.get_all(org, user).filter(pk__in=label_ids)
 
             message.update_labels(user, labels)
@@ -252,8 +252,8 @@ class MessageCRUDL(SmartCRUDL):
             return r'^message/bulk_reply/$'
 
         def post(self, request, *args, **kwargs):
-            text = request.POST['text']
-            message_ids = parse_csv(request.POST.get('messages', ''), as_ints=False)
+            text = request.json['text']
+            message_ids = request.json['messages']
             messages = Message.objects.filter(org=request.org, backend_id__in=message_ids).select_related('contact')
 
             # organize messages by contact
@@ -279,9 +279,9 @@ class MessageCRUDL(SmartCRUDL):
             return r'^message/forward/(?P<id>\d+)/$'
 
         def post(self, request, *args, **kwargs):
-            text = request.POST['text']
+            text = request.json['text']
             message = Message.objects.get(org=request.org, backend_id=int(kwargs['id']))
-            urns = parse_csv(request.POST['urns'], as_ints=False)
+            urns = request.json['urns']
 
             out = Outgoing.create_forward(request.org, request.user, text, urns, message)
             return JsonResponse({'id': out.pk})
