@@ -416,6 +416,16 @@ describe('services:', () ->
       spyOn($uibModal, 'open').and.callThrough()
     )
 
+    describe('displayAlert', () ->
+      it('called external displayAlert', () ->
+        $window.displayAlert = jasmine.createSpy('$window.displayAlert')
+
+        UtilsService.displayAlert('error', "Uh Oh!")
+
+        expect($window.displayAlert).toHaveBeenCalledWith('error', "Uh Oh!")
+      )
+    )
+
     describe('navigate', () ->
       it('changes location of $window', () ->
         spyOn($window.location, 'replace')
