@@ -93,7 +93,7 @@ class Test(object):
         Subclasses must implement this to return a boolean.
         """
 
-    def __eq__(self, other):
+    def __eq__(self, other):  # pragma: no cover
         return other and self.TYPE == other.TYPE
 
     def __ne__(self, other):

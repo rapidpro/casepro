@@ -785,6 +785,58 @@ class CaseCRUDLTest(BaseCasesTest):
         mock_fetch_contact_messages.assert_called_once_with(self.unicef, self.ann, d1, case.closed_on)
         mock_fetch_contact_messages.reset_mock()
 
+    def test_search(self):
+        url = reverse('cases.case_search')
+
+        # create another case
+        msg2 = self.create_message(self.unicef, 102, self.ann, "I ♡ RapidPro")
+        case2 = self.create_case(self.unicef, self.ann, self.who, msg2)
+
+        # try unauthenticated
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # test as org administrator
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url, {'folder': 'open'})
+        self.assertEqual(response.json['results'], [
+            {
+                'id': case2.pk,
+                'assignee': {'id': self.who.pk, 'name': "WHO"},
+                'contact': {'id': self.ann.pk, 'name': "Ann"},
+                'labels': [],
+                'summary': "",
+                'opened_on': format_iso8601(case2.opened_on),
+                'is_closed': False
+            },
+            {
+                'id': self.case.pk,
+                'assignee': {'id': self.moh.pk, 'name': "MOH"},
+                'contact': {'id': self.ann.pk, 'name': "Ann"},
+                'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
+                'summary': "Summary",
+                'opened_on': format_iso8601(self.case.opened_on),
+                'is_closed': False
+            }
+        ])
+
+        # test as partner user
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url, {'folder': 'open'})
+        self.assertEqual(response.json['results'], [
+            {
+                'id': self.case.pk,
+                'assignee': {'id': self.moh.pk, 'name': "MOH"},
+                'contact': {'id': self.ann.pk, 'name': "Ann"},
+                'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
+                'summary': "Summary",
+                'opened_on': format_iso8601(self.case.opened_on),
+                'is_closed': False
+            }
+        ])
+
 
 class CaseExportCRUDLTest(BaseCasesTest):
     @override_settings(SITE_ORGS_STORAGE_ROOT='test_orgs', CELERY_ALWAYS_EAGER=True,
