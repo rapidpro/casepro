@@ -9,7 +9,7 @@ services = angular.module('cases.services', ['cases.modals']);
 # Incoming message service
 #=====================================================================
 
-services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer', ($rootScope, $http, $httpParamSerializer) ->
+services.factory('MessageService', ['$rootScope', '$http', '$httpParamSerializer', ($rootScope, $http, $httpParamSerializer) ->
   new class MessageService
 
     #----------------------------------------------------------------------------
@@ -129,14 +129,14 @@ services.factory 'MessageService', ['$rootScope', '$http', '$httpParamSerializer
         params.label = label.id
 
       return $http.post('/message/action/' + action + '/', params)
-]
+])
 
 
 #=====================================================================
 # Incoming message service
 #=====================================================================
 
-services.factory 'OutgoingService', ['$rootScope', '$http', '$httpParamSerializer', ($rootScope, $http, $httpParamSerializer) ->
+services.factory('OutgoingService', ['$rootScope', '$http', '$httpParamSerializer', ($rootScope, $http, $httpParamSerializer) ->
   new class OutgoingService
 
     #----------------------------------------------------------------------------
@@ -183,14 +183,14 @@ services.factory 'OutgoingService', ['$rootScope', '$http', '$httpParamSerialize
         before: if search.before then utils.formatIso8601(search.before) else utils.formatIso8601(startTime),
         page: page
       }
-]
+])
 
 
 #=====================================================================
 # Case service
 #=====================================================================
 
-services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($http, $httpParamSerializer, $window) ->
+services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($http, $httpParamSerializer, $window) ->
   new class CaseService
 
     #----------------------------------------------------------------------------
@@ -204,19 +204,6 @@ services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($h
       return $http.get('/case/search/?' + $httpParamSerializer(params)).then((response) ->
         utils.parseDates(response.data.results, 'opened_on')
         return {results: response.data.results, hasMore: response.data.has_more}
-      )
-
-    #----------------------------------------------------------------------------
-    # Fetches new cases
-    #----------------------------------------------------------------------------
-    fetchNew: (search, after, before) ->
-      params = @_searchToParams(search)
-      params.after = utils.formatIso8601(after)
-      params.before = utils.formatIso8601(before)
-
-      return $http.get('/case/search/?' + $httpParamSerializer(params)).then((response) ->
-        utils.parseDates(response.data.results, 'opened_on')
-        return {results: response.data.results}
       )
 
     #----------------------------------------------------------------------------
@@ -343,14 +330,14 @@ services.factory 'CaseService', ['$http', '$httpParamSerializer', '$window', ($h
         assignee: if search.assignee then search.assignee.id else null,
         label: if search.label then search.label.id else null
       }
-]
+])
 
 
 #=====================================================================
 # Label service
 #=====================================================================
 
-services.factory 'LabelService', ['$http', ($http) ->
+services.factory('LabelService', ['$http', ($http) ->
   new class LabelService
 
     #----------------------------------------------------------------------------
@@ -358,13 +345,13 @@ services.factory 'LabelService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     delete: (label) ->
       return $http.post('/label/delete/' + label.id + '/')
-]
+])
 
 
 #=====================================================================
 # Partner service
 #=====================================================================
-services.factory 'PartnerService', ['$http', ($http) ->
+services.factory('PartnerService', ['$http', ($http) ->
   new class PartnerService
 
     #----------------------------------------------------------------------------
@@ -378,13 +365,13 @@ services.factory 'PartnerService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     delete: (partner) ->
       return $http.post('/partner/delete/' + partner.id + '/')
-]
+])
 
 
 #=====================================================================
 # User service
 #=====================================================================
-services.factory 'UserService', ['$http', ($http) ->
+services.factory('UserService', ['$http', ($http) ->
   new class UserService
 
     #----------------------------------------------------------------------------
@@ -392,55 +379,41 @@ services.factory 'UserService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     delete: (user) ->
       return $http.post('/user/delete/' + user.id + '/')
-]
+])
 
 
 #=====================================================================
 # Utils service
 #=====================================================================
-services.factory 'UtilsService', ['$window', '$uibModal', ($window, $uibModal) ->
+services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) ->
   new class UtilsService
 
     displayAlert: (type, message) ->
-      # TODO angularize ?
       $window.displayAlert(type, message)
 
     navigate: (url) ->
-      $window.location.href = url
+      $window.location.replace(url)
 
     navigateBack: () ->
       $window.history.back();
 
-    refresh: () ->
-      @navigate($window.location.href)
-
-    confirmModal: (prompt, style, callback) ->
+    confirmModal: (prompt, style) ->
       resolve = {prompt: (() -> prompt), style: (() -> style)}
-      $uibModal.open({templateUrl: 'confirmModal.html', controller: 'ConfirmModalController', resolve: resolve})
-      .result.then () ->
-        callback()
+      return $uibModal.open({templateUrl: 'confirmModal.html', controller: 'ConfirmModalController', resolve: resolve}).result
 
-    editModal: (title, initial, maxLength, callback) ->
+    editModal: (title, initial, maxLength) ->
       resolve = {title: (() -> title), initial: (() -> initial), maxLength: (() -> maxLength)}
-      $uibModal.open({templateUrl: 'editModal.html', controller: 'EditModalController', resolve: resolve})
-      .result.then (text) ->
-        callback(text)
+      return $uibModal.open({templateUrl: 'editModal.html', controller: 'EditModalController', resolve: resolve}).result
 
-    assignModal: (title, prompt, partners, callback) ->
+    assignModal: (title, prompt, partners) ->
       resolve = {title: (() -> title), prompt: (() -> prompt), partners: (() -> partners)}
-      $uibModal.open({templateUrl: 'assignModal.html', controller: 'AssignModalController', resolve: resolve})
-      .result.then (assignee) ->
-        callback(assignee)
+      return $uibModal.open({templateUrl: 'assignModal.html', controller: 'AssignModalController', resolve: resolve}).result
 
-    noteModal: (title, prompt, style, maxLength, callback) ->
+    noteModal: (title, prompt, style, maxLength) ->
       resolve = {title: (() -> title), prompt: (() -> prompt), style: (() -> style), maxLength: (() -> maxLength)}
-      $uibModal.open({templateUrl: 'noteModal.html', controller: 'NoteModalController', resolve: resolve})
-      .result.then (note) ->
-        callback(note)
+      return $uibModal.open({templateUrl: 'noteModal.html', controller: 'NoteModalController', resolve: resolve}).result
 
-    labelModal: (title, prompt, labels, initial, callback) ->
+    labelModal: (title, prompt, labels, initial) ->
       resolve = {title: (() -> title), prompt: (() -> prompt), labels: (() -> labels), initial: (() -> initial)}
-      $uibModal.open({templateUrl: 'labelModal.html', controller: 'LabelModalController', resolve: resolve})
-      .result.then (selectedLabels) ->
-        callback(selectedLabels)
-]
+      return $uibModal.open({templateUrl: 'labelModal.html', controller: 'LabelModalController', resolve: resolve}).result
+])

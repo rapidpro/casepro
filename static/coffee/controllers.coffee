@@ -6,7 +6,6 @@ controllers = angular.module('cases.controllers', ['cases.services', 'cases.moda
 
 
 # Component refresh intervals
-INTERVAL_CASES_NEW = 30000
 INTERVAL_CASE_INFO = 30000
 INTERVAL_CASE_TIMELINE = 30000
 
@@ -21,7 +20,7 @@ OUTGOING_TEXT_MAX_LEN = 480
 #============================================================================
 # Home controller (DOM parent of inbox and cases)
 #============================================================================
-controllers.controller 'HomeController', [ '$scope', '$window', '$location', 'LabelService', 'UtilsService', ($scope, $window, $location, LabelService, UtilsService) ->
+controllers.controller('HomeController', ['$scope', '$window', '$location', 'LabelService', 'UtilsService', ($scope, $window, $location, LabelService, UtilsService) ->
 
   $scope.user = $window.contextData.user
   $scope.partners = $window.contextData.partners
@@ -31,10 +30,11 @@ controllers.controller 'HomeController', [ '$scope', '$window', '$location', 'La
   $scope.activeLabel = null
   $scope.activeContact = null
 
-  $scope.init = (folder) ->
+  $scope.init = (folder, serverTime) ->
     $scope.folder = folder
+    $scope.startTime = new Date(serverTime)
 
-    $scope.$on '$locationChangeSuccess', () ->
+    $scope.$on('$locationChangeSuccess', () ->
       params = $location.search()
       initialLabel = null
       if 'label' of params
@@ -43,7 +43,9 @@ controllers.controller 'HomeController', [ '$scope', '$window', '$location', 'La
               initialLabel = l
               break
 
-      $scope.activateLabel(initialLabel)
+      if $scope.activeLabel != initialLabel
+        $scope.activateLabel(initialLabel)
+    )
 
   $scope.activateLabel = (label) ->
     $scope.activeLabel = label
@@ -63,7 +65,7 @@ controllers.controller 'HomeController', [ '$scope', '$window', '$location', 'La
     $scope.$broadcast('activeContactChange')
 
   $scope.onDeleteLabel = () ->
-    UtilsService.confirmModal('Delete the label <strong>' + $scope.activeLabel.name + '</strong>?', 'danger', () ->
+    UtilsService.confirmModal('Delete the label <strong>' + $scope.activeLabel.name + '</strong>?', 'danger').then(() ->
       LabelService.delete($scope.activeLabel).then(() ->
         $scope.labels = (l for l in $scope.labels when l.id != $scope.activeLabel.id)
         $scope.activateLabel(null)
@@ -74,20 +76,19 @@ controllers.controller 'HomeController', [ '$scope', '$window', '$location', 'La
   $scope.filterDisplayLabels = (labels) ->
     # filters out the active label from the given set of message labels
     if $scope.activeLabel then (l for l in labels when l.id != $scope.activeLabel.id) else labels
-]
+])
 
 
 #============================================================================
-# Base controller class for CasesController and MessagesController
+# Base controller class for controllers which display fetched items with
+# infinite scrolling, e.g. lists of messages, cases etc
 #============================================================================
-controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
+controllers.controller('BaseItemsController', ['$scope', ($scope) ->
 
   $scope.items = []
-  $scope.startTime = new Date()
   $scope.oldItemsLoading = false
   $scope.oldItemsPage = 0
   $scope.oldItemsMore = true
-  $scope.newItemsMaxTime = null
   $scope.selection = []
 
   #----------------------------------------------------------------------------
@@ -181,7 +182,7 @@ controllers.controller('BaseItemsController', [ '$scope', ($scope) ->
 #============================================================================
 # Incoming messages controller
 #============================================================================
-controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal', '$controller', 'MessageService', 'CaseService', 'UtilsService', ($scope, $timeout, $uibModal, $controller, MessageService, CaseService, UtilsService) ->
+controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal', '$controller', 'MessageService', 'CaseService', 'UtilsService', ($scope, $timeout, $uibModal, $controller, MessageService, CaseService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
   $scope.advancedSearch = false
@@ -229,7 +230,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
     $scope.advancedSearch = state
 
   $scope.onExportSearch = () ->
-    UtilsService.confirmModal("Export the current message search?", null, () ->
+    UtilsService.confirmModal("Export the current message search?").then(() ->
       MessageService.startExport($scope.activeSearch).then(() ->
         UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
       )
@@ -246,14 +247,14 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
   #----------------------------------------------------------------------------
 
   $scope.onLabelSelection = (label) ->
-    UtilsService.confirmModal('Apply the label <strong>' + label.name + '</strong> to the selected messages?', null, () ->
+    UtilsService.confirmModal('Apply the label <strong>' + label.name + '</strong> to the selected messages?').then(() ->
       MessageService.bulkLabel($scope.selection, label).then(() ->
         $scope.updateItems()
       )
     )
 
   $scope.onFlagSelection = () ->
-    UtilsService.confirmModal('Flag the selected messages?', null, () ->
+    UtilsService.confirmModal('Flag the selected messages?').then(() ->
       MessageService.bulkFlag($scope.selection, true).then(() ->
         $scope.updateItems()
       )
@@ -271,14 +272,14 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
     )
 
   $scope.onArchiveSelection = () ->
-    UtilsService.confirmModal('Archive the selected messages? This will remove them from your inbox.', null, () ->
+    UtilsService.confirmModal('Archive the selected messages? This will remove them from your inbox.').then(() ->
       MessageService.bulkArchive($scope.selection).then(() ->
         $scope.updateItems()
       )
     )
 
   $scope.onRestoreSelection = () ->
-    UtilsService.confirmModal('Restore the selected messages? This will put them back in your inbox.', null, () ->
+    UtilsService.confirmModal('Restore the selected messages? This will put them back in your inbox.').then(() ->
       MessageService.bulkRestore($scope.selection).then(() ->
         $scope.updateItems()
       )
@@ -325,7 +326,7 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
     )
 
   $scope.onLabelMessage = (message) ->
-    UtilsService.labelModal("Labels", "Update the labels for this message. This determines which other partner organizations can view this message.", $scope.labels, message.labels, (selectedLabels) ->
+    UtilsService.labelModal("Labels", "Update the labels for this message. This determines which other partner organizations can view this message.", $scope.labels, message.labels).then((selectedLabels) ->
       MessageService.relabel(message, selectedLabels).then(() ->
         $scope.updateItems()
       )
@@ -335,13 +336,13 @@ controllers.controller 'MessagesController', [ '$scope', '$timeout', '$uibModal'
     $uibModal.open({templateUrl: 'messageHistory.html', controller: 'MessageHistoryModalController', resolve: {
       message: () -> message
     }})
-]
+])
 
 
 #============================================================================
 # Outgoing messages controller
 #============================================================================
-controllers.controller 'OutgoingController', [ '$scope', '$controller', 'OutgoingService', ($scope, $controller, OutgoingService) ->
+controllers.controller('OutgoingController', ['$scope', '$controller', 'OutgoingService', ($scope, $controller, OutgoingService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
   $scope.init = () ->
@@ -356,27 +357,24 @@ controllers.controller 'OutgoingController', [ '$scope', '$controller', 'Outgoin
     search = angular.copy($scope.searchFields)
     search.folder = $scope.folder
     search.contact = $scope.activeContact
-    search.timeCode = Date.now()
     return search
 
   $scope.searchFieldDefaults = () -> { text: null }
 
   $scope.fetchOldItems = (search, startTime, page) ->
     return OutgoingService.fetchOld(search, startTime, page)
-]
+])
 
 
 #============================================================================
 # Cases listing controller
 #============================================================================
-controllers.controller('CasesController', [ '$scope', '$timeout', '$controller', 'CaseService', 'UtilsService', ($scope, $timeout, $controller, CaseService, UtilsService) ->
+controllers.controller('CasesController', ['$scope', '$timeout', '$controller', 'CaseService', 'UtilsService', ($scope, $timeout, $controller, CaseService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
   $scope.init = () ->
     $scope.searchFields = $scope.searchFieldDefaults()
     $scope.activeSearch = $scope.buildSearch()
-
-    $scope.refreshNewItems()
 
     $scope.$on('activeLabelChange', () ->
       $scope.onResetSearch()
@@ -392,13 +390,12 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
     search = angular.copy($scope.searchFields)
     search.folder = $scope.folder
     search.label = $scope.activeLabel
-    search.timeCode = Date.now()
     return search
 
   $scope.searchFieldDefaults = () -> { assignee: $scope.user.partner }
 
   $scope.onExportSearch = () ->
-    UtilsService.confirmModal("Export the current case search?", null, () ->
+    UtilsService.confirmModal("Export the current case search?").then(() ->
       CaseService.startExport($scope.activeSearch).then(() ->
         UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
       )
@@ -406,19 +403,6 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
 
   $scope.fetchOldItems = (search, startTime, page) ->
     return CaseService.fetchOld(search, startTime, page)
-
-  $scope.refreshNewItems = () ->
-    timeCode = $scope.activeSearch.timeCode
-    afterTime = $scope.newItemsMaxTime or $scope.startTime
-    $scope.newItemsMaxTime = new Date()
-
-    CaseService.fetchNew($scope.activeSearch, afterTime, $scope.newItemsMaxTime).then((data) ->
-      items = data.results
-      if timeCode == $scope.activeSearch.timeCode
-        $scope.items = items.concat($scope.items)
-
-      $timeout($scope.refreshNewItems, INTERVAL_CASES_NEW)
-    )
 
   $scope.onClickCase = (caseObj) ->
     UtilsService.navigate('/case/read/' + caseObj.id + '/')
@@ -428,7 +412,7 @@ controllers.controller('CasesController', [ '$scope', '$timeout', '$controller',
 #============================================================================
 # Case view controller
 #============================================================================
-controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'CaseService', 'MessageService', 'UtilsService', ($scope, $window, $timeout, CaseService, MessageService, UtilsService) ->
+controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'MessageService', 'UtilsService', ($scope, $window, $timeout, CaseService, MessageService, UtilsService) ->
 
   $scope.caseObj = $window.contextData.case_obj
   $scope.allPartners = $window.contextData.all_partners
@@ -451,14 +435,14 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
     )
 
   $scope.onEditLabels = ->
-    UtilsService.labelModal("Labels", "Update the labels for this case. This determines which other partner organizations can view this case.", $scope.allLabels, $scope.caseObj.labels, (selectedLabels) ->
+    UtilsService.labelModal("Labels", "Update the labels for this case. This determines which other partner organizations can view this case.", $scope.allLabels, $scope.caseObj.labels).then((selectedLabels) ->
       CaseService.relabel($scope.caseObj, selectedLabels).then(() ->
         $scope.$broadcast('timelineChanged')
       )
     )
 
   $scope.onEditSummary = ->
-    UtilsService.editModal("Edit Summary", $scope.caseObj.summary, CASE_SUMMARY_MAX_LEN, (text) ->
+    UtilsService.editModal("Edit Summary", $scope.caseObj.summary, CASE_SUMMARY_MAX_LEN).then((text) ->
       CaseService.updateSummary($scope.caseObj, text).then(() ->
         $scope.$broadcast('timelineChanged')
       )
@@ -488,39 +472,39 @@ controllers.controller 'CaseController', [ '$scope', '$window', '$timeout', 'Cas
   #----------------------------------------------------------------------------
 
   $scope.onAddNote = () ->
-    UtilsService.noteModal("Add Note", null, null, CASE_NOTE_MAX_LEN, (note) ->
+    UtilsService.noteModal("Add Note", null, null, CASE_NOTE_MAX_LEN).then((note) ->
       CaseService.addNote($scope.caseObj, note).then(() ->
         $scope.$broadcast('timelineChanged')
       )
     )
 
   $scope.onReassign = () ->
-    UtilsService.assignModal("Re-assign", null, $scope.allPartners, (assignee) ->
+    UtilsService.assignModal("Re-assign", null, $scope.allPartners).then((assignee) ->
       CaseService.reassign($scope.caseObj, assignee).then(() ->
         $scope.$broadcast('timelineChanged')
       )
     )
 
   $scope.onClose = () ->
-    UtilsService.noteModal("Close", "Close this case?", 'danger', CASE_NOTE_MAX_LEN, (note) ->
+    UtilsService.noteModal("Close", "Close this case?", 'danger', CASE_NOTE_MAX_LEN).then((note) ->
       CaseService.close($scope.caseObj, note).then(() ->
         UtilsService.navigate('/')
       )
     )
 
   $scope.onReopen = () ->
-    UtilsService.noteModal("Re-open", "Re-open this case?", null, CASE_NOTE_MAX_LEN, (note) ->
+    UtilsService.noteModal("Re-open", "Re-open this case?", null, CASE_NOTE_MAX_LEN).then((note) ->
       CaseService.reopen($scope.caseObj, note).then(() ->
         $scope.$broadcast('timelineChanged')
       )
     )
-]
+])
 
 
 #============================================================================
 # Case timeline controller
 #============================================================================
-controllers.controller 'CaseTimelineController', [ '$scope', '$timeout', 'CaseService', ($scope, $timeout, CaseService) ->
+controllers.controller('CaseTimelineController', ['$scope', '$timeout', 'CaseService', ($scope, $timeout, CaseService) ->
 
   $scope.timeline = []
   $scope.itemsMaxTime = null
@@ -541,13 +525,13 @@ controllers.controller 'CaseTimelineController', [ '$scope', '$timeout', 'CaseSe
       if repeat
         $timeout((() -> $scope.refreshItems(true)), INTERVAL_CASE_TIMELINE)
     )
-]
+])
 
 
 #============================================================================
 # Partner view controller
 #============================================================================
-controllers.controller 'PartnerController', [ '$scope', '$window', 'UtilsService', 'PartnerService', ($scope, $window, UtilsService, PartnerService) ->
+controllers.controller('PartnerController', ['$scope', '$window', 'UtilsService', 'PartnerService', ($scope, $window, UtilsService, PartnerService) ->
 
   $scope.partner = $window.contextData.partner
   $scope.usersFetched = false
@@ -561,18 +545,18 @@ controllers.controller 'PartnerController', [ '$scope', '$window', 'UtilsService
       )
 
   $scope.onDeletePartner = () ->
-    UtilsService.confirmModal("Remove this partner organization?", 'danger', () ->
+    UtilsService.confirmModal("Remove this partner organization?", 'danger').then(() ->
       PartnerService.delete($scope.partner).then(() ->
         UtilsService.navigate('/partner/')
       )
     )
-]
+])
 
 
 #============================================================================
 # Partner replies controller
 #============================================================================
-controllers.controller 'PartnerRepliesController', [ '$scope', '$window', '$controller', 'UtilsService', 'OutgoingService', ($scope, $window, $controller, UtilsService, OutgoingService) ->
+controllers.controller('PartnerRepliesController', ['$scope', '$window', '$controller', 'UtilsService', 'OutgoingService', ($scope, $window, $controller, UtilsService, OutgoingService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
   $scope.init = () ->
@@ -600,34 +584,34 @@ controllers.controller 'PartnerRepliesController', [ '$scope', '$window', '$cont
     return OutgoingService.fetchReplies(search, startTime, page)
 
   $scope.onExportSearch = () ->
-    UtilsService.confirmModal("Export the current search?", null, () ->
+    UtilsService.confirmModal("Export the current search?").then(() ->
       OutgoingService.startReplyExport($scope.activeSearch).then(() ->
         UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
       )
     )
-]
+])
 
 
 #============================================================================
 # User view controller
 #============================================================================
-controllers.controller 'UserController', [ '$scope', '$window', 'UtilsService', 'UserService', ($scope, $window, UtilsService, UserService) ->
+controllers.controller('UserController', ['$scope', '$window', 'UtilsService', 'UserService', ($scope, $window, UtilsService, UserService) ->
 
   $scope.user = $window.contextData.user
 
   $scope.onDeleteUser = () ->
-    UtilsService.confirmModal("Delete this user?", 'danger', () ->
+    UtilsService.confirmModal("Delete this user?", 'danger').then(() ->
       UserService.delete($scope.user).then(() ->
         UtilsService.navigateBack()
       )
     )
-]
+])
 
 
 #============================================================================
 # Date range controller
 #============================================================================
-controllers.controller 'DateRangeController', ['$scope', ($scope) ->
+controllers.controller('DateRangeController', ['$scope', ($scope) ->
   $scope.afterOpen = false
   $scope.afterOptions = { minDate: null, maxDate: new Date() }
   $scope.beforeOpen = false
@@ -654,4 +638,4 @@ controllers.controller 'DateRangeController', ['$scope', ($scope) ->
     $event.preventDefault()
     $event.stopPropagation()
     $scope.beforeOpen = true
-]
+])
