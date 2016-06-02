@@ -445,12 +445,24 @@ describe('services:', () ->
     )
 
     describe('editModal', () ->
-      it('opens confirm modal', () ->
+      it('opens edit modal', () ->
         UtilsService.editModal("Edit", "this...", 100)
 
         modalOptions = $uibModal.open.calls.mostRecent().args[0]
         expect(modalOptions.templateUrl).toEqual('editModal.html')
         expect(modalOptions.resolve.title()).toEqual("Edit")
+        expect(modalOptions.resolve.initial()).toEqual("this...")
+        expect(modalOptions.resolve.maxLength()).toEqual(100)
+      )
+    )
+
+    describe('composeModal', () ->
+      it('opens compose modal', () ->
+        UtilsService.composeModal("Compose", "this...", 100)
+
+        modalOptions = $uibModal.open.calls.mostRecent().args[0]
+        expect(modalOptions.templateUrl).toEqual('composeModal.html')
+        expect(modalOptions.resolve.title()).toEqual("Compose")
         expect(modalOptions.resolve.initial()).toEqual("this...")
         expect(modalOptions.resolve.maxLength()).toEqual(100)
       )
@@ -491,6 +503,18 @@ describe('services:', () ->
         expect(modalOptions.resolve.prompt()).toEqual("this...")
         expect(modalOptions.resolve.labels()).toEqual([test.tea, test.coffee])
         expect(modalOptions.resolve.initial()).toEqual([test.tea])
+      )
+    )
+
+    describe('newCaseModal', () ->
+      it('opens new case modal', () ->
+        UtilsService.newCaseModal("this...", 100, [test.moh, test.who])
+
+        modalOptions = $uibModal.open.calls.mostRecent().args[0]
+        expect(modalOptions.templateUrl).toEqual('newCaseModal.html')
+        expect(modalOptions.resolve.summaryInitial()).toEqual("this...")
+        expect(modalOptions.resolve.summaryMaxLength()).toEqual(100)
+        expect(modalOptions.resolve.partners()).toEqual([test.moh, test.who])
       )
     )
   )

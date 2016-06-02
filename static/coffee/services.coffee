@@ -296,15 +296,6 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
       return $http.post('/case/reply/' + caseObj.id + '/', {text: text})
 
     #----------------------------------------------------------------------------
-    # Navigates to the read page for the given case
-    #----------------------------------------------------------------------------
-    navigateToCase: (caseObj, withAlert) ->
-      caseUrl = '/case/read/' + caseObj.id + '/'
-      if withAlert
-        caseUrl += '?alert=' + withAlert
-      $window.location.href = caseUrl
-
-    #----------------------------------------------------------------------------
     # Fetches timeline events
     #----------------------------------------------------------------------------
     fetchTimeline: (caseObj, after) ->
@@ -405,6 +396,10 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
       resolve = {title: (() -> title), initial: (() -> initial), maxLength: (() -> maxLength)}
       return $uibModal.open({templateUrl: 'editModal.html', controller: 'EditModalController', resolve: resolve}).result
 
+    composeModal: (title, initial, maxLength) ->
+      resolve = {title: (() -> title), initial: (() -> initial), maxLength: (() -> maxLength)}
+      return $uibModal.open({templateUrl: 'composeModal.html', controller: 'ComposeModalController', resolve: resolve}).result
+
     assignModal: (title, prompt, partners) ->
       resolve = {title: (() -> title), prompt: (() -> prompt), partners: (() -> partners)}
       return $uibModal.open({templateUrl: 'assignModal.html', controller: 'AssignModalController', resolve: resolve}).result
@@ -416,4 +411,8 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
     labelModal: (title, prompt, labels, initial) ->
       resolve = {title: (() -> title), prompt: (() -> prompt), labels: (() -> labels), initial: (() -> initial)}
       return $uibModal.open({templateUrl: 'labelModal.html', controller: 'LabelModalController', resolve: resolve}).result
+
+    newCaseModal: (summaryInitial, summaryMaxLength, partners) ->
+      resolve = {summaryInitial: (() -> summaryInitial), summaryMaxLength: (() -> summaryMaxLength), partners: (() -> partners)}
+      return $uibModal.open({templateUrl: 'newCaseModal.html', controller: 'NewCaseModalController', resolve: resolve}).result
 ])

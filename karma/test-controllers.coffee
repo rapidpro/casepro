@@ -79,11 +79,22 @@ describe('controllers:', () ->
   # Tests for any controllers which must be children of HomeController
   #=======================================================================
   describe('home controllers:', () ->
+    # injected services
+    MessageService = null
+    OutgoingService = null
+    CaseService = null
+
     $homeScope = null
     $scope = null
     serverTime = 1464775597109  # ~ Jun 1st 2016 10:06:37 UTC
 
     beforeEach(() ->
+      inject((_MessageService_, _OutgoingService_, _CaseService_) ->
+        MessageService = _MessageService_
+        OutgoingService = _OutgoingService_
+        CaseService = _CaseService_
+      )
+
       $window.contextData = {user: test.user1, partners: [], labels: [], groups: []}
 
       $homeScope = $rootScope.$new()
@@ -96,19 +107,16 @@ describe('controllers:', () ->
     # Tests for CasesController
     #=======================================================================
     describe('CasesController', () ->
-      CaseService = null
 
-      beforeEach(inject((_CaseService_) ->
-        CaseService = _CaseService_
-
+      beforeEach(() ->
         $controller('CasesController', {$scope: $scope})
 
         $homeScope.init('open', serverTime)
         $scope.init()
 
-        # case test data
+        # extra test data
         test.case1 = {id: 601, summary: "Hi", opened_on: utcdate(2016, 5, 28, 10, 0)}
-      ))
+      )
 
       it('loadOldItems', () ->
         fetchOld = spyOnPromise($q, $scope, CaseService, 'fetchOld')
@@ -152,14 +160,209 @@ describe('controllers:', () ->
     )
 
     #=======================================================================
+    # Tests for MessagesController
+    #=======================================================================
+    describe('MessagesController', () ->
+
+      beforeEach(() ->
+        $controller('MessagesController', {$scope: $scope})
+
+        $homeScope.init('inbox', serverTime)
+        $scope.init()
+
+        # extra test data
+        test.msg1 = {id: 101, text: "Hello 1", labels: [test.tea], flagged: true, archived: false}
+        test.msg2 = {id: 102, text: "Hello 2", labels: [test.coffee], flagged: false, archived: false}
+        test.msg3 = {id: 103, text: "Hello 3", labels: [], flagged: false, archived: false}
+      )
+
+      it('loadOldItems', () ->
+        fetchOld = spyOnPromise($q, $scope, MessageService, 'fetchOld')
+
+        $scope.loadOldItems()
+
+        expect(MessageService.fetchOld).toHaveBeenCalledWith({
+          folder: 'inbox', label: null, contact: null, text: null,
+          groups: [], archived: false, after: null, before: null
+        }, $scope.startTime, 1)
+
+        fetchOld.resolve({results: [test.msg3, test.msg2], hasMore: true})
+
+        expect($scope.items).toEqual([test.msg3, test.msg2])
+        expect($scope.oldItemsMore).toEqual(true)
+        expect($scope.isInfiniteScrollEnabled()).toEqual(true)
+      )
+
+      it('getItemFilter', () ->
+        filter = $scope.getItemFilter()
+        expect(filter({archived: false})).toEqual(true)
+        expect(filter({archived: true})).toEqual(false)
+
+        $scope.folder = 'flagged'
+        $scope.searchFields.archived = false
+
+        filter = $scope.getItemFilter()
+        expect(filter({flagged: true, archived: false})).toEqual(true)
+        expect(filter({flagged: true, archived: true})).toEqual(false)
+        expect(filter({flagged: false})).toEqual(false)
+
+        $scope.searchFields.archived = true
+
+        filter = $scope.getItemFilter()
+        expect(filter({flagged: true, archived: false})).toEqual(true)
+        expect(filter({flagged: true, archived: true})).toEqual(true)
+        expect(filter({flagged: false})).toEqual(false)
+
+        $scope.folder = 'archived'
+
+        filter = $scope.getItemFilter()
+        expect(filter({archived: false})).toEqual(false)
+        expect(filter({archived: true})).toEqual(true)
+
+        $scope.folder = 'unlabelled'
+
+        filter = $scope.getItemFilter()
+        expect(filter({labels: []})).toEqual(true)
+        expect(filter({labels: [test.tea]})).toEqual(false)
+      )
+
+      it('onExportSearch', () ->
+        confirmModal = spyOnPromise($q, $scope, UtilsService, 'confirmModal')
+        startExport = spyOnPromise($q, $scope, MessageService, 'startExport')
+        spyOn(UtilsService, 'displayAlert')
+
+        $scope.onExportSearch()
+
+        confirmModal.resolve()
+        startExport.resolve()
+
+        expect(MessageService.startExport).toHaveBeenCalledWith({
+          folder: 'inbox', label: null, contact: null, text: null,
+          groups: [], archived: false, after: null, before: null
+        })
+        expect(UtilsService.displayAlert).toHaveBeenCalled()
+      )
+
+      it('onFlagSelection', () ->
+        confirmModal = spyOnPromise($q, $scope, UtilsService, 'confirmModal')
+        bulkFlag = spyOnPromise($q, $scope, MessageService, 'bulkFlag')
+
+        $scope.selection = [test.msg1]
+        $scope.onFlagSelection()
+
+        confirmModal.resolve()
+        bulkFlag.resolve()
+
+        expect(MessageService.bulkFlag).toHaveBeenCalledWith([test.msg1], true)
+      )
+
+      it('onArchiveSelection', () ->
+        confirmModal = spyOnPromise($q, $scope, UtilsService, 'confirmModal')
+        bulkArchive = spyOnPromise($q, $scope, MessageService, 'bulkArchive')
+
+        $scope.selection = [test.msg1]
+        $scope.onArchiveSelection()
+
+        confirmModal.resolve()
+        bulkArchive.resolve()
+
+        expect(MessageService.bulkArchive).toHaveBeenCalledWith([test.msg1])
+      )
+
+      it('onRestoreSelection', () ->
+        confirmModal = spyOnPromise($q, $scope, UtilsService, 'confirmModal')
+        bulkRestore = spyOnPromise($q, $scope, MessageService, 'bulkRestore')
+
+        $scope.selection = [test.msg1]
+        $scope.onRestoreSelection()
+
+        confirmModal.resolve()
+        bulkRestore.resolve()
+
+        expect(MessageService.bulkRestore).toHaveBeenCalledWith([test.msg1])
+      )
+
+      describe('onCaseFromMessage', () ->
+        it('should open new case if message does not have one', () ->
+          newCaseModal = spyOnPromise($q, $scope, UtilsService, 'newCaseModal')
+          openCase = spyOnPromise($q, $scope, CaseService, 'open')
+          spyOn(UtilsService, 'navigate')
+
+          $scope.onCaseFromMessage(test.msg1)
+
+          newCaseModal.resolve({summary: "New case", assignee: test.moh})
+          openCase.resolve({id: 601, summary: "New case", isNew: false})
+
+          expect(CaseService.open).toHaveBeenCalledWith(test.msg1, "New case", test.moh)
+          expect(UtilsService.navigate).toHaveBeenCalledWith('/case/read/601/?alert=open_found_existing')
+        )
+
+        it('should redirect to an existing case', () ->
+          spyOn(UtilsService, 'navigate')
+
+          test.msg1.case = {id: 601, summary: "A case"}
+          $scope.onCaseFromMessage(test.msg1)
+
+          expect(UtilsService.navigate).toHaveBeenCalledWith('/case/read/601/')
+        )
+      )
+
+      it('onForwardMessage', () ->
+        composeModal = spyOnPromise($q, $scope, UtilsService, 'composeModal')
+        forward = spyOnPromise($q, $scope, MessageService, 'forward')
+        spyOn(UtilsService, 'displayAlert')
+
+        $scope.onForwardMessage(test.msg1)
+
+        composeModal.resolve({text: "FYI", urn: "tel:+260964153686"})
+        forward.resolve()
+
+        expect(MessageService.forward).toHaveBeenCalledWith(test.msg1, "FYI", "tel:+260964153686")
+        expect(UtilsService.displayAlert).toHaveBeenCalled()
+      )
+
+      it('onLabelMessage', () ->
+        labelModal = spyOnPromise($q, $scope, UtilsService, 'labelModal')
+        relabel = spyOnPromise($q, $scope, MessageService, 'relabel')
+
+        $scope.onLabelMessage(test.msg1)
+
+        labelModal.resolve([test.coffee])
+        relabel.resolve()
+
+        expect(MessageService.relabel).toHaveBeenCalledWith(test.msg1, [test.coffee])
+      )
+
+      it('onToggleMessageFlag', () ->
+        confirmModal = spyOnPromise($q, $scope, UtilsService, 'confirmModal')
+        bulkFlag = spyOnPromise($q, $scope, MessageService, 'bulkFlag')
+
+        # try with message that is currently flagged
+        $scope.onToggleMessageFlag(test.msg1)
+
+        confirmModal.resolve()
+        bulkFlag.resolve()
+
+        expect(MessageService.bulkFlag).toHaveBeenCalledWith([test.msg1], false)
+
+        confirmModal.reset()
+
+        # try with message that isn't currently flagged
+        $scope.onToggleMessageFlag(test.msg2)
+
+        confirmModal.resolve()
+        bulkFlag.resolve()
+
+        expect(MessageService.bulkFlag).toHaveBeenCalledWith([test.msg2], true)
+      )
+    )
+
+    #=======================================================================
     # Tests for OutgoingController
     #=======================================================================
     describe('OutgoingController', () ->
-      OutgoingService = null
 
-      beforeEach(inject((_OutgoingService_) ->
-        OutgoingService = _OutgoingService_
-
+      beforeEach(() ->
         $controller('OutgoingController', {$scope: $scope})
 
         $homeScope.init('sent', serverTime)
@@ -169,7 +372,7 @@ describe('controllers:', () ->
         test.out1 = {id: 601, text: "Hi", time: utcdate(2016, 5, 28, 10, 0)}
         test.out2 = {id: 602, text: "OK", time: utcdate(2016, 5, 27, 11, 0)}
         test.out3 = {id: 603, text: "Sawa", time: utcdate(2016, 5, 27, 12, 0)}
-      ))
+      )
 
       it('loadOldItems', () ->
         fetchOld = spyOnPromise($q, $scope, OutgoingService, 'fetchOld')
@@ -192,6 +395,7 @@ describe('controllers:', () ->
         expect($scope.items).toEqual([test.out3, test.out2, test.out1])
         expect($scope.oldItemsMore).toEqual(false)
         expect($scope.isInfiniteScrollEnabled()).toEqual(false)
+        expect($scope.hasTooManyItemsToDisplay()).toEqual(false)
       )
 
       it('activateContact', () ->

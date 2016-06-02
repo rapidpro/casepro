@@ -216,7 +216,6 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
     search.folder = $scope.folder
     search.label = $scope.activeLabel
     search.contact = $scope.activeContact
-    search.timeCode = Date.now()
 
     # searching up to a date means including anything on the date
     if search.before
@@ -290,21 +289,14 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
   #----------------------------------------------------------------------------
 
   $scope.onToggleMessageFlag = (message) ->
-    prevState = message.flagged
-    message.flagged = !prevState
-    MessageService.bulkFlag([message], message.flagged).then(() ->
+    MessageService.bulkFlag([message], !message.flagged).then(() ->
       $scope.updateItems()
     )
 
   $scope.onForwardMessage = (message) ->
     initialText = '"' + message.text + '"'
 
-    $uibModal.open({templateUrl: 'composeModal.html', controller: 'ComposeModalController', resolve: {
-      title: () -> "Forward",
-      initialText: () -> initialText,
-      maxLength: () -> OUTGOING_TEXT_MAX_LEN,
-    }})
-    .result.then((data) ->
+    UtilsService.composeModal("Forward", initialText, OUTGOING_TEXT_MAX_LEN).then((data) ->
       MessageService.forward(message, data.text, data.urn).then(() ->
         UtilsService.displayAlert('success', "Message forwarded to " + data.urn.path)
       )
@@ -312,16 +304,17 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
 
   $scope.onCaseFromMessage = (message) ->
     if message.case
-      CaseService.navigateToCase(message.case, null)
+      UtilsService.navigate('/case/read/' + message.case.id + '/')
       return
 
     partners = if $scope.user.partner then null else $scope.partners
-    resolve = {message: (() -> message), summaryMaxLength: (() -> CASE_SUMMARY_MAX_LEN), partners: (() -> partners)}
-    $uibModal.open({templateUrl: 'newCaseModal.html', controller: 'NewCaseModalController', resolve: resolve})
-    .result.then((result) ->
-      CaseService.open(message, result.summary, result.assignee).then((caseObj) ->
-          withAlert = if !caseObj.isNew then 'open_found_existing' else null
-          CaseService.navigateToCase(caseObj, withAlert)
+
+    UtilsService.newCaseModal(message.text, CASE_SUMMARY_MAX_LEN, partners).then((data) ->
+      CaseService.open(message, data.summary, data.assignee).then((caseObj) ->
+          caseUrl = '/case/read/' + caseObj.id + '/'
+          if !caseObj.isNew
+            caseUrl += '?alert=open_found_existing'
+          UtilsService.navigate(caseUrl)
       )
     )
 

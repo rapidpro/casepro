@@ -72,10 +72,10 @@ modals.controller('ReplyModalController', ['$scope', '$uibModalInstance', 'maxLe
 #=====================================================================
 # Open new case modal
 #=====================================================================
-modals.controller 'NewCaseModalController', ['$scope', '$uibModalInstance', 'message', 'summaryMaxLength', 'partners', ($scope, $uibModalInstance, message, summaryMaxLength, partners) ->
+modals.controller 'NewCaseModalController', ['$scope', '$uibModalInstance', 'summaryInitial', 'summaryMaxLength', 'partners', ($scope, $uibModalInstance, summaryInitial, summaryMaxLength, partners) ->
   $scope.partners = partners
   $scope.fields = {
-    summary: {val: message.text, maxLength: summaryMaxLength},
+    summary: {val: summaryInitial, maxLength: summaryMaxLength},
     assignee: {val: if partners then partners[0] else null}
   }
 
@@ -120,11 +120,11 @@ modals.controller('LabelModalController', ['$scope', '$uibModalInstance', 'title
 #=====================================================================
 # Compose message to URN modal
 #=====================================================================
-modals.controller('ComposeModalController', ['$scope', '$uibModalInstance', 'title', 'initialText', 'maxLength', ($scope, $uibModalInstance, title, initialText, maxLength) ->
+modals.controller('ComposeModalController', ['$scope', '$uibModalInstance', 'title', 'initial', 'maxLength', ($scope, $uibModalInstance, title, initial, maxLength) ->
   $scope.title = title
   $scope.fields = {
     urn: {scheme: null, path: ''},
-    text: {val: initialText, maxLength: maxLength}
+    text: {val: initial, maxLength: maxLength}
   }
 
   $scope.setScheme = (scheme) ->
