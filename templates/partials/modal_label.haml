@@ -1,0 +1,19 @@
+-load i18n
+
+.modal-header
+  %h3.modal-title
+    [[ title ]]
+  .modal-body
+    %p
+      %span{ ng-bind-html:"prompt" }
+    %form
+      .{ ng-repeat:"item in selection" }
+        %input{ type:"checkbox", ng-model:"item.selected" }
+        &nbsp;
+        %label.control-label
+          [[ item.label.name ]]
+  .modal-footer
+    %button.btn.btn-primary{ ng-click:"ok()" }
+      - trans "OK"
+    %button.btn.btn-default{ ng-click:"cancel()" }
+      - trans "Cancel"

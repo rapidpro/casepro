@@ -1,0 +1,13 @@
+-load i18n
+
+.modal-header
+  %h3.modal-title
+    [[ title ]]
+  .modal-body
+    %p
+      %span{ ng-bind-html:"prompt" }
+  .modal-footer
+    %button.btn{ ng-click:"ok()", ng-class:'{ "btn-primary": style == "primary", "btn-danger": style == "danger" }' }
+      - trans "OK"
+    %button.btn.btn-default{ ng-click:"cancel()" }
+      - trans "Cancel"

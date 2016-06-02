@@ -1,0 +1,39 @@
+-load i18n
+
+.modal-header
+  %h3.modal-title
+    [[ title ]]
+  .modal-body
+    %form{ name:"form", novalidate:"" }
+      .form-group{ ng-class:'{"has-error": form.path.$invalid && (form.path.$dirty || form.submitted)}' }
+        %label.control-label
+          - trans "Recipient"
+        .input-group
+          .input-group-btn
+            %button.btn.btn-default.dropdown-toggle{ type:"button", data-toggle:"dropdown" }
+              [[ urn_scheme_label ]]
+              %span.caret
+            %ul.dropdown-menu
+              %li
+                %a{ ng-click:'setScheme("tel")' }
+                  - trans "Phone"
+              %li
+                %a{ ng-click:'setScheme("twitter")' }
+                  - trans "Twitter"
+          %input.form-control{ type:"text", ng-model:"fields.urn.path", name:"path", required:"", style:"width: 300px" }
+        .help-block{ ng-show:"form.path.$error.required && (form.path.$dirty || form.submitted)" }
+          - trans "Required"
+
+      .form-group{ ng-class:'{"has-error": form.text.$invalid}' }
+        %label.control-label
+          - trans "Message"
+        %textarea.form-control{ ng-model:"fields.text.val", ng-maxlength:"fields.text.maxLength", name:"text", required:"" }
+        .help-block{ ng-show:"form.text.$error.required" }
+          - trans "Required"
+        .help-block{ ng-show:"form.text.$error.maxlength" }
+          - trans "Too long"
+  .modal-footer
+    %button.btn.btn-primary{ ng-click:"ok()" }
+      - trans "Send"
+    %button.btn.btn-default{ ng-click:"cancel()" }
+      - trans "Cancel"
