@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 import pytz
 
 from datetime import date, datetime
+from django.core.urlresolvers import reverse
 from django.http import HttpRequest
 from enum import Enum
 
@@ -111,3 +112,10 @@ class MiddlewareTest(BaseCasesTest):
         request.META = {'CONTENT_TYPE': "text/html"}
         middleware.process_request(request)
         self.assertFalse(hasattr(request, 'json'))
+
+
+class ViewsTest(BaseCasesTest):
+    def test_partials(self):
+        response = self.url_get('unicef', '/partials/modal_confirm.html')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "[[ title ]]")
