@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 import pytz
 
 from datetime import date, datetime
-from django.core.urlresolvers import reverse
 from django.http import HttpRequest
 from enum import Enum
 
