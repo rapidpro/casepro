@@ -10,6 +10,7 @@ from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
 from el_pagination.paginators import LazyPaginator
+from smartmin.mixins import NonAtomicMixin
 from smartmin.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView
 from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
@@ -19,7 +20,6 @@ from casepro.msgs.models import Label, Message, MessageFolder, Outgoing, Outgoin
 from casepro.utils import json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder
 from casepro.utils import month_range
 from casepro.utils.export import BaseDownloadView
-from casepro.utils.views import NonAtomicMixin
 
 from . import MAX_MESSAGE_CHARS
 from .forms import PartnerForm
