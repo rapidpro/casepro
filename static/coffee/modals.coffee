@@ -16,7 +16,7 @@ modals.controller 'ConfirmModalController', ['$scope', '$uibModalInstance', 'pro
   $scope.style = style or 'primary'
 
   $scope.ok = () -> $uibModalInstance.close(true)
-  $scope.cancel = () -> $uibModalInstance.dismiss('cancel')
+  $scope.cancel = () -> $uibModalInstance.dismiss(false)
 ]
 
 
@@ -35,7 +35,7 @@ modals.controller 'NoteModalController', ['$scope', '$uibModalInstance', 'title'
     if $scope.form.$valid
       $uibModalInstance.close($scope.fields.note.val)
 
-  $scope.cancel = () -> $uibModalInstance.dismiss('cancel')
+  $scope.cancel = () -> $uibModalInstance.dismiss(false)
 ]
 
 
@@ -50,7 +50,7 @@ modals.controller 'EditModalController', ['$scope', '$uibModalInstance', 'title'
     if $scope.form.$valid
       $uibModalInstance.close($scope.fields.text.val)
 
-  $scope.cancel = () -> $uibModalInstance.dismiss('cancel')
+  $scope.cancel = () -> $uibModalInstance.dismiss(false)
 ]
 
 
@@ -65,7 +65,7 @@ modals.controller('ReplyModalController', ['$scope', '$uibModalInstance', 'maxLe
     if $scope.form.$valid
       $uibModalInstance.close($scope.fields.text.val)
 
-  $scope.cancel = () -> $uibModalInstance.dismiss('cancel')
+  $scope.cancel = () -> $uibModalInstance.dismiss(false)
 ])
 
 
@@ -83,7 +83,7 @@ modals.controller 'NewCaseModalController', ['$scope', '$uibModalInstance', 'sum
     $scope.form.submitted = true
     if $scope.form.$valid
       $uibModalInstance.close({summary: $scope.fields.summary.val, assignee: $scope.fields.assignee.val})
-  $scope.cancel = () -> $uibModalInstance.dismiss('cancel')
+  $scope.cancel = () -> $uibModalInstance.dismiss(false)
 ]
 
 
@@ -97,7 +97,7 @@ modals.controller 'AssignModalController', ['$scope', '$uibModalInstance', 'titl
   $scope.fields = { assignee: partners[0] }
 
   $scope.ok = () -> $uibModalInstance.close($scope.fields.assignee)
-  $scope.cancel = () -> $uibModalInstance.dismiss('cancel')
+  $scope.cancel = () -> $uibModalInstance.dismiss(false)
 ]
 
 
@@ -113,7 +113,7 @@ modals.controller('LabelModalController', ['$scope', '$uibModalInstance', 'title
     selectedLabels = (item.label for item in $scope.selection when item.selected)
     $uibModalInstance.close(selectedLabels)
 
-  $scope.cancel = () -> $uibModalInstance.dismiss('cancel')
+  $scope.cancel = () -> $uibModalInstance.dismiss(false)
 ])
 
 
@@ -138,7 +138,7 @@ modals.controller('ComposeModalController', ['$scope', '$uibModalInstance', 'tit
       urn = {scheme: $scope.fields.urn.scheme, path: $scope.fields.urn.path, urn: ($scope.fields.urn.scheme + ':' + $scope.fields.urn.path)}
       $uibModalInstance.close({text: $scope.fields.text.val, urn: urn})
 
-  $scope.cancel = () -> $uibModalInstance.dismiss('cancel')
+  $scope.cancel = () -> $uibModalInstance.dismiss(false)
 
   $scope.setScheme('tel')
 ])
@@ -156,5 +156,5 @@ modals.controller('MessageHistoryModalController', ['$scope', '$uibModalInstance
     $scope.loading = false
   )
 
-  $scope.close = () -> $uibModalInstance.dismiss('close')
+  $scope.close = () -> $uibModalInstance.dismiss(false)
 ])
