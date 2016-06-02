@@ -10,10 +10,10 @@ from casepro.backend import get_backend
 from .models import Label, Message
 
 
-@receiver(pre_save, sender=Label)
+@receiver(post_save, sender=Label)
 def update_label_uuid(sender, instance, **kwargs):
     if instance.is_synced and not instance.uuid:
-        instance.uuid = get_backend().create_label(instance.org, instance.name)
+        get_backend().push_label(instance.org, instance)
 
 
 @receiver(pre_save, sender=Message)
