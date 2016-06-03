@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+from dash.orgs.models import TaskState
 from django.core.urlresolvers import reverse
 
 from casepro.contacts.models import Field, Group
@@ -92,11 +93,16 @@ class TaskExtCRUDLTest(BaseCasesTest):
     def test_list(self):
         url = reverse('orgs_ext.task_list')
 
+        state1 = TaskState.get_or_create(self.unicef, 'mytask1')
+        state2 = TaskState.get_or_create(self.nyaruka, 'mytask1')
+
         # not accessible to org users
         self.login(self.admin)
-        self.assertLoginRedirect(self.url_get('unicef', url), 'unicef', url)
+        self.assertRedirects(self.url_get(None, url), 'http://testserver/users/login/?next=%s' % url)
 
         # accessible to superusers
         self.login(self.superuser)
-        response = self.url_get('unicef', url)
+        response = self.url_get(None, url)
+
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context['object_list']), [state2, state1])

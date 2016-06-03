@@ -23,8 +23,8 @@ from .tasks import handle_messages, pull_messages
 
 
 class LabelTest(BaseCasesTest):
-    @patch('casepro.test.TestBackend.create_label')
-    def test_save(self, mock_create_label):
+    @patch('casepro.test.TestBackend.push_label')
+    def test_save(self, mock_push_label):
         # create un-synced label
         tests = [ContainsTest(['ebola', 'fever'], Quantifier.ALL), GroupsTest([self.reporters], Quantifier.ANY)]
         label = Label.create(self.unicef, "Ebola", "Msgs about ebola", tests, is_synced=False)
@@ -36,16 +36,14 @@ class LabelTest(BaseCasesTest):
         self.assertEqual(label.is_synced, False)
         self.assertEqual(six.text_type(label), "Ebola")
 
-        mock_create_label.assert_not_called()
-        mock_create_label.return_value = "L-010"
+        self.assertNotCalled(mock_push_label)
 
         # update it to be synced
         label.is_synced = True
         label.save()
         label.refresh_from_db()
 
-        self.assertEqual(label.uuid, 'L-010')
-        self.assertEqual(label.is_synced, True)
+        mock_push_label.assert_called_once_with(self.unicef, label)
 
     def test_get_all(self):
         self.assertEqual(set(Label.get_all(self.unicef)), {self.aids, self.pregnancy, self.tea})
@@ -157,17 +155,21 @@ class LabelCRUDLTest(BaseCasesTest):
 
         self.assertEqual(response.status_code, 302)
 
-        label = Label.objects.get(pk=self.pregnancy.pk)
-        self.assertEqual(label.uuid, 'L-002')
-        self.assertEqual(label.org, self.unicef)
-        self.assertEqual(label.name, "Pregnancy")
-        self.assertEqual(label.description, "Msgs about maternity")
-        self.assertEqual(label.get_tests(), [
+        self.pregnancy.refresh_from_db()
+        self.assertEqual(self.pregnancy.uuid, 'L-002')
+        self.assertEqual(self.pregnancy.org, self.unicef)
+        self.assertEqual(self.pregnancy.name, "Pregnancy")
+        self.assertEqual(self.pregnancy.description, "Msgs about maternity")
+        self.assertEqual(self.pregnancy.get_tests(), [
             ContainsTest(['pregnancy', 'maternity'], Quantifier.ANY),
             GroupsTest([self.males], Quantifier.ANY),
             FieldTest('age', ["18", "19", "20"])
         ])
-        self.assertEqual(label.is_synced, True)
+        self.assertEqual(self.pregnancy.is_synced, True)
+
+        # view form again for recently edited label
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
 
     def test_list(self):
         url = reverse('msgs.label_list')

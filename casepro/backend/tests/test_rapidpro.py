@@ -131,11 +131,17 @@ class ContactSyncerTest(BaseCasesTest):
 
 
 class MessageSyncerTest(BaseCasesTest):
-    def test_fetch_local(self):
-        ann = self.create_contact(self.unicef, 'C-001', "Ann")
-        msg = self.create_message(self.unicef, 123456789, ann, "Yes")
 
-        self.assertEqual(MessageSyncer(as_handled=False).fetch_local(self.unicef, 123456789), msg)
+    def setUp(self):
+        super(MessageSyncerTest, self).setUp()
+
+        self.syncer = MessageSyncer(as_handled=False)
+        self.ann = self.create_contact(self.unicef, 'C-001', "Ann")
+
+    def test_fetch_local(self):
+        msg = self.create_message(self.unicef, 123456789, self.ann, "Yes")
+
+        self.assertEqual(self.syncer.fetch_local(self.unicef, 123456789), msg)
 
     def test_local_kwargs(self):
         d1 = now() - timedelta(hours=1)
@@ -186,6 +192,73 @@ class MessageSyncerTest(BaseCasesTest):
         remote.visibility = 'deleted'
 
         self.assertIsNone(MessageSyncer(as_handled=False).local_kwargs(self.unicef, remote))
+
+    def test_update_required(self):
+        d1 = now() - timedelta(hours=1)
+        local = self.create_message(self.unicef, 101, self.ann, "Yes", [self.aids], is_flagged=False)
+
+        # remote message has been flagged
+        self.assertTrue(self.syncer.update_required(local, TembaMessage.create(
+                id=101,
+                contact=ObjectRef.create(uuid='C-001', name="Ann"),
+                urn="twitter:ann123",
+                direction='in',
+                type='inbox',
+                status='handled',
+                visibility='visible',
+                text="Yes",
+                labels=[ObjectRef.create(uuid='L-001', name="AIDS"), ObjectRef.create(uuid='L-009', name="Flagged")],
+                created_on=d1
+        ), {}))
+
+        # remote message has been archived
+        self.assertTrue(self.syncer.update_required(local, TembaMessage.create(
+            id=101,
+            contact=ObjectRef.create(uuid='C-001', name="Ann"),
+            urn="twitter:ann123",
+            direction='in',
+            type='inbox',
+            status='handled',
+            visibility='archived',
+            text="Yes",
+            labels=[ObjectRef.create(uuid='L-001', name="AIDS")],
+            created_on=d1
+        ), {}))
+
+        # remote message has been relabelled
+        self.assertTrue(self.syncer.update_required(local, TembaMessage.create(
+            id=101,
+            contact=ObjectRef.create(uuid='C-001', name="Ann"),
+            urn="twitter:ann123",
+            direction='in',
+            type='inbox',
+            status='handled',
+            visibility='archived',
+            text="Yes",
+            labels=[ObjectRef.create(uuid='L-002', name="Pregnancy")],
+            created_on=d1
+        ), {}))
+
+        # no differences
+        self.assertFalse(self.syncer.update_required(local, TembaMessage.create(
+            id=101,
+            contact=ObjectRef.create(uuid='C-001', name="Ann"),
+            urn="twitter:ann123",
+            direction='in',
+            type='inbox',
+            status='handled',
+            visibility='visible',
+            text="Yes",
+            labels=[ObjectRef.create(uuid='L-001', name="AIDS")],
+            created_on=d1
+        ), {}))
+
+    def test_delete_local(self):
+        local = self.create_message(self.unicef, 101, self.ann, "Yes", [self.aids], is_flagged=False)
+        self.syncer.delete_local(local)
+
+        self.assertEqual(local.is_active, False)
+        self.assertEqual(set(local.labels.all()), set())
 
 
 class RapidProBackendTest(BaseCasesTest):
@@ -526,24 +599,34 @@ class RapidProBackendTest(BaseCasesTest):
 
     @patch('dash.orgs.models.TembaClient1.create_label')
     @patch('dash.orgs.models.TembaClient1.get_labels')
-    def test_create_label(self, mock_get_labels, mock_create_label):
+    def test_push_label(self, mock_get_labels, mock_create_label):
         mock_get_labels.return_value = [
-            TembaLabel.create(uuid="L-011", name="Not Ebola", count=213),
-            TembaLabel.create(uuid="L-012", name="ebola", count=345)
+            TembaLabel.create(uuid="L-011", name="Not Tea", count=213),
+            TembaLabel.create(uuid="L-012", name="tea", count=345)
         ]
 
-        # check when label exists
-        self.assertEqual(self.backend.create_label(self.unicef, "Ebola"), "L-012")
+        # check when label with name exists
+        self.tea.uuid = None
+        self.tea.save()
+        self.backend.push_label(self.unicef, self.tea)
+
+        self.tea.refresh_from_db()
+        self.assertEqual(self.tea.uuid, "L-012")
 
         self.assertNotCalled(mock_create_label)
 
         # check when label doesn't exist
         mock_get_labels.return_value = []
-        mock_create_label.return_value = TembaLabel.create(uuid='L-013', name="Ebola", count=0)
+        mock_create_label.return_value = TembaLabel.create(uuid='L-013', name="Tea", count=0)
 
-        self.assertEqual(self.backend.create_label(self.unicef, "Ebola"), "L-013")
+        self.tea.uuid = None
+        self.tea.save()
+        self.backend.push_label(self.unicef, self.tea)
 
-        mock_create_label.assert_called_once_with(name="Ebola")
+        self.tea.refresh_from_db()
+        self.assertEqual(self.tea.uuid, "L-013")
+
+        mock_create_label.assert_called_once_with(name="Tea")
 
     @patch('dash.orgs.models.TembaClient1.create_broadcast')
     def test_push_outgoing(self, mock_create_broadcast):

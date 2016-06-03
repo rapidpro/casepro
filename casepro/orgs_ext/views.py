@@ -77,8 +77,7 @@ class OrgExtCRUDL(SmartCRUDL):
 
 class TaskExtCRUDL(TaskCRUDL):
     class List(TaskCRUDL.List):
+        link_fields = ('org',)
+
         def lookup_field_link(self, context, field, obj):
-            if field == 'org':
-                return reverse('orgs_ext.org_update', args=[obj.org_id])
-            else:
-                return super(TaskCRUDL.List, self).lookup_field_link(context, field, obj)
+            return reverse('orgs_ext.org_update', args=[obj.org_id])

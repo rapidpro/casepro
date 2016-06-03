@@ -172,10 +172,10 @@ class MessageSyncer(BaseSyncer):
         return kwargs
 
     def update_required(self, local, remote, remote_as_kwargs):
-        if local.is_flagged != (SYSTEM_LABEL_FLAGGED in [l.name for l in remote.labels]):
+        if local.is_flagged != remote_message_is_flagged(remote):
             return True
 
-        if local.is_archived and remote.visibility != 'archived':
+        if local.is_archived != remote_message_is_archived(remote):
             return True
 
         local_label_uuids = {l.uuid for l in local.labels.all()}
@@ -235,17 +235,18 @@ class RapidProBackend(BaseBackend):
 
         return sync_local_to_changes(org, MessageSyncer(as_handled), fetches, [], progress_callback)
 
-    def create_label(self, org, name):
+    def push_label(self, org, label):
         client = self._get_client(org, 1)
-        temba_labels = client.get_labels(name=name)  # gets all partial name matches
-        temba_labels = [l for l in temba_labels if l.name.lower() == name.lower()]
+        temba_labels = client.get_labels(name=label.name)  # gets all partial name matches
+        temba_labels = [l for l in temba_labels if l.name.lower() == label.name.lower()]
 
         if temba_labels:
             remote = temba_labels[0]
         else:
-            remote = client.create_label(name=name)
+            remote = client.create_label(name=label.name)
 
-        return remote.uuid
+        label.uuid = remote.uuid
+        label.save(update_fields=('uuid',))
 
     def push_outgoing(self, org, outgoing, as_broadcast=False):
         client = self._get_client(org, 1)

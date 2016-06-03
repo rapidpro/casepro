@@ -74,13 +74,12 @@ class BaseBackend(object):
         """
 
     @abstractmethod
-    def create_label(self, org, name):
+    def push_label(self, org, label):
         """
-        Creates a label (or returns an existing label) with the given name
+        Pushes a new or updated label
 
         :param org: the org
-        :param name: the name, e.g. "Spam"
-        :return: the backend label UUID
+        :param label: the label
         """
 
     @abstractmethod

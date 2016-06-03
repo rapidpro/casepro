@@ -34,6 +34,10 @@ class TestsTest(BaseCasesTest):
         self.assertEqual(test.quantifier, Quantifier.ANY)
         self.assertEqual(test.to_json(), {'type': 'contains', 'keywords': ["red", "blue"], 'quantifier': 'any'})
         self.assertEqual(six.text_type(test), 'message contains any of "red", "blue"')
+        self.assertEqual(str(test), 'message contains any of "red", "blue"')
+
+        self.assertEqual(test, ContainsTest(["RED", "Blue"], Quantifier.ANY))
+        self.assertNotEqual(test, ContainsTest(["RED", "Green"], Quantifier.ANY))
 
         self.assertTest(test, self.ann, "Fred Blueth", False)
         self.assertTest(test, self.ann, "red", True)
@@ -118,6 +122,9 @@ class ActionsTest(BaseCasesTest):
         self.assertEqual(action.label, self.aids)
         self.assertEqual(action.to_json(), {'type': 'label', 'label': self.aids.pk})
 
+        self.assertEqual(action, LabelAction(self.aids))
+        self.assertNotEqual(action, LabelAction(self.pregnancy))
+
         msg = self.create_message(self.unicef, 102, self.ann, "red")
         action.apply_to(self.unicef, [msg])
 
@@ -127,6 +134,9 @@ class ActionsTest(BaseCasesTest):
         action = Action.from_json({'type': 'flag'}, self.context)
         self.assertEqual(action.TYPE, 'flag')
         self.assertEqual(action.to_json(), {'type': 'flag'})
+
+        self.assertEqual(action, FlagAction())
+        self.assertNotEqual(action, ArchiveAction())
 
         msg = self.create_message(self.unicef, 102, self.ann, "red")
         action.apply_to(self.unicef, [msg])
@@ -138,6 +148,9 @@ class ActionsTest(BaseCasesTest):
         action = Action.from_json({'type': 'archive'}, self.context)
         self.assertEqual(action.TYPE, 'archive')
         self.assertEqual(action.to_json(), {'type': 'archive'})
+
+        self.assertEqual(action, ArchiveAction())
+        self.assertNotEqual(action, FlagAction())
 
         msg = self.create_message(self.unicef, 102, self.ann, "red")
         action.apply_to(self.unicef, [msg])

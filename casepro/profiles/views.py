@@ -217,14 +217,13 @@ class UserCRUDL(SmartCRUDL):
 
         def get_role(self, obj):
             org = self.request.org
-            if org:
-                if obj.can_administer(org):
-                    return _("Administrator")
-                elif org.editors.filter(pk=obj.pk).exists():
-                    return _("Manager")
-                elif org.viewers.filter(pk=obj.pk).exists():
-                    return _("Data Analyst")
-            return None
+
+            if obj.can_administer(org):
+                return _("Administrator")
+            elif org.editors.filter(pk=obj.pk).exists():
+                return _("Manager")
+            elif org.viewers.filter(pk=obj.pk).exists():
+                return _("Data Analyst")
 
     class Delete(OrgPermsMixin, SmartDeleteView):
         cancel_url = '@profiles.user_list'
