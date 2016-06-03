@@ -229,11 +229,13 @@ class UserCRUDL(SmartCRUDL):
         cancel_url = '@profiles.user_list'
 
         def has_permission(self, request, *args, **kwargs):
-            return request.user.can_edit(request.org, self.get_object())
+            user = self.get_object()
+            return request.user.can_edit(request.org, user) and request.user != user
 
         def post(self, request, *args, **kwargs):
             user = self.get_object()
-            user.release()
+            user.remove_from_org(request.org)
+
             return HttpResponse(status=204)
 
     class List(OrgPermsMixin, UserFieldsMixin, SmartListView):

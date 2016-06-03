@@ -111,9 +111,19 @@ class UserPatchTest(BaseCasesTest):
         self.assertFalse(self.user2.can_edit(self.unicef, self.user3))
         self.assertFalse(self.user2.can_edit(self.unicef, self.user3))
 
-    def test_release(self):
-        self.user1.release()
-        self.assertFalse(self.user1.is_active)
+    def test_remove_from_org(self):
+        # try with org admin
+        self.admin.remove_from_org(self.unicef)
+
+        self.admin.refresh_from_db()
+        self.assertIsNone(self.unicef.get_user_org_group(self.admin))
+
+        # try with partner user
+        self.user1.remove_from_org(self.unicef)
+
+        self.user1.refresh_from_db()
+        self.assertIsNone(self.unicef.get_user_org_group(self.user1))
+        self.assertIsNone(self.user1.get_partner(self.unicef))
 
     def test_unicode(self):
         self.assertEqual(unicode(self.superuser), "root")
@@ -461,6 +471,40 @@ class UserCRUDLTest(BaseCasesTest):
         user = User.objects.get(pk=self.user1.pk)
         self.assertFalse(user.profile.change_password)
         self.assertNotEqual(user.password, old_password_hash)
+
+    def test_delete(self):
+        # partner data analyst can't delete anyone
+        self.login(self.user2)
+
+        response = self.url_post('unicef', reverse('profiles.user_delete', args=[self.admin.pk]))
+        self.assertEqual(response.status_code, 302)
+
+        response = self.url_post('unicef', reverse('profiles.user_delete', args=[self.user1.pk]))
+        self.assertEqual(response.status_code, 302)
+
+        # partner manager can delete fellow partner org users but not org admins
+        self.login(self.user1)
+
+        response = self.url_post('unicef', reverse('profiles.user_delete', args=[self.user2.pk]))
+        self.assertEqual(response.status_code, 204)
+        self.assertIsNone(self.unicef.get_user_org_group(self.user2))
+
+        response = self.url_post('unicef', reverse('profiles.user_delete', args=[self.admin.pk]))
+        self.assertEqual(response.status_code, 302)
+
+        # admins can delete anyone in their org
+        self.login(self.admin)
+
+        response = self.url_post('unicef', reverse('profiles.user_delete', args=[self.user1.pk]))
+        self.assertEqual(response.status_code, 204)
+        self.assertIsNone(self.unicef.get_user_org_group(self.user1))
+
+        response = self.url_post('unicef', reverse('profiles.user_delete', args=[self.norbert.pk]))
+        self.assertEqual(response.status_code, 302)
+
+        # but not themselves
+        response = self.url_post('unicef', reverse('profiles.user_delete', args=[self.admin.pk]))
+        self.assertEqual(response.status_code, 302)
 
 
 class ForcePasswordChangeMiddlewareTest(BaseCasesTest):

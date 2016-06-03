@@ -123,9 +123,16 @@ def _user_can_edit(user, org, other):
     return other_partner and user.can_manage(other_partner)  # manager can edit users in same partner org
 
 
-def _user_release(user):
-    user.is_active = False
-    user.save(update_fields=('is_active',))
+def _user_remove_from_org(user, org):
+    # remove user from all org groups
+    org.administrators.remove(user)
+    org.editors.remove(user)
+    org.viewers.remove(user)
+
+    # remove from any partner for this org
+    if user.profile.partner and user.profile.partner.org == org:
+        user.profile.partner = None
+        user.profile.save(update_fields=('partner',))
 
 
 def _user_unicode(user):
@@ -151,6 +158,6 @@ User.get_partner = _user_get_partner
 User.can_administer = _user_can_administer
 User.can_manage = _user_can_manage
 User.can_edit = _user_can_edit
-User.release = _user_release
+User.remove_from_org = _user_remove_from_org
 User.__unicode__ = _user_unicode
 User.as_json = _user_as_json
