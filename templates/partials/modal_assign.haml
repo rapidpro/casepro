@@ -1,0 +1,17 @@
+-load i18n
+
+.modal-header
+  %h3.modal-title
+    [[ title ]]
+  .modal-body
+    %p
+      %span{ ng-bind-html:"prompt" }
+    .form-group
+      %label.control-label
+        - trans "Assign to"
+      %select.form-control{ ng-model:"fields.assignee", ng-options:"p.name for p in partners track by p.id" }
+  .modal-footer
+    %button.btn.btn-primary{ ng-click:"ok()" }
+      - trans "Open"
+    %button.btn.btn-default{ ng-click:"cancel()" }
+      - trans "Cancel"

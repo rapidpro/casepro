@@ -1,0 +1,40 @@
+-load i18n
+
+.modal-header
+  %h3.modal-title
+    - trans "Message History"
+  .modal-body
+    .message-history
+      .action.stackitem{ ng-repeat:"action in actions" }
+        .action-time
+          [[ action.created_on | autodate ]]
+
+        %span{ ng-if:'action.action == "F"' }
+          Flagged
+        %span{ ng-if:'action.action == "N"' }
+          Un-flagged
+        %span{ ng-if:'action.action == "L"' }
+          Label
+          %span.label.label-success<
+            [[ action.label.name ]]
+          added
+        %span{ ng-if:'action.action == "U"' }
+          Label
+          %span.label.label-success<
+            [[ action.label.name ]]
+          removed
+        %span{ ng-if:'action.action == "A"' }
+          Archived
+        %span{ ng-if:'action.action == "R"' }
+          Restored
+
+        by
+        %a{ ng-href:"/user/read/[[ action.created_by.id ]]/" }
+          [[ action.created_by.name ]]
+
+    .loading{ ng-if:"loading" }
+    .none{ ng-if:"actions.length == 0" }
+      - trans "No events"
+  .modal-footer
+    %button.btn.btn-primary{ ng-click:"close()" }
+      - trans "Close"

@@ -1,0 +1,18 @@
+-load i18n
+
+.modal-header
+  %h3.modal-title
+    [[ title ]]
+  .modal-body
+    %form{ name:"form", novalidate:"" }
+      .form-group{ ng-class:'{"has-error": form.text.$invalid}' }
+        %textarea.form-control{ ng-model:"fields.text.val", ng-maxlength:"fields.text.maxLength", name:"text", required:"" }
+        .help-block{ ng-show:"form.text.$error.required" }
+          - trans "Required"
+        .help-block{ ng-show:"form.text.$error.maxlength" }
+          - trans "Too long"
+  .modal-footer
+    %button.btn.btn-primary{ ng-click:"ok()" }
+      - trans "Save"
+    %button.btn.btn-default{ ng-click:"cancel()" }
+      - trans "Cancel"
