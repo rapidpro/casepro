@@ -373,7 +373,7 @@ class PartnerCRUDL(SmartCRUDL):
         def get_queryset(self, **kwargs):
             return Partner.get_all(self.request.org).order_by('name')
 
-    class Users(OrgPermsMixin, SmartReadView):
+    class Users(OrgObjPermsMixin, SmartReadView):
         """
         JSON endpoint to fetch partner users with their activity information
         """

@@ -6,41 +6,58 @@ from django.test.utils import override_settings
 
 from casepro.test import BaseCasesTest
 
-from . import ROLE_ANALYST, ROLE_MANAGER
+from .models import Profile, ROLE_ANALYST, ROLE_MANAGER
 
 
-class UserPatchTest(BaseCasesTest):
+class ProfileTest(BaseCasesTest):
     def test_create_user(self):
-        user = User.create(self.unicef, self.moh, ROLE_MANAGER, "Mo Cases", "mo@moh.com", "Qwerty123", False)
-        self.assertEqual(user.profile.full_name, "Mo Cases")
+        # create un-attached user
+        user1 = Profile.create_user("Tom McTicket", "tom@unicef.org", "Qwerty123")
+        self.assertEqual(user1.profile.full_name, "Tom McTicket")
+        self.assertIsNone(user1.profile.partner)
+        self.assertFalse(user1.profile.change_password)
+        self.assertEqual(user1.first_name, "")
+        self.assertEqual(user1.last_name, "")
+        self.assertEqual(user1.email, "tom@unicef.org")
+        self.assertEqual(user1.get_full_name(), "Tom McTicket")
+        self.assertIsNotNone(user1.password)
 
-        self.assertEqual(user.first_name, "")
-        self.assertEqual(user.last_name, "")
-        self.assertEqual(user.email, "mo@moh.com")
-        self.assertEqual(user.get_full_name(), "Mo Cases")
-        self.assertIsNotNone(user.password)
+        # create org-level user
+        user2 = Profile.create_org_user(self.unicef,  "Cary McCase", "cary@unicef.org", "Qwerty123")
+        self.assertIn(user2, self.unicef.administrators.all())
+        self.assertIsNone(user2.profile.partner)
 
-        self.assertFalse(user.profile.change_password)
-        self.assertEqual(user.profile.partner, self.moh)
+        # create partner-level manager user
+        user3 = Profile.create_partner_user(self.unicef, self.moh, ROLE_MANAGER, "Mo Cases", "mo@moh.com", "Qwerty123")
+        self.assertIn(user3, self.unicef.editors.all())
+        self.assertEqual(user3.profile.partner, self.moh)
 
-        user.set_org(self.unicef)
-        self.assertEqual(user.get_org_group(), Group.objects.get(name="Editors"))
+        # create partner-level manager user
+        user4 = Profile.create_partner_user(self.unicef, self.moh, ROLE_ANALYST, "Jo Cases", "jo@moh.com", "Qwerty123")
+        self.assertIn(user4, self.unicef.viewers.all())
+        self.assertEqual(user4.profile.partner, self.moh)
 
         # test creating user with long email
-        User.create(self.unicef, self.moh, ROLE_MANAGER, "Mo Cases",
-                    "mo123456789012345678901234567890@moh.com", "Qwerty123", False)
+        user5 = Profile.create_user("Lou", "lou123456789012345678901234567890@moh.com", "Qwerty123")
+        self.assertEqual(user5.email, "lou123456789012345678901234567890@moh.com")
 
-    def test_update_role(self):
-        self.user1.update_role(self.unicef, ROLE_ANALYST)
+    def test_update_partner_role(self):
+        self.user1.profile.update_partner_role(self.who, ROLE_ANALYST)
+
+        self.assertEqual(self.user1.profile.partner, self.who)
         self.assertTrue(self.user1 in self.unicef.viewers.all())
         self.assertTrue(self.user1 not in self.unicef.editors.all())
         self.assertTrue(self.user1 not in self.unicef.administrators.all())
 
-        self.user2.update_role(self.unicef, ROLE_MANAGER)
-        self.assertTrue(self.user2 not in self.unicef.viewers.all())
-        self.assertTrue(self.user2 in self.unicef.editors.all())
-        self.assertTrue(self.user2 not in self.unicef.administrators.all())
+        self.user1.profile.update_partner_role(self.moh, ROLE_MANAGER)
 
+        self.assertEqual(self.user1.profile.partner, self.moh)
+        self.assertTrue(self.user1 not in self.unicef.viewers.all())
+        self.assertTrue(self.user1 in self.unicef.editors.all())
+        self.assertTrue(self.user1 not in self.unicef.administrators.all())
+
+
+class UserTest(BaseCasesTest):
     def test_has_profile(self):
         self.assertFalse(self.superuser.has_profile())
         self.assertTrue(self.admin.has_profile())
@@ -220,8 +237,8 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertLoginRedirect(response, 'unicef', url)
 
-    def test_created_in(self):
-        url = reverse('profiles.user_create_in', args=[self.moh.pk])
+    def test_create_partner_user(self):
+        url = reverse('profiles.user_create_partner_user', args=[self.moh.pk])
 
         # log in as an org administrator
         self.login(self.admin)

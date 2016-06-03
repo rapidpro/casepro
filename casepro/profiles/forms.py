@@ -7,7 +7,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from casepro.cases.models import Partner
 
-from . import ROLE_ANALYST, ROLE_CHOICES
+from .models import ROLE_ANALYST, ROLE_PARTNER_CHOICES
 
 
 class UserForm(forms.ModelForm):
@@ -16,9 +16,9 @@ class UserForm(forms.ModelForm):
     """
     full_name = forms.CharField(label=_("Full name"), max_length=128)
 
-    partner = forms.ModelChoiceField(label=_("Partner Organization"), queryset=Partner.objects.none())
+    role = forms.ChoiceField(label=_("Role"), choices=ROLE_PARTNER_CHOICES, required=True, initial=ROLE_ANALYST)
 
-    role = forms.ChoiceField(label=_("Role"), choices=ROLE_CHOICES, required=True, initial=ROLE_ANALYST)
+    partner = forms.ModelChoiceField(label=_("Partner Organization"), queryset=Partner.objects.none())
 
     email = forms.CharField(label=_("Email"), max_length=254,
                             help_text=_("Email address and login."))
@@ -40,7 +40,7 @@ class UserForm(forms.ModelForm):
 
         super(UserForm, self).__init__(*args, **kwargs)
 
-        self.fields['partner'].queryset = Partner.get_all(self.org)
+        self.fields['partner'].queryset = Partner.get_all(self.org).order_by('name')
 
     def clean(self):
         cleaned_data = super(UserForm, self).clean()

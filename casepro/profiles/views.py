@@ -12,7 +12,7 @@ from smartmin.views import SmartCRUDL
 from casepro.cases.models import Partner
 from casepro.utils import json_encode
 
-from . import ROLE_ANALYST, ROLE_MANAGER
+from .models import Profile, ROLE_ANALYST, ROLE_MANAGER
 from .forms import UserForm
 
 
@@ -48,7 +48,7 @@ class UserFormMixin(object):
         obj.profile.save()
 
         if 'role' in data:
-            obj.update_role(self.request.org, data['role'])
+            obj.profile.update_role(self.request.org, data['role'])
 
         password = data.get('new_password', None) or data.get('password', None)
         if password:
@@ -69,52 +69,58 @@ class UserFieldsMixin(object):
 
 class UserCRUDL(SmartCRUDL):
     model = User
-    actions = ('create', 'update', 'read', 'self', 'delete', 'list')
+    actions = ('create', 'create_in_partner', 'update', 'read', 'self', 'delete', 'list')
 
     class Create(OrgPermsMixin, UserFormMixin, SmartCreateView):
-        form_class = UserForm
         permission = 'profiles.profile_user_create'
-
-        def has_permission(self, request, *args, **kwargs):
-            org = self.request.org
-
-            # non-admins can't access this view without a specified partner
-            if org and 'partner_id' not in self.kwargs and not self.request.user.can_administer(org):
-                return False
-
-            return super(UserCRUDL.Create, self).has_permission(request, *args, **kwargs)
-
-        def derive_fields(self):
-            fields = ['full_name']
-            if self.request.org:
-                if 'partner_id' not in self.kwargs:
-                    fields.append('partner')
-                fields.append('role')
-            return fields + ['email', 'password', 'confirm_password', 'change_password']
+        form_class = UserForm
+        fields = ('full_name', 'email', 'password', 'confirm_password', 'change_password')
+        success_url = 'profiles.user_list'
 
         def save(self, obj):
             data = self.form.cleaned_data
             org = self.request.org
-
-            if 'partner_id' in self.kwargs:
-                partner = Partner.get_all(org).get(pk=self.kwargs['partner_id'])
-            else:
-                partner = data.get('partner', None)
-
-            full_name = data['full_name']
-            role = data.get('role', None)
+            name = data['full_name']
             password = data['password']
             change_password = data['change_password']
-            self.object = User.create(org, partner, role, full_name, obj.email, password, change_password)
+
+            if org:
+                self.object = Profile.create_org_user(org, name, obj.email, password, change_password)
+            else:
+                self.object = Profile.create_user(name, obj.email, password, change_password)
+
+        def post_save(self, obj):
+            return obj
+
+    class CreateInPartner(OrgPermsMixin, UserFormMixin, SmartCreateView):
+        form_class = UserForm
+        fields = ('name', 'role', 'email', 'password', 'confirm_password', 'change_password')
+
+        @classmethod
+        def derive_url_pattern(cls, path, action):
+            return r'^user/create_in/(?P<partner_id>\d+)/$'
+
+        def derive_partner(self):
+            return Partner.get_all(self.request.org).get(pk=self.kwargs['partner_id'])
+
+        def has_permission(self, request, *args, **kwargs):
+            return self.request.user.can_manage(self.derive_partner())
+
+        def save(self, obj):
+            data = self.form.cleaned_data
+            org = self.request.org
+            partner = self.derive_partner()
+            role = data.get['role']
+            name = data['full_name']
+            password = data['password']
+            change_password = data['change_password']
+            self.object = Profile.create_partner_user(org, partner, role, name, obj.email, password, change_password)
 
         def post_save(self, obj):
             return obj
 
         def get_success_url(self):
-            if 'partner_id' in self.kwargs:
-                return reverse('cases.partner_read', args=[self.kwargs['partner_id']])
-            else:
-                return reverse('profiles.user_list')
+            return reverse('cases.partner_read', args=[self.kwargs['partner_id']])
 
     class Update(OrgPermsMixin, UserFormMixin, SmartUpdateView):
         form_class = UserForm
