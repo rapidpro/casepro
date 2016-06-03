@@ -172,10 +172,10 @@ class MessageSyncer(BaseSyncer):
         return kwargs
 
     def update_required(self, local, remote, remote_as_kwargs):
-        if local.is_flagged != (SYSTEM_LABEL_FLAGGED in [l.name for l in remote.labels]):
+        if local.is_flagged != remote_message_is_flagged(remote):
             return True
 
-        if local.is_archived and remote.visibility != 'archived':
+        if local.is_archived != remote_message_is_archived(remote):
             return True
 
         local_label_uuids = {l.uuid for l in local.labels.all()}

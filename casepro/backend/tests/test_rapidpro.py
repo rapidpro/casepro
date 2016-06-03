@@ -131,11 +131,17 @@ class ContactSyncerTest(BaseCasesTest):
 
 
 class MessageSyncerTest(BaseCasesTest):
-    def test_fetch_local(self):
-        ann = self.create_contact(self.unicef, 'C-001', "Ann")
-        msg = self.create_message(self.unicef, 123456789, ann, "Yes")
 
-        self.assertEqual(MessageSyncer(as_handled=False).fetch_local(self.unicef, 123456789), msg)
+    def setUp(self):
+        super(MessageSyncerTest, self).setUp()
+
+        self.syncer = MessageSyncer(as_handled=False)
+        self.ann = self.create_contact(self.unicef, 'C-001', "Ann")
+
+    def test_fetch_local(self):
+        msg = self.create_message(self.unicef, 123456789, self.ann, "Yes")
+
+        self.assertEqual(self.syncer.fetch_local(self.unicef, 123456789), msg)
 
     def test_local_kwargs(self):
         d1 = now() - timedelta(hours=1)
@@ -186,6 +192,73 @@ class MessageSyncerTest(BaseCasesTest):
         remote.visibility = 'deleted'
 
         self.assertIsNone(MessageSyncer(as_handled=False).local_kwargs(self.unicef, remote))
+
+    def test_update_required(self):
+        d1 = now() - timedelta(hours=1)
+        local = self.create_message(self.unicef, 101, self.ann, "Yes", [self.aids], is_flagged=False)
+
+        # remote message has been flagged
+        self.assertTrue(self.syncer.update_required(local, TembaMessage.create(
+                id=101,
+                contact=ObjectRef.create(uuid='C-001', name="Ann"),
+                urn="twitter:ann123",
+                direction='in',
+                type='inbox',
+                status='handled',
+                visibility='visible',
+                text="Yes",
+                labels=[ObjectRef.create(uuid='L-001', name="AIDS"), ObjectRef.create(uuid='L-009', name="Flagged")],
+                created_on=d1
+        ), {}))
+
+        # remote message has been archived
+        self.assertTrue(self.syncer.update_required(local, TembaMessage.create(
+            id=101,
+            contact=ObjectRef.create(uuid='C-001', name="Ann"),
+            urn="twitter:ann123",
+            direction='in',
+            type='inbox',
+            status='handled',
+            visibility='archived',
+            text="Yes",
+            labels=[ObjectRef.create(uuid='L-001', name="AIDS")],
+            created_on=d1
+        ), {}))
+
+        # remote message has been relabelled
+        self.assertTrue(self.syncer.update_required(local, TembaMessage.create(
+            id=101,
+            contact=ObjectRef.create(uuid='C-001', name="Ann"),
+            urn="twitter:ann123",
+            direction='in',
+            type='inbox',
+            status='handled',
+            visibility='archived',
+            text="Yes",
+            labels=[ObjectRef.create(uuid='L-002', name="Pregnancy")],
+            created_on=d1
+        ), {}))
+
+        # no differences
+        self.assertFalse(self.syncer.update_required(local, TembaMessage.create(
+            id=101,
+            contact=ObjectRef.create(uuid='C-001', name="Ann"),
+            urn="twitter:ann123",
+            direction='in',
+            type='inbox',
+            status='handled',
+            visibility='visible',
+            text="Yes",
+            labels=[ObjectRef.create(uuid='L-001', name="AIDS")],
+            created_on=d1
+        ), {}))
+
+    def test_delete_local(self):
+        local = self.create_message(self.unicef, 101, self.ann, "Yes", [self.aids], is_flagged=False)
+        self.syncer.delete_local(local)
+
+        self.assertEqual(local.is_active, False)
+        self.assertEqual(set(local.labels.all()), set())
 
 
 class RapidProBackendTest(BaseCasesTest):
