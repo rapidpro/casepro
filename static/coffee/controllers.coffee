@@ -260,7 +260,7 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
     )
 
   $scope.onReplyToSelection = () ->
-    $uibModal.open({templateUrl: 'partials/modal_reply.html', controller: 'ReplyModalController', resolve: {maxLength: (() -> OUTGOING_TEXT_MAX_LEN)}})
+    $uibModal.open({templateUrl: '/partials/modal_reply.html', controller: 'ReplyModalController', resolve: {maxLength: (() -> OUTGOING_TEXT_MAX_LEN)}})
     .result.then((text) ->
       MessageService.bulkReply($scope.selection, text).then(() ->
         MessageService.bulkArchive($scope.selection).then(() ->
@@ -326,7 +326,7 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
     )
 
   $scope.onShowMessageHistory = (message) ->
-    $uibModal.open({templateUrl: 'partials/modal_messagehistory.html', controller: 'MessageHistoryModalController', resolve: {
+    $uibModal.open({templateUrl: '/partials/modal_messagehistory.html', controller: 'MessageHistoryModalController', resolve: {
       message: () -> message
     }})
 ])
