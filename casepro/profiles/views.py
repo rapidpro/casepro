@@ -46,7 +46,7 @@ class UserUpdateMixin(OrgFormMixin):
 
         if 'role' in data:
             role = data['role']
-            partner = data['partner'] if 'partner' in data else self.get_partner(self.request.org)
+            partner = data['partner'] if 'partner' in data else self.get_partner()
             obj.profile.update_role(self.request.org, role, partner)
 
         # set new password if provided
@@ -162,7 +162,7 @@ class UserCRUDL(SmartCRUDL):
                 else:
                     profile_fields += ['role', 'partner']
 
-            return profile_fields + user_fields
+            return tuple(profile_fields + user_fields)
 
         def get_success_url(self):
             return reverse('profiles.user_read', args=[self.object.pk])

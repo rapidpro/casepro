@@ -210,7 +210,8 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_post('unicef', url, {'name': "Mo Cases", 'email': "mo@casely.com",
                                                  'partner': self.moh.pk, 'role': ROLE_ANALYST,
                                                  'password': "123", 'confirm_password': "123"})
-        self.assertFormError(response, 'form', 'password', "Ensure this value has at least 8 characters (it has 3).")
+        self.assertFormError(response, 'form', 'password', "Must contain a mixture of lowercase and uppercase, "
+                                                           "as well as a number")
 
         # submit again with valid password but mismatched confirmation
         response = self.url_post('unicef', url, {'name': "Mo Cases", 'email': "mo@casely.com",
@@ -245,7 +246,7 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertLoginRedirect(response, 'unicef', url)
 
-    def test_create_partner_user(self):
+    def test_create_in(self):
         url = reverse('profiles.user_create_in', args=[self.moh.pk])
 
         # log in as an org administrator
@@ -301,42 +302,94 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(user.profile.partner, self.moh)  # WHO was ignored
 
     def test_update(self):
-        url = reverse('profiles.user_update', args=[self.user1.pk])
+        url = reverse('profiles.user_update', args=[self.user2.pk])
 
         # log in as an org administrator
         self.login(self.admin)
 
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(set(response.context['form'].fields.keys()), {'name', 'email', 'role', 'partner',
+                                                                       'new_password', 'confirm_password',
+                                                                       'change_password', 'loc'})
 
         # submit with no fields entered
-        response = self.url_post('unicef', url, dict())
+        response = self.url_post('unicef', url, {})
         self.assertEqual(response.status_code, 200)
         self.assertFormError(response, 'form', 'name', 'This field is required.')
         self.assertFormError(response, 'form', 'role', 'This field is required.')
         self.assertFormError(response, 'form', 'email', 'This field is required.')
 
-        # submit with all fields entered
-        data = {'name': "Morris", 'partner': self.moh.pk, 'role': ROLE_ANALYST, 'email': "mo2@chat.com"}
-        response = self.url_post('unicef', url, data)
+        # submit with all required fields
+        response = self.url_post('unicef', url, {'name': "Bill", 'email': "bill@unicef.org",
+                                                 'partner': self.who.pk, 'role': ROLE_MANAGER})
         self.assertEqual(response.status_code, 302)
 
         # check updated user and profile
-        user = User.objects.get(pk=self.user1.pk)
-        self.assertEqual(user.profile.full_name, "Morris")
-        self.assertEqual(user.email, "mo2@chat.com")
-        self.assertEqual(user.username, "mo2@chat.com")
+        self.user2.refresh_from_db()
+        self.user2.profile.refresh_from_db()
+        self.assertEqual(self.user2.profile.full_name, "Bill")
+        self.assertEqual(self.user2.profile.partner, self.who)
+        self.assertEqual(self.user2.email, "bill@unicef.org")
+        self.assertEqual(self.user2.username, "bill@unicef.org")
+        self.assertNotIn(self.user2, self.unicef.viewers.all())
+        self.assertIn(self.user2, self.unicef.editors.all())
 
-        # submit again for good measure
-        data = {'name': "Morris", 'partner': self.moh.pk, 'role': ROLE_ANALYST, 'email': "mo2@chat.com"}
-        response = self.url_post('unicef', url, data)
+        # submit with too simple a password
+        response = self.url_post('unicef', url, {'name': "Bill", 'email': "bill@unicef.org",
+                                                 'partner': self.moh.pk, 'role': ROLE_MANAGER,
+                                                 'new_password': "123", 'confirm_password': "123"})
+        self.assertFormError(response, 'form', 'new_password', "Must contain a mixture of lowercase and uppercase, "
+                                                               "as well as a number")
+
+        # submit with old email, valid password, and switch back to being analyst for MOH
+        response = self.url_post('unicef', url, {'name': "Bill", 'email': "bill@unicef.org",
+                                                 'partner': self.moh.pk, 'role': ROLE_ANALYST,
+                                                 'new_password': "Qwerty123", 'confirm_password': "Qwerty123"})
         self.assertEqual(response.status_code, 302)
+        self.user2.refresh_from_db()
+        self.user2.profile.refresh_from_db()
+        self.assertEqual(self.user2.profile.full_name, "Bill")
+        self.assertEqual(self.user2.profile.partner, self.moh)
+        self.assertEqual(self.user2.email, "bill@unicef.org")
+        self.assertEqual(self.user2.username, "bill@unicef.org")
+        self.assertNotIn(self.user2, self.unicef.editors.all())
+        self.assertIn(self.user2, self.unicef.viewers.all())
 
         # try giving user someone else's email address
-        data = {'name': "Morris", 'partner': self.moh.pk, 'role': ROLE_ANALYST,
-                'email': "rick@unicef.org", 'password': "Qwerty123", 'confirm_password': "Qwerty123"}
-        response = self.url_post('unicef', url, data)
+        response = self.url_post('unicef', url, {'name': "Bill", 'email': "evan@unicef.org",
+                                                 'partner': self.moh.pk, 'role': ROLE_ANALYST})
         self.assertFormError(response, 'form', None, "Email address already taken.")
+
+        # login in as a partner manager user
+        self.login(self.user1)
+
+        # shouldn't see partner as field on the form
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(set(response.context['form'].fields.keys()), {'name', 'email', 'role', 'new_password',
+                                                                       'confirm_password', 'change_password', 'loc'})
+
+        # update partner colleague
+        response = self.url_post('unicef', url, {'name': "Bob", 'email': "bob@unicef.org", 'role': ROLE_MANAGER,
+                                                 'new_password': "Qwerty123", 'confirm_password': "Qwerty123"})
+        self.assertEqual(response.status_code, 302)
+        self.user2.refresh_from_db()
+        self.user2.profile.refresh_from_db()
+        self.assertEqual(self.user2.profile.full_name, "Bob")
+        self.assertEqual(self.user2.profile.partner, self.moh)
+        self.assertEqual(self.user2.email, "bob@unicef.org")
+        self.assertEqual(self.user2.username, "bob@unicef.org")
+        self.assertNotIn(self.user2, self.unicef.viewers.all())
+        self.assertIn(self.user2, self.unicef.editors.all())
+
+        # can't update user outside of their partner
+        url = reverse('profiles.user_update', args=[self.user3.pk])
+        self.assertEqual(self.url_get('unicef', url).status_code, 302)
+
+        # partner analyst users can't access page
+        self.client.login(username="bill@unicef.org", password="Qwerty123")
+        self.assertEqual(self.url_get('unicef', url).status_code, 302)
 
     def test_read(self):
         # log in as an org administrator
@@ -453,7 +506,13 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(user.email, "mo2@trac.com")
         self.assertEqual(user.username, "mo2@trac.com")
 
-        # submit with all required fields entered and password fields
+        # submit with too simple a password
+        response = self.url_post('unicef', url, {'name': "Morris", 'email': "mo2@trac.com",
+                                                 'new_password': "123", 'confirm_password': "123"})
+        self.assertFormError(response, 'form', 'new_password', "Must contain a mixture of lowercase and uppercase, "
+                                                               "as well as a number")
+
+        # submit with all required fields entered and valid password fields
         old_password_hash = user.password
         response = self.url_post('unicef', url, {'name': "Morris", 'email': "mo2@trac.com",
                                                  'new_password': "Qwerty123", 'confirm_password': "Qwerty123"})

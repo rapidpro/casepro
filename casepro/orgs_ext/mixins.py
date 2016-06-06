@@ -9,4 +9,3 @@ class OrgFormMixin(object):
         kwargs = super(OrgFormMixin, self).get_form_kwargs()
         kwargs['org'] = self.request.org
         return kwargs
-
