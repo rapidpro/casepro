@@ -1,0 +1,13 @@
+- extends "smartmin/update.html"
+
+- block extra-script
+  {{ block.super }}
+  :javascript
+    $(function() {
+      function onChangeRole() {
+        $('#id_partner').prop("disabled", $('#id_role').val() == 'A');
+      }
+      $('#id_role').on('change', onChangeRole);
+
+      onChangeRole();
+    });

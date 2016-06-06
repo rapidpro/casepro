@@ -9,7 +9,14 @@ from casepro.cases.models import Partner
 ROLE_ADMIN = 'A'
 ROLE_MANAGER = 'M'
 ROLE_ANALYST = 'Y'
-ROLE_PARTNER_CHOICES = ((ROLE_ANALYST, _("Data Analyst")), (ROLE_MANAGER, _("Manager")))
+
+ROLE_ORG_CHOICES = ((ROLE_ADMIN, _("Administrator")),
+                    (ROLE_MANAGER, _("Partner Manager")),
+                    (ROLE_ANALYST, _("Partner Data Analyst")))
+ROLE_PARTNER_CHOICES = ((ROLE_MANAGER, _("Manager")),
+                        (ROLE_ANALYST, _("Data Analyst")))
+
+PARTNER_ROLES = {ROLE_MANAGER, ROLE_ANALYST}  # roles that are tied to a partner
 
 
 class Profile(models.Model):
@@ -64,6 +71,11 @@ class Profile(models.Model):
         if partner and partner.org != org:  # pragma: no cover
             raise ValueError("Can only update partner to partner in same org")
 
+        if role in PARTNER_ROLES and not partner:
+            raise ValueError("Role %s requires a partner org" % role)
+        elif role not in PARTNER_ROLES and partner:
+            raise ValueError("Cannot specify a partner for role %s" % role)
+
         self.partner = partner
         self.save(update_fields=('partner',))
 
@@ -81,6 +93,16 @@ class Profile(models.Model):
             org.viewers.add(self.user)
         else:  # pragma: no cover
             raise ValueError("Invalid user role: %s" % role)
+
+    def get_role(self, org):
+        if self.user in org.administrators.all():
+            return ROLE_ADMIN
+        elif self.user in org.editors.all():
+            return ROLE_MANAGER
+        elif self.user in org.viewers.all():
+            return ROLE_ANALYST
+        else:
+            return None
 
     @classmethod
     def exists_for(cls, user):

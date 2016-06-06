@@ -7,18 +7,14 @@ from django.utils.translation import ugettext_lazy as _
 
 from casepro.cases.models import Partner
 
-from .models import ROLE_ANALYST, ROLE_PARTNER_CHOICES
+from .models import PARTNER_ROLES, ROLE_ORG_CHOICES, ROLE_PARTNER_CHOICES
 
 
 class UserForm(forms.ModelForm):
     """
-    Form for user profiles
+    Base form for all user editing and used for user-editing outside of orgs by superusers
     """
-    full_name = forms.CharField(label=_("Full name"), max_length=128)
-
-    role = forms.ChoiceField(label=_("Role"), choices=ROLE_PARTNER_CHOICES, required=True, initial=ROLE_ANALYST)
-
-    partner = forms.ModelChoiceField(label=_("Partner Organization"), queryset=Partner.objects.none())
+    name = forms.CharField(label=_("Name"), max_length=128)
 
     email = forms.CharField(label=_("Email"), max_length=254,
                             help_text=_("Email address and login."))
@@ -37,20 +33,50 @@ class UserForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.org = kwargs.pop('org')
+        require_password_change = kwargs.pop('require_password_change', False)
 
         super(UserForm, self).__init__(*args, **kwargs)
 
-        self.fields['partner'].queryset = Partner.get_all(self.org).order_by('name')
+        self.fields['new_password'].required = require_password_change
 
     def clean(self):
         cleaned_data = super(UserForm, self).clean()
 
-        password = cleaned_data.get('password', None) or cleaned_data.get('new_password', None)
+        password = cleaned_data.get('password') or cleaned_data.get('new_password')
         if password:
             confirm_password = cleaned_data.get('confirm_password', '')
             if password != confirm_password:
                 self.add_error('confirm_password', _("Passwords don't match."))
 
+        return cleaned_data
+
     class Meta:
         model = User
         exclude = ()
+
+
+class OrgUserForm(UserForm):
+    """
+    Form for user editing at org-level
+    """
+    role = forms.ChoiceField(label=_("Role"), choices=ROLE_ORG_CHOICES, required=True)
+
+    partner = forms.ModelChoiceField(label=_("Partner Organization"), queryset=Partner.objects.none(), required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(OrgUserForm, self).__init__(*args, **kwargs)
+
+        self.fields['partner'].queryset = Partner.get_all(self.org).order_by('name')
+
+    def clean(self):
+        cleaned_data = super(OrgUserForm, self).clean()
+
+        if cleaned_data.get('role') in PARTNER_ROLES and not cleaned_data.get('partner'):
+            self.add_error('partner', _("Required for role."))
+
+
+class PartnerUserForm(UserForm):
+    """
+    Form for user editing at partner-level
+    """
+    role = forms.ChoiceField(label=_("Role"), choices=ROLE_PARTNER_CHOICES, required=True)

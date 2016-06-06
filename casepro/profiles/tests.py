@@ -1,12 +1,12 @@
 from __future__ import absolute_import, unicode_literals
 
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
 
 from casepro.test import BaseCasesTest
 
-from .models import Profile, ROLE_ANALYST, ROLE_MANAGER
+from .models import Profile, ROLE_ADMIN, ROLE_MANAGER, ROLE_ANALYST
 
 
 class ProfileTest(BaseCasesTest):
@@ -41,20 +41,33 @@ class ProfileTest(BaseCasesTest):
         user5 = Profile.create_user("Lou", "lou123456789012345678901234567890@moh.com", "Qwerty123")
         self.assertEqual(user5.email, "lou123456789012345678901234567890@moh.com")
 
-    def test_update_partner_role(self):
-        self.user1.profile.update_partner_role(self.who, ROLE_ANALYST)
+    def test_update_role(self):
+        self.user1.profile.update_role(self.unicef, ROLE_ANALYST, self.who)
 
         self.assertEqual(self.user1.profile.partner, self.who)
-        self.assertTrue(self.user1 in self.unicef.viewers.all())
-        self.assertTrue(self.user1 not in self.unicef.editors.all())
         self.assertTrue(self.user1 not in self.unicef.administrators.all())
+        self.assertTrue(self.user1 not in self.unicef.editors.all())
+        self.assertTrue(self.user1 in self.unicef.viewers.all())
 
-        self.user1.profile.update_partner_role(self.moh, ROLE_MANAGER)
+        self.user1.profile.update_role(self.unicef, ROLE_MANAGER, self.moh)
 
         self.assertEqual(self.user1.profile.partner, self.moh)
-        self.assertTrue(self.user1 not in self.unicef.viewers.all())
-        self.assertTrue(self.user1 in self.unicef.editors.all())
         self.assertTrue(self.user1 not in self.unicef.administrators.all())
+        self.assertTrue(self.user1 in self.unicef.editors.all())
+        self.assertTrue(self.user1 not in self.unicef.viewers.all())
+
+        self.user1.profile.update_role(self.unicef, ROLE_ADMIN, None)
+
+        self.assertIsNone(self.user1.profile.partner)
+        self.assertTrue(self.user1 in self.unicef.administrators.all())
+        self.assertTrue(self.user1 not in self.unicef.editors.all())
+        self.assertTrue(self.user1 not in self.unicef.viewers.all())
+
+        # error if partner provided for non-partner role
+        self.assertRaises(ValueError, self.user1.profile.update_role, self.unicef, ROLE_ADMIN, self.who)
+
+        # error if no partner provided for partner role
+        self.assertRaises(ValueError, self.user1.profile.update_role, self.unicef, ROLE_MANAGER, None)
 
 
 class UserTest(BaseCasesTest):
@@ -161,15 +174,13 @@ class UserCRUDLTest(BaseCasesTest):
         # submit with no subdomain (i.e. no org) and no fields entered
         response = self.url_post(None, url, {})
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'full_name', 'This field is required.')
+        self.assertFormError(response, 'form', 'name', 'This field is required.')
         self.assertFormError(response, 'form', 'email', 'This field is required.')
         self.assertFormError(response, 'form', 'password', 'This field is required.')
 
         # submit again with all required fields to create an un-attached user
-        data = {'full_name': "McAdmin", 'email': "mcadmin@casely.com",
-                'password': "Qwerty123", 'confirm_password': "Qwerty123"}
-        response = self.url_post(None, url, data)
-
+        response = self.url_post(None, url, {'name': "McAdmin", 'email': "mcadmin@casely.com",
+                                             'password': "Qwerty123", 'confirm_password': "Qwerty123"})
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, 'http://testserver/user/')
 
@@ -190,29 +201,27 @@ class UserCRUDLTest(BaseCasesTest):
         # submit with no fields entered
         response = self.url_post('unicef', url, {})
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'full_name', 'This field is required.')
-        self.assertFormError(response, 'form', 'partner', 'This field is required.')
+        self.assertFormError(response, 'form', 'name', 'This field is required.')
         self.assertFormError(response, 'form', 'role', 'This field is required.')
         self.assertFormError(response, 'form', 'email', 'This field is required.')
         self.assertFormError(response, 'form', 'password', 'This field is required.')
 
         # submit again with all required fields but invalid password
-        data = {'full_name': "Mo Cases", 'partner': self.moh.pk, 'role': ROLE_ANALYST, 'email': "mo@casely.com",
-                'password': "123", 'confirm_password': "123"}
-        response = self.url_post('unicef', url, data)
+        response = self.url_post('unicef', url, {'name': "Mo Cases", 'email': "mo@casely.com",
+                                                 'partner': self.moh.pk, 'role': ROLE_ANALYST,
+                                                 'password': "123", 'confirm_password': "123"})
         self.assertFormError(response, 'form', 'password', "Ensure this value has at least 8 characters (it has 3).")
 
         # submit again with valid password but mismatched confirmation
-        data = {'full_name': "Mo Cases", 'partner': self.moh.pk, 'role': ROLE_ANALYST, 'email': "mo@casely.com",
-                'password': "Qwerty123", 'confirm_password': "Azerty234"}
-        response = self.url_post('unicef', url, data)
+        response = self.url_post('unicef', url, {'name': "Mo Cases", 'email': "mo@casely.com",
+                                                 'partner': self.moh.pk, 'role': ROLE_ANALYST,
+                                                 'password': "Qwerty123", 'confirm_password': "Azerty234"})
         self.assertFormError(response, 'form', 'confirm_password', "Passwords don't match.")
 
         # submit again with valid password and confirmation
-        data = {'full_name': "Mo Cases", 'partner': self.moh.pk, 'role': ROLE_ANALYST, 'email': "mo@casely.com",
-                'password': "Qwerty123", 'confirm_password': "Qwerty123"}
-        response = self.url_post('unicef', url, data)
-
+        response = self.url_post('unicef', url, {'name': "Mo Cases", 'email': "mo@casely.com",
+                                                 'partner': self.moh.pk, 'role': ROLE_ANALYST,
+                                                 'password': "Qwerty123", 'confirm_password': "Qwerty123"})
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, 'http://unicef.localhost/user/')
 
@@ -225,9 +234,8 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertTrue(user in self.unicef.viewers.all())
 
         # try again with same email address
-        data = {'full_name': "Mo Cases II", 'email': "mo@casely.com",
-                'password': "Qwerty123", 'confirm_password': "Qwerty123"}
-        response = self.url_post('unicef', url, data)
+        response = self.url_post('unicef', url, {'name': "Mo Cases II", 'email': "mo@casely.com",
+                                                 'password': "Qwerty123", 'confirm_password': "Qwerty123"})
         self.assertFormError(response, 'form', None, "Email address already taken.")
 
         # log in as a partner manager
@@ -238,7 +246,7 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertLoginRedirect(response, 'unicef', url)
 
     def test_create_partner_user(self):
-        url = reverse('profiles.user_create_partner_user', args=[self.moh.pk])
+        url = reverse('profiles.user_create_in', args=[self.moh.pk])
 
         # log in as an org administrator
         self.login(self.admin)
@@ -246,16 +254,14 @@ class UserCRUDLTest(BaseCasesTest):
         # submit with no fields entered
         response = self.url_post('unicef', url, {})
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'full_name', 'This field is required.')
+        self.assertFormError(response, 'form', 'name', 'This field is required.')
         self.assertFormError(response, 'form', 'role', 'This field is required.')
         self.assertFormError(response, 'form', 'email', 'This field is required.')
         self.assertFormError(response, 'form', 'password', 'This field is required.')
 
         # submit again with all required fields
-        data = {'full_name': "Mo Cases", 'role': ROLE_ANALYST, 'email': "mo@casely.com",
-                'password': "Qwerty123", 'confirm_password': "Qwerty123"}
-        response = self.url_post('unicef', url, data)
-
+        response = self.url_post('unicef', url, {'name': "Mo Cases", 'email': "mo@casely.com", 'role': ROLE_ANALYST,
+                                                 'password': "Qwerty123", 'confirm_password': "Qwerty123"})
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, 'http://unicef.localhost/partner/read/%d/' % self.moh.pk)
 
@@ -268,16 +274,14 @@ class UserCRUDLTest(BaseCasesTest):
         # submit with no fields entered
         response = self.url_post('unicef', url, {})
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'full_name', 'This field is required.')
+        self.assertFormError(response, 'form', 'name', 'This field is required.')
         self.assertFormError(response, 'form', 'role', 'This field is required.')
         self.assertFormError(response, 'form', 'email', 'This field is required.')
         self.assertFormError(response, 'form', 'password', 'This field is required.')
 
         # submit again with all required fields to create another manager
-        data = {'full_name': "McManage", 'email': "manager@moh.com", 'role': ROLE_MANAGER,
-                'password': "Qwerty123", 'confirm_password': "Qwerty123"}
-        response = self.url_post('unicef', url, data)
-
+        response = self.url_post('unicef', url, {'name': "McManage", 'email': "manager@moh.com", 'role': ROLE_MANAGER,
+                                                 'password': "Qwerty123", 'confirm_password': "Qwerty123"})
         self.assertEqual(response.status_code, 302)
 
         user = User.objects.get(email='manager@moh.com')
@@ -288,10 +292,9 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertTrue(user.can_manage(self.moh))
 
         # submit again with partner - not allowed and will be ignored
-        data = {'full_name': "Bob", 'email': "bob@moh.com", 'partner': self.who, 'role': ROLE_MANAGER,
-                'password': "Qwerty123", 'confirm_password': "Qwerty123"}
-        response = self.url_post('unicef', url, data)
-
+        response = self.url_post('unicef', url, {'name': "Bob", 'email': "bob@moh.com",
+                                                 'partner': self.who, 'role': ROLE_MANAGER,
+                                                 'password': "Qwerty123", 'confirm_password': "Qwerty123"})
         self.assertEqual(response.status_code, 302)
 
         user = User.objects.get(email='bob@moh.com')
@@ -309,13 +312,12 @@ class UserCRUDLTest(BaseCasesTest):
         # submit with no fields entered
         response = self.url_post('unicef', url, dict())
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'full_name', 'This field is required.')
-        self.assertFormError(response, 'form', 'partner', 'This field is required.')
+        self.assertFormError(response, 'form', 'name', 'This field is required.')
         self.assertFormError(response, 'form', 'role', 'This field is required.')
         self.assertFormError(response, 'form', 'email', 'This field is required.')
 
         # submit with all fields entered
-        data = {'full_name': "Morris", 'partner': self.moh.pk, 'role': ROLE_ANALYST, 'email': "mo2@chat.com"}
+        data = {'name': "Morris", 'partner': self.moh.pk, 'role': ROLE_ANALYST, 'email': "mo2@chat.com"}
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
 
@@ -326,12 +328,12 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(user.username, "mo2@chat.com")
 
         # submit again for good measure
-        data = {'full_name': "Morris", 'partner': self.moh.pk, 'role': ROLE_ANALYST, 'email': "mo2@chat.com"}
+        data = {'name': "Morris", 'partner': self.moh.pk, 'role': ROLE_ANALYST, 'email': "mo2@chat.com"}
         response = self.url_post('unicef', url, data)
         self.assertEqual(response.status_code, 302)
 
         # try giving user someone else's email address
-        data = {'full_name': "Morris", 'partner': self.moh.pk, 'role': ROLE_ANALYST,
+        data = {'name': "Morris", 'partner': self.moh.pk, 'role': ROLE_ANALYST,
                 'email': "rick@unicef.org", 'password': "Qwerty123", 'confirm_password': "Qwerty123"}
         response = self.url_post('unicef', url, data)
         self.assertFormError(response, 'form', None, "Email address already taken.")
@@ -438,12 +440,11 @@ class UserCRUDLTest(BaseCasesTest):
         # submit with no fields entered
         response = self.url_post('unicef', url, dict())
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'full_name', 'This field is required.')
+        self.assertFormError(response, 'form', 'name', 'This field is required.')
         self.assertFormError(response, 'form', 'email', 'This field is required.')
 
         # submit with all required fields entered
-        data = dict(full_name="Morris", email="mo2@trac.com")
-        response = self.url_post('unicef', url, data)
+        response = self.url_post('unicef', url, {'name': "Morris", 'email': "mo2@trac.com"})
         self.assertEqual(response.status_code, 302)
 
         # check updated user and profile
@@ -454,8 +455,8 @@ class UserCRUDLTest(BaseCasesTest):
 
         # submit with all required fields entered and password fields
         old_password_hash = user.password
-        data = dict(full_name="Morris", email="mo2@trac.com", new_password="Qwerty123", confirm_password="Qwerty123")
-        response = self.url_post('unicef', url, data)
+        response = self.url_post('unicef', url, {'name': "Morris", 'email': "mo2@trac.com",
+                                                 'new_password': "Qwerty123", 'confirm_password': "Qwerty123"})
         self.assertEqual(response.status_code, 302)
 
         # check password has been changed
@@ -468,26 +469,26 @@ class UserCRUDLTest(BaseCasesTest):
         self.user1.profile.save()
 
         # submit without password
-        data = dict(full_name="Morris", email="mo2@trac.com")
-        response = self.url_post('unicef', url, data)
+        response = self.url_post('unicef', url, {'name': "Morris", 'email': "mo2@trac.com"})
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'password', 'This field is required.')
+        self.assertFormError(response, 'form', 'new_password', 'This field is required.')
 
-        # submit again with password but no confirmation
-        data = dict(full_name="Morris", email="mo2@trac.com", password="Qwerty123")
-        response = self.url_post('unicef', url, data)
+        # submit again with new password but no confirmation
+        response = self.url_post('unicef', url, {'name': "Morris", 'email': "mo2@trac.com",
+                                                 'new_password': "Qwerty123"})
         self.assertEqual(response.status_code, 200)
         self.assertFormError(response, 'form', 'confirm_password', "Passwords don't match.")
 
-        # submit again with password and confirmation
-        data = dict(full_name="Morris", email="mo2@trac.com", password="Qwerty123", confirm_password="Qwerty123")
-        response = self.url_post('unicef', url, data)
+        # submit again with new password and confirmation
+        response = self.url_post('unicef', url, {'name': "Morris", 'email': "mo2@trac.com",
+                                                 'new_password': "Qwerty123", 'confirm_password': "Qwerty123"})
         self.assertEqual(response.status_code, 302)
 
         # check password has changed and no longer has to be changed
-        user = User.objects.get(pk=self.user1.pk)
-        self.assertFalse(user.profile.change_password)
-        self.assertNotEqual(user.password, old_password_hash)
+        self.user1.refresh_from_db()
+        self.user1.profile.refresh_from_db()
+        self.assertFalse(self.user1.profile.change_password)
+        self.assertNotEqual(self.user1.password, old_password_hash)
 
     def test_delete(self):
         # partner data analyst can't delete anyone
@@ -516,10 +517,11 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 204)
         self.assertIsNone(self.unicef.get_user_org_group(self.user1))
 
+        # but not in a different org
         response = self.url_post('unicef', reverse('profiles.user_delete', args=[self.norbert.pk]))
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 404)
 
-        # but not themselves
+        # and not themselves
         response = self.url_post('unicef', reverse('profiles.user_delete', args=[self.admin.pk]))
         self.assertEqual(response.status_code, 302)
 

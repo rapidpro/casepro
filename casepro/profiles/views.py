@@ -4,62 +4,21 @@ from dash.orgs.views import OrgPermsMixin
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.db.models import Q
 from django.http import Http404, HttpResponse
-from smartmin.views import SmartCreateView, SmartListView, SmartDeleteView, SmartReadView, SmartUpdateView
-from smartmin.views import SmartCRUDL
+from smartmin.views import SmartCreateView, SmartDeleteView, SmartReadView, SmartUpdateView
+from smartmin.views import SmartListView, SmartCRUDL
 
+from casepro.cases.mixins import PartnerPermsMixin
 from casepro.cases.models import Partner
+from casepro.orgs_ext.mixins import OrgFormMixin
 from casepro.utils import json_encode
 
-from .models import Profile, ROLE_ANALYST, ROLE_MANAGER
-from .forms import UserForm
-
-
-class UserFormMixin(object):
-    """
-    Mixin for views that use a user form
-    """
-    def get_form_kwargs(self):
-        kwargs = super(UserFormMixin, self).get_form_kwargs()
-        kwargs['org'] = self.request.org
-        return kwargs
-
-    def derive_initial(self):
-        initial = super(UserFormMixin, self).derive_initial()
-        if self.object:
-            is_manager = self.request.org and self.object in self.request.org.get_org_editors()
-
-            initial['full_name'] = self.object.profile.full_name
-            initial['partner'] = self.object.profile.partner
-            initial['role'] = ROLE_MANAGER if is_manager else ROLE_ANALYST
-        return initial
-
-    def post_save(self, obj):
-        obj = super(UserFormMixin, self).post_save(obj)
-        user = self.request.user
-        data = self.form.cleaned_data
-
-        obj.profile.full_name = data['full_name']
-
-        if 'partner' in data and user.can_administer(self.request.org):  # only admins can update a user's partner
-            obj.profile.partner = data['partner']
-
-        obj.profile.save()
-
-        if 'role' in data:
-            obj.profile.update_role(self.request.org, data['role'])
-
-        password = data.get('new_password', None) or data.get('password', None)
-        if password:
-            obj.set_password(password)
-            obj.save()
-
-        return obj
+from .forms import UserForm, OrgUserForm, PartnerUserForm
+from .models import Profile
 
 
 class UserFieldsMixin(object):
-    def get_full_name(self, obj):
+    def get_name(self, obj):
         return obj.profile.full_name
 
     def get_partner(self, obj):
@@ -67,83 +26,153 @@ class UserFieldsMixin(object):
         return partner if partner else ''
 
 
+class UserUpdateMixin(OrgFormMixin):
+    """
+    Mixin for views that update user
+    """
+    def derive_initial(self):
+        initial = super(UserUpdateMixin, self).derive_initial()
+        initial['name'] = self.object.profile.full_name
+        initial['role'] = self.object.profile.get_role(self.request.org)
+        initial['partner'] = self.object.profile.partner
+        return initial
+
+    def post_save(self, obj):
+        obj = super(UserUpdateMixin, self).post_save(obj)
+        data = self.form.cleaned_data
+
+        obj.profile.full_name = data['name']
+        obj.profile.save(update_fields=('full_name',))
+
+        if 'role' in data:
+            role = data['role']
+            partner = data['partner'] if 'partner' in data else self.get_partner(self.request.org)
+            obj.profile.update_role(self.request.org, role, partner)
+
+        # set new password if provided
+        password = data['new_password']
+        if password:
+            obj.set_password(password)
+            obj.save()
+
+        return obj
+
+
 class UserCRUDL(SmartCRUDL):
     model = User
-    actions = ('create', 'create_in_partner', 'update', 'read', 'self', 'delete', 'list')
+    actions = ('create', 'create_in', 'update', 'read', 'self', 'delete', 'list')
 
-    class Create(OrgPermsMixin, UserFormMixin, SmartCreateView):
+    class Create(OrgPermsMixin, OrgFormMixin, SmartCreateView):
+        """
+        Form used by org admins to create any kind of user, and used by superusers to create unattached users
+        """
         permission = 'profiles.profile_user_create'
-        form_class = UserForm
-        fields = ('full_name', 'email', 'password', 'confirm_password', 'change_password')
-        success_url = 'profiles.user_list'
+        success_url = '@profiles.user_list'
+
+        def get_form_class(self):
+            return OrgUserForm if self.request.org else UserForm
+
+        def derive_fields(self):
+            if self.request.org:
+                return 'name', 'role', 'partner', 'email', 'password', 'confirm_password', 'change_password'
+            else:
+                return 'name', 'email', 'password', 'confirm_password', 'change_password'
 
         def save(self, obj):
-            data = self.form.cleaned_data
             org = self.request.org
-            name = data['full_name']
-            password = data['password']
-            change_password = data['change_password']
+            name = self.form.cleaned_data['name']
+            email = self.form.cleaned_data['email']
+            password = self.form.cleaned_data['password']
+            change_password = self.form.cleaned_data['change_password']
 
             if org:
-                self.object = Profile.create_org_user(org, name, obj.email, password, change_password)
+                role = self.form.cleaned_data['role']
+                partner = self.form.cleaned_data['partner']
+
+                if partner:
+                    self.object = Profile.create_partner_user(org, partner, role, name, email,
+                                                              password, change_password)
+                else:
+                    self.object = Profile.create_org_user(org, name, email, password, change_password)
             else:
-                self.object = Profile.create_user(name, obj.email, password, change_password)
+                self.object = Profile.create_user(name, email, password, change_password)
 
-        def post_save(self, obj):
-            return obj
-
-    class CreateInPartner(OrgPermsMixin, UserFormMixin, SmartCreateView):
-        form_class = UserForm
+    class CreateIn(PartnerPermsMixin, OrgFormMixin, SmartCreateView):
+        """
+        Form for creating partner-level users in a specific partner
+        """
+        permission = 'profiles.profile_user_create_in'
+        form_class = PartnerUserForm
         fields = ('name', 'role', 'email', 'password', 'confirm_password', 'change_password')
 
         @classmethod
         def derive_url_pattern(cls, path, action):
             return r'^user/create_in/(?P<partner_id>\d+)/$'
 
-        def derive_partner(self):
+        def get_partner(self):
             return Partner.get_all(self.request.org).get(pk=self.kwargs['partner_id'])
 
-        def has_permission(self, request, *args, **kwargs):
-            return self.request.user.can_manage(self.derive_partner())
-
         def save(self, obj):
-            data = self.form.cleaned_data
             org = self.request.org
-            partner = self.derive_partner()
-            role = data.get['role']
-            name = data['full_name']
-            password = data['password']
-            change_password = data['change_password']
-            self.object = Profile.create_partner_user(org, partner, role, name, obj.email, password, change_password)
+            partner = self.get_partner()
+            role = self.form.cleaned_data['role']
+            name = self.form.cleaned_data['name']
+            email = self.form.cleaned_data['email']
+            password = self.form.cleaned_data['password']
+            change_password = self.form.cleaned_data['change_password']
 
-        def post_save(self, obj):
-            return obj
+            self.object = Profile.create_partner_user(org, partner, role, name, email, password, change_password)
 
         def get_success_url(self):
             return reverse('cases.partner_read', args=[self.kwargs['partner_id']])
 
-    class Update(OrgPermsMixin, UserFormMixin, SmartUpdateView):
+    class Update(PartnerPermsMixin, UserUpdateMixin, SmartUpdateView):
+        """
+        Form for updating any kind of user by another user
+        """
+        permission = 'profiles.profile_user_update'
         form_class = UserForm
 
-        def has_permission(self, request, *args, **kwargs):
-            return request.user.can_edit(request.org, self.get_object())
+        def get_form_class(self):
+            if self.request.org:
+                if self.request.user.get_partner(self.request.org):
+                    return PartnerUserForm
+                else:
+                    return OrgUserForm
+            else:
+                return UserForm
+
+        def get_queryset(self):
+            if self.request.org:
+                return self.request.org.get_users()
+            else:
+                return super(UserCRUDL.Update, self).get_queryset()
+
+        def get_partner(self):
+            return self.get_object().get_partner(self.request.org)
 
         def derive_fields(self):
-            fields = ['full_name']
+            profile_fields = ['name']
+            user_fields = ['email', 'new_password', 'confirm_password', 'change_password']
+
             if self.request.org:
-                if self.request.user.can_administer(self.request.org):
-                    fields.append('partner')
-                fields.append('role')
-            return fields + ['email', 'new_password', 'confirm_password']
+                user_partner = self.request.user.get_partner(self.request.org)
+                if user_partner:
+                    profile_fields += ['role']  # partner users can't change a user's partner
+                else:
+                    profile_fields += ['role', 'partner']
+
+            return profile_fields + user_fields
 
         def get_success_url(self):
             return reverse('profiles.user_read', args=[self.object.pk])
 
-    class Self(OrgPermsMixin, UserFormMixin, SmartUpdateView):
+    class Self(OrgPermsMixin, UserUpdateMixin, SmartUpdateView):
         """
         Limited update form for users to edit their own profiles
         """
         form_class = UserForm
+        fields = ('name', 'email', 'new_password', 'confirm_password')
         success_url = '@cases.inbox'
         success_message = _("Profile updated")
         title = _("Edit My Profile")
@@ -155,26 +184,22 @@ class UserCRUDL(SmartCRUDL):
         def has_permission(self, request, *args, **kwargs):
             return self.request.user.is_authenticated()
 
+        def get_form_kwargs(self):
+            kwargs = super(UserCRUDL.Self, self).get_form_kwargs()
+            kwargs['require_password_change'] = self.object.profile.change_password
+            return kwargs
+
         def get_object(self, queryset=None):
             if not self.request.user.has_profile():
                 raise Http404(_("User doesn't have a profile"))
 
             return self.request.user
 
-        def pre_save(self, obj):
-            obj = super(UserCRUDL.Self, self).pre_save(obj)
-            if 'password' in self.form.cleaned_data:
-                self.object.profile.change_password = False
-
+        def post_save(self, obj):
+            obj = super(UserCRUDL.Self, self).post_save(obj)
+            obj.profile.change_password = False
+            obj.profile.save(update_fields=('change_password',))
             return obj
-
-        def derive_fields(self):
-            fields = ['full_name', 'email']
-            if self.object.profile.change_password:
-                fields += ['password']
-            else:
-                fields += ['new_password']
-            return fields + ['confirm_password']
 
     class Read(OrgPermsMixin, UserFieldsMixin, SmartReadView):
         permission = 'profiles.profile_user_read'
@@ -186,20 +211,16 @@ class UserCRUDL(SmartCRUDL):
                 return super(UserCRUDL.Read, self).derive_title()
 
         def derive_fields(self):
-            fields = ['full_name', 'email']
+            fields = ['name', 'email']
             if self.object.profile.partner:
                 fields += ['partner']
             return fields + ['role']
 
         def get_queryset(self):
-            queryset = super(UserCRUDL.Read, self).get_queryset()
-
-            org = self.request.org
-            if org:
-                # only allow access to active users attached to this org
-                queryset = queryset.filter(Q(org_admins=org) | Q(org_editors=org) | Q(org_viewers=org)).distinct()
-
-            return queryset.filter(is_active=True)
+            if self.request.org:
+                return self.request.org.get_users()
+            else:
+                return super(UserCRUDL.Read, self).get_queryset()
 
         def get_context_data(self, **kwargs):
             context = super(UserCRUDL.Read, self).get_context_data(**kwargs)
@@ -238,6 +259,9 @@ class UserCRUDL(SmartCRUDL):
             user = self.get_object()
             return request.user.can_edit(request.org, user) and request.user != user
 
+        def get_queryset(self):
+            return self.request.org.get_users()
+
         def post(self, request, *args, **kwargs):
             user = self.get_object()
             user.remove_from_org(request.org)
@@ -246,20 +270,16 @@ class UserCRUDL(SmartCRUDL):
 
     class List(OrgPermsMixin, UserFieldsMixin, SmartListView):
         default_order = ('profile__full_name',)
-        fields = ('full_name', 'email', 'partner')
-        link_fields = ('full_name', 'partner')
+        fields = ('name', 'email', 'partner')
+        link_fields = ('name', 'partner')
         permission = 'profiles.profile_user_list'
         select_related = ('profile',)
 
         def derive_queryset(self, **kwargs):
-            qs = super(UserCRUDL.List, self).derive_queryset(**kwargs)
-            org = self.request.org
-            if org:
-                qs = qs.filter(Q(pk__in=org.get_org_admins()) |
-                               Q(pk__in=org.get_org_editors()) |
-                               Q(pk__in=org.get_org_viewers()))
-            qs = qs.filter(is_active=True).exclude(profile=None)
-            return qs
+            if self.request.org:
+                return self.request.org.get_users().exclude(profile=None)
+            else:
+                return super(UserCRUDL.List, self).derive_queryset(**kwargs)
 
         def lookup_field_link(self, context, field, obj):
             if field == 'partner':
