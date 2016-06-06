@@ -390,29 +390,29 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
 
     confirmModal: (prompt, style) ->
       resolve = {prompt: (() -> prompt), style: (() -> style)}
-      return $uibModal.open({templateUrl: 'partials/modal_confirm.html', controller: 'ConfirmModalController', resolve: resolve}).result
+      return $uibModal.open({templateUrl: '/partials/modal_confirm.html', controller: 'ConfirmModalController', resolve: resolve}).result
 
     editModal: (title, initial, maxLength) ->
       resolve = {title: (() -> title), initial: (() -> initial), maxLength: (() -> maxLength)}
-      return $uibModal.open({templateUrl: 'partials/modal_edit.html', controller: 'EditModalController', resolve: resolve}).result
+      return $uibModal.open({templateUrl: '/partials/modal_edit.html', controller: 'EditModalController', resolve: resolve}).result
 
     composeModal: (title, initial, maxLength) ->
       resolve = {title: (() -> title), initial: (() -> initial), maxLength: (() -> maxLength)}
-      return $uibModal.open({templateUrl: 'partials/modal_compose.html', controller: 'ComposeModalController', resolve: resolve}).result
+      return $uibModal.open({templateUrl: '/partials/modal_compose.html', controller: 'ComposeModalController', resolve: resolve}).result
 
     assignModal: (title, prompt, partners) ->
       resolve = {title: (() -> title), prompt: (() -> prompt), partners: (() -> partners)}
-      return $uibModal.open({templateUrl: 'partials/modal_assign.html', controller: 'AssignModalController', resolve: resolve}).result
+      return $uibModal.open({templateUrl: '/partials/modal_assign.html', controller: 'AssignModalController', resolve: resolve}).result
 
     noteModal: (title, prompt, style, maxLength) ->
       resolve = {title: (() -> title), prompt: (() -> prompt), style: (() -> style), maxLength: (() -> maxLength)}
-      return $uibModal.open({templateUrl: 'partials/modal_note.html', controller: 'NoteModalController', resolve: resolve}).result
+      return $uibModal.open({templateUrl: '/partials/modal_note.html', controller: 'NoteModalController', resolve: resolve}).result
 
     labelModal: (title, prompt, labels, initial) ->
       resolve = {title: (() -> title), prompt: (() -> prompt), labels: (() -> labels), initial: (() -> initial)}
-      return $uibModal.open({templateUrl: 'partials/modal_label.html', controller: 'LabelModalController', resolve: resolve}).result
+      return $uibModal.open({templateUrl: '/partials/modal_label.html', controller: 'LabelModalController', resolve: resolve}).result
 
     newCaseModal: (summaryInitial, summaryMaxLength, partners) ->
       resolve = {summaryInitial: (() -> summaryInitial), summaryMaxLength: (() -> summaryMaxLength), partners: (() -> partners)}
-      return $uibModal.open({templateUrl: 'partials/modal_newcase.html', controller: 'NewCaseModalController', resolve: resolve}).result
+      return $uibModal.open({templateUrl: '/partials/modal_newcase.html', controller: 'NewCaseModalController', resolve: resolve}).result
 ])

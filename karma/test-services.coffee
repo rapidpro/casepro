@@ -451,7 +451,7 @@ describe('services:', () ->
         UtilsService.confirmModal("OK?")
 
         modalOptions = $uibModal.open.calls.mostRecent().args[0]
-        expect(modalOptions.templateUrl).toEqual('partials/modal_confirm.html')
+        expect(modalOptions.templateUrl).toEqual('/partials/modal_confirm.html')
         expect(modalOptions.resolve.prompt()).toEqual("OK?")
       )
     )
@@ -461,7 +461,7 @@ describe('services:', () ->
         UtilsService.editModal("Edit", "this...", 100)
 
         modalOptions = $uibModal.open.calls.mostRecent().args[0]
-        expect(modalOptions.templateUrl).toEqual('partials/modal_edit.html')
+        expect(modalOptions.templateUrl).toEqual('/partials/modal_edit.html')
         expect(modalOptions.resolve.title()).toEqual("Edit")
         expect(modalOptions.resolve.initial()).toEqual("this...")
         expect(modalOptions.resolve.maxLength()).toEqual(100)
@@ -473,7 +473,7 @@ describe('services:', () ->
         UtilsService.composeModal("Compose", "this...", 100)
 
         modalOptions = $uibModal.open.calls.mostRecent().args[0]
-        expect(modalOptions.templateUrl).toEqual('partials/modal_compose.html')
+        expect(modalOptions.templateUrl).toEqual('/partials/modal_compose.html')
         expect(modalOptions.resolve.title()).toEqual("Compose")
         expect(modalOptions.resolve.initial()).toEqual("this...")
         expect(modalOptions.resolve.maxLength()).toEqual(100)
@@ -485,7 +485,7 @@ describe('services:', () ->
         UtilsService.assignModal("Assign", "this...", [test.moh, test.who])
 
         modalOptions = $uibModal.open.calls.mostRecent().args[0]
-        expect(modalOptions.templateUrl).toEqual('partials/modal_assign.html')
+        expect(modalOptions.templateUrl).toEqual('/partials/modal_assign.html')
         expect(modalOptions.resolve.title()).toEqual("Assign")
         expect(modalOptions.resolve.prompt()).toEqual("this...")
         expect(modalOptions.resolve.partners()).toEqual([test.moh, test.who])
@@ -497,7 +497,7 @@ describe('services:', () ->
         UtilsService.noteModal("Note", "this...", 'danger', 100)
 
         modalOptions = $uibModal.open.calls.mostRecent().args[0]
-        expect(modalOptions.templateUrl).toEqual('partials/modal_note.html')
+        expect(modalOptions.templateUrl).toEqual('/partials/modal_note.html')
         expect(modalOptions.resolve.title()).toEqual("Note")
         expect(modalOptions.resolve.prompt()).toEqual("this...")
         expect(modalOptions.resolve.style()).toEqual('danger')
@@ -510,7 +510,7 @@ describe('services:', () ->
         UtilsService.labelModal("Label", "this...", [test.tea, test.coffee], [test.tea])
 
         modalOptions = $uibModal.open.calls.mostRecent().args[0]
-        expect(modalOptions.templateUrl).toEqual('partials/modal_label.html')
+        expect(modalOptions.templateUrl).toEqual('/partials/modal_label.html')
         expect(modalOptions.resolve.title()).toEqual("Label")
         expect(modalOptions.resolve.prompt()).toEqual("this...")
         expect(modalOptions.resolve.labels()).toEqual([test.tea, test.coffee])
@@ -523,7 +523,7 @@ describe('services:', () ->
         UtilsService.newCaseModal("this...", 100, [test.moh, test.who])
 
         modalOptions = $uibModal.open.calls.mostRecent().args[0]
-        expect(modalOptions.templateUrl).toEqual('partials/modal_newcase.html')
+        expect(modalOptions.templateUrl).toEqual('/partials/modal_newcase.html')
         expect(modalOptions.resolve.summaryInitial()).toEqual("this...")
         expect(modalOptions.resolve.summaryMaxLength()).toEqual(100)
         expect(modalOptions.resolve.partners()).toEqual([test.moh, test.who])
