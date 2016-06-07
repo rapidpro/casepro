@@ -326,6 +326,17 @@ class UserCRUDLTest(BaseCasesTest):
         user = User.objects.get(email='bob@moh.com')
         self.assertEqual(user.profile.partner, self.moh)  # WHO was ignored
 
+        # partner managers can't access page for other partner orgs
+        url = reverse('profiles.user_create_in', args=[self.who.pk])
+        response = self.url_post('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # partner analysts can't access page at all
+        self.login(self.user2)
+        url = reverse('profiles.user_create_in', args=[self.moh.pk])
+        response = self.url_post('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
     def test_update(self):
         url = reverse('profiles.user_update', args=[self.user2.pk])
 
