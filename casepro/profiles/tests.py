@@ -69,6 +69,12 @@ class ProfileTest(BaseCasesTest):
         # error if no partner provided for partner role
         self.assertRaises(ValueError, self.user1.profile.update_role, self.unicef, ROLE_MANAGER, None)
 
+    def test_get_role(self):
+        self.assertEqual(self.admin.profile.get_role(self.unicef), ROLE_ADMIN)
+        self.assertEqual(self.user1.profile.get_role(self.unicef), ROLE_MANAGER)
+        self.assertEqual(self.user2.profile.get_role(self.unicef), ROLE_ANALYST)
+        self.assertEqual(self.user4.profile.get_role(self.unicef), None)
+
 
 class UserTest(BaseCasesTest):
     def test_has_profile(self):
@@ -206,6 +212,25 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertFormError(response, 'form', 'email', 'This field is required.')
         self.assertFormError(response, 'form', 'password', 'This field is required.')
 
+        # create another org admin user
+        response = self.url_post('unicef', url, {'name': "Adrian Admin", 'email': "adrian@casely.com",
+                                                 'role': ROLE_ADMIN,
+                                                 'password': "Qwerty123", 'confirm_password': "Qwerty123"})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, 'http://unicef.localhost/user/')
+
+        user = User.objects.get(email='adrian@casely.com')
+        self.assertEqual(user.get_full_name(), "Adrian Admin")
+        self.assertEqual(user.username, "adrian@casely.com")
+        self.assertIsNone(user.get_partner(self.unicef))
+        self.assertTrue(user in self.unicef.administrators.all())
+
+        # submit again without providing a partner for role that requires one
+        response = self.url_post('unicef', url, {'name': "Mo Cases", 'email': "mo@casely.com",
+                                                 'partner': None, 'role': ROLE_ANALYST,
+                                                 'password': "Qwerty123", 'confirm_password': "Qwerty123"})
+        self.assertFormError(response, 'form', 'partner', "Required for role.")
+
         # submit again with all required fields but invalid password
         response = self.url_post('unicef', url, {'name': "Mo Cases", 'email': "mo@casely.com",
                                                  'partner': self.moh.pk, 'role': ROLE_ANALYST,
@@ -304,6 +329,27 @@ class UserCRUDLTest(BaseCasesTest):
     def test_update(self):
         url = reverse('profiles.user_update', args=[self.user2.pk])
 
+        # log in as superuser
+        self.login(self.superuser)
+
+        response = self.url_get(None, url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(set(response.context['form'].fields.keys()), {'name', 'email', 'new_password',
+                                                                       'confirm_password', 'change_password', 'loc'})
+
+        # submit with all required fields, updating name
+        response = self.url_post('unicef', url, {'name': "Richard", 'email': "rick@unicef.org",
+                                                 'partner': self.moh.pk, 'role': ROLE_ANALYST})
+        self.assertEqual(response.status_code, 302)
+
+        self.user2.refresh_from_db()
+        self.user2.profile.refresh_from_db()
+        self.assertEqual(self.user2.profile.full_name, "Richard")
+        self.assertEqual(self.user2.profile.partner, self.moh)
+        self.assertEqual(self.user2.email, "rick@unicef.org")
+        self.assertEqual(self.user2.username, "rick@unicef.org")
+        self.assertIn(self.user2, self.unicef.viewers.all())
+
         # log in as an org administrator
         self.login(self.admin)
 
@@ -392,6 +438,15 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(self.url_get('unicef', url).status_code, 302)
 
     def test_read(self):
+        # log in as superuser
+        self.login(self.superuser)
+
+        # can view a user outside of org, tho can't delete because there is no org
+        response = self.url_get(None, reverse('profiles.user_read', args=[self.admin.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['edit_button_url'], reverse('profiles.user_update', args=[self.admin.pk]))
+        self.assertFalse(response.context['can_delete'])
+
         # log in as an org administrator
         self.login(self.admin)
 

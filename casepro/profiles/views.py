@@ -33,8 +33,9 @@ class UserUpdateMixin(OrgFormMixin):
     def derive_initial(self):
         initial = super(UserUpdateMixin, self).derive_initial()
         initial['name'] = self.object.profile.full_name
-        initial['role'] = self.object.profile.get_role(self.request.org)
-        initial['partner'] = self.object.profile.partner
+        if self.request.org:
+            initial['role'] = self.object.profile.get_role(self.request.org)
+            initial['partner'] = self.object.profile.partner
         return initial
 
     def post_save(self, obj):
@@ -212,9 +213,12 @@ class UserCRUDL(SmartCRUDL):
 
         def derive_fields(self):
             fields = ['name', 'email']
-            if self.object.profile.partner:
-                fields += ['partner']
-            return fields + ['role']
+            if self.request.org:
+                fields += ['role']
+                if self.object.profile.partner:
+                    fields += ['partner']
+
+            return fields
 
         def get_queryset(self):
             if self.request.org:
@@ -232,7 +236,7 @@ class UserCRUDL(SmartCRUDL):
                 can_delete = False  # can't delete yourself
             elif user.can_edit(org, self.object):
                 edit_button_url = reverse('profiles.user_update', args=[self.object.pk])
-                can_delete = True
+                can_delete = bool(org)  # can only delete in context of an org
             else:
                 edit_button_url = None
                 can_delete = False
