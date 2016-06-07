@@ -219,7 +219,7 @@ class Message(models.Model):
         if before:
             queryset = queryset.filter(created_on__lt=before)
 
-        queryset = queryset.select_related('contact').prefetch_related('labels', 'case__assignee')
+        queryset = queryset.prefetch_related('contact', 'labels', 'case__assignee')
 
         return queryset.order_by('-created_on')
 
@@ -479,7 +479,7 @@ class Outgoing(models.Model):
         if contact_id:
             queryset = queryset.filter(contact__pk=contact_id)
 
-        queryset = queryset.select_related('partner', 'contact', 'case__assignee', 'created_by__profile')
+        queryset = queryset.prefetch_related('partner', 'contact', 'case__assignee', 'created_by__profile')
 
         return queryset.order_by('-created_on')
 
