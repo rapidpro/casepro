@@ -736,15 +736,17 @@ class MessageCRUDLTest(BaseCasesTest):
         # log in as a non-administrator
         self.login(self.user1)
 
-        response = self.url_post_json('unicef', url, {
+        self.url_post_json('unicef', url, {
             'text': "Check this out", 'urns': ["tel:+2501234567", "twitter:bob"]
         })
-        out = Outgoing.objects.get(pk=response.json['id'])
+        outgoing = Outgoing.objects.all().order_by('urn')
 
-        self.assertEqual(out.org, self.unicef)
-        self.assertEqual(out.activity, Outgoing.FORWARD)
-        self.assertEqual(out.urns, ["tel:+2501234567", "twitter:bob"])
-        self.assertEqual(out.created_by, self.user1)
+        self.assertEqual(len(outgoing), 2)
+        self.assertEqual(outgoing[0].org, self.unicef)
+        self.assertEqual(outgoing[0].activity, Outgoing.FORWARD)
+        self.assertEqual(outgoing[0].urn, "tel:+2501234567")
+        self.assertEqual(outgoing[0].created_by, self.user1)
+        self.assertEqual(outgoing[1].urn, "twitter:bob")
 
     def test_history(self):
         msg1 = self.create_message(self.unicef, 101, self.ann, "Hello")
@@ -859,7 +861,7 @@ class OutgoingTest(BaseCasesTest):
         self.assertEqual(outgoing[0].activity, Outgoing.BULK_REPLY)
         self.assertEqual(outgoing[0].text, "That's great")
         self.assertEqual(outgoing[0].contact, self.ann)
-        self.assertEqual(outgoing[0].urns, ())
+        self.assertEqual(outgoing[0].urn, None)
         self.assertEqual(outgoing[0].reply_to, msg1)
         self.assertEqual(outgoing[0].case, None)
         self.assertEqual(outgoing[0].created_by, self.user1)
@@ -887,32 +889,29 @@ class OutgoingTest(BaseCasesTest):
         self.assertEqual(out.activity, Outgoing.CASE_REPLY)
         self.assertEqual(out.text, "We can help")
         self.assertEqual(out.contact, case.contact)
-        self.assertEqual(out.urns, ())
+        self.assertEqual(out.urn, None)
         self.assertEqual(out.reply_to, msg)
         self.assertEqual(out.case, case)
         self.assertEqual(out.created_by, self.user1)
 
     @patch('casepro.test.TestBackend.push_outgoing')
-    def test_create_forward(self, mock_push_outgoing):
+    def test_create_forwards(self, mock_push_outgoing):
         self.create_message(self.unicef, 101, self.ann, "Hello")
         msg2 = self.create_message(self.unicef, 102, self.bob, "Bonjour")
 
-        out = Outgoing.create_forward(self.unicef, self.user1, "FYI: \"Hello\"", ["tel:+26012345678"], msg2)
+        fwds = Outgoing.create_forwards(self.unicef, self.user1, "FYI: \"Hello\"", ["tel:+26012345678"], msg2)
 
-        mock_push_outgoing.assert_called_once_with(self.unicef, [out])
+        mock_push_outgoing.assert_called_once_with(self.unicef, fwds, as_broadcast=True)
 
-        self.assertEqual(out.org, self.unicef)
-        self.assertEqual(out.partner, self.moh)
-        self.assertEqual(out.activity, Outgoing.FORWARD)
-        self.assertEqual(out.text, "FYI: \"Hello\"")
-        self.assertEqual(out.contact, None)
-        self.assertEqual(out.urns, ["tel:+26012345678"])
-        self.assertEqual(out.reply_to, msg2)
-        self.assertEqual(out.case, None)
-        self.assertEqual(out.created_by, self.user1)
-
-        # can't create with no URNs
-        self.assertRaises(ValueError, Outgoing.create_forward, self.unicef, self.user1, "Hi", [], msg2)
+        self.assertEqual(fwds[0].org, self.unicef)
+        self.assertEqual(fwds[0].partner, self.moh)
+        self.assertEqual(fwds[0].activity, Outgoing.FORWARD)
+        self.assertEqual(fwds[0].text, "FYI: \"Hello\"")
+        self.assertEqual(fwds[0].contact, None)
+        self.assertEqual(fwds[0].urn, "tel:+26012345678")
+        self.assertEqual(fwds[0].reply_to, msg2)
+        self.assertEqual(fwds[0].case, None)
+        self.assertEqual(fwds[0].created_by, self.user1)
 
     def test_search(self):
         out1 = self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello 1", self.ann)
@@ -995,7 +994,7 @@ class OutgoingTest(BaseCasesTest):
         self.assertEqual(outgoing.as_json(), {
             'id': outgoing.pk,
             'contact': {'id': self.ann.pk, 'name': "Ann"},
-            'urns': [],
+            'urn': None,
             'text': "That's great",
             'time': outgoing.created_on,
             'direction': 'O',
@@ -1031,7 +1030,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
             {
                 'id': out2.pk,
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
-                'urns': [],
+                'urn': None,
                 'text': "Hello 2",
                 'direction': 'O',
                 'case': None,
@@ -1041,7 +1040,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
             {
                 'id': out1.pk,
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
-                'urns': [],
+                'urn': None,
                 'text': "Hello 1",
                 'direction': 'O',
                 'case': None,
@@ -1058,7 +1057,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
             {
                 'id': out2.pk,
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
-                'urns': [],
+                'urn': None,
                 'text': "Hello 2",
                 'direction': 'O',
                 'case': None,
@@ -1094,7 +1093,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
             {
                 'id': out2.pk,
                 'contact': {'id': self.bob.pk, 'name': "Bob"},
-                'urns': [],
+                'urn': None,
                 'text': "Hello 2",
                 'direction': 'O',
                 'case': None,
@@ -1110,7 +1109,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
             {
                 'id': out1.pk,
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
-                'urns': [],
+                'urn': None,
                 'text': "Hello 1",
                 'direction': 'O',
                 'case': {'id': case.pk, 'assignee': {'id': self.moh.pk, 'name': "MOH"}},

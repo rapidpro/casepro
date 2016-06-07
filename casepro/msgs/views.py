@@ -283,8 +283,8 @@ class MessageCRUDL(SmartCRUDL):
             message = Message.objects.get(org=request.org, backend_id=int(kwargs['id']))
             urns = request.json['urns']
 
-            out = Outgoing.create_forward(request.org, request.user, text, urns, message)
-            return JsonResponse({'id': out.pk})
+            outgoing = Outgoing.create_forwards(request.org, request.user, text, urns, message)
+            return JsonResponse({'messages': len(outgoing)})
 
     class History(OrgPermsMixin, SmartTemplateView):
         """
