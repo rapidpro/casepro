@@ -505,21 +505,27 @@ class UserCRUDLTest(BaseCasesTest):
     def test_list(self):
         url = reverse('profiles.user_list')
 
+        # can't access if not logged in
         response = self.url_get('unicef', url)
         self.assertLoginRedirect(response, 'unicef', url)
 
-        # log in as a non-administrator
-        self.login(self.user1)
+        # log in as superuser
+        self.login(self.superuser)
 
-        response = self.url_get('unicef', url)
-        self.assertLoginRedirect(response, 'unicef', url)
+        # they can use without org to see users from all orgs
+        self.assertEqual(len(self.url_get(None, url).context['object_list']), 6)
 
-        # log in as an org administrator
+        # or with org to see users from that orgs
+        self.assertEqual(len(self.url_get('unicef', url).context['object_list']), 4)
+
+        # administrator can also see all users in their org
         self.login(self.admin)
 
-        response = self.url_get('unicef', url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['object_list']), 4)
+        self.assertEqual(len(self.url_get('unicef', url).context['object_list']), 4)
+
+        # can't access as non-administrator
+        self.login(self.user1)
+        self.assertLoginRedirect(self.url_get('unicef', url), 'unicef', url)
 
     def test_self(self):
         url = reverse('profiles.user_self')

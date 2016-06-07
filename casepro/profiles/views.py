@@ -281,9 +281,11 @@ class UserCRUDL(SmartCRUDL):
 
         def derive_queryset(self, **kwargs):
             if self.request.org:
-                return self.request.org.get_users().exclude(profile=None)
+                queryset = self.request.org.get_users()
             else:
-                return super(UserCRUDL.List, self).derive_queryset(**kwargs)
+                queryset = super(UserCRUDL.List, self).derive_queryset(**kwargs)
+
+            return queryset.exclude(profile=None)
 
         def lookup_field_link(self, context, field, obj):
             if field == 'partner':
