@@ -18,7 +18,7 @@ from xlrd import open_workbook
 from casepro.contacts.models import Contact
 from casepro.msgs.models import Message, Outgoing
 from casepro.msgs.tasks import handle_messages
-from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
+from casepro.profiles.models import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
 from casepro.utils import datetime_to_microseconds, microseconds_to_datetime
 
