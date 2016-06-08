@@ -186,7 +186,7 @@ class UserCRUDLTest(BaseCasesTest):
 
         # submit again with all required fields to create an un-attached user
         response = self.url_post(None, url, {'name': "McAdmin", 'email': "mcadmin@casely.com",
-                                             'password': "Qwerty123", 'confirm_password': "Qwerty123"})
+                                             'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, 'http://testserver/user/')
 
@@ -215,7 +215,7 @@ class UserCRUDLTest(BaseCasesTest):
         # create another org admin user
         response = self.url_post('unicef', url, {'name': "Adrian Admin", 'email': "adrian@casely.com",
                                                  'role': ROLE_ADMIN,
-                                                 'password': "Qwerty123", 'confirm_password': "Qwerty123"})
+                                                 'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, 'http://unicef.localhost/user/')
 
@@ -228,26 +228,25 @@ class UserCRUDLTest(BaseCasesTest):
         # submit again without providing a partner for role that requires one
         response = self.url_post('unicef', url, {'name': "Mo Cases", 'email': "mo@casely.com",
                                                  'partner': None, 'role': ROLE_ANALYST,
-                                                 'password': "Qwerty123", 'confirm_password': "Qwerty123"})
+                                                 'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
         self.assertFormError(response, 'form', 'partner', "Required for role.")
 
         # submit again with all required fields but invalid password
         response = self.url_post('unicef', url, {'name': "Mo Cases", 'email': "mo@casely.com",
                                                  'partner': self.moh.pk, 'role': ROLE_ANALYST,
                                                  'password': "123", 'confirm_password': "123"})
-        self.assertFormError(response, 'form', 'password', "Must contain a mixture of lowercase and uppercase, "
-                                                           "as well as a number")
+        self.assertFormError(response, 'form', 'password', "Must be at least 10 characters long")
 
         # submit again with valid password but mismatched confirmation
         response = self.url_post('unicef', url, {'name': "Mo Cases", 'email': "mo@casely.com",
                                                  'partner': self.moh.pk, 'role': ROLE_ANALYST,
-                                                 'password': "Qwerty123", 'confirm_password': "Azerty234"})
+                                                 'password': "Qwerty12345", 'confirm_password': "Azerty23456"})
         self.assertFormError(response, 'form', 'confirm_password', "Passwords don't match.")
 
         # submit again with valid password and confirmation
         response = self.url_post('unicef', url, {'name': "Mo Cases", 'email': "mo@casely.com",
                                                  'partner': self.moh.pk, 'role': ROLE_ANALYST,
-                                                 'password': "Qwerty123", 'confirm_password': "Qwerty123"})
+                                                 'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, 'http://unicef.localhost/user/')
 
@@ -261,7 +260,7 @@ class UserCRUDLTest(BaseCasesTest):
 
         # try again with same email address
         response = self.url_post('unicef', url, {'name': "Mo Cases II", 'email': "mo@casely.com",
-                                                 'password': "Qwerty123", 'confirm_password': "Qwerty123"})
+                                                 'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
         self.assertFormError(response, 'form', None, "Email address already taken.")
 
         # log in as a partner manager
@@ -287,7 +286,7 @@ class UserCRUDLTest(BaseCasesTest):
 
         # submit again with all required fields
         response = self.url_post('unicef', url, {'name': "Mo Cases", 'email': "mo@casely.com", 'role': ROLE_ANALYST,
-                                                 'password': "Qwerty123", 'confirm_password': "Qwerty123"})
+                                                 'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, 'http://unicef.localhost/partner/read/%d/' % self.moh.pk)
 
@@ -307,7 +306,7 @@ class UserCRUDLTest(BaseCasesTest):
 
         # submit again with all required fields to create another manager
         response = self.url_post('unicef', url, {'name': "McManage", 'email': "manager@moh.com", 'role': ROLE_MANAGER,
-                                                 'password': "Qwerty123", 'confirm_password': "Qwerty123"})
+                                                 'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
         self.assertEqual(response.status_code, 302)
 
         user = User.objects.get(email='manager@moh.com')
@@ -320,7 +319,7 @@ class UserCRUDLTest(BaseCasesTest):
         # submit again with partner - not allowed and will be ignored
         response = self.url_post('unicef', url, {'name': "Bob", 'email': "bob@moh.com",
                                                  'partner': self.who, 'role': ROLE_MANAGER,
-                                                 'password': "Qwerty123", 'confirm_password': "Qwerty123"})
+                                                 'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
         self.assertEqual(response.status_code, 302)
 
         user = User.objects.get(email='bob@moh.com')
@@ -396,13 +395,12 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_post('unicef', url, {'name': "Bill", 'email': "bill@unicef.org",
                                                  'partner': self.moh.pk, 'role': ROLE_MANAGER,
                                                  'new_password': "123", 'confirm_password': "123"})
-        self.assertFormError(response, 'form', 'new_password', "Must contain a mixture of lowercase and uppercase, "
-                                                               "as well as a number")
+        self.assertFormError(response, 'form', 'new_password', "Must be at least 10 characters long")
 
         # submit with old email, valid password, and switch back to being analyst for MOH
         response = self.url_post('unicef', url, {'name': "Bill", 'email': "bill@unicef.org",
                                                  'partner': self.moh.pk, 'role': ROLE_ANALYST,
-                                                 'new_password': "Qwerty123", 'confirm_password': "Qwerty123"})
+                                                 'new_password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
         self.assertEqual(response.status_code, 302)
         self.user2.refresh_from_db()
         self.user2.profile.refresh_from_db()
@@ -429,7 +427,7 @@ class UserCRUDLTest(BaseCasesTest):
 
         # update partner colleague
         response = self.url_post('unicef', url, {'name': "Bob", 'email': "bob@unicef.org", 'role': ROLE_MANAGER,
-                                                 'new_password': "Qwerty123", 'confirm_password': "Qwerty123"})
+                                                 'new_password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
         self.assertEqual(response.status_code, 302)
         self.user2.refresh_from_db()
         self.user2.profile.refresh_from_db()
@@ -445,7 +443,7 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(self.url_get('unicef', url).status_code, 302)
 
         # partner analyst users can't access page
-        self.client.login(username="bill@unicef.org", password="Qwerty123")
+        self.client.login(username="bill@unicef.org", password="Qwerty12345")
         self.assertEqual(self.url_get('unicef', url).status_code, 302)
 
     def test_read(self):
@@ -581,13 +579,12 @@ class UserCRUDLTest(BaseCasesTest):
         # submit with too simple a password
         response = self.url_post('unicef', url, {'name': "Morris", 'email': "mo2@trac.com",
                                                  'new_password': "123", 'confirm_password': "123"})
-        self.assertFormError(response, 'form', 'new_password', "Must contain a mixture of lowercase and uppercase, "
-                                                               "as well as a number")
+        self.assertFormError(response, 'form', 'new_password', "Must be at least 10 characters long")
 
         # submit with all required fields entered and valid password fields
         old_password_hash = user.password
         response = self.url_post('unicef', url, {'name': "Morris", 'email': "mo2@trac.com",
-                                                 'new_password': "Qwerty123", 'confirm_password': "Qwerty123"})
+                                                 'new_password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
         self.assertEqual(response.status_code, 302)
 
         # check password has been changed
@@ -606,13 +603,13 @@ class UserCRUDLTest(BaseCasesTest):
 
         # submit again with new password but no confirmation
         response = self.url_post('unicef', url, {'name': "Morris", 'email': "mo2@trac.com",
-                                                 'new_password': "Qwerty123"})
+                                                 'new_password': "Qwerty12345"})
         self.assertEqual(response.status_code, 200)
         self.assertFormError(response, 'form', 'confirm_password', "Passwords don't match.")
 
         # submit again with new password and confirmation
         response = self.url_post('unicef', url, {'name': "Morris", 'email': "mo2@trac.com",
-                                                 'new_password': "Qwerty123", 'confirm_password': "Qwerty123"})
+                                                 'new_password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
         self.assertEqual(response.status_code, 302)
 
         # check password has changed and no longer has to be changed

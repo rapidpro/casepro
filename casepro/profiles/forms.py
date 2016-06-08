@@ -4,7 +4,6 @@ from django import forms
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
-from smartmin.users.models import is_password_complex
 
 from casepro.cases.models import Partner
 
@@ -16,9 +15,11 @@ class PasswordValidator(object):
     Basic password complexity check - should integrate with auth's validate_password functionality when we update to
     Django 1.9.
     """
+    MIN_LENGTH = 10
+
     def __call__(self, value):
-        if not is_password_complex(value):
-            raise ValidationError(_("Must contain a mixture of lowercase and uppercase, as well as a number"))
+        if len(value) < self.MIN_LENGTH:
+            raise ValidationError(_("Must be at least %d characters long") % self.MIN_LENGTH)
 
 
 class UserForm(forms.ModelForm):
