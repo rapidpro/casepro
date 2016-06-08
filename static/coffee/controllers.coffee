@@ -83,7 +83,7 @@ controllers.controller('HomeController', ['$scope', '$window', '$location', 'Lab
 # Base controller class for controllers which display fetched items with
 # infinite scrolling, e.g. lists of messages, cases etc
 #============================================================================
-controllers.controller('BaseItemsController', ['$scope', ($scope) ->
+controllers.controller('BaseItemsController', ['$scope', 'UtilsService', ($scope, UtilsService) ->
 
   $scope.items = []
   $scope.oldItemsLoading = false
@@ -169,6 +169,8 @@ controllers.controller('BaseItemsController', ['$scope', ($scope) ->
         $scope.updateItems(false)
         if $scope.oldItemsMore and $scope.items.length < INFINITE_SCROLL_MAX_ITEMS
           $scope.loadOldItems(true)
+    ).catch(() ->
+      UtilsService.displayAlert('error', "Problem communicating with the server")
     )
 
   $scope.isInfiniteScrollEnabled = () ->
