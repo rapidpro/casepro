@@ -8,7 +8,7 @@ from casepro.msgs.models import Message
 from casepro.test import BaseCasesTest
 
 from .models import Action, LabelAction, ArchiveAction, FlagAction
-from .models import Test, ContainsTest, GroupsTest, FieldTest, Rule, DeserializationContext, Quantifier
+from .models import Test, ContainsTest, WordCountTest, GroupsTest, FieldTest, Rule, DeserializationContext, Quantifier
 
 
 class TestsTest(BaseCasesTest):
@@ -54,6 +54,21 @@ class TestsTest(BaseCasesTest):
         self.assertTest(test, self.ann, "Fred Blueth", True)
         self.assertTest(test, self.ann, "red", False)
         self.assertTest(test, self.ann, "yo RED Blue", False)
+
+    def test_word_count(self):
+        test = Test.from_json({'type': 'words', 'minimum': 2}, self.context)
+        self.assertEqual(test.TYPE, 'words')
+        self.assertEqual(test.minimum, 2)
+        self.assertEqual(test.to_json(), {'type': 'words', 'minimum': 2})
+        self.assertEqual(six.text_type(test), 'message has at least 2 words')
+
+        self.assertEqual(test, WordCountTest(2))
+        self.assertNotEqual(test, WordCountTest(3))
+
+        self.assertTest(test, self.ann, "!", False)
+        self.assertTest(test, self.ann, "no!", False)
+        self.assertTest(test, self.ann, "ok  maybe ", True)
+        self.assertTest(test, self.ann, "uh-ok-sure", True)
 
     def test_groups(self):
         test = Test.from_json(

@@ -76,6 +76,7 @@ class Test(object):
         if not cls.CLASS_BY_TYPE:
             cls.CLASS_BY_TYPE = {
                 ContainsTest.TYPE: ContainsTest,
+                WordCountTest.TYPE: WordCountTest,
                 GroupsTest.TYPE: GroupsTest,
                 FieldTest.TYPE: FieldTest,
             }
@@ -143,6 +144,33 @@ class ContainsTest(Test):
     def __unicode__(self):
         quoted_keywords = ['"%s"' % w for w in self.keywords]
         return "message contains %s %s" % (six.text_type(self.quantifier), ", ".join(quoted_keywords))
+
+
+class WordCountTest(Test):
+    """
+    Test that returns whether the message text contains at least the given number of words
+    """
+    TYPE = 'words'
+
+    def __init__(self, minimum):
+        self.minimum = minimum
+
+    @classmethod
+    def from_json(cls, json_obj, context):
+        return cls(json_obj['minimum'])
+
+    def to_json(self):
+        return {'type': self.TYPE, 'minimum': self.minimum}
+
+    def matches(self, message):
+        num_words = len(regex.findall(r'\w+', message.text, flags=regex.UNICODE | regex.V0))
+        return num_words >= self.minimum
+
+    def __eq__(self, other):
+        return other and self.TYPE == other.TYPE and self.minimum == other.minimum
+
+    def __unicode__(self):
+        return "message has at least %d words" % self.minimum
 
 
 class GroupsTest(Test):
