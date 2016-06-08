@@ -673,13 +673,16 @@ class RapidProBackendTest(BaseCasesTest):
             TembaBroadcast.create(id=204, text="FYI", urns=["tel:+250783935665"], contacts=[])
         ]
 
-        out5 = self.create_outgoing(self.unicef, self.user1, None, 'F', "FYI", None, urns=["tel:+250783935665"])
-        self.backend.push_outgoing(self.unicef, [out5])
+        out5 = self.create_outgoing(self.unicef, self.user1, None, 'F', "FYI", None, urn="tel:+1234")
+        out6 = self.create_outgoing(self.unicef, self.user1, None, 'F', "FYI", None, urn="tel:+2345")
+        self.backend.push_outgoing(self.unicef, [out5, out6], as_broadcast=True)
 
-        mock_create_broadcast.assert_called_once_with(text="FYI", contacts=[], urns=["tel:+250783935665"])
+        mock_create_broadcast.assert_called_once_with(text="FYI", contacts=[], urns=["tel:+1234", "tel:+2345"])
 
         out5.refresh_from_db()
+        out6.refresh_from_db()
         self.assertEqual(out5.backend_broadcast_id, 204)
+        self.assertEqual(out6.backend_broadcast_id, 204)
 
     @patch('dash.orgs.models.TembaClient1.add_contacts')
     def test_add_to_group(self, mock_add_contacts):
@@ -826,7 +829,7 @@ class RapidProBackendTest(BaseCasesTest):
             {
                 'id': 201,  # id is the broadcast id
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
-                'urns': [],
+                'urn': None,
                 'text': "Welcome",
                 'time': d3,
                 'direction': 'O',

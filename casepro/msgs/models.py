@@ -4,7 +4,6 @@ import json
 
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
-from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models import Count
 from django.utils.encoding import python_2_unicode_compatible
@@ -408,7 +407,7 @@ class Outgoing(models.Model):
 
     contact = models.ForeignKey(Contact, null=True, related_name='outgoing_messages')  # used for case and bulk replies
 
-    urns = ArrayField(base_field=models.CharField(max_length=255), default=list)  # used for forwards
+    urn = models.CharField(max_length=255, null=True)  # used for forwards
 
     reply_to = models.ForeignKey(Message, null=True, related_name='replies')
 
@@ -441,19 +440,26 @@ class Outgoing(models.Model):
         return cls._create(org, user, cls.CASE_REPLY, text, last_incoming, contact=case.contact, case=case)
 
     @classmethod
-    def create_forward(cls, org, user, text, urns, original_message):
-        return cls._create(org, user, cls.FORWARD, text, original_message, urns=urns)
+    def create_forwards(cls, org, user, text, urns, original_message):
+        forwards = []
+        for urn in urns:
+            forwards.append(cls._create(org, user, cls.FORWARD, text, original_message, urn=urn, push=False))
+
+        # push together as a single broadcast
+        get_backend().push_outgoing(org, forwards, as_broadcast=True)
+
+        return forwards
 
     @classmethod
-    def _create(cls, org, user, activity, text, reply_to, contact=None, urns=(), case=None, push=True):
+    def _create(cls, org, user, activity, text, reply_to, contact=None, urn=None, case=None, push=True):
         if not text:
             raise ValueError("Message text cannot be empty")
-        if not contact and not urns:
-            raise ValueError("Message must have at least one recipient")
+        if not contact and not urn:
+            raise ValueError("Message must have a recipient")
 
         msg = cls.objects.create(org=org, partner=user.get_partner(org),
                                  activity=activity, text=text,
-                                 contact=contact, urns=urns,
+                                 contact=contact, urn=urn,
                                  reply_to=reply_to, case=case,
                                  created_by=user)
 
@@ -534,7 +540,7 @@ class Outgoing(models.Model):
         return {
             'id': self.pk,
             'contact': self.contact.as_json(full=False) if self.contact else None,
-            'urns': self.urns,
+            'urn': self.urn,
             'text': self.text,
             'time': self.created_on,
             'direction': self.DIRECTION,

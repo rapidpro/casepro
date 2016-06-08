@@ -625,7 +625,7 @@ class CaseCRUDLTest(BaseCasesTest):
         remote_message1 = {
             'id': 102,
             'contact': {'id': self.ann.pk, 'name': "Ann"},
-            'urns': [],
+            'urn': None,
             'text': "Non casepro message...",
             'time': d2,
             'direction': 'O',
@@ -745,7 +745,7 @@ class CaseCRUDLTest(BaseCasesTest):
             {
                 'id': 202,
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
-                'urns': [],
+                'urn': None,
                 'text': "It's bad",
                 'time': d3,
                 'direction': 'O',

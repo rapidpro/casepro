@@ -257,8 +257,8 @@ class RapidProBackend(BaseBackend):
             for msg in outgoing:
                 if msg.contact:
                     contact_uuids.append(msg.contact.uuid)
-                if msg.urns:
-                    urns.extend(msg.urns)
+                if msg.urn:
+                    urns.append(msg.urn)
             text = outgoing[0].text
             broadcast = client.create_broadcast(text=text, contacts=contact_uuids, urns=urns)
 
@@ -269,7 +269,8 @@ class RapidProBackend(BaseBackend):
         else:
             for msg in outgoing:
                 contact_uuids = [msg.contact.uuid] if msg.contact else []
-                broadcast = client.create_broadcast(text=msg.text, contacts=contact_uuids, urns=msg.urns)
+                urns = [msg.urn] if msg.urn else []
+                broadcast = client.create_broadcast(text=msg.text, contacts=contact_uuids, urns=urns)
 
                 msg.backend_broadcast_id = broadcast.id
                 msg.save(update_fields=('backend_broadcast_id',))
@@ -335,7 +336,7 @@ class RapidProBackend(BaseBackend):
             return {
                 'id': msg.broadcast,
                 'contact': contact_json,
-                'urns': [],
+                'urn': None,
                 'text': msg.text,
                 'time': msg.created_on,
                 'direction': Outgoing.DIRECTION,
