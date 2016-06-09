@@ -434,9 +434,15 @@ describe('controllers:', () ->
 
     it('onTabSelect', () ->
       expect($scope.users).toEqual([])
-      expect($scope.usersFetched).toEqual(false)
+      expect($scope.initialisedTabs).toEqual([])
 
       fetchUsers = spyOnPromise($q, $scope, PartnerService, 'fetchUsers')
+      fetchRepliesChart = spyOnPromise($q, $scope, PartnerService, 'fetchRepliesChart')
+
+      $scope.onTabSelect('summary')
+
+      expect(PartnerService.fetchRepliesChart).toHaveBeenCalledWith(test.moh)
+      expect($scope.initialisedTabs).toEqual(['summary'])
 
       $scope.onTabSelect('users')
 
@@ -444,13 +450,14 @@ describe('controllers:', () ->
       fetchUsers.resolve(users)
 
       expect($scope.users).toEqual(users)
-      expect($scope.usersFetched).toEqual(true)
+      expect($scope.initialisedTabs).toEqual(['summary', 'users'])
 
       # select the users tab again
       $scope.onTabSelect('users')
 
       # users shouldn't be re-fetched
       expect(PartnerService.fetchUsers.calls.count()).toEqual(1)
+      expect($scope.initialisedTabs).toEqual(['summary', 'users'])
     )
 
     it('onDeletePartner', () ->
