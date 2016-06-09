@@ -157,8 +157,9 @@ controllers.controller('BaseItemsController', ['$scope', 'UtilsService', ($scope
   $scope.loadOldItems = (forSelectAll) ->
     $scope.oldItemsLoading = true
     $scope.oldItemsPage += 1
+    search = angular.copy($scope.activeSearch)
 
-    $scope.fetchOldItems($scope.activeSearch, $scope.startTime, $scope.oldItemsPage).then((data) ->
+    $scope.fetchOldItems(search, $scope.startTime, $scope.oldItemsPage).then((data) ->
       $scope.items = $scope.items.concat(data.results)
       $scope.oldItemsMore = data.hasMore
       $scope.oldItemsLoading = false
@@ -172,7 +173,7 @@ controllers.controller('BaseItemsController', ['$scope', 'UtilsService', ($scope
     ).catch(() ->
       UtilsService.displayAlert('error', "Problem communicating with the server")
 
-      Raven.captureMessage('Item fetch errored or timed out')
+      Raven.captureMessage('Item fetch errored or timed out', {extra: {search: search}})
     )
 
   $scope.isInfiniteScrollEnabled = () ->
