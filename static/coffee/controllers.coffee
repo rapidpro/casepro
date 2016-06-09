@@ -532,11 +532,28 @@ controllers.controller('CaseTimelineController', ['$scope', '$timeout', 'CaseSer
 controllers.controller('PartnerController', ['$scope', '$window', 'UtilsService', 'PartnerService', ($scope, $window, UtilsService, PartnerService) ->
 
   $scope.partner = $window.contextData.partner
-  $scope.usersFetched = false
+  $scope.initialisedTabs = []
   $scope.users = []
 
   $scope.onTabSelect = (tab) ->
-    if tab == 'users' and not $scope.usersFetched
+    if tab not in $scope.initialisedTabs
+      $scope.onTabInit(tab)
+      $scope.initialisedTabs.push(tab)
+
+  $scope.onTabInit = (tab) ->
+    if tab == 'summary'
+      PartnerService.fetchRepliesChart($scope.partner).then((data) ->
+        Highcharts.chart('chart-replies-by-month', {
+          chart: {type: 'column'},
+          title: {text: null},
+          xAxis: {categories: data.categories},
+          yAxis: {min: 0, title: {text: 'Replies'}},
+          legend: {enabled: false},
+          series: [{name: 'Replies', data: data.series}],
+          credits: {enabled: false}
+        });
+      )
+    else if tab == 'users'
       PartnerService.fetchUsers($scope.partner).then((users) ->
         $scope.usersFetched = true
         $scope.users = users
