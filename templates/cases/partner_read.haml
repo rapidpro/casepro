@@ -151,8 +151,8 @@
         </uib-tab-heading>
         .search-toolbar.clearfix
           - if can_manage
-          .pull-away
-            <a class="btn btn-default" href="{% url 'profiles.user_create_in' object.pk %}">{% trans "New..." %}</a>
+            .pull-away
+              <a class="btn btn-default" href="{% url 'profiles.user_create_in' object.pk %}">{% trans "New..." %}</a>
 
           .{ style:"margin-top: 7px" }
             Total of <strong>[[ users.length ]]</strong> users
