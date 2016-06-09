@@ -171,6 +171,8 @@ controllers.controller('BaseItemsController', ['$scope', 'UtilsService', ($scope
           $scope.loadOldItems(true)
     ).catch(() ->
       UtilsService.displayAlert('error', "Problem communicating with the server")
+
+      Raven.captureMessage('Item fetch errored or timed out')
     )
 
   $scope.isInfiniteScrollEnabled = () ->
