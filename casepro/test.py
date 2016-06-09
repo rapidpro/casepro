@@ -109,6 +109,7 @@ class BaseCasesTest(DashTest):
 
     def create_outgoing(self, org, user, broadcast_id, activity, text, contact, **kwargs):
         return Outgoing.objects.create(org=org,
+                                       partner=user.get_partner(org),
                                        backend_broadcast_id=broadcast_id,
                                        activity=activity,
                                        text=text,

@@ -915,9 +915,9 @@ class OutgoingTest(BaseCasesTest):
 
     def test_search(self):
         out1 = self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello 1", self.ann)
-        out2 = self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann, partner=self.moh)
+        out2 = self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann)
         out3 = self.create_outgoing(self.unicef, self.admin, 203, 'C', "Hello 3", self.bob)
-        out4 = self.create_outgoing(self.unicef, self.user1, 204, 'C', "Hello 4", self.bob, partner=self.moh)
+        out4 = self.create_outgoing(self.unicef, self.user1, 204, 'C', "Hello 4", self.bob)
         out5 = self.create_outgoing(self.unicef, self.admin, 205, 'F', "Hello 5", None)
 
         # other org
@@ -941,9 +941,9 @@ class OutgoingTest(BaseCasesTest):
 
     def test_search_replies(self):
         out1 = self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello 1", self.ann)
-        out2 = self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann, partner=self.moh)
+        out2 = self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann)
         out3 = self.create_outgoing(self.unicef, self.admin, 203, 'C', "Hello 3", self.bob)
-        out4 = self.create_outgoing(self.unicef, self.user1, 204, 'C', "Hello 4", self.bob, partner=self.moh)
+        out4 = self.create_outgoing(self.unicef, self.user1, 204, 'C', "Hello 4", self.bob)
         self.create_outgoing(self.unicef, self.admin, 205, 'F', "Hello 5", None)  # forwards are ignored
 
         # other org
@@ -967,9 +967,9 @@ class OutgoingTest(BaseCasesTest):
     def test_get_user_reply_counts(self):
         self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello 1", self.ann,
                              created_on=datetime(2016, 5, 20, 9, 0, tzinfo=pytz.UTC))  # May 20th
-        self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann, partner=self.moh,
+        self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann,
                              created_on=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC))  # April 20th
-        self.create_outgoing(self.unicef, self.user1, 203, 'C', "Hello 3", self.bob, partner=self.moh,
+        self.create_outgoing(self.unicef, self.user1, 203, 'C', "Hello 3", self.bob,
                              created_on=datetime(2016, 3, 20, 9, 0, tzinfo=pytz.UTC))  # Mar 20th
         self.create_outgoing(self.unicef, self.admin, 205, 'F', "Hello 5", None)  # forwards are ignored
 
@@ -1016,7 +1016,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
         url = reverse('msgs.outgoing_search')
 
         out1 = self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello 1", self.ann)
-        out2 = self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann, partner=self.moh)
+        out2 = self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann)
 
         # try unauthenticated
         response = self.url_get('unicef', url)
@@ -1145,14 +1145,10 @@ class ReplyExportCRUDLTest(BaseCasesTest):
 
         case = self.create_case(self.unicef, ann, self.moh, msg1)
 
-        self.create_outgoing(self.unicef, self.user1, 201, 'C', "Bonjour", ann, case=case, reply_to=msg1,
-                             partner=self.moh, created_on=d4)
-        self.create_outgoing(self.unicef, self.user2, 202, 'B', "That's nice", bob, reply_to=msg2,
-                             partner=self.moh, created_on=d5)
-        self.create_outgoing(self.unicef, self.user3, 203, 'B', "Welcome", bob, reply_to=msg2,
-                             partner=self.who, created_on=d6)
-        self.create_outgoing(self.unicef, self.user3, 204, 'F', "FYI", None, reply_to=msg2,
-                             partner=self.who, created_on=d6)
+        self.create_outgoing(self.unicef, self.user1, 201, 'C', "Bonjour", ann, case=case, reply_to=msg1, created_on=d4)
+        self.create_outgoing(self.unicef, self.user2, 202, 'B', "That's nice", bob, reply_to=msg2, created_on=d5)
+        self.create_outgoing(self.unicef, self.user3, 203, 'B', "Welcome", bob, reply_to=msg2, created_on=d6)
+        self.create_outgoing(self.unicef, self.user3, 204, 'F', "FYI", None, reply_to=msg2, created_on=d6)
 
         # log in as a administrator
         self.login(self.admin)
