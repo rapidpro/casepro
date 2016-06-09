@@ -1,6 +1,7 @@
 # Unit tests for our Angular controllers
 
 describe('controllers:', () ->
+  $httpBackend = null
   $window = null
   $controller = null
   $rootScope = null
@@ -11,7 +12,8 @@ describe('controllers:', () ->
   beforeEach(() ->
     module('cases')
 
-    inject((_$window_, _$controller_, _$rootScope_, _$q_, _UtilsService_) ->
+    inject((_$httpBackend_, _$window_, _$controller_, _$rootScope_, _$q_, _UtilsService_) ->
+      $httpBackend = _$httpBackend_
       $window = _$window_
       $controller = _$controller_
       $rootScope = _$rootScope_
@@ -130,6 +132,20 @@ describe('controllers:', () ->
         expect($scope.items).toEqual([test.case1])
         expect($scope.oldItemsMore).toEqual(true)
         expect($scope.isInfiniteScrollEnabled()).toEqual(true)
+      )
+
+      it('loadOldItems should report to raven on failure', () ->
+        spyOn(CaseService, 'fetchOld').and.callThrough()
+        spyOn(UtilsService, 'displayAlert')
+        spyOn(Raven, 'captureMessage')
+
+        $httpBackend.expectGET(/\/case\/search\/\?.*/).respond(() -> [500, 'Server error', {}, 'Internal error'])
+
+        $scope.loadOldItems()
+
+        $httpBackend.flush()
+        expect(UtilsService.displayAlert).toHaveBeenCalled()
+        expect(Raven.captureMessage).toHaveBeenCalled()
       )
 
       it('getItemFilter', () ->
