@@ -3,7 +3,9 @@ from __future__ import absolute_import, unicode_literals
 from django.conf import settings
 from django.conf.urls import include, url
 
+from casepro.backend import get_backend
 from casepro.utils.views import PartialTemplate
+
 
 urlpatterns = [
     url(r'', include('casepro.cases.urls')),
@@ -15,6 +17,9 @@ urlpatterns = [
     url(r'^i18n/', include('django.conf.urls.i18n')),
     url(r'^partials/(?P<template>[a-z0-9\-_]+)\.html$', PartialTemplate.as_view(), name='utils.partial_template')
 ]
+
+backend_urls = get_backend().get_url_patterns() or []
+urlpatterns += backend_urls
 
 if settings.DEBUG:  # pragma: no cover
     import debug_toolbar
