@@ -18,7 +18,7 @@ from casepro.utils import parse_csv, str_to_bool, json_encode, JSONEncoder
 from casepro.utils.export import BaseDownloadView
 
 from .forms import LabelForm
-from .models import Label, Message, MessageExport, MessageFolder, Outgoing, OutgoingFolder, ReplyExport
+from .models import Label, FAQ, Message, MessageExport, MessageFolder, Outgoing, OutgoingFolder, ReplyExport
 from .tasks import message_export, reply_export
 
 
@@ -127,6 +127,15 @@ class LabelCRUDL(SmartCRUDL):
 
         def get_partners(self, obj):
             return ', '.join([p.name for p in obj.get_partners()])
+
+
+class FaqCRUDL(SmartCRUDL):
+    model = FAQ
+    actions = ('list',)
+
+    class List(OrgPermsMixin, SmartListView):
+        fields = ('question', 'answer')
+        default_order = ('question',)
 
 
 class MessageSearchMixin(object):
