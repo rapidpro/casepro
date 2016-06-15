@@ -199,6 +199,15 @@ class BaseBackend(object):
                  Message.as_json() for incoming messages and Outgoing.as_json() for outgoing messages.
         """
 
+    @abstractmethod
+    def get_url_patterns(self):
+        """
+        Returns the list of URL patterns that should be registered for this
+        backend.
+
+        :return: a list of URL patterns.
+        """
+
 
 class NoopBackend(BaseBackend):
     """
