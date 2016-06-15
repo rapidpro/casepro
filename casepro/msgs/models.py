@@ -94,6 +94,34 @@ class Label(models.Model):
 
 
 @python_2_unicode_compatible
+class FAQ(models.Model):
+    """
+    Pre-approved questions and answers to be used when replying to a message.
+    """
+    # SAVE_LABELS_ATTR = '__data__labels'
+
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='faqs')
+
+    question = models.CharField(max_length=140)
+
+    answer = models.CharField(max_length=140)
+
+    labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this FAQ"), related_name='faqs')
+
+    # def __init__(self, *args, **kwargs):
+    #     if self.SAVE_LABELS_ATTR in kwargs:
+    #         setattr(self, self.SAVE_LABELS_ATTR, kwargs.pop(self.SAVE_LABELS_ATTR))
+
+    #     super(FAQ, self).__init__(*args, **kwargs)
+
+    def as_json(self):
+        return {'id': self.pk, 'question': self.question, 'answer': self.answer}
+
+    def __str__(self):
+        return self.question
+
+
+@python_2_unicode_compatible
 class Message(models.Model):
     """
     A incoming message from the backend
