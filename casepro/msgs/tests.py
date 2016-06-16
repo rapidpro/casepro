@@ -156,6 +156,7 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 302)
 
         self.pregnancy.refresh_from_db()
+        self.pregnancy.rule.refresh_from_db()
         self.assertEqual(self.pregnancy.uuid, 'L-002')
         self.assertEqual(self.pregnancy.org, self.unicef)
         self.assertEqual(self.pregnancy.name, "Pregnancy")
@@ -170,6 +171,25 @@ class LabelCRUDLTest(BaseCasesTest):
         # view form again for recently edited label
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
+
+        # submit again with no tests
+        response = self.url_post('unicef', url, {
+            'name': "Pregnancy",
+            'description': "Msgs about maternity",
+            'keywords': "",
+            'field_test_0': "",
+            'field_test_1': "",
+            'is_synced': "1"
+        })
+
+        self.assertEqual(response.status_code, 302)
+
+        self.pregnancy.refresh_from_db()
+        self.assertEqual(self.pregnancy.rule, None)
+        self.assertEqual(self.pregnancy.get_tests(), [])
+
+        self.assertEqual(self.unicef.labels.count(), 3)
+        self.assertEqual(self.unicef.rules.count(), 2)
 
     def test_list(self):
         url = reverse('msgs.label_list')

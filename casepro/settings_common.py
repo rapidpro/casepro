@@ -353,6 +353,8 @@ GROUP_PERMISSIONS = {
         'contacts.field.*',
 
         'profiles.profile.*',
+
+        'rules.rule.*',
     ),
     "Editors": (  # Partner users: Managers
         'orgs.org_inbox',

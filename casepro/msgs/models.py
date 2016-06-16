@@ -46,7 +46,7 @@ class Label(models.Model):
 
     description = models.CharField(verbose_name=_("Description"), null=True, max_length=255)
 
-    tests = models.TextField(blank=True)
+    rule = models.OneToOneField('rules.Rule', null=True)
 
     is_synced = models.BooleanField(
         default=True,
@@ -57,8 +57,9 @@ class Label(models.Model):
 
     @classmethod
     def create(cls, org, name, description, tests, is_synced):
-        return cls.objects.create(org=org, name=name, description=description,
-                                  tests=json_encode(tests), is_synced=is_synced)
+        label = cls.objects.create(org=org, name=name, description=description, is_synced=is_synced)
+        label.update_tests(tests)
+        return label
 
     @classmethod
     def get_all(cls, org, user=None):
@@ -69,15 +70,30 @@ class Label(models.Model):
 
         return org.labels.filter(is_active=True)
 
+    def update_tests(self, tests):
+        from casepro.rules.models import Rule, LabelAction
+
+        if tests:
+            if self.rule:
+                self.rule.tests = json_encode(tests)
+                self.rule.save(update_fields=('tests',))
+            else:
+                self.rule = Rule.create(self.org, tests, [LabelAction(self)])
+                self.save(update_fields=('rule',))
+        else:
+            if self.rule:
+                rule = self.rule
+                self.rule = None
+                self.save(update_fields=('rule',))
+
+                rule.delete()
+
+    def get_tests(self):
+        return self.rule.get_tests() if self.rule else []
+
     @classmethod
     def lock(cls, org, uuid):
         return get_redis_connection().lock(LABEL_LOCK_KEY % (org.pk, uuid), timeout=60)
-
-    def get_tests(self):
-        from casepro.rules.models import Test, DeserializationContext
-
-        tests_json = json.loads(self.tests) if self.tests else []
-        return [Test.from_json(t, DeserializationContext(self.org)) for t in tests_json]
 
     def get_partners(self):
         return self.partners.filter(is_active=True)

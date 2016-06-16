@@ -100,11 +100,11 @@ class LabelCRUDL(SmartCRUDL):
 
             return initial
 
-        def pre_save(self, obj):
-            obj = super(LabelCRUDL.Update, self).pre_save(obj)
+        def post_save(self, obj):
+            obj = super(LabelCRUDL.Update, self).post_save(obj)
 
             tests = self.construct_tests(self.form.cleaned_data)
-            obj.tests = json_encode(tests) if tests else ""
+            obj.update_tests(tests)
 
             return obj
 
