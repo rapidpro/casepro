@@ -1,6 +1,7 @@
 # Unit tests for our Angular controllers
 
 describe('controllers:', () ->
+  $httpBackend = null
   $window = null
   $controller = null
   $rootScope = null
@@ -11,7 +12,8 @@ describe('controllers:', () ->
   beforeEach(() ->
     module('cases')
 
-    inject((_$window_, _$controller_, _$rootScope_, _$q_, _UtilsService_) ->
+    inject((_$httpBackend_, _$window_, _$controller_, _$rootScope_, _$q_, _UtilsService_) ->
+      $httpBackend = _$httpBackend_
       $window = _$window_
       $controller = _$controller_
       $rootScope = _$rootScope_
@@ -130,6 +132,20 @@ describe('controllers:', () ->
         expect($scope.items).toEqual([test.case1])
         expect($scope.oldItemsMore).toEqual(true)
         expect($scope.isInfiniteScrollEnabled()).toEqual(true)
+      )
+
+      it('loadOldItems should report to raven on failure', () ->
+        spyOn(CaseService, 'fetchOld').and.callThrough()
+        spyOn(UtilsService, 'displayAlert')
+        spyOn(Raven, 'captureMessage')
+
+        $httpBackend.expectGET(/\/case\/search\/\?.*/).respond(() -> [500, 'Server error', {}, 'Internal error'])
+
+        $scope.loadOldItems()
+
+        $httpBackend.flush()
+        expect(UtilsService.displayAlert).toHaveBeenCalled()
+        expect(Raven.captureMessage).toHaveBeenCalled()
       )
 
       it('getItemFilter', () ->
@@ -434,9 +450,15 @@ describe('controllers:', () ->
 
     it('onTabSelect', () ->
       expect($scope.users).toEqual([])
-      expect($scope.usersFetched).toEqual(false)
+      expect($scope.initialisedTabs).toEqual([])
 
       fetchUsers = spyOnPromise($q, $scope, PartnerService, 'fetchUsers')
+      fetchRepliesChart = spyOnPromise($q, $scope, PartnerService, 'fetchRepliesChart')
+
+      $scope.onTabSelect('summary')
+
+      expect(PartnerService.fetchRepliesChart).toHaveBeenCalledWith(test.moh)
+      expect($scope.initialisedTabs).toEqual(['summary'])
 
       $scope.onTabSelect('users')
 
@@ -444,13 +466,14 @@ describe('controllers:', () ->
       fetchUsers.resolve(users)
 
       expect($scope.users).toEqual(users)
-      expect($scope.usersFetched).toEqual(true)
+      expect($scope.initialisedTabs).toEqual(['summary', 'users'])
 
       # select the users tab again
       $scope.onTabSelect('users')
 
       # users shouldn't be re-fetched
       expect(PartnerService.fetchUsers.calls.count()).toEqual(1)
+      expect($scope.initialisedTabs).toEqual(['summary', 'users'])
     )
 
     it('onDeletePartner', () ->

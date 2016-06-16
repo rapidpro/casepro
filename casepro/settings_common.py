@@ -328,7 +328,7 @@ PERMISSIONS = {
     'contacts.group': ('select', 'list'),
 
     # can't create profiles.user.* permissions because we don't own User
-    'profiles.profile': ('user_create', 'user_read', 'user_list'),
+    'profiles.profile': ('user_create', 'user_create_in', 'user_update', 'user_read', 'user_list'),
 }
 
 # assigns the permissions that each group should have
@@ -385,7 +385,8 @@ GROUP_PERMISSIONS = {
 
         'contacts.contact_read',
 
-        'profiles.profile_user_create',
+        'profiles.profile_user_create_in',
+        'profiles.profile_user_update',
         'profiles.profile_user_read',
     ),
     "Viewers": (  # Partner users: Data Analysts

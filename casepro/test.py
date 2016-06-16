@@ -2,19 +2,19 @@ from __future__ import unicode_literals
 
 import json
 
-from casepro.backend import NoopBackend
-from casepro.cases.models import Case, Partner
-from casepro.contacts.models import Contact, Group, Field
-from casepro.msgs.models import Label, Message, Outgoing
-from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
-from casepro.rules.models import ContainsTest, LabelAction, Quantifier, Rule
 from dash.test import DashTest
 from datetime import datetime
-from django.contrib.auth.models import User
 from django.utils.timezone import now
 from django.test import override_settings
 from xlrd import xldate_as_tuple
 from xlrd.sheet import XL_CELL_DATE
+
+from casepro.backend import NoopBackend
+from casepro.cases.models import Case, Partner
+from casepro.contacts.models import Contact, Group, Field
+from casepro.msgs.models import Label, Message, Outgoing
+from casepro.profiles.models import Profile, ROLE_ANALYST, ROLE_MANAGER
+from casepro.rules.models import ContainsTest, Quantifier, LabelAction, Rule
 
 
 class TestBackend(NoopBackend):
@@ -74,13 +74,11 @@ class BaseCasesTest(DashTest):
     def create_partner(self, org, name, labels=(), restricted=True):
         return Partner.create(org, name, restricted, labels, None)
 
-    def create_admin(self, org, full_name, email):
-        user = User.create(None, None, None, full_name, email, password=email, change_password=False)
-        org.administrators.add(user)
-        return user
+    def create_admin(self, org, name, email):
+        return Profile.create_org_user(org, name, email, email)
 
-    def create_user(self, org, partner, role, full_name, email):
-        return User.create(org, partner, role, full_name, email, password=email, change_password=False)
+    def create_user(self, org, partner, role, name, email):
+        return Profile.create_partner_user(org, partner, role, name, email, email)
 
     def create_label(self, org, uuid, name, description, keywords=(), **kwargs):
         label = Label.objects.create(org=org, uuid=uuid, name=name, description=description, **kwargs)
@@ -119,6 +117,7 @@ class BaseCasesTest(DashTest):
 
     def create_outgoing(self, org, user, broadcast_id, activity, text, contact, **kwargs):
         return Outgoing.objects.create(org=org,
+                                       partner=user.get_partner(org),
                                        backend_broadcast_id=broadcast_id,
                                        activity=activity,
                                        text=text,

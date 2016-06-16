@@ -5,50 +5,7 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 
 
-ROLE_ANALYST = 'A'
-ROLE_MANAGER = 'M'
-
-ROLE_CHOICES = ((ROLE_ANALYST, _("Data Analyst")), (ROLE_MANAGER, _("Manager")))
-
-
 # ================================== Monkey patching for the User class ====================================
-
-def _user_create(cls, org, partner, role, full_name, email, password, change_password=False):
-    """
-    Creates a user
-    """
-    from .models import Profile
-
-    if role and (not org or not partner):  # pragma: no cover
-        raise ValueError("Only users in partner organizations can be assigned a role")
-
-    if partner and partner.org_id != org.pk:  # pragma: no cover
-        raise ValueError("Org and partner org mismatch")
-
-    # create auth user
-    user = cls.objects.create(is_active=True, username=email, email=email)
-    user.set_password(password)
-    user.save()
-
-    # add profile
-    Profile.objects.create(user=user, partner=partner, full_name=full_name, change_password=change_password)
-
-    if org:
-        user.update_role(org, role)
-
-    return user
-
-
-def _user_update_role(user, org, role):
-    if role == ROLE_ANALYST:
-        org.viewers.add(user)
-        org.editors.remove(user)
-    elif role == ROLE_MANAGER:
-        org.viewers.remove(user)
-        org.editors.add(user)
-    else:  # pragma: no cover
-        raise ValueError("Invalid user role: %s" % role)
-
 
 def _user_clean(user):
     # we use email for login
@@ -62,11 +19,7 @@ def _user_clean(user):
 
 def _user_has_profile(user):
     from .models import Profile
-
-    try:
-        return bool(user.profile)
-    except Profile.DoesNotExist:
-        return False
+    return Profile.exists_for(user)
 
 
 def _user_get_full_name(user):
@@ -149,8 +102,6 @@ def _user_as_json(user):
     return {'id': user.pk, 'name': user.get_full_name()}
 
 
-User.create = classmethod(_user_create)
-User.update_role = _user_update_role
 User.clean = _user_clean
 User.has_profile = _user_has_profile
 User.get_full_name = _user_get_full_name

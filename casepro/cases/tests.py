@@ -18,7 +18,7 @@ from xlrd import open_workbook
 from casepro.contacts.models import Contact
 from casepro.msgs.models import Message, Outgoing
 from casepro.msgs.tasks import handle_messages
-from casepro.profiles import ROLE_ANALYST, ROLE_MANAGER
+from casepro.profiles.models import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
 from casepro.utils import datetime_to_microseconds, microseconds_to_datetime
 
@@ -992,6 +992,7 @@ class PartnerCRUDLTest(BaseCasesTest):
         # manager user from same partner gets full view of their own partner org
         self.login(self.user1)
         response = self.url_get('unicef', url)
+
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['can_manage'], True)
         self.assertEqual(response.context['can_view_replies'], True)
@@ -1070,13 +1071,37 @@ class PartnerCRUDLTest(BaseCasesTest):
         self.assertEqual(partners[0].name, "MOH")
         self.assertEqual(partners[1].name, "WHO")
 
+    def test_replies_chart(self):
+        url = reverse('cases.partner_replies_chart', args=[self.moh.pk])
+
+        self.login(self.user3)  # even users from other partners can see this
+
+        ann = self.create_contact(self.unicef, "C-001", "Ann")
+        self.create_outgoing(self.unicef, self.user1, 201, 'B', "Reply 1", ann,
+                             created_on=datetime(2016, 1, 15, 9, 0, tzinfo=pytz.UTC))  # Jan 15th
+        self.create_outgoing(self.unicef, self.user1, 202, 'B', "Reply 2", ann,
+                             created_on=datetime(2016, 1, 20, 9, 0, tzinfo=pytz.UTC))  # Jan 20th
+        self.create_outgoing(self.unicef, self.user1, 203, 'B', "Reply 3", ann,
+                             created_on=datetime(2016, 2, 1, 9, 0, tzinfo=pytz.UTC))  # Feb 1st
+        self.create_outgoing(self.unicef, self.user3, 204, 'B', "Reply 4", ann,
+                             created_on=datetime(2016, 2, 1, 9, 0, tzinfo=pytz.UTC))  # different partner
+
+        # simulate making request in April
+        with patch('casepro.cases.views.now', return_value=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC)):
+            response = self.url_get('unicef', url)
+
+        self.assertEqual(response.json, {
+            'categories': ["November", "December", "January", "February", "March", "April"],
+            'series': [0, 0, 2, 1, 0, 0]
+        })
+
     def test_users(self):
         url = reverse('cases.partner_users', args=[self.moh.pk])
 
         ann = self.create_contact(self.unicef, "C-001", "Ann")
-        self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", ann, partner=self.moh,
+        self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", ann,
                              created_on=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC))  # April 20th
-        self.create_outgoing(self.unicef, self.user1, 203, 'C', "Hello 3", ann, partner=self.moh,
+        self.create_outgoing(self.unicef, self.user1, 203, 'C', "Hello 3", ann,
                              created_on=datetime(2016, 3, 20, 9, 0, tzinfo=pytz.UTC))  # Mar 20th
 
         # try as regular user

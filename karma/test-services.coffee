@@ -362,6 +362,16 @@ describe('services:', () ->
       PartnerService = _PartnerService_
     ))
 
+    describe('fetchRepliesChart', () ->
+      it('fetches from replies chart endpoint', () ->
+        $httpBackend.expectGET('/partner/replies_chart/301/').respond('{"categories":["Jan", "Feb"], "series":[2, 3]}')
+        PartnerService.fetchRepliesChart(test.moh).then((data) ->
+          expect(data).toEqual({categories: ["Jan", "Feb"], series: [2, 3]})
+        )
+        $httpBackend.flush()
+      )
+    )
+
     describe('fetchUsers', () ->
       it('fetches from users endpoint', () ->
         $httpBackend.expectGET('/partner/users/301/').respond('{"results":[{"id": 101, "name": "Tom McTest", "replies": {}}]}')

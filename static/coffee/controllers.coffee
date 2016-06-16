@@ -83,7 +83,7 @@ controllers.controller('HomeController', ['$scope', '$window', '$location', 'Lab
 # Base controller class for controllers which display fetched items with
 # infinite scrolling, e.g. lists of messages, cases etc
 #============================================================================
-controllers.controller('BaseItemsController', ['$scope', ($scope) ->
+controllers.controller('BaseItemsController', ['$scope', 'UtilsService', ($scope, UtilsService) ->
 
   $scope.items = []
   $scope.oldItemsLoading = false
@@ -169,6 +169,13 @@ controllers.controller('BaseItemsController', ['$scope', ($scope) ->
         $scope.updateItems(false)
         if $scope.oldItemsMore and $scope.items.length < INFINITE_SCROLL_MAX_ITEMS
           $scope.loadOldItems(true)
+    ).catch((error) ->
+      UtilsService.displayAlert('error', "Problem communicating with the server")
+
+      Raven.captureMessage(error.statusText + " (" + error.status + ")", {
+        user: if $scope.user then {id: $scope.user.id} else null,
+        extra: {xhr_url: error.config.url}
+      })
     )
 
   $scope.isInfiniteScrollEnabled = () ->
@@ -527,11 +534,28 @@ controllers.controller('CaseTimelineController', ['$scope', '$timeout', 'CaseSer
 controllers.controller('PartnerController', ['$scope', '$window', 'UtilsService', 'PartnerService', ($scope, $window, UtilsService, PartnerService) ->
 
   $scope.partner = $window.contextData.partner
-  $scope.usersFetched = false
+  $scope.initialisedTabs = []
   $scope.users = []
 
   $scope.onTabSelect = (tab) ->
-    if tab == 'users' and not $scope.usersFetched
+    if tab not in $scope.initialisedTabs
+      $scope.onTabInit(tab)
+      $scope.initialisedTabs.push(tab)
+
+  $scope.onTabInit = (tab) ->
+    if tab == 'summary'
+      PartnerService.fetchRepliesChart($scope.partner).then((data) ->
+        Highcharts.chart('chart-replies-by-month', {
+          chart: {type: 'column'},
+          title: {text: null},
+          xAxis: {categories: data.categories},
+          yAxis: {min: 0, title: {text: 'Replies'}},
+          legend: {enabled: false},
+          series: [{name: 'Replies', data: data.series}],
+          credits: {enabled: false}
+        });
+      )
+    else if tab == 'users'
       PartnerService.fetchUsers($scope.partner).then((users) ->
         $scope.usersFetched = true
         $scope.users = users

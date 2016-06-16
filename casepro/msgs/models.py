@@ -470,7 +470,7 @@ class Outgoing(models.Model):
     def _create(cls, org, user, activity, text, reply_to, contact=None, urn=None, case=None, push=True):
         if not text:
             raise ValueError("Message text cannot be empty")
-        if not contact and not urn:
+        if not contact and not urn:  # pragma: no cover
             raise ValueError("Message must have a recipient")
 
         msg = cls.objects.create(org=org, partner=user.get_partner(org),
@@ -483,6 +483,10 @@ class Outgoing(models.Model):
             get_backend().push_outgoing(org, [msg])
 
         return msg
+
+    @classmethod
+    def get_replies(cls, org):
+        return org.outgoing_messages.filter(activity__in=(Outgoing.BULK_REPLY, Outgoing.CASE_REPLY))
 
     @classmethod
     def search(cls, org, user, search):
@@ -511,7 +515,7 @@ class Outgoing(models.Model):
         after = search.get('after')
         before = search.get('before')
 
-        queryset = org.outgoing_messages.filter(activity__in=(Outgoing.BULK_REPLY, Outgoing.CASE_REPLY))
+        queryset = cls.get_replies(org)
 
         user_partner = user.get_partner(org)
         if user_partner:
@@ -537,7 +541,7 @@ class Outgoing(models.Model):
         """
         # TODO db triggers to pre-calculate these for performance
 
-        replies = cls.objects.filter(org=org, activity__in=(Outgoing.BULK_REPLY, Outgoing.CASE_REPLY))
+        replies = cls.get_replies(org)
 
         if partner:
             replies = replies.filter(partner=partner)

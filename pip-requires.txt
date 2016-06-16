@@ -2,6 +2,7 @@
 -e git+https://github.com/nyaruka/smartmin.git@master#egg=smartmin-master
 boto
 celery[redis]
+colorama
 coverage
 django
 django-celery

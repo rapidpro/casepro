@@ -346,6 +346,12 @@ services.factory('PartnerService', ['$http', ($http) ->
   new class PartnerService
 
     #----------------------------------------------------------------------------
+    # Fetches data for replies by month chart
+    #----------------------------------------------------------------------------
+    fetchRepliesChart: (partner) ->
+      return $http.get('/partner/replies_chart/' + partner.id + '/').then((response) -> response.data)
+
+    #----------------------------------------------------------------------------
     # Fetches users with activity statistics for the given partner
     #----------------------------------------------------------------------------
     fetchUsers: (partner) ->

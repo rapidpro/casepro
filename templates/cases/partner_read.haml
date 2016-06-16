@@ -58,7 +58,7 @@
               %li
                 Number of closed cases: <strong>{{ summary.cases_closed }}</strong>
           .col-md-8
-            .chart.chart-replies-by-month
+            #chart-replies-by-month
       </uib-tab>
 
       - if can_view_replies
@@ -151,8 +151,8 @@
         </uib-tab-heading>
         .search-toolbar.clearfix
           - if can_manage
-          .pull-away
-            <a class="btn btn-default" href="{% url 'profiles.user_create_in' object.pk %}">{% trans "New..." %}</a>
+            .pull-away
+              <a class="btn btn-default" href="{% url 'profiles.user_create_in' object.pk %}">{% trans "New..." %}</a>
 
           .{ style:"margin-top: 7px" }
             Total of <strong>[[ users.length ]]</strong> users
@@ -189,22 +189,6 @@
     </uib-tabset>
 
 
-- block extra-script
-  {{ block.super }}
-  :javascript
-    $(function() {
-      $('.chart-replies-by-month').highcharts({
-        chart: { type: 'column' },
-        title: { text: null },
-        xAxis: { categories: contextData.replies_by_month[0] },
-        yAxis: { min: 0, title: { text: 'Replies' }},
-        legend: { enabled: false },
-        series: [{ name: 'Replies', data: contextData.replies_by_month[1] }],
-        credits: { enabled: false }
-      });
-    });
-
-
 - block extra-style
   {{ block.super }}
   :css
@@ -229,7 +213,7 @@
     .time-warning {
       color: #922
     }
-    .chart {
+    #chart-replies-by-month {
       width: 100%;
       height: 250px;
     }
