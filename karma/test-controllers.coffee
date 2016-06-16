@@ -97,7 +97,7 @@ describe('controllers:', () ->
         CaseService = _CaseService_
       )
 
-      $window.contextData = {user: test.user1, partners: [], labels: [], groups: []}
+      $window.contextData = {user: test.user1, partners: [], labels: [test.tea, test.coffee], groups: []}
 
       $homeScope = $rootScope.$new()
       $controller('HomeController', {$scope: $homeScope})
@@ -190,6 +190,13 @@ describe('controllers:', () ->
         test.msg1 = {id: 101, text: "Hello 1", labels: [test.tea], flagged: true, archived: false}
         test.msg2 = {id: 102, text: "Hello 2", labels: [test.coffee], flagged: false, archived: false}
         test.msg3 = {id: 103, text: "Hello 3", labels: [], flagged: false, archived: false}
+      )
+
+      it('should initialize correctly', () ->
+        expect($scope.items).toEqual([])
+        expect($scope.activeLabel).toEqual(null)
+        expect($scope.activeContact).toEqual(null)
+        expect($scope.inactiveLabels).toEqual([test.tea, test.coffee])
       )
 
       it('loadOldItems', () ->

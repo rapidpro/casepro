@@ -29,6 +29,7 @@ controllers.controller('HomeController', ['$scope', '$window', '$location', 'Lab
 
   $scope.activeLabel = null
   $scope.activeContact = null
+  $scope.inactiveLabels = $scope.labels
 
   $scope.init = (folder, serverTime) ->
     $scope.folder = folder
