@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-import json
-
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
 from django.db import models

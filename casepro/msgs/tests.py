@@ -15,7 +15,7 @@ from temba_client.utils import format_iso8601
 from xlrd import open_workbook
 
 from casepro.contacts.models import Contact
-from casepro.rules.models import ContainsTest, GroupsTest, FieldTest, Quantifier
+from casepro.rules.models import ContainsTest, GroupsTest, FieldTest, WordCountTest, Quantifier
 from casepro.test import BaseCasesTest
 
 from .models import Label, Message, MessageAction, MessageExport, MessageFolder, Outgoing, OutgoingFolder, ReplyExport
@@ -105,6 +105,7 @@ class LabelCRUDLTest(BaseCasesTest):
             'groups': '%d' % self.reporters.pk,
             'field_test_0': "state",
             'field_test_1': "Kigali,Lusaka",
+            'ignore_single_words': "1"
         })
 
         self.assertEqual(response.status_code, 302)
@@ -117,7 +118,8 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(label.get_tests(), [
             ContainsTest(['ebola', 'fever'], Quantifier.ANY),
             GroupsTest([self.reporters], Quantifier.ANY),
-            FieldTest('state', ["Kigali", "Lusaka"])
+            FieldTest('state', ["Kigali", "Lusaka"]),
+            WordCountTest(2)
         ])
         self.assertEqual(label.is_synced, False)
 
@@ -150,7 +152,8 @@ class LabelCRUDLTest(BaseCasesTest):
             'groups': '%d' % self.males.pk,
             'field_test_0': "age",
             'field_test_1': "18,19,20",
-            'is_synced': "1"
+            'is_synced': "1",
+            'ignore_single_words': "1"
         })
 
         self.assertEqual(response.status_code, 302)
@@ -164,7 +167,8 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(self.pregnancy.get_tests(), [
             ContainsTest(['pregnancy', 'maternity'], Quantifier.ANY),
             GroupsTest([self.males], Quantifier.ANY),
-            FieldTest('age', ["18", "19", "20"])
+            FieldTest('age', ["18", "19", "20"]),
+            WordCountTest(2)
         ])
         self.assertEqual(self.pregnancy.is_synced, True)
 

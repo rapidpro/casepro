@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-import six
-
 from mock import patch, call
 
 from casepro.msgs.models import Message
