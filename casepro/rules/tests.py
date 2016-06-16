@@ -136,6 +136,7 @@ class ActionsTest(BaseCasesTest):
         self.assertEqual(action.TYPE, 'label')
         self.assertEqual(action.label, self.aids)
         self.assertEqual(action.to_json(), {'type': 'label', 'label': self.aids.pk})
+        self.assertEqual(action.get_description(), "apply label 'AIDS'")
 
         self.assertEqual(action, LabelAction(self.aids))
         self.assertNotEqual(action, LabelAction(self.pregnancy))
@@ -149,6 +150,7 @@ class ActionsTest(BaseCasesTest):
         action = Action.from_json({'type': 'flag'}, self.context)
         self.assertEqual(action.TYPE, 'flag')
         self.assertEqual(action.to_json(), {'type': 'flag'})
+        self.assertEqual(action.get_description(), "flag")
 
         self.assertEqual(action, FlagAction())
         self.assertNotEqual(action, ArchiveAction())
@@ -163,6 +165,7 @@ class ActionsTest(BaseCasesTest):
         action = Action.from_json({'type': 'archive'}, self.context)
         self.assertEqual(action.TYPE, 'archive')
         self.assertEqual(action.to_json(), {'type': 'archive'})
+        self.assertEqual(action.get_description(), "archive")
 
         self.assertEqual(action, ArchiveAction())
         self.assertNotEqual(action, FlagAction())
@@ -198,6 +201,11 @@ class RuleTest(BaseCasesTest):
         self.assertEqual(rule.get_tests_description(), 'message contains any of "aids", "hiv" '
                                                        'and contact belongs to all of Females, Reporters '
                                                        'and contact.city is any of "kigali", "lusaka"')
+
+    def test_get_actions_description(self):
+        rule = self.create_rule(self.unicef, [], [LabelAction(self.tea), ArchiveAction(), FlagAction()])
+
+        self.assertEqual(rule.get_actions_description(), "apply label 'Tea' and archive and flag")
 
     @patch('casepro.test.TestBackend.label_messages')
     @patch('casepro.test.TestBackend.flag_messages')

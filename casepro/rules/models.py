@@ -311,7 +311,7 @@ class LabelAction(Action):
         return {'type': self.TYPE, 'label': self.label.pk}
 
     def get_description(self):
-        return "label with '%s'" % self.label.name
+        return "apply label '%s'" % self.label.name
 
     def apply_to(self, org, messages):
         for msg in messages:
