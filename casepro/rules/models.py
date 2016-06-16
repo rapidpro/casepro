@@ -18,6 +18,9 @@ from casepro.msgs.models import Label, Message
 from casepro.utils import normalize, json_encode
 
 
+KEYWORD_REGEX = regex.compile(r'^\w[\w\- ]*\w$', flags=regex.UNICODE | regex.V0)
+
+
 class Quantifier(Enum):
     """
     Tests are typically composed of multiple conditions, e.g. contains ANY of X, Y or Z.
@@ -119,8 +122,6 @@ class ContainsTest(Test):
     """
     TYPE = 'contains'
 
-    KEYWORD_MIN_LENGTH = 3
-
     def __init__(self, keywords, quantifier):
         self.keywords = [normalize(word) for word in keywords]
         self.quantifier = quantifier
@@ -148,7 +149,7 @@ class ContainsTest(Test):
 
     @classmethod
     def is_valid_keyword(cls, keyword):
-        return len(keyword) >= cls.KEYWORD_MIN_LENGTH and regex.match(r'^\w[\w\- ]*\w$', keyword)
+        return KEYWORD_REGEX.match(keyword)
 
     def __eq__(self, other):
         return other and self.TYPE == other.TYPE \

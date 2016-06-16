@@ -1,3 +1,4 @@
+# coding=utf-8
 from __future__ import unicode_literals
 
 from mock import patch, call
@@ -110,12 +111,13 @@ class TestsTest(BaseCasesTest):
         self.assertTest(test, self.cat, "Yes", False)
 
     def test_is_valid_keyword(self):
+        self.assertTrue(ContainsTest.is_valid_keyword('tú'))
         self.assertTrue(ContainsTest.is_valid_keyword('kit'))
         self.assertTrue(ContainsTest.is_valid_keyword('kit-kat'))
         self.assertTrue(ContainsTest.is_valid_keyword('kit kat'))
         self.assertTrue(ContainsTest.is_valid_keyword('kit-kat wrapper'))
 
-        self.assertFalse(ContainsTest.is_valid_keyword('it'))  # too short
+        self.assertFalse(ContainsTest.is_valid_keyword('i'))  # too short
         self.assertFalse(ContainsTest.is_valid_keyword(' kitkat'))  # can't start with a space
         self.assertFalse(ContainsTest.is_valid_keyword('-kit'))  # can't start with a dash
         self.assertFalse(ContainsTest.is_valid_keyword('kat '))  # can't end with a space

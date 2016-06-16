@@ -90,7 +90,7 @@ class LabelCRUDLTest(BaseCasesTest):
         # submit with a keyword that is too short
         response = self.url_post('unicef', url, {'name': 'Ebola', 'keywords': 'a, ebola'})
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'keywords', "Keywords must be at least 3 characters long")
+        self.assertFormError(response, 'form', 'keywords', "Invalid keyword: a")
 
         # submit with a keyword that is invalid
         response = self.url_post('unicef', url, {'name': 'Ebola', 'keywords': r'ebol@?, ebola'})

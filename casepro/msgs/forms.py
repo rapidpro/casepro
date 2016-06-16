@@ -5,6 +5,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from casepro.contacts.models import Group
 from casepro.rules.forms import FieldTestField
+from casepro.rules.models import ContainsTest
 from casepro.utils import parse_csv, normalize
 
 from .models import Label
@@ -63,16 +64,10 @@ class LabelForm(forms.ModelForm):
         return name
 
     def clean_keywords(self):
-        from casepro.rules.models import ContainsTest
-
         keywords = parse_csv(self.cleaned_data['keywords'])
         clean_keywords = []
         for keyword in keywords:
             clean_keyword = normalize(keyword)
-
-            if len(keyword) < ContainsTest.KEYWORD_MIN_LENGTH:
-                raise forms.ValidationError(_("Keywords must be at least %d characters long")
-                                            % ContainsTest.KEYWORD_MIN_LENGTH)
 
             if not ContainsTest.is_valid_keyword(keyword):
                 raise forms.ValidationError(_("Invalid keyword: %s") % keyword)
