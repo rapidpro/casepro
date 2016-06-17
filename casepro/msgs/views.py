@@ -5,6 +5,7 @@ import six
 from collections import defaultdict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
+from django.core.urlresolvers import reverse
 from django.utils.timesince import timesince
 from django.utils.translation import ugettext_lazy as _
 from el_pagination.paginators import LazyPaginator
@@ -148,7 +149,7 @@ class LabelCRUDL(SmartCRUDL):
 
 class FaqCRUDL(SmartCRUDL):
     model = FAQ
-    actions = ('list', 'read', 'update')
+    actions = ('list', 'read', 'update', 'delete')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('question', 'answer')
@@ -159,8 +160,25 @@ class FaqCRUDL(SmartCRUDL):
         def get_queryset(self):
             return FAQ.objects.all()
 
+        def get_context_data(self, **kwargs):
+            context = super(FaqCRUDL.Read, self).get_context_data(**kwargs)
+            edit_button_url = reverse('msgs.faq_update', args=[self.object.pk])
+            context['context_data_json'] = json_encode({'faq': self.object.as_json()})
+            context['edit_button_url'] = edit_button_url
+            context['can_delete'] = True
+            return context
+
     class Update(OrgPermsMixin, SmartUpdateView):
         form_class = FaqForm
+
+    class Delete(OrgPermsMixin, SmartDeleteView):
+        cancel_url = '@msgs.faq_list'
+
+        def post(self, request, *args, **kwargs):
+            faq = self.get_object()
+            faq.delete()
+
+            return HttpResponse(status=204)
 
 
 class MessageSearchMixin(object):

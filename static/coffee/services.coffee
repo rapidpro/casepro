@@ -640,6 +640,20 @@ services.factory('UserService', ['$http', '$httpParamSerializer', ($http, $httpP
 
 
 #=====================================================================
+# Faq service
+#=====================================================================
+services.factory('FaqService', ['$http', ($http) ->
+  new class FaqService
+
+    #----------------------------------------------------------------------------
+    # Delete the given faq
+    #----------------------------------------------------------------------------
+    delete: (faq) ->
+      return $http.post('/faq/delete/' + faq.id + '/')
+])
+
+
+#=====================================================================
 # Utils service
 #=====================================================================
 services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) ->
