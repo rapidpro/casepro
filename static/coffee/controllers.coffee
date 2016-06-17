@@ -607,6 +607,22 @@ controllers.controller('UserController', ['$scope', '$window', 'UtilsService', '
 
 
 #============================================================================
+# Faq view controller
+#============================================================================
+controllers.controller('FaqController', ['$scope', '$window', 'UtilsService', 'FaqService', ($scope, $window, UtilsService, FaqService) ->
+
+  $scope.faq = $window.contextData.faq
+
+  $scope.onDeleteFaq = () ->
+    UtilsService.confirmModal("Delete this FAQ?", 'danger').then(() ->
+      FaqService.delete($scope.faq).then(() ->
+        UtilsService.navigateBack()
+      )
+    )
+])
+
+
+#============================================================================
 # Date range controller
 #============================================================================
 controllers.controller('DateRangeController', ['$scope', ($scope) ->
