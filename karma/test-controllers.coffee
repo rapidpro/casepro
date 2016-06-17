@@ -36,8 +36,8 @@ describe('controllers:', () ->
       who: {id: 302, name: "WHO"},
 
       # contacts
-      contact1: {id: 401, name: "Ann"},
-      contact2: {id: 402, name: "Bob"}
+      ann: {id: 401, name: "Ann"},
+      bob: {id: 402, name: "Bob"}
     }
   )
 
@@ -424,9 +424,9 @@ describe('controllers:', () ->
       it('activateContact', () ->
         fetchOld = spyOnPromise($q, $scope, OutgoingService, 'fetchOld')
 
-        $scope.activateContact(test.contact1)
+        $scope.activateContact(test.ann)
 
-        expect(OutgoingService.fetchOld).toHaveBeenCalledWith({folder: 'sent', text: null, contact: test.contact1}, $scope.startTime, 1)
+        expect(OutgoingService.fetchOld).toHaveBeenCalledWith({folder: 'sent', text: null, contact: test.ann}, $scope.startTime, 1)
       )
 
       it('onSearch', () ->

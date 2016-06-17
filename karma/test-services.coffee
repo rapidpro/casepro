@@ -23,7 +23,11 @@ describe('services:', () ->
 
       # partners
       moh: {id: 301, name: "MOH"},
-      who: {id: 302, name: "WHO"}
+      who: {id: 302, name: "WHO"},
+
+      # contacts
+      ann: {id: 401, name: "Ann"},
+      bob: {id: 402, name: "Bob"}
     }
   )
 
@@ -166,6 +170,27 @@ describe('services:', () ->
         $httpBackend.expectPOST('/case/update_summary/501/', {summary: "Got coffee?"}).respond('')
         CaseService.updateSummary(test.case1, "Got coffee?").then(() ->
           expect(test.case1.summary).toEqual("Got coffee?")
+        )
+        $httpBackend.flush()
+      )
+    )
+  )
+
+  #=======================================================================
+  # Tests for ContactService
+  #=======================================================================
+  describe('ContactService', () ->
+    ContactService = null
+
+    beforeEach(inject((_ContactService_) ->
+      ContactService = _ContactService_
+    ))
+
+    describe('fetch', () ->
+      it('gets contact from fetch endpoint', () ->
+        $httpBackend.expectGET('/contact/fetch/401/').respond('{"id":401, "name":"Ann", "fields":{}}')
+        ContactService.fetch(401).then((contact) ->
+          expect(contact).toEqual({id: 401, name: "Ann", fields:{}})
         )
         $httpBackend.flush()
       )
