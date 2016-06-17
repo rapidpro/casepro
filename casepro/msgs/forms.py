@@ -35,7 +35,7 @@ class LabelForm(forms.ModelForm):
 
     ignore_single_words = forms.BooleanField(
         label=_("Ignore single words"), required=False,
-        help_text=_("Whether label should be applied to single word messages")
+        help_text=_("Whether to ignore messages consisting of a single word")
     )
 
     def __init__(self, *args, **kwargs):
