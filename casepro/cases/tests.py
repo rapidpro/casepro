@@ -519,6 +519,9 @@ class CaseCRUDLTest(BaseCasesTest):
         # log in as manager user in currently assigned partner
         self.login(self.user1)
 
+        # add additional label to case which this user can't access
+        self.case.labels.add(self.tea)
+
         response = self.url_post_json('unicef', url, {'labels': [self.pregnancy.pk]})
         self.assertEqual(response.status_code, 204)
 
@@ -529,8 +532,9 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(actions[1].action, CaseAction.UNLABEL)
         self.assertEqual(actions[1].label, self.aids)
 
+        # check that tea label wasn't removed as this user doesn't have access to that label
         self.case.refresh_from_db()
-        self.assertEqual(set(self.case.labels.all()), {self.pregnancy})
+        self.assertEqual(set(self.case.labels.all()), {self.pregnancy, self.tea})
 
         # only user from assigned partner can label
         self.login(self.user3)

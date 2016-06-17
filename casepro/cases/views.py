@@ -158,10 +158,16 @@ class CaseCRUDL(SmartCRUDL):
 
         def post(self, request, *args, **kwargs):
             case = self.get_object()
-            label_ids = request.json['labels']
-            labels = Label.get_all(request.org).filter(pk__in=label_ids)
+            user = request.user
+            user_labels = Label.get_all(self.org, user)
 
-            case.update_labels(request.user, labels)
+            label_ids = request.json['labels']
+            specified_labels = list(user_labels.filter(pk__in=label_ids))
+
+            # user can't remove labels that they can't see
+            unseen_labels = [l for l in case.labels.all() if l not in user_labels]
+
+            case.update_labels(user, specified_labels + unseen_labels)
             return HttpResponse(status=204)
 
     class UpdateSummary(OrgObjPermsMixin, SmartUpdateView):

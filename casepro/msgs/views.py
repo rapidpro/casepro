@@ -195,14 +195,18 @@ class MessageCRUDL(SmartCRUDL):
         def post(self, request, *args, **kwargs):
             org = request.org
             user = request.user
+            user_labels = Label.get_all(self.org, user)
 
             message_id = int(kwargs['id'])
             message = org.incoming_messages.filter(org=org, backend_id=message_id).first()
 
             label_ids = request.json['labels']
-            labels = Label.get_all(org, user).filter(pk__in=label_ids)
+            specified_labels = list(user_labels.filter(pk__in=label_ids))
 
-            message.update_labels(user, labels)
+            # user can't remove labels that they can't see
+            unseen_labels = [l for l in message.labels.all() if l not in user_labels]
+
+            message.update_labels(user, specified_labels + unseen_labels)
 
             return HttpResponse(status=204)
 
