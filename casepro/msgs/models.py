@@ -97,8 +97,14 @@ class Label(models.Model):
         return self.partners.filter(is_active=True)
 
     def release(self):
+        rule = self.rule
+
+        self.rule = None
         self.is_active = False
-        self.save(update_fields=('is_active',))
+        self.save(update_fields=('rule', 'is_active'))
+
+        if rule:
+            rule.delete()
 
     def as_json(self):
         return {'id': self.pk, 'name': self.name}

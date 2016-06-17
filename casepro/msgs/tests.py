@@ -52,7 +52,12 @@ class LabelTest(BaseCasesTest):
 
     def test_release(self):
         self.aids.release()
+
+        self.aids.refresh_from_db()
+        self.assertIsNone(self.aids.rule)
         self.assertFalse(self.aids.is_active)
+
+        self.assertEqual(self.unicef.rules.count(), 2)
 
 
 class LabelCRUDLTest(BaseCasesTest):
