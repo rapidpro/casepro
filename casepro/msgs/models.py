@@ -107,7 +107,12 @@ class FAQ(models.Model):
     labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this FAQ"), related_name='faqs')
 
     def as_json(self):
-        return {'id': self.pk, 'question': self.question, 'answer': self.answer}
+        return {
+            'id': self.pk,
+            'question': self.question,
+            'answer': self.answer,
+            'labels': [l.as_json() for l in self.labels.all()]
+        }
 
     def __str__(self):
         return self.question
