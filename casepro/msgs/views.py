@@ -10,7 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 from el_pagination.paginators import LazyPaginator
 from smartmin.mixins import NonAtomicMixin
 from smartmin.views import SmartCRUDL, SmartTemplateView
-from smartmin.views import SmartListView, SmartCreateView, SmartUpdateView, SmartDeleteView
+from smartmin.views import SmartListView, SmartCreateView, SmartUpdateView, SmartDeleteView, SmartReadView
 from temba_client.utils import parse_iso8601
 
 from casepro.rules.models import ContainsTest, GroupsTest, Quantifier
@@ -131,11 +131,16 @@ class LabelCRUDL(SmartCRUDL):
 
 class FaqCRUDL(SmartCRUDL):
     model = FAQ
-    actions = ('list',)
+    actions = ('list', 'read')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('question', 'answer')
         default_order = ('question',)
+
+    class Read(OrgPermsMixin, SmartReadView):
+
+        def get_queryset(self):
+            return FAQ.objects.all()
 
 
 class MessageSearchMixin(object):
