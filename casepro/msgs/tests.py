@@ -707,7 +707,7 @@ class MessageCRUDLTest(BaseCasesTest):
     @patch('casepro.test.TestBackend.label_messages')
     @patch('casepro.test.TestBackend.unlabel_messages')
     def test_label(self, mock_unlabel_messages, mock_label_messages):
-        msg1 = self.create_message(self.unicef, 101, self.ann, "Normal", [self.aids])
+        msg1 = self.create_message(self.unicef, 101, self.ann, "Normal", [self.aids, self.tea])
 
         url = reverse('msgs.message_label', kwargs={'id': 101})
 
@@ -720,8 +720,9 @@ class MessageCRUDLTest(BaseCasesTest):
         mock_label_messages.assert_called_once_with(self.unicef, [msg1], self.pregnancy)
         mock_unlabel_messages.assert_called_once_with(self.unicef, [msg1], self.aids)
 
+        # check that tea label wasn't removed as this user doesn't have access to that label
         msg1.refresh_from_db()
-        self.assertEqual(set(msg1.labels.all()), {self.pregnancy})
+        self.assertEqual(set(msg1.labels.all()), {self.pregnancy, self.tea})
 
     def test_bulk_reply(self):
         self.create_message(self.unicef, 101, self.ann, "Hello")
