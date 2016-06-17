@@ -2,19 +2,19 @@ from __future__ import unicode_literals
 
 import json
 
-from casepro.backend import NoopBackend
-from casepro.cases.models import Case, Partner
-from casepro.contacts.models import Contact, Group, Field
-from casepro.msgs.models import Label, Message, Outgoing
-from casepro.profiles.models import Profile, ROLE_ANALYST, ROLE_MANAGER
-from casepro.rules.models import ContainsTest, Quantifier
-from casepro.utils import json_encode
 from dash.test import DashTest
 from datetime import datetime
 from django.utils.timezone import now
 from django.test import override_settings
 from xlrd import xldate_as_tuple
 from xlrd.sheet import XL_CELL_DATE
+
+from casepro.backend import NoopBackend
+from casepro.cases.models import Case, Partner
+from casepro.contacts.models import Contact, Group, Field
+from casepro.msgs.models import Label, Message, Outgoing
+from casepro.profiles.models import Profile, ROLE_ANALYST, ROLE_MANAGER
+from casepro.rules.models import ContainsTest, Quantifier, LabelAction, Rule
 
 
 class TestBackend(NoopBackend):
@@ -80,10 +80,18 @@ class BaseCasesTest(DashTest):
     def create_user(self, org, partner, role, name, email):
         return Profile.create_partner_user(org, partner, role, name, email, email)
 
-    def create_label(self, org, uuid, name, description, keywords, **kwargs):
-        tests = json_encode([ContainsTest(keywords, Quantifier.ANY)])
-        return Label.objects.create(org=org, uuid=uuid, name=name, description=description,
-                                    tests=tests, **kwargs)
+    def create_label(self, org, uuid, name, description, keywords=(), **kwargs):
+        label = Label.objects.create(org=org, uuid=uuid, name=name, description=description, **kwargs)
+
+        if keywords:
+            rule = Rule.create(org, [ContainsTest(keywords, Quantifier.ANY)], [LabelAction(label)])
+            label.rule = rule
+            label.save(update_fields=('rule',))
+
+        return label
+
+    def create_rule(self, org, tests, actions):
+        return Rule.create(org, tests, actions)
 
     def create_contact(self, org, uuid, name, groups=(), fields=None, is_stub=False):
         contact = Contact.objects.create(org=org, uuid=uuid, name=name, is_stub=is_stub, fields=fields, language="eng")

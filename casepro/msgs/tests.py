@@ -15,7 +15,7 @@ from temba_client.utils import format_iso8601
 from xlrd import open_workbook
 
 from casepro.contacts.models import Contact
-from casepro.rules.models import ContainsTest, GroupsTest, FieldTest, Quantifier
+from casepro.rules.models import ContainsTest, GroupsTest, FieldTest, WordCountTest, Quantifier
 from casepro.test import BaseCasesTest
 
 from .models import Label, Message, MessageAction, MessageExport, MessageFolder, Outgoing, OutgoingFolder, ReplyExport
@@ -90,7 +90,7 @@ class LabelCRUDLTest(BaseCasesTest):
         # submit with a keyword that is too short
         response = self.url_post('unicef', url, {'name': 'Ebola', 'keywords': 'a, ebola'})
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'keywords', "Keywords must be at least 3 characters long")
+        self.assertFormError(response, 'form', 'keywords', "Invalid keyword: a")
 
         # submit with a keyword that is invalid
         response = self.url_post('unicef', url, {'name': 'Ebola', 'keywords': r'ebol@?, ebola'})
@@ -105,6 +105,7 @@ class LabelCRUDLTest(BaseCasesTest):
             'groups': '%d' % self.reporters.pk,
             'field_test_0': "state",
             'field_test_1': "Kigali,Lusaka",
+            'ignore_single_words': "1"
         })
 
         self.assertEqual(response.status_code, 302)
@@ -117,7 +118,8 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(label.get_tests(), [
             ContainsTest(['ebola', 'fever'], Quantifier.ANY),
             GroupsTest([self.reporters], Quantifier.ANY),
-            FieldTest('state', ["Kigali", "Lusaka"])
+            FieldTest('state', ["Kigali", "Lusaka"]),
+            WordCountTest(2)
         ])
         self.assertEqual(label.is_synced, False)
 
@@ -150,12 +152,14 @@ class LabelCRUDLTest(BaseCasesTest):
             'groups': '%d' % self.males.pk,
             'field_test_0': "age",
             'field_test_1': "18,19,20",
-            'is_synced': "1"
+            'is_synced': "1",
+            'ignore_single_words': "1"
         })
 
         self.assertEqual(response.status_code, 302)
 
         self.pregnancy.refresh_from_db()
+        self.pregnancy.rule.refresh_from_db()
         self.assertEqual(self.pregnancy.uuid, 'L-002')
         self.assertEqual(self.pregnancy.org, self.unicef)
         self.assertEqual(self.pregnancy.name, "Pregnancy")
@@ -163,13 +167,33 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(self.pregnancy.get_tests(), [
             ContainsTest(['pregnancy', 'maternity'], Quantifier.ANY),
             GroupsTest([self.males], Quantifier.ANY),
-            FieldTest('age', ["18", "19", "20"])
+            FieldTest('age', ["18", "19", "20"]),
+            WordCountTest(2)
         ])
         self.assertEqual(self.pregnancy.is_synced, True)
 
         # view form again for recently edited label
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
+
+        # submit again with no tests
+        response = self.url_post('unicef', url, {
+            'name': "Pregnancy",
+            'description': "Msgs about maternity",
+            'keywords': "",
+            'field_test_0': "",
+            'field_test_1': "",
+            'is_synced': "1"
+        })
+
+        self.assertEqual(response.status_code, 302)
+
+        self.pregnancy.refresh_from_db()
+        self.assertEqual(self.pregnancy.rule, None)
+        self.assertEqual(self.pregnancy.get_tests(), [])
+
+        self.assertEqual(self.unicef.labels.count(), 3)
+        self.assertEqual(self.unicef.rules.count(), 2)
 
     def test_list(self):
         url = reverse('msgs.label_list')

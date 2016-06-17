@@ -13,8 +13,8 @@ from smartmin.views import SmartCRUDL, SmartTemplateView
 from smartmin.views import SmartListView, SmartCreateView, SmartUpdateView, SmartDeleteView
 from temba_client.utils import parse_iso8601
 
-from casepro.rules.models import ContainsTest, GroupsTest, Quantifier
-from casepro.utils import parse_csv, str_to_bool, json_encode, JSONEncoder
+from casepro.rules.mixins import RuleFormMixin
+from casepro.utils import parse_csv, str_to_bool, JSONEncoder
 from casepro.utils.export import BaseDownloadView
 
 from .forms import LabelForm
@@ -25,29 +25,11 @@ from .tasks import message_export, reply_export
 RESPONSE_DELAY_WARN_SECONDS = 24 * 60 * 60  # show response delays > 1 day as warning
 
 
-class LabelFormMixin(object):
-    @staticmethod
-    def construct_tests(data):
-        keywords = parse_csv(data['keywords'])
-        groups = data['groups']
-        field_test = data['field_test']
-
-        tests = []
-        if keywords:
-            tests.append(ContainsTest(keywords, Quantifier.ANY))
-        if groups:
-            tests.append(GroupsTest(groups, Quantifier.ANY))
-        if field_test:
-            tests.append(field_test)
-
-        return tests
-
-
 class LabelCRUDL(SmartCRUDL):
     actions = ('create', 'update', 'delete', 'list')
     model = Label
 
-    class Create(LabelFormMixin, OrgPermsMixin, SmartCreateView):
+    class Create(RuleFormMixin, OrgPermsMixin, SmartCreateView):
         form_class = LabelForm
 
         def get_form_kwargs(self):
@@ -67,12 +49,12 @@ class LabelCRUDL(SmartCRUDL):
             org = self.request.org
             name = data['name']
             description = data['description']
-            tests = self.construct_tests(data)
+            tests = self.construct_tests()
             is_synced = data['is_synced']
 
             self.object = Label.create(org, name, description, tests, is_synced)
 
-    class Update(LabelFormMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Update(RuleFormMixin, OrgObjPermsMixin, SmartUpdateView):
         form_class = LabelForm
 
         def get_form_kwargs(self):
@@ -81,30 +63,11 @@ class LabelCRUDL(SmartCRUDL):
             kwargs['is_create'] = False
             return kwargs
 
-        def derive_initial(self):
-            initial = super(LabelCRUDL.Update, self).derive_initial()
+        def post_save(self, obj):
+            obj = super(LabelCRUDL.Update, self).post_save(obj)
 
-            tests_by_type = {t.TYPE: t for t in self.object.get_tests()}
-            contains_test = tests_by_type.get('contains')
-            groups_test = tests_by_type.get('groups')
-            field_test = tests_by_type.get('field')
-
-            if contains_test:
-                initial['keywords'] = ", ".join(contains_test.keywords)
-
-            if groups_test:
-                initial['groups'] = groups_test.groups
-
-            if field_test:
-                initial['field_test'] = field_test
-
-            return initial
-
-        def pre_save(self, obj):
-            obj = super(LabelCRUDL.Update, self).pre_save(obj)
-
-            tests = self.construct_tests(self.form.cleaned_data)
-            obj.tests = json_encode(tests) if tests else ""
+            tests = self.construct_tests()
+            obj.update_tests(tests)
 
             return obj
 
