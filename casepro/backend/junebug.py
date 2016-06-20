@@ -1,10 +1,55 @@
+from django.conf import settings
+import requests
+
 from . import BaseBackend
+
+
+class JunebugMessageSendingError(Exception):
+    '''Exception that is raised when errors occur when trying to send messages
+    through Junebug.'''
+
+
+class JunebugMessageSender(object):
+    def __init__(self, base_url, channel_id, from_address):
+        self.base_url = base_url
+        self.channel_id = channel_id
+        self.from_address = from_address
+        self.session = requests.Session()
+
+    @property
+    def url(self):
+        return '%s/channels/%s/messages/' % (
+            self.base_url.rstrip('/'), self.channel_id)
+
+    def split_urn(self, urn):
+        try:
+            type_, address = urn.split(':', 1)
+        except ValueError:
+            raise JunebugMessageSendingError('Invalid URN: %s' % urn)
+        return type_, address
+
+    def send_message(self, message):
+        if not message.urn:
+            raise JunebugMessageSendingError(
+                'Cannot send message without URN: %r' % message)
+        _, to_addr = self.split_urn(message.urn)
+        data = {
+            'to': to_addr,
+            'from': self.from_address,
+            'content': message.text,
+        }
+        self.session.post(self.url, json=data)
 
 
 class JunebugBackend(BaseBackend):
     '''
     Junebug instance as a backend.
     '''
+
+    def __init__(self):
+        self.message_sender = JunebugMessageSender(
+            settings.JUNEBUG_API_ROOT, settings.JUNEBUG_CHANNEL_ID,
+            settings.JUNEBUG_FROM_ADDRESS)
 
     def pull_contacts(
             self, org, modified_after, modified_before,
@@ -92,7 +137,8 @@ class JunebugBackend(BaseBackend):
             whether outgoing messages differ only by recipient and so can be
             sent as single broadcast
         """
-        # TODO: Implement sending outgoing messages
+        for message in outgoing:
+            self.message_sender.send_message(message)
 
     def add_to_group(self, org, contact, group):
         """
