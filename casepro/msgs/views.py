@@ -159,6 +159,7 @@ class FaqCRUDL(SmartCRUDL):
             self.object = faq
 
     class Read(OrgPermsMixin, SmartReadView):
+        fields = ['question', 'answer']
 
         def get_queryset(self):
             return FAQ.objects.all()
@@ -173,6 +174,11 @@ class FaqCRUDL(SmartCRUDL):
 
     class Update(OrgPermsMixin, SmartUpdateView):
         form_class = FaqForm
+
+        def derive_initial(self):
+            initial = super(FaqCRUDL.Update, self).derive_initial()
+            initial['labels'] = self.object.labels.all()
+            return initial
 
     class Delete(OrgPermsMixin, SmartDeleteView):
         cancel_url = '@msgs.faq_list'

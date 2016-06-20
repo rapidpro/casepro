@@ -80,7 +80,8 @@ class FaqForm(forms.ModelForm):
 
     question = forms.CharField(label=_("Question"), max_length=140)
     answer = forms.CharField(label=_("Answer"), max_length=140)
+    labels = forms.ModelMultipleChoiceField(queryset=Label.objects.filter())
 
     class Meta:
         model = FAQ
-        fields = ('question', 'answer')
+        fields = ('question', 'answer', 'labels')
