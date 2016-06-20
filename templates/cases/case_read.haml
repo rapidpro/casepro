@@ -15,8 +15,6 @@
           - trans "Could not open new case as message was already handled by this case"
         .alert.alert-info{ ng-if:"!caseObj.is_closed" }
           - trans "Could not open new case as contact already has this open case"
-      .alert.alert-danger{ ng-if:"!caseObj.contact" }
-        This case is for a contact who no longer exists in RapidPro
 
       .clearfix
         %h2.pull-back
