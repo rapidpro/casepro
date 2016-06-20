@@ -187,6 +187,11 @@ class FaqCRUDL(SmartCRUDL):
             context['context_data_json'] = json_encode({'faq': self.object.as_json()})
             context['edit_button_url'] = edit_button_url
             context['can_delete'] = True
+
+            labels = []
+            for label in self.object.labels.all():
+                labels.append(label.name)
+            context['labels'] = ', '.join(labels)
             return context
 
     class Update(OrgPermsMixin, SmartUpdateView):
