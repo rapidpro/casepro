@@ -413,24 +413,30 @@ controllers.controller('CasesController', ['$scope', '$timeout', '$controller', 
 #============================================================================
 # Case view controller
 #============================================================================
-controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'MessageService', 'UtilsService', ($scope, $window, $timeout, CaseService, MessageService, UtilsService) ->
+controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'MessageService', 'ContactService', 'UtilsService', ($scope, $window, $timeout, CaseService, MessageService, ContactService, UtilsService) ->
 
-  $scope.caseObj = $window.contextData.case_obj
   $scope.allPartners = $window.contextData.all_partners
   $scope.allLabels = $window.contextData.all_labels
-
+  
+  $scope.caseObj = null
+  $scope.contact = null
   $scope.newMessage = ''
   $scope.sending = false
 
-  $scope.init = (maxMsgChars) ->
+  $scope.init = (caseId, maxMsgChars) ->
+    $scope.caseId = caseId
     $scope.msgCharsRemaining = $scope.maxMsgChars = maxMsgChars
 
     $scope.refresh()
 
   $scope.refresh = () ->
-    CaseService.fetchSingle($scope.caseObj.id).then((caseObj) ->
-      caseObj.contact = $scope.caseObj.contact  # refresh doesn't include contact
+    CaseService.fetchSingle($scope.caseId).then((caseObj) ->
       $scope.caseObj = caseObj
+
+      if not $scope.contact
+        ContactService.fetch(caseObj.contact.id).then((contact) ->
+          $scope.contact = contact
+        )
 
       $timeout($scope.refresh, INTERVAL_CASE_INFO)
     )
@@ -519,7 +525,7 @@ controllers.controller('CaseTimelineController', ['$scope', '$timeout', 'CaseSer
 
   $scope.refreshItems = (repeat) ->
 
-    CaseService.fetchTimeline($scope.caseObj, $scope.itemsMaxTime).then((data) ->
+    CaseService.fetchTimeline({id: $scope.caseId}, $scope.itemsMaxTime).then((data) ->
       $scope.timeline = $scope.timeline.concat(data.results)
       $scope.itemsMaxTime = data.maxTime
 

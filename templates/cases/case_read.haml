@@ -8,7 +8,7 @@
   %script{ type:"text/javascript" }
     var contextData = {{ context_data_json|safe }};
 
-  .ng-cloak{ ng-controller:"CaseController", ng-init:"init({{ max_msg_chars }})", ng-cloak:"" }
+  .ng-cloak{ ng-controller:"CaseController", ng-init:"init({{ object.pk }}, {{ max_msg_chars }})", ng-cloak:"" }
     .page-header
       - if alert == 'open_found_existing'
         .alert.alert-info{ ng-if:"caseObj.is_closed" }
@@ -135,16 +135,14 @@
           .panel-body
             [[ caseObj.summary ]]
 
-        .panel.panel-default{ ng-if:"caseObj.contact" }
+        .panel.panel-default{ ng-if:"contact" }
           .panel-heading
             - trans "Contact"
-            %a{ ng-href:"/contact/read/[[ caseObj.contact.id ]]/" }
+            %a{ ng-href:"/contact/read/[[ contact.id ]]/" }
               [[ caseObj.contact.name ]]
           .panel-body
             .contact-details
-              .none{ ng-if:"!caseObj.contact.fields" }
-                No fields configured
-              .contact-field{ ng-repeat:"(key, val) in caseObj.contact.fields" }
+              .contact-field{ ng-repeat:"(key, val) in contact.fields" }
                 %strong><
                   [[ key ]]
                 : [[ val ]]

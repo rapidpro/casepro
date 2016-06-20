@@ -46,6 +46,46 @@ describe('controllers:', () ->
   )
 
   #=======================================================================
+  # Tests for CaseController
+  #=======================================================================
+  describe('CaseController', () ->
+    CaseService = null
+    ContactService = null
+    $scope = null
+
+    beforeEach(() ->
+      inject((_CaseService_, _ContactService_) ->
+        CaseService = _CaseService_
+        ContactService = _ContactService_
+      )
+
+      $window.contextData = {all_labels: [test.tea, test.coffee], all_partners: [test.moh, test.who]}
+
+      $scope = $rootScope.$new()
+      $controller('CaseController', {$scope: $scope})
+
+      # extra test data
+      test.case1 = {id: 601, contact: test.ann, summary: "Hi", opened_on: utcdate(2016, 5, 28, 10, 0)}
+    )
+
+    it('should initialize correctly', () ->
+      fetchCase = spyOnPromise($q, $scope, CaseService, 'fetchSingle')
+      fetchContact = spyOnPromise($q, $scope, ContactService, 'fetch')
+
+      $scope.init(601, 140)
+
+      expect($scope.caseId).toEqual(601)
+      expect($scope.msgCharsRemaining).toEqual(140)
+
+      fetchCase.resolve(test.case1)
+      fetchContact.resolve(test.ann)
+
+      expect($scope.caseObj).toEqual(test.case1)
+      expect($scope.contact).toEqual(test.ann)
+    )
+  )
+
+  #=======================================================================
   # Tests for DateRangeController
   #=======================================================================
   describe('DateRangeController', () ->
