@@ -147,6 +147,16 @@ class ContactCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertLoginRedirect(response, 'unicef', url)
 
+    def test_fetch(self):
+        url = reverse('contacts.contact_fetch', args=[self.ann.pk])
+
+        # log in as regular user
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, {'id': self.ann.pk, 'name': "Ann", 'fields': {'age': '32', 'nickname': None}})
+
 
 class FieldCRUDLTest(BaseCasesTest):
     def test_list(self):

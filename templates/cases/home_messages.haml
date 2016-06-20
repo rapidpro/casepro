@@ -140,9 +140,8 @@
         .message-time
           [[ message.time | autodate ]]
         .message-contact
-          %a{ ng-click:"activateContact(message.contact)", title:"View all from contact" }><
-            %span.glyphicon.glyphicon-phone>
-            [[ message.contact.name ]]
+          %a{ ng-click:"activateContact(message.contact)" }><
+            <cp-contact contact="message.contact">
         .message-text{ ng-click:"onExpandMessage(message)" }
           %span.label-container{ ng-if:"message.flow" }
             %span.label.label-info

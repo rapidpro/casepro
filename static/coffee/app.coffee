@@ -6,7 +6,8 @@ app = angular.module('cases', [
   'infinite-scroll',
   'cases.services',
   'cases.controllers',
-  'cases.filters'
+  'cases.filters',
+  'cases.directives'
 ]);
 
 app.config [ '$interpolateProvider', '$httpProvider', ($interpolateProvider, $httpProvider) ->
