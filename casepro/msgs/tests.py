@@ -18,7 +18,8 @@ from casepro.contacts.models import Contact
 from casepro.rules.models import ContainsTest, GroupsTest, FieldTest, Quantifier
 from casepro.test import BaseCasesTest
 
-from .models import Label, Message, MessageAction, MessageExport, MessageFolder, Outgoing, OutgoingFolder, ReplyExport
+from .models import (Label, FAQ, Message, MessageAction, MessageExport, MessageFolder, Outgoing, OutgoingFolder,
+                     ReplyExport)
 from .tasks import handle_messages, pull_messages
 
 
@@ -198,6 +199,51 @@ class LabelCRUDLTest(BaseCasesTest):
 
         pregnancy = Label.objects.get(pk=self.pregnancy.pk)
         self.assertFalse(pregnancy.is_active)
+
+
+class FaqCRUDLTest(BaseCasesTest):
+    def setUp(self):
+        super(FaqCRUDLTest, self).setUp()
+
+        tests = [ContainsTest(['ebola', 'fever'], Quantifier.ALL), GroupsTest([self.reporters], Quantifier.ANY)]
+        self.ebola_label = Label.create(self.unicef, "Ebola", "Msgs about ebola", tests, is_synced=False)
+
+    def test_create(self):
+        url = reverse('msgs.faq_create')
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # log in as an administrator
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+        # submit with no data
+        response = self.url_post('unicef', url, {})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'question', 'This field is required.')
+        self.assertFormError(response, 'form', 'answer', 'This field is required.')
+        self.assertFormError(response, 'form', 'labels', 'This field is required.')
+
+        # submit again with valid data
+        response = self.url_post('unicef', url, {
+            'question': "How do I know whether I have Ebola?",
+            'answer': "Get tested by a doctor if you have any symptoms.",
+            'labels': [self.ebola_label]
+        })
+
+        self.assertEqual(response.status_code, 302)
+
+        faq_ebola = FAQ.objects.get(question="How do I know whether I have Ebola?")
+        self.assertEqual(faq_ebola.uuid, None)
+        self.assertEqual(faq_ebola.org, self.unicef)
+        self.assertEqual(faq_ebola.answer, "Get tested by a doctor if you have any symptoms.")
+        self.assertEqual(faq_ebola.labels, self.ebola_label)
 
 
 class MessageTest(BaseCasesTest):

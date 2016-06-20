@@ -150,9 +150,7 @@ class FaqCRUDL(SmartCRUDL):
             org = self.request.org
             question = data['question']
             answer = data['answer']
-
-            # labels = data['labels']  # continue here on monday!
-            labels = Label.objects.all()
+            labels = data['labels']
 
             faq = FAQ.objects.create(org=org, question=question, answer=answer)
             faq.labels.add(*labels)
