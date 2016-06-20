@@ -357,12 +357,12 @@ class Case(models.Model):
     def is_closed(self):
         return self.closed_on is not None
 
-    def as_json(self, full=True, full_contact=False):
+    def as_json(self, full=True):
         if full:
             return {
                 'id': self.pk,
                 'assignee': self.assignee.as_json(),
-                'contact': self.contact.as_json(full_contact),
+                'contact': self.contact.as_json(full=False),
                 'labels': [l.as_json() for l in self.labels.all()],
                 'summary': self.summary,
                 'opened_on': self.opened_on,
