@@ -44,6 +44,7 @@ raven==5.3.1
 redis==2.10.3
 regex==2015.10.01
 requests==2.7.0
+responses==2.2.1
 six==1.10.0
 -e git+https://github.com/nyaruka/smartmin.git@588f3df96d076f2dffe78f844cb25b5baf1729e0#egg=smartmin-dev
 sorl-thumbnail==12.3
