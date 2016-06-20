@@ -59,14 +59,16 @@ class Group(models.Model):
     def lock(cls, org, uuid):
         return get_redis_connection().lock(GROUP_LOCK_KEY % (org.pk, uuid), timeout=60)
 
-    def as_json(self):
-        return {
-            'id': self.pk,
-            'uuid': self.uuid,
-            'name': self.name,
-            'count': self.count,
-            'is_dynamic': self.is_dynamic
-        }
+    def as_json(self, full=True):
+        if full:
+            return {
+                'id': self.pk,
+                'name': self.name,
+                'count': self.count,
+                'is_dynamic': self.is_dynamic
+            }
+        else:
+            return {'id': self.pk, 'name': self.name}
 
     def __str__(self):
         return self.name

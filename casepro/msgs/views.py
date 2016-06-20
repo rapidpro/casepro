@@ -98,21 +98,21 @@ class MessageSearchMixin(object):
         Collects and prepares message search parameters into JSON serializable dict
         """
         folder = MessageFolder[self.request.GET['folder']]
-        label = self.request.GET.get('label', None)
+        label_id = self.request.GET.get('label', None)
         include_archived = str_to_bool(self.request.GET.get('archived', ''))
         text = self.request.GET.get('text', None)
-        contact = self.request.GET.get('contact', None)
-        groups = parse_csv(self.request.GET.get('groups', ''))
+        contact_id = self.request.GET.get('contact', None)
+        group_ids = parse_csv(self.request.GET.get('groups', ''), as_ints=True)
         after = parse_iso8601(self.request.GET.get('after', None))
         before = parse_iso8601(self.request.GET.get('before', None))
 
         return {
             'folder': folder,
-            'label': label,
+            'label': label_id,
             'include_archived': include_archived,  # only applies to flagged folder
             'text': text,
-            'contact': contact,
-            'groups': groups,
+            'contact': contact_id,
+            'groups': group_ids,
             'after': after,
             'before': before
         }
