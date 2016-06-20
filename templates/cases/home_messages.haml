@@ -132,40 +132,40 @@
                 - trans "Restore"
 
     .messages{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"!isInfiniteScrollEnabled()" }
-      .stackitem.clearfix.hoverable{ ng-repeat:"message in items | filter: getItemFilter()", ng-class:"{ flagged: message.flagged, selected: message.selected, archived: message.archived }" }
+      .stackitem.clearfix.hoverable{ ng-repeat:"item in items | filter: getItemFilter()", ng-click:"onExpandMessage(item)", ng-class:"{ flagged: item.flagged, selected: item.selected, archived: item.archived }" }
         .message-actions
-          %input{ type:"checkbox", ng-model:"message.selected", ng-change:"onChangeSelection()" }
-          %a.flag{ ng-click:"onToggleMessageFlag(message)" }
+          %input{ type:"checkbox", ng-model:"item.selected", ng-change:"onChangeSelection()" }
+          %a.flag{ ng-click:"onToggleMessageFlag(item)" }
             %span.glyphicon.glyphicon-flag
         .message-time
-          [[ message.time | autodate ]]
+          [[ item.time | autodate ]]
         .message-contact
-          %a{ ng-click:"activateContact(message.contact)" }><
-            <cp-contact contact="message.contact">
-        .message-text{ ng-click:"onExpandMessage(message)" }
-          %span.label-container{ ng-if:"message.flow" }
+          %a{ ng-click:"activateContact(item.contact)" }><
+            <cp-contact contact="item.contact">
+        .message-text
+          %span.label-container{ ng-if:"item.flow" }
             %span.label.label-info
               - trans "Flow"
             &nbsp;
-          %span.label-container{ ng-if:"message.case" }
+          %span.label-container{ ng-if:"item.case" }
             %span.label.label-warning
-              [[ message.case.assignee.name ]]
+              [[ item.case.assignee.name ]]
             &nbsp;
-          %span.label-container{ ng-repeat:"label in filterDisplayLabels(message.labels)" }
+          %span.label-container{ ng-repeat:"label in filterDisplayLabels(item.labels)" }
             %span.label.label-success
               [[ label.name ]]
             &nbsp;
-          [[ message.text ]]
-        .message-extra{ uib-collapse:"expandedMessageId != message.id" }
+          [[ item.text ]]
+        .message-extra{ uib-collapse:"expandedMessageId != item.id" }
           .btn-group.pull-away
-            %button.btn.btn-default{ type:"button", ng-click:"onCaseFromMessage(message)", ng-if:"partners.length > 0" }
+            %button.btn.btn-default{ type:"button", ng-click:"onCaseFromMessage(item)", ng-if:"partners.length > 0" }
               - trans "Open Case"
-            %button.btn.btn-default{ type:"button", ng-click:"onForwardMessage(message)" }
+            %button.btn.btn-default{ type:"button", ng-click:"onForwardMessage(item)" }
               %span.glyphicon.glyphicon-share-alt
               - trans "Forward"
-            %button.btn.btn-default{ type:"button", ng-click:"onLabelMessage(message)" }
+            %button.btn.btn-default{ type:"button", ng-click:"onLabelMessage(item)" }
               %span.glyphicon.glyphicon-tag
-            %button.btn.btn-default{ type:"button", ng-click:"onShowMessageHistory(message)" }
+            %button.btn.btn-default{ type:"button", ng-click:"onShowMessageHistory(item)" }
               %span.glyphicon.glyphicon-time
 
       .loading{ ng-if:"oldItemsLoading" }
