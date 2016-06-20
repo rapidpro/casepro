@@ -30,6 +30,9 @@ class JunebugMessageSender(object):
 
     def send_message(self, message):
         if not message.urn:
+            # If we don't have an URN for a message, we cannot send it, because
+            # we don't have an address to send it to.
+            # TODO: Add sending to contacts with Identity Store integration.
             raise JunebugMessageSendingError(
                 'Cannot send message without URN: %r' % message)
         _, to_addr = self.split_urn(message.urn)
