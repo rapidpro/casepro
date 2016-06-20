@@ -149,11 +149,31 @@ class LabelCRUDL(SmartCRUDL):
 
 class FaqCRUDL(SmartCRUDL):
     model = FAQ
-    actions = ('list', 'read', 'update', 'delete')
+    actions = ('list', 'create', 'read', 'update', 'delete')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('question', 'answer')
         default_order = ('question',)
+
+    class Create(OrgPermsMixin, SmartCreateView):
+        form_class = FaqForm
+
+        def get_form_kwargs(self):
+            kwargs = super(FaqCRUDL.Create, self).get_form_kwargs()
+            return kwargs
+
+        def save(self, obj):
+            data = self.form.cleaned_data
+            org = self.request.org
+            question = data['question']
+            answer = data['answer']
+
+            # labels = data['labels']  # continue here on monday!
+            labels = Label.objects.all()
+
+            faq = FAQ.objects.create(org=org, question=question, answer=answer)
+            faq.labels.add(*labels)
+            self.object = faq
 
     class Read(OrgPermsMixin, SmartReadView):
 
