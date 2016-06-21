@@ -85,7 +85,7 @@ modals.controller('ReplyModalController', ['$scope','FAQService','$uibModalInsta
     else
       $scope.replies = FAQService.fetchFaqs($scope.search)
 
-  $scope.searchFieldDefaults = () -> { text: null, groups: [], after: null, before: null, archived: false ,folder : 'inbox' }
+  $scope.searchFieldDefaults = () -> { text: null}
 
   $scope.setResponse = (faq)->
    $scope.fields.text.val = faq

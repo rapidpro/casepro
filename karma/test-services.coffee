@@ -49,7 +49,7 @@ describe('services:', () ->
         is_closed: false
       }
     ))
-    
+
     describe('addNote', () ->
       it('posts to note endpoint', () ->
         $httpBackend.expectPOST('/case/note/501/', {note: "Hello there"}).respond('')
@@ -152,7 +152,7 @@ describe('services:', () ->
         $httpBackend.flush()
       )
     )
-    
+
     describe('replyTo', () ->
       it('posts to reply endpoint', () ->
         $httpBackend.expectPOST('/case/reply/501/', {text: "Hello there"}).respond('')
@@ -361,6 +361,43 @@ describe('services:', () ->
       )
     )
   )
+  #=======================================================================
+  # Tests for FaqService
+  #=======================================================================
+  describe('FaqService',() ->
+    faqService = null
+
+    beforeEach(inject((_FAQService_) ->
+      faqService = _FAQService_
+    ))
+
+    # Dummy Replies to be removed when API ready
+
+    describe ('fetchFaqs',() ->
+      it('Should fetch faq replies', () ->
+        $httpBackEnd.expectGET('/faqs/search/label=12')
+        respond("results:[{
+                "id": 1,
+                "question": "example question 1",
+                "answer": "example answer 1",
+                "labels": [
+                    {'id': 101, 'name': "AIDS"},
+                    {'id': 102, 'name': "TB"}
+                  ]
+                },
+                {
+                  "id": 2,
+                  "question": "example question 2",
+                  "answer": "example answer 2",
+                  "labels": [
+                      {'id': 102, 'name': "TB"},
+                      {'id': 103, 'name': "Pregnancy"},
+                  ]
+                }")
+        faqService.fetchFaqs({label:{name:'HIV',id:12}})
+        $httpBackEnd.flush()
+    )
+  )
 
   #=======================================================================
   # Tests for OutgoingService
@@ -517,7 +554,7 @@ describe('services:', () ->
         expect($window.location.replace).toHaveBeenCalledWith("http://example.com")
       )
     )
-    
+
     describe('navigateBack', () ->
       it('calls history.back', () ->
         spyOn($window.history, 'back')

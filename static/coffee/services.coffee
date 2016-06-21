@@ -159,25 +159,68 @@ services.factory('FAQService', ['$rootScope', '$http', '$httpParamSerializer', (
     #----------------------------------------------------------------------------
 
     fetchFaqs: (search) ->
-      results = [
-            {
-                "id": 1,
-                "question": "example question 1",
-                "answer": "example answer 1",
-                "labels": [
-                    {'id': 101, 'name': "AIDS"},
-                    {'id': 102, 'name': "TB"}
-                ]
-            },
-            {
-                "id": 2,
-                "question": "example question 2",
-                "answer": "example answer 2",
-                "labels": [
-                    {'id': 102, 'name': "TB"},
-                    {'id': 103, 'name': "Pregnancy"},
-                ]
-              }]
+      console.log search
+      results = [{
+          "id": 1,
+          "question": "Can I get infected from touching an HIV+ person's blood ?",
+          "answer": "Contact with an HIV+'s blood may lead to infection . Please contact 0865000342 for for urgent assistance if you may have conme into contact with an HIV+'s blood",
+          "labels": [
+              {'id': 12, 'name': "AIDS"}
+          ]
+      },
+      {
+          "id": 2,
+          "question": "Can my baby also be HIV+ ?",
+          "answer": "It depends on wether you had used the Vital B medication prescribed to pregnant mothers.",
+          "labels": [
+              {'id': 12, 'name': "HIV"},
+              {'id': 15, 'name': "Pregnancy"}
+          ]
+        },
+        {
+          "id": 2,
+          "question": "Must I close the windows if I have TB ?",
+          "answer": "Please be advised all windows are to be kept open at all times",
+          "labels": [
+              {'id': 13, 'name': "TB"}
+          ]
+        },
+        {
+          "id": 2,
+          "question": "How will I know If I am pregnant ?",
+          "answer": "Please visit www.amipregnant.com",
+          "labels": [
+              {'id': 15, 'name': "Pregnancy"}
+          ]
+        }
+        {
+          "id": 2,
+          "question": "example question 5",
+          "answer": "example answer 5",
+          "labels": [
+              {'id': 102, 'name': "TB"},
+              {'id': 103, 'name': "Pregnancy"},
+          ]
+        }
+        {
+          "id": 2,
+          "question": "example question 6",
+          "answer": "example answer 6",
+          "labels": [
+              {'id': 102, 'name': "TB"},
+              {'id': 103, 'name': "Pregnancy"},
+          ]
+        }]
+      if search.label
+        if search.label.name == 'TB'
+          results = [results[2]]
+        else if search.label.name == 'HIV'
+          results = [results[0],results[1]]
+        else
+          results = [results[3],results[4],results[5]]
+      else
+        results
+
       # Comment out when API ready
       # params = @_searchFaqsToParams(search)
       # return $http.get('/faq/search/?'+$httpParamSerializer(params)).then((response) -> response.data.results)
