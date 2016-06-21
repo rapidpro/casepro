@@ -74,10 +74,9 @@ class BaseExport(models.Model):
         self.save(update_fields=('filename',))
 
         subject = "Your export is ready"
-        host = settings.SITE_HOST_PATTERN % self.org.subdomain
-        download_url = host + reverse(self.download_view, args=[self.pk])
+        download_url = self.org.make_absolute_url(reverse(self.download_view, args=[self.pk]))
 
-        send_email(self.created_by.username, subject, self.email_templates, dict(link=download_url))
+        send_email([self.created_by], subject, self.email_templates, {'link': download_url})
 
         # force a gc
         import gc

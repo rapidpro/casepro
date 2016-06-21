@@ -61,6 +61,7 @@ class CaseTest(BaseCasesTest):
         self.assertTrue(case.is_new)
         self.assertEqual(case.org, self.unicef)
         self.assertEqual(set(case.labels.all()), {self.aids})
+        self.assertEqual(set(case.watchers.all()), {self.user1})
         self.assertEqual(case.assignee, self.moh)
         self.assertEqual(case.contact, self.ann)
         self.assertEqual(case.initial_message, msg2)
@@ -117,6 +118,8 @@ class CaseTest(BaseCasesTest):
         with patch.object(timezone, 'now', return_value=d2):
             # other user in MOH adds a note
             case.add_note(self.user2, "Interesting")
+
+        self.assertEqual(set(case.watchers.all()), {self.user1, self.user2})
 
         actions = case.actions.order_by('pk')
         self.assertEqual(len(actions), 2)

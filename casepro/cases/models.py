@@ -4,6 +4,7 @@ from dash.orgs.models import Org
 from dash.utils import intersection
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
+from django.core.urlresolvers import reverse
 from django.db import models
 from django.db.models import Q, Count, Prefetch
 from django.utils.encoding import python_2_unicode_compatible
@@ -15,6 +16,7 @@ from redis_cache import get_redis_connection
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact
 from casepro.msgs.models import Label, Message, Outgoing
+from casepro.utils.email import send_email
 from casepro.utils.export import BaseExport
 
 
@@ -33,6 +35,17 @@ class AccessLevel(IntEnum):
     none = 0
     read = 1
     update = 2
+
+
+class CaseEvent(Enum):
+    CONTACT_REPLY = ("Contact sent a new reply",)
+    NEW_NOTE = ("User %(user)s added a new note", )
+    CLOSED = ("User %(user)s closed the case.",)
+    REOPENED = ("User %(user)s reopened the case.",)
+    REASSIGNED = ("User %(user)s reassigned the case.",)
+
+    def __init__(self, message):
+        self.message = message
 
 
 @python_2_unicode_compatible
@@ -101,14 +114,20 @@ class case_action(object):
     """
     Helper decorator for case action methods that should check the user is allowed to update the case
     """
-    def __init__(self, require_update=True):
+    def __init__(self, require_update=True, watch=True):
         self.require_update = require_update
+        self.watch = watch
 
     def __call__(self, func):
         def wrapped(case, user, *args, **kwargs):
             access = case.access_level(user)
             if (access == AccessLevel.update) or (not self.require_update and access == AccessLevel.read):
-                return func(case, user, *args, **kwargs)
+                result = func(case, user, *args, **kwargs)
+
+                if self.watch:
+                    case.watchers.add(user)
+
+                return result
             else:
                 raise PermissionDenied()
         return wrapped
@@ -136,6 +155,8 @@ class Case(models.Model):
 
     closed_on = models.DateTimeField(null=True,
                                      help_text="When this case was closed")
+
+    watchers = models.ManyToManyField(User, help_text="Users to notified of case activity")
 
     @classmethod
     def get_all(cls, org, user=None, label=None):
@@ -220,6 +241,7 @@ class Case(models.Model):
                                       summary=summary)
             case.is_new = True
             case.labels.add(*list(message.labels.all()))  # copy labels from message to new case
+            case.watchers.add(user)
 
             # attach message to this case
             message.case = case
@@ -262,6 +284,13 @@ class Case(models.Model):
         # merge actions and messages and sort by time
         return sorted(messages + actions, key=lambda event: event['time'])
 
+    def add_reply(self, message):
+        message.case = self
+        message.is_archived = True
+        message.save(update_fields=('case', 'is_archived'))
+
+        self.notify_watchers(CaseEvent.CONTACT_REPLY)
+
     @case_action()
     def update_summary(self, user, summary):
         self.summary = summary
@@ -273,6 +302,8 @@ class Case(models.Model):
     def add_note(self, user, note):
         CaseAction.create(self, user, CaseAction.ADD_NOTE, note=note)
 
+        self.notify_watchers(CaseEvent.NEW_NOTE, user, note)
+
     @case_action()
     def close(self, user, note=None):
         self.contact.restore_groups()
@@ -281,6 +312,8 @@ class Case(models.Model):
 
         self.closed_on = close_action.created_on
         self.save(update_fields=('closed_on',))
+
+        self.notify_watchers(CaseEvent.CLOSED, user, note)
 
     @case_action()
     def reopen(self, user, note=None, update_contact=True):
@@ -293,12 +326,16 @@ class Case(models.Model):
             # suspend from groups, expire flows and archive messages
             self.contact.prepare_for_case()
 
+        self.notify_watchers(CaseEvent.REOPENED, user, note)
+
     @case_action()
     def reassign(self, user, partner, note=None):
         self.assignee = partner
         self.save(update_fields=('assignee',))
 
         CaseAction.create(self, user, CaseAction.REASSIGN, assignee=partner, note=note)
+
+        self.notify_watchers(CaseEvent.REASSIGNED, user, note, assignee=partner)
 
     @case_action()
     def label(self, user, label):
@@ -307,14 +344,14 @@ class Case(models.Model):
         CaseAction.create(self, user, CaseAction.LABEL, label=label)
 
     @case_action()
-    def reply(self, user, text):
-        return Outgoing.create_case_reply(self.org, user, text, self)
-
-    @case_action()
     def unlabel(self, user, label):
         self.labels.remove(label)
 
         CaseAction.create(self, user, CaseAction.UNLABEL, label=label)
+
+    @case_action()
+    def reply(self, user, text):
+        return Outgoing.create_case_reply(self.org, user, text, self)
 
     def update_labels(self, user, labels):
         """
@@ -329,6 +366,34 @@ class Case(models.Model):
             self.label(user, label)
         for label in rem_labels:
             self.unlabel(user, label)
+
+    def watch(self, user):
+        if self.access_level(user) != AccessLevel.none:
+            self.watchers.add(user)
+        else:
+            raise PermissionDenied()
+
+    def unwatch(self, user):
+        self.watchers.remove(user)
+
+    def is_watched_by(self, user):
+        return user in self.watchers.all()
+
+    def notify_watchers(self, event, user=None, note=None, assignee=None):
+        subject = "Notification for case #%d" % self.pk
+        template = 'cases/email/case_notification'
+        case_url = self.org.make_absolute_url(reverse('cases.case_read', args=[self.pk]))
+
+        description = event.message % {
+            'user': user.email if user else None,
+            'assignee': assignee.name if assignee else None
+        }
+
+        notify_users = [u for u in self.watchers.all() if u != user]  # don't notify user who did this
+
+        # TODO send email from background task
+
+        send_email(notify_users, subject, template, {'description': description, 'note': note, 'case_url': case_url})
 
     def access_level(self, user):
         """

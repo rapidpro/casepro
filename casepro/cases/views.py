@@ -44,7 +44,7 @@ class CaseSearchMixin(object):
 class CaseCRUDL(SmartCRUDL):
     model = Case
     actions = ('read', 'open', 'update_summary', 'reply', 'fetch', 'search', 'timeline',
-               'note', 'reassign', 'close', 'reopen', 'label')
+               'note', 'reassign', 'close', 'reopen', 'label', 'subscribe', 'unsubscribe')
 
     class Read(OrgObjPermsMixin, SmartReadView):
         fields = ()
@@ -59,11 +59,12 @@ class CaseCRUDL(SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super(CaseCRUDL.Read, self).get_context_data(**kwargs)
             org = self.request.org
+            case = self.get_object()
 
             labels = Label.get_all(self.request.org).order_by('name')
             partners = Partner.get_all(org).order_by('name')
 
-            can_update = self.get_object().access_level(self.request.user) == AccessLevel.update
+            can_update = case.access_level(self.request.user) == AccessLevel.update
 
             # angular app requires context data in JSON format
             context['context_data_json'] = json_encode({
@@ -265,6 +266,26 @@ class CaseCRUDL(SmartCRUDL):
 
         def render_to_response(self, context, **response_kwargs):
             return JsonResponse({'results': context['timeline'], 'max_time': context['max_time']}, encoder=JSONEncoder)
+
+    class Subscribe(OrgObjPermsMixin, SmartUpdateView):
+        """
+        Endpoint for subscribing to a case
+        """
+        permission = 'cases.case_read'
+
+        def post(self, request, *args, **kwargs):
+            self.get_object().subscribe(request.user)
+            return HttpResponse(status=204)
+
+    class Unsubscribe(OrgObjPermsMixin, SmartUpdateView):
+        """
+        Endpoint for unsubscribing from a case
+        """
+        permission = 'cases.case_read'
+
+        def post(self, request, *args, **kwargs):
+            self.get_object().unsubscribe(request.user)
+            return HttpResponse(status=204)
 
 
 class CaseExportCRUDL(SmartCRUDL):
