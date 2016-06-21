@@ -171,6 +171,7 @@ class FaqCRUDL(SmartCRUDL):
 
             faq = FAQ.objects.create(org=org, question=question, answer=answer)
             faq.labels.add(*labels)
+            faq.save()
             self.object = faq
 
     class Read(OrgPermsMixin, SmartReadView):
