@@ -330,6 +330,19 @@ class FaqCRUDLTest(BaseCasesTest):
         self.assertEqual(faq_ebola.answer, "Get tested by a doctor if you have any symptoms.")
         self.assertEqual(faq_ebola.labels.all()[0], self.ebola_label)
 
+    def test_list(self):
+        url = reverse('msgs.faq_list')
+
+        # log in as an administrator
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+        # note list below is sorted alphabetically by question by default
+        self.assertEqual(list(response.context['object_list']),
+                         [self.tea_faq1, self.pregnancy_faq1, self.pregnancy_faq2])
+
 
 class MessageTest(BaseCasesTest):
     def setUp(self):
