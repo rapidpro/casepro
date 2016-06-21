@@ -202,12 +202,6 @@ class LabelCRUDLTest(BaseCasesTest):
 
 
 class FaqCRUDLTest(BaseCasesTest):
-    def setUp(self):
-        super(FaqCRUDLTest, self).setUp()
-
-        tests = [ContainsTest(['ebola', 'fever'], Quantifier.ALL), GroupsTest([self.reporters], Quantifier.ANY)]
-        self.ebola_label = Label.create(self.unicef, "Ebola", "Msgs about ebola", tests, is_synced=False)
-
     def test_create(self):
         url = reverse('msgs.faq_create')
 
@@ -232,17 +226,17 @@ class FaqCRUDLTest(BaseCasesTest):
 
         # submit again with valid data
         response = self.url_post('unicef', url, {
-            'question': "How do I know whether I have Ebola?",
-            'answer': "Get tested by a doctor if you have any symptoms.",
-            'labels': [self.ebola_label.pk]
+            'question': "Is nausea during pregnancy normal?",
+            'answer': "Yes, especially in the first 3 months",
+            'labels': [self.pregnancy.pk]
         })
 
         self.assertEqual(response.status_code, 302)
 
-        faq_ebola = FAQ.objects.get(question="How do I know whether I have Ebola?")
-        self.assertEqual(faq_ebola.org, self.unicef)
-        self.assertEqual(faq_ebola.answer, "Get tested by a doctor if you have any symptoms.")
-        self.assertEqual(faq_ebola.labels.all()[0], self.ebola_label)
+        faq = FAQ.objects.get(question="Is nausea during pregnancy normal?")
+        self.assertEqual(faq.org, self.unicef)
+        self.assertEqual(faq.answer, "Yes, especially in the first 3 months")
+        self.assertEqual(faq.labels.all()[0], self.pregnancy)
 
     def test_list(self):
         url = reverse('msgs.faq_list')
