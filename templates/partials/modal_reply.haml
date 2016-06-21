@@ -18,7 +18,6 @@
                   %a.glyphicon.glyphicon-tag
                     [[label.name]]
           %br
-
           %small
             %label.control-label
                 -trans "Containing"
@@ -27,7 +26,6 @@
             %span.input-group-addon
               %i.glyphicon.glyphicon-search
           %br
-
           %small
             %label.control-label
                 -trans "Written in"
@@ -37,7 +35,7 @@
               %span.caret
             %ul.dropdown-menu
               %li{ng-repeat:'language in languages'}
-                %a{ ng-click:"setLanguage(language.id)" }
+                %a{ ng-click:"filterByLanguage(language.id)" }
                   - trans language.name
 
       .form-group

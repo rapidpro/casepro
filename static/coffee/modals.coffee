@@ -66,17 +66,16 @@ modals.controller('ReplyModalController', ['$scope','FAQService','$uibModalInsta
     $scope.searchField = $scope.searchFieldDefaults()
     $scope.search = $scope.buildSearch()
     $scope.fetchFaqs()
+    $scope.setLanguages()
 
 
   $scope.buildSearch = () ->
     search = angular.copy($scope.searchField)
     search.label = $scope.activeLabel
-
-
-  # searching up to a date means including anything on the date
-    if search.before
-      search.before.setHours(23, 59, 59, 999)
     return search
+
+  $scope.filterByLanguage = (language_id) ->
+    $scope.search.language = language_id
 
   $scope.fetchFaqs = (label) ->
     if label
@@ -85,7 +84,10 @@ modals.controller('ReplyModalController', ['$scope','FAQService','$uibModalInsta
     else
       $scope.replies = FAQService.fetchFaqs($scope.search)
 
-  $scope.searchFieldDefaults = () -> { text: null}
+  $scope.setLanguages = () ->
+      $scope.languages = FAQService.getFaqLanguages()
+
+  $scope.searchFieldDefaults = () -> { text: null,language:null}
 
   $scope.setResponse = (faq)->
    $scope.fields.text.val = faq
