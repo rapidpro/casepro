@@ -251,6 +251,47 @@ class FaqCRUDLTest(BaseCasesTest):
         self.assertEqual(list(response.context['object_list']),
                          [self.tea_faq1, self.pregnancy_faq1, self.pregnancy_faq2])
 
+    def test_update(self):
+        url = reverse('msgs.faq_update', args=[self.pregnancy_faq1.pk])
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # log in as an administrator
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+        # submit with no data
+        response = self.url_post('unicef', url, {})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'question', 'This field is required.')
+        self.assertFormError(response, 'form', 'answer', 'This field is required.')
+        self.assertFormError(response, 'form', 'labels', 'This field is required.')
+
+        response = self.url_post('unicef', url, {
+            'question': "Can I drink tea if I'm pregnant?",
+            'answer': "Try to keep to caffeine-free tea",
+            'labels': [self.pregnancy.pk, self.tea.pk]
+        })
+
+        self.assertEqual(response.status_code, 302)
+
+        self.pregnancy_faq1.refresh_from_db()
+        self.assertEqual(self.pregnancy_faq1.question, "Can I drink tea if I'm pregnant?")
+        self.assertEqual(self.pregnancy_faq1.org, self.unicef)
+        self.assertEqual(self.pregnancy_faq1.answer, "Try to keep to caffeine-free tea")
+        self.assertEqual(self.pregnancy_faq1.labels.all()[0], self.pregnancy)
+        self.assertEqual(self.pregnancy_faq1.labels.all()[1], self.tea)
+
+        # view form again for recently edited label
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
 
 class MessageTest(BaseCasesTest):
     def setUp(self):
