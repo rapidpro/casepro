@@ -186,13 +186,13 @@ class GroupTest(BaseCasesTest):
         self.assertEqual(set(Group.get_all(self.unicef, dynamic=False)),
                          {self.males, self.females, self.reporters, invisible})
 
-        self.assertEqual(invisible.as_json(), {
+        self.assertEqual(invisible.as_json(full=True), {
             'id': invisible.pk,
-            'uuid': "G-006",
             'name': "Invisible",
             'count': 12,
             'is_dynamic': False
         })
+        self.assertEqual(invisible.as_json(full=False), {'id': invisible.pk, 'name': "Invisible"})
 
 
 class GroupCRUDLTest(BaseCasesTest):
