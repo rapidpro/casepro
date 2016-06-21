@@ -8,19 +8,38 @@
       - trans "Send the following reply to each contact and archive each message. This will remove the messages from your inbox."
     %form{ name:"form", novalidate:"" }
       .form-group
-        .well.col-md-12.panel-info.panel-heading
-          .col-md-6
-            %small
-              -trans "Browse by tag"
-            .btn-group.btn-group-xs
-              %span.btn.btn-primary.btn-sm{ng-repeat:'label in labels',ng-click:'fetchFaqs(label)'}
-                  %i.glyphicon.glyphicon-tag
+        .well.well-small.col-md-12
+          %small
+            %label.control-label
+                -trans "Labelled with"
+          %ul.nav.nav-pills.btn-group-xs.col-md-12{data-toggle:'buttons'}
+            %li.btn.btn-sm{ng-repeat:'label in labels',ng-click:'fetchFaqs(label)',aria-pressed:"true",style:"label.active{background:blue}"}
+                %input{type:'radio'}
+                  %a.glyphicon.glyphicon-tag
                     [[label.name]]
-          .col-md-6
-            .input-group
-              %input.form-control{ type:"text", placeholder:'Search by keyword',ng-keyup:'fetchFaqs()',ng-model:'search.text' }
-              %span.input-group-addon
-                %i.glyphicon.glyphicon-search
+          %br
+
+          %small
+            %label.control-label
+                -trans "Containing"
+          .input-group
+            %input.form-control{ type:"text", placeholder:'Keyword',ng-keyup:'fetchFaqs()',ng-model:'search.text' }
+            %span.input-group-addon
+              %i.glyphicon.glyphicon-search
+          %br
+
+          %small
+            %label.control-label
+                -trans "Written in"
+          .btn-group{ uib-dropdown:"true" }
+            %button.btn.btn-default.dropdown-toggle{ type:"button", uib-dropdown-toggle:"true" }
+              - trans "Select language"
+              %span.caret
+            %ul.dropdown-menu
+              %li{ng-repeat:'language in languages'}
+                %a{ ng-click:"setLanguage(language.id)" }
+                  - trans language.name
+
       .form-group
         %ul.list-group.col-md-12.col-xs-12{style:'overflow-x:auto;max-height:20vh;'}
           %li.text-center{ng-repeat:"reply in replies"}
@@ -41,4 +60,3 @@
       - trans "Send & Archive"
     %button.btn.btn-default{ ng-click:"cancel()" }
       - trans "Cancel"
-
