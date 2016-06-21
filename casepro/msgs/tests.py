@@ -234,16 +234,15 @@ class FaqCRUDLTest(BaseCasesTest):
         response = self.url_post('unicef', url, {
             'question': "How do I know whether I have Ebola?",
             'answer': "Get tested by a doctor if you have any symptoms.",
-            'labels': [self.ebola_label]
+            'labels': [self.ebola_label.pk]
         })
 
         self.assertEqual(response.status_code, 302)
 
         faq_ebola = FAQ.objects.get(question="How do I know whether I have Ebola?")
-        self.assertEqual(faq_ebola.uuid, None)
         self.assertEqual(faq_ebola.org, self.unicef)
         self.assertEqual(faq_ebola.answer, "Get tested by a doctor if you have any symptoms.")
-        self.assertEqual(faq_ebola.labels, self.ebola_label)
+        self.assertEqual(faq_ebola.labels.all()[0], self.ebola_label)
 
 
 class MessageTest(BaseCasesTest):
