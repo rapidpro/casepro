@@ -311,6 +311,22 @@ class FaqCRUDLTest(BaseCasesTest):
         with self.assertRaises(FAQ.DoesNotExist):
             FAQ.objects.get(pk=preg_faq1_pk)
 
+    def test_read(self):
+        preg_faq1_pk = self.pregnancy_faq1.pk
+        url = reverse('msgs.faq_read', args=[preg_faq1_pk])
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # log in as an administrator
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
 
 class MessageTest(BaseCasesTest):
     def setUp(self):
