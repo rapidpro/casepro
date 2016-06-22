@@ -5,7 +5,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from casepro.contacts.models import Group
 from casepro.rules.forms import FieldTestField
-from casepro.utils import parse_csv, normalize
+from casepro.utils import parse_csv, normalize, normalize_language_code
 
 from .models import Label, Language
 
@@ -78,9 +78,24 @@ class LabelForm(forms.ModelForm):
 
 class LanguageForm(forms.ModelForm):
 
-    code = forms.CharField(label=_("6-digit Language Code (e.g. eng_UK)"), max_length=6)
-    name = forms.CharField(label=_("Language Name (e.g. English"), max_length=100)
-    location = forms.CharField(label=_("Language Location (e.g. United Kingdom"), max_length=100)
+    code = forms.CharField(label=_("Code"), max_length=6,
+                           widget=forms.TextInput(attrs={'placeholder': 'eng_UK'}))
+    name = forms.CharField(label=_("Name"), max_length=100, required=False,
+                           widget=forms.TextInput(attrs={'placeholder': 'English'}))
+    location = forms.CharField(label=_("Location"), max_length=100, required=False,
+                               widget=forms.TextInput(attrs={'placeholder': 'United Kingdom'}))
+
+    def clean_code(self):
+        code = self.cleaned_data['code'].strip()
+        normalized_code = normalize(code)
+
+        if len(normalized_code) != 6:
+            raise forms.ValidationError(_("Language codes should be 6 characters long"))
+
+        if normalized_code[3] != normalize('_'):
+            raise forms.ValidationError(_("Language name and location should be seperated by an underscore"))
+
+        return normalize_language_code(normalized_code)
 
     class Meta:
         model = Language
