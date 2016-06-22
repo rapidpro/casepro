@@ -478,6 +478,20 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
   # Case actions
   #----------------------------------------------------------------------------
 
+  $scope.onWatch = () ->
+    UtilsService.confirmModal("Receive notifications for activity in this case?").then(() ->
+      CaseService.watch($scope.caseObj).then(() ->
+        $scope.caseObj.watching = true
+      )
+    )
+
+  $scope.onUnwatch = () ->
+    UtilsService.confirmModal("Stop receiving notifications for activity in this case?").then(() ->
+      CaseService.unwatch($scope.caseObj).then(() ->
+        $scope.caseObj.watching = false
+      )
+    )
+
   $scope.onAddNote = () ->
     UtilsService.noteModal("Add Note", null, null, CASE_NOTE_MAX_LEN).then((note) ->
       CaseService.addNote($scope.caseObj, note).then(() ->

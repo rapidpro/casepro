@@ -44,7 +44,7 @@ class CaseSearchMixin(object):
 class CaseCRUDL(SmartCRUDL):
     model = Case
     actions = ('read', 'open', 'update_summary', 'reply', 'fetch', 'search', 'timeline',
-               'note', 'reassign', 'close', 'reopen', 'label', 'subscribe', 'unsubscribe')
+               'note', 'reassign', 'close', 'reopen', 'label', 'watch', 'unwatch')
 
     class Read(OrgObjPermsMixin, SmartReadView):
         fields = ()
@@ -200,7 +200,12 @@ class CaseCRUDL(SmartCRUDL):
         permission = 'cases.case_read'
 
         def render_to_response(self, context, **response_kwargs):
-            return JsonResponse(self.object.as_json(), encoder=JSONEncoder)
+            case_json = self.object.as_json()
+
+            # augment usual case JSON
+            case_json['watching'] = self.object.is_watched_by(self.request.user)
+
+            return JsonResponse(case_json, encoder=JSONEncoder)
 
     class Search(OrgPermsMixin, CaseSearchMixin, SmartTemplateView):
         """
@@ -267,24 +272,24 @@ class CaseCRUDL(SmartCRUDL):
         def render_to_response(self, context, **response_kwargs):
             return JsonResponse({'results': context['timeline'], 'max_time': context['max_time']}, encoder=JSONEncoder)
 
-    class Subscribe(OrgObjPermsMixin, SmartUpdateView):
+    class Watch(OrgObjPermsMixin, SmartReadView):
         """
-        Endpoint for subscribing to a case
+        Endpoint for watching a case
         """
         permission = 'cases.case_read'
 
         def post(self, request, *args, **kwargs):
-            self.get_object().subscribe(request.user)
+            self.get_object().watch(request.user)
             return HttpResponse(status=204)
 
-    class Unsubscribe(OrgObjPermsMixin, SmartUpdateView):
+    class Unwatch(OrgObjPermsMixin, SmartReadView):
         """
-        Endpoint for unsubscribing from a case
+        Endpoint for unwatching a case
         """
         permission = 'cases.case_read'
 
         def post(self, request, *args, **kwargs):
-            self.get_object().unsubscribe(request.user)
+            self.get_object().unwatch(request.user)
             return HttpResponse(status=204)
 
 

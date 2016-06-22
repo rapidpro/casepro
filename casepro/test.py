@@ -4,6 +4,7 @@ import json
 
 from dash.test import DashTest
 from datetime import datetime
+from django.core import mail
 from django.utils.timezone import now
 from django.test import override_settings
 from xlrd import xldate_as_tuple
@@ -170,3 +171,9 @@ class BaseCasesTest(DashTest):
             actual_values.append(actual)
 
         self.assertEqual(actual_values, expected_values)
+
+    def assertSentMail(self, recipients, reset_outbox=True):
+        self.assertEqual([e.to[0] for e in mail.outbox], recipients)
+
+        if reset_outbox:
+            mail.outbox = []

@@ -254,6 +254,18 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
       )
 
     #----------------------------------------------------------------------------
+    # Watches this case (i.e. get notifications for activity)
+    #----------------------------------------------------------------------------
+    watch: (caseObj) ->
+      return $http.post('/case/watch/' + caseObj.id + '/')
+
+    #----------------------------------------------------------------------------
+    # Unwatches this case (i.e. stop getting notifications for activity)
+    #----------------------------------------------------------------------------
+    unwatch: (caseObj) ->
+      return $http.post('/case/unwatch/' + caseObj.id + '/')
+
+    #----------------------------------------------------------------------------
     # Adds a note to a case
     #----------------------------------------------------------------------------
     addNote: (caseObj, note) ->

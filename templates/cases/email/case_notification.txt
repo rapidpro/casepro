@@ -2,9 +2,7 @@
 
 {{ description }}
 
-{% if note %}
-    {{ note }}
-{% endif %}
+{% if note %}{{ note }}{% endif %}
 
 Go to {{ case_url }} to view the case.
 

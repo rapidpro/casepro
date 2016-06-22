@@ -7,6 +7,7 @@ import six
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core import mail
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
@@ -107,6 +108,8 @@ class CaseTest(BaseCasesTest):
         msg3 = self.create_message(self.unicef, 432, self.ann, "OK", created_on=d2)
         handle_messages(self.unicef.pk)
 
+        self.assertSentMail(["evan@unicef.org"])  # user #1 notified of reply
+
         # which will have been archived and added to the case
         mock_archive_messages.assert_called_once_with(self.unicef, [msg3])
         mock_archive_messages.reset_mock()
@@ -120,6 +123,7 @@ class CaseTest(BaseCasesTest):
             case.add_note(self.user2, "Interesting")
 
         self.assertEqual(set(case.watchers.all()), {self.user1, self.user2})
+        self.assertSentMail(["evan@unicef.org"])  # user #1 notified of new note
 
         actions = case.actions.order_by('pk')
         self.assertEqual(len(actions), 2)
@@ -135,6 +139,8 @@ class CaseTest(BaseCasesTest):
         with patch.object(timezone, 'now', return_value=d3):
             # first user closes the case
             case.close(self.user1)
+
+        self.assertSentMail(["rick@unicef.org"])  # user #2 notified
 
         self.assertEqual(case.opened_on, d1)
         self.assertEqual(case.closed_on, d3)
@@ -601,7 +607,8 @@ class CaseCRUDLTest(BaseCasesTest):
             'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
             'summary': "Summary",
             'opened_on': format_iso8601(self.case.opened_on),
-            'is_closed': False
+            'is_closed': False,
+            'watching': False
         })
 
         # users with label access can also fetch

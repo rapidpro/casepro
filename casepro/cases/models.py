@@ -42,7 +42,7 @@ class CaseEvent(Enum):
     NEW_NOTE = ("User %(user)s added a new note", )
     CLOSED = ("User %(user)s closed the case.",)
     REOPENED = ("User %(user)s reopened the case.",)
-    REASSIGNED = ("User %(user)s reassigned the case.",)
+    REASSIGNED = ("User %(user)s reassigned the case to %(assignee)s.",)
 
     def __init__(self, message):
         self.message = message

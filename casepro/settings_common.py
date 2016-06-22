@@ -42,6 +42,9 @@ DEFAULT_FROM_EMAIL = 'server@nyaruka.com'
 EMAIL_HOST_PASSWORD = 'NOTREAL'
 EMAIL_USE_TLS = True
 
+# safe to send emails during tests as these use a fake backend
+SEND_EMAILS = TESTING
+
 # dash configuration
 SITE_API_HOST = 'http://localhost:8001/'
 SITE_API_USER_AGENT = 'casepro/0.1'
