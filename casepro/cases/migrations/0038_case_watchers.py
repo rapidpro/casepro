@@ -16,6 +16,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='case',
             name='watchers',
-            field=models.ManyToManyField(help_text='Users to notified of case activity', to=settings.AUTH_USER_MODEL),
+            field=models.ManyToManyField(help_text='Users to be notified of case activity', related_name='watched_cases', to=settings.AUTH_USER_MODEL),
         ),
     ]

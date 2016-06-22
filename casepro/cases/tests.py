@@ -851,6 +851,32 @@ class CaseCRUDLTest(BaseCasesTest):
             }
         ])
 
+    def test_watch_and_unwatch(self):
+        watch_url = reverse('cases.case_watch', args=[self.case.pk])
+        unwatch_url = reverse('cases.case_unwatch', args=[self.case.pk])
+
+        # log in as manager user in currently assigned partner
+        self.login(self.user1)
+
+        response = self.url_post('unicef', watch_url)
+        self.assertEqual(response.status_code, 204)
+
+        self.assertIn(self.user1, self.case.watchers.all())
+
+        response = self.url_post('unicef', unwatch_url)
+        self.assertEqual(response.status_code, 204)
+
+        self.assertNotIn(self.user1, self.case.watchers.all())
+
+        # only user with case access can watch
+        self.who.labels.remove(self.aids)
+        self.login(self.user3)
+
+        response = self.url_post('unicef', watch_url)
+        self.assertEqual(response.status_code, 403)
+
+        self.assertNotIn(self.user3, self.case.watchers.all())
+
 
 class CaseExportCRUDLTest(BaseCasesTest):
     @override_settings(SITE_ORGS_STORAGE_ROOT='test_orgs', CELERY_ALWAYS_EAGER=True,

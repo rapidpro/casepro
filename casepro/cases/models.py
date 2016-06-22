@@ -156,7 +156,8 @@ class Case(models.Model):
     closed_on = models.DateTimeField(null=True,
                                      help_text="When this case was closed")
 
-    watchers = models.ManyToManyField(User, help_text="Users to notified of case activity")
+    watchers = models.ManyToManyField(User, related_name='watched_cases',
+                                      help_text="Users to be notified of case activity")
 
     @classmethod
     def get_all(cls, org, user=None, label=None):
@@ -390,8 +391,6 @@ class Case(models.Model):
         }
 
         notify_users = [u for u in self.watchers.all() if u != user]  # don't notify user who did this
-
-        # TODO send email from background task
 
         send_email(notify_users, subject, template, {'description': description, 'note': note, 'case_url': case_url})
 
