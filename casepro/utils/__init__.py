@@ -75,6 +75,14 @@ def normalize(text):
     return unicodedata.normalize('NFKD', re.sub(r'\s+', ' ', text.lower()))
 
 
+def normalize_language_code(text):
+    """
+    Converts letters 5 & 6 to uppercase.
+    """
+    normalized_code = normalize(text)
+    return normalized_code[0:4] + normalized_code[4:6].upper()
+
+
 def match_keywords(text, keywords):
     """
     Checks the given text for a keyword match
