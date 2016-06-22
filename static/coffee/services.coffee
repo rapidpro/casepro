@@ -320,13 +320,17 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     # Watches this case (i.e. get notifications for activity)
     #----------------------------------------------------------------------------
     watch: (caseObj) ->
-      return $http.post('/case/watch/' + caseObj.id + '/')
+      return $http.post('/case/watch/' + caseObj.id + '/').then(() ->
+        caseObj.watching = true
+      )
 
     #----------------------------------------------------------------------------
     # Unwatches this case (i.e. stop getting notifications for activity)
     #----------------------------------------------------------------------------
     unwatch: (caseObj) ->
-      return $http.post('/case/unwatch/' + caseObj.id + '/')
+      return $http.post('/case/unwatch/' + caseObj.id + '/').then(() ->
+        caseObj.watching = false
+      )
 
     #----------------------------------------------------------------------------
     # Fetches timeline events
