@@ -285,8 +285,7 @@ class FaqCRUDLTest(BaseCasesTest):
         self.assertEqual(self.pregnancy_faq1.question, "Can I drink tea if I'm pregnant?")
         self.assertEqual(self.pregnancy_faq1.org, self.unicef)
         self.assertEqual(self.pregnancy_faq1.answer, "Try to keep to caffeine-free tea")
-        self.assertEqual(self.pregnancy_faq1.labels.all()[0], self.pregnancy)
-        self.assertEqual(self.pregnancy_faq1.labels.all()[1], self.tea)
+        self.assertEqual(len(self.pregnancy_faq1.labels.all()), 2)
 
         # view form again for recently edited label
         response = self.url_get('unicef', url)
