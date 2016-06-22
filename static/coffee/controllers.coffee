@@ -607,6 +607,22 @@ controllers.controller('UserController', ['$scope', '$window', 'UtilsService', '
 
 
 #============================================================================
+# Language view controller
+#============================================================================
+controllers.controller('LanguageController', ['$scope', '$window', 'UtilsService', 'LanguageService', ($scope, $window, UtilsService, LanguageService) ->
+
+  $scope.language = $window.contextData.language
+
+  $scope.onDeleteLanguage = () ->
+    UtilsService.confirmModal("Delete this Language?", 'danger').then(() ->
+      LanguageService.delete($scope.language).then(() ->
+        UtilsService.navigateBack()
+      )
+    )
+])
+
+
+#============================================================================
 # Date range controller
 #============================================================================
 controllers.controller('DateRangeController', ['$scope', ($scope) ->
