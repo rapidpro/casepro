@@ -7,7 +7,7 @@ from casepro.contacts.models import Group
 from casepro.rules.forms import FieldTestField
 from casepro.utils import parse_csv, normalize
 
-from .models import Label
+from .models import Label, Language
 
 
 class LabelForm(forms.ModelForm):
@@ -74,3 +74,14 @@ class LabelForm(forms.ModelForm):
     class Meta:
         model = Label
         fields = ('name', 'description', 'keywords', 'groups', 'field_test', 'is_synced')
+
+
+class LanguageForm(forms.ModelForm):
+
+    code = forms.CharField(label=_("6-digit Language Code (e.g. eng_UK)"), max_length=6)
+    name = forms.CharField(label=_("Language Name (e.g. English"), max_length=100)
+    location = forms.CharField(label=_("Language Location (e.g. United Kingdom"), max_length=100)
+
+    class Meta:
+        model = Language
+        fields = ('code', 'name', 'location')
