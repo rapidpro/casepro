@@ -18,7 +18,8 @@ from casepro.contacts.models import Contact
 from casepro.rules.models import ContainsTest, GroupsTest, FieldTest, Quantifier
 from casepro.test import BaseCasesTest
 
-from .models import Label, Message, MessageAction, MessageExport, MessageFolder, Outgoing, OutgoingFolder, ReplyExport
+from .models import (Label, Language, Message, MessageAction, MessageExport, MessageFolder, Outgoing, OutgoingFolder,
+                     ReplyExport)
 from .tasks import handle_messages, pull_messages
 
 
@@ -198,6 +199,127 @@ class LabelCRUDLTest(BaseCasesTest):
 
         pregnancy = Label.objects.get(pk=self.pregnancy.pk)
         self.assertFalse(pregnancy.is_active)
+
+
+class LanguageCRUDLTest(BaseCasesTest):
+    def test_create(self):
+        url = reverse('msgs.language_create')
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # log in as an administrator
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+        # submit with no data
+        response = self.url_post('unicef', url, {})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'code', 'This field is required.')
+
+        # submit again with valid data
+        response = self.url_post('unicef', url, {
+            'code': "afr_za",
+            'name': "Afrikaans",
+            'location': "South Africa"
+        })
+
+        self.assertEqual(response.status_code, 302)
+
+        language = Language.objects.get(code="afr_ZA")
+        self.assertEqual(language.org, self.unicef)
+        self.assertEqual(language.name, "Afrikaans")
+        self.assertEqual(language.location, "South Africa")
+
+    def test_list(self):
+        url = reverse('msgs.language_list')
+
+        # log in as an administrator
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+        # list below is sorted alphabetically by code by default
+        self.assertEqual(list(response.context['object_list']), [self.cgg_ug, self.eng_za, self.lug_ug])
+
+    def test_update(self):
+        url = reverse('msgs.language_update', args=[self.eng_za.pk])
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # log in as an administrator
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+        # submit with no data
+        response = self.url_post('unicef', url, {})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'code', 'This field is required.')
+
+        response = self.url_post('unicef', url, {
+            'code': "eng_UK",
+            'name': "English",
+            'location': "United Kingdom"
+        })
+
+        self.assertEqual(response.status_code, 302)
+
+        self.eng_za.refresh_from_db()
+        self.assertEqual(self.eng_za.org, self.unicef)
+        self.assertEqual(self.eng_za.code, "eng_UK")
+        self.assertEqual(self.eng_za.name, "English")
+        self.assertEqual(self.eng_za.location, "United Kingdom")
+
+        # view form again for recently edited label
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_delete(self):
+        eng_za_pk = self.eng_za.pk
+        url = reverse('msgs.language_delete', args=[eng_za_pk])
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # log in as an administrator
+        self.login(self.admin)
+
+        response = self.url_post('unicef', url)
+        self.assertEqual(response.status_code, 204)
+
+        with self.assertRaises(Language.DoesNotExist):
+            Language.objects.get(pk=eng_za_pk)
+
+    def test_read(self):
+        eng_za_pk = self.eng_za.pk
+        url = reverse('msgs.language_read', args=[eng_za_pk])
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # log in as an administrator
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
 
 
 class MessageTest(BaseCasesTest):
