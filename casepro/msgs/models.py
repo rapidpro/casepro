@@ -94,6 +94,31 @@ class Label(models.Model):
 
 
 @python_2_unicode_compatible
+class Language(models.Model):
+    """
+    Languages used, defined by the ISO 639-3 language code combined with the location code, e.g. eng_UK
+    """
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='languages')
+
+    code = models.CharField(max_length=6)  # e.g. eng_UK
+
+    name = models.CharField(max_length=100, null=True, blank=True)  # e.g. English
+
+    location = models.CharField(max_length=100, null=True, blank=True)  # e.g. United Kingdom
+
+    def as_json(self):
+        return {
+            'id': self.pk,
+            'code': self.code,
+            'name': self.name,
+            'location': self.location
+        }
+
+    def __str__(self):
+        return "%s - %s - %s" % (self.code, self.name, self.location)
+
+
+@python_2_unicode_compatible
 class Message(models.Model):
     """
     A incoming message from the backend
