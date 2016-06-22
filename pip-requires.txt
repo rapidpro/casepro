@@ -6,6 +6,7 @@ colorama
 coverage
 django
 django-celery
+django-celery-email
 django-compressor
 django-debug-toolbar
 django-digest
