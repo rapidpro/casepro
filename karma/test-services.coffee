@@ -118,10 +118,10 @@ describe('services:', () ->
 
     describe('open', () ->
       it('posts to open endpoint', () ->
-        $httpBackend.expectPOST('/case/open/', {message: 401, summary: "Hi", assignee: 301}).respond('{"case": {"id": 501}, "is_new": true}')
+        $httpBackend.expectPOST('/case/open/', {message: 401, summary: "Hi", assignee: 301}).respond('{"id": 501, "is_new": true}')
         CaseService.open({id: 401, text: "Hi"}, "Hi", test.moh).then((caseObj) ->
           expect(caseObj.id).toEqual(501)
-          expect(caseObj.isNew).toEqual(true)
+          expect(caseObj.is_new).toEqual(true)
         )
         $httpBackend.flush()
       )
@@ -171,6 +171,22 @@ describe('services:', () ->
         CaseService.updateSummary(test.case1, "Got coffee?").then(() ->
           expect(test.case1.summary).toEqual("Got coffee?")
         )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('watch', () ->
+      it('posts to watch endpoint', () ->
+        $httpBackend.expectPOST('/case/watch/501/', null).respond('')
+        CaseService.watch(test.case1)
+        $httpBackend.flush()
+      )
+    )
+
+    describe('unwatch', () ->
+      it('posts to unwatch endpoint', () ->
+        $httpBackend.expectPOST('/case/unwatch/501/', null).respond('')
+        CaseService.unwatch(test.case1)
         $httpBackend.flush()
       )
     )

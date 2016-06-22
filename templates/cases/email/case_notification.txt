@@ -4,8 +4,7 @@
 
 {% if note %}{{ note }}{% endif %}
 
-Go to {{ case_url }} to view the case.
-
-{% trans "You are receiving this email because you are watching this case. You can unwatch from the link above." %}
-
-
+{% blocktrans with case_url as case_url %}
+Go to {{ case_url }} to view the case. You are receiving this email because you are watching this case. You can unwatch
+from the case page.
+{% endblocktrans %}

@@ -320,7 +320,7 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
     UtilsService.newCaseModal(message.text, CASE_SUMMARY_MAX_LEN, partners).then((data) ->
       CaseService.open(message, data.summary, data.assignee).then((caseObj) ->
           caseUrl = '/case/read/' + caseObj.id + '/'
-          if !caseObj.isNew
+          if !caseObj.is_new
             caseUrl += '?alert=open_found_existing'
           UtilsService.navigate(caseUrl)
       )

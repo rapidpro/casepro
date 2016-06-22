@@ -382,10 +382,11 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_post_json('unicef', url, {'message': 101, 'summary': "Summary", 'assignee': self.moh.pk})
         self.assertEqual(response.status_code, 200)
 
-        self.assertTrue(response.json['is_new'])
-        self.assertEqual(response.json['case']['summary'], "Summary")
+        self.assertEqual(response.json['summary'], "Summary")
+        self.assertEqual(response.json['is_new'], True)
+        self.assertEqual(response.json['watching'], True)
 
-        case1 = Case.objects.get(pk=response.json['case']['id'])
+        case1 = Case.objects.get(pk=response.json['id'])
         self.assertEqual(case1.initial_message, msg1)
         self.assertEqual(case1.summary, "Summary")
         self.assertEqual(case1.assignee, self.moh)
@@ -401,7 +402,7 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_post_json('unicef', url, {'message': 102, 'summary': "Summary"})
         self.assertEqual(response.status_code, 200)
 
-        case2 = Case.objects.get(pk=response.json['case']['id'])
+        case2 = Case.objects.get(pk=response.json['id'])
         self.assertEqual(case2.initial_message, msg2)
         self.assertEqual(case2.summary, "Summary")
         self.assertEqual(case2.assignee, self.moh)

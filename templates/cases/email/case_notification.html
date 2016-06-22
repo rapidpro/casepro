@@ -4,8 +4,9 @@
 
 {% if note %}<p><i>{{ note }}</i></p>{% endif %}
 
-<p>Click <a href="{{ case_url }}">here</a> to view the case.</p>
-
-<p>{% trans "You are receiving this email because you are watching this case. You can unwatch from the link above." %}</p>
-
-
+<p>
+{% blocktrans with case_url as case_url %}
+Click <a href="{{ case_url }}">here</a> to view the case. You are receiving this email because you are watching this
+case. You can unwatch from the case page.
+{% endblocktrans %}
+</p>

@@ -392,7 +392,9 @@ class Case(models.Model):
 
         notify_users = [u for u in self.watchers.all() if u != user]  # don't notify user who did this
 
-        send_email(notify_users, subject, template, {'description': description, 'note': note, 'case_url': case_url})
+        if notify_users:
+            email_context = {'description': description, 'note': note, 'case_url': case_url}
+            send_email(notify_users, subject, template, email_context)
 
     def access_level(self, user):
         """

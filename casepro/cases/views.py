@@ -97,7 +97,12 @@ class CaseCRUDL(SmartCRUDL):
 
             case = Case.get_or_open(request.org, request.user, message, summary, assignee)
 
-            return JsonResponse({'case': case.as_json(), 'is_new': case.is_new}, encoder=JSONEncoder)
+            # augment regular case JSON
+            case_json = case.as_json()
+            case_json['is_new'] = case.is_new
+            case_json['watching'] = case.is_watched_by(request.user)
+
+            return JsonResponse(case_json, encoder=JSONEncoder)
 
     class Note(OrgObjPermsMixin, SmartUpdateView):
         """
