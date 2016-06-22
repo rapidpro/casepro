@@ -842,6 +842,11 @@ class RapidProBackendTest(BaseCasesTest):
         outgoing = self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello", self.ann)
         self.assertEqual(messages[0].keys(), outgoing.as_json().keys())
 
+    def test_get_url_patterns(self):
+        '''Getting the list of url patterns for the rapidpro backend should
+        return an empty list.'''
+        self.assertEqual(self.backend.get_url_patterns(), [])
+
 
 @skip
 class PerfTest(BaseCasesTest):
