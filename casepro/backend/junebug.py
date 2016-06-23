@@ -48,10 +48,11 @@ class JunebugMessageSendingError(Exception):
 
 
 class JunebugMessageSender(object):
-    def __init__(self, base_url, channel_id, from_address):
+    def __init__(self, base_url, channel_id, from_address, identity_store):
         self.base_url = base_url
         self.channel_id = channel_id
         self.from_address = from_address
+        self.identity_store = identity_store
         self.session = requests.Session()
 
     @property
@@ -67,19 +68,23 @@ class JunebugMessageSender(object):
         return type_, address
 
     def send_message(self, message):
-        if not message.urn:
-            # If we don't have an URN for a message, we cannot send it, because
-            # we don't have an address to send it to.
-            # TODO: Add sending to contacts with Identity Store integration.
+        if message.urn:
+            _, to_addr = self.split_urn(message.urn)
+            addresses = [to_addr]
+        elif message.contact and message.contact.uuid:
+            uuid = message.contact.uuid
+            addresses = self.identity_store.get_addresses(uuid)
+        else:
+            # If we don't have an URN for a message, we cannot send it.
             raise JunebugMessageSendingError(
                 'Cannot send message without URN: %r' % message)
-        _, to_addr = self.split_urn(message.urn)
-        data = {
-            'to': to_addr,
-            'from': self.from_address,
-            'content': message.text,
-        }
-        self.session.post(self.url, json=data)
+        for to_addr in addresses:
+            data = {
+                'to': to_addr,
+                'from': self.from_address,
+                'content': message.text,
+            }
+            self.session.post(self.url, json=data)
 
 
 class JunebugBackend(BaseBackend):
@@ -88,9 +93,12 @@ class JunebugBackend(BaseBackend):
     '''
 
     def __init__(self):
+        identity_store = IdentityStore(
+            settings.IDENTITY_API_ROOT, settings.IDENTITY_AUTH_TOKEN,
+            settings.IDENTITY_ADDRESS_TYPE)
         self.message_sender = JunebugMessageSender(
             settings.JUNEBUG_API_ROOT, settings.JUNEBUG_CHANNEL_ID,
-            settings.JUNEBUG_FROM_ADDRESS)
+            settings.JUNEBUG_FROM_ADDRESS, identity_store)
 
     def pull_contacts(
             self, org, modified_after, modified_before,
