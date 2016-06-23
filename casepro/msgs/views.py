@@ -305,10 +305,6 @@ class LanguageCRUDL(SmartCRUDL):
     class Update(OrgPermsMixin, SmartUpdateView):
         form_class = LanguageForm
 
-        # def derive_initial(self):
-        #     initial = super(LanguageCRUDL.Update, self).derive_initial()
-        #     return initial
-
     class Delete(OrgPermsMixin, SmartDeleteView):
         cancel_url = '@msgs.language_list'
 
