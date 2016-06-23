@@ -4,6 +4,44 @@ import requests
 from . import BaseBackend
 
 
+class IdentityStore(object):
+    '''Implements required methods for accessing the identity data in the
+    identity store.'''
+    def __init__(self, base_url, auth_token, address_type):
+        '''
+        base_url: the base URL where the identity store is located
+        auth_token: the token that should be used for authorized access
+        address_type: the address type of the addresses that we want
+        '''
+        self.base_url = base_url.rstrip('/')
+        self.address_type = address_type
+        self.session = requests.Session()
+        self.session.headers.update({'Authorization': 'Token %s' % auth_token})
+        self.session.headers.update({'Content-Type': 'application/json'})
+
+    def get_paginated_response(self, url, params={}, **kwargs):
+        '''Get the results of all pages of a response.'''
+        results = []
+        url = url
+        while url is not None:
+            r = self.session.get(url, params=params, **kwargs)
+            data = r.json()
+            results += data.get('results', [])
+            url = data.get('next', None)
+            # params are included in the next url
+            params = {}
+        return results
+
+    def get_addresses(self, uuid):
+        '''Get the list of addresses for an identity specified by uuid.'''
+        addresses = self.get_paginated_response(
+            '%s/api/v1/identities/%s/addresses/%s' % (
+                self.base_url, uuid, self.address_type),
+            params={'default': True})
+        return [
+            a['address'] for a in addresses if a.get('address') is not None]
+
+
 class JunebugMessageSendingError(Exception):
     '''Exception that is raised when errors occur when trying to send messages
     through Junebug.'''
