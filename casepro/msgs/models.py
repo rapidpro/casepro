@@ -1,9 +1,11 @@
 from __future__ import unicode_literals
 
+import pytz
+
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
 from django.db import models
-from django.db.models import Count
+from django.db.models import Count, Sum
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timesince import timesince
@@ -412,6 +414,7 @@ class Outgoing(models.Model):
     FORWARD = 'F'
 
     ACTIVITY_CHOICES = ((BULK_REPLY, _("Bulk Reply")), (CASE_REPLY, "Case Reply"), (FORWARD, _("Forward")))
+    REPLY_ACTIVITIES = (BULK_REPLY, CASE_REPLY)
 
     DIRECTION = 'O'
 
@@ -490,7 +493,7 @@ class Outgoing(models.Model):
 
     @classmethod
     def get_replies(cls, org):
-        return org.outgoing_messages.filter(activity__in=(Outgoing.BULK_REPLY, Outgoing.CASE_REPLY))
+        return org.outgoing_messages.filter(activity__in=cls.REPLY_ACTIVITIES)
 
     @classmethod
     def search(cls, org, user, search):
@@ -556,6 +559,9 @@ class Outgoing(models.Model):
 
         counts = replies.values('created_by').annotate(replies=Count('pk'))
         return {c['created_by']: c['replies'] for c in counts}
+
+    def is_reply(self):
+        return self.activity in self.REPLY_ACTIVITIES
 
     def as_json(self):
         """
@@ -684,3 +690,99 @@ class ReplyExport(BaseExport):
             row += 1
 
         return book
+
+
+class OutgoingCount(models.Model):
+    """
+    Counts of outgoing messages sent on each day
+    """
+    TYPE_ORG_REPLIES = 'O'      # replies by each org
+    TYPE_PARTNER_REPLIES = 'P'  # replies by each partner org (including null partner)
+    TYPE_USER_REPLIES = 'U'     # replies by each user in a partner org (including null partner)
+
+    type = models.CharField(max_length=1)
+
+    org = models.ForeignKey(Org)
+
+    partner = models.ForeignKey('cases.Partner', null=True)
+
+    user = models.ForeignKey(User, null=True)
+
+    day = models.DateField(help_text=_("The day this count is for"))
+
+    count = models.PositiveIntegerField()
+
+    @classmethod
+    def record(cls, outgoing):
+        org = outgoing.org
+        partner = outgoing.partner
+
+        # get reply day in org timezone
+        org_tz = pytz.timezone(org.timezone)
+        day = outgoing.created_on.astimezone(org_tz).date()
+
+        if outgoing.is_reply():
+            cls.objects.bulk_create([
+                cls(type=cls.TYPE_ORG_REPLIES, org=org, day=day, count=1),
+                cls(type=cls.TYPE_PARTNER_REPLIES, org=org, partner=partner, day=day, count=1),
+                cls(type=cls.TYPE_USER_REPLIES, org=org, partner=partner, user=outgoing.created_by, day=day, count=1)
+            ])
+
+    @classmethod
+    def get_total_org_replies(cls, org):
+        return cls._sum(cls.objects.filter(type=cls.TYPE_ORG_REPLIES, org=org))
+
+    @classmethod
+    def get_total_partner_replies(cls, partner):
+        return cls._sum(cls.objects.filter(type=cls.TYPE_PARTNER_REPLIES, partner=partner))
+
+    @classmethod
+    def get_total_user_replies(cls, org, user):
+        return cls._sum(cls.objects.filter(type=cls.TYPE_USER_REPLIES, org=org, user=user))
+
+    @staticmethod
+    def _sum(counts):
+        total = counts.aggregate(total=Sum('count'))
+        return 0 if not total else total['total']
+
+    @classmethod
+    def get_replies_by_partner(cls, partners, since=None, until=None):
+        """
+        Calculates totals by partner in the given time window
+        """
+        counts = cls.objects.filter(type=cls.TYPE_PARTNER_REPLIES, partner__pk__in=[p.pk for p in partners])
+        if since:
+            counts = counts.filter(day__gte=since)
+        if until:
+            counts = counts.filter(day__lt=until)
+
+        totals = counts.values('partner').annotate(total=Sum('count'))
+        total_by_partner_id = {t['partner']: t['total'] for t in totals}
+
+        return {p: total_by_partner_id.get(p.pk, 0) for p in partners}
+
+    @classmethod
+    def get_replies_by_user(cls, org, partner, users, since=None, until=None):
+        """
+        Calculates totals by user in the given time window
+        """
+        counts = cls.objects.filter(type=cls.TYPE_USER_REPLIES, user__pk__in=[u.pk for u in users])
+        if org:
+            counts = counts.filter(org=org)
+        if partner:
+            counts = counts.filter(partner=partner)
+        if since:
+            counts = counts.filter(day__gte=since)
+        if until:
+            counts = counts.filter(day__lt=until)
+
+        totals = counts.values('user').annotate(total=Sum('count'))
+        total_by_user_id = {t['user']: t['total'] for t in totals}
+
+        return {u: total_by_user_id.get(u.pk, 0) for u in users}
+
+    @classmethod
+    def squash(cls):
+        # TODO
+        pass
+

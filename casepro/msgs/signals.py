@@ -7,7 +7,7 @@ from django.dispatch import receiver
 
 from casepro.backend import get_backend
 
-from .models import Label, Message
+from .models import Label, Message, Outgoing, OutgoingCount
 
 
 @receiver(post_save, sender=Label)
@@ -73,3 +73,9 @@ def update_message_labels(sender, instance, created, **kwargs):
         instance.labels.add(*add_to_labels)
 
     delattr(instance, Message.SAVE_LABELS_ATTR)
+
+
+@receiver(post_save, sender=Outgoing)
+def record_outgoing(sender, instance, created, **kwargs):
+    if created:
+        OutgoingCount.record(instance)
