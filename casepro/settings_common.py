@@ -309,6 +309,8 @@ PERMISSIONS = {
 
     'msgs.label': ('create', 'update', 'list'),
 
+    'msgs.language': ('create', 'read', 'update', 'delete', 'list'),
+
     'msgs.faq': ('create', 'read', 'update', 'delete', 'list'),
 
     'msgs.message': ('action', 'bulk_reply', 'forward', 'label', 'history', 'search', 'unlabelled'),
@@ -341,6 +343,7 @@ GROUP_PERMISSIONS = {
         'orgs.org_inbox',
 
         'msgs.label.*',
+        'msgs.language.*',
         'msgs.faq.*',
         'msgs.message.*',
         'msgs.messageexport.*',

@@ -18,8 +18,8 @@ from casepro.rules.models import ContainsTest, GroupsTest, Quantifier
 from casepro.utils import parse_csv, str_to_bool, json_encode, JSONEncoder
 from casepro.utils.export import BaseDownloadView
 
-from .forms import LabelForm, FaqForm
-from .models import Label, FAQ, Message, MessageExport, MessageFolder, Outgoing, OutgoingFolder, ReplyExport
+from .forms import LabelForm, LanguageForm, FaqForm
+from .models import Label, Language, FAQ, Message, MessageExport, MessageFolder, Outgoing, OutgoingFolder, ReplyExport
 from .tasks import message_export, reply_export
 
 
@@ -128,6 +128,58 @@ class LabelCRUDL(SmartCRUDL):
 
         def get_partners(self, obj):
             return ', '.join([p.name for p in obj.get_partners()])
+
+
+class LanguageCRUDL(SmartCRUDL):
+    model = Language
+    actions = ('list', 'create', 'read', 'update', 'delete')
+
+    class List(OrgPermsMixin, SmartListView):
+        fields = ('code', 'name', 'location')
+        default_order = ('code',)
+
+    class Create(OrgPermsMixin, SmartCreateView):
+        form_class = LanguageForm
+
+        def get_form_kwargs(self):
+            kwargs = super(LanguageCRUDL.Create, self).get_form_kwargs()
+            return kwargs
+
+        def save(self, obj):
+            data = self.form.cleaned_data
+            org = self.request.org
+            code = data['code']
+            name = data['name']
+            location = data['location']
+
+            self.object = Language.objects.create(org=org, code=code, name=name, location=location)
+
+    class Read(OrgPermsMixin, SmartReadView):
+        fields = ['code', 'name', 'location']
+
+        def get_queryset(self):
+            return Language.objects.all()
+
+        def get_context_data(self, **kwargs):
+            context = super(LanguageCRUDL.Read, self).get_context_data(**kwargs)
+            edit_button_url = reverse('msgs.language_update', args=[self.object.pk])
+            context['context_data_json'] = json_encode({'language': self.object.as_json()})
+            context['edit_button_url'] = edit_button_url
+            context['can_delete'] = True
+
+            return context
+
+    class Update(OrgPermsMixin, SmartUpdateView):
+        form_class = LanguageForm
+
+    class Delete(OrgPermsMixin, SmartDeleteView):
+        cancel_url = '@msgs.language_list'
+
+        def post(self, request, *args, **kwargs):
+            language = self.get_object()
+            language.delete()
+
+            return HttpResponse(status=204)
 
 
 class FaqSearchMixin(object):

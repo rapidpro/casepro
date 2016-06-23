@@ -5,7 +5,7 @@ import json
 from casepro.backend import NoopBackend
 from casepro.cases.models import Case, Partner
 from casepro.contacts.models import Contact, Group, Field
-from casepro.msgs.models import Label, FAQ, Message, Outgoing
+from casepro.msgs.models import Label, Language, FAQ, Message, Outgoing
 from casepro.profiles.models import Profile, ROLE_ANALYST, ROLE_MANAGER
 from casepro.rules.models import ContainsTest, Quantifier
 from casepro.utils import json_encode
@@ -46,6 +46,11 @@ class BaseCasesTest(DashTest):
                                            ["pregnant", "pregnancy"])
         self.tea = self.create_label(self.unicef, None, "Tea", 'Messages about tea', ["tea", "chai"], is_synced=False)
         self.code = self.create_label(self.nyaruka, "L-101", "Code", 'Messages about code', ["java", "python", "go"])
+
+        # some languages
+        self.eng_za = self.create_language(self.unicef, "eng_ZA", "English", "South Africa")
+        self.cgg_ug = self.create_language(self.unicef, "cgg_UG", "Rukiga", "Uganda")
+        self.lug_ug = self.create_language(self.unicef, "lug_UG", "Luganda", "Uganda")
 
         # some message faqs
         self.pregnancy_faq1 = self.create_faq(self.unicef, "How do I know I'm pregnant?", "Do a pregnancy test.",
@@ -97,6 +102,9 @@ class BaseCasesTest(DashTest):
         tests = json_encode([ContainsTest(keywords, Quantifier.ANY)])
         return Label.objects.create(org=org, uuid=uuid, name=name, description=description,
                                     tests=tests, **kwargs)
+
+    def create_language(self, org, code, name, location):
+        return Language.objects.create(org=org, code=code, name=name, location=location)
 
     def create_contact(self, org, uuid, name, groups=(), fields=None, is_stub=False):
         contact = Contact.objects.create(org=org, uuid=uuid, name=name, is_stub=is_stub, fields=fields, language="eng")
