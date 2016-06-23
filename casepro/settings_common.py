@@ -60,6 +60,10 @@ SITE_EXTERNAL_CONTACT_URL = 'http://localhost:8001/contact/read/%s/'
 SITE_BACKEND = 'casepro.backend.NoopBackend'
 SITE_ANON_CONTACTS = False
 
+# junebug configuration
+JUNEBUG_API_ROOT = 'http://localhost:8080/'
+JUNEBUG_CHANNEL_ID = 'replace-me'
+JUNEBUG_FROM_ADDRESS = None
 
 # On Unix systems, a value of None will cause Django to use the same
 # timezone as the operating system.

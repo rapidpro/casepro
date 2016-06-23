@@ -1,8 +1,11 @@
 from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message
 from casepro.test import BaseCasesTest
+from django.test import override_settings
+import json
+import responses
 
-from ..junebug import JunebugBackend
+from ..junebug import JunebugBackend, JunebugMessageSendingError
 
 
 class JunebugBackendTest(BaseCasesTest):
@@ -94,11 +97,93 @@ class JunebugBackendTest(BaseCasesTest):
         self.tea.refresh_from_db()
         self.assertEqual(self.tea.__dict__, old_tea)
 
+    @responses.activate
     def test_outgoing(self):
         '''
         Sending outgoing messages should send via Junebug.
         '''
-        # TODO: Implement and test outgoing messages.
+        bob = self.create_contact(self.unicef, 'C-002', "Bob")
+        msg = self.create_outgoing(
+            self.unicef, self.user1, None, 'B', "That's great", bob,
+            urn="tel:+1234")
+
+        def request_callback(request):
+            data = json.loads(request.body)
+            self.assertEqual(data, {
+                'to': '+1234', 'from': None, 'content': "That's great"})
+            headers = {'Content-Type': 'application/json'}
+            resp = {
+                'status': 201,
+                'code': 'created',
+                'description': 'message submitted',
+                'result': {
+                    'id': 'message-uuid-1234',
+                },
+            }
+            return (201, headers, json.dumps(resp))
+        responses.add_callback(
+            responses.POST,
+            'http://localhost:8080/channels/replace-me/messages/',
+            callback=request_callback, content_type='application/json')
+
+        self.backend.push_outgoing(self.unicef, [msg])
+        self.assertEqual(len(responses.calls), 1)
+
+    @responses.activate
+    @override_settings(JUNEBUG_FROM_ADDRESS='+4321')
+    def test_outgoing_from_address(self):
+        '''Setting the from address in the settings should set the from address
+        in the request to Junebug.'''
+        self.backend = JunebugBackend()
+        bob = self.create_contact(self.unicef, 'C-002', "Bob")
+        msg = self.create_outgoing(
+            self.unicef, self.user1, None, 'B', "That's great", bob,
+            urn="tel:+1234")
+
+        def request_callback(request):
+            data = json.loads(request.body)
+            self.assertEqual(data, {
+                'to': '+1234', 'from': '+4321', 'content': "That's great"})
+            headers = {'Content-Type': 'application/json'}
+            resp = {
+                'status': 201,
+                'code': 'created',
+                'description': 'message submitted',
+                'result': {
+                    'id': 'message-uuid-1234',
+                },
+            }
+            return (201, headers, json.dumps(resp))
+        responses.add_callback(
+            responses.POST,
+            'http://localhost:8080/channels/replace-me/messages/',
+            callback=request_callback, content_type='application/json')
+
+        self.backend.push_outgoing(self.unicef, [msg])
+        self.assertEqual(len(responses.calls), 1)
+
+    def test_outgoing_no_urn(self):
+        '''If the outgoing message has no URN, then we cannot send it.'''
+        bob = self.create_contact(self.unicef, 'C-002', "Bob")
+        msg = self.create_outgoing(
+            self.unicef, self.user1, None, 'B', "That's great", bob,
+            urn=None)
+
+        self.assertRaises(
+            JunebugMessageSendingError, self.backend.push_outgoing,
+            self.unicef, [msg])
+
+    def test_outgoing_invalid_urn(self):
+        '''If the outgoing message has an invalid URN, an exception should be
+        raised.'''
+        bob = self.create_contact(self.unicef, 'C-002', "Bob")
+        msg = self.create_outgoing(
+            self.unicef, self.user1, None, 'B', "That's great", bob,
+            urn='badurn')
+
+        self.assertRaises(
+            JunebugMessageSendingError, self.backend.push_outgoing,
+            self.unicef, [msg])
 
     def test_add_to_group(self):
         '''
