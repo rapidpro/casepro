@@ -19,7 +19,6 @@ from casepro.rules.models import ContainsTest, GroupsTest, FieldTest, WordCountT
 from casepro.test import BaseCasesTest
 
 from .models import Label, Message, MessageAction, MessageExport, MessageFolder, Outgoing, OutgoingFolder, ReplyExport
-from .models import OutgoingCount
 from .tasks import handle_messages, pull_messages
 
 
@@ -1218,32 +1217,6 @@ class ReplyExportCRUDLTest(BaseCasesTest):
 
         response = self.url_get('unicef', read_url)
         self.assertEqual(response.status_code, 302)
-
-
-class OutgoingCountTest(BaseCasesTest):
-    def test_counts(self):
-        ann = self.create_contact(self.unicef, 'C-001', "Ann")
-        ned = self.create_contact(self.nyaruka, 'C-002', "Ned")
-
-        self.create_outgoing(self.unicef, self.admin, 201, 'C', "Hello", ann)
-        self.create_outgoing(self.unicef, self.admin, 202, 'B', "Hello", ann)
-        self.create_outgoing(self.unicef, self.admin, 203, 'F', "Hello", ann)  # not a reply
-        self.create_outgoing(self.unicef, self.user1, 204, 'C', "Hello", ann)
-        self.create_outgoing(self.unicef, self.user2, 205, 'C', "Hello", ann)
-        self.create_outgoing(self.unicef, self.user3, 206, 'C', "Hello", ann)
-        self.create_outgoing(self.nyaruka, self.user4, 207, 'C', "Hello", ned)  # other org
-
-        self.assertEqual(OutgoingCount.get_total_org_replies(self.unicef), 5)
-        self.assertEqual(OutgoingCount.get_total_partner_replies(self.moh), 2)
-        self.assertEqual(OutgoingCount.get_total_partner_replies(self.who), 1)
-        self.assertEqual(OutgoingCount.get_total_user_replies(self.unicef, self.admin), 2)
-        self.assertEqual(OutgoingCount.get_total_user_replies(self.unicef, self.user1), 1)
-
-        counts = OutgoingCount.get_replies_by_partner(self.unicef.partners.all(), since=None, until=None)
-        self.assertEqual(counts, {self.moh: 2, self.who: 1})
-
-        counts = OutgoingCount.get_replies_by_user(self.unicef, None, self.unicef.get_users(), since=None, until=None)
-        self.assertEqual(counts, {self.admin: 2, self.user1: 1, self.user2: 1, self.user3: 1})
 
 
 class TasksTest(BaseCasesTest):

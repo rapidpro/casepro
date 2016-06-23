@@ -240,6 +240,7 @@ INSTALLED_APPS = (
     'casepro.msgs',
     'casepro.rules',
     'casepro.cases',
+    'casepro.statistics',
 )
 
 LOGGING = {
