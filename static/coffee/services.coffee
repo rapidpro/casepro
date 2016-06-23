@@ -374,6 +374,20 @@ services.factory('UserService', ['$http', ($http) ->
 
 
 #=====================================================================
+# Language service
+#=====================================================================
+services.factory('LanguageService', ['$http', ($http) ->
+  new class LanguageService
+
+    #----------------------------------------------------------------------------
+    # Delete the given language
+    #----------------------------------------------------------------------------
+    delete: (language) ->
+      return $http.post('/language/delete/' + language.id + '/')
+])
+
+
+#=====================================================================
 # Utils service
 #=====================================================================
 services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) ->
