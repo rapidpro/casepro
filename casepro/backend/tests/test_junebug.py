@@ -98,9 +98,10 @@ class JunebugBackendTest(BaseCasesTest):
         self.assertEqual(self.tea.__dict__, old_tea)
 
     @responses.activate
-    def test_outgoing(self):
+    def test_outgoing_urn(self):
         '''
-        Sending outgoing messages should send via Junebug.
+        Sending outgoing messages with a specified urn should send via Junebug
+        with that URN.
         '''
         bob = self.create_contact(self.unicef, 'C-002', "Bob")
         msg = self.create_outgoing(
@@ -130,14 +131,63 @@ class JunebugBackendTest(BaseCasesTest):
         self.assertEqual(len(responses.calls), 1)
 
     @responses.activate
+    def test_outgoing_contact(self):
+        '''Sending outgoing message with a specified contact should look that
+        contact up in the identity store, and then send it to the addresses
+        found in the identity store through Junebug.'''
+        bob = self.create_contact(self.unicef, 'C-002', "Bob")
+        msg = self.create_outgoing(
+            self.unicef, self.user1, None, 'B', "That's great", bob)
+
+        def junebug_callback(request):
+            data = json.loads(request.body)
+            self.assertEqual(data, {
+                'to': '+1234', 'from': None, 'content': "That's great"})
+            headers = {'Content-Type': 'application/json'}
+            resp = {
+                'status': 201,
+                'code': 'created',
+                'description': 'message submitted',
+                'result': {
+                    'id': 'message-uuid-1234',
+                },
+            }
+            return (201, headers, json.dumps(resp))
+        responses.add_callback(
+            responses.POST,
+            'http://localhost:8080/channels/replace-me/messages/',
+            callback=junebug_callback, content_type='application/json')
+
+        def identity_store_callback(request):
+            headers = {'Content-Type': 'application/json'}
+            resp = {
+                "count": 1,
+                "next": None,
+                "previous": None,
+                "results": [
+                    {
+                        "address": "+1234"
+                    }
+                ]
+            }
+            return (201, headers, json.dumps(resp))
+        responses.add_callback(
+            responses.GET,
+            'http://localhost:8081/api/v1/identities/%s/addresses/msisdn' % (
+                bob.uuid),
+            callback=identity_store_callback, content_type='application/json')
+
+        self.backend.push_outgoing(self.unicef, [msg])
+        self.assertEqual(len(responses.calls), 2)
+
+    @responses.activate
     @override_settings(JUNEBUG_FROM_ADDRESS='+4321')
     def test_outgoing_from_address(self):
         '''Setting the from address in the settings should set the from address
         in the request to Junebug.'''
         self.backend = JunebugBackend()
-        bob = self.create_contact(self.unicef, 'C-002', "Bob")
         msg = self.create_outgoing(
-            self.unicef, self.user1, None, 'B', "That's great", bob,
+            self.unicef, self.user1, None, 'B', "That's great", None,
             urn="tel:+1234")
 
         def request_callback(request):
@@ -162,11 +212,11 @@ class JunebugBackendTest(BaseCasesTest):
         self.backend.push_outgoing(self.unicef, [msg])
         self.assertEqual(len(responses.calls), 1)
 
-    def test_outgoing_no_urn(self):
-        '''If the outgoing message has no URN, then we cannot send it.'''
-        bob = self.create_contact(self.unicef, 'C-002', "Bob")
+    def test_outgoing_no_urn_no_contact(self):
+        '''If the outgoing message has no URN or contact, then we cannot send
+        it.'''
         msg = self.create_outgoing(
-            self.unicef, self.user1, None, 'B', "That's great", bob,
+            self.unicef, self.user1, None, 'B', "That's great", None,
             urn=None)
 
         self.assertRaises(
