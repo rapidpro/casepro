@@ -147,9 +147,35 @@ class LabelCRUDL(SmartCRUDL):
             return HttpResponse(status=204)
 
 
+class FaqSearchMixin(object):
+    def derive_search(self):
+        """
+        Collects and prepares FAQ search parameters into JSON serializable dict
+        """
+        # folder = MessageFolder[self.request.GET['folder']]
+        label = self.request.GET.get('label', None)
+        # include_archived = str_to_bool(self.request.GET.get('archived', ''))
+        text = self.request.GET.get('text', None)
+        # contact = self.request.GET.get('contact', None)
+        # groups = parse_csv(self.request.GET.get('groups', ''))
+        # after = parse_iso8601(self.request.GET.get('after', None))
+        # before = parse_iso8601(self.request.GET.get('before', None))
+
+        return {
+            # 'folder': folder,
+            'label': label,
+            # 'include_archived': include_archived,  # only applies to flagged folder
+            'text': text,
+            # 'contact': contact,
+            # 'groups': groups,
+            # 'after': after,
+            # 'before': before
+        }
+
+
 class FaqCRUDL(SmartCRUDL):
     model = FAQ
-    actions = ('list', 'create', 'read', 'update', 'delete')
+    actions = ('list', 'create', 'read', 'update', 'delete', 'search')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('question', 'answer')
@@ -209,6 +235,31 @@ class FaqCRUDL(SmartCRUDL):
             faq.delete()
 
             return HttpResponse(status=204)
+
+    class Search(OrgPermsMixin, FaqSearchMixin, SmartTemplateView):
+        """
+        JSON endpoint for searching FAQs
+        """
+        def get_context_data(self, **kwargs):
+            context = super(FaqCRUDL.Search, self).get_context_data(**kwargs)
+
+            org = self.request.org
+            user = self.request.user
+            page = int(self.request.GET.get('page', 1))
+
+            search = self.derive_search()
+            faqs = FAQ.search(org, user, search)
+            paginator = LazyPaginator(faqs, per_page=50)
+
+            context['object_list'] = paginator.page(page)
+            context['has_more'] = paginator.num_pages > page
+            return context
+
+        def render_to_response(self, context, **response_kwargs):
+            return JsonResponse({
+                'results': [m.as_json() for m in context['object_list']],
+                'has_more': context['has_more']
+            }, encoder=JSONEncoder)
 
 
 class MessageSearchMixin(object):

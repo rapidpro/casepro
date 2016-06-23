@@ -144,6 +144,35 @@ class FAQ(models.Model):
 
     labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this FAQ"), related_name='faqs')
 
+    @classmethod
+    def search(cls, org, user, search):
+        """
+        Search for FAQs
+        """
+        label_id = search.get('label')
+        text = search.get('text')
+
+        # only show non-deleted handled messages
+        queryset = FAQ.objects.all()
+
+        labels = Label.get_all(org, user)
+
+        if label_id:
+            labels = labels.filter(pk=label_id)
+        else:
+            # if not filtering by a single label, need distinct to avoid duplicates
+            queryset = queryset.distinct()
+
+        # queryset = queryset.filter(has_labels=True, labels__in=list(labels))
+        queryset = queryset.filter(labels__in=list(labels))
+
+        if text:
+            queryset = queryset.filter(text__icontains=text)
+
+        queryset = queryset.prefetch_related('labels')
+
+        return queryset.order_by('-created_on')
+
     def as_json(self):
         return {
             'id': self.pk,
