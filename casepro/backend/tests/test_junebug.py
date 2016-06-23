@@ -5,7 +5,7 @@ from django.test import override_settings
 import json
 import responses
 
-from ..junebug import JunebugBackend, JunebugMessageSendingError
+from ..junebug import IdentityStore, JunebugBackend, JunebugMessageSendingError
 
 
 class JunebugBackendTest(BaseCasesTest):
@@ -312,3 +312,101 @@ class JunebugBackendTest(BaseCasesTest):
         from Junebug.
         '''
         # TODO: Implement the views needed for receiving messages.
+
+
+class IdentityStoreTest(BaseCasesTest):
+    @responses.activate
+    def test_get_addresses(self):
+        '''The get_addresses function should call the correct URL, and return
+        the relevant addresses.'''
+        identity_store = IdentityStore(
+            'http://identitystore.org/', 'auth-token', 'msisdn')
+
+        def request_callback(request):
+            self.assertEqual(
+                request.headers.get('Content-Type'), 'application/json')
+            self.assertEqual(
+                request.headers.get('Authorization'), 'Token auth-token')
+            headers = {'Content-Type': 'application/json'}
+            resp = {
+                "count": 2,
+                "next": None,
+                "previous": None,
+                "results": [
+                    {
+                        "address": "+4321"
+                    },
+                    {
+                        "address": "+1234"
+                    }
+                ]
+            }
+            return (201, headers, json.dumps(resp))
+        responses.add_callback(
+            responses.GET,
+            'http://identitystore.org/api/v1/identities/identity-uuid/'
+            'addresses/msisdn?default=True', match_querystring=True,
+            callback=request_callback, content_type='application/json')
+
+        res = identity_store.get_addresses('identity-uuid')
+        self.assertEqual(sorted(res), sorted(['+1234', '+4321']))
+
+    @responses.activate
+    def test_get_paginated_response(self):
+        '''The get_paginated_response function should follow all the next links
+        until it runs out of pages, and return the combined results.'''
+        identity_store = IdentityStore(
+            'http://identitystore.org/', 'auth-token', 'msisdn')
+
+        def request_callback_1(request):
+            headers = {'Content-Type': 'application/json'}
+            resp = {
+                "count": 5,
+                "next": (
+                    'http://identitystore.org/api/v1/identities/identity-uuid/'
+                    'addresses/msisdn?default=True&limit=2&offset=2'),
+                "previous": None,
+                "results": [
+                    {
+                        "address": "+1111"
+                    },
+                    {
+                        "address": "+2222"
+                    }
+                ]
+            }
+            return (201, headers, json.dumps(resp))
+        responses.add_callback(
+            responses.GET,
+            'http://identitystore.org/api/v1/identities/identity-uuid/'
+            'addresses/msisdn?default=True', match_querystring=True,
+            callback=request_callback_1, content_type='application/json')
+
+        def request_callback_2(request):
+            headers = {'Content-Type': 'application/json'}
+            resp = {
+                "count": 5,
+                "next": None,
+                "previous": None,
+                "results": [
+                    {
+                        "address": "+3333"
+                    },
+                ]
+            }
+            return (201, headers, json.dumps(resp))
+        responses.add_callback(
+            responses.GET,
+            'http://identitystore.org/api/v1/identities/identity-uuid/'
+            'addresses/msisdn?default=True&limit=2&offset=2',
+            match_querystring=True, callback=request_callback_2,
+            content_type='application/json')
+
+        res = identity_store.get_paginated_response(
+            ('http://identitystore.org/api/v1/identities/identity-uuid/'
+             'addresses/msisdn'), params={'default': True})
+        self.assertEqual(sorted(res), sorted([
+            {'address': '+1111'},
+            {'address': '+2222'},
+            {'address': '+3333'},
+        ]))
