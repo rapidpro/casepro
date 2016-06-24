@@ -131,7 +131,7 @@ class FAQ(models.Model):
 
     language = models.ForeignKey(Language, verbose_name=('Language'), related_name='faqs', default=None)
 
-    parent = models.ForeignKey('self', null=True, blank=True, related_name='faqs_children')
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='translations')
 
     labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this FAQ"), related_name='faqs')
 
