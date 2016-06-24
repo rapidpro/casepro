@@ -118,7 +118,11 @@ class FaqForm(forms.ModelForm):
 
     def clean_labels(self):
         labels = self.cleaned_data['labels']
-        parent = self.cleaned_data['parent']
+
+        if 'parent' in self.cleaned_data:
+            parent = self.cleaned_data['parent']
+        else:
+            parent = None
 
         if parent is not None:
             parent_labels = parent.labels.all()
