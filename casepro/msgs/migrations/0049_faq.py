@@ -19,7 +19,9 @@ class Migration(migrations.Migration):
                 ('question', models.CharField(max_length=140)),
                 ('answer', models.CharField(max_length=140)),
                 ('labels', models.ManyToManyField(help_text='Labels assigned to this FAQ', related_name='faqs', to='msgs.Label')),
+                ('language', models.ForeignKey(related_name='faqs', default=None, verbose_name='Language', to='msgs.Language')),
                 ('org', models.ForeignKey(related_name='faqs', verbose_name='Organization', to='orgs.Org')),
+                ('parent', models.ForeignKey(related_name='faqs_children', blank=True, to='msgs.FAQ', null=True)),
             ],
         ),
     ]
