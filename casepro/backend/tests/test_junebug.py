@@ -158,7 +158,7 @@ class JunebugBackendTest(BaseCasesTest):
             'http://localhost:8080/channels/replace-me/messages/',
             callback=junebug_callback, content_type='application/json')
 
-        def identity_store_callback(request):
+        def identity_address_callback(request):
             headers = {'Content-Type': 'application/json'}
             resp = {
                 "count": 1,
@@ -175,10 +175,31 @@ class JunebugBackendTest(BaseCasesTest):
             responses.GET,
             'http://localhost:8081/api/v1/identities/%s/addresses/msisdn' % (
                 bob.uuid),
-            callback=identity_store_callback, content_type='application/json')
+            callback=identity_address_callback,
+            content_type='application/json')
+
+        def identity_callback(request):
+            headers = {'Content-Type': 'application/json'}
+            resp = {
+                "id": bob.uuid,
+                "version": 1,
+                "details": {
+                },
+                "communicate_through": None,
+                "operator": None,
+                "created_at": "2016-06-23T13:03:18.674016Z",
+                "created_by": 1,
+                "updated_at": "2016-06-23T13:03:18.674043Z",
+                "updated_by": 1
+            }
+            return 200, headers, json.dumps(resp)
+        responses.add_callback(
+            responses.GET,
+            'http://localhost:8081/api/v1/identities/%s/' % bob.uuid,
+            callback=identity_callback, content_type='application/json')
 
         self.backend.push_outgoing(self.unicef, [msg])
-        self.assertEqual(len(responses.calls), 2)
+        self.assertEqual(len(responses.calls), 3)
 
     @responses.activate
     @override_settings(JUNEBUG_FROM_ADDRESS='+4321')
@@ -398,6 +419,28 @@ class IdentityStoreTest(BaseCasesTest):
             'addresses/msisdn?default=True', match_querystring=True,
             callback=request_callback, content_type='application/json')
 
+        def identity_callback(request):
+            headers = {'Content-Type': 'application/json'}
+            resp = {
+                "id": "identity-uuid",
+                "version": 1,
+                "details": {
+                },
+                "communicate_through": None,
+                "operator": None,
+                "created_at": "2016-06-23T13:03:18.674016Z",
+                "created_by": 1,
+                "updated_at": "2016-06-23T13:03:18.674043Z",
+                "updated_by": 1
+            }
+            return 200, headers, json.dumps(resp)
+        responses.add_callback(
+            responses.GET,
+            'http://identitystore.org/api/v1/identities/identity-uuid/',
+            callback=identity_callback, content_type='application/json')
+
+        res = identity_store.get_addresses('identity-uuid')
+        self.assertEqual(sorted(res), sorted(['+1234', '+4321']))
         res = identity_store.get_addresses('identity-uuid')
         self.assertEqual(sorted(res), sorted(['+1234', '+4321']))
 
