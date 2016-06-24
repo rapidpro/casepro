@@ -5,7 +5,7 @@ from django.test import override_settings
 import json
 import responses
 
-from ..junebug import JunebugBackend, JunebugMessageSendingError
+from ..junebug import IdentityStore, JunebugBackend, JunebugMessageSendingError
 
 
 class JunebugBackendTest(BaseCasesTest):
@@ -98,9 +98,10 @@ class JunebugBackendTest(BaseCasesTest):
         self.assertEqual(self.tea.__dict__, old_tea)
 
     @responses.activate
-    def test_outgoing(self):
+    def test_outgoing_urn(self):
         '''
-        Sending outgoing messages should send via Junebug.
+        Sending outgoing messages with a specified urn should send via Junebug
+        with that URN.
         '''
         bob = self.create_contact(self.unicef, 'C-002', "Bob")
         msg = self.create_outgoing(
@@ -130,14 +131,63 @@ class JunebugBackendTest(BaseCasesTest):
         self.assertEqual(len(responses.calls), 1)
 
     @responses.activate
+    def test_outgoing_contact(self):
+        '''Sending outgoing message with a specified contact should look that
+        contact up in the identity store, and then send it to the addresses
+        found in the identity store through Junebug.'''
+        bob = self.create_contact(self.unicef, 'C-002', "Bob")
+        msg = self.create_outgoing(
+            self.unicef, self.user1, None, 'B', "That's great", bob)
+
+        def junebug_callback(request):
+            data = json.loads(request.body)
+            self.assertEqual(data, {
+                'to': '+1234', 'from': None, 'content': "That's great"})
+            headers = {'Content-Type': 'application/json'}
+            resp = {
+                'status': 201,
+                'code': 'created',
+                'description': 'message submitted',
+                'result': {
+                    'id': 'message-uuid-1234',
+                },
+            }
+            return (201, headers, json.dumps(resp))
+        responses.add_callback(
+            responses.POST,
+            'http://localhost:8080/channels/replace-me/messages/',
+            callback=junebug_callback, content_type='application/json')
+
+        def identity_store_callback(request):
+            headers = {'Content-Type': 'application/json'}
+            resp = {
+                "count": 1,
+                "next": None,
+                "previous": None,
+                "results": [
+                    {
+                        "address": "+1234"
+                    }
+                ]
+            }
+            return (201, headers, json.dumps(resp))
+        responses.add_callback(
+            responses.GET,
+            'http://localhost:8081/api/v1/identities/%s/addresses/msisdn' % (
+                bob.uuid),
+            callback=identity_store_callback, content_type='application/json')
+
+        self.backend.push_outgoing(self.unicef, [msg])
+        self.assertEqual(len(responses.calls), 2)
+
+    @responses.activate
     @override_settings(JUNEBUG_FROM_ADDRESS='+4321')
     def test_outgoing_from_address(self):
         '''Setting the from address in the settings should set the from address
         in the request to Junebug.'''
         self.backend = JunebugBackend()
-        bob = self.create_contact(self.unicef, 'C-002', "Bob")
         msg = self.create_outgoing(
-            self.unicef, self.user1, None, 'B', "That's great", bob,
+            self.unicef, self.user1, None, 'B', "That's great", None,
             urn="tel:+1234")
 
         def request_callback(request):
@@ -162,11 +212,11 @@ class JunebugBackendTest(BaseCasesTest):
         self.backend.push_outgoing(self.unicef, [msg])
         self.assertEqual(len(responses.calls), 1)
 
-    def test_outgoing_no_urn(self):
-        '''If the outgoing message has no URN, then we cannot send it.'''
-        bob = self.create_contact(self.unicef, 'C-002', "Bob")
+    def test_outgoing_no_urn_no_contact(self):
+        '''If the outgoing message has no URN or contact, then we cannot send
+        it.'''
         msg = self.create_outgoing(
-            self.unicef, self.user1, None, 'B', "That's great", bob,
+            self.unicef, self.user1, None, 'B', "That's great", None,
             urn=None)
 
         self.assertRaises(
@@ -312,3 +362,101 @@ class JunebugBackendTest(BaseCasesTest):
         from Junebug.
         '''
         # TODO: Implement the views needed for receiving messages.
+
+
+class IdentityStoreTest(BaseCasesTest):
+    @responses.activate
+    def test_get_addresses(self):
+        '''The get_addresses function should call the correct URL, and return
+        the relevant addresses.'''
+        identity_store = IdentityStore(
+            'http://identitystore.org/', 'auth-token', 'msisdn')
+
+        def request_callback(request):
+            self.assertEqual(
+                request.headers.get('Content-Type'), 'application/json')
+            self.assertEqual(
+                request.headers.get('Authorization'), 'Token auth-token')
+            headers = {'Content-Type': 'application/json'}
+            resp = {
+                "count": 2,
+                "next": None,
+                "previous": None,
+                "results": [
+                    {
+                        "address": "+4321"
+                    },
+                    {
+                        "address": "+1234"
+                    }
+                ]
+            }
+            return (201, headers, json.dumps(resp))
+        responses.add_callback(
+            responses.GET,
+            'http://identitystore.org/api/v1/identities/identity-uuid/'
+            'addresses/msisdn?default=True', match_querystring=True,
+            callback=request_callback, content_type='application/json')
+
+        res = identity_store.get_addresses('identity-uuid')
+        self.assertEqual(sorted(res), sorted(['+1234', '+4321']))
+
+    @responses.activate
+    def test_get_paginated_response(self):
+        '''The get_paginated_response function should follow all the next links
+        until it runs out of pages, and return the combined results.'''
+        identity_store = IdentityStore(
+            'http://identitystore.org/', 'auth-token', 'msisdn')
+
+        def request_callback_1(request):
+            headers = {'Content-Type': 'application/json'}
+            resp = {
+                "count": 5,
+                "next": (
+                    'http://identitystore.org/api/v1/identities/identity-uuid/'
+                    'addresses/msisdn?default=True&limit=2&offset=2'),
+                "previous": None,
+                "results": [
+                    {
+                        "address": "+1111"
+                    },
+                    {
+                        "address": "+2222"
+                    }
+                ]
+            }
+            return (201, headers, json.dumps(resp))
+        responses.add_callback(
+            responses.GET,
+            'http://identitystore.org/api/v1/identities/identity-uuid/'
+            'addresses/msisdn?default=True', match_querystring=True,
+            callback=request_callback_1, content_type='application/json')
+
+        def request_callback_2(request):
+            headers = {'Content-Type': 'application/json'}
+            resp = {
+                "count": 5,
+                "next": None,
+                "previous": None,
+                "results": [
+                    {
+                        "address": "+3333"
+                    },
+                ]
+            }
+            return (201, headers, json.dumps(resp))
+        responses.add_callback(
+            responses.GET,
+            'http://identitystore.org/api/v1/identities/identity-uuid/'
+            'addresses/msisdn?default=True&limit=2&offset=2',
+            match_querystring=True, callback=request_callback_2,
+            content_type='application/json')
+
+        res = identity_store.get_paginated_response(
+            ('http://identitystore.org/api/v1/identities/identity-uuid/'
+             'addresses/msisdn'), params={'default': True})
+        self.assertEqual(sorted(res), sorted([
+            {'address': '+1111'},
+            {'address': '+2222'},
+            {'address': '+3333'},
+        ]))

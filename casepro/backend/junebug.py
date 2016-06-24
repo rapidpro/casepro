@@ -4,16 +4,54 @@ import requests
 from . import BaseBackend
 
 
+class IdentityStore(object):
+    '''Implements required methods for accessing the identity data in the
+    identity store.'''
+    def __init__(self, base_url, auth_token, address_type):
+        '''
+        base_url: the base URL where the identity store is located
+        auth_token: the token that should be used for authorized access
+        address_type: the address type of the addresses that we want
+        '''
+        self.base_url = base_url.rstrip('/')
+        self.address_type = address_type
+        self.session = requests.Session()
+        self.session.headers.update({'Authorization': 'Token %s' % auth_token})
+        self.session.headers.update({'Content-Type': 'application/json'})
+
+    def get_paginated_response(self, url, params={}, **kwargs):
+        '''Get the results of all pages of a response. Returns an iterator that
+        returns each of the items.'''
+        while url is not None:
+            r = self.session.get(url, params=params, **kwargs)
+            data = r.json()
+            for result in data.get('results', []):
+                yield result
+            url = data.get('next', None)
+            # params are included in the next url
+            params = {}
+
+    def get_addresses(self, uuid):
+        '''Get the list of addresses for an identity specified by uuid.'''
+        addresses = self.get_paginated_response(
+            '%s/api/v1/identities/%s/addresses/%s' % (
+                self.base_url, uuid, self.address_type),
+            params={'default': True})
+        return (
+            a['address'] for a in addresses if a.get('address') is not None)
+
+
 class JunebugMessageSendingError(Exception):
     '''Exception that is raised when errors occur when trying to send messages
     through Junebug.'''
 
 
 class JunebugMessageSender(object):
-    def __init__(self, base_url, channel_id, from_address):
+    def __init__(self, base_url, channel_id, from_address, identity_store):
         self.base_url = base_url
         self.channel_id = channel_id
         self.from_address = from_address
+        self.identity_store = identity_store
         self.session = requests.Session()
 
     @property
@@ -29,19 +67,23 @@ class JunebugMessageSender(object):
         return type_, address
 
     def send_message(self, message):
-        if not message.urn:
-            # If we don't have an URN for a message, we cannot send it, because
-            # we don't have an address to send it to.
-            # TODO: Add sending to contacts with Identity Store integration.
+        if message.urn:
+            _, to_addr = self.split_urn(message.urn)
+            addresses = [to_addr]
+        elif message.contact and message.contact.uuid:
+            uuid = message.contact.uuid
+            addresses = self.identity_store.get_addresses(uuid)
+        else:
+            # If we don't have an URN for a message, we cannot send it.
             raise JunebugMessageSendingError(
                 'Cannot send message without URN: %r' % message)
-        _, to_addr = self.split_urn(message.urn)
-        data = {
-            'to': to_addr,
-            'from': self.from_address,
-            'content': message.text,
-        }
-        self.session.post(self.url, json=data)
+        for to_addr in addresses:
+            data = {
+                'to': to_addr,
+                'from': self.from_address,
+                'content': message.text,
+            }
+            self.session.post(self.url, json=data)
 
 
 class JunebugBackend(BaseBackend):
@@ -50,9 +92,12 @@ class JunebugBackend(BaseBackend):
     '''
 
     def __init__(self):
+        identity_store = IdentityStore(
+            settings.IDENTITY_API_ROOT, settings.IDENTITY_AUTH_TOKEN,
+            settings.IDENTITY_ADDRESS_TYPE)
         self.message_sender = JunebugMessageSender(
             settings.JUNEBUG_API_ROOT, settings.JUNEBUG_CHANNEL_ID,
-            settings.JUNEBUG_FROM_ADDRESS)
+            settings.JUNEBUG_FROM_ADDRESS, identity_store)
 
     def pull_contacts(
             self, org, modified_after, modified_before,

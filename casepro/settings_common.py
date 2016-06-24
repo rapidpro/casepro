@@ -65,6 +65,11 @@ JUNEBUG_API_ROOT = 'http://localhost:8080/'
 JUNEBUG_CHANNEL_ID = 'replace-me'
 JUNEBUG_FROM_ADDRESS = None
 
+# identity store configuration
+IDENTITY_API_ROOT = 'http://localhost:8081/'
+IDENTITY_AUTH_TOKEN = 'replace-with-auth-token'
+IDENTITY_ADDRESS_TYPE = 'msisdn'
+
 # On Unix systems, a value of None will cause Django to use the same
 # timezone as the operating system.
 # If running in a Windows environment this must be set to the same as your
