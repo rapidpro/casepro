@@ -630,7 +630,7 @@ controllers.controller('FaqController', ['$scope', '$window', 'UtilsService', 'F
   $scope.faq = $window.contextData.faq
 
   $scope.onDeleteFaq = () ->
-    UtilsService.confirmModal("Delete this FAQ?", 'danger').then(() ->
+    UtilsService.confirmModal("Warning! If this FAQ has any linked translation FAQs, they will be also be deleted. Delete this FAQ?", 'danger').then(() ->
       FaqService.delete($scope.faq).then(() ->
         UtilsService.navigateBack()
       )
