@@ -22,7 +22,6 @@ class IdentityStore(object):
     def get_paginated_response(self, url, params={}, **kwargs):
         '''Get the results of all pages of a response.'''
         results = []
-        url = url
         while url is not None:
             r = self.session.get(url, params=params, **kwargs)
             data = r.json()
