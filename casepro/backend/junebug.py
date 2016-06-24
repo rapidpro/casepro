@@ -20,16 +20,16 @@ class IdentityStore(object):
         self.session.headers.update({'Content-Type': 'application/json'})
 
     def get_paginated_response(self, url, params={}, **kwargs):
-        '''Get the results of all pages of a response.'''
-        results = []
+        '''Get the results of all pages of a response. Returns an iterator that
+        returns each of the items.'''
         while url is not None:
             r = self.session.get(url, params=params, **kwargs)
             data = r.json()
-            results += data.get('results', [])
+            for result in data.get('results', []):
+                yield result
             url = data.get('next', None)
             # params are included in the next url
             params = {}
-        return results
 
     def get_addresses(self, uuid):
         '''Get the list of addresses for an identity specified by uuid.'''
@@ -37,8 +37,8 @@ class IdentityStore(object):
             '%s/api/v1/identities/%s/addresses/%s' % (
                 self.base_url, uuid, self.address_type),
             params={'default': True})
-        return [
-            a['address'] for a in addresses if a.get('address') is not None]
+        return (
+            a['address'] for a in addresses if a.get('address') is not None)
 
 
 class JunebugMessageSendingError(Exception):
