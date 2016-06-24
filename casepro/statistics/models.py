@@ -4,7 +4,7 @@ import pytz
 
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
-from django.db import models
+from django.db import models, connection
 from django.db.models import Sum
 from django.utils.translation import ugettext_lazy as _
 
@@ -24,6 +24,28 @@ class BaseDailyCount(models.Model):
     squashed = models.BooleanField(default=False)
 
     @classmethod
+    def squash(cls):
+        unique_fields = list(cls.UNIQUE_FIELDS) + ['type', 'day']
+        unsquashed_values = cls.objects.filter(squashed=False).values(*unique_fields).distinct(*unique_fields)
+
+        for unsquashed in unsquashed_values:
+            with connection.cursor() as cursor:
+                table_name = cls._meta.db_table
+                delete_cond = " AND ".join(['"%s" = %%s' % f for f in unique_fields])
+                insert_rows = ", ".join(['"%s"' % f for f in unique_fields])
+                insert_vals = ", ".join(['%s'] * len(unique_fields))
+
+                sql = """
+                WITH removed as (DELETE FROM %s WHERE %s RETURNING "count")
+                INSERT INTO %s(%s, "count", "squashed")
+                VALUES (%s, GREATEST(0, (SELECT SUM("count") FROM removed)), TRUE);
+                """ % (table_name, delete_cond, table_name, insert_rows, insert_vals)
+
+                params = [unsquashed[f] for f in unique_fields]
+
+                cursor.execute(sql, params + params)
+
+    @classmethod
     def _get_counts(cls, of_type, since, until):
         counts = cls.objects.filter(type=of_type)
         if since:
@@ -37,9 +59,9 @@ class BaseDailyCount(models.Model):
         total = counts.aggregate(total=Sum('count'))
         return total['total'] if total['total'] is not None else 0
 
-    @classmethod
-    def squash(cls):
-        pass
+    @staticmethod
+    def _sum_days(counts):
+        return list(counts.values_list('day').annotate(total=Sum('count')).order_by('day'))
 
     class Meta:
         abstract = True
@@ -48,21 +70,33 @@ class BaseDailyCount(models.Model):
 class DailyOrgCount(BaseDailyCount):
     TYPE_REPLIES = 'R'
 
+    UNIQUE_FIELDS = ('org_id',)
+
     org = models.ForeignKey(Org)
 
     @classmethod
     def get_total(cls, org, of_type, since=None, until=None):
         return cls._sum(cls._get_counts(of_type, since, until).filter(org=org))
 
+    @classmethod
+    def get_daily_totals(cls, org, of_type, since=None, until=None):
+        return cls._sum_days(cls._get_counts(of_type, since, until).filter(org=org))
+
 
 class DailyPartnerCount(BaseDailyCount):
     TYPE_REPLIES = 'R'
+
+    UNIQUE_FIELDS = ('partner_id',)
 
     partner = models.ForeignKey(Partner)
 
     @classmethod
     def get_total(cls, partner, of_type, since=None, until=None):
         return cls._sum(cls._get_counts(of_type, since, until).filter(partner=partner))
+
+    @classmethod
+    def get_daily_totals(cls, partner, of_type, since=None, until=None):
+        return cls._sum_days(cls._get_counts(of_type, since, until).filter(partner=partner))
 
     @classmethod
     def get_totals(cls, partners, of_type, since=None, until=None):
@@ -75,8 +109,10 @@ class DailyPartnerCount(BaseDailyCount):
         return {p: total_by_partner_id.get(p.pk, 0) for p in partners}
 
 
-class DailyOrgUserCount(BaseDailyCount):
+class DailyUserCount(BaseDailyCount):
     TYPE_REPLIES = 'R'
+
+    UNIQUE_FIELDS = ('org_id', 'user_id')
 
     org = models.ForeignKey(Org)
 
@@ -85,6 +121,10 @@ class DailyOrgUserCount(BaseDailyCount):
     @classmethod
     def get_total(cls, org, user, of_type, since=None, until=None):
         return cls._sum(cls._get_counts(of_type, since, until).filter(org=org, user=user))
+
+    @classmethod
+    def get_daily_totals(cls, org, user, of_type, since=None, until=None):
+        return cls._sum_days(cls._get_counts(of_type, since, until).filter(org=org, user=user))
 
     @classmethod
     def get_totals(cls, org, users, of_type, since=None, until=None):
@@ -110,9 +150,7 @@ def record_new_outgoing(outgoing):
 
     if outgoing.is_reply():
         DailyOrgCount.objects.create(org=org, type=DailyOrgCount.TYPE_REPLIES, day=day)
-        DailyOrgUserCount.objects.create(org=org, user=user, type=DailyOrgUserCount.TYPE_REPLIES, day=day)
+        DailyUserCount.objects.create(org=org, user=user, type=DailyUserCount.TYPE_REPLIES, day=day)
 
         if outgoing.partner:
             DailyPartnerCount.objects.create(partner=outgoing.partner, type=DailyPartnerCount.TYPE_REPLIES, day=day)
-
-
