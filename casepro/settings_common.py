@@ -307,7 +307,7 @@ PERMISSIONS = {
 
     'msgs.label': ('create', 'update', 'read', 'delete', 'list'),
 
-    'msgs.faq': ('create', 'read', 'update', 'delete', 'list', 'search'),
+    'msgs.faq': ('create', 'read', 'update', 'delete', 'list'),
 
     'msgs.language': ('create', 'read', 'update', 'delete', 'list'),
 
