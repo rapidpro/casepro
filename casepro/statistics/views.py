@@ -20,7 +20,7 @@ class PartnerRepliesPerMonthChart(OrgPermsMixin, View):
         now = timezone.now()
 
         since = month_range(-5)[0]  # last six months ago including this month
-        totals = DailyPartnerCount.get_monthly_totals(partner, DailyPartnerCount.TYPE_REPLIES, since, now)
+        totals = DailyPartnerCount.get_monthly_totals(partner, DailyPartnerCount.TYPE_REPLIES, since)
         totals_by_month = {t[0]: t[1] for t in totals}
 
         # generate category labels and series over last six months

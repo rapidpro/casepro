@@ -1,10 +1,9 @@
 from __future__ import absolute_import, unicode_literals
-from calendar import month_name
+
 from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from datetime import timedelta
 from django.core.cache import cache
-from django.db.models import Count
 from django.http import HttpResponse, JsonResponse
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _

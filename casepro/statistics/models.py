@@ -68,7 +68,7 @@ class BaseDailyCount(models.Model):
     @staticmethod
     def _sum_months(counts):
         counts = counts.extra(select={'month': 'EXTRACT(month FROM "day")'})
-        return list(counts.values_list('month').annotate(replies=Sum('count')))
+        return list(counts.values_list('month').annotate(replies=Sum('count')).order_by('month'))
 
     class Meta:
         abstract = True

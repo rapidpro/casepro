@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
 from django.db import models
-from django.db.models import Count, Sum
+from django.db.models import Count
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timesince import timesince

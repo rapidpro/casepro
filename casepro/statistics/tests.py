@@ -1,52 +1,67 @@
 from __future__ import unicode_literals
 
 import pytz
+import random
 
-from datetime import date, datetime
+from datetime import date, datetime, time
 from django.core.urlresolvers import reverse
+from django.utils import timezone
 from mock import patch
 
 from casepro.test import BaseCasesTest
 
 from .models import DailyOrgCount, DailyPartnerCount, DailyUserCount
+from .tasks import squash_counts
 
 
 class DailyCountsTest(BaseCasesTest):
+    def setUp(self):
+        super(DailyCountsTest, self).setUp()
+
+        self.ann = self.create_contact(self.unicef, 'C-001', "Ann")
+        self.ned = self.create_contact(self.nyaruka, 'C-002', "Ned")
+
+        self._backend_id = 200
+
+    def send_outgoing(self, user, day, count=1):
+        for m in range(count):
+            self._backend_id += 1
+            hour = random.randrange(0, 24)
+            minute = random.randrange(0, 60)
+            created_on = pytz.timezone("Africa/Kampala").localize(datetime.combine(day, time(hour, minute, 0, 0)))
+
+            self.create_outgoing(self.unicef, user, self._backend_id, 'B', "Hello", self.ann, created_on=created_on)
+
     def test_counts(self):
-        ann = self.create_contact(self.unicef, 'C-001', "Ann")
-        ned = self.create_contact(self.nyaruka, 'C-002', "Ned")
+        self.send_outgoing(self.admin, date(2015, 1, 1), count=2)
+        self.send_outgoing(self.user1, date(2015, 1, 1))
+        self.send_outgoing(self.user1, date(2015, 1, 2), count=2)
+        self.send_outgoing(self.user2, date(2015, 1, 2))
+        self.send_outgoing(self.user3, date(2015, 1, 3))
+        self.send_outgoing(self.user3, date(2015, 2, 1))
+        self.send_outgoing(self.user3, date(2015, 2, 2), count=2)
+        self.send_outgoing(self.user3, date(2015, 2, 28))
+        self.send_outgoing(self.user3, date(2015, 3, 1))
 
-        tz = pytz.timezone("Africa/Kigali")
-
-        self.create_outgoing(self.unicef, self.admin, 201, 'C', "Hello", ann,
-                             created_on=datetime(2015, 1, 1, 9, 0, tzinfo=tz))  # admin on Jan 1st
-        self.create_outgoing(self.unicef, self.admin, 202, 'B', "Hello", ann,
-                             created_on=datetime(2015, 1, 1, 10, 0, tzinfo=tz))  # admin on Jan 1st
-        self.create_outgoing(self.unicef, self.admin, 203, 'F', "Hello", ann,
-                             created_on=datetime(2015, 1, 1, 11, 0, tzinfo=tz))  # admin on Jan 1st (not a reply)
-        self.create_outgoing(self.unicef, self.user1, 204, 'C', "Hello", ann,
-                             created_on=datetime(2015, 1, 1, 12, 0, tzinfo=tz))  # user #1 on Jan 1st
-        self.create_outgoing(self.unicef, self.user1, 205, 'C', "Hello", ann,
-                             created_on=datetime(2015, 1, 2, 9, 0, tzinfo=tz))  # user #1 on Jan 2nd
-        self.create_outgoing(self.unicef, self.user1, 206, 'C', "Hello", ann,
-                             created_on=datetime(2015, 1, 2, 9, 0, tzinfo=tz))  # user #1 on Jan 2nd
-        self.create_outgoing(self.unicef, self.user2, 207, 'C', "Hello", ann,
-                             created_on=datetime(2015, 1, 2, 9, 0, tzinfo=tz))  # user #2 on Jan 2nd
-        self.create_outgoing(self.unicef, self.user3, 208, 'C', "Hello", ann,
-                             created_on=datetime(2015, 1, 3, 9, 0, tzinfo=tz))  # user #3 on Jan 3rd
-        self.create_outgoing(self.nyaruka, self.user4, 209, 'C', "Hello", ned,
-                             created_on=datetime(2015, 1, 3, 9, 0, tzinfo=tz))  # user #4 on Jan 3rd (other org)
+        self.create_outgoing(self.unicef, self.admin, 203, 'F', "Hello", self.ann,
+                             created_on=datetime(2015, 1, 1, 11, 0, tzinfo=pytz.UTC))  # admin on Jan 1st (not a reply)
+        self.create_outgoing(self.nyaruka, self.user4, 209, 'C', "Hello", self.ned,
+                             created_on=datetime(2015, 1, 3, 9, 0, tzinfo=pytz.UTC))  # user #4 on Jan 3rd (other org)
 
         # check overall totals
-        self.assertEqual(DailyOrgCount.get_total(self.unicef, DailyOrgCount.TYPE_REPLIES), 7)
-        self.assertEqual(DailyPartnerCount.get_total(self.moh, DailyPartnerCount.TYPE_REPLIES), 4)
-        self.assertEqual(DailyPartnerCount.get_total(self.who, DailyPartnerCount.TYPE_REPLIES), 1)
+        self.assertEqual(DailyOrgCount.get_total(self.unicef, 'R'), 12)
+        self.assertEqual(DailyPartnerCount.get_total(self.moh, 'R'), 4)
+        self.assertEqual(DailyPartnerCount.get_total(self.who, 'R'), 6)
         self.assertEqual(DailyUserCount.get_total(self.unicef, self.admin, 'R'), 2)
         self.assertEqual(DailyUserCount.get_total(self.unicef, self.user1, 'R'), 3)
+        self.assertEqual(DailyUserCount.get_total(self.unicef, self.user2, 'R'), 1)
+        self.assertEqual(DailyUserCount.get_total(self.unicef, self.user3, 'R'), 6)
+        self.assertEqual(DailyUserCount.get_total(self.nyaruka, self.user4, 'R'), 1)
 
         # check daily totals
         self.assertEqual(DailyOrgCount.get_daily_totals(self.unicef, DailyOrgCount.TYPE_REPLIES), [
-            (date(2015, 1, 1), 3), (date(2015, 1, 2), 3), (date(2015, 1, 3), 1)
+            (date(2015, 1, 1), 3), (date(2015, 1, 2), 3), (date(2015, 1, 3), 1),
+            (date(2015, 2, 1), 1), (date(2015, 2, 2), 2), (date(2015, 2, 28), 1), (date(2015, 3, 1), 1)
         ])
         self.assertEqual(DailyPartnerCount.get_daily_totals(self.moh, DailyOrgCount.TYPE_REPLIES), [
             (date(2015, 1, 1), 1), (date(2015, 1, 2), 3)
@@ -57,7 +72,7 @@ class DailyCountsTest(BaseCasesTest):
 
         # check monthly totals
         self.assertEqual(DailyOrgCount.get_monthly_totals(self.unicef, DailyOrgCount.TYPE_REPLIES), [
-            (1, 7)
+            (1, 7), (2, 4), (3, 1)
         ])
         # check monthly totals
         self.assertEqual(DailyPartnerCount.get_monthly_totals(self.moh, DailyOrgCount.TYPE_REPLIES), [
@@ -70,31 +85,30 @@ class DailyCountsTest(BaseCasesTest):
 
         counts = DailyPartnerCount.get_totals(self.unicef.partners.all(), DailyPartnerCount.TYPE_REPLIES,
                                               since=None, until=None)
-        self.assertEqual(counts, {self.moh: 4, self.who: 1})
+        self.assertEqual(counts, {self.moh: 4, self.who: 6})
 
         counts = DailyUserCount.get_totals(self.unicef, self.unicef.get_users(), DailyUserCount.TYPE_REPLIES,
                                            since=None, until=None)
-        self.assertEqual(counts, {self.admin: 2, self.user1: 3, self.user2: 1, self.user3: 1})
+        self.assertEqual(counts, {self.admin: 2, self.user1: 3, self.user2: 1, self.user3: 6})
 
-        DailyOrgCount.squash()
-        DailyPartnerCount.squash()
-        DailyUserCount.squash()
+        # squash all daily counts
+        squash_counts()
 
-        self.assertEqual(DailyOrgCount.objects.count(), 4)
+        self.assertEqual(DailyOrgCount.objects.count(), 8)
         self.assertEqual(DailyOrgCount.objects.filter(squashed=False).count(), 0)
         self.assertEqual(DailyOrgCount.objects.get(org=self.unicef, day=date(2015, 1, 1)).count, 3)
         self.assertEqual(DailyOrgCount.objects.get(org=self.unicef, day=date(2015, 1, 2)).count, 3)
         self.assertEqual(DailyOrgCount.objects.get(org=self.unicef, day=date(2015, 1, 3)).count, 1)
         self.assertEqual(DailyOrgCount.objects.get(org=self.nyaruka, day=date(2015, 1, 3)).count, 1)
 
-        self.assertEqual(DailyPartnerCount.objects.count(), 4)
+        self.assertEqual(DailyPartnerCount.objects.count(), 8)
         self.assertEqual(DailyPartnerCount.objects.filter(squashed=False).count(), 0)
         self.assertEqual(DailyPartnerCount.objects.get(partner=self.moh, day=date(2015, 1, 1)).count, 1)
         self.assertEqual(DailyPartnerCount.objects.get(partner=self.moh, day=date(2015, 1, 2)).count, 3)
         self.assertEqual(DailyPartnerCount.objects.get(partner=self.who, day=date(2015, 1, 3)).count, 1)
         self.assertEqual(DailyPartnerCount.objects.get(partner=self.klab, day=date(2015, 1, 3)).count, 1)
 
-        self.assertEqual(DailyUserCount.objects.count(), 6)
+        self.assertEqual(DailyUserCount.objects.count(), 10)
         self.assertEqual(DailyUserCount.objects.filter(squashed=False).count(), 0)
         self.assertEqual(DailyUserCount.objects.get(org=self.unicef, user=self.admin, day=date(2015, 1, 1)).count, 2)
         self.assertEqual(DailyUserCount.objects.get(org=self.unicef, user=self.user1, day=date(2015, 1, 1)).count, 1)
@@ -103,28 +117,30 @@ class DailyCountsTest(BaseCasesTest):
         self.assertEqual(DailyUserCount.objects.get(org=self.unicef, user=self.user3, day=date(2015, 1, 3)).count, 1)
         self.assertEqual(DailyUserCount.objects.get(org=self.nyaruka, user=self.user4, day=date(2015, 1, 3)).count, 1)
 
-        self.create_outgoing(self.unicef, self.admin, 210, 'C', "Hello", ann,
-                             created_on=datetime(2015, 1, 3, 10, 0, tzinfo=tz))  # admin on Jan 3rd
-        self.create_outgoing(self.unicef, self.user1, 211, 'C', "Hello", ann,
-                             created_on=datetime(2015, 1, 1, 12, 0, tzinfo=tz))  # user #1 on Jan 1st
+        # add new count on day that already has a squashed value
+        self.send_outgoing(self.admin, date(2015, 3, 1))
+
+        self.assertEqual(DailyOrgCount.get_total(self.unicef, 'R'), 13)
+
+        # squash all daily counts
+        squash_counts()
+
+        self.assertEqual(DailyOrgCount.objects.count(), 8)
+        self.assertEqual(DailyOrgCount.objects.filter(squashed=False).count(), 0)
+        self.assertEqual(DailyOrgCount.get_total(self.unicef, 'R'), 13)
 
     def test_replies_chart(self):
         url = reverse('stats.partner_replies_chart', args=[self.moh.pk])
 
         self.login(self.user3)  # even users from other partners can see this
 
-        ann = self.create_contact(self.unicef, "C-001", "Ann")
-        self.create_outgoing(self.unicef, self.user1, 201, 'B', "Reply 1", ann,
-                             created_on=datetime(2016, 1, 15, 9, 0, tzinfo=pytz.UTC))  # Jan 15th
-        self.create_outgoing(self.unicef, self.user1, 202, 'B', "Reply 2", ann,
-                             created_on=datetime(2016, 1, 20, 9, 0, tzinfo=pytz.UTC))  # Jan 20th
-        self.create_outgoing(self.unicef, self.user1, 203, 'B', "Reply 3", ann,
-                             created_on=datetime(2016, 2, 1, 9, 0, tzinfo=pytz.UTC))  # Feb 1st
-        self.create_outgoing(self.unicef, self.user3, 204, 'B', "Reply 4", ann,
-                             created_on=datetime(2016, 2, 1, 9, 0, tzinfo=pytz.UTC))  # different partner
+        self.send_outgoing(self.user1, date(2016, 1, 15))  # Jan 15th
+        self.send_outgoing(self.user1, date(2016, 1, 20))  # Jan 20th
+        self.send_outgoing(self.user1, date(2016, 2, 1))  # Feb 1st
+        self.send_outgoing(self.user3, date(2016, 2, 1))  # different partner
 
         # simulate making request in April
-        with patch('casepro.cases.views.now', return_value=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC)):
+        with patch.object(timezone, 'now', return_value=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC)):
             response = self.url_get('unicef', url)
 
         self.assertEqual(response.json, {
