@@ -13,6 +13,9 @@ from .models import DailyPartnerCount
 
 
 class PartnerRepliesPerMonthChart(OrgPermsMixin, View):
+    """
+    Chart of replies per month for a specific partner org
+    """
     permission = 'cases.partner_read'
 
     def get(self, request, *args, **kwargs):

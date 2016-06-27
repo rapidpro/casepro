@@ -27,6 +27,9 @@ class BaseDailyCount(models.Model):
 
     @classmethod
     def squash(cls):
+        """
+        Squashes counts so that there is a single count per unique field combination per day
+        """
         unique_fields = list(cls.UNIQUE_FIELDS) + ['type', 'day']
         unsquashed_values = cls.objects.filter(squashed=False).values(*unique_fields).distinct(*unique_fields)
 
@@ -58,15 +61,24 @@ class BaseDailyCount(models.Model):
 
     @staticmethod
     def _sum(counts):
+        """
+        Calculates the overall sum over a set of counts
+        """
         total = counts.aggregate(total=Sum('count'))
         return total['total'] if total['total'] is not None else 0
 
     @staticmethod
     def _sum_days(counts):
+        """
+        Calculates per-day totals over a set of counts
+        """
         return list(counts.values_list('day').annotate(total=Sum('count')).order_by('day'))
 
     @staticmethod
     def _sum_months(counts):
+        """
+        Calculates per-month totals over a set of counts
+        """
         counts = counts.extra(select={'month': 'EXTRACT(month FROM "day")'})
         return list(counts.values_list('month').annotate(replies=Sum('count')).order_by('month'))
 
@@ -75,6 +87,9 @@ class BaseDailyCount(models.Model):
 
 
 class DailyOrgCount(BaseDailyCount):
+    """
+    An item being counted on a per-org per-day basis
+    """
     UNIQUE_FIELDS = ('org_id',)
 
     org = models.ForeignKey(Org)
@@ -97,6 +112,9 @@ class DailyOrgCount(BaseDailyCount):
 
 
 class DailyPartnerCount(BaseDailyCount):
+    """
+    An item being counted on a per-partner per-day basis
+    """
     UNIQUE_FIELDS = ('partner_id',)
 
     partner = models.ForeignKey(Partner)
@@ -119,6 +137,9 @@ class DailyPartnerCount(BaseDailyCount):
 
     @classmethod
     def get_totals(cls, partners, of_type, since=None, until=None):
+        """
+        For given set of partners, returns map of partners to totals
+        """
         counts = cls._get_counts(of_type, since, until)
         counts = counts.filter(partner__pk__in=[p.pk for p in partners])
 
@@ -129,6 +150,9 @@ class DailyPartnerCount(BaseDailyCount):
 
 
 class DailyUserCount(BaseDailyCount):
+    """
+    An item being counted on a per-user-in-org per-day basis
+    """
     UNIQUE_FIELDS = ('org_id', 'user_id')
 
     org = models.ForeignKey(Org)
@@ -153,6 +177,9 @@ class DailyUserCount(BaseDailyCount):
 
     @classmethod
     def get_totals(cls, org, users, of_type, since=None, until=None):
+        """
+        For given set of users, returns map of users to totals
+        """
         counts = cls._get_counts(of_type, since, until)
         counts = counts.filter(org=org, user__pk__in=[u.pk for u in users])
 
