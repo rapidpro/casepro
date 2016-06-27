@@ -16,6 +16,7 @@ from temba_client.utils import parse_iso8601
 
 from casepro.contacts.models import Group
 from casepro.msgs.models import Label, Message, MessageFolder, Outgoing, OutgoingFolder
+from casepro.statistics.models import DailyUserCount
 from casepro.utils import json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder
 from casepro.utils import month_range
 from casepro.utils.export import BaseDownloadView
@@ -360,22 +361,23 @@ class PartnerCRUDL(SmartCRUDL):
         """
         def get(self, request, *args, **kwargs):
             partner = self.get_object()
+            org = partner.org
             managers = set(partner.get_managers())
             all_users = list(partner.get_users().order_by('profile__full_name'))
 
             # get reply statistics
-            total = Outgoing.get_user_reply_counts(partner.org, partner, None, None)
-            this_month = Outgoing.get_user_reply_counts(partner.org, partner, *month_range(0))
-            last_month = Outgoing.get_user_reply_counts(partner.org, partner, *month_range(-1))
+            total = DailyUserCount.get_totals(org, all_users, DailyUserCount.TYPE_REPLIES, None, None)
+            this_month = DailyUserCount.get_totals(org, all_users, DailyUserCount.TYPE_REPLIES, *month_range(0))
+            last_month = DailyUserCount.get_totals(org, all_users, DailyUserCount.TYPE_REPLIES, *month_range(-1))
 
             def as_json(user):
                 obj = user.as_json()
                 obj.update({
                     'role': "Manager" if user in managers else "Analyst",
                     'replies': {
-                        'this_month': this_month.get(user.pk, 0),
-                        'last_month': last_month.get(user.pk, 0),
-                        'total': total.get(user.pk, 0)
+                        'this_month': this_month.get(user, 0),
+                        'last_month': last_month.get(user, 0),
+                        'total': total.get(user, 0)
                     }
                 })
                 return obj

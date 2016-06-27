@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
 from django.db import models
-from django.db.models import Count
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timesince import timesince
@@ -538,25 +537,6 @@ class Outgoing(models.Model):
         queryset = queryset.prefetch_related('reply_to__labels')
 
         return queryset.order_by('-created_on')
-
-    @classmethod
-    def get_user_reply_counts(cls, org, partner, since, until):
-        """
-        Calculates aggregated counts of replies by user
-        """
-        # TODO db triggers to pre-calculate these for performance
-
-        replies = cls.get_replies(org)
-
-        if partner:
-            replies = replies.filter(partner=partner)
-        if since:
-            replies = replies.filter(created_on__gte=since)
-        if until:
-            replies = replies.filter(created_on__lt=until)
-
-        counts = replies.values('created_by').annotate(replies=Count('pk'))
-        return {c['created_by']: c['replies'] for c in counts}
 
     def is_reply(self):
         return self.activity in self.REPLY_ACTIVITIES

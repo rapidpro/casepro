@@ -994,29 +994,6 @@ class OutgoingTest(BaseCasesTest):
         assert_search(self.admin, {'after': format_iso8601(out3.created_on)}, [out4, out3])
         assert_search(self.admin, {'before': format_iso8601(out3.created_on)}, [out3, out2, out1])
 
-    def test_get_user_reply_counts(self):
-        self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello 1", self.ann,
-                             created_on=datetime(2016, 5, 20, 9, 0, tzinfo=pytz.UTC))  # May 20th
-        self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann,
-                             created_on=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC))  # April 20th
-        self.create_outgoing(self.unicef, self.user1, 203, 'C', "Hello 3", self.bob,
-                             created_on=datetime(2016, 3, 20, 9, 0, tzinfo=pytz.UTC))  # Mar 20th
-        self.create_outgoing(self.unicef, self.admin, 205, 'F', "Hello 5", None)  # forwards are ignored
-
-        self.assertEqual(Outgoing.get_user_reply_counts(self.unicef, None, None, None), {
-            self.admin.pk: 1,
-            self.user1.pk: 2
-        })
-
-        self.assertEqual(Outgoing.get_user_reply_counts(self.unicef, self.moh, None, None), {
-            self.user1.pk: 2
-        })
-
-        since, until = datetime(2016, 3, 1, 0, 0, tzinfo=pytz.UTC), datetime(2016, 4, 30, 23, 59, tzinfo=pytz.UTC)
-        self.assertEqual(Outgoing.get_user_reply_counts(self.unicef, None, since, until), {
-            self.user1.pk: 2
-        })
-
     def test_as_json(self):
         msg1 = self.create_message(self.unicef, 101, self.ann, "Hello")
         outgoing = self.create_outgoing(self.unicef, self.user1, 201, 'B', "That's great", self.ann, reply_to=msg1)
