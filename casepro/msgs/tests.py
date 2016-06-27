@@ -405,10 +405,15 @@ class FaqCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
 
-        # note list below is sorted alphabetically by question
+        # note list below is sorted alphabetically by parent (reversed), then question
         self.assertEqual(
-            list(response.context['object_list']),
-            [self.preg_faq1_cgg, self.tea_faq1_eng, self.preg_faq1_eng, self.preg_faq2_eng, self.preg_faq1_lug]
+            list(response.context['object_list']), [
+                self.tea_faq1_eng,
+                self.preg_faq1_eng,
+                self.preg_faq2_eng,
+                self.preg_faq1_cgg,
+                self.preg_faq1_lug
+            ]
         )
 
     def test_update(self):
