@@ -40,6 +40,19 @@ class IdentityStore(object):
         return (
             a['address'] for a in addresses if a.get('address') is not None)
 
+    def get_identities(self, **kwargs):
+        '''Get the list of identities filtered by the given kwargs.'''
+        url = '%s/api/v1/identities/search/?' % (self.base_url)
+        for key, value in kwargs.iteritems():
+            url = '%s%s=%s&' % (url, key, value)
+
+        identities = self.get_paginated_response(
+            url, params={'default': True})
+
+        return (
+            i for i in identities if i.get('details').get('name') is not "removed"
+        )
+
 
 class JunebugMessageSendingError(Exception):
     '''Exception that is raised when errors occur when trying to send messages
