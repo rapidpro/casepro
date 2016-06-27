@@ -35,12 +35,8 @@ DATABASES = {
     }
 }
 
-# set the mail settings, we send throught gmail
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = 'server@nyaruka.com'
-DEFAULT_FROM_EMAIL = 'server@nyaruka.com'
-EMAIL_HOST_PASSWORD = 'NOTREAL'
-EMAIL_USE_TLS = True
+EMAIL_BACKEND = 'djcelery_email.backends.CeleryEmailBackend'
+SEND_EMAILS = TESTING  # safe to send emails during tests as these use a fake backend
 
 # dash configuration
 SITE_API_HOST = 'http://localhost:8001/'
@@ -204,6 +200,7 @@ INSTALLED_APPS = (
     'django.contrib.postgres',
 
     'djcelery',
+    'djcelery_email',
 
     # mo-betta permission management
     'guardian',

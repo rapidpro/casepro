@@ -148,11 +148,18 @@ class UserTest(BaseCasesTest):
         self.assertFalse(self.user2.can_edit(self.unicef, self.user3))
 
     def test_remove_from_org(self):
+        # setup case which users are watching
+        ann = self.create_contact(self.unicef, 'C-001', "Ann")
+        msg = self.create_message(self.unicef, 101, ann, "Hello", [self.aids])
+        case = self.create_case(self.unicef, ann, self.moh, msg, [self.aids], summary="Summary")
+        case.watchers.add(self.admin, self.user1)
+
         # try with org admin
         self.admin.remove_from_org(self.unicef)
 
         self.admin.refresh_from_db()
         self.assertIsNone(self.unicef.get_user_org_group(self.admin))
+        self.assertNotIn(self.admin, case.watchers.all())
 
         # try with partner user
         self.user1.remove_from_org(self.unicef)
@@ -160,6 +167,7 @@ class UserTest(BaseCasesTest):
         self.user1.refresh_from_db()
         self.assertIsNone(self.unicef.get_user_org_group(self.user1))
         self.assertIsNone(self.user1.get_partner(self.unicef))
+        self.assertNotIn(self.user1, case.watchers.all())
 
     def test_unicode(self):
         self.assertEqual(unicode(self.superuser), "root")

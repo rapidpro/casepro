@@ -248,42 +248,42 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
         params.assignee = assignee.id
 
       return $http.post('/case/open/', params).then((response) ->
-        caseObj = response.data['case']
-        caseObj.isNew = response.data['is_new']
-        return caseObj
+        return response.data
       )
 
     #----------------------------------------------------------------------------
     # Adds a note to a case
     #----------------------------------------------------------------------------
     addNote: (caseObj, note) ->
-      return $http.post('/case/note/' + caseObj.id + '/', {note: note})
+      return $http.post('/case/note/' + caseObj.id + '/', {note: note}).then(() ->
+        caseObj.watching = true
+      )
 
     #----------------------------------------------------------------------------
     # Re-assigns a case
     #----------------------------------------------------------------------------
     reassign: (caseObj, assignee) ->
-      return $http.post('/case/reassign/' + caseObj.id + '/', {assignee: assignee.id})
-      .then(() ->
+      return $http.post('/case/reassign/' + caseObj.id + '/', {assignee: assignee.id}).then(() ->
         caseObj.assignee = assignee
+        caseObj.watching = true
       )
 
     #----------------------------------------------------------------------------
     # Closes a case
     #----------------------------------------------------------------------------
     close: (caseObj, note) ->
-      return $http.post('/case/close/' + caseObj.id + '/', {note: note})
-      .then(() ->
+      return $http.post('/case/close/' + caseObj.id + '/', {note: note}).then(() ->
         caseObj.is_closed = true
+        caseObj.watching = true
       )
 
     #----------------------------------------------------------------------------
     # Re-opens a case
     #----------------------------------------------------------------------------
     reopen: (caseObj, note) ->
-      return $http.post('/case/reopen/' + caseObj.id + '/', {note: note})
-      .then(() ->
+      return $http.post('/case/reopen/' + caseObj.id + '/', {note: note}).then(() ->
         caseObj.is_closed = false
+        caseObj.watching = true
       )
 
     #----------------------------------------------------------------------------
@@ -296,6 +296,7 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
 
       return $http.post('/case/label/' + caseObj.id + '/', params).then(() ->
         caseObj.labels = labels
+        caseObj.watching = true
       )
 
     #----------------------------------------------------------------------------
@@ -304,13 +305,32 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     updateSummary: (caseObj, summary) ->
       return $http.post('/case/update_summary/' + caseObj.id + '/', {summary: summary}).then(() ->
         caseObj.summary = summary
+        caseObj.watching = true
       )
 
     #----------------------------------------------------------------------------
     # Reply in a case
     #----------------------------------------------------------------------------
     replyTo: (caseObj, text) ->
-      return $http.post('/case/reply/' + caseObj.id + '/', {text: text})
+      return $http.post('/case/reply/' + caseObj.id + '/', {text: text}).then(() ->
+        caseObj.watching = true
+      )
+
+    #----------------------------------------------------------------------------
+    # Watches this case (i.e. get notifications for activity)
+    #----------------------------------------------------------------------------
+    watch: (caseObj) ->
+      return $http.post('/case/watch/' + caseObj.id + '/').then(() ->
+        caseObj.watching = true
+      )
+
+    #----------------------------------------------------------------------------
+    # Unwatches this case (i.e. stop getting notifications for activity)
+    #----------------------------------------------------------------------------
+    unwatch: (caseObj) ->
+      return $http.post('/case/unwatch/' + caseObj.id + '/').then(() ->
+        caseObj.watching = false
+      )
 
     #----------------------------------------------------------------------------
     # Fetches timeline events

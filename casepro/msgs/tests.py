@@ -827,6 +827,8 @@ class MessageExportCRUDLTest(BaseCasesTest):
                                  % reverse('msgs.messageexport_create'))
         self.assertEqual(response.status_code, 200)
 
+        self.assertSentMail(["evan@unicef.org"])  # user #1 notified that export is ready
+
         export = MessageExport.objects.get()
         self.assertEqual(export.org, self.unicef)
         self.assertEqual(export.partner, self.moh)

@@ -18,12 +18,18 @@
 
       .clearfix
         %h2.pull-back
-          %span.glyphicon{ ng-class:'{ "glyphicon-folder-close": caseObj.is_closed, "glyphicon-folder-open": !caseObj.is_closed }' }
+          %i.glyphicon{ ng-class:'{ "glyphicon-folder-close": caseObj.is_closed, "glyphicon-folder-open": !caseObj.is_closed }' }
           &nbsp;
           Case #{{ object.pk }}
 
         .page-header-buttons
           .btn-group
+            %button.btn.btn-default{ type:"button", ng-if:"!caseObj.watching", ng-click:"onWatch()" }
+              %i.glyphicon.glyphicon-eye-open
+              - trans "Watch"
+            %button.btn.btn-default{ type:"button", ng-if:"caseObj.watching", ng-click:"onUnwatch()" }
+              %i.glyphicon.glyphicon-eye-close
+              - trans "Unwatch"
             %button.btn.btn-default{ type:"button", ng-if:"!caseObj.is_closed", ng-click:"onAddNote()" }
               - trans "Add Note"
             - if can_update
@@ -128,7 +134,7 @@
             - if can_update
               .pull-away
                 %a{ href:"#", ng-click:"onEditSummary()", style:"color: #AAA" }
-                  %span.glyphicon.glyphicon-edit
+                  %i.glyphicon.glyphicon-edit
             - trans "Summary"
           .panel-body
             [[ caseObj.summary ]]

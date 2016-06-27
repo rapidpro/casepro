@@ -53,7 +53,9 @@ describe('services:', () ->
     describe('addNote', () ->
       it('posts to note endpoint', () ->
         $httpBackend.expectPOST('/case/note/501/', {note: "Hello there"}).respond('')
-        CaseService.addNote(test.case1, "Hello there")
+        CaseService.addNote(test.case1, "Hello there").then(() ->
+          expect(test.case1.watching).toEqual(true)
+        )
         $httpBackend.flush()
       )
     )
@@ -111,6 +113,7 @@ describe('services:', () ->
         $httpBackend.expectPOST('/case/close/501/', {note: "Hello there"}).respond('')
         CaseService.close(test.case1, "Hello there").then(() ->
           expect(test.case1.is_closed).toEqual(true)
+          expect(test.case1.watching).toEqual(true)
         )
         $httpBackend.flush()
       )
@@ -118,10 +121,11 @@ describe('services:', () ->
 
     describe('open', () ->
       it('posts to open endpoint', () ->
-        $httpBackend.expectPOST('/case/open/', {message: 401, summary: "Hi", assignee: 301}).respond('{"case": {"id": 501}, "is_new": true}')
+        $httpBackend.expectPOST('/case/open/', {message: 401, summary: "Hi", assignee: 301}).respond('{"id": 501, "is_new": true, "watching": true}')
         CaseService.open({id: 401, text: "Hi"}, "Hi", test.moh).then((caseObj) ->
           expect(caseObj.id).toEqual(501)
-          expect(caseObj.isNew).toEqual(true)
+          expect(caseObj.is_new).toEqual(true)
+          expect(caseObj.watching).toEqual(true)
         )
         $httpBackend.flush()
       )
@@ -144,6 +148,7 @@ describe('services:', () ->
         $httpBackend.expectPOST('/case/reopen/501/', {note: "Hello there"}).respond('')
         CaseService.reopen(test.case1, "Hello there").then(() ->
           expect(test.case1.is_closed).toEqual(false)
+          expect(test.case1.watching).toEqual(true)
         )
         $httpBackend.flush()
       )
@@ -152,7 +157,9 @@ describe('services:', () ->
     describe('replyTo', () ->
       it('posts to reply endpoint', () ->
         $httpBackend.expectPOST('/case/reply/501/', {text: "Hello there"}).respond('')
-        CaseService.replyTo(test.case1, "Hello there")
+        CaseService.replyTo(test.case1, "Hello there").then(() ->
+          expect(test.case1.watching).toEqual(true)
+        )
         $httpBackend.flush()
       )
     )
@@ -170,6 +177,27 @@ describe('services:', () ->
         $httpBackend.expectPOST('/case/update_summary/501/', {summary: "Got coffee?"}).respond('')
         CaseService.updateSummary(test.case1, "Got coffee?").then(() ->
           expect(test.case1.summary).toEqual("Got coffee?")
+          expect(test.case1.watching).toEqual(true)
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('watch', () ->
+      it('posts to watch endpoint', () ->
+        $httpBackend.expectPOST('/case/watch/501/', null).respond('')
+        CaseService.watch(test.case1).then(() ->
+          expect(test.case1.watching).toEqual(true)
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('unwatch', () ->
+      it('posts to unwatch endpoint', () ->
+        $httpBackend.expectPOST('/case/unwatch/501/', null).respond('')
+        CaseService.unwatch(test.case1).then(() ->
+          expect(test.case1.watching).toEqual(false)
         )
         $httpBackend.flush()
       )

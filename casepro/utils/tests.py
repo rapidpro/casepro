@@ -4,13 +4,16 @@ from __future__ import unicode_literals
 import pytz
 
 from datetime import date, datetime
+from django.core import mail
 from django.http import HttpRequest
+from django.test import override_settings
 from enum import Enum
 
 from casepro.test import BaseCasesTest
 
 from . import safe_max, normalize, match_keywords, truncate, str_to_bool, json_encode
 from . import datetime_to_microseconds, microseconds_to_datetime, month_range
+from .email import send_email
 from .middleware import JSONMiddleware
 
 
@@ -86,6 +89,18 @@ class UtilsTest(BaseCasesTest):
                                                   datetime(2015, 12, 1, 0, 0, 0, 0, pytz.UTC)))
         self.assertEqual(month_range(-1, now=d1), (datetime(2015, 9, 1, 0, 0, 0, 0, pytz.UTC),
                                                    datetime(2015, 10, 1, 0, 0, 0, 0, pytz.UTC)))
+
+
+class EmailTest(BaseCasesTest):
+    @override_settings(SEND_EMAILS=True)
+    def test_send_email(self):
+        send_email([self.user1, 'bob@unicef.org'],
+                   "Subject", 'msgs/email/message_export', {'link': 'http://example.com'})
+
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertEqual(mail.outbox[0].to, ["evan@unicef.org"])
+        self.assertEqual(mail.outbox[0].subject, "Subject")
+        self.assertEqual(mail.outbox[1].to, ["bob@unicef.org"])
 
 
 class MiddlewareTest(BaseCasesTest):
