@@ -154,7 +154,7 @@ class FaqCRUDL(SmartCRUDL):
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('question', 'answer', 'language', 'parent')
-        default_order = ('question',)
+        default_order = ('-parent', 'question')
 
     class Create(OrgPermsMixin, SmartCreateView):
         form_class = FaqForm
