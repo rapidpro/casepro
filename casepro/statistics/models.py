@@ -15,6 +15,8 @@ class BaseDailyCount(models.Model):
     """
     Base class for models which record counts of something per day
     """
+    TYPE_REPLIES = 'R'
+
     type = models.CharField(max_length=1)
 
     day = models.DateField(help_text=_("The day this count is for"))
@@ -68,8 +70,6 @@ class BaseDailyCount(models.Model):
 
 
 class DailyOrgCount(BaseDailyCount):
-    TYPE_REPLIES = 'R'
-
     UNIQUE_FIELDS = ('org_id',)
 
     org = models.ForeignKey(Org)
@@ -84,8 +84,6 @@ class DailyOrgCount(BaseDailyCount):
 
 
 class DailyPartnerCount(BaseDailyCount):
-    TYPE_REPLIES = 'R'
-
     UNIQUE_FIELDS = ('partner_id',)
 
     partner = models.ForeignKey(Partner)
@@ -110,8 +108,6 @@ class DailyPartnerCount(BaseDailyCount):
 
 
 class DailyUserCount(BaseDailyCount):
-    TYPE_REPLIES = 'R'
-
     UNIQUE_FIELDS = ('org_id', 'user_id')
 
     org = models.ForeignKey(Org)
