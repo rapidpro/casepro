@@ -3,6 +3,11 @@ import requests
 
 from . import BaseBackend
 
+from dash.utils import is_dict_equal
+from dash.utils.sync import BaseSyncer
+
+from casepro.contacts.models import Contact
+
 
 class IdentityStore(object):
     '''Implements required methods for accessing the identity data in the
@@ -52,6 +57,29 @@ class IdentityStore(object):
         return (
             i for i in identities if i.get('details').get('name') is not "removed"
         )
+
+
+class IdentityStoreContactSyncer(BaseSyncer):
+    """
+    Syncer for contacts from the Identity Store
+    """
+    model = Contact
+    remote_id_attr = 'id'
+
+    def local_kwargs(self, org, remote):
+        return {
+            'org': org,
+            'uuid': remote.id,
+            'name': remote.user.username,
+            'is_stub': False,
+        }
+
+    def update_required(self, local, remote, remote_as_kwargs):
+        if local.is_stub or local.name != remote.name:
+            return True
+
+        return not is_dict_equal(
+            local.get_fields, remote.fields, ignore_none_values=True)
 
 
 class JunebugMessageSendingError(Exception):
