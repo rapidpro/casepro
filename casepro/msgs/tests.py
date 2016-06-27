@@ -344,54 +344,57 @@ class FaqCRUDLTest(BaseCasesTest):
         self.assertFormError(response, 'form', 'question', 'This field is required.')
         self.assertFormError(response, 'form', 'answer', 'This field is required.')
         self.assertFormError(response, 'form', 'language', 'This field is required.')
-        self.assertFormError(response, 'form', 'labels', 'This field is required.')
+        self.assertFormError(response, 'form', 'labels', 'Labels are required if no Parent is selected')
 
-        # submit again with invalid data (labels differ between parent and translation)
+        # submit again with invalid data (no parent, no labels)
         response = self.url_post('unicef', url, {
-            'question': "CGG Question",
-            'answer': "CGG Answer",
-            'language': self.cgg_ug.pk,
-            'parent': self.preg_faq1_eng.pk,
-            'labels': [self.aids.pk]
+            'question': "Is nausea during pregnancy normal?",
+            'answer': "Yes, especially in the first 3 months",
+            'language': self.eng_za.pk,
         })
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'labels',
-                             "Labels should be the same as the parent FAQ's labels - Pregnancy")
+        self.assertFormError(response, 'form', 'labels', 'Labels are required if no Parent is selected')
 
-        # submit again with valid data (no parent)
+        # submit again with valid data (no parent, has labels)
         response = self.url_post('unicef', url, {
             'question': "Is nausea during pregnancy normal?",
             'answer': "Yes, especially in the first 3 months",
             'language': self.eng_za.pk,
             'labels': [self.pregnancy.pk]
         })
-
         self.assertEqual(response.status_code, 302)
+        faq1 = FAQ.objects.get(question="Is nausea during pregnancy normal?")
+        self.assertEqual(faq1.org, self.unicef)
+        self.assertEqual(faq1.answer, "Yes, especially in the first 3 months")
+        self.assertEqual(faq1.language, Language.objects.get(code='eng_ZA'))
+        self.assertEqual(faq1.parent, None)
+        self.assertEqual(faq1.labels.all()[0], self.pregnancy)
 
-        faq_new = FAQ.objects.get(question="Is nausea during pregnancy normal?")
-        self.assertEqual(faq_new.org, self.unicef)
-        self.assertEqual(faq_new.answer, "Yes, especially in the first 3 months")
-        self.assertEqual(faq_new.language, Language.objects.get(code='eng_ZA'))
-        self.assertEqual(faq_new.parent, None)
-        self.assertEqual(faq_new.labels.all()[0], self.pregnancy)
+        # submit again with valid data (has parent, no labels)
+        response = self.url_post('unicef', url, {
+            'question': "CGG Question",
+            'answer': "CGG Answer",
+            'language': self.cgg_ug.pk,
+            'parent': self.preg_faq1_eng.pk
+        })
+        self.assertEqual(response.status_code, 302)
+        faq2 = FAQ.objects.get(question="CGG Question")
+        self.assertEqual(faq2.parent, self.preg_faq1_eng)
+        self.assertEqual(faq2.labels.all()[0], self.pregnancy)
 
-        # submit again with valid data (faq_new as parent)
+        # submit again with valid data (has parent, wrong labels)
         response = self.url_post('unicef', url, {
             'question': "CGG Is nausea during pregnancy normal?",
             'answer': "CGG Yes, especially in the first 3 months",
             'language': self.cgg_ug.pk,
-            'parent': faq_new.pk,
-            'labels': [self.pregnancy.pk]
+            'parent': faq1.pk,
+            'labels': [self.aids.pk]
         })
 
         self.assertEqual(response.status_code, 302)
-
-        faq_translated = FAQ.objects.get(question="CGG Is nausea during pregnancy normal?")
-        self.assertEqual(faq_translated.org, self.unicef)
-        self.assertEqual(faq_translated.answer, "CGG Yes, especially in the first 3 months")
-        self.assertEqual(faq_translated.language, Language.objects.get(code='cgg_UG'))
-        self.assertEqual(faq_translated.parent, faq_new)
-        self.assertEqual(faq_translated.labels.all()[0], self.pregnancy)
+        faq3 = FAQ.objects.get(question="CGG Is nausea during pregnancy normal?")
+        self.assertEqual(faq3.parent, faq1)
+        self.assertEqual(faq3.labels.all()[0], self.pregnancy)
 
     def test_list(self):
         url = reverse('msgs.faq_list')
@@ -429,7 +432,7 @@ class FaqCRUDLTest(BaseCasesTest):
         self.assertFormError(response, 'form', 'question', 'This field is required.')
         self.assertFormError(response, 'form', 'answer', 'This field is required.')
         self.assertFormError(response, 'form', 'language', 'This field is required.')
-        self.assertFormError(response, 'form', 'labels', 'This field is required.')
+        self.assertFormError(response, 'form', 'labels', 'Labels are required if no Parent is selected')
 
         # submit again with valid data
         response = self.url_post('unicef', url, {
