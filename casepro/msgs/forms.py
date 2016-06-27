@@ -114,22 +114,25 @@ class FaqForm(forms.ModelForm):
     language = forms.ModelChoiceField(queryset=Language.objects.filter())
     # limit the parent choices to FAQs that have a ForeignKey parent that is None
     parent = forms.ModelChoiceField(queryset=FAQ.objects.filter(parent=None), required=False)
-    labels = forms.ModelMultipleChoiceField(queryset=Label.objects.filter())
+    labels = forms.ModelMultipleChoiceField(queryset=Label.objects.filter(), required=False, help_text=_(
+        "If a Parent is selected, the labels will be copied from the Parent FAQ"))
 
     def clean_labels(self):
-        labels = self.cleaned_data['labels']
+        if 'labels' in self.cleaned_data and len(self.cleaned_data['labels']) != 0:
+            labels = self.cleaned_data['labels']
+        else:
+            labels = None
 
         if 'parent' in self.cleaned_data:
             parent = self.cleaned_data['parent']
         else:
             parent = None
 
+        if parent is None and labels is None:
+            raise forms.ValidationError(_("Labels are required if no Parent is selected"))
+
         if parent is not None:
-            parent_labels = parent.labels.all()
-            if list(parent_labels) != list(labels):
-                reqd_labels = ", ".join([str(label.name) for label in list(parent_labels)])
-                raise forms.ValidationError(
-                    "%s - %s" % (_("Labels should be the same as the parent FAQ's labels"), reqd_labels))
+            labels = parent.labels.all()
 
         return labels
 
