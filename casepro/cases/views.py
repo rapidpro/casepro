@@ -293,7 +293,7 @@ class PartnerFormMixin(object):
 
 
 class PartnerCRUDL(SmartCRUDL):
-    actions = ('create', 'read', 'replies_chart', 'update', 'delete', 'list', 'users')
+    actions = ('create', 'read', 'update', 'delete', 'list', 'users')
     model = Partner
 
     class Create(OrgPermsMixin, PartnerFormMixin, SmartCreateView):
@@ -340,39 +340,6 @@ class PartnerCRUDL(SmartCRUDL):
                 'cases_open': Case.objects.filter(org=partner.org, assignee=partner, closed_on=None).count(),
                 'cases_closed': Case.objects.filter(org=partner.org, assignee=partner).exclude(closed_on=None).count()
             }
-
-    class RepliesChart(OrgObjPermsMixin, SmartReadView):
-        """
-        JSON endpoint to get data for chart of replies per month
-        """
-        permission = 'cases.partner_read'
-
-        def get(self, request, *args, **kwargs):
-            categories, series = self.get_replies_by_month(self.get_object())
-            return JsonResponse({'categories': categories, 'series': series}, encoder=JSONEncoder)
-
-        @staticmethod
-        def get_replies_by_month(partner):
-            since = month_range(-5)[0]  # last six months ago including this month
-
-            outgoing = Outgoing.get_replies(org=partner.org).filter(partner=partner, created_on__gte=since)
-            outgoing = outgoing.extra(select={'month': 'EXTRACT(month FROM created_on)'})
-            outgoing = outgoing.values('month').annotate(replies=Count('created_on'))
-
-            replies_by_month = {int(c['month']): c['replies'] for c in outgoing}
-
-            # generate category labels and series over last six months
-            categories = []
-            series = []
-            this_month = now().date().month
-            for m in reversed(range(0, -6, -1)):
-                month = this_month + m
-                if month < 1:
-                    month += 12
-                categories.append(month_name[month])
-                series.append(replies_by_month.get(month, 0))
-
-            return categories, series
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
         cancel_url = '@cases.partner_list'

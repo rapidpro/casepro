@@ -65,6 +65,11 @@ class BaseDailyCount(models.Model):
     def _sum_days(counts):
         return list(counts.values_list('day').annotate(total=Sum('count')).order_by('day'))
 
+    @staticmethod
+    def _sum_months(counts):
+        counts = counts.extra(select={'month': 'EXTRACT(month FROM "day")'})
+        return list(counts.values_list('month').annotate(replies=Sum('count')))
+
     class Meta:
         abstract = True
 
@@ -75,12 +80,20 @@ class DailyOrgCount(BaseDailyCount):
     org = models.ForeignKey(Org)
 
     @classmethod
+    def get_counts(cls, org, of_type, since=None, until=None):
+        return cls._get_counts(of_type, since, until).filter(org=org)
+
+    @classmethod
     def get_total(cls, org, of_type, since=None, until=None):
-        return cls._sum(cls._get_counts(of_type, since, until).filter(org=org))
+        return cls._sum(cls.get_counts(org, of_type, since, until))
 
     @classmethod
     def get_daily_totals(cls, org, of_type, since=None, until=None):
-        return cls._sum_days(cls._get_counts(of_type, since, until).filter(org=org))
+        return cls._sum_days(cls.get_counts(org, of_type, since, until))
+
+    @classmethod
+    def get_monthly_totals(cls, org, of_type, since=None, until=None):
+        return cls._sum_months(cls.get_counts(org, of_type, since, until))
 
 
 class DailyPartnerCount(BaseDailyCount):
@@ -89,12 +102,20 @@ class DailyPartnerCount(BaseDailyCount):
     partner = models.ForeignKey(Partner)
 
     @classmethod
+    def get_counts(cls, partner, of_type, since=None, until=None):
+        return cls._get_counts(of_type, since, until).filter(partner=partner)
+
+    @classmethod
     def get_total(cls, partner, of_type, since=None, until=None):
-        return cls._sum(cls._get_counts(of_type, since, until).filter(partner=partner))
+        return cls._sum(cls.get_counts(partner, of_type, since, until))
 
     @classmethod
     def get_daily_totals(cls, partner, of_type, since=None, until=None):
-        return cls._sum_days(cls._get_counts(of_type, since, until).filter(partner=partner))
+        return cls._sum_days(cls.get_counts(partner, of_type, since, until))
+
+    @classmethod
+    def get_monthly_totals(cls, partner, of_type, since=None, until=None):
+        return cls._sum_months(cls.get_counts(partner, of_type, since, until))
 
     @classmethod
     def get_totals(cls, partners, of_type, since=None, until=None):
@@ -115,12 +136,20 @@ class DailyUserCount(BaseDailyCount):
     user = models.ForeignKey(User)
 
     @classmethod
+    def get_counts(cls, org, user, of_type, since=None, until=None):
+        return cls._get_counts(of_type, since, until).filter(org=org, user=user)
+
+    @classmethod
     def get_total(cls, org, user, of_type, since=None, until=None):
-        return cls._sum(cls._get_counts(of_type, since, until).filter(org=org, user=user))
+        return cls._sum(cls.get_counts(org, user, of_type, since, until))
 
     @classmethod
     def get_daily_totals(cls, org, user, of_type, since=None, until=None):
-        return cls._sum_days(cls._get_counts(of_type, since, until).filter(org=org, user=user))
+        return cls._sum_days(cls.get_counts(org, user, of_type, since, until))
+
+    @classmethod
+    def get_monthly_totals(cls, org, user, of_type, since=None, until=None):
+        return cls._sum_months(cls.get_counts(org, user, of_type, since, until))
 
     @classmethod
     def get_totals(cls, org, users, of_type, since=None, until=None):

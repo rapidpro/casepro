@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 import pytz
 
 from datetime import date, datetime
+from django.core.urlresolvers import reverse
+from mock import patch
 
 from casepro.test import BaseCasesTest
 
@@ -53,6 +55,19 @@ class DailyCountsTest(BaseCasesTest):
             (date(2015, 1, 1), 1), (date(2015, 1, 2), 2)
         ])
 
+        # check monthly totals
+        self.assertEqual(DailyOrgCount.get_monthly_totals(self.unicef, DailyOrgCount.TYPE_REPLIES), [
+            (1, 7)
+        ])
+        # check monthly totals
+        self.assertEqual(DailyPartnerCount.get_monthly_totals(self.moh, DailyOrgCount.TYPE_REPLIES), [
+            (1, 4)
+        ])
+        # check monthly totals
+        self.assertEqual(DailyUserCount.get_monthly_totals(self.unicef, self.admin, DailyOrgCount.TYPE_REPLIES), [
+            (1, 2)
+        ])
+
         counts = DailyPartnerCount.get_totals(self.unicef.partners.all(), DailyPartnerCount.TYPE_REPLIES,
                                               since=None, until=None)
         self.assertEqual(counts, {self.moh: 4, self.who: 1})
@@ -92,3 +107,27 @@ class DailyCountsTest(BaseCasesTest):
                              created_on=datetime(2015, 1, 3, 10, 0, tzinfo=tz))  # admin on Jan 3rd
         self.create_outgoing(self.unicef, self.user1, 211, 'C', "Hello", ann,
                              created_on=datetime(2015, 1, 1, 12, 0, tzinfo=tz))  # user #1 on Jan 1st
+
+    def test_replies_chart(self):
+        url = reverse('stats.partner_replies_chart', args=[self.moh.pk])
+
+        self.login(self.user3)  # even users from other partners can see this
+
+        ann = self.create_contact(self.unicef, "C-001", "Ann")
+        self.create_outgoing(self.unicef, self.user1, 201, 'B', "Reply 1", ann,
+                             created_on=datetime(2016, 1, 15, 9, 0, tzinfo=pytz.UTC))  # Jan 15th
+        self.create_outgoing(self.unicef, self.user1, 202, 'B', "Reply 2", ann,
+                             created_on=datetime(2016, 1, 20, 9, 0, tzinfo=pytz.UTC))  # Jan 20th
+        self.create_outgoing(self.unicef, self.user1, 203, 'B', "Reply 3", ann,
+                             created_on=datetime(2016, 2, 1, 9, 0, tzinfo=pytz.UTC))  # Feb 1st
+        self.create_outgoing(self.unicef, self.user3, 204, 'B', "Reply 4", ann,
+                             created_on=datetime(2016, 2, 1, 9, 0, tzinfo=pytz.UTC))  # different partner
+
+        # simulate making request in April
+        with patch('casepro.cases.views.now', return_value=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC)):
+            response = self.url_get('unicef', url)
+
+        self.assertEqual(response.json, {
+            'categories': ["November", "December", "January", "February", "March", "April"],
+            'series': [0, 0, 2, 1, 0, 0]
+        })
