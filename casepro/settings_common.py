@@ -363,6 +363,7 @@ GROUP_PERMISSIONS = {
     "Editors": (  # Partner users: Managers
         'orgs.org_inbox',
 
+        'msgs.faq_search',
         'msgs.message_action',
         'msgs.message_bulk_reply',
         'msgs.message_forward',
