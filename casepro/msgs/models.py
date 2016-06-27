@@ -140,12 +140,17 @@ class FAQ(models.Model):
         """
         Search for FAQs
         """
+        language_id = search.get('language')
         label_id = search.get('label')
-        text = search.get('text')
+        question = search.get('question')
 
-        # only show non-deleted handled messages
         queryset = FAQ.objects.all()
 
+        # Language filtering
+        if language_id:
+            queryset = queryset.filter(language__pk=language_id)
+
+        # Label filtering
         labels = Label.get_all(org, user)
 
         if label_id:
@@ -154,15 +159,15 @@ class FAQ(models.Model):
             # if not filtering by a single label, need distinct to avoid duplicates
             queryset = queryset.distinct()
 
-        # queryset = queryset.filter(has_labels=True, labels__in=list(labels))
         queryset = queryset.filter(labels__in=list(labels))
 
-        if text:
-            queryset = queryset.filter(text__icontains=text)
+        # Text filtering
+        if question:
+            queryset = queryset.filter(question__icontains=question)
 
-        queryset = queryset.prefetch_related('labels')
+        queryset = queryset.prefetch_related('language', 'labels')
 
-        return queryset.order_by('-created_on')
+        return queryset.order_by('question')
 
     def as_json(self):
         if not self.parent:
