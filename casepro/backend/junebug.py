@@ -4,7 +4,7 @@ import requests
 from . import BaseBackend
 
 from dash.utils import is_dict_equal
-from dash.utils.sync import BaseSyncer
+from dash.utils.sync import BaseSyncer, sync_local_to_changes
 
 from casepro.contacts.models import Contact
 
@@ -133,12 +133,12 @@ class JunebugBackend(BaseBackend):
     '''
 
     def __init__(self):
-        identity_store = IdentityStore(
+        self.identity_store = IdentityStore(
             settings.IDENTITY_API_ROOT, settings.IDENTITY_AUTH_TOKEN,
             settings.IDENTITY_ADDRESS_TYPE)
         self.message_sender = JunebugMessageSender(
             settings.JUNEBUG_API_ROOT, settings.JUNEBUG_CHANNEL_ID,
-            settings.JUNEBUG_FROM_ADDRESS, identity_store)
+            settings.JUNEBUG_FROM_ADDRESS, self.identity_store)
 
     def pull_contacts(
             self, org, modified_after, modified_before,
@@ -156,7 +156,28 @@ class JunebugBackend(BaseBackend):
             tuple of the number of contacts created, updated, deleted and
             ignored
         """
-        return (0, 0, 0, 0)
+        identity_store = self.identity_store
+
+        # all identities created in the Identity Store in the time window
+        new_identities = identity_store.get_contacts(
+            created_at__gte=modified_after)
+
+        # all identities modified in the Identity Store in the time window
+        modified_identities = identity_store.get_contacts(
+            updated_at__gte=modified_after,
+            updated_at__lte=modified_before)
+
+        identities_to_update = modified_identities + new_identities
+
+        # all identities deleted in the Identity Store in the time window
+        deleted_identities = identity_store.get_contacts(
+            optout__optout_type='forget', updated_at__gte=modified_after,
+            updated_at__lte=modified_before)
+
+        # the method expects fetches not lists so I faked it
+        return sync_local_to_changes(
+            org, IdentityStoreContactSyncer(), [identities_to_update],
+            [deleted_identities], progress_callback)
 
     def pull_fields(self, org):
         """
