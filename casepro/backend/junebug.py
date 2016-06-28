@@ -7,6 +7,7 @@ from dash.utils import is_dict_equal
 from dash.utils.sync import BaseSyncer, sync_local_to_changes
 
 from casepro.contacts.models import Contact
+from itertools import chain
 
 
 class IdentityStore(object):
@@ -167,7 +168,7 @@ class JunebugBackend(BaseBackend):
             updated_at__gte=modified_after,
             updated_at__lte=modified_before)
 
-        identities_to_update = modified_identities + new_identities
+        identities_to_update = chain(modified_identities, new_identities)
 
         # all identities deleted in the Identity Store in the time window
         deleted_identities = identity_store.get_identities(
