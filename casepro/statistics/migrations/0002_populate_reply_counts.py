@@ -10,9 +10,7 @@ from django.db import migrations
 def populate_reply_counts(apps, schema_editor):
     Org = apps.get_model('orgs', 'Org')
     Outgoing = apps.get_model('msgs', 'Outgoing')
-    DailyOrgCount = apps.get_model('statistics', 'DailyOrgCount')
-    DailyPartnerCount = apps.get_model('statistics', 'DailyPartnerCount')
-    DailyUserCount = apps.get_model('statistics', 'DailyUserCount')
+    DailyCount = apps.get_model('statistics', 'DailyCount')
 
     for org in Org.objects.all():
         # extract all of this orgs replies as dicts of day, partner id and user id
@@ -30,17 +28,17 @@ def populate_reply_counts(apps, schema_editor):
 
             # record day count for org
             org_count = len(day_replies)
-            DailyOrgCount.objects.create(org=org, day=day, type='R', count=org_count)
+            DailyCount.objects.create(day=day, item_type='R', scope='org:%d' % org.pk, count=org_count)
 
             # record day counts for each partner
             partner_counts = Counter([r['partner'] for r in day_replies if r['partner']])
             for partner_id, count in six.iteritems(partner_counts):
-                DailyPartnerCount.objects.create(partner_id=partner_id, day=day, type='R', count=count)
+                DailyCount.objects.create(day=day, item_type='R', scope='partner:%d' % partner_id, count=count)
 
             # record day counts for each org/user
             user_counts = Counter([r['created_by'] for r in day_replies])
             for user_id, count in six.iteritems(user_counts):
-                DailyUserCount.objects.create(org=org, user_id=user_id, day=day, type='R', count=count)
+                DailyCount.objects.create(day=day, item_type='R', scope='org:%d:user:%d' % (org.pk, user_id), count=count)
 
         print("Created reply counts for org %s [%d] with %d replies" % (org.name, org.pk, len(replies)))
 

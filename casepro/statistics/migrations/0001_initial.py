@@ -2,56 +2,26 @@
 from __future__ import unicode_literals
 
 from django.db import migrations, models
-from django.conf import settings
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('orgs', '0016_taskstate_is_disabled'),
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('cases', '0037_partner_is_restricted'),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='DailyOrgCount',
+            name='DailyCount',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('type', models.CharField(max_length=1)),
                 ('day', models.DateField(help_text='The day this count is for')),
-                ('count', models.PositiveIntegerField(default=1)),
-                ('org', models.ForeignKey(to='orgs.Org')),
+                ('item_type', models.CharField(help_text='The thing being counted', max_length=1)),
+                ('scope', models.CharField(help_text='The scope in which it is being counted', max_length=32)),
+                ('count', models.PositiveIntegerField()),
             ],
-            options={
-                'abstract': False,
-            },
         ),
-        migrations.CreateModel(
-            name='DailyUserCount',
-            fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('type', models.CharField(max_length=1)),
-                ('day', models.DateField(help_text='The day this count is for')),
-                ('count', models.PositiveIntegerField(default=1)),
-                ('org', models.ForeignKey(to='orgs.Org')),
-                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
-            ],
-            options={
-                'abstract': False,
-            },
-        ),
-        migrations.CreateModel(
-            name='DailyPartnerCount',
-            fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('type', models.CharField(max_length=1)),
-                ('day', models.DateField(help_text='The day this count is for')),
-                ('count', models.PositiveIntegerField(default=1)),
-                ('partner', models.ForeignKey(to='cases.Partner')),
-            ],
-            options={
-                'abstract': False,
-            },
+        migrations.AlterIndexTogether(
+            name='dailycount',
+            index_together=set([('item_type', 'scope', 'day')]),
         ),
     ]

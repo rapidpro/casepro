@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import pytz
 import random
 
+from dash.orgs.models import Org
 from datetime import date, datetime, time
 from django.core.urlresolvers import reverse
 from django.utils import timezone
@@ -10,7 +11,7 @@ from mock import patch
 
 from casepro.test import BaseCasesTest
 
-from .models import DailyOrgCount, DailyPartnerCount, DailyUserCount
+from .models import DailyCount
 from .tasks import squash_counts
 
 
@@ -48,86 +49,74 @@ class DailyCountsTest(BaseCasesTest):
         self.create_outgoing(self.nyaruka, self.user4, 209, 'C', "Hello", self.ned,
                              created_on=datetime(2015, 1, 3, 9, 0, tzinfo=pytz.UTC))  # user #4 on Jan 3rd (other org)
 
-        # check overall totals
-        self.assertEqual(DailyOrgCount.get_total(self.unicef, 'R'), 12)
-        self.assertEqual(DailyPartnerCount.get_total(self.moh, 'R'), 4)
-        self.assertEqual(DailyPartnerCount.get_total(self.who, 'R'), 6)
-        self.assertEqual(DailyUserCount.get_total(self.unicef, self.admin, 'R'), 2)
-        self.assertEqual(DailyUserCount.get_total(self.unicef, self.user1, 'R'), 3)
-        self.assertEqual(DailyUserCount.get_total(self.unicef, self.user2, 'R'), 1)
-        self.assertEqual(DailyUserCount.get_total(self.unicef, self.user3, 'R'), 6)
-        self.assertEqual(DailyUserCount.get_total(self.nyaruka, self.user4, 'R'), 1)
+        def check_counts():
+            # check overall totals
+            self.assertEqual(DailyCount.get_by_org([self.unicef], 'R').total(), 12)
+            self.assertEqual(DailyCount.get_by_partner([self.moh], 'R').total(), 4)
+            self.assertEqual(DailyCount.get_by_partner([self.who], 'R').total(), 6)
+            self.assertEqual(DailyCount.get_by_user(self.unicef, [self.admin], 'R').total(), 2)
+            self.assertEqual(DailyCount.get_by_user(self.unicef, [self.user1], 'R').total(), 3)
+            self.assertEqual(DailyCount.get_by_user(self.unicef, [self.user2], 'R').total(), 1)
+            self.assertEqual(DailyCount.get_by_user(self.unicef, [self.user3], 'R').total(), 6)
+            self.assertEqual(DailyCount.get_by_user(self.nyaruka, [self.user4], 'R').total(), 1)
 
-        # check daily totals
-        self.assertEqual(DailyOrgCount.get_daily_totals(self.unicef, DailyOrgCount.TYPE_REPLIES), [
-            (date(2015, 1, 1), 3), (date(2015, 1, 2), 3), (date(2015, 1, 3), 1),
-            (date(2015, 2, 1), 1), (date(2015, 2, 2), 2), (date(2015, 2, 28), 1), (date(2015, 3, 1), 1)
-        ])
-        self.assertEqual(DailyPartnerCount.get_daily_totals(self.moh, DailyOrgCount.TYPE_REPLIES), [
-            (date(2015, 1, 1), 1), (date(2015, 1, 2), 3)
-        ])
-        self.assertEqual(DailyUserCount.get_daily_totals(self.unicef, self.user1, DailyOrgCount.TYPE_REPLIES), [
-            (date(2015, 1, 1), 1), (date(2015, 1, 2), 2)
-        ])
+            # check daily totals
+            self.assertEqual(DailyCount.get_by_org([self.unicef], 'R').day_totals(), [
+                (date(2015, 1, 1), 3), (date(2015, 1, 2), 3), (date(2015, 1, 3), 1),
+                (date(2015, 2, 1), 1), (date(2015, 2, 2), 2), (date(2015, 2, 28), 1), (date(2015, 3, 1), 1)
+            ])
+            self.assertEqual(DailyCount.get_by_partner([self.moh], 'R').day_totals(), [
+                (date(2015, 1, 1), 1), (date(2015, 1, 2), 3)
+            ])
+            self.assertEqual(DailyCount.get_by_user(self.unicef, [self.user1], 'R').day_totals(), [
+                (date(2015, 1, 1), 1), (date(2015, 1, 2), 2)
+            ])
 
-        # check monthly totals
-        self.assertEqual(DailyOrgCount.get_monthly_totals(self.unicef, DailyOrgCount.TYPE_REPLIES), [
-            (1, 7), (2, 4), (3, 1)
-        ])
-        # check monthly totals
-        self.assertEqual(DailyPartnerCount.get_monthly_totals(self.moh, DailyOrgCount.TYPE_REPLIES), [
-            (1, 4)
-        ])
-        # check monthly totals
-        self.assertEqual(DailyUserCount.get_monthly_totals(self.unicef, self.admin, DailyOrgCount.TYPE_REPLIES), [
-            (1, 2)
-        ])
+            # check monthly totals
+            self.assertEqual(DailyCount.get_by_org([self.unicef], 'R').month_totals(), [
+                (1, 7), (2, 4), (3, 1)
+            ])
+            self.assertEqual(DailyCount.get_by_partner([self.moh], 'R').month_totals(), [
+                (1, 4)
+            ])
+            self.assertEqual(DailyCount.get_by_user(self.unicef, [self.admin], 'R').month_totals(), [
+                (1, 2)
+            ])
 
-        counts = DailyPartnerCount.get_totals(self.unicef.partners.all(), DailyPartnerCount.TYPE_REPLIES,
-                                              since=None, until=None)
-        self.assertEqual(counts, {self.moh: 4, self.who: 6})
+            # check org totals
+            self.assertEqual(DailyCount.get_by_org(Org.objects.all(), 'R').scope_totals(), {
+                self.unicef: 12, self.nyaruka: 1
+            })
 
-        counts = DailyUserCount.get_totals(self.unicef, self.unicef.get_users(), DailyUserCount.TYPE_REPLIES,
-                                           since=None, until=None)
-        self.assertEqual(counts, {self.admin: 2, self.user1: 3, self.user2: 1, self.user3: 6})
+            # check partner totals
+            self.assertEqual(DailyCount.get_by_partner(self.unicef.partners.all(), 'R').scope_totals(), {
+                self.moh: 4, self.who: 6
+            })
+
+            # check user totals
+            self.assertEqual(DailyCount.get_by_user(self.unicef, self.unicef.get_users(), 'R').scope_totals(), {
+                self.admin: 2, self.user1: 3, self.user2: 1, self.user3: 6
+            })
+
+        check_counts()
+        self.assertEqual(DailyCount.objects.count(), 37)
 
         # squash all daily counts
         squash_counts()
 
-        self.assertEqual(DailyOrgCount.objects.count(), 8)
-        self.assertEqual(DailyOrgCount.objects.filter(squashed=False).count(), 0)
-        self.assertEqual(DailyOrgCount.objects.get(org=self.unicef, day=date(2015, 1, 1)).count, 3)
-        self.assertEqual(DailyOrgCount.objects.get(org=self.unicef, day=date(2015, 1, 2)).count, 3)
-        self.assertEqual(DailyOrgCount.objects.get(org=self.unicef, day=date(2015, 1, 3)).count, 1)
-        self.assertEqual(DailyOrgCount.objects.get(org=self.nyaruka, day=date(2015, 1, 3)).count, 1)
-
-        self.assertEqual(DailyPartnerCount.objects.count(), 8)
-        self.assertEqual(DailyPartnerCount.objects.filter(squashed=False).count(), 0)
-        self.assertEqual(DailyPartnerCount.objects.get(partner=self.moh, day=date(2015, 1, 1)).count, 1)
-        self.assertEqual(DailyPartnerCount.objects.get(partner=self.moh, day=date(2015, 1, 2)).count, 3)
-        self.assertEqual(DailyPartnerCount.objects.get(partner=self.who, day=date(2015, 1, 3)).count, 1)
-        self.assertEqual(DailyPartnerCount.objects.get(partner=self.klab, day=date(2015, 1, 3)).count, 1)
-
-        self.assertEqual(DailyUserCount.objects.count(), 10)
-        self.assertEqual(DailyUserCount.objects.filter(squashed=False).count(), 0)
-        self.assertEqual(DailyUserCount.objects.get(org=self.unicef, user=self.admin, day=date(2015, 1, 1)).count, 2)
-        self.assertEqual(DailyUserCount.objects.get(org=self.unicef, user=self.user1, day=date(2015, 1, 1)).count, 1)
-        self.assertEqual(DailyUserCount.objects.get(org=self.unicef, user=self.user1, day=date(2015, 1, 2)).count, 2)
-        self.assertEqual(DailyUserCount.objects.get(org=self.unicef, user=self.user2, day=date(2015, 1, 2)).count, 1)
-        self.assertEqual(DailyUserCount.objects.get(org=self.unicef, user=self.user3, day=date(2015, 1, 3)).count, 1)
-        self.assertEqual(DailyUserCount.objects.get(org=self.nyaruka, user=self.user4, day=date(2015, 1, 3)).count, 1)
+        check_counts()
+        self.assertEqual(DailyCount.objects.count(), 26)
 
         # add new count on day that already has a squashed value
-        self.send_outgoing(self.admin, date(2015, 3, 1))
+        self.send_outgoing(self.admin, date(2015, 1, 1))
 
-        self.assertEqual(DailyOrgCount.get_total(self.unicef, 'R'), 13)
+        self.assertEqual(DailyCount.get_by_org([self.unicef], 'R').total(), 13)
 
-        # squash all daily counts
+        # squash all daily counts again
         squash_counts()
 
-        self.assertEqual(DailyOrgCount.objects.count(), 8)
-        self.assertEqual(DailyOrgCount.objects.filter(squashed=False).count(), 0)
-        self.assertEqual(DailyOrgCount.get_total(self.unicef, 'R'), 13)
+        self.assertEqual(DailyCount.objects.count(), 26)
+        self.assertEqual(DailyCount.get_by_org([self.unicef], 'R').total(), 13)
 
     def test_replies_chart(self):
         url = reverse('stats.partner_replies_chart', args=[self.moh.pk])

@@ -1,56 +1,73 @@
 from __future__ import unicode_literals
 
 import pytz
+import six
 
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.db import models, connection
 from django.db.models import Sum
+from django.utils.functional import SimpleLazyObject
 from django.utils.translation import ugettext_lazy as _
 
 from casepro.cases.models import Partner
 
 
-class BaseDailyCount(models.Model):
+class DailyCount(models.Model):
     """
-    Base class for models which record counts of something per day
+    Tracks per-day counts of different items (e.g. replies, messages) in different scopes (e.g. org, user)
     """
     TYPE_REPLIES = 'R'
 
-    type = models.CharField(max_length=1)
-
     day = models.DateField(help_text=_("The day this count is for"))
 
-    count = models.PositiveIntegerField(default=1)
+    item_type = models.CharField(max_length=1, help_text=_("The thing being counted"))
+
+    scope = models.CharField(max_length=32, help_text=_("The scope in which it is being counted"))
+
+    count = models.PositiveIntegerField()
+
+    @classmethod
+    def record_item(cls, day, item_type, *scope_args):
+        cls.objects.create(day=day, item_type=item_type, scope=cls.encode_scope(*scope_args), count=1)
+
+    @staticmethod
+    def encode_scope(*args):
+        types = [type(a) for a in args]
+
+        if types == [Org]:
+            return 'org:%d' % args[0].pk
+        elif types == [Partner]:
+            return 'partner:%d' % args[0].pk
+        elif types == [Org, User]:
+            return 'org:%d:user:%d' % (args[0].pk, args[1].pk)
+        else:  # pragma: no cover
+            raise ValueError("Unsupported scope: %s" % ",".join([t.__name__ for t in types]))
 
     @classmethod
     def squash(cls):
         """
         Squashes counts so that there is a single count per unique field combination per day
         """
-        table_name = cls._meta.db_table
-        last_squash_key = 'last_squash:%s' % table_name
+        last_squash_key = 'daily_count:last_squash'
         last_squash_id = cache.get(last_squash_key, 0)
 
-        unique_fields = list(cls.UNIQUE_FIELDS) + ['type', 'day']
+        unique_fields = ('day', 'item_type', 'scope')
         unsquashed_values = cls.objects.filter(pk__gt=last_squash_id).values(*unique_fields).distinct(*unique_fields)
 
         for unsquashed in unsquashed_values:
             with connection.cursor() as cursor:
-                table_name = cls._meta.db_table
-                delete_cond = " AND ".join(['"%s" = %%s' % f for f in unique_fields])
-                insert_rows = ", ".join(['"%s"' % f for f in unique_fields])
-                insert_vals = ", ".join(['%s'] * len(unique_fields))
-
                 sql = """
-                WITH removed as (DELETE FROM %s WHERE %s RETURNING "count")
-                INSERT INTO %s(%s, "count")
-                VALUES (%s, GREATEST(0, (SELECT SUM("count") FROM removed)));
-                """ % (table_name, delete_cond, table_name, insert_rows, insert_vals)
+                WITH removed as (
+                    DELETE FROM statistics_dailycount
+                    WHERE "day" = %s AND "item_type" = %s AND "scope" = %s RETURNING "count"
+                )
+                INSERT INTO statistics_dailycount("day", "item_type", "scope", "count")
+                VALUES (%s, %s, %s, GREATEST(0, (SELECT SUM("count") FROM removed)));
+                """
 
                 params = [unsquashed[f] for f in unique_fields]
-
                 cursor.execute(sql, params + params)
 
         max_id = cls.objects.order_by('-pk').values_list('pk', flat=True).first()
@@ -58,142 +75,71 @@ class BaseDailyCount(models.Model):
             cache.set(last_squash_key, max_id)
 
     @classmethod
-    def _get_counts(cls, of_type, since, until):
-        counts = cls.objects.filter(type=of_type)
+    def get_by_org(cls, orgs, item_type, since=None, until=None):
+        return cls._get_count_set(item_type, {cls.encode_scope(o): o for o in orgs}, since, until)
+
+    @classmethod
+    def get_by_partner(cls, partners, item_type, since=None, until=None):
+        return cls._get_count_set(item_type, {cls.encode_scope(p): p for p in partners}, since, until)
+
+    @classmethod
+    def get_by_user(cls, org, users, item_type, since=None, until=None):
+        return cls._get_count_set(item_type, {cls.encode_scope(org, u): u for u in users}, since, until)
+
+    @classmethod
+    def _get_count_set(cls, item_type, scopes, since, until):
+        counts = cls.objects.filter(item_type=item_type)
+        if scopes:
+            counts = counts.filter(scope__in=scopes.keys())
         if since:
             counts = counts.filter(day__gte=since)
         if until:
             counts = counts.filter(day__lt=until)
-        return counts
+        return DailyCount.CountSet(counts, scopes)
 
-    @staticmethod
-    def _sum(counts):
+    class CountSet(object):
         """
-        Calculates the overall sum over a set of counts
+        A queryset of counts which can be aggregated in different ways
         """
-        total = counts.aggregate(total=Sum('count'))
-        return total['total'] if total['total'] is not None else 0
+        def __init__(self, counts, scopes):
+            self.counts = counts
+            self.scopes = scopes
 
-    @staticmethod
-    def _sum_days(counts):
-        """
-        Calculates per-day totals over a set of counts
-        """
-        return list(counts.values_list('day').annotate(total=Sum('count')).order_by('day'))
+        def total(self):
+            """
+            Calculates the overall total over a set of counts
+            """
+            total = self.counts.aggregate(total=Sum('count'))
+            return total['total'] if total['total'] is not None else 0
 
-    @staticmethod
-    def _sum_months(counts):
-        """
-        Calculates per-month totals over a set of counts
-        """
-        counts = counts.extra(select={'month': 'EXTRACT(month FROM "day")'})
-        return list(counts.values_list('month').annotate(replies=Sum('count')).order_by('month'))
+        def day_totals(self):
+            """
+            Calculates per-day totals over a set of counts
+            """
+            return list(self.counts.values_list('day').annotate(total=Sum('count')).order_by('day'))
+
+        def month_totals(self):
+            """
+            Calculates per-month totals over a set of counts
+            """
+            counts = self.counts.extra(select={'month': 'EXTRACT(month FROM "day")'})
+            return list(counts.values_list('month').annotate(replies=Sum('count')).order_by('month'))
+
+        def scope_totals(self):
+            """
+            Calculates per-scope totals over a set of counts
+            """
+            totals = list(self.counts.values_list('scope').annotate(replies=Sum('count')))
+            total_by_encoded_scope = {t[0]: t[1] for t in totals}
+
+            total_by_scope = {}
+            for encoded_scope, scope in six.iteritems(self.scopes):
+                total_by_scope[scope] = total_by_encoded_scope.get(encoded_scope, 0)
+
+            return total_by_scope
 
     class Meta:
-        abstract = True
-
-
-class DailyOrgCount(BaseDailyCount):
-    """
-    An item being counted on a per-org per-day basis
-    """
-    UNIQUE_FIELDS = ('org_id',)
-
-    org = models.ForeignKey(Org)
-
-    @classmethod
-    def get_counts(cls, org, of_type, since=None, until=None):
-        return cls._get_counts(of_type, since, until).filter(org=org)
-
-    @classmethod
-    def get_total(cls, org, of_type, since=None, until=None):
-        return cls._sum(cls.get_counts(org, of_type, since, until))
-
-    @classmethod
-    def get_daily_totals(cls, org, of_type, since=None, until=None):
-        return cls._sum_days(cls.get_counts(org, of_type, since, until))
-
-    @classmethod
-    def get_monthly_totals(cls, org, of_type, since=None, until=None):
-        return cls._sum_months(cls.get_counts(org, of_type, since, until))
-
-
-class DailyPartnerCount(BaseDailyCount):
-    """
-    An item being counted on a per-partner per-day basis
-    """
-    UNIQUE_FIELDS = ('partner_id',)
-
-    partner = models.ForeignKey(Partner)
-
-    @classmethod
-    def get_counts(cls, partner, of_type, since=None, until=None):
-        return cls._get_counts(of_type, since, until).filter(partner=partner)
-
-    @classmethod
-    def get_total(cls, partner, of_type, since=None, until=None):
-        return cls._sum(cls.get_counts(partner, of_type, since, until))
-
-    @classmethod
-    def get_daily_totals(cls, partner, of_type, since=None, until=None):
-        return cls._sum_days(cls.get_counts(partner, of_type, since, until))
-
-    @classmethod
-    def get_monthly_totals(cls, partner, of_type, since=None, until=None):
-        return cls._sum_months(cls.get_counts(partner, of_type, since, until))
-
-    @classmethod
-    def get_totals(cls, partners, of_type, since=None, until=None):
-        """
-        For given set of partners, returns map of partners to totals
-        """
-        counts = cls._get_counts(of_type, since, until)
-        counts = counts.filter(partner__pk__in=[p.pk for p in partners])
-
-        totals = counts.values('partner').annotate(total=Sum('count'))
-        total_by_partner_id = {t['partner']: t['total'] for t in totals}
-
-        return {p: total_by_partner_id.get(p.pk, 0) for p in partners}
-
-
-class DailyUserCount(BaseDailyCount):
-    """
-    An item being counted on a per-user-in-org per-day basis
-    """
-    UNIQUE_FIELDS = ('org_id', 'user_id')
-
-    org = models.ForeignKey(Org)
-
-    user = models.ForeignKey(User)
-
-    @classmethod
-    def get_counts(cls, org, user, of_type, since=None, until=None):
-        return cls._get_counts(of_type, since, until).filter(org=org, user=user)
-
-    @classmethod
-    def get_total(cls, org, user, of_type, since=None, until=None):
-        return cls._sum(cls.get_counts(org, user, of_type, since, until))
-
-    @classmethod
-    def get_daily_totals(cls, org, user, of_type, since=None, until=None):
-        return cls._sum_days(cls.get_counts(org, user, of_type, since, until))
-
-    @classmethod
-    def get_monthly_totals(cls, org, user, of_type, since=None, until=None):
-        return cls._sum_months(cls.get_counts(org, user, of_type, since, until))
-
-    @classmethod
-    def get_totals(cls, org, users, of_type, since=None, until=None):
-        """
-        For given set of users, returns map of users to totals
-        """
-        counts = cls._get_counts(of_type, since, until)
-        counts = counts.filter(org=org, user__pk__in=[u.pk for u in users])
-
-        totals = counts.values('user').annotate(total=Sum('count'))
-        total_by_user_id = {t['user']: t['total'] for t in totals}
-
-        return {u: total_by_user_id.get(u.pk, 0) for u in users}
+        index_together = ('item_type', 'scope', 'day')
 
 
 def record_new_outgoing(outgoing):
@@ -201,15 +147,19 @@ def record_new_outgoing(outgoing):
     Records a new outgoing being sent
     """
     org = outgoing.org
+    partner = outgoing.partner
     user = outgoing.created_by
+
+    if isinstance(user, SimpleLazyObject):
+        user = User.objects.get(pk=user.pk)
 
     # get day in org timezone
     org_tz = pytz.timezone(org.timezone)
     day = outgoing.created_on.astimezone(org_tz).date()
 
     if outgoing.is_reply():
-        DailyOrgCount.objects.create(org=org, type=DailyOrgCount.TYPE_REPLIES, day=day)
-        DailyUserCount.objects.create(org=org, user=user, type=DailyUserCount.TYPE_REPLIES, day=day)
+        DailyCount.record_item(day, DailyCount.TYPE_REPLIES, org)
+        DailyCount.record_item(day, DailyCount.TYPE_REPLIES, org, user)
 
         if outgoing.partner:
-            DailyPartnerCount.objects.create(partner=outgoing.partner, type=DailyPartnerCount.TYPE_REPLIES, day=day)
+            DailyCount.record_item(day, DailyCount.TYPE_REPLIES, partner)

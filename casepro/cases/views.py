@@ -15,8 +15,8 @@ from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
 
 from casepro.contacts.models import Group
-from casepro.msgs.models import Label, Message, MessageFolder, Outgoing, OutgoingFolder
-from casepro.statistics.models import DailyUserCount
+from casepro.msgs.models import Label, Message, MessageFolder, OutgoingFolder
+from casepro.statistics.models import DailyCount
 from casepro.utils import json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder
 from casepro.utils import month_range
 from casepro.utils.export import BaseDownloadView
@@ -336,7 +336,7 @@ class PartnerCRUDL(SmartCRUDL):
 
         def get_summary(self, partner):
             return {
-                'total_replies': Outgoing.objects.filter(org=partner.org, partner=partner).count(),
+                'total_replies': DailyCount.get_by_partner([partner], DailyCount.TYPE_REPLIES).total(),
                 'cases_open': Case.objects.filter(org=partner.org, assignee=partner, closed_on=None).count(),
                 'cases_closed': Case.objects.filter(org=partner.org, assignee=partner).exclude(closed_on=None).count()
             }
@@ -363,12 +363,12 @@ class PartnerCRUDL(SmartCRUDL):
             partner = self.get_object()
             org = partner.org
             managers = set(partner.get_managers())
-            all_users = list(partner.get_users().order_by('profile__full_name'))
+            users = list(partner.get_users().order_by('profile__full_name'))
 
             # get reply statistics
-            total = DailyUserCount.get_totals(org, all_users, DailyUserCount.TYPE_REPLIES, None, None)
-            this_month = DailyUserCount.get_totals(org, all_users, DailyUserCount.TYPE_REPLIES, *month_range(0))
-            last_month = DailyUserCount.get_totals(org, all_users, DailyUserCount.TYPE_REPLIES, *month_range(-1))
+            total = DailyCount.get_by_user(org, users, DailyCount.TYPE_REPLIES, None, None).scope_totals()
+            this_month = DailyCount.get_by_user(org, users, DailyCount.TYPE_REPLIES, *month_range(0)).scope_totals()
+            last_month = DailyCount.get_by_user(org, users, DailyCount.TYPE_REPLIES, *month_range(-1)).scope_totals()
 
             def as_json(user):
                 obj = user.as_json()
@@ -382,7 +382,7 @@ class PartnerCRUDL(SmartCRUDL):
                 })
                 return obj
 
-            return JsonResponse({'results': [as_json(u) for u in all_users]})
+            return JsonResponse({'results': [as_json(u) for u in users]})
 
 
 class BaseHomeView(OrgPermsMixin, SmartTemplateView):

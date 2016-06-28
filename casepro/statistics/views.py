@@ -9,7 +9,7 @@ from django.views.generic import View
 from casepro.cases.models import Partner
 from casepro.utils import month_range
 
-from .models import DailyPartnerCount
+from .models import DailyCount
 
 
 class PartnerRepliesPerMonthChart(OrgPermsMixin, View):
@@ -23,7 +23,7 @@ class PartnerRepliesPerMonthChart(OrgPermsMixin, View):
         now = timezone.now()
 
         since = month_range(-5)[0]  # last six months ago including this month
-        totals = DailyPartnerCount.get_monthly_totals(partner, DailyPartnerCount.TYPE_REPLIES, since)
+        totals = DailyCount.get_by_partner([partner], DailyCount.TYPE_REPLIES, since).month_totals()
         totals_by_month = {t[0]: t[1] for t in totals}
 
         # generate category labels and series over last six months
