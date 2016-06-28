@@ -6,6 +6,26 @@ services = angular.module('cases.services', ['cases.modals']);
 
 
 #=====================================================================
+# Chart service
+#=====================================================================
+services.factory('StatisticsService', ['$http', ($http) ->
+  new class StatisticsService
+
+    #----------------------------------------------------------------------------
+    # Fetches data for partner replies by month chart
+    #----------------------------------------------------------------------------
+    repliesChart: () ->
+      return $http.get('/stats/replies_chart/').then((response) -> response.data)
+
+    #----------------------------------------------------------------------------
+    # Fetches data for partner replies by month chart
+    #----------------------------------------------------------------------------
+    partnerRepliesChart: (partner) ->
+      return $http.get('/stats/partner_replies_chart/' + partner.id + '/').then((response) -> response.data)
+])
+
+
+#=====================================================================
 # Contact service
 #=====================================================================
 
@@ -361,12 +381,6 @@ services.factory('LabelService', ['$http', ($http) ->
 #=====================================================================
 services.factory('PartnerService', ['$http', ($http) ->
   new class PartnerService
-
-    #----------------------------------------------------------------------------
-    # Fetches data for replies by month chart
-    #----------------------------------------------------------------------------
-    fetchRepliesChart: (partner) ->
-      return $http.get('/stats/partner_replies_chart/' + partner.id + '/').then((response) -> response.data)
 
     #----------------------------------------------------------------------------
     # Fetches users with activity statistics for the given partner

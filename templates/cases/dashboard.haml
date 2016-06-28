@@ -1,0 +1,88 @@
+- extends "smartmin/read.html"
+- load smartmin i18n thumbnail
+
+- block pre-content
+
+- block content
+
+  .ng-cloak{ ng-controller:"DashboardController", ng-init:"init()", ng-cloak:"" }
+    .page-header.clearfix{ style:"border-bottom: none" }
+      .clearfix{ style:"margin-bottom: 10px" }
+        .page-header-buttons
+        %h2
+          - trans "Dashboard"
+
+    <uib-tabset active="active">
+
+      <uib-tab index="0" select="onTabSelect('summary')">
+        <uib-tab-heading>
+          %span.glyphicon.glyphicon-dashboard
+          - trans "Summary"
+        </uib-tab-heading>
+        %br
+        .row
+          .col-md-4
+            %ul
+              %li
+                Total replies: <strong>{{ summary.total_replies }}</strong>
+              %li
+                Number of open cases: <strong>{{ summary.cases_open }}</strong>
+              %li
+                Number of closed cases: <strong>{{ summary.cases_closed }}</strong>
+          .col-md-8
+            #chart-replies-by-month
+      </uib-tab>
+
+      <uib-tab index="1" select="onTabSelect('partners')">
+        <uib-tab-heading>
+          %span.glyphicon.glyphicon-th-large
+          - trans "Partners"
+        </uib-tab-heading>
+        .search-toolbar.clearfix
+          - if perms.cases.partner_create or org_perms.cases.partner_create
+            .pull-away
+              <a class="btn btn-default" href="{% url 'cases.partner_create' %}">{% trans "New..." %}</a>
+
+          .{ style:"margin-top: 7px" }
+            Total of <strong>[[ partners.length ]]</strong> partners
+
+        %table.table.table-striped
+          %thead
+            %th
+              - trans "Name"
+            %th
+              - trans "Replies (this month)"
+            %th
+              - trans "Replies (last month)"
+            %th
+              - trans "Replies (total)"
+          %tbody
+            %tr{ ng-repeat:"partner in partners" }
+              %td
+                %a{ ng-href:"/partner/read/[[ partner.id ]]/" }><
+                  [[ partner.name ]]
+              %td
+                [[ partner.replies.this_month ]]
+              %td
+                [[ partner.replies.last_month ]]
+              %td
+                [[ partner.replies.total ]]
+        .none{ ng-if:"!partner" }
+          - trans "None"
+
+      </uib-tab>
+    </uib-tabset>
+
+
+- block extra-style
+  {{ block.super }}
+  :css
+    .search-toolbar {
+      padding: 7px;
+      background-color: #f7f7f7;
+      margin-top: 7px;
+    }
+    #chart-replies-by-month {
+      width: 100%;
+      height: 250px;
+    }

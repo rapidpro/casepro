@@ -81,6 +81,20 @@ controllers.controller('HomeController', ['$scope', '$window', '$location', 'Lab
 
 
 #============================================================================
+# Base controller class for controllers which have tabs
+#============================================================================
+controllers.controller('BaseTabsController', ['$scope', ($scope) ->
+
+  $scope.initialisedTabs = []
+
+  $scope.onTabSelect = (tab) ->
+    if tab not in $scope.initialisedTabs
+      $scope.onTabInit(tab)
+      $scope.initialisedTabs.push(tab)
+])
+
+
+#============================================================================
 # Base controller class for controllers which display fetched items with
 # infinite scrolling, e.g. lists of messages, cases etc
 #============================================================================
@@ -413,6 +427,36 @@ controllers.controller('CasesController', ['$scope', '$timeout', '$controller', 
 #============================================================================
 # Case view controller
 #============================================================================
+controllers.controller('DashboardController', ['$scope', '$controller', 'StatisticsService', ($scope, $controller, StatisticsService) ->
+  $controller('BaseTabsController', {$scope: $scope})
+
+  $scope.partners = []
+
+  $scope.onTabInit = (tab) ->
+    if tab == 'summary'
+      StatisticsService.repliesChart().then((data) ->
+        Highcharts.chart('chart-replies-by-month', {
+          chart: {type: 'column'},
+          title: {text: null},
+          xAxis: {categories: data.categories},
+          yAxis: {min: 0, title: {text: 'Replies'}},
+          legend: {enabled: false},
+          series: [{name: 'Replies', data: data.series}],
+          credits: {enabled: false}
+        });
+      )
+    # else if tab == 'partners'
+      # PartnerService.fetchUsers($scope.partner).then((users) ->
+      #  $scope.usersFetched = true
+      #  $scope.users = users
+      #)
+
+])
+
+
+#============================================================================
+# Case view controller
+#============================================================================
 controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'MessageService', 'ContactService', 'UtilsService', ($scope, $window, $timeout, CaseService, MessageService, ContactService, UtilsService) ->
 
   $scope.allPartners = $window.contextData.all_partners
@@ -538,20 +582,15 @@ controllers.controller('CaseTimelineController', ['$scope', '$timeout', 'CaseSer
 #============================================================================
 # Partner view controller
 #============================================================================
-controllers.controller('PartnerController', ['$scope', '$window', 'UtilsService', 'PartnerService', ($scope, $window, UtilsService, PartnerService) ->
+controllers.controller('PartnerController', ['$scope', '$window', '$controller', 'UtilsService', 'PartnerService', 'StatisticsService', ($scope, $window, $controller, UtilsService, PartnerService, StatisticsService) ->
+  $controller('BaseTabsController', {$scope: $scope})
 
   $scope.partner = $window.contextData.partner
-  $scope.initialisedTabs = []
   $scope.users = []
-
-  $scope.onTabSelect = (tab) ->
-    if tab not in $scope.initialisedTabs
-      $scope.onTabInit(tab)
-      $scope.initialisedTabs.push(tab)
 
   $scope.onTabInit = (tab) ->
     if tab == 'summary'
-      PartnerService.fetchRepliesChart($scope.partner).then((data) ->
+      StatisticsService.partnerRepliesChart($scope.partner).then((data) ->
         Highcharts.chart('chart-replies-by-month', {
           chart: {type: 'column'},
           title: {text: null},

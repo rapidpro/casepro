@@ -491,6 +491,23 @@ class ClosedCasesView(BaseHomeView):
     template_name = 'cases/home_cases.haml'
 
 
+class DashboardView(SmartTemplateView):
+    template_name = 'cases/dashboard.haml'
+
+    def get_context_data(self, **kwargs):
+        context = super(DashboardView, self).get_context_data(**kwargs)
+
+        context['summary'] = self.get_summary(self.request.org)
+        return context
+
+    def get_summary(self, org):
+        return {
+            'total_replies': DailyCount.get_by_org([org], DailyCount.TYPE_REPLIES).total(),
+            'cases_open': Case.objects.filter(org=org, closed_on=None).count(),
+            'cases_closed': Case.objects.filter(org=org).exclude(closed_on=None).count()
+        }
+
+
 class StatusView(View):
     """
     Status endpoint for keyword-based up-time monitoring checks
