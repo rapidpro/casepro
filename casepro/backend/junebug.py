@@ -159,18 +159,18 @@ class JunebugBackend(BaseBackend):
         identity_store = self.identity_store
 
         # all identities created in the Identity Store in the time window
-        new_identities = identity_store.get_contacts(
+        new_identities = identity_store.get_identities(
             created_at__gte=modified_after)
 
         # all identities modified in the Identity Store in the time window
-        modified_identities = identity_store.get_contacts(
+        modified_identities = identity_store.get_identities(
             updated_at__gte=modified_after,
             updated_at__lte=modified_before)
 
         identities_to_update = modified_identities + new_identities
 
         # all identities deleted in the Identity Store in the time window
-        deleted_identities = identity_store.get_contacts(
+        deleted_identities = identity_store.get_identities(
             optout__optout_type='forget', updated_at__gte=modified_after,
             updated_at__lte=modified_before)
 
