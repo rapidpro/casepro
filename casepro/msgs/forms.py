@@ -134,6 +134,8 @@ class FaqForm(forms.ModelForm):
         if parent is not None:
             labels = parent.labels.all()
 
+        # TODO 19: Update Translation FAQ labels when Parent FAQ labels are updated
+
         return labels
 
     class Meta:
