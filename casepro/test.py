@@ -5,7 +5,7 @@ import json
 from casepro.backend import NoopBackend
 from casepro.cases.models import Case, Partner
 from casepro.contacts.models import Contact, Group, Field
-from casepro.msgs.models import Label, Language, Message, Outgoing
+from casepro.msgs.models import Label, Language, FAQ, Message, Outgoing
 from casepro.profiles.models import Profile, ROLE_ANALYST, ROLE_MANAGER
 from casepro.rules.models import ContainsTest, Quantifier
 from casepro.utils import json_encode
@@ -52,6 +52,18 @@ class BaseCasesTest(DashTest):
         self.cgg_ug = self.create_language(self.unicef, "cgg_UG", "Rukiga", "Uganda")
         self.lug_ug = self.create_language(self.unicef, "lug_UG", "Luganda", "Uganda")
 
+        # some message faqs
+        self.preg_faq1_eng = self.create_faq(self.unicef, "How do I know I'm pregnant?", "Do a pregnancy test.",
+                                             self.eng_za, None, [self.pregnancy])
+        self.preg_faq1_cgg = self.create_faq(self.unicef, "CGG How do I know I'm pregnant?", "CGG Do a pregnancy test.",
+                                             self.cgg_ug, self.preg_faq1_eng, [self.pregnancy])
+        self.preg_faq1_lug = self.create_faq(self.unicef, "LUG How do I know I'm pregnant?", "LUG Do a pregnancy test.",
+                                             self.lug_ug, self.preg_faq1_eng, [self.pregnancy])
+        self.preg_faq2_eng = self.create_faq(self.unicef, "How do I prevent HIV transfer to my baby?", "Take ARVs.",
+                                             self.eng_za, None, [self.pregnancy, self.aids])
+        self.tea_faq1_eng = self.create_faq(self.unicef, "Does tea contain caffeine?", "It varies - black tea does.",
+                                            self.eng_za, None, [self.tea])
+
         # some partners
         self.moh = self.create_partner(self.unicef, "MOH", [self.aids, self.pregnancy])
         self.who = self.create_partner(self.unicef, "WHO", [self.aids])
@@ -84,6 +96,11 @@ class BaseCasesTest(DashTest):
 
     def create_user(self, org, partner, role, name, email):
         return Profile.create_partner_user(org, partner, role, name, email, email)
+
+    def create_faq(self, org, question, answer, language, parent, labels=(), **kwargs):
+        faq = FAQ.objects.create(org=org, question=question, answer=answer, language=language, parent=parent, **kwargs)
+        faq.labels.add(*labels)
+        return faq
 
     def create_label(self, org, uuid, name, description, keywords, **kwargs):
         tests = json_encode([ContainsTest(keywords, Quantifier.ANY)])

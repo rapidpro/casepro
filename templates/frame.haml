@@ -82,7 +82,7 @@
                           - trans "Tasks"
 
               - else
-                - if request.user.is_superuser or org_perms.orgs.org_home or org_perms.msgs.label_list or org_perms.msgs.language_list or org_perms.cases.group_list or org_perms.profiles.profile_user_list
+                - if request.user.is_superuser or org_perms.orgs.org_home or org_perms.msgs.label_list or org_perms.msgs.language_list or org_perms.msgs.faq_list or org_perms.cases.group_list or org_perms.profiles.profile_user_list
                   %li.dropdown
                     %a.dropdown-toggle{href:"#", data-toggle:"dropdown"}
                       - trans "Administration"
@@ -102,6 +102,11 @@
                         %li
                           %a{ href:"{% url 'msgs.language_list' %}" }
                             - trans "Languages"
+
+                      - if perms.msgs.faq_list or org_perms.msgs.faq_list
+                        %li
+                          %a{ href:"{% url 'msgs.faq_list' %}" }
+                            - trans "FAQs"
 
                       - if perms.contacts.group_list or org_perms.contacts.group_list
                         %li

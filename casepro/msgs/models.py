@@ -115,7 +115,43 @@ class Language(models.Model):
         }
 
     def __str__(self):
-        return "%s - %s - %s" % (self.code, self.name, self.location)
+        return "%s" % self.code
+
+
+@python_2_unicode_compatible
+class FAQ(models.Model):
+    """
+    Pre-approved questions and answers to be used when replying to a message.
+    """
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='faqs')
+
+    question = models.CharField(max_length=140)
+
+    answer = models.CharField(max_length=140)
+
+    language = models.ForeignKey(Language, verbose_name=('Language'), related_name='faqs', default=None)
+
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='translations')
+
+    labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this FAQ"), related_name='faqs')
+
+    def as_json(self):
+        if not self.parent:
+            parent_json = None
+        else:
+            parent_json = self.parent.id
+
+        return {
+            'id': self.pk,
+            'question': self.question,
+            'answer': self.answer,
+            'language': self.language.as_json(),
+            'parent': parent_json,
+            'labels': [l.as_json() for l in self.labels.all()]
+        }
+
+    def __str__(self):
+        return self.question
 
 
 @python_2_unicode_compatible

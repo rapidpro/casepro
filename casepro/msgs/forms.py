@@ -7,7 +7,7 @@ from casepro.contacts.models import Group
 from casepro.rules.forms import FieldTestField
 from casepro.utils import parse_csv, normalize, normalize_language_code
 
-from .models import Label, Language
+from .models import Label, Language, FAQ
 
 
 class LabelForm(forms.ModelForm):
@@ -100,3 +100,39 @@ class LanguageForm(forms.ModelForm):
     class Meta:
         model = Language
         fields = ('code', 'name', 'location')
+
+
+class FaqForm(forms.ModelForm):
+
+    question = forms.CharField(label=_("Question"), max_length=140)
+    answer = forms.CharField(label=_("Answer"), max_length=140)
+    language = forms.ModelChoiceField(queryset=Language.objects.filter())
+    # limit the parent choices to FAQs that have a ForeignKey parent that is None
+    parent = forms.ModelChoiceField(queryset=FAQ.objects.filter(parent=None), required=False)
+    labels = forms.ModelMultipleChoiceField(queryset=Label.objects.filter(), required=False, help_text=_(
+        "If a Parent is selected, the labels will be copied from the Parent FAQ"))
+
+    def clean_labels(self):
+        if 'labels' in self.cleaned_data and len(self.cleaned_data['labels']) != 0:
+            labels = self.cleaned_data['labels']
+        else:
+            labels = None
+
+        if 'parent' in self.cleaned_data:
+            parent = self.cleaned_data['parent']
+        else:
+            parent = None
+
+        if parent is None and labels is None:
+            raise forms.ValidationError(_("Labels are required if no Parent is selected"))
+
+        if parent is not None:
+            labels = parent.labels.all()
+
+        # TODO 19: Update Translation FAQ labels when Parent FAQ labels are updated
+
+        return labels
+
+    class Meta:
+        model = FAQ
+        fields = ('question', 'answer', 'language', 'parent', 'labels')

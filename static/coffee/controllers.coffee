@@ -616,7 +616,23 @@ controllers.controller('LanguageController', ['$scope', '$window', 'UtilsService
   $scope.onDeleteLanguage = () ->
     UtilsService.confirmModal("Delete this Language?", 'danger').then(() ->
       LanguageService.delete($scope.language).then(() ->
-        UtilsService.navigateBack()
+        UtilsService.navigate('/language/')
+      )
+    )
+])
+
+
+#============================================================================
+# Faq view controller
+#============================================================================
+controllers.controller('FaqController', ['$scope', '$window', 'UtilsService', 'FaqService', ($scope, $window, UtilsService, FaqService) ->
+
+  $scope.faq = $window.contextData.faq
+
+  $scope.onDeleteFaq = () ->
+    UtilsService.confirmModal("Warning! If this FAQ has any linked translation FAQs, they will be also be deleted. Delete this FAQ?", 'danger').then(() ->
+      FaqService.delete($scope.faq).then(() ->
+        UtilsService.navigate('/faq/')
       )
     )
 ])

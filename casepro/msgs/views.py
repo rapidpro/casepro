@@ -18,8 +18,8 @@ from casepro.rules.models import ContainsTest, GroupsTest, Quantifier
 from casepro.utils import parse_csv, str_to_bool, json_encode, JSONEncoder
 from casepro.utils.export import BaseDownloadView
 
-from .forms import LabelForm, LanguageForm
-from .models import Label, Language, Message, MessageExport, MessageFolder, Outgoing, OutgoingFolder, ReplyExport
+from .forms import LabelForm, LanguageForm, FaqForm
+from .models import Label, Language, FAQ, Message, MessageExport, MessageFolder, Outgoing, OutgoingFolder, ReplyExport
 from .tasks import message_export, reply_export
 
 
@@ -178,6 +178,72 @@ class LanguageCRUDL(SmartCRUDL):
         def post(self, request, *args, **kwargs):
             language = self.get_object()
             language.delete()
+
+            return HttpResponse(status=204)
+
+
+class FaqCRUDL(SmartCRUDL):
+    model = FAQ
+    actions = ('list', 'create', 'read', 'update', 'delete')
+
+    class List(OrgPermsMixin, SmartListView):
+        fields = ('question', 'answer', 'language', 'parent')
+        default_order = ('-parent', 'question')
+
+    class Create(OrgPermsMixin, SmartCreateView):
+        form_class = FaqForm
+
+        def get_form_kwargs(self):
+            kwargs = super(FaqCRUDL.Create, self).get_form_kwargs()
+            return kwargs
+
+        def save(self, obj):
+            data = self.form.cleaned_data
+            org = self.request.org
+            question = data['question']
+            answer = data['answer']
+            language = data['language']
+            parent = data['parent']
+            labels = data['labels']
+
+            faq = FAQ.objects.create(org=org, question=question, answer=answer, language=language, parent=parent)
+            faq.labels.add(*labels)
+            faq.save()
+            self.object = faq
+
+    class Read(OrgPermsMixin, SmartReadView):
+        fields = ['question', 'answer', 'language', 'parent']
+
+        def get_queryset(self):
+            return FAQ.objects.all()
+
+        def get_context_data(self, **kwargs):
+            context = super(FaqCRUDL.Read, self).get_context_data(**kwargs)
+            edit_button_url = reverse('msgs.faq_update', args=[self.object.pk])
+            context['context_data_json'] = json_encode({'faq': self.object.as_json()})
+            context['edit_button_url'] = edit_button_url
+            context['can_delete'] = True
+
+            labels = []
+            for label in self.object.labels.all():
+                labels.append(label.name)
+            context['labels'] = ', '.join(labels)
+            return context
+
+    class Update(OrgPermsMixin, SmartUpdateView):
+        form_class = FaqForm
+
+        def derive_initial(self):
+            initial = super(FaqCRUDL.Update, self).derive_initial()
+            initial['labels'] = self.object.labels.all()
+            return initial
+
+    class Delete(OrgPermsMixin, SmartDeleteView):
+        cancel_url = '@msgs.faq_list'
+
+        def post(self, request, *args, **kwargs):
+            faq = self.get_object()
+            faq.delete()
 
             return HttpResponse(status=204)
 
