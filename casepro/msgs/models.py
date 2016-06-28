@@ -173,7 +173,7 @@ class FAQ(models.Model):
         if not self.parent:
             parent_json = None
         else:
-            parent_json = self.parent.question
+            parent_json = self.parent.id
 
         return {
             'id': self.pk,
