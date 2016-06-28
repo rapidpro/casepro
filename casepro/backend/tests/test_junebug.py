@@ -13,20 +13,53 @@ class JunebugBackendTest(BaseCasesTest):
         super(JunebugBackendTest, self).setUp()
         self.backend = JunebugBackend()
 
+    @responses.activate
     def test_pull_contacts(self):
         '''
         Pulling all of the contacts should be a noop.
         '''
         Contact.objects.all().delete()
 
+        def identity_store_callback(request):
+            headers = {'Content-Type': 'application/json'}
+            resp = {
+                "count": 1,
+                "next": None,
+                "previous": None,
+                "results": [
+                    {
+                        "id": "test_id",
+                        "version": 1,
+                        "details": {
+                            "name": "test",
+                            "addresses": {
+                                "msisdn": {
+                                    "+1234": {}
+                                }
+                            }
+                        },
+                        "communicate_through": None,
+                        "operator": None,
+                        "created_at": "2016-03-14T10:21:00.258406Z",
+                        "created_by": 1,
+                        "updated_at": "2016-03-14T10:21:00.258441Z",
+                        "updated_by": 1
+                    }
+                ]
+            }
+            return (201, headers, json.dumps(resp))
+        responses.add_callback(
+            responses.GET,
+            'http://localhost:8081/api/v1/identities/search/',
+            callback=identity_store_callback, content_type='application/json')
+
         (created, updated, deleted, ignored) = self.backend.pull_contacts(
             self.unicef, None, None)
-
-        self.assertEqual(created, 0)
+        self.assertEqual(created, 1)
         self.assertEqual(updated, 0)
         self.assertEqual(deleted, 0)
         self.assertEqual(ignored, 0)
-        self.assertEqual(Contact.objects.count(), 0)
+        self.assertEqual(Contact.objects.count(), 1)
 
     def test_pull_fields(self):
         '''
