@@ -4,6 +4,7 @@ import pytz
 
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.db import models, connection
 from django.db.models import Sum
 from django.utils.translation import ugettext_lazy as _
@@ -23,15 +24,17 @@ class BaseDailyCount(models.Model):
 
     count = models.PositiveIntegerField(default=1)
 
-    squashed = models.BooleanField(default=False)
-
     @classmethod
     def squash(cls):
         """
         Squashes counts so that there is a single count per unique field combination per day
         """
+        table_name = cls._meta.db_table
+        last_squash_key = 'last_squash:%s' % table_name
+        last_squash_id = cache.get(last_squash_key, 0)
+
         unique_fields = list(cls.UNIQUE_FIELDS) + ['type', 'day']
-        unsquashed_values = cls.objects.filter(squashed=False).values(*unique_fields).distinct(*unique_fields)
+        unsquashed_values = cls.objects.filter(pk__gt=last_squash_id).values(*unique_fields).distinct(*unique_fields)
 
         for unsquashed in unsquashed_values:
             with connection.cursor() as cursor:
@@ -42,13 +45,17 @@ class BaseDailyCount(models.Model):
 
                 sql = """
                 WITH removed as (DELETE FROM %s WHERE %s RETURNING "count")
-                INSERT INTO %s(%s, "count", "squashed")
-                VALUES (%s, GREATEST(0, (SELECT SUM("count") FROM removed)), TRUE);
+                INSERT INTO %s(%s, "count")
+                VALUES (%s, GREATEST(0, (SELECT SUM("count") FROM removed)));
                 """ % (table_name, delete_cond, table_name, insert_rows, insert_vals)
 
                 params = [unsquashed[f] for f in unique_fields]
 
                 cursor.execute(sql, params + params)
+
+        max_id = cls.objects.order_by('-pk').values_list('pk', flat=True).first()
+        if max_id:
+            cache.set(last_squash_key, max_id)
 
     @classmethod
     def _get_counts(cls, of_type, since, until):

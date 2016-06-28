@@ -21,7 +21,6 @@ class Migration(migrations.Migration):
                 ('type', models.CharField(max_length=1)),
                 ('day', models.DateField(help_text='The day this count is for')),
                 ('count', models.PositiveIntegerField(default=1)),
-                ('squashed', models.BooleanField(default=False)),
                 ('org', models.ForeignKey(to='orgs.Org')),
             ],
             options={
@@ -35,7 +34,6 @@ class Migration(migrations.Migration):
                 ('type', models.CharField(max_length=1)),
                 ('day', models.DateField(help_text='The day this count is for')),
                 ('count', models.PositiveIntegerField(default=1)),
-                ('squashed', models.BooleanField(default=False)),
                 ('org', models.ForeignKey(to='orgs.Org')),
                 ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
             ],
@@ -50,7 +48,6 @@ class Migration(migrations.Migration):
                 ('type', models.CharField(max_length=1)),
                 ('day', models.DateField(help_text='The day this count is for')),
                 ('count', models.PositiveIntegerField(default=1)),
-                ('squashed', models.BooleanField(default=False)),
                 ('partner', models.ForeignKey(to='cases.Partner')),
             ],
             options={
