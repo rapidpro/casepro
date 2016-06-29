@@ -182,9 +182,25 @@ class LanguageCRUDL(SmartCRUDL):
             return HttpResponse(status=204)
 
 
+class FaqSearchMixin(object):
+    def derive_search(self):
+        """
+        Collects and prepares FAQ search parameters into JSON serializable dict
+        """
+        label = self.request.GET.get('label', None)
+        question = self.request.GET.get('question', None)
+        language = self.request.GET.get('language', None)
+
+        return {
+            'label': label,
+            'question': question,
+            'language': language,
+        }
+
+
 class FaqCRUDL(SmartCRUDL):
     model = FAQ
-    actions = ('list', 'create', 'read', 'update', 'delete')
+    actions = ('list', 'create', 'read', 'update', 'delete', 'search')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('question', 'answer', 'language', 'parent')
@@ -246,6 +262,31 @@ class FaqCRUDL(SmartCRUDL):
             faq.delete()
 
             return HttpResponse(status=204)
+
+    class Search(OrgPermsMixin, FaqSearchMixin, SmartTemplateView):
+        """
+        JSON endpoint for searching FAQs
+        """
+        def get_context_data(self, **kwargs):
+            context = super(FaqCRUDL.Search, self).get_context_data(**kwargs)
+
+            org = self.request.org
+            user = self.request.user
+            page = int(self.request.GET.get('page', 1))
+
+            search = self.derive_search()
+            faqs = FAQ.search(org, user, search)
+            paginator = LazyPaginator(faqs, per_page=50)
+
+            context['object_list'] = paginator.page(page)
+            context['has_more'] = paginator.num_pages > page
+            return context
+
+        def render_to_response(self, context, **response_kwargs):
+            return JsonResponse({
+                'results': [m.as_json() for m in context['object_list']],
+                'has_more': context['has_more']
+            }, encoder=JSONEncoder)
 
 
 class MessageSearchMixin(object):

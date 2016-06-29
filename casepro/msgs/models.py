@@ -135,6 +135,40 @@ class FAQ(models.Model):
 
     labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this FAQ"), related_name='faqs')
 
+    @classmethod
+    def search(cls, org, user, search):
+        """
+        Search for FAQs
+        """
+        language_id = search.get('language')
+        label_id = search.get('label')
+        question = search.get('question')
+
+        queryset = FAQ.objects.all()
+
+        # Language filtering
+        if language_id:
+            queryset = queryset.filter(language__pk=language_id)
+
+        # Label filtering
+        labels = Label.get_all(org, user)
+
+        if label_id:
+            labels = labels.filter(pk=label_id)
+        else:
+            # if not filtering by a single label, need distinct to avoid duplicates
+            queryset = queryset.distinct()
+
+        queryset = queryset.filter(labels__in=list(labels))
+
+        # Text filtering
+        if question:
+            queryset = queryset.filter(question__icontains=question)
+
+        queryset = queryset.prefetch_related('language', 'labels')
+
+        return queryset.order_by('question')
+
     def as_json(self):
         if not self.parent:
             parent_json = None

@@ -505,6 +505,64 @@ class FaqCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
 
+    def test_search(self):
+        url = reverse('msgs.faq_search')
+
+        # try unauthenticated
+        response = self.url_get('unicef', url, {})
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url, {})
+        # should have 4 results as one is label restricted
+        self.assertEqual(len(response.json['results']), 4)
+
+        # log in as an administrator
+        self.login(self.admin)
+
+        # request FAQs - no filtering
+        response = self.url_get('unicef', url, {})
+        # should show all FAQs
+        self.assertEqual(len(response.json['results']), 5)
+
+        # request FAQs - filter on language
+        response = self.url_get('unicef', url, {'language': self.eng_za.pk})
+        self.assertEqual(len(response.json['results']), 3)
+
+        # request FAQs - filter on label
+        response = self.url_get('unicef', url, {'label': self.pregnancy.pk})
+        self.assertEqual(len(response.json['results']), 4)
+
+        # request FAQs - filter on language, label
+        response = self.url_get('unicef', url, {
+            'label': self.pregnancy.pk,
+            'language': self.eng_za.pk,
+        })
+        self.assertEqual(len(response.json['results']), 2)
+
+        # request FAQs - filter on language, label, question
+        response = self.url_get('unicef', url, {
+            'label': self.pregnancy.pk,
+            'language': self.eng_za.pk,
+            'question': "hiv transfer"
+        })
+        self.assertEqual(len(response.json['results']), 1)
+        self.assertEqual(response.json['results'][0]['question'], "How do I prevent HIV transfer to my baby?")
+        self.assertEqual(response.json['results'][0]['labels'], [
+            {'id': self.aids.pk, 'name': "AIDS"},
+            {'id': self.pregnancy.pk, 'name': "Pregnancy"}
+        ])
+
+        # request FAQs - filter on language, label, question - no results
+        response = self.url_get('unicef', url, {
+            'label': self.pregnancy.pk,
+            'language': self.eng_za.pk,
+            'question': "hiv and tea"
+        })
+        self.assertEqual(len(response.json['results']), 0)
+
 
 class MessageTest(BaseCasesTest):
     def setUp(self):
