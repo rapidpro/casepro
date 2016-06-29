@@ -265,7 +265,6 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     reassign: (caseObj, assignee) ->
       return $http.post('/case/reassign/' + caseObj.id + '/', {assignee: assignee.id}).then(() ->
         caseObj.assignee = assignee
-        caseObj.watching = true
       )
 
     #----------------------------------------------------------------------------
@@ -274,7 +273,6 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     close: (caseObj, note) ->
       return $http.post('/case/close/' + caseObj.id + '/', {note: note}).then(() ->
         caseObj.is_closed = true
-        caseObj.watching = true
       )
 
     #----------------------------------------------------------------------------
@@ -296,7 +294,6 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
 
       return $http.post('/case/label/' + caseObj.id + '/', params).then(() ->
         caseObj.labels = labels
-        caseObj.watching = true
       )
 
     #----------------------------------------------------------------------------
@@ -305,7 +302,6 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     updateSummary: (caseObj, summary) ->
       return $http.post('/case/update_summary/' + caseObj.id + '/', {summary: summary}).then(() ->
         caseObj.summary = summary
-        caseObj.watching = true
       )
 
     #----------------------------------------------------------------------------
