@@ -237,6 +237,7 @@ INSTALLED_APPS = (
     'casepro.msgs',
     'casepro.rules',
     'casepro.cases',
+    'casepro.statistics',
 )
 
 LOGGING = {
@@ -463,6 +464,10 @@ CELERYBEAT_SCHEDULE = {
         'task': 'dash.orgs.tasks.trigger_org_task',
         'schedule': timedelta(minutes=1),
         'args': ('casepro.msgs.tasks.handle_messages', 'sync')
+    },
+    'squash-counts': {
+        'task': 'casepro.statistics.tasks.squash_counts',
+        'schedule': timedelta(minutes=5),
     },
 }
 

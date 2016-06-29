@@ -1,10 +1,9 @@
 from __future__ import absolute_import, unicode_literals
-from calendar import month_name
+
 from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from datetime import timedelta
 from django.core.cache import cache
-from django.db.models import Count
 from django.http import HttpResponse, JsonResponse
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
@@ -16,7 +15,8 @@ from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
 
 from casepro.contacts.models import Group
-from casepro.msgs.models import Label, Message, MessageFolder, Outgoing, OutgoingFolder
+from casepro.msgs.models import Label, Message, MessageFolder, OutgoingFolder
+from casepro.statistics.models import DailyCount
 from casepro.utils import json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder
 from casepro.utils import month_range
 from casepro.utils.export import BaseDownloadView
@@ -324,7 +324,7 @@ class PartnerFormMixin(object):
 
 
 class PartnerCRUDL(SmartCRUDL):
-    actions = ('create', 'read', 'replies_chart', 'update', 'delete', 'list', 'users')
+    actions = ('create', 'read', 'update', 'delete', 'list', 'users')
     model = Partner
 
     class Create(OrgPermsMixin, PartnerFormMixin, SmartCreateView):
@@ -367,43 +367,10 @@ class PartnerCRUDL(SmartCRUDL):
 
         def get_summary(self, partner):
             return {
-                'total_replies': Outgoing.objects.filter(org=partner.org, partner=partner).count(),
+                'total_replies': DailyCount.get_by_partner([partner], DailyCount.TYPE_REPLIES).total(),
                 'cases_open': Case.objects.filter(org=partner.org, assignee=partner, closed_on=None).count(),
                 'cases_closed': Case.objects.filter(org=partner.org, assignee=partner).exclude(closed_on=None).count()
             }
-
-    class RepliesChart(OrgObjPermsMixin, SmartReadView):
-        """
-        JSON endpoint to get data for chart of replies per month
-        """
-        permission = 'cases.partner_read'
-
-        def get(self, request, *args, **kwargs):
-            categories, series = self.get_replies_by_month(self.get_object())
-            return JsonResponse({'categories': categories, 'series': series}, encoder=JSONEncoder)
-
-        @staticmethod
-        def get_replies_by_month(partner):
-            since = month_range(-5)[0]  # last six months ago including this month
-
-            outgoing = Outgoing.get_replies(org=partner.org).filter(partner=partner, created_on__gte=since)
-            outgoing = outgoing.extra(select={'month': 'EXTRACT(month FROM created_on)'})
-            outgoing = outgoing.values('month').annotate(replies=Count('created_on'))
-
-            replies_by_month = {int(c['month']): c['replies'] for c in outgoing}
-
-            # generate category labels and series over last six months
-            categories = []
-            series = []
-            this_month = now().date().month
-            for m in reversed(range(0, -6, -1)):
-                month = this_month + m
-                if month < 1:
-                    month += 12
-                categories.append(month_name[month])
-                series.append(replies_by_month.get(month, 0))
-
-            return categories, series
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
         cancel_url = '@cases.partner_list'
@@ -425,27 +392,28 @@ class PartnerCRUDL(SmartCRUDL):
         """
         def get(self, request, *args, **kwargs):
             partner = self.get_object()
+            org = partner.org
             managers = set(partner.get_managers())
-            all_users = list(partner.get_users().order_by('profile__full_name'))
+            users = list(partner.get_users().order_by('profile__full_name'))
 
             # get reply statistics
-            total = Outgoing.get_user_reply_counts(partner.org, partner, None, None)
-            this_month = Outgoing.get_user_reply_counts(partner.org, partner, *month_range(0))
-            last_month = Outgoing.get_user_reply_counts(partner.org, partner, *month_range(-1))
+            total = DailyCount.get_by_user(org, users, DailyCount.TYPE_REPLIES, None, None).scope_totals()
+            this_month = DailyCount.get_by_user(org, users, DailyCount.TYPE_REPLIES, *month_range(0)).scope_totals()
+            last_month = DailyCount.get_by_user(org, users, DailyCount.TYPE_REPLIES, *month_range(-1)).scope_totals()
 
             def as_json(user):
                 obj = user.as_json()
                 obj.update({
                     'role': "Manager" if user in managers else "Analyst",
                     'replies': {
-                        'this_month': this_month.get(user.pk, 0),
-                        'last_month': last_month.get(user.pk, 0),
-                        'total': total.get(user.pk, 0)
+                        'this_month': this_month.get(user, 0),
+                        'last_month': last_month.get(user, 0),
+                        'total': total.get(user, 0)
                     }
                 })
                 return obj
 
-            return JsonResponse({'results': [as_json(u) for u in all_users]})
+            return JsonResponse({'results': [as_json(u) for u in users]})
 
 
 class BaseHomeView(OrgPermsMixin, SmartTemplateView):
