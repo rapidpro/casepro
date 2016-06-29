@@ -114,9 +114,9 @@ class case_action(object):
     """
     Helper decorator for case action methods that should check the user is allowed to update the case
     """
-    def __init__(self, require_update=True, watch=True):
+    def __init__(self, require_update=True, become_watcher=False):
         self.require_update = require_update
-        self.watch = watch
+        self.become_watcher = become_watcher
 
     def __call__(self, func):
         def wrapped(case, user, *args, **kwargs):
@@ -124,7 +124,7 @@ class case_action(object):
             if (access == AccessLevel.update) or (not self.require_update and access == AccessLevel.read):
                 result = func(case, user, *args, **kwargs)
 
-                if self.watch:
+                if self.become_watcher:
                     case.watchers.add(user)
 
                 return result
@@ -299,7 +299,7 @@ class Case(models.Model):
 
         CaseAction.create(self, user, CaseAction.UPDATE_SUMMARY, note=None)
 
-    @case_action(require_update=False)
+    @case_action(require_update=False, become_watcher=True)
     def add_note(self, user, note):
         CaseAction.create(self, user, CaseAction.ADD_NOTE, note=note)
 
@@ -316,7 +316,7 @@ class Case(models.Model):
 
         self.notify_watchers(CaseEvent.CLOSED, user, note)
 
-    @case_action()
+    @case_action(become_watcher=True)
     def reopen(self, user, note=None, update_contact=True):
         self.closed_on = None
         self.save(update_fields=('closed_on',))
@@ -350,7 +350,7 @@ class Case(models.Model):
 
         CaseAction.create(self, user, CaseAction.UNLABEL, label=label)
 
-    @case_action()
+    @case_action(become_watcher=True)
     def reply(self, user, text):
         return Outgoing.create_case_reply(self.org, user, text, self)
 
