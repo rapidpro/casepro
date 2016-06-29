@@ -555,6 +555,14 @@ class FaqCRUDLTest(BaseCasesTest):
             {'id': self.pregnancy.pk, 'name': "Pregnancy"}
         ])
 
+        # request FAQs - filter on language, label, question - no results
+        response = self.url_get('unicef', url, {
+            'label': self.pregnancy.pk,
+            'language': self.eng_za.pk,
+            'question': "hiv and tea"
+        })
+        self.assertEqual(len(response.json['results']), 0)
+
 
 class MessageTest(BaseCasesTest):
     def setUp(self):
