@@ -61,6 +61,7 @@ class CaseTest(BaseCasesTest):
         self.assertTrue(case.is_new)
         self.assertEqual(case.org, self.unicef)
         self.assertEqual(set(case.labels.all()), {self.aids})
+        self.assertEqual(set(case.watchers.all()), {self.user1})
         self.assertEqual(case.assignee, self.moh)
         self.assertEqual(case.contact, self.ann)
         self.assertEqual(case.initial_message, msg2)
@@ -106,6 +107,8 @@ class CaseTest(BaseCasesTest):
         msg3 = self.create_message(self.unicef, 432, self.ann, "OK", created_on=d2)
         handle_messages(self.unicef.pk)
 
+        self.assertSentMail(["evan@unicef.org"])  # user #1 notified of reply
+
         # which will have been archived and added to the case
         mock_archive_messages.assert_called_once_with(self.unicef, [msg3])
         mock_archive_messages.reset_mock()
@@ -117,6 +120,9 @@ class CaseTest(BaseCasesTest):
         with patch.object(timezone, 'now', return_value=d2):
             # other user in MOH adds a note
             case.add_note(self.user2, "Interesting")
+
+        self.assertEqual(set(case.watchers.all()), {self.user1, self.user2})
+        self.assertSentMail(["evan@unicef.org"])  # user #1 notified of new note
 
         actions = case.actions.order_by('pk')
         self.assertEqual(len(actions), 2)
@@ -132,6 +138,8 @@ class CaseTest(BaseCasesTest):
         with patch.object(timezone, 'now', return_value=d3):
             # first user closes the case
             case.close(self.user1)
+
+        self.assertSentMail(["rick@unicef.org"])  # user #2 notified
 
         self.assertEqual(case.opened_on, d1)
         self.assertEqual(case.closed_on, d3)
@@ -374,10 +382,11 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_post_json('unicef', url, {'message': 101, 'summary': "Summary", 'assignee': self.moh.pk})
         self.assertEqual(response.status_code, 200)
 
-        self.assertTrue(response.json['is_new'])
-        self.assertEqual(response.json['case']['summary'], "Summary")
+        self.assertEqual(response.json['summary'], "Summary")
+        self.assertEqual(response.json['is_new'], True)
+        self.assertEqual(response.json['watching'], True)
 
-        case1 = Case.objects.get(pk=response.json['case']['id'])
+        case1 = Case.objects.get(pk=response.json['id'])
         self.assertEqual(case1.initial_message, msg1)
         self.assertEqual(case1.summary, "Summary")
         self.assertEqual(case1.assignee, self.moh)
@@ -393,7 +402,7 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_post_json('unicef', url, {'message': 102, 'summary': "Summary"})
         self.assertEqual(response.status_code, 200)
 
-        case2 = Case.objects.get(pk=response.json['case']['id'])
+        case2 = Case.objects.get(pk=response.json['id'])
         self.assertEqual(case2.initial_message, msg2)
         self.assertEqual(case2.summary, "Summary")
         self.assertEqual(case2.assignee, self.moh)
@@ -598,7 +607,8 @@ class CaseCRUDLTest(BaseCasesTest):
             'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
             'summary': "Summary",
             'opened_on': format_iso8601(self.case.opened_on),
-            'is_closed': False
+            'is_closed': False,
+            'watching': False
         })
 
         # users with label access can also fetch
@@ -840,6 +850,32 @@ class CaseCRUDLTest(BaseCasesTest):
                 'is_closed': False
             }
         ])
+
+    def test_watch_and_unwatch(self):
+        watch_url = reverse('cases.case_watch', args=[self.case.pk])
+        unwatch_url = reverse('cases.case_unwatch', args=[self.case.pk])
+
+        # log in as manager user in currently assigned partner
+        self.login(self.user1)
+
+        response = self.url_post('unicef', watch_url)
+        self.assertEqual(response.status_code, 204)
+
+        self.assertIn(self.user1, self.case.watchers.all())
+
+        response = self.url_post('unicef', unwatch_url)
+        self.assertEqual(response.status_code, 204)
+
+        self.assertNotIn(self.user1, self.case.watchers.all())
+
+        # only user with case access can watch
+        self.who.labels.remove(self.aids)
+        self.login(self.user3)
+
+        response = self.url_post('unicef', watch_url)
+        self.assertEqual(response.status_code, 403)
+
+        self.assertNotIn(self.user3, self.case.watchers.all())
 
 
 class CaseExportCRUDLTest(BaseCasesTest):

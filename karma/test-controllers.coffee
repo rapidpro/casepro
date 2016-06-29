@@ -83,6 +83,48 @@ describe('controllers:', () ->
       expect($scope.caseObj).toEqual(test.case1)
       expect($scope.contact).toEqual(test.ann)
     )
+
+    it('addNote', () ->
+      noteModal = spyOnPromise($q, $scope, UtilsService, 'noteModal')
+      addNote = spyOnPromise($q, $scope, CaseService, 'addNote')
+
+      $scope.caseObj = test.case1
+      $scope.onAddNote()
+
+      noteModal.resolve("this is a note")
+      addNote.resolve()
+
+      expect(UtilsService.noteModal).toHaveBeenCalled()
+      expect(CaseService.addNote).toHaveBeenCalledWith(test.case1, "this is a note")
+    )
+
+    it('onWatch', () ->
+      confirmModal = spyOnPromise($q, $scope, UtilsService, 'confirmModal')
+      watchCase = spyOnPromise($q, $scope, CaseService, 'watch')
+
+      $scope.caseObj = test.case1
+      $scope.onWatch()
+
+      confirmModal.resolve()
+      watchCase.resolve()
+
+      expect(UtilsService.confirmModal).toHaveBeenCalled()
+      expect(CaseService.watch).toHaveBeenCalledWith(test.case1)
+    )
+
+    it('onUnwatch', () ->
+      confirmModal = spyOnPromise($q, $scope, UtilsService, 'confirmModal')
+      unwatchCase = spyOnPromise($q, $scope, CaseService, 'unwatch')
+
+      $scope.caseObj = test.case1
+      $scope.onUnwatch()
+
+      confirmModal.resolve()
+      unwatchCase.resolve()
+
+      expect(UtilsService.confirmModal).toHaveBeenCalled()
+      expect(CaseService.unwatch).toHaveBeenCalledWith(test.case1)
+    )
   )
 
   #=======================================================================

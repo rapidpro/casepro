@@ -44,7 +44,7 @@ class CaseSearchMixin(object):
 class CaseCRUDL(SmartCRUDL):
     model = Case
     actions = ('read', 'open', 'update_summary', 'reply', 'fetch', 'search', 'timeline',
-               'note', 'reassign', 'close', 'reopen', 'label')
+               'note', 'reassign', 'close', 'reopen', 'label', 'watch', 'unwatch')
 
     class Read(OrgObjPermsMixin, SmartReadView):
         fields = ()
@@ -59,11 +59,12 @@ class CaseCRUDL(SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super(CaseCRUDL.Read, self).get_context_data(**kwargs)
             org = self.request.org
+            case = self.get_object()
 
             labels = Label.get_all(self.request.org).order_by('name')
             partners = Partner.get_all(org).order_by('name')
 
-            can_update = self.get_object().access_level(self.request.user) == AccessLevel.update
+            can_update = case.access_level(self.request.user) == AccessLevel.update
 
             # angular app requires context data in JSON format
             context['context_data_json'] = json_encode({
@@ -96,7 +97,12 @@ class CaseCRUDL(SmartCRUDL):
 
             case = Case.get_or_open(request.org, request.user, message, summary, assignee)
 
-            return JsonResponse({'case': case.as_json(), 'is_new': case.is_new}, encoder=JSONEncoder)
+            # augment regular case JSON
+            case_json = case.as_json()
+            case_json['is_new'] = case.is_new
+            case_json['watching'] = case.is_watched_by(request.user)
+
+            return JsonResponse(case_json, encoder=JSONEncoder)
 
     class Note(OrgObjPermsMixin, SmartUpdateView):
         """
@@ -199,7 +205,12 @@ class CaseCRUDL(SmartCRUDL):
         permission = 'cases.case_read'
 
         def render_to_response(self, context, **response_kwargs):
-            return JsonResponse(self.object.as_json(), encoder=JSONEncoder)
+            case_json = self.object.as_json()
+
+            # augment usual case JSON
+            case_json['watching'] = self.object.is_watched_by(self.request.user)
+
+            return JsonResponse(case_json, encoder=JSONEncoder)
 
     class Search(OrgPermsMixin, CaseSearchMixin, SmartTemplateView):
         """
@@ -265,6 +276,26 @@ class CaseCRUDL(SmartCRUDL):
 
         def render_to_response(self, context, **response_kwargs):
             return JsonResponse({'results': context['timeline'], 'max_time': context['max_time']}, encoder=JSONEncoder)
+
+    class Watch(OrgObjPermsMixin, SmartReadView):
+        """
+        Endpoint for watching a case
+        """
+        permission = 'cases.case_read'
+
+        def post(self, request, *args, **kwargs):
+            self.get_object().watch(request.user)
+            return HttpResponse(status=204)
+
+    class Unwatch(OrgObjPermsMixin, SmartReadView):
+        """
+        Endpoint for unwatching a case
+        """
+        permission = 'cases.case_read'
+
+        def post(self, request, *args, **kwargs):
+            self.get_object().unwatch(request.user)
+            return HttpResponse(status=204)
 
 
 class CaseExportCRUDL(SmartCRUDL):

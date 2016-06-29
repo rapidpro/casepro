@@ -87,6 +87,10 @@ def _user_remove_from_org(user, org):
         user.profile.partner = None
         user.profile.save(update_fields=('partner',))
 
+    # remove as watcher of any case in this org
+    for case in user.watched_cases.filter(org=org):
+        case.unwatch(user)
+
 
 def _user_unicode(user):
     if user.has_profile():

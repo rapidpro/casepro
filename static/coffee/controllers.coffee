@@ -334,7 +334,7 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
     UtilsService.newCaseModal(message.text, CASE_SUMMARY_MAX_LEN, partners).then((data) ->
       CaseService.open(message, data.summary, data.assignee).then((caseObj) ->
           caseUrl = '/case/read/' + caseObj.id + '/'
-          if !caseObj.isNew
+          if !caseObj.is_new
             caseUrl += '?alert=open_found_existing'
           UtilsService.navigate(caseUrl)
       )
@@ -521,6 +521,16 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
   #----------------------------------------------------------------------------
   # Case actions
   #----------------------------------------------------------------------------
+
+  $scope.onWatch = () ->
+    UtilsService.confirmModal("Receive notifications for activity in this case?").then(() ->
+      CaseService.watch($scope.caseObj)
+    )
+
+  $scope.onUnwatch = () ->
+    UtilsService.confirmModal("Stop receiving notifications for activity in this case?").then(() ->
+      CaseService.unwatch($scope.caseObj)
+    )
 
   $scope.onAddNote = () ->
     UtilsService.noteModal("Add Note", null, null, CASE_NOTE_MAX_LEN).then((note) ->
