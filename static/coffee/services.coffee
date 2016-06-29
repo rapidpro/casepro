@@ -401,7 +401,7 @@ services.factory('PartnerService', ['$http', '$httpParamSerializer', ($http, $ht
     #----------------------------------------------------------------------------
     # Fetches all partners, optionally with activity information
     #----------------------------------------------------------------------------
-    fetchAll: (with_activity) ->
+    fetchAll: (with_activity = false) ->
       params = {with_activity: with_activity}
       return $http.get('/partner/?' + $httpParamSerializer(params)).then((response) -> response.data.results)
 

@@ -23,7 +23,6 @@ OUTGOING_TEXT_MAX_LEN = 480
 controllers.controller('HomeController', ['$scope', '$window', '$location', 'LabelService', 'UtilsService', ($scope, $window, $location, LabelService, UtilsService) ->
 
   $scope.user = $window.contextData.user
-  $scope.partners = $window.contextData.partners
   $scope.labels = $window.contextData.labels
   $scope.groups = $window.contextData.groups
 
@@ -204,7 +203,7 @@ controllers.controller('BaseItemsController', ['$scope', 'UtilsService', ($scope
 #============================================================================
 # Incoming messages controller
 #============================================================================
-controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal', '$controller', 'MessageService', 'CaseService', 'UtilsService', ($scope, $timeout, $uibModal, $controller, MessageService, CaseService, UtilsService) ->
+controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal', '$controller', 'CaseService', 'MessageService', 'PartnerService', 'UtilsService', ($scope, $timeout, $uibModal, $controller, CaseService, MessageService, PartnerService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
   $scope.advancedSearch = false
@@ -329,16 +328,14 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
       UtilsService.navigate('/case/read/' + message.case.id + '/')
       return
 
-    partners = if $scope.user.partner then null else $scope.partners
-
-    UtilsService.newCaseModal(message.text, CASE_SUMMARY_MAX_LEN, partners).then((data) ->
-      CaseService.open(message, data.summary, data.assignee).then((caseObj) ->
-          caseUrl = '/case/read/' + caseObj.id + '/'
-          if !caseObj.is_new
-            caseUrl += '?alert=open_found_existing'
-          UtilsService.navigate(caseUrl)
+    if $scope.user.partner
+      # if user belongs to a partner, case will be assigned to them
+      newCaseFromMessage(message, null)
+    else
+      # if not then they can choose an assignee
+      PartnerService.fetchAll().then((partners) ->
+        newCaseFromMessage(message, partners)
       )
-    )
 
   $scope.onLabelMessage = (message) ->
     UtilsService.labelModal("Labels", "Update the labels for this message. This determines which other partner organizations can view this message.", $scope.labels, message.labels).then((selectedLabels) ->
@@ -351,6 +348,16 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
     $uibModal.open({templateUrl: '/partials/modal_messagehistory.html', controller: 'MessageHistoryModalController', resolve: {
       message: () -> message
     }})
+
+  newCaseFromMessage = (message, possibleAssignees) ->
+    UtilsService.newCaseModal(message.text, CASE_SUMMARY_MAX_LEN, possibleAssignees).then((data) ->
+      CaseService.open(message, data.summary, data.assignee).then((caseObj) ->
+          caseUrl = '/case/read/' + caseObj.id + '/'
+          if !caseObj.is_new
+            caseUrl += '?alert=open_found_existing'
+          UtilsService.navigate(caseUrl)
+      )
+    )
 ])
 
 
@@ -456,9 +463,8 @@ controllers.controller('DashboardController', ['$scope', '$controller', 'Partner
 #============================================================================
 # Case view controller
 #============================================================================
-controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'MessageService', 'ContactService', 'UtilsService', ($scope, $window, $timeout, CaseService, MessageService, ContactService, UtilsService) ->
+controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'ContactService', 'MessageService', 'PartnerService', 'UtilsService', ($scope, $window, $timeout, CaseService, ContactService, MessageService, PartnerService, UtilsService) ->
 
-  $scope.allPartners = $window.contextData.all_partners
   $scope.allLabels = $window.contextData.all_labels
   
   $scope.caseObj = null
@@ -539,9 +545,11 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
     )
 
   $scope.onReassign = () ->
-    UtilsService.assignModal("Re-assign", null, $scope.allPartners).then((assignee) ->
-      CaseService.reassign($scope.caseObj, assignee).then(() ->
-        $scope.$broadcast('timelineChanged')
+    PartnerService.fetchAll().then((partners) ->
+      UtilsService.assignModal("Re-assign", null, partners).then((assignee) ->
+        CaseService.reassign($scope.caseObj, assignee).then(() ->
+          $scope.$broadcast('timelineChanged')
+        )
       )
     )
 

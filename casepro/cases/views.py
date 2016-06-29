@@ -58,18 +58,13 @@ class CaseCRUDL(SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super(CaseCRUDL.Read, self).get_context_data(**kwargs)
-            org = self.request.org
             case = self.get_object()
-
             labels = Label.get_all(self.request.org).order_by('name')
-            partners = Partner.get_all(org).order_by('name')
-
             can_update = case.access_level(self.request.user) == AccessLevel.update
 
             # angular app requires context data in JSON format
             context['context_data_json'] = json_encode({
-                'all_labels': [l.as_json() for l in labels],
-                'all_partners': [p.as_json() for p in partners],
+                'all_labels': [l.as_json() for l in labels]
             })
 
             context['max_msg_chars'] = MAX_MESSAGE_CHARS
@@ -463,13 +458,11 @@ class BaseHomeView(OrgPermsMixin, SmartTemplateView):
         partner = user.get_partner(org)
 
         labels = Label.get_all(org, user).order_by('name')
-        partners = Partner.get_all(org).order_by('name')
         groups = Group.get_all(org, visible=True).order_by('name')
 
         # angular app requires context data in JSON format
         context['context_data_json'] = json_encode({
             'user': {'id': user.pk, 'partner': partner.as_json() if partner else None},
-            'partners': [p.as_json() for p in partners],
             'labels': [l.as_json() for l in labels],
             'groups': [g.as_json() for g in groups],
         })
