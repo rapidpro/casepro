@@ -113,7 +113,6 @@ describe('services:', () ->
         $httpBackend.expectPOST('/case/close/501/', {note: "Hello there"}).respond('')
         CaseService.close(test.case1, "Hello there").then(() ->
           expect(test.case1.is_closed).toEqual(true)
-          expect(test.case1.watching).toEqual(true)
         )
         $httpBackend.flush()
       )
@@ -177,7 +176,6 @@ describe('services:', () ->
         $httpBackend.expectPOST('/case/update_summary/501/', {summary: "Got coffee?"}).respond('')
         CaseService.updateSummary(test.case1, "Got coffee?").then(() ->
           expect(test.case1.summary).toEqual("Got coffee?")
-          expect(test.case1.watching).toEqual(true)
         )
         $httpBackend.flush()
       )
