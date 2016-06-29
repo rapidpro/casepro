@@ -395,8 +395,15 @@ services.factory('LabelService', ['$http', ($http) ->
 #=====================================================================
 # Partner service
 #=====================================================================
-services.factory('PartnerService', ['$http', ($http) ->
+services.factory('PartnerService', ['$http', '$httpParamSerializer', ($http, $httpParamSerializer) ->
   new class PartnerService
+    
+    #----------------------------------------------------------------------------
+    # Fetches all partners, optionally with activity information
+    #----------------------------------------------------------------------------
+    fetchAll: (with_activity) ->
+      params = {with_activity: with_activity}
+      return $http.get('/partner/?' + $httpParamSerializer(params)).then((response) -> response.data.results)
 
     #----------------------------------------------------------------------------
     # Fetches users with activity statistics for the given partner

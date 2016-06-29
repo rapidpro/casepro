@@ -17,7 +17,7 @@ from temba_client.utils import parse_iso8601
 from casepro.contacts.models import Group
 from casepro.msgs.models import Label, Message, MessageFolder, OutgoingFolder
 from casepro.statistics.models import DailyCount
-from casepro.utils import json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder
+from casepro.utils import json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder, str_to_bool
 from casepro.utils import month_range
 from casepro.utils.export import BaseDownloadView
 
@@ -385,6 +385,36 @@ class PartnerCRUDL(SmartCRUDL):
 
         def get_queryset(self, **kwargs):
             return Partner.get_all(self.request.org).order_by('name')
+
+        def render_to_response(self, context, **response_kwargs):
+            if self.request.is_ajax():
+                with_activity = str_to_bool(self.request.GET.get('with_activity', ''))
+                return self.render_as_json(context['object_list'], with_activity)
+            else:
+                return super(PartnerCRUDL.List, self).render_to_response(context, **response_kwargs)
+
+        def render_as_json(self, partners, with_activity):
+            if with_activity:
+                # get reply statistics
+                total = DailyCount.get_by_partner(partners, DailyCount.TYPE_REPLIES, None, None).scope_totals()
+                this_month = DailyCount.get_by_partner(partners, DailyCount.TYPE_REPLIES,
+                                                       *month_range(0)).scope_totals()
+                last_month = DailyCount.get_by_partner(partners, DailyCount.TYPE_REPLIES,
+                                                       *month_range(-1)).scope_totals()
+
+            def as_json(partner):
+                obj = partner.as_json()
+                if with_activity:
+                    obj.update({
+                        'replies': {
+                            'this_month': this_month.get(partner, 0),
+                            'last_month': last_month.get(partner, 0),
+                            'total': total.get(partner, 0)
+                        }
+                    })
+                return obj
+
+            return JsonResponse({'results': [as_json(p) for p in partners]})
 
     class Users(OrgObjPermsMixin, SmartReadView):
         """

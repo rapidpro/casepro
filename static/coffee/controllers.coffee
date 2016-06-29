@@ -427,7 +427,7 @@ controllers.controller('CasesController', ['$scope', '$timeout', '$controller', 
 #============================================================================
 # Case view controller
 #============================================================================
-controllers.controller('DashboardController', ['$scope', '$controller', 'StatisticsService', ($scope, $controller, StatisticsService) ->
+controllers.controller('DashboardController', ['$scope', '$controller', 'PartnerService', 'StatisticsService', ($scope, $controller, PartnerService, StatisticsService) ->
   $controller('BaseTabsController', {$scope: $scope})
 
   $scope.partners = []
@@ -445,11 +445,10 @@ controllers.controller('DashboardController', ['$scope', '$controller', 'Statist
           credits: {enabled: false}
         });
       )
-    # else if tab == 'partners'
-      # PartnerService.fetchUsers($scope.partner).then((users) ->
-      #  $scope.usersFetched = true
-      #  $scope.users = users
-      #)
+    else if tab == 'partners'
+        PartnerService.fetchAll(true).then((partners) ->
+          $scope.partners = partners
+        )
 
 ])
 
@@ -613,7 +612,6 @@ controllers.controller('PartnerController', ['$scope', '$window', '$controller',
       )
     else if tab == 'users'
       PartnerService.fetchUsers($scope.partner).then((users) ->
-        $scope.usersFetched = true
         $scope.users = users
       )
 

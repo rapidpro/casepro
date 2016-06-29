@@ -10,7 +10,7 @@
       .clearfix{ style:"margin-bottom: 10px" }
         .page-header-buttons
         %h2
-          - trans "Dashboard"
+          - trans "My Organization"
 
     <uib-tabset active="active">
 
@@ -67,7 +67,7 @@
                 [[ partner.replies.last_month ]]
               %td
                 [[ partner.replies.total ]]
-        .none{ ng-if:"!partner" }
+        .none{ ng-if:"!partners" }
           - trans "None"
 
       </uib-tab>
