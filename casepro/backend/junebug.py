@@ -179,7 +179,7 @@ class JunebugBackend(BaseBackend):
 
         # all identities created in the Identity Store in the time window
         new_identities = identity_store.get_identities(
-            created_at__gte=modified_after)
+            created_at__gte=modified_after, created_at__lte=modified_before)
 
         # all identities modified in the Identity Store in the time window
         modified_identities = identity_store.get_identities(
