@@ -311,7 +311,7 @@ PERMISSIONS = {
 
     'msgs.language': ('create', 'read', 'update', 'delete', 'list'),
 
-    'msgs.faq': ('create', 'read', 'update', 'delete', 'list', 'search'),
+    'msgs.faq': ('create', 'read', 'update', 'delete', 'list', 'search', 'import'),
 
     'msgs.message': ('action', 'bulk_reply', 'forward', 'label', 'history', 'search', 'unlabelled'),
 
@@ -341,6 +341,8 @@ GROUP_PERMISSIONS = {
         'orgs.org_home',
         'orgs.org_edit',
         'orgs.org_inbox',
+
+        'csv_imports.importtask.*',
 
         'msgs.label.*',
         'msgs.language.*',
