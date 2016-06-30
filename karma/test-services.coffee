@@ -413,16 +413,6 @@ describe('services:', () ->
       PartnerService = _PartnerService_
     ))
 
-    describe('fetchRepliesChart', () ->
-      it('fetches from replies chart endpoint', () ->
-        $httpBackend.expectGET('/stats/partner_replies_chart/301/').respond('{"categories":["Jan", "Feb"], "series":[2, 3]}')
-        PartnerService.fetchRepliesChart(test.moh).then((data) ->
-          expect(data).toEqual({categories: ["Jan", "Feb"], series: [2, 3]})
-        )
-        $httpBackend.flush()
-      )
-    )
-
     describe('fetchUsers', () ->
       it('fetches from users endpoint', () ->
         $httpBackend.expectGET('/partner/users/301/').respond('{"results":[{"id": 101, "name": "Tom McTest", "replies": {}}]}')
@@ -437,6 +427,27 @@ describe('services:', () ->
       it('posts to delete endpoint', () ->
         $httpBackend.expectPOST('/partner/delete/301/', null).respond('')
         PartnerService.delete(test.moh)
+        $httpBackend.flush()
+      )
+    )
+  )
+
+  #=======================================================================
+  # Tests for StatisticsService
+  #=======================================================================
+  describe('StatisticsService', () ->
+    StatisticsService = null
+
+    beforeEach(inject((_StatisticsService_) ->
+      StatisticsService = _StatisticsService_
+    ))
+
+    describe('repliesChart', () ->
+      it('fetches from replies chart endpoint', () ->
+        $httpBackend.expectGET('/stats/replies_chart/?partner=301').respond('{"categories":["Jan", "Feb"], "series":[2, 3]}')
+        StatisticsService.repliesChart(test.moh).then((data) ->
+          expect(data).toEqual({categories: ["Jan", "Feb"], series: [2, 3]})
+        )
         $httpBackend.flush()
       )
     )

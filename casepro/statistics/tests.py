@@ -119,20 +119,40 @@ class DailyCountsTest(BaseCasesTest):
         self.assertEqual(DailyCount.get_by_org([self.unicef], 'R').total(), 13)
 
     def test_replies_chart(self):
-        url = reverse('stats.partner_replies_chart', args=[self.moh.pk])
+        url = reverse('stats.replies_chart')
+
+        self.assertLoginRedirect(self.url_get('unicef', url), 'unicef', url)
 
         self.login(self.user3)  # even users from other partners can see this
 
+        self.send_outgoing(self.admin, date(2016, 1, 1))  # Jan 1st
         self.send_outgoing(self.user1, date(2016, 1, 15))  # Jan 15th
         self.send_outgoing(self.user1, date(2016, 1, 20))  # Jan 20th
-        self.send_outgoing(self.user1, date(2016, 2, 1))  # Feb 1st
+        self.send_outgoing(self.user2, date(2016, 2, 1))  # Feb 1st
         self.send_outgoing(self.user3, date(2016, 2, 1))  # different partner
 
-        # simulate making request in April
+        # simulate making requests in April
         with patch.object(timezone, 'now', return_value=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC)):
             response = self.url_get('unicef', url)
 
-        self.assertEqual(response.json, {
-            'categories': ["November", "December", "January", "February", "March", "April"],
-            'series': [0, 0, 2, 1, 0, 0]
-        })
+            self.assertEqual(response.json, {
+                'categories': ["May", "June", "July", "August", "September", "October",
+                               "November", "December", "January", "February", "March", "April"],
+                'series': [0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 0, 0]
+            })
+
+            response = self.url_get('unicef', url + '?partner=%d' % self.moh.pk)
+
+            self.assertEqual(response.json, {
+                'categories': ["May", "June", "July", "August", "September", "October",
+                               "November", "December", "January", "February", "March", "April"],
+                'series': [0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0]
+            })
+
+            response = self.url_get('unicef', url + '?user=%d' % self.user1.pk)
+
+            self.assertEqual(response.json, {
+                'categories': ["May", "June", "July", "August", "September", "October",
+                               "November", "December", "January", "February", "March", "April"],
+                'series': [0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0]
+            })

@@ -14,7 +14,7 @@
   %script{ type:"text/javascript" }
     var contextData = {{ context_data_json|safe }};
 
-  .ng-cloak{ ng-controller:"HomeController", ng-init:'init("{{ folder }}", {{ server_time }})', ng-cloak:"" }
+  .ng-cloak{ ng-controller:"InboxController", ng-init:'init("{{ folder }}", {{ server_time }})', ng-cloak:"" }
     .page-header.clearfix
       %h2.pull-back
         %span{ class:'glyphicon {{ folder_icon }}' }

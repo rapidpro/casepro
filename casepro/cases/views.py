@@ -482,7 +482,7 @@ class InboxView(BaseHomeView):
     title = _("Inbox")
     folder = MessageFolder.inbox
     folder_icon = 'glyphicon-inbox'
-    template_name = 'cases/home_messages.haml'
+    template_name = 'cases/inbox_messages.haml'
 
 
 class FlaggedView(BaseHomeView):
@@ -492,7 +492,7 @@ class FlaggedView(BaseHomeView):
     title = _("Flagged")
     folder = MessageFolder.flagged
     folder_icon = 'glyphicon-flag'
-    template_name = 'cases/home_messages.haml'
+    template_name = 'cases/inbox_messages.haml'
 
 
 class ArchivedView(BaseHomeView):
@@ -502,7 +502,7 @@ class ArchivedView(BaseHomeView):
     title = _("Archived")
     folder = MessageFolder.archived
     folder_icon = 'glyphicon-trash'
-    template_name = 'cases/home_messages.haml'
+    template_name = 'cases/inbox_messages.haml'
 
 
 class UnlabelledView(BaseHomeView):
@@ -512,7 +512,7 @@ class UnlabelledView(BaseHomeView):
     title = _("Unlabelled")
     folder = MessageFolder.unlabelled
     folder_icon = 'glyphicon-bullhorn'
-    template_name = 'cases/home_messages.haml'
+    template_name = 'cases/inbox_messages.haml'
 
 
 class SentView(BaseHomeView):
@@ -522,7 +522,7 @@ class SentView(BaseHomeView):
     title = _("Sent")
     folder = OutgoingFolder.sent
     folder_icon = 'glyphicon-send'
-    template_name = 'cases/home_outgoing.haml'
+    template_name = 'cases/inbox_outgoing.haml'
 
 
 class OpenCasesView(BaseHomeView):
@@ -532,7 +532,7 @@ class OpenCasesView(BaseHomeView):
     title = _("Open Cases")
     folder = CaseFolder.open
     folder_icon = 'glyphicon-folder-open'
-    template_name = 'cases/home_cases.haml'
+    template_name = 'cases/inbox_cases.haml'
 
 
 class ClosedCasesView(BaseHomeView):
@@ -542,24 +542,7 @@ class ClosedCasesView(BaseHomeView):
     title = _("Closed Cases")
     folder = CaseFolder.closed
     folder_icon = 'glyphicon-folder-close'
-    template_name = 'cases/home_cases.haml'
-
-
-class DashboardView(SmartTemplateView):
-    template_name = 'cases/dashboard.haml'
-
-    def get_context_data(self, **kwargs):
-        context = super(DashboardView, self).get_context_data(**kwargs)
-
-        context['summary'] = self.get_summary(self.request.org)
-        return context
-
-    def get_summary(self, org):
-        return {
-            'total_replies': DailyCount.get_by_org([org], DailyCount.TYPE_REPLIES).total(),
-            'cases_open': Case.objects.filter(org=org, closed_on=None).count(),
-            'cases_closed': Case.objects.filter(org=org).exclude(closed_on=None).count()
-        }
+    template_name = 'cases/inbox_cases.haml'
 
 
 class StatusView(View):

@@ -18,9 +18,9 @@ OUTGOING_TEXT_MAX_LEN = 480
 
 
 #============================================================================
-# Home controller (DOM parent of inbox and cases)
+# Inbox controller (DOM parent of messages and cases)
 #============================================================================
-controllers.controller('HomeController', ['$scope', '$window', '$location', 'LabelService', 'UtilsService', ($scope, $window, $location, LabelService, UtilsService) ->
+controllers.controller('InboxController', ['$scope', '$window', '$location', 'LabelService', 'UtilsService', ($scope, $window, $location, LabelService, UtilsService) ->
 
   $scope.user = $window.contextData.user
   $scope.labels = $window.contextData.labels
@@ -432,9 +432,9 @@ controllers.controller('CasesController', ['$scope', '$timeout', '$controller', 
 
 
 #============================================================================
-# Case view controller
+# Org home controller
 #============================================================================
-controllers.controller('DashboardController', ['$scope', '$controller', 'PartnerService', 'StatisticsService', ($scope, $controller, PartnerService, StatisticsService) ->
+controllers.controller('HomeController', ['$scope', '$controller', 'PartnerService', 'StatisticsService', ($scope, $controller, PartnerService, StatisticsService) ->
   $controller('BaseTabsController', {$scope: $scope})
 
   $scope.partners = []
@@ -456,7 +456,6 @@ controllers.controller('DashboardController', ['$scope', '$controller', 'Partner
         PartnerService.fetchAll(true).then((partners) ->
           $scope.partners = partners
         )
-
 ])
 
 
@@ -607,7 +606,7 @@ controllers.controller('PartnerController', ['$scope', '$window', '$controller',
 
   $scope.onTabInit = (tab) ->
     if tab == 'summary'
-      StatisticsService.partnerRepliesChart($scope.partner).then((data) ->
+      StatisticsService.repliesChart($scope.partner, null).then((data) ->
         Highcharts.chart('chart-replies-by-month', {
           chart: {type: 'column'},
           title: {text: null},

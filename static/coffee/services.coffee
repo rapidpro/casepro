@@ -6,26 +6,6 @@ services = angular.module('cases.services', ['cases.modals']);
 
 
 #=====================================================================
-# Chart service
-#=====================================================================
-services.factory('StatisticsService', ['$http', ($http) ->
-  new class StatisticsService
-
-    #----------------------------------------------------------------------------
-    # Fetches data for partner replies by month chart
-    #----------------------------------------------------------------------------
-    repliesChart: () ->
-      return $http.get('/stats/replies_chart/').then((response) -> response.data)
-
-    #----------------------------------------------------------------------------
-    # Fetches data for partner replies by month chart
-    #----------------------------------------------------------------------------
-    partnerRepliesChart: (partner) ->
-      return $http.get('/stats/partner_replies_chart/' + partner.id + '/').then((response) -> response.data)
-])
-
-
-#=====================================================================
 # Contact service
 #=====================================================================
 
@@ -416,6 +396,24 @@ services.factory('PartnerService', ['$http', '$httpParamSerializer', ($http, $ht
     #----------------------------------------------------------------------------
     delete: (partner) ->
       return $http.post('/partner/delete/' + partner.id + '/')
+])
+
+
+#=====================================================================
+# Statistics service
+#=====================================================================
+services.factory('StatisticsService', ['$http', '$httpParamSerializer', ($http, $httpParamSerializer) ->
+  new class StatisticsService
+
+    #----------------------------------------------------------------------------
+    # Fetches data for replies by month chart
+    #----------------------------------------------------------------------------
+    repliesChart: (partner = null, user = null) ->
+      params = {
+        partner: if partner then partner.id else null,
+        user: if user then user.id else null
+      }
+      return $http.get('/stats/replies_chart/?' + $httpParamSerializer(params)).then((response) -> response.data)
 ])
 
 

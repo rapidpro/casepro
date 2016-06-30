@@ -160,31 +160,33 @@ describe('controllers:', () ->
   )
 
   #=======================================================================
-  # Tests for any controllers which must be children of HomeController
+  # Tests for any controllers which must be children of InboxController
   #=======================================================================
-  describe('home controllers:', () ->
+  describe('inbox controllers:', () ->
     # injected services
     MessageService = null
     OutgoingService = null
     CaseService = null
+    PartnerService = null
 
-    $homeScope = null
+    $inboxScope = null
     $scope = null
     serverTime = 1464775597109  # ~ Jun 1st 2016 10:06:37 UTC
 
     beforeEach(() ->
-      inject((_MessageService_, _OutgoingService_, _CaseService_) ->
+      inject((_MessageService_, _OutgoingService_, _CaseService_, _PartnerService_) ->
         MessageService = _MessageService_
         OutgoingService = _OutgoingService_
         CaseService = _CaseService_
+        PartnerService = _PartnerService_
       )
 
       $window.contextData = {user: test.user1, partners: [], labels: [test.tea, test.coffee], groups: []}
 
-      $homeScope = $rootScope.$new()
-      $controller('HomeController', {$scope: $homeScope})
+      $inboxScope = $rootScope.$new()
+      $controller('InboxController', {$scope: $inboxScope})
 
-      $scope = $homeScope.$new()
+      $scope = $inboxScope.$new()
     )
 
     #=======================================================================
@@ -195,7 +197,7 @@ describe('controllers:', () ->
       beforeEach(() ->
         $controller('CasesController', {$scope: $scope})
 
-        $homeScope.init('open', serverTime)
+        $inboxScope.init('open', serverTime)
         $scope.init()
 
         # extra test data
@@ -265,7 +267,7 @@ describe('controllers:', () ->
       beforeEach(() ->
         $controller('MessagesController', {$scope: $scope})
 
-        $homeScope.init('inbox', serverTime)
+        $inboxScope.init('inbox', serverTime)
         $scope.init()
 
         # extra test data
@@ -389,12 +391,14 @@ describe('controllers:', () ->
 
       describe('onCaseFromMessage', () ->
         it('should open new case if message does not have one', () ->
+          fetchPartners = spyOnPromise($q, $scope, PartnerService, 'fetchAll')
           newCaseModal = spyOnPromise($q, $scope, UtilsService, 'newCaseModal')
           openCase = spyOnPromise($q, $scope, CaseService, 'open')
           spyOn(UtilsService, 'navigate')
 
           $scope.onCaseFromMessage(test.msg1)
 
+          fetchPartners.resolve([test.moh, test.who])
           newCaseModal.resolve({summary: "New case", assignee: test.moh})
           openCase.resolve({id: 601, summary: "New case", isNew: false})
 
@@ -470,7 +474,7 @@ describe('controllers:', () ->
       beforeEach(() ->
         $controller('OutgoingController', {$scope: $scope})
 
-        $homeScope.init('sent', serverTime)
+        $inboxScope.init('sent', serverTime)
         $scope.init()
 
         # outgoing message test data
@@ -527,10 +531,12 @@ describe('controllers:', () ->
   #=======================================================================
   describe('PartnerController', () ->
     PartnerService = null
+    StatisticsService = null
     $scope = null
 
-    beforeEach(inject((_PartnerService_) ->
+    beforeEach(inject((_PartnerService_, _StatisticsService_) ->
       PartnerService = _PartnerService_
+      StatisticsService = _StatisticsService_
 
       $scope = $rootScope.$new()
       $window.contextData = {partner: test.moh}
@@ -542,11 +548,11 @@ describe('controllers:', () ->
       expect($scope.initialisedTabs).toEqual([])
 
       fetchUsers = spyOnPromise($q, $scope, PartnerService, 'fetchUsers')
-      fetchRepliesChart = spyOnPromise($q, $scope, PartnerService, 'fetchRepliesChart')
+      repliesChart = spyOnPromise($q, $scope, StatisticsService, 'repliesChart')
 
       $scope.onTabSelect('summary')
 
-      expect(PartnerService.fetchRepliesChart).toHaveBeenCalledWith(test.moh)
+      expect(StatisticsService.repliesChart).toHaveBeenCalledWith(test.moh, null)
       expect($scope.initialisedTabs).toEqual(['summary'])
 
       $scope.onTabSelect('users')

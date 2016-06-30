@@ -943,7 +943,7 @@ class CaseExportCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 302)
 
 
-class HomeViewsTest(BaseCasesTest):
+class InboxViewsTest(BaseCasesTest):
     def test_inbox(self):
         url = reverse('cases.inbox')
 
@@ -954,13 +954,14 @@ class HomeViewsTest(BaseCasesTest):
         self.login(self.admin)
 
         response = self.url_get('unicef', url)
-        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "/org/home/")  # org-level users get link to org dashboard
 
         # log in as regular user
         self.login(self.user1)
 
         response = self.url_get('unicef', url)
-        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "/org/home/")
+        self.assertContains(response, "/partner/read/%d/" % self.moh.pk)  # partner users get link to partner dashboard
 
 
 class PartnerTest(BaseCasesTest):
@@ -1110,6 +1111,17 @@ class PartnerCRUDLTest(BaseCasesTest):
         self.assertEqual(len(partners), 2)
         self.assertEqual(partners[0].name, "MOH")
         self.assertEqual(partners[1].name, "WHO")
+
+        response = self.url_get('unicef', url, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.json, {'results': [
+            {'id': self.moh.pk, 'name': "MOH"}, {'id': self.who.pk, 'name': "WHO"}
+        ]})
+
+        response = self.url_get('unicef', url + '?with_activity=1', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.json, {'results': [
+            {'id': self.moh.pk, 'name': "MOH", 'replies': {'last_month': 0, 'this_month': 0, 'total': 0}},
+            {'id': self.who.pk, 'name': "WHO", 'replies': {'last_month': 0, 'this_month': 0, 'total': 0}}
+        ]})
 
     def test_users(self):
         url = reverse('cases.partner_users', args=[self.moh.pk])

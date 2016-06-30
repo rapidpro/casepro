@@ -4,7 +4,7 @@ from django.conf.urls import url
 
 from .views import CaseCRUDL, CaseExportCRUDL, PartnerCRUDL
 from .views import InboxView, FlaggedView, OpenCasesView, ClosedCasesView, ArchivedView, SentView, UnlabelledView
-from .views import DashboardView, StatusView, PingView
+from .views import StatusView, PingView
 
 
 urlpatterns = CaseCRUDL().as_urlpatterns()
@@ -19,7 +19,6 @@ urlpatterns += [
     url(r'^sent/$', SentView.as_view(), name='cases.sent'),
     url(r'^open/$', OpenCasesView.as_view(), name='cases.open'),
     url(r'^closed/$', ClosedCasesView.as_view(), name='cases.closed'),
-    url(r'^dashboard/$', DashboardView.as_view(), name='cases.dashboard'),
     url(r'^status$', StatusView.as_view(), name='internal.status'),
     url(r'^ping$', PingView.as_view(), name='internal.ping')
 ]
