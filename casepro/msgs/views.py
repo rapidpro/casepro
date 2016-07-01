@@ -310,7 +310,7 @@ class FaqCRUDL(SmartCRUDL):
     class Import(OrgPermsMixin, SmartCSVImportView):
         model = ImportTask
         fields = ('csv_file',)
-        success_message = 'CSV File Uploaded. Successfully loaded FAQs should appear here soon (hit Refresh)'
+        success_message = "File uploaded successfully. If your FAQs don't appear here soon, something went wrong."
         success_url = '@msgs.faq_list'
 
         def derive_title(self):
