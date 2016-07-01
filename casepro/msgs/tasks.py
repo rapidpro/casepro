@@ -9,7 +9,6 @@ from django.utils import timezone
 from dash.orgs.tasks import org_task
 from datetime import timedelta
 from smartmin.csv_imports.models import ImportTask
-from casepro.utils import normalize, normalize_language_code
 from .models import FAQ, Language, Label
 
 # python2 and python3 support
