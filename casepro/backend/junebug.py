@@ -66,16 +66,10 @@ class IdentityStoreContact(object):
     Holds identity data for syncing
     """
     def __init__(self, json_data):
-        self.id = json_data.get('id')
-        self.version = json_data.get('version')
+        for k, v in json_data.items():
+            setattr(self, k, v)
         self.name = json_data.get('details').get('name')
         self.addresses = json_data.get('details').get('addresses')
-        self.communicate_through = json_data.get('communicate_through')
-        self.operator = json_data.get('operator')
-        self.created_at = json_data.get('created_at')
-        self.created_by = json_data.get('created_by')
-        self.updated_at = json_data.get('updated_at')
-        self.updated_by = json_data.get('updated_by')
 
 
 class IdentityStoreContactSyncer(BaseSyncer):
