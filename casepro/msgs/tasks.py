@@ -9,7 +9,8 @@ from django.utils import timezone
 from dash.orgs.tasks import org_task
 from datetime import timedelta
 from smartmin.csv_imports.models import ImportTask
-from .models import FAQ
+from casepro.utils import normalize, normalize_language_code
+from .models import FAQ, Language, Label
 
 # python2 and python3 support
 try:
@@ -106,9 +107,53 @@ def reply_export(export_id):
 
 
 def create_faq(org, question, answer, language, parent, labels=(), **kwargs):
+    """
+    A helper for creating FAQs since labels (many-to-many) needs to be added after initial creation
+    """
     faq = FAQ.objects.create(org=org, question=question, answer=answer, language=language, parent=parent, **kwargs)
     faq.labels.add(*labels)
     return faq
+
+
+def get_or_create_lang(org, lang_code):
+    """
+    Gets or creates a Language object from a potentially poorly formatted language code
+    """
+    lang_code = lang_code.strip()
+    try:
+        # Get the Language
+        return Language.objects.get(code__iexact=lang_code)  # iexact removes case sensitivity
+    except:
+        # Format the lang_code before creating a new language
+        if len(lang_code) != 6:
+            raise ValueError("Language codes should be 6 characters long")
+
+        if lang_code[3] != '_':
+            raise ValueError("Language name and location should be seperated by an underscore")
+
+        lang_code = lang_code[0:4] + lang_code[4:6].upper()
+        # Create the language
+        return Language.objects.create(org=org, code=lang_code)
+
+
+def get_labels(labelstring):
+    """
+    Gets a list of label objects from a comma-seperated string of the label codes, eg. "TB, aids"
+    """
+    labels = set()
+    labelstrings = labelstring.split(', ')
+    print labelstrings
+    for labelstring in labelstrings:
+        labelstring = labelstring.strip()
+        print labelstring
+        try:
+            label = Label.objects.get(name__iexact=labelstring)  # iexact removes case sensitivity
+        except Exception as e:
+            task.log('Label does not exist! Create it first.')
+            raise e
+        print label
+        labels.add(label)
+    return list(labels)
 
 
 @task(track_started=True)
@@ -121,69 +166,49 @@ def faq_csv_import(org, task_id):  # pragma: no cover
     task.log("--------------------------------")
     task.save()
 
-    from casepro.msgs.models import Language, Label
-    tb = Label.objects.all()[0]
-
-    upload = csv.DictReader(task.csv_file)
-
-    for line in upload:
-
-        # TODO: get_or_create
-        try:
-            parent_lang = Language.objects.get(code=line['Parent Language'])
-        except:
-            parent_lang = Language.objects.create(org=org, code=line['Parent Language'])
-
-        # TODO: use actual labels
-        labels = [tb]
-
-        parent_faq = create_faq(
-            org,
-            line['Parent Question'],
-            line['Parent Answer'],
-            parent_lang,
-            None,
-            labels
-        )
-
-        # Get translation languages
-        lang_codes = set()
-        keys = line.keys()
-        keys.remove('Parent Question')
-        keys.remove('Parent Language')
-        keys.remove('Parent Answer')
-        keys.remove('Parent ID')
-        keys.remove('Labels')
-        for key in keys:
-            lang_code, name = key.split(' ')
-            lang_codes.add(lang_code)
-
-        for lang_code in lang_codes:
-            try:
-                trans_lang = Language.objects.get(code=lang_code)
-            except:
-                trans_lang = Language.objects.create(org=org, code=lang_code)
-
-            create_faq(
-                org,
-                line['%s Question' % lang_code],
-                line['%s Answer' % lang_code],
-                trans_lang,
-                parent_faq,
-                labels
-            )
-
     try:
-        with transaction.atomic():
-            # create_faq(org, "How do I know I'm pregnant?", "Do a pregnancy test.",
-            #            eng_uk, None, [tb])
-            # model = class_from_string(task.model_class)
-            # records = model.import_csv(task, log)
-            task.save()
+        with transaction.atomic():  # prevents partial csv import - all or nothing
+            # Load csv into Dict
+            records = csv.DictReader(task.csv_file)
+            lines = 0
 
+            for line in records:
+                lines += 1
+                # Get or create parent Language object
+                parent_lang = get_or_create_lang(org, line['Parent Language'])
+
+                # Get label objects
+                labels = get_labels(line['Labels'])
+
+                # Create parent FAQ
+                parent_faq = create_faq(org, line['Parent Question'], line['Parent Answer'],
+                                        parent_lang, None, labels)
+
+                # Start creation of translation FAQs
+                # get a list of the csv keys
+                keys = line.keys()
+                # remove non-translation keys
+                parent_keys = ['Parent Question', 'Parent Language', 'Parent Answer', 'Parent ID', 'Labels']
+                [keys.remove(parent_key) for parent_key in parent_keys]
+                # get a set of unique translation language codes
+                lang_codes = set()
+                for key in keys:
+                    lang_code, name = key.split(' ')
+                    lang_codes.add(lang_code)
+
+                # Loop through for each translation
+                for lang_code in lang_codes:
+                    # Create or create translation Language object
+                    trans_lang = get_or_create_lang(org, lang_code)
+
+                    # Create translation FAQ
+                    create_faq(org, line['%s Question' % lang_code], line['%s Answer' % lang_code],
+                               trans_lang, parent_faq, labels)
+
+            task.save()
             task.log(log.getvalue())
             task.log("Import finished at %s" % timezone.now())
-            # task.log("%d record(s) added." % len(records))
+            task.log("%d FAQ(s) added." % lines)
 
     except Exception as e:
         import traceback
