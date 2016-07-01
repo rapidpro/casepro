@@ -381,8 +381,8 @@ services.factory('PartnerService', ['$http', '$httpParamSerializer', ($http, $ht
     #----------------------------------------------------------------------------
     # Fetches all partners, optionally with activity information
     #----------------------------------------------------------------------------
-    fetchAll: (with_activity = false) ->
-      params = {with_activity: with_activity}
+    fetchAll: (withActivity = false) ->
+      params = {with_activity: withActivity}
       return $http.get('/partner/?' + $httpParamSerializer(params)).then((response) -> response.data.results)
 
     #----------------------------------------------------------------------------
@@ -420,8 +420,25 @@ services.factory('StatisticsService', ['$http', '$httpParamSerializer', ($http, 
 #=====================================================================
 # User service
 #=====================================================================
-services.factory('UserService', ['$http', ($http) ->
+services.factory('UserService', ['$http', '$httpParamSerializer', ($http, $httpParamSerializer) ->
   new class UserService
+
+    #----------------------------------------------------------------------------
+    # Fetches users in the given partner with optional activity statistics
+    #----------------------------------------------------------------------------
+    fetchInPartner: (partner, withActivity = false) ->
+      params = {
+        partner: if partner then partner.id else null,
+        with_activity: withActivity
+      }
+      return $http.get('/user/?' + $httpParamSerializer(params)).then((response) -> response.data.results)
+
+    #----------------------------------------------------------------------------
+    # Fetches non-partner users with optional activity statistics
+    #----------------------------------------------------------------------------
+    fetchNonPartner: (withActivity = false) ->
+      params = {non_partner: true, with_activity: withActivity}
+      return $http.get('/user/?' + $httpParamSerializer(params)).then((response) -> response.data.results)
 
     #----------------------------------------------------------------------------
     # Delete the given user

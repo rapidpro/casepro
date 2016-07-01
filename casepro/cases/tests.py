@@ -1123,38 +1123,6 @@ class PartnerCRUDLTest(BaseCasesTest):
             {'id': self.who.pk, 'name': "WHO", 'replies': {'last_month': 0, 'this_month': 0, 'total': 0}}
         ]})
 
-    def test_users(self):
-        url = reverse('cases.partner_users', args=[self.moh.pk])
-
-        ann = self.create_contact(self.unicef, "C-001", "Ann")
-        self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", ann,
-                             created_on=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC))  # April 20th
-        self.create_outgoing(self.unicef, self.user1, 203, 'C', "Hello 3", ann,
-                             created_on=datetime(2016, 3, 20, 9, 0, tzinfo=pytz.UTC))  # Mar 20th
-
-        # try as regular user
-        self.login(self.user2)
-
-        # simulate making request in May
-        with patch.object(timezone, 'now', return_value=datetime(2016, 5, 20, 9, 0, tzinfo=pytz.UTC)):
-            response = self.url_get('unicef', url)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json['results'], [
-            {
-                'id': self.user1.pk,
-                'name': "Evan",
-                'replies': {'last_month': 1, 'this_month': 0, 'total': 2},
-                'role': "Manager"
-            },
-            {
-                'id': self.user2.pk,
-                'name': "Rick",
-                'replies': {'last_month': 0, 'this_month': 0, 'total': 0},
-                'role': "Analyst"
-            }
-        ])
-
 
 class ContextProcessorsTest(BaseCasesTest):
     def test_sentry_dsn(self):

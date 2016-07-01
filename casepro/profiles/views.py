@@ -4,17 +4,18 @@ from dash.orgs.views import OrgPermsMixin
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from smartmin.views import SmartCreateView, SmartDeleteView, SmartReadView, SmartUpdateView
 from smartmin.views import SmartListView, SmartCRUDL
 
 from casepro.cases.mixins import PartnerPermsMixin
 from casepro.cases.models import Partner
 from casepro.orgs_ext.mixins import OrgFormMixin
-from casepro.utils import json_encode
+from casepro.statistics.models import DailyCount
+from casepro.utils import json_encode, month_range, str_to_bool
 
 from .forms import UserForm, OrgUserForm, PartnerUserForm
-from .models import Profile
+from .models import Profile, ROLE_ADMIN, ROLE_MANAGER, ROLE_ANALYST
 
 
 class UserFieldsMixin(object):
@@ -241,19 +242,20 @@ class UserCRUDL(SmartCRUDL):
                 edit_button_url = None
                 can_delete = False
 
-            context['context_data_json'] = json_encode({'user': self.object.as_json()})
+            context['context_data_json'] = json_encode({'user': self.object.as_json(full=True, org=org)})
             context['edit_button_url'] = edit_button_url
             context['can_delete'] = can_delete
             return context
 
         def get_role(self, obj):
             org = self.request.org
+            role = obj.profile.get_role(org)
 
-            if obj.can_administer(org):
+            if role == ROLE_ADMIN:
                 return _("Administrator")
-            elif org.editors.filter(pk=obj.pk).exists():
+            elif role == ROLE_MANAGER:
                 return _("Manager")
-            elif org.viewers.filter(pk=obj.pk).exists():
+            elif role == ROLE_ANALYST:
                 return _("Data Analyst")
 
     class Delete(OrgPermsMixin, SmartDeleteView):
@@ -272,24 +274,43 @@ class UserCRUDL(SmartCRUDL):
 
             return HttpResponse(status=204)
 
-    class List(OrgPermsMixin, UserFieldsMixin, SmartListView):
-        default_order = ('profile__full_name',)
-        fields = ('name', 'email', 'partner')
-        link_fields = ('name', 'partner')
+    class List(OrgPermsMixin, SmartListView):
+        """
+        JSON endpoint to fetch users with their activity information
+        """
         permission = 'profiles.profile_user_list'
-        select_related = ('profile',)
 
-        def derive_queryset(self, **kwargs):
-            if self.request.org:
-                queryset = self.request.org.get_users()
-            else:
-                queryset = super(UserCRUDL.List, self).derive_queryset(**kwargs)
+        def get(self, request, *args, **kwargs):
+            org = request.org
+            partner_id = request.GET.get('partner')
+            non_partner = str_to_bool(self.request.GET.get('non_partner', ''))
+            with_activity = str_to_bool(self.request.GET.get('with_activity', ''))
 
-            return queryset.exclude(profile=None)
+            users = request.org.get_users()
 
-        def lookup_field_link(self, context, field, obj):
-            if field == 'partner':
-                partner = obj.get_partner(self.request.org)
-                return reverse('cases.partner_read', args=[partner.pk]) if partner else None
-            else:
-                return super(UserCRUDL.List, self).lookup_field_link(context, field, obj)
+            if partner_id:
+                users = users.filter(profile__partner__pk=partner_id)
+            elif non_partner:
+                users = users.filter(profile__partner=None)
+
+            users = list(users.select_related('profile').order_by('profile__full_name'))
+
+            # get reply statistics
+            if with_activity:
+                total = DailyCount.get_by_user(org, users, DailyCount.TYPE_REPLIES, None, None).scope_totals()
+                this_month = DailyCount.get_by_user(org, users, DailyCount.TYPE_REPLIES, *month_range(0)).scope_totals()
+                last_month = DailyCount.get_by_user(org, users, DailyCount.TYPE_REPLIES,
+                                                    *month_range(-1)).scope_totals()
+
+            def as_json(user):
+                obj = user.as_json(full=True, org=org)
+                if with_activity:
+                    obj['replies'] = {
+                        'this_month': this_month.get(user, 0),
+                        'last_month': last_month.get(user, 0),
+                        'total': total.get(user, 0)
+                    }
+
+                return obj
+
+            return JsonResponse({'results': [as_json(u) for u in users]})

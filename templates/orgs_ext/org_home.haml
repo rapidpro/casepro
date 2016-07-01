@@ -76,6 +76,46 @@
           - trans "None"
 
       </uib-tab>
+
+      <uib-tab index="2" select="onTabSelect('users')">
+        <uib-tab-heading>
+          %span.glyphicon.glyphicon-user
+          - trans "Users"
+        </uib-tab-heading>
+        .search-toolbar.clearfix
+          - if perms.profiles.user_create or org_perms.profiles.user_create
+            .pull-away
+              <a class="btn btn-default" href="{% url 'profiles.user_create' %}">{% trans "New..." %}</a>
+
+          .{ style:"margin-top: 7px" }
+            Total of <strong>[[ users.length ]]</strong> users
+
+        %table.table.table-striped
+          %thead
+            %th
+              - trans "Name"
+            %th
+              - trans "Replies (this month)"
+            %th
+              - trans "Replies (last month)"
+            %th
+              - trans "Replies (total)"
+          %tbody
+            %tr{ ng-repeat:"user in users" }
+              %td
+                %a{ ng-href:"/user/read/[[ user.id ]]/" }><
+                  [[ user.name ]]
+              %td
+                [[ user.replies.this_month ]]
+              %td
+                [[ user.replies.last_month ]]
+              %td
+                [[ user.replies.total ]]
+        .none{ ng-if:"!users" }
+          - trans "None"
+
+      </uib-tab>
+
     </uib-tabset>
 
 

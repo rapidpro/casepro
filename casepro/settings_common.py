@@ -319,7 +319,7 @@ PERMISSIONS = {
 
     'case.caseexport': ('create', 'read'),
 
-    'cases.partner': ('create', 'read', 'delete', 'list', 'users'),
+    'cases.partner': ('create', 'read', 'delete', 'list'),
 
     'contacts.contact': ('read', 'list'),
 
@@ -381,13 +381,13 @@ GROUP_PERMISSIONS = {
         'cases.caseexport_read',
         'cases.partner_list',
         'cases.partner_read',
-        'cases.partner_users',
 
         'contacts.contact_read',
 
         'profiles.profile_user_create_in',
         'profiles.profile_user_update',
         'profiles.profile_user_read',
+        'profiles.profile_user_list',
     ),
     "Viewers": (  # Partner users: Data Analysts
         'orgs.org_inbox',
@@ -415,11 +415,11 @@ GROUP_PERMISSIONS = {
         'cases.caseexport_read',
         'cases.partner_list',
         'cases.partner_read',
-        'cases.partner_users',
 
         'contacts.contact_read',
 
         'profiles.profile_user_read',
+        'profiles.profile_user_list',
     ),
 }
 

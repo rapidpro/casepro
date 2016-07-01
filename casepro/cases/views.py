@@ -319,7 +319,7 @@ class PartnerFormMixin(object):
 
 
 class PartnerCRUDL(SmartCRUDL):
-    actions = ('create', 'read', 'update', 'delete', 'list', 'users')
+    actions = ('create', 'read', 'update', 'delete', 'list')
     model = Partner
 
     class Create(OrgPermsMixin, PartnerFormMixin, SmartCreateView):
@@ -400,45 +400,14 @@ class PartnerCRUDL(SmartCRUDL):
             def as_json(partner):
                 obj = partner.as_json()
                 if with_activity:
-                    obj.update({
-                        'replies': {
-                            'this_month': this_month.get(partner, 0),
-                            'last_month': last_month.get(partner, 0),
-                            'total': total.get(partner, 0)
-                        }
-                    })
+                    obj['replies'] = {
+                        'this_month': this_month.get(partner, 0),
+                        'last_month': last_month.get(partner, 0),
+                        'total': total.get(partner, 0)
+                    }
                 return obj
 
             return JsonResponse({'results': [as_json(p) for p in partners]})
-
-    class Users(OrgObjPermsMixin, SmartReadView):
-        """
-        JSON endpoint to fetch partner users with their activity information
-        """
-        def get(self, request, *args, **kwargs):
-            partner = self.get_object()
-            org = partner.org
-            managers = set(partner.get_managers())
-            users = list(partner.get_users().order_by('profile__full_name'))
-
-            # get reply statistics
-            total = DailyCount.get_by_user(org, users, DailyCount.TYPE_REPLIES, None, None).scope_totals()
-            this_month = DailyCount.get_by_user(org, users, DailyCount.TYPE_REPLIES, *month_range(0)).scope_totals()
-            last_month = DailyCount.get_by_user(org, users, DailyCount.TYPE_REPLIES, *month_range(-1)).scope_totals()
-
-            def as_json(user):
-                obj = user.as_json()
-                obj.update({
-                    'role': "Manager" if user in managers else "Analyst",
-                    'replies': {
-                        'this_month': this_month.get(user, 0),
-                        'last_month': last_month.get(user, 0),
-                        'total': total.get(user, 0)
-                    }
-                })
-                return obj
-
-            return JsonResponse({'results': [as_json(u) for u in users]})
 
 
 class BaseHomeView(OrgPermsMixin, SmartTemplateView):

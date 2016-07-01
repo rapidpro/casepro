@@ -413,16 +413,6 @@ describe('services:', () ->
       PartnerService = _PartnerService_
     ))
 
-    describe('fetchUsers', () ->
-      it('fetches from users endpoint', () ->
-        $httpBackend.expectGET('/partner/users/301/').respond('{"results":[{"id": 101, "name": "Tom McTest", "replies": {}}]}')
-        PartnerService.fetchUsers(test.moh).then((users) ->
-          expect(users).toEqual([{id: 101, name: "Tom McTest", replies: {}}])
-        )
-        $httpBackend.flush()
-      )
-    )
-
     describe('delete', () ->
       it('posts to delete endpoint', () ->
         $httpBackend.expectPOST('/partner/delete/301/', null).respond('')
@@ -462,6 +452,26 @@ describe('services:', () ->
     beforeEach(inject((_UserService_) ->
       UserService = _UserService_
     ))
+
+    describe('fetchInPartner', () ->
+      it('fetches from users endpoint', () ->
+        $httpBackend.expectGET('/user/?partner=301&with_activity=false').respond('{"results":[{"id": 101, "name": "Tom McTest", "replies": {}}]}')
+        UserService.fetchInPartner(test.moh).then((users) ->
+          expect(users).toEqual([{id: 101, name: "Tom McTest", replies: {}}])
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('fetchNonPartner', () ->
+      it('fetches from users endpoint', () ->
+        $httpBackend.expectGET('/user/?non_partner=true&with_activity=true').respond('{"results":[{"id": 101, "name": "Tom McTest", "replies": {}}]}')
+        UserService.fetchNonPartner(true).then((users) ->
+          expect(users).toEqual([{id: 101, name: "Tom McTest", replies: {}}])
+        )
+        $httpBackend.flush()
+      )
+    )
 
     describe('delete', () ->
       it('posts to delete endpoint', () ->

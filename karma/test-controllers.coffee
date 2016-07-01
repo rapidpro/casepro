@@ -532,11 +532,13 @@ describe('controllers:', () ->
   describe('PartnerController', () ->
     PartnerService = null
     StatisticsService = null
+    UserService = null
     $scope = null
 
-    beforeEach(inject((_PartnerService_, _StatisticsService_) ->
+    beforeEach(inject((_PartnerService_, _StatisticsService_, _UserService_) ->
       PartnerService = _PartnerService_
       StatisticsService = _StatisticsService_
+      UserService = _UserService_
 
       $scope = $rootScope.$new()
       $window.contextData = {partner: test.moh}
@@ -547,7 +549,7 @@ describe('controllers:', () ->
       expect($scope.users).toEqual([])
       expect($scope.initialisedTabs).toEqual([])
 
-      fetchUsers = spyOnPromise($q, $scope, PartnerService, 'fetchUsers')
+      fetchUsers = spyOnPromise($q, $scope, UserService, 'fetchInPartner')
       repliesChart = spyOnPromise($q, $scope, StatisticsService, 'repliesChart')
 
       $scope.onTabSelect('summary')
@@ -567,7 +569,7 @@ describe('controllers:', () ->
       $scope.onTabSelect('users')
 
       # users shouldn't be re-fetched
-      expect(PartnerService.fetchUsers.calls.count()).toEqual(1)
+      expect(UserService.fetchInPartner.calls.count()).toEqual(1)
       expect($scope.initialisedTabs).toEqual(['summary', 'users'])
     )
 

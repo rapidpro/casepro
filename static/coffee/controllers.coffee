@@ -434,10 +434,11 @@ controllers.controller('CasesController', ['$scope', '$timeout', '$controller', 
 #============================================================================
 # Org home controller
 #============================================================================
-controllers.controller('HomeController', ['$scope', '$controller', 'PartnerService', 'StatisticsService', ($scope, $controller, PartnerService, StatisticsService) ->
+controllers.controller('HomeController', ['$scope', '$controller', 'PartnerService', 'StatisticsService', 'UserService', ($scope, $controller, PartnerService, StatisticsService, UserService) ->
   $controller('BaseTabsController', {$scope: $scope})
 
   $scope.partners = []
+  $scope.users = []
 
   $scope.onTabInit = (tab) ->
     if tab == 'summary'
@@ -453,9 +454,13 @@ controllers.controller('HomeController', ['$scope', '$controller', 'PartnerServi
         });
       )
     else if tab == 'partners'
-        PartnerService.fetchAll(true).then((partners) ->
-          $scope.partners = partners
-        )
+      PartnerService.fetchAll(true).then((partners) ->
+        $scope.partners = partners
+      )
+    else if tab == 'users'
+      UserService.fetchNonPartner(true).then((users) ->
+        $scope.users = users
+      )
 ])
 
 
@@ -598,7 +603,7 @@ controllers.controller('CaseTimelineController', ['$scope', '$timeout', 'CaseSer
 #============================================================================
 # Partner view controller
 #============================================================================
-controllers.controller('PartnerController', ['$scope', '$window', '$controller', 'UtilsService', 'PartnerService', 'StatisticsService', ($scope, $window, $controller, UtilsService, PartnerService, StatisticsService) ->
+controllers.controller('PartnerController', ['$scope', '$window', '$controller', 'UtilsService', 'PartnerService', 'StatisticsService', 'UserService', ($scope, $window, $controller, UtilsService, PartnerService, StatisticsService, UserService) ->
   $controller('BaseTabsController', {$scope: $scope})
 
   $scope.partner = $window.contextData.partner
@@ -618,7 +623,7 @@ controllers.controller('PartnerController', ['$scope', '$window', '$controller',
         });
       )
     else if tab == 'users'
-      PartnerService.fetchUsers($scope.partner).then((users) ->
+      UserService.fetchInPartner($scope.partner, true).then((users) ->
         $scope.users = users
       )
 
