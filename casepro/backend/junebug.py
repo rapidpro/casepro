@@ -70,6 +70,8 @@ class IdentityStoreContact(object):
             setattr(self, k, v)
         self.name = json_data.get('details').get('name')
         self.addresses = json_data.get('details').get('addresses')
+        self.fields = {}
+        self.groups = {}
 
 
 class IdentityStoreContactSyncer(BaseSyncer):
@@ -91,8 +93,11 @@ class IdentityStoreContactSyncer(BaseSyncer):
         if local.is_stub or local.name != remote.name:
             return True
 
+        if {g.uuid for g in local.groups.all()} != {g.uuid for g in remote.groups}:
+            return True
+
         return not is_dict_equal(
-            local.get_fields, remote.fields, ignore_none_values=True)
+            local.get_fields(), remote.fields, ignore_none_values=True)
 
     def delete_local(self, local):
         local.release()
