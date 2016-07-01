@@ -94,6 +94,9 @@ class IdentityStoreContactSyncer(BaseSyncer):
         return not is_dict_equal(
             local.get_fields, remote.fields, ignore_none_values=True)
 
+    def delete_local(self, local):
+        local.release()
+
 
 class JunebugMessageSendingError(Exception):
     '''Exception that is raised when errors occur when trying to send messages
