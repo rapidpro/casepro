@@ -66,7 +66,7 @@ modals.controller('ReplyModalController', ['$scope','FAQService','LanguageServic
     $scope.searchField = $scope.searchFieldDefaults()
     $scope.search = $scope.buildSearch()
     $scope.fetchFaqs()
-    $scope.setLanguages()
+    $scope.fetchLanguages()
     $scope.lang = "Select language"
 
   $scope.buildSearch = () ->
@@ -90,10 +90,12 @@ modals.controller('ReplyModalController', ['$scope','FAQService','LanguageServic
         $scope.replies = results
       )
 
-  $scope.setLanguages = () ->
-      $scope.languages = LanguageService.getLanguages()
+  $scope.fetchLanguages = () ->
+    LanguageService.fetchLanguages().then((results) ->
+      $scope.languages = results
+    )
 
-  $scope.searchFieldDefaults = () -> { text: null,language:null}
+  $scope.searchFieldDefaults = () -> { text: null, language: null}
 
   $scope.setResponse = (faq)->
    $scope.fields.text.val = faq
