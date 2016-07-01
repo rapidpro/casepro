@@ -143,7 +143,7 @@ class FAQ(models.Model):
         """
         language_id = search.get('language')
         label_id = search.get('label')
-        question = search.get('question')
+        text = search.get('text')
 
         queryset = FAQ.objects.all()
 
@@ -163,8 +163,8 @@ class FAQ(models.Model):
         queryset = queryset.filter(labels__in=list(labels))
 
         # Text filtering
-        if question:
-            queryset = queryset.filter(Q(question__icontains=question) | Q(answer__icontains=question))
+        if text:
+            queryset = queryset.filter(Q(question__icontains=text) | Q(answer__icontains=text))
 
         queryset = queryset.prefetch_related('language', 'labels')
 
