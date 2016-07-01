@@ -87,6 +87,8 @@ class IdentityStoreContactSyncer(BaseSyncer):
             'uuid': remote.id,
             'name': remote.name,
             'is_stub': False,
+            'fields': {},
+            Contact.SAVE_GROUPS_ATTR: {},
         }
 
     def update_required(self, local, remote, remote_as_kwargs):
