@@ -70,6 +70,8 @@ class IdentityStoreContact(object):
             setattr(self, k, v)
         self.name = json_data.get('details').get('name')
         self.addresses = json_data.get('details').get('addresses')
+        self.language = json_data.get('details').get(
+            'preferred_langage', 'EN')
         self.fields = {}
         self.groups = {}
 
@@ -86,16 +88,19 @@ class IdentityStoreContactSyncer(BaseSyncer):
             'org': org,
             'uuid': remote.id,
             'name': remote.name,
+            'language': remote.language,
             'is_stub': False,
             'fields': {},
             Contact.SAVE_GROUPS_ATTR: {},
         }
 
     def update_required(self, local, remote, remote_as_kwargs):
-        if local.is_stub or local.name != remote.name:
+        if local.is_stub or local.name != remote.name or \
+                local.language != remote.language:
             return True
 
-        if {g.uuid for g in local.groups.all()} != {g.uuid for g in remote.groups}:
+        if {g.uuid for g in local.groups.all()} != \
+                {g.uuid for g in remote.groups}:
             return True
 
         return not is_dict_equal(
