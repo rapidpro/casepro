@@ -214,7 +214,7 @@ services.factory('LanguageService', ['$rootScope', '$http', '$httpParamSerialize
   ])
 
 #=====================================================================
-# Incoming message service
+# Outgoing message service
 #=====================================================================
 services.factory('OutgoingService', ['$rootScope', '$http', '$httpParamSerializer', ($rootScope, $http, $httpParamSerializer) ->
   new class OutgoingService
