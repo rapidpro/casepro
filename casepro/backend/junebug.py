@@ -89,6 +89,7 @@ class IdentityStoreContactSyncer(BaseSyncer):
             'uuid': remote.id,
             'name': remote.name,
             'language': remote.language,
+            'is_blocked': False,  # TODO: Get 'is_blocked' from Opt-outs
             'is_stub': False,
             'fields': {},
             Contact.SAVE_GROUPS_ATTR: {},
