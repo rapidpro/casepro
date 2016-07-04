@@ -321,6 +321,40 @@ class LanguageCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
 
+    def test_search(self):
+        url = reverse('msgs.language_search')
+
+        # try unauthenticated
+        response = self.url_get('unicef', url, {})
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url, {})
+        # should show all 3 languages
+        self.assertEqual(len(response.json['results']), 3)
+
+        # log in as an administrator
+        self.login(self.admin)
+
+        # request Languages - no filtering
+        response = self.url_get('unicef', url, {})
+        # should show all 3 languages
+        self.assertEqual(len(response.json['results']), 3)
+
+        # request Languages - filter on name
+        response = self.url_get('unicef', url, {'name': 'n'})  # contains letter n
+        self.assertEqual(len(response.json['results']), 2)
+
+        # request Languages - filter on location
+        response = self.url_get('unicef', url, {'location': 'uganda'})
+        self.assertEqual(len(response.json['results']), 2)
+
+        # request Languages - no results
+        response = self.url_get('unicef', url, {'location': 'new zealand'})
+        self.assertEqual(len(response.json['results']), 0)
+
 
 class FaqCRUDLTest(BaseCasesTest):
     def test_create(self):

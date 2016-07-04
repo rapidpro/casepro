@@ -107,6 +107,26 @@ class Language(models.Model):
 
     location = models.CharField(max_length=100, null=True, blank=True)  # e.g. United Kingdom
 
+    @classmethod
+    def search(cls, org, user, search):
+        """
+        Search for Languages
+        """
+        name = search.get('name')
+        location = search.get('location')
+
+        queryset = Language.objects.all()
+
+        # Name filtering
+        if name:
+            queryset = queryset.filter(name__icontains=name)
+
+        # Location filtering
+        if location:
+            queryset = queryset.filter(location__icontains=location)
+
+        return queryset.order_by('code')
+
     def as_json(self):
         return {
             'id': self.pk,
