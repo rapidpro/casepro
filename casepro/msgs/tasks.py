@@ -141,16 +141,13 @@ def get_labels(labelstring):
     """
     labels = set()
     labelstrings = labelstring.split(', ')
-    print labelstrings
     for labelstring in labelstrings:
         labelstring = labelstring.strip()
-        print labelstring
         try:
             label = Label.objects.get(name__iexact=labelstring)  # iexact removes case sensitivity
         except Exception as e:
             task.log('Label does not exist! Create it first.')
             raise e
-        print label
         labels.add(label)
     return list(labels)
 
