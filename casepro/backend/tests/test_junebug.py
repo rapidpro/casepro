@@ -539,6 +539,40 @@ class JunebugBackendTest(BaseCasesTest):
 
 
 class IdentityStoreTest(BaseCasesTest):
+    def get_identities_callback(self, request):
+        self.assertEqual(
+            request.headers.get('Content-Type'), 'application/json')
+        self.assertEqual(
+            request.headers.get('Authorization'), 'Token auth-token')
+        headers = {'Content-Type': 'application/json'}
+        resp = {
+            "count": 1,
+            "next": None,
+            "previous": None,
+            "results": [
+                {
+                    "id": "test_id",
+                    "version": 1,
+                    "details": {
+                        "name": "test",
+                        "addresses": {
+                            "msisdn": {
+                                "+1234": {}
+                            },
+                        },
+                        "preferred_langage": "eng_NG",
+                    },
+                    "communicate_through": None,
+                    "operator": None,
+                    "created_at": "2016-02-14T10:21:00.258406Z",
+                    "created_by": 1,
+                    "updated_at": "2016-03-14T10:21:00.258406Z",
+                    "updated_by": 1
+                }
+            ]
+        }
+        return (201, headers, json.dumps(resp))
+
     @responses.activate
     def test_get_addresses(self):
         '''The get_addresses function should call the correct URL, and return
@@ -582,43 +616,10 @@ class IdentityStoreTest(BaseCasesTest):
         identity_store = IdentityStore(
             'http://identitystore.org/', 'auth-token', 'msisdn')
 
-        def request_callback(request):
-            self.assertEqual(
-                request.headers.get('Content-Type'), 'application/json')
-            self.assertEqual(
-                request.headers.get('Authorization'), 'Token auth-token')
-            headers = {'Content-Type': 'application/json'}
-            resp = {
-                "count": 1,
-                "next": None,
-                "previous": None,
-                "results": [
-                    {
-                        "id": "test_id",
-                        "version": 1,
-                        "details": {
-                            "name": "test",
-                            "addresses": {
-                                "msisdn": {
-                                    "+1234": {}
-                                },
-                            },
-                            "preferred_langage": "eng_NG",
-                        },
-                        "communicate_through": None,
-                        "operator": None,
-                        "created_at": "2016-02-14T10:21:00.258406Z",
-                        "created_by": 1,
-                        "updated_at": "2016-03-14T10:21:00.258406Z",
-                        "updated_by": 1
-                    }
-                ]
-            }
-            return (201, headers, json.dumps(resp))
         responses.add_callback(
             responses.GET,
             'http://identitystore.org/api/v1/identities/search/?details__name=test',
-            match_querystring=True, callback=request_callback,
+            match_querystring=True, callback=self.get_identities_callback,
             content_type='application/json')
 
         [identity] = identity_store.get_identities(details__name="test")
