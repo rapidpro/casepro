@@ -20,7 +20,7 @@ class JunebugBackendTest(BaseCasesTest):
         '''
         Contact.objects.all().delete()
 
-        def identity_store_callback(request):
+        def identity_store_one_identity_callback(request):
             headers = {'Content-Type': 'application/json'}
             resp = {
                 "count": 1,
@@ -49,13 +49,40 @@ class JunebugBackendTest(BaseCasesTest):
                 ]
             }
             return (201, headers, json.dumps(resp))
+
+        def identity_store_no_identities_callback(request):
+            headers = {'Content-Type': 'application/json'}
+            resp = {
+                "count": 0,
+                "next": None,
+                "previous": None,
+                "results": []
+            }
+            return (201, headers, json.dumps(resp))
+
         responses.add_callback(
             responses.GET,
-            'http://localhost:8081/api/v1/identities/search/',
-            callback=identity_store_callback, content_type='application/json')
+            'http://localhost:8081/api/v1/identities/search/?created_at__lte'
+            '=2016-03-14T10%3A21%3A00&created_at__gte=2016-03-14T10%3A25%3A00',
+            callback=identity_store_one_identity_callback, match_querystring=True,
+            content_type='application/json')
+
+        responses.add_callback(
+            responses.GET,
+            'http://localhost:8081/api/v1/identities/search/?updated_at__lte'
+            '=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00',
+            callback=identity_store_no_identities_callback, match_querystring=True,
+            content_type='application/json')
+
+        responses.add_callback(
+            responses.GET,
+            'http://localhost:8081/api/v1/identities/search/?updated_at__lte'
+            '=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00&optout__optout_type=forget',
+            callback=identity_store_no_identities_callback, match_querystring=True,
+            content_type='application/json')
 
         (created, updated, deleted, ignored) = self.backend.pull_contacts(
-            self.unicef, None, None)
+            self.unicef, '2016-03-14T10:25:00', '2016-03-14T10:21:00')
         self.assertEqual(created, 1)
         self.assertEqual(updated, 0)
         self.assertEqual(deleted, 0)
