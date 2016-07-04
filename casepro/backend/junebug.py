@@ -71,7 +71,7 @@ class IdentityStoreContact(object):
 
         # Languages in the idenity store have the country code at the end
         remote_language = json_data.get('details').get('preferred_langage')
-        language = remote_language[:remote_language.index('_')]
+        language, _, _ = remote_language.partition('_')
         self.name = json_data.get('details').get('name')
         self.addresses = json_data.get('details').get('addresses')
         self.language = language
