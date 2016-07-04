@@ -349,13 +349,14 @@ def received_junebug_message(request):
     except StopIteration:
         # TODO: Create identity
         identity = {'id': 'test-uuid'}
-    # Hack to default to the first org for the message
     contact = Contact.get_or_create(request.org, identity.get('id'))
+    contact.is_stub = False
+    contact.save()
 
     message_id = UUID(hex=data.get('message_id')).int % 2147483647
     Message.objects.create(
         org=request.org, backend_id=message_id, contact=contact,
         type=Message.TYPE_INBOX, text=(data.get('content') or ''),
-        created_on=datetime.now())
+        created_on=datetime.now(), has_labels=True)
 
     return JsonResponse({})
