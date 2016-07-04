@@ -195,12 +195,12 @@ class JunebugBackend(BaseBackend):
             updated_at__gte=modified_after,
             updated_at__lte=modified_before)
 
-        identities_to_update = chain(modified_identities, new_identities)
+        identities_to_update = list(chain(modified_identities, new_identities))
 
         # all identities deleted in the Identity Store in the time window
-        deleted_identities = identity_store.get_identities(
+        deleted_identities = list(identity_store.get_identities(
             optout__optout_type='forget', updated_at__gte=modified_after,
-            updated_at__lte=modified_before)
+            updated_at__lte=modified_before))
 
         # the method expects fetches not lists so I faked it
         return sync_local_to_changes(
