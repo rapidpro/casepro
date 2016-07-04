@@ -1,4 +1,3 @@
-from dash.orgs.models import Org
 from datetime import datetime
 from django.conf import settings
 from django.conf.urls import url
@@ -351,12 +350,11 @@ def received_junebug_message(request):
         # TODO: Create identity
         identity = {'id': 'test-uuid'}
     # Hack to default to the first org for the message
-    org = Org.objects.all()[0]
-    contact = Contact.get_or_create(org, identity.get('id'))
+    contact = Contact.get_or_create(request.org, identity.get('id'))
 
     message_id = UUID(hex=data.get('message_id')).int % 2147483647
     Message.objects.create(
-        org=org, backend_id=message_id, contact=contact,
+        org=request.org, backend_id=message_id, contact=contact,
         type=Message.TYPE_INBOX, text=(data.get('content') or ''),
         created_on=datetime.now())
 
