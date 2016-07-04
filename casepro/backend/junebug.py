@@ -1,6 +1,10 @@
+from dash.orgs.models import Org
+from datetime import datetime
 from django.conf import settings
 from django.conf.urls import url
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from uuid import UUID
 import json
 import requests
 
@@ -325,6 +329,7 @@ class JunebugBackend(BaseBackend):
         ]
 
 
+@csrf_exempt
 def received_junebug_message(request):
     '''Handles MO messages from Junebug.'''
     if request.method != 'POST':
@@ -344,11 +349,15 @@ def received_junebug_message(request):
         identity = identities.next()
     except StopIteration:
         # TODO: Create identity
-        pass
-    contact = Contact.get_or_create(None, identity.get('id'))
+        identity = {'id': 'test-uuid'}
+    # Hack to default to the first org for the message
+    org = Org.objects.all()[0]
+    contact = Contact.get_or_create(org, identity.get('id'))
 
+    message_id = UUID(hex=data.get('message_id')).int % 2147483647
     Message.objects.create(
-        org=None, backend_id=data.get('message_id'), contact=contact,
-        type=Message.TYPE_INBOX, text=data.get('content'))
+        org=org, backend_id=message_id, contact=contact,
+        type=Message.TYPE_INBOX, text=(data.get('content') or ''),
+        created_on=datetime.now())
 
     return JsonResponse({})
