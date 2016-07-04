@@ -44,7 +44,7 @@ class IdentityStore(object):
         by uuid should be sent to.'''
         identity = self.get_identity(uuid)
         if identity and identity.get('communicate_through') is not None:
-            return self.get_addresses(identity['communicate_through'])
+            identity = self.get_identity(identity['communicate_through'])
         addresses = self.get_paginated_response(
             '%s/api/v1/identities/%s/addresses/%s' % (
                 self.base_url, uuid, self.address_type),
