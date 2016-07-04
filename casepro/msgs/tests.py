@@ -332,16 +332,16 @@ class LanguageCRUDLTest(BaseCasesTest):
         self.login(self.user1)
 
         response = self.url_get('unicef', url, {})
-        # should have 4 results as one is label restricted
-        self.assertEqual(len(response.json['results']), 99)
+        # should show all 3 languages
+        self.assertEqual(len(response.json['results']), 3)
 
         # log in as an administrator
         self.login(self.admin)
 
         # request Languages - no filtering
         response = self.url_get('unicef', url, {})
-        # should show all Languages
-        self.assertEqual(len(response.json['results']), 98)
+        # should show all 3 languages
+        self.assertEqual(len(response.json['results']), 3)
 
         # request Languages - filter on name
         response = self.url_get('unicef', url, {'name': 'n'})  # contains letter n

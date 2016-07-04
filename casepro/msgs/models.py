@@ -106,6 +106,7 @@ class Language(models.Model):
 
     location = models.CharField(max_length=100, null=True, blank=True)  # e.g. United Kingdom
 
+    @classmethod
     def search(cls, org, user, search):
         """
         Search for Languages
