@@ -37,7 +37,6 @@ def override_start(self, org):
 
     # trigger task
     result = faq_csv_import.delay(org, self.pk)
-    # TODO: celery setup required? currently always_eager set to true
 
     self.task_id = result.task_id
     self.save(update_fields=['task_id'])
