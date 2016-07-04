@@ -49,12 +49,16 @@
               %b[[reply.question]]
               %p[[reply.answer]]
 
-      .form-group
-        %textarea.form-control{ ng-model:"fields.text.val", ng-maxlength:"fields.text.maxLength", name:"text", required:"" ,readonly:""}
+      - if user_is_admin
+        .form-group{ ng-class:'{"has-error": form.text.$invalid && (form.text.$dirty || form.submitted)}' }
+          %textarea.form-control{ ng-model:"fields.text.val", ng-maxlength:"fields.text.maxLength", name:"text", required:"" }
             .help-block{ ng-show:"form.text.$error.required && (form.text.$dirty || form.submitted)" }
               - trans "Required"
             .help-block{ ng-show:"form.text.$error.maxlength" }
               - trans "Too long"
+      - else
+        .form-group
+          %textarea.form-control{ ng-model:"fields.text.val", ng-maxlength:"fields.text.maxLength", name:"text", required:"", readonly:"" }
 
 
 
