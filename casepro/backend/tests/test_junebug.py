@@ -35,8 +35,9 @@ class JunebugBackendTest(BaseCasesTest):
                             "addresses": {
                                 "msisdn": {
                                     "+1234": {}
-                                }
-                            }
+                                },
+                            },
+                            "preferred_langage": "eng_NG",
                         },
                         "communicate_through": None,
                         "operator": None,
