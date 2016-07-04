@@ -321,6 +321,40 @@ class LanguageCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
 
+    def test_search(self):
+        url = reverse('msgs.language_search')
+
+        # try unauthenticated
+        response = self.url_get('unicef', url, {})
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url, {})
+        # should show all 3 languages
+        self.assertEqual(len(response.json['results']), 3)
+
+        # log in as an administrator
+        self.login(self.admin)
+
+        # request Languages - no filtering
+        response = self.url_get('unicef', url, {})
+        # should show all 3 languages
+        self.assertEqual(len(response.json['results']), 3)
+
+        # request Languages - filter on name
+        response = self.url_get('unicef', url, {'name': 'n'})  # contains letter n
+        self.assertEqual(len(response.json['results']), 2)
+
+        # request Languages - filter on location
+        response = self.url_get('unicef', url, {'location': 'uganda'})
+        self.assertEqual(len(response.json['results']), 2)
+
+        # request Languages - no results
+        response = self.url_get('unicef', url, {'location': 'new zealand'})
+        self.assertEqual(len(response.json['results']), 0)
+
 
 class FaqCRUDLTest(BaseCasesTest):
     def test_create(self):
@@ -542,11 +576,11 @@ class FaqCRUDLTest(BaseCasesTest):
         })
         self.assertEqual(len(response.json['results']), 2)
 
-        # request FAQs - filter on language, label, question
+        # request FAQs - filter on language, label, text
         response = self.url_get('unicef', url, {
             'label': self.pregnancy.pk,
             'language': self.eng_za.pk,
-            'question': "hiv transfer"
+            'text': "hiv transfer"
         })
         self.assertEqual(len(response.json['results']), 1)
         self.assertEqual(response.json['results'][0]['question'], "How do I prevent HIV transfer to my baby?")
@@ -555,13 +589,19 @@ class FaqCRUDLTest(BaseCasesTest):
             {'id': self.pregnancy.pk, 'name': "Pregnancy"}
         ])
 
-        # request FAQs - filter on language, label, question - no results
+        # request FAQs - filter on language, label, text - no results
         response = self.url_get('unicef', url, {
             'label': self.pregnancy.pk,
             'language': self.eng_za.pk,
-            'question': "hiv and tea"
+            'text': "hiv and tea"
         })
         self.assertEqual(len(response.json['results']), 0)
+
+        # request FAQs - filter on text answer
+        response = self.url_get('unicef', url, {
+            'text': "arv"
+        })
+        self.assertEqual(len(response.json['results']), 1)
 
 
 class MessageTest(BaseCasesTest):

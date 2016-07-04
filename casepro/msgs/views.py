@@ -149,9 +149,23 @@ class LabelCRUDL(SmartCRUDL):
             return ', '.join([p.name for p in obj.get_partners()])
 
 
+class LanguageSearchMixin(object):
+    def derive_search(self):
+        """
+        Collects and prepares Language search parameters into JSON serializable dict
+        """
+        name = self.request.GET.get('name', None)
+        location = self.request.GET.get('location', None)
+
+        return {
+            'name': name,
+            'location': location,
+        }
+
+
 class LanguageCRUDL(SmartCRUDL):
     model = Language
-    actions = ('list', 'create', 'read', 'update', 'delete')
+    actions = ('list', 'create', 'read', 'update', 'delete', 'search')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('code', 'name', 'location')
@@ -200,6 +214,31 @@ class LanguageCRUDL(SmartCRUDL):
 
             return HttpResponse(status=204)
 
+    class Search(OrgPermsMixin, LanguageSearchMixin, SmartTemplateView):
+        """
+        JSON endpoint for searching Languages
+        """
+        def get_context_data(self, **kwargs):
+            context = super(LanguageCRUDL.Search, self).get_context_data(**kwargs)
+
+            org = self.request.org
+            user = self.request.user
+            page = int(self.request.GET.get('page', 1))
+
+            search = self.derive_search()
+            languages = Language.search(org, user, search)
+            paginator = LazyPaginator(languages, per_page=50)
+
+            context['object_list'] = paginator.page(page)
+            context['has_more'] = paginator.num_pages > page
+            return context
+
+        def render_to_response(self, context, **response_kwargs):
+            return JsonResponse({
+                'results': [m.as_json() for m in context['object_list']],
+                'has_more': context['has_more']
+            }, encoder=JSONEncoder)
+
 
 class FaqSearchMixin(object):
     def derive_search(self):
@@ -207,12 +246,12 @@ class FaqSearchMixin(object):
         Collects and prepares FAQ search parameters into JSON serializable dict
         """
         label = self.request.GET.get('label', None)
-        question = self.request.GET.get('question', None)
+        text = self.request.GET.get('text', None)
         language = self.request.GET.get('language', None)
 
         return {
             'label': label,
-            'question': question,
+            'text': text,
             'language': language,
         }
 

@@ -10,6 +10,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timesince import timesince
 from django.utils.timezone import now
+from django.db.models import Q
 from enum import Enum
 from redis_cache import get_redis_connection
 
@@ -106,6 +107,26 @@ class Language(models.Model):
 
     location = models.CharField(max_length=100, null=True, blank=True)  # e.g. United Kingdom
 
+    @classmethod
+    def search(cls, org, user, search):
+        """
+        Search for Languages
+        """
+        name = search.get('name')
+        location = search.get('location')
+
+        queryset = Language.objects.all()
+
+        # Name filtering
+        if name:
+            queryset = queryset.filter(name__icontains=name)
+
+        # Location filtering
+        if location:
+            queryset = queryset.filter(location__icontains=location)
+
+        return queryset.order_by('code')
+
     def as_json(self):
         return {
             'id': self.pk,
@@ -142,7 +163,7 @@ class FAQ(models.Model):
         """
         language_id = search.get('language')
         label_id = search.get('label')
-        question = search.get('question')
+        text = search.get('text')
 
         queryset = FAQ.objects.all()
 
@@ -162,8 +183,8 @@ class FAQ(models.Model):
         queryset = queryset.filter(labels__in=list(labels))
 
         # Text filtering
-        if question:
-            queryset = queryset.filter(question__icontains=question)
+        if text:
+            queryset = queryset.filter(Q(question__icontains=text) | Q(answer__icontains=text))
 
         queryset = queryset.prefetch_related('language', 'labels')
 
