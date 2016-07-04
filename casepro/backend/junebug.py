@@ -48,7 +48,7 @@ class IdentityStore(object):
 
     def get_identities(self, **params):
         '''Get the list of identities filtered by the given kwargs.'''
-        url = '%s/api/v1/identities/search/?' % (self.base_url)
+        url = '%s/api/v1/identities/search/?' % self.base_url
 
         identities = self.get_paginated_response(
             url, params=params)
