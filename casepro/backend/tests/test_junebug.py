@@ -116,6 +116,9 @@ class JunebugBackendTest(BaseCasesTest):
         self.assertEqual(deleted, 0)
         self.assertEqual(ignored, 0)
         self.assertEqual(Contact.objects.count(), 1)
+        [contact] = Contact.objects.all()
+        self.assertEqual(contact.uuid, "test_id")
+        self.assertEqual(contact.name, "test")
 
     @responses.activate
     def test_pull_contacts_recently_updated(self):
@@ -144,10 +147,15 @@ class JunebugBackendTest(BaseCasesTest):
         self.assertEqual(deleted, 0)
         self.assertEqual(ignored, 0)
         self.assertEqual(Contact.objects.count(), 1)
+        [contact] = Contact.objects.all()
+        self.assertEqual(contact.uuid, "test_id")
+        self.assertEqual(contact.name, "test")
 
     @responses.activate
     def test_pull_contacts_recently_deleted(self):
         Contact.get_or_create(self.unicef, 'test_id', "test")
+        contact = Contact.objects.get(uuid='test_id')
+        self.assertTrue(contact.is_active)
 
         self.add_identity_store_callback(
             'created_at__lte=2016-03-14T10%3A21%3A00&created_at__gte=2016-03-14T10%3A25%3A00',
@@ -172,6 +180,8 @@ class JunebugBackendTest(BaseCasesTest):
         self.assertEqual(deleted, 1)
         self.assertEqual(ignored, 0)
         self.assertEqual(Contact.objects.count(), 1)
+        contact = Contact.objects.get(uuid='test_id')
+        self.assertFalse(contact.is_active)
 
     @responses.activate
     def test_pull_contacts_no_changes(self):
@@ -201,6 +211,9 @@ class JunebugBackendTest(BaseCasesTest):
         self.assertEqual(deleted, 0)
         self.assertEqual(ignored, 1)
         self.assertEqual(Contact.objects.count(), 1)
+        [contact] = Contact.objects.all()
+        self.assertEqual(contact.uuid, "test_id")
+        self.assertEqual(contact.name, "test")
 
     def test_pull_fields(self):
         '''
