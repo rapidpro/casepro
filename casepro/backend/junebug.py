@@ -69,9 +69,13 @@ class IdentityStoreContact(object):
     def __init__(self, json_data):
         for k, v in json_data.items():
             setattr(self, k, v)
+
+        # Languages in the idenity store have the country code at the end
+        remote_language = json_data.get('details').get('preferred_langage')
+        language = remote_language[:remote_language.index('_')]
         self.name = json_data.get('details').get('name')
         self.addresses = json_data.get('details').get('addresses')
-        self.language = json_data.get('details').get('preferred_langage')
+        self.language = language
         self.fields = {}
         self.groups = {}
 
@@ -84,14 +88,11 @@ class IdentityStoreContactSyncer(BaseSyncer):
     remote_id_attr = 'id'
 
     def local_kwargs(self, org, remote):
-        # Languages in the idenity store have the country code at the end
-        remote_language = remote.language
-        language = remote_language[:remote_language.index('_')]
         return {
             'org': org,
             'uuid': remote.id,
             'name': remote.name,
-            'language': language,
+            'language': remote.language,
             'is_blocked': False,  # TODO: Get 'is_blocked' from Opt-outs
             'is_stub': False,
             'fields': {},
