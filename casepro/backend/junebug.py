@@ -31,11 +31,23 @@ class IdentityStore(object):
             # params are included in the next url
             params = {}
 
+    def get_identity(self, uuid):
+        '''Returns the details of the identity.'''
+        r = self.session.get(
+            '%s/api/v1/identities/%s/' % (self.base_url, uuid))
+        if r.status_code == 404:
+            return None
+        return r.json()
+
     def get_addresses(self, uuid):
-        '''Get the list of addresses for an identity specified by uuid.'''
+        '''Get the list of addresses that a message to an identity specified
+        by uuid should be sent to.'''
+        identity = self.get_identity(uuid)
+        if identity and identity.get('communicate_through') is not None:
+            identity = self.get_identity(identity['communicate_through'])
         addresses = self.get_paginated_response(
             '%s/api/v1/identities/%s/addresses/%s' % (
-                self.base_url, uuid, self.address_type),
+                self.base_url, identity['id'], self.address_type),
             params={'default': True})
         return (
             a['address'] for a in addresses if a.get('address') is not None)
