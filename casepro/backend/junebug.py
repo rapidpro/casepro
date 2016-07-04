@@ -49,11 +49,12 @@ class IdentityStore(object):
     def get_identities(self, **kwargs):
         '''Get the list of identities filtered by the given kwargs.'''
         url = '%s/api/v1/identities/search/?' % (self.base_url)
+        params = {}
         for key, value in kwargs.iteritems():
-            url = '%s%s=%s&' % (url, key, value)
+            params[key] = value
 
         identities = self.get_paginated_response(
-            url, params={'default': True})
+            url, params=params)
 
         return (
             IdentityStoreContact(i) for i in identities if
