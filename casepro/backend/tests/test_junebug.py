@@ -93,8 +93,6 @@ class JunebugBackendTest(BaseCasesTest):
 
     @responses.activate
     def test_pull_contacts_recently_created(self):
-        Contact.objects.all().delete()
-
         self.add_identity_store_callback(
             'created_at__lte=2016-03-14T10%3A21%3A00&created_at__gte=2016-03-14T10%3A25%3A00',
             self.identity_store_created_identity_callback
@@ -121,7 +119,6 @@ class JunebugBackendTest(BaseCasesTest):
 
     @responses.activate
     def test_pull_contacts_recently_updated(self):
-        Contact.objects.all().delete()
         Contact.get_or_create(self.unicef, 'test_id', "test")
 
         self.add_identity_store_callback(
@@ -150,7 +147,6 @@ class JunebugBackendTest(BaseCasesTest):
 
     @responses.activate
     def test_pull_contacts_recently_deleted(self):
-        Contact.objects.all().delete()
         Contact.get_or_create(self.unicef, 'test_id', "test")
 
         self.add_identity_store_callback(
@@ -179,7 +175,6 @@ class JunebugBackendTest(BaseCasesTest):
 
     @responses.activate
     def test_pull_contacts_no_changes(self):
-        Contact.objects.all().delete()
         Contact.objects.create(org=self.unicef, uuid='test_id', name="test",
                                language='eng')
 
