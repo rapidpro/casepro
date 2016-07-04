@@ -47,7 +47,7 @@ class IdentityStore(object):
             identity = self.get_identity(identity['communicate_through'])
         addresses = self.get_paginated_response(
             '%s/api/v1/identities/%s/addresses/%s' % (
-                self.base_url, uuid, self.address_type),
+                self.base_url, identity['id'], self.address_type),
             params={'default': True})
         return (
             a['address'] for a in addresses if a.get('address') is not None)
