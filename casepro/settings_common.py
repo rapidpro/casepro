@@ -309,7 +309,7 @@ PERMISSIONS = {
 
     'msgs.label': ('create', 'update', 'list'),
 
-    'msgs.language': ('create', 'read', 'update', 'delete', 'list'),
+    'msgs.language': ('create', 'read', 'update', 'delete', 'list', 'search'),
 
     'msgs.faq': ('create', 'read', 'update', 'delete', 'list', 'search'),
 
@@ -363,6 +363,7 @@ GROUP_PERMISSIONS = {
     "Editors": (  # Partner users: Managers
         'orgs.org_inbox',
 
+        'msgs.language_search',
         'msgs.faq_search',
         'msgs.message_action',
         'msgs.message_bulk_reply',
