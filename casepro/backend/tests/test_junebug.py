@@ -48,7 +48,7 @@ class JunebugBackendTest(BaseCasesTest):
                                 "+1234": {}
                             },
                         },
-                        "preferred_langage": "eng_NG",
+                        "preferred_language": "eng_NG",
                     },
                     "communicate_through": None,
                     "operator": None,
@@ -78,7 +78,7 @@ class JunebugBackendTest(BaseCasesTest):
                                 "+1234": {}
                             },
                         },
-                        "preferred_langage": "eng_NG",
+                        "preferred_language": "eng_NG",
                     },
                     "communicate_through": None,
                     "operator": None,
@@ -573,7 +573,7 @@ class IdentityStoreTest(BaseCasesTest):
                                 "+1234": {}
                             },
                         },
-                        "preferred_langage": "eng_NG",
+                        "preferred_language": "eng_NG",
                     },
                     "communicate_through": None,
                     "operator": None,
@@ -708,7 +708,7 @@ class IdentityStoreContactSyncerTest(BaseCasesTest):
                 "id": "test_1",
                 "version": "1",
                 "details": {
-                    "preferred_langage": "eng_NG",
+                    "preferred_language": "eng_NG",
                     "name": "test",
                     "addresses": {
                         "msisdn": {
