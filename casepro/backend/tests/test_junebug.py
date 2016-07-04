@@ -13,73 +13,101 @@ class JunebugBackendTest(BaseCasesTest):
         super(JunebugBackendTest, self).setUp()
         self.backend = JunebugBackend()
 
+    def add_identity_store_callback(self, query, callback):
+        url = 'http://localhost:8081/api/v1/identities/search/?' + query
+        responses.add_callback(
+            responses.GET, url, callback=callback, match_querystring=True,
+            content_type='application/json')
+
+    def identity_store_no_matches_callback(self, request):
+        headers = {'Content-Type': 'application/json'}
+        resp = {
+            "count": 0,
+            "next": None,
+            "previous": None,
+            "results": []
+        }
+        return (201, headers, json.dumps(resp))
+
+    def identity_store_created_identity_callback(self, request):
+        headers = {'Content-Type': 'application/json'}
+        resp = {
+            "count": 1,
+            "next": None,
+            "previous": None,
+            "results": [
+                {
+                    "id": "test_id",
+                    "version": 1,
+                    "details": {
+                        "name": "test",
+                        "addresses": {
+                            "msisdn": {
+                                "+1234": {}
+                            },
+                        },
+                        "preferred_langage": "eng_NG",
+                    },
+                    "communicate_through": None,
+                    "operator": None,
+                    "created_at": "2016-03-14T10:21:00.258406Z",
+                    "created_by": 1,
+                    "updated_at": None,
+                    "updated_by": None
+                }
+            ]
+        }
+        return (201, headers, json.dumps(resp))
+
+    def identity_store_updated_identity_callback(self, request):
+        headers = {'Content-Type': 'application/json'}
+        resp = {
+            "count": 1,
+            "next": None,
+            "previous": None,
+            "results": [
+                {
+                    "id": "test_id",
+                    "version": 1,
+                    "details": {
+                        "name": "test",
+                        "addresses": {
+                            "msisdn": {
+                                "+1234": {}
+                            },
+                        },
+                        "preferred_langage": "eng_NG",
+                    },
+                    "communicate_through": None,
+                    "operator": None,
+                    "created_at": "2016-02-14T10:21:00.258406Z",
+                    "created_by": 1,
+                    "updated_at": "2016-03-14T10:21:00.258406Z",
+                    "updated_by": 1
+                }
+            ]
+        }
+        return (201, headers, json.dumps(resp))
+
     @responses.activate
-    def test_pull_contacts(self):
-        '''
-        Pulling all of the contacts should be a noop.
-        '''
+    def test_pull_contacts_recently_created(self):
         Contact.objects.all().delete()
 
-        def identity_store_one_identity_callback(request):
-            headers = {'Content-Type': 'application/json'}
-            resp = {
-                "count": 1,
-                "next": None,
-                "previous": None,
-                "results": [
-                    {
-                        "id": "test_id",
-                        "version": 1,
-                        "details": {
-                            "name": "test",
-                            "addresses": {
-                                "msisdn": {
-                                    "+1234": {}
-                                },
-                            },
-                            "preferred_langage": "eng_NG",
-                        },
-                        "communicate_through": None,
-                        "operator": None,
-                        "created_at": "2016-03-14T10:21:00.258406Z",
-                        "created_by": 1,
-                        "updated_at": "2016-03-14T10:21:00.258441Z",
-                        "updated_by": 1
-                    }
-                ]
-            }
-            return (201, headers, json.dumps(resp))
+        self.add_identity_store_callback(
+            'created_at__lte=2016-03-14T10%3A21%3A00&created_at__gte=2016-03-14T10%3A25%3A00',
+            self.identity_store_created_identity_callback
+        )
 
-        def identity_store_no_identities_callback(request):
-            headers = {'Content-Type': 'application/json'}
-            resp = {
-                "count": 0,
-                "next": None,
-                "previous": None,
-                "results": []
-            }
-            return (201, headers, json.dumps(resp))
+        self.add_identity_store_callback(
+            'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00',
+            self.identity_store_no_matches_callback
+        )
 
-        responses.add_callback(
-            responses.GET,
-            'http://localhost:8081/api/v1/identities/search/?created_at__lte'
-            '=2016-03-14T10%3A21%3A00&created_at__gte=2016-03-14T10%3A25%3A00',
-            callback=identity_store_one_identity_callback, match_querystring=True,
-            content_type='application/json')
-
-        responses.add_callback(
-            responses.GET,
-            'http://localhost:8081/api/v1/identities/search/?updated_at__lte'
-            '=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00',
-            callback=identity_store_no_identities_callback, match_querystring=True,
-            content_type='application/json')
-
-        responses.add_callback(
-            responses.GET,
-            'http://localhost:8081/api/v1/identities/search/?updated_at__lte'
-            '=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00&optout__optout_type=forget',
-            callback=identity_store_no_identities_callback, match_querystring=True,
-            content_type='application/json')
+        self.add_identity_store_callback(
+            'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00&'
+            'optout__optout_type=forget',
+            self.identity_store_no_matches_callback
+        )
 
         (created, updated, deleted, ignored) = self.backend.pull_contacts(
             self.unicef, '2016-03-14T10:25:00', '2016-03-14T10:21:00')
@@ -87,6 +115,94 @@ class JunebugBackendTest(BaseCasesTest):
         self.assertEqual(updated, 0)
         self.assertEqual(deleted, 0)
         self.assertEqual(ignored, 0)
+        self.assertEqual(Contact.objects.count(), 1)
+
+    @responses.activate
+    def test_pull_contacts_recently_updated(self):
+        Contact.objects.all().delete()
+        Contact.get_or_create(self.unicef, 'test_id', "test")
+
+        self.add_identity_store_callback(
+            'created_at__lte=2016-03-14T10%3A21%3A00&created_at__gte=2016-03-14T10%3A25%3A00',
+            self.identity_store_no_matches_callback
+        )
+
+        self.add_identity_store_callback(
+            'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00',
+            self.identity_store_updated_identity_callback
+        )
+
+        self.add_identity_store_callback(
+            'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00&'
+            'optout__optout_type=forget',
+            self.identity_store_no_matches_callback
+        )
+
+        (created, updated, deleted, ignored) = self.backend.pull_contacts(
+            self.unicef, '2016-03-14T10:25:00', '2016-03-14T10:21:00')
+        self.assertEqual(created, 0)
+        self.assertEqual(updated, 1)
+        self.assertEqual(deleted, 0)
+        self.assertEqual(ignored, 0)
+        self.assertEqual(Contact.objects.count(), 1)
+
+    @responses.activate
+    def test_pull_contacts_recently_deleted(self):
+        Contact.objects.all().delete()
+        Contact.get_or_create(self.unicef, 'test_id', "test")
+
+        self.add_identity_store_callback(
+            'created_at__lte=2016-03-14T10%3A21%3A00&created_at__gte=2016-03-14T10%3A25%3A00',
+            self.identity_store_no_matches_callback
+        )
+
+        self.add_identity_store_callback(
+            'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00',
+            self.identity_store_no_matches_callback
+        )
+
+        self.add_identity_store_callback(
+            'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00&'
+            'optout__optout_type=forget',
+            self.identity_store_updated_identity_callback
+        )
+
+        (created, updated, deleted, ignored) = self.backend.pull_contacts(
+            self.unicef, '2016-03-14T10:25:00', '2016-03-14T10:21:00')
+        self.assertEqual(created, 0)
+        self.assertEqual(updated, 0)
+        self.assertEqual(deleted, 1)
+        self.assertEqual(ignored, 0)
+        self.assertEqual(Contact.objects.count(), 1)
+
+    @responses.activate
+    def test_pull_contacts_no_changes(self):
+        Contact.objects.all().delete()
+        Contact.objects.create(org=self.unicef, uuid='test_id', name="test",
+                               language='eng')
+
+        self.add_identity_store_callback(
+            'created_at__lte=2016-03-14T10%3A21%3A00&created_at__gte=2016-03-14T10%3A25%3A00',
+            self.identity_store_no_matches_callback
+        )
+
+        self.add_identity_store_callback(
+            'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00',
+            self.identity_store_updated_identity_callback
+        )
+
+        self.add_identity_store_callback(
+            'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00&'
+            'optout__optout_type=forget',
+            self.identity_store_no_matches_callback
+        )
+
+        (created, updated, deleted, ignored) = self.backend.pull_contacts(
+            self.unicef, '2016-03-14T10:25:00', '2016-03-14T10:21:00')
+        self.assertEqual(created, 0)
+        self.assertEqual(updated, 0)
+        self.assertEqual(deleted, 0)
+        self.assertEqual(ignored, 1)
         self.assertEqual(Contact.objects.count(), 1)
 
     def test_pull_fields(self):
