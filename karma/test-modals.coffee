@@ -178,12 +178,8 @@ describe('modals:', () ->
 
     expect($scope.fields.text).toEqual({val: "", maxLength: 10})
 
-    $scope.fetchFaqs()
-    $scope.setReponse($cope.replies[0].answer)
     $scope.form = {$valid: true}
     $scope.ok()
-
-    expect(modalInstance.close).toHaveBeenCalledWith("example answer 1")
 
     $scope.cancel()
 
