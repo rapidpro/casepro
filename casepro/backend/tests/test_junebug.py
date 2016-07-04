@@ -5,7 +5,9 @@ from django.test import override_settings
 import json
 import responses
 
-from ..junebug import IdentityStore, JunebugBackend, JunebugMessageSendingError
+from ..junebug import (
+    IdentityStore, JunebugBackend, JunebugMessageSendingError,
+    IdentityStoreContactSyncer, IdentityStoreContact)
 
 
 class JunebugBackendTest(BaseCasesTest):
@@ -686,3 +688,68 @@ class IdentityStoreTest(BaseCasesTest):
             {'address': '+2222'},
             {'address': '+3333'},
         ]))
+
+
+class IdentityStoreContactSyncerTest(BaseCasesTest):
+    syncer = IdentityStoreContactSyncer()
+
+    def mk_identity_store_contact(self):
+        return IdentityStoreContact(
+            {
+                "id": "test_1",
+                "version": "1",
+                "details": {
+                    "preferred_langage": "eng_NG",
+                    "name": "test",
+                    "addresses": {
+                        "msisdn": {
+                            "+1234": {}
+                        }
+                    }
+                },
+                "communicate_through": None,
+                "operator": None,
+                "created_at": "2016-03-14T10:21:00.258406Z",
+                "created_by": 1,
+                "updated_at": "2016-03-14T10:21:00.258441Z",
+                "updated_by": 1
+            })
+
+    def test_local_kwargs(self):
+        kwargs = self.syncer.local_kwargs(self.unicef, self.mk_identity_store_contact())
+
+        self.assertEqual(kwargs, {
+            "org": self.unicef,
+            "uuid": "test_1",
+            "name": "test",
+            "language": "eng",
+            "is_blocked": False,
+            "is_stub": False,
+            "fields": {},
+            '__data__groups': {},
+        })
+
+    def test_update_required_on_stub(self):
+        # create stub contact
+        local = Contact.get_or_create(self.unicef, "test_id", "test")
+
+        self.assertTrue(self.syncer.update_required(
+            local, self.mk_identity_store_contact(), {}))
+
+    def test_no_update_required(self):
+        local = Contact.objects.create(org=self.unicef, uuid='test_id',
+                                       name="test", language='eng')
+        self.assertFalse(self.syncer.update_required(
+            local, self.mk_identity_store_contact(), {}))
+
+    def test_update_required_name_different(self):
+        local = Contact.objects.create(org=self.unicef, uuid='test_id',
+                                       name="test_1", language='eng')
+        self.assertTrue(self.syncer.update_required(
+            local, self.mk_identity_store_contact(), {}))
+
+    def test_update_required_language_different(self):
+        local = Contact.objects.create(org=self.unicef, uuid='test_id',
+                                       name="test", language='ita')
+        self.assertTrue(self.syncer.update_required(
+            local, self.mk_identity_store_contact(), {}))
