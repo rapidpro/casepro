@@ -53,6 +53,8 @@ class IdentityStore(object):
         identities = self.get_paginated_response(
             url, params=params)
 
+        # Users who opt to be forgotten from the system have their details
+        # stored as 'removed'
         return (
             IdentityStoreContact(i) for i in identities if
             i.get('details').get('name') is not "removed"
