@@ -10,6 +10,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timesince import timesince
 from django.utils.timezone import now
+from django.db.models import Q
 from enum import Enum
 from redis_cache import get_redis_connection
 
@@ -162,7 +163,7 @@ class FAQ(models.Model):
         """
         language_id = search.get('language')
         label_id = search.get('label')
-        question = search.get('question')
+        text = search.get('text')
 
         queryset = FAQ.objects.all()
 
@@ -182,8 +183,8 @@ class FAQ(models.Model):
         queryset = queryset.filter(labels__in=list(labels))
 
         # Text filtering
-        if question:
-            queryset = queryset.filter(question__icontains=question)
+        if text:
+            queryset = queryset.filter(Q(question__icontains=text) | Q(answer__icontains=text))
 
         queryset = queryset.prefetch_related('language', 'labels')
 
