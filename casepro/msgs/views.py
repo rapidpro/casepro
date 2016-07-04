@@ -188,12 +188,12 @@ class FaqSearchMixin(object):
         Collects and prepares FAQ search parameters into JSON serializable dict
         """
         label = self.request.GET.get('label', None)
-        question = self.request.GET.get('question', None)
+        text = self.request.GET.get('text', None)
         language = self.request.GET.get('language', None)
 
         return {
             'label': label,
-            'question': question,
+            'text': text,
             'language': language,
         }
 
