@@ -46,12 +46,9 @@ class IdentityStore(object):
         return (
             a['address'] for a in addresses if a.get('address') is not None)
 
-    def get_identities(self, **kwargs):
+    def get_identities(self, **params):
         '''Get the list of identities filtered by the given kwargs.'''
         url = '%s/api/v1/identities/search/?' % (self.base_url)
-        params = {}
-        for key, value in kwargs.iteritems():
-            params[key] = value
 
         identities = self.get_paginated_response(
             url, params=params)
