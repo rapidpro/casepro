@@ -25,21 +25,27 @@ class DailyCountsTest(BaseCasesTest):
         self._incoming_backend_id = 100
         self._outgoing_backend_id = 200
 
+    @staticmethod
+    def anytime_on_day(day, tz):
+        """
+        Returns a datetime representing a random time on the given day
+        """
+        hour = random.randrange(0, 24)
+        minute = random.randrange(0, 60)
+        second = random.randrange(0, 60)
+        return tz.localize(datetime.combine(day, time(hour, minute, second, 0)))
+
     def new_messages(self, day, count=1):
         for m in range(count):
             self._incoming_backend_id += 1
-            hour = random.randrange(0, 24)
-            minute = random.randrange(0, 60)
-            created_on = pytz.timezone("Africa/Kampala").localize(datetime.combine(day, time(hour, minute, 0, 0)))
+            created_on = self.anytime_on_day(day, pytz.timezone("Africa/Kampala"))
 
             self.create_message(self.unicef, self._incoming_backend_id, self.ann, "Hello", created_on=created_on)
 
     def new_outgoing(self, user, day, count=1):
         for m in range(count):
             self._outgoing_backend_id += 1
-            hour = random.randrange(0, 24)
-            minute = random.randrange(0, 60)
-            created_on = pytz.timezone("Africa/Kampala").localize(datetime.combine(day, time(hour, minute, 0, 0)))
+            created_on = self.anytime_on_day(day, pytz.timezone("Africa/Kampala"))
 
             self.create_outgoing(self.unicef, user, self._outgoing_backend_id, 'B', "Hello", self.ann,
                                  created_on=created_on)
@@ -134,6 +140,24 @@ class DailyCountsTest(BaseCasesTest):
         self.new_messages(date(2015, 1, 2), count=1)
 
         self.assertEqual(DailyCount.get_by_org([self.unicef], 'I').total(), 3)
+
+    def test_labelling_counts(self):
+        d1 = self.anytime_on_day(date(2015, 1, 1), pytz.timezone("Africa/Kampala"))
+        msg = self.create_message(self.unicef, 301, self.ann, "Hi", created_on=d1)
+        msg.labels.add(self.aids, self.tea)
+
+        self.assertEqual(DailyCount.get_by_label([self.aids], 'I').day_totals(), [(date(2015, 1, 1), 1)])
+        self.assertEqual(DailyCount.get_by_label([self.tea], 'I').day_totals(), [(date(2015, 1, 1), 1)])
+
+        msg.labels.remove(self.aids)
+
+        self.assertEqual(DailyCount.get_by_label([self.aids], 'I').day_totals(), [(date(2015, 1, 1), 0)])
+        self.assertEqual(DailyCount.get_by_label([self.tea], 'I').day_totals(), [(date(2015, 1, 1), 1)])
+
+        msg.labels.clear()
+
+        self.assertEqual(DailyCount.get_by_label([self.aids], 'I').day_totals(), [(date(2015, 1, 1), 0)])
+        self.assertEqual(DailyCount.get_by_label([self.tea], 'I').day_totals(), [(date(2015, 1, 1), 0)])
 
     def test_replies_chart(self):
         url = reverse('stats.replies_chart')

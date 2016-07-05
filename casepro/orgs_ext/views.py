@@ -38,6 +38,7 @@ class OrgExtCRUDL(SmartCRUDL):
 
         def get_summary(self, org):
             return {
+                'total_incoming': DailyCount.get_by_org([org], DailyCount.TYPE_INCOMING).total(),
                 'total_replies': DailyCount.get_by_org([org], DailyCount.TYPE_REPLIES).total(),
                 'cases_open': Case.objects.filter(org=org, closed_on=None).count(),
                 'cases_closed': Case.objects.filter(org=org).exclude(closed_on=None).count()
