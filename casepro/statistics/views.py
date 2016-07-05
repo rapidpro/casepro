@@ -1,15 +1,23 @@
 from __future__ import unicode_literals
 
-from calendar import month_name
+import six
+
 from dash.orgs.views import OrgPermsMixin
 from django.http import JsonResponse
 from django.utils import timezone
+from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartTemplateView
 
 from casepro.cases.models import Partner
 from casepro.utils import month_range
 
 from .models import DailyCount
+
+
+MONTH_NAMES = (
+    _("January"), _("February"), _("March"), _("April"), _("May"), _("June"),
+    _("July"), _("August"), _("September"), _("October"), _("November"), _("December")
+)
 
 
 class PerMonthChart(OrgPermsMixin, SmartTemplateView):
@@ -30,7 +38,7 @@ class PerMonthChart(OrgPermsMixin, SmartTemplateView):
             month = this_month + m
             if month < 1:
                 month += 12
-            categories.append(month_name[month])
+            categories.append(six.text_type(MONTH_NAMES[month - 1]))
             series.append(totals_by_month.get(month, 0))
 
         return JsonResponse({'categories': categories, 'series': series})
