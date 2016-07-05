@@ -102,8 +102,12 @@ def _user_unicode(user):
     return user.email or user.username
 
 
-def _user_as_json(user):
-    return {'id': user.pk, 'name': user.get_full_name()}
+def _user_as_json(user, full=True, org=None):
+    result = {'id': user.pk, 'name': user.get_full_name()}
+    if full:
+        result['role'] = user.profile.get_role(org) if (org and user.has_profile()) else None
+
+    return result
 
 
 User.clean = _user_clean

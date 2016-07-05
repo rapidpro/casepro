@@ -17,7 +17,7 @@ from temba_client.utils import parse_iso8601
 from casepro.contacts.models import Group
 from casepro.msgs.models import Label, Message, MessageFolder, OutgoingFolder
 from casepro.statistics.models import DailyCount
-from casepro.utils import json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder
+from casepro.utils import json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder, str_to_bool
 from casepro.utils import month_range
 from casepro.utils.export import BaseDownloadView
 
@@ -58,18 +58,13 @@ class CaseCRUDL(SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super(CaseCRUDL.Read, self).get_context_data(**kwargs)
-            org = self.request.org
             case = self.get_object()
-
             labels = Label.get_all(self.request.org).order_by('name')
-            partners = Partner.get_all(org).order_by('name')
-
             can_update = case.access_level(self.request.user) == AccessLevel.update
 
             # angular app requires context data in JSON format
             context['context_data_json'] = json_encode({
-                'all_labels': [l.as_json() for l in labels],
-                'all_partners': [p.as_json() for p in partners],
+                'all_labels': [l.as_json() for l in labels]
             })
 
             context['max_msg_chars'] = MAX_MESSAGE_CHARS
@@ -324,7 +319,7 @@ class PartnerFormMixin(object):
 
 
 class PartnerCRUDL(SmartCRUDL):
-    actions = ('create', 'read', 'update', 'delete', 'list', 'users')
+    actions = ('create', 'read', 'update', 'delete', 'list')
     model = Partner
 
     class Create(OrgPermsMixin, PartnerFormMixin, SmartCreateView):
@@ -386,34 +381,33 @@ class PartnerCRUDL(SmartCRUDL):
         def get_queryset(self, **kwargs):
             return Partner.get_all(self.request.org).order_by('name')
 
-    class Users(OrgObjPermsMixin, SmartReadView):
-        """
-        JSON endpoint to fetch partner users with their activity information
-        """
-        def get(self, request, *args, **kwargs):
-            partner = self.get_object()
-            org = partner.org
-            managers = set(partner.get_managers())
-            users = list(partner.get_users().order_by('profile__full_name'))
+        def render_to_response(self, context, **response_kwargs):
+            if self.request.is_ajax():
+                with_activity = str_to_bool(self.request.GET.get('with_activity', ''))
+                return self.render_as_json(context['object_list'], with_activity)
+            else:
+                return super(PartnerCRUDL.List, self).render_to_response(context, **response_kwargs)
 
-            # get reply statistics
-            total = DailyCount.get_by_user(org, users, DailyCount.TYPE_REPLIES, None, None).scope_totals()
-            this_month = DailyCount.get_by_user(org, users, DailyCount.TYPE_REPLIES, *month_range(0)).scope_totals()
-            last_month = DailyCount.get_by_user(org, users, DailyCount.TYPE_REPLIES, *month_range(-1)).scope_totals()
+        def render_as_json(self, partners, with_activity):
+            if with_activity:
+                # get reply statistics
+                total = DailyCount.get_by_partner(partners, DailyCount.TYPE_REPLIES, None, None).scope_totals()
+                this_month = DailyCount.get_by_partner(partners, DailyCount.TYPE_REPLIES,
+                                                       *month_range(0)).scope_totals()
+                last_month = DailyCount.get_by_partner(partners, DailyCount.TYPE_REPLIES,
+                                                       *month_range(-1)).scope_totals()
 
-            def as_json(user):
-                obj = user.as_json()
-                obj.update({
-                    'role': "Manager" if user in managers else "Analyst",
-                    'replies': {
-                        'this_month': this_month.get(user, 0),
-                        'last_month': last_month.get(user, 0),
-                        'total': total.get(user, 0)
+            def as_json(partner):
+                obj = partner.as_json()
+                if with_activity:
+                    obj['replies'] = {
+                        'this_month': this_month.get(partner, 0),
+                        'last_month': last_month.get(partner, 0),
+                        'total': total.get(partner, 0)
                     }
-                })
                 return obj
 
-            return JsonResponse({'results': [as_json(u) for u in users]})
+            return JsonResponse({'results': [as_json(p) for p in partners]})
 
 
 class BaseHomeView(OrgPermsMixin, SmartTemplateView):
@@ -433,13 +427,11 @@ class BaseHomeView(OrgPermsMixin, SmartTemplateView):
         partner = user.get_partner(org)
 
         labels = Label.get_all(org, user).order_by('name')
-        partners = Partner.get_all(org).order_by('name')
         groups = Group.get_all(org, visible=True).order_by('name')
 
         # angular app requires context data in JSON format
         context['context_data_json'] = json_encode({
             'user': {'id': user.pk, 'partner': partner.as_json() if partner else None},
-            'partners': [p.as_json() for p in partners],
             'labels': [l.as_json() for l in labels],
             'groups': [g.as_json() for g in groups],
         })
@@ -459,7 +451,7 @@ class InboxView(BaseHomeView):
     title = _("Inbox")
     folder = MessageFolder.inbox
     folder_icon = 'glyphicon-inbox'
-    template_name = 'cases/home_messages.haml'
+    template_name = 'cases/inbox_messages.haml'
 
 
 class FlaggedView(BaseHomeView):
@@ -469,7 +461,7 @@ class FlaggedView(BaseHomeView):
     title = _("Flagged")
     folder = MessageFolder.flagged
     folder_icon = 'glyphicon-flag'
-    template_name = 'cases/home_messages.haml'
+    template_name = 'cases/inbox_messages.haml'
 
 
 class ArchivedView(BaseHomeView):
@@ -479,7 +471,7 @@ class ArchivedView(BaseHomeView):
     title = _("Archived")
     folder = MessageFolder.archived
     folder_icon = 'glyphicon-trash'
-    template_name = 'cases/home_messages.haml'
+    template_name = 'cases/inbox_messages.haml'
 
 
 class UnlabelledView(BaseHomeView):
@@ -489,7 +481,7 @@ class UnlabelledView(BaseHomeView):
     title = _("Unlabelled")
     folder = MessageFolder.unlabelled
     folder_icon = 'glyphicon-bullhorn'
-    template_name = 'cases/home_messages.haml'
+    template_name = 'cases/inbox_messages.haml'
 
 
 class SentView(BaseHomeView):
@@ -499,7 +491,7 @@ class SentView(BaseHomeView):
     title = _("Sent")
     folder = OutgoingFolder.sent
     folder_icon = 'glyphicon-send'
-    template_name = 'cases/home_outgoing.haml'
+    template_name = 'cases/inbox_outgoing.haml'
 
 
 class OpenCasesView(BaseHomeView):
@@ -509,7 +501,7 @@ class OpenCasesView(BaseHomeView):
     title = _("Open Cases")
     folder = CaseFolder.open
     folder_icon = 'glyphicon-folder-open'
-    template_name = 'cases/home_cases.haml'
+    template_name = 'cases/inbox_cases.haml'
 
 
 class ClosedCasesView(BaseHomeView):
@@ -519,7 +511,7 @@ class ClosedCasesView(BaseHomeView):
     title = _("Closed Cases")
     folder = CaseFolder.closed
     folder_icon = 'glyphicon-folder-close'
-    template_name = 'cases/home_cases.haml'
+    template_name = 'cases/inbox_cases.haml'
 
 
 class StatusView(View):

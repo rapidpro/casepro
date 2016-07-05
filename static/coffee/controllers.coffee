@@ -18,12 +18,11 @@ OUTGOING_TEXT_MAX_LEN = 480
 
 
 #============================================================================
-# Home controller (DOM parent of inbox and cases)
+# Inbox controller (DOM parent of messages and cases)
 #============================================================================
-controllers.controller('HomeController', ['$scope', '$window', '$location', 'LabelService', 'UtilsService', ($scope, $window, $location, LabelService, UtilsService) ->
+controllers.controller('InboxController', ['$scope', '$window', '$location', 'LabelService', 'UtilsService', ($scope, $window, $location, LabelService, UtilsService) ->
 
   $scope.user = $window.contextData.user
-  $scope.partners = $window.contextData.partners
   $scope.labels = $window.contextData.labels
   $scope.groups = $window.contextData.groups
 
@@ -77,6 +76,20 @@ controllers.controller('HomeController', ['$scope', '$window', '$location', 'Lab
   $scope.filterDisplayLabels = (labels) ->
     # filters out the active label from the given set of message labels
     if $scope.activeLabel then (l for l in labels when l.id != $scope.activeLabel.id) else labels
+])
+
+
+#============================================================================
+# Base controller class for controllers which have tabs
+#============================================================================
+controllers.controller('BaseTabsController', ['$scope', ($scope) ->
+
+  $scope.initialisedTabs = []
+
+  $scope.onTabSelect = (tab) ->
+    if tab not in $scope.initialisedTabs
+      $scope.onTabInit(tab)
+      $scope.initialisedTabs.push(tab)
 ])
 
 
@@ -190,7 +203,7 @@ controllers.controller('BaseItemsController', ['$scope', 'UtilsService', ($scope
 #============================================================================
 # Incoming messages controller
 #============================================================================
-controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal', '$controller', 'MessageService', 'CaseService', 'UtilsService', ($scope, $timeout, $uibModal, $controller, MessageService, CaseService, UtilsService) ->
+controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal', '$controller', 'CaseService', 'MessageService', 'PartnerService', 'UtilsService', ($scope, $timeout, $uibModal, $controller, CaseService, MessageService, PartnerService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
   $scope.advancedSearch = false
@@ -315,16 +328,14 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
       UtilsService.navigate('/case/read/' + message.case.id + '/')
       return
 
-    partners = if $scope.user.partner then null else $scope.partners
-
-    UtilsService.newCaseModal(message.text, CASE_SUMMARY_MAX_LEN, partners).then((data) ->
-      CaseService.open(message, data.summary, data.assignee).then((caseObj) ->
-          caseUrl = '/case/read/' + caseObj.id + '/'
-          if !caseObj.is_new
-            caseUrl += '?alert=open_found_existing'
-          UtilsService.navigate(caseUrl)
+    if $scope.user.partner
+      # if user belongs to a partner, case will be assigned to them
+      newCaseFromMessage(message, null)
+    else
+      # if not then they can choose an assignee
+      PartnerService.fetchAll().then((partners) ->
+        newCaseFromMessage(message, partners)
       )
-    )
 
   $scope.onLabelMessage = (message) ->
     UtilsService.labelModal("Labels", "Update the labels for this message. This determines which other partner organizations can view this message.", $scope.labels, message.labels).then((selectedLabels) ->
@@ -337,6 +348,16 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
     $uibModal.open({templateUrl: '/partials/modal_messagehistory.html', controller: 'MessageHistoryModalController', resolve: {
       message: () -> message
     }})
+
+  newCaseFromMessage = (message, possibleAssignees) ->
+    UtilsService.newCaseModal(message.text, CASE_SUMMARY_MAX_LEN, possibleAssignees).then((data) ->
+      CaseService.open(message, data.summary, data.assignee).then((caseObj) ->
+          caseUrl = '/case/read/' + caseObj.id + '/'
+          if !caseObj.is_new
+            caseUrl += '?alert=open_found_existing'
+          UtilsService.navigate(caseUrl)
+      )
+    )
 ])
 
 
@@ -411,11 +432,43 @@ controllers.controller('CasesController', ['$scope', '$timeout', '$controller', 
 
 
 #============================================================================
+# Org home controller
+#============================================================================
+controllers.controller('HomeController', ['$scope', '$controller', 'PartnerService', 'StatisticsService', 'UserService', ($scope, $controller, PartnerService, StatisticsService, UserService) ->
+  $controller('BaseTabsController', {$scope: $scope})
+
+  $scope.partners = []
+  $scope.users = []
+
+  $scope.onTabInit = (tab) ->
+    if tab == 'summary'
+      StatisticsService.repliesChart().then((data) ->
+        Highcharts.chart('chart-replies-by-month', {
+          chart: {type: 'column'},
+          title: {text: null},
+          xAxis: {categories: data.categories},
+          yAxis: {min: 0, title: {text: 'Replies'}},
+          legend: {enabled: false},
+          series: [{name: 'Replies', data: data.series}],
+          credits: {enabled: false}
+        });
+      )
+    else if tab == 'partners'
+      PartnerService.fetchAll(true).then((partners) ->
+        $scope.partners = partners
+      )
+    else if tab == 'users'
+      UserService.fetchNonPartner(true).then((users) ->
+        $scope.users = users
+      )
+])
+
+
+#============================================================================
 # Case view controller
 #============================================================================
-controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'MessageService', 'ContactService', 'UtilsService', ($scope, $window, $timeout, CaseService, MessageService, ContactService, UtilsService) ->
+controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'ContactService', 'MessageService', 'PartnerService', 'UtilsService', ($scope, $window, $timeout, CaseService, ContactService, MessageService, PartnerService, UtilsService) ->
 
-  $scope.allPartners = $window.contextData.all_partners
   $scope.allLabels = $window.contextData.all_labels
   
   $scope.caseObj = null
@@ -496,9 +549,11 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
     )
 
   $scope.onReassign = () ->
-    UtilsService.assignModal("Re-assign", null, $scope.allPartners).then((assignee) ->
-      CaseService.reassign($scope.caseObj, assignee).then(() ->
-        $scope.$broadcast('timelineChanged')
+    PartnerService.fetchAll().then((partners) ->
+      UtilsService.assignModal("Re-assign", null, partners).then((assignee) ->
+        CaseService.reassign($scope.caseObj, assignee).then(() ->
+          $scope.$broadcast('timelineChanged')
+        )
       )
     )
 
@@ -548,20 +603,15 @@ controllers.controller('CaseTimelineController', ['$scope', '$timeout', 'CaseSer
 #============================================================================
 # Partner view controller
 #============================================================================
-controllers.controller('PartnerController', ['$scope', '$window', 'UtilsService', 'PartnerService', ($scope, $window, UtilsService, PartnerService) ->
+controllers.controller('PartnerController', ['$scope', '$window', '$controller', 'UtilsService', 'PartnerService', 'StatisticsService', 'UserService', ($scope, $window, $controller, UtilsService, PartnerService, StatisticsService, UserService) ->
+  $controller('BaseTabsController', {$scope: $scope})
 
   $scope.partner = $window.contextData.partner
-  $scope.initialisedTabs = []
   $scope.users = []
-
-  $scope.onTabSelect = (tab) ->
-    if tab not in $scope.initialisedTabs
-      $scope.onTabInit(tab)
-      $scope.initialisedTabs.push(tab)
 
   $scope.onTabInit = (tab) ->
     if tab == 'summary'
-      PartnerService.fetchRepliesChart($scope.partner).then((data) ->
+      StatisticsService.repliesChart($scope.partner, null).then((data) ->
         Highcharts.chart('chart-replies-by-month', {
           chart: {type: 'column'},
           title: {text: null},
@@ -573,8 +623,7 @@ controllers.controller('PartnerController', ['$scope', '$window', 'UtilsService'
         });
       )
     else if tab == 'users'
-      PartnerService.fetchUsers($scope.partner).then((users) ->
-        $scope.usersFetched = true
+      UserService.fetchInPartner($scope.partner, true).then((users) ->
         $scope.users = users
       )
 

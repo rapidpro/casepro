@@ -375,14 +375,15 @@ services.factory('LabelService', ['$http', ($http) ->
 #=====================================================================
 # Partner service
 #=====================================================================
-services.factory('PartnerService', ['$http', ($http) ->
+services.factory('PartnerService', ['$http', '$httpParamSerializer', ($http, $httpParamSerializer) ->
   new class PartnerService
-
+    
     #----------------------------------------------------------------------------
-    # Fetches data for replies by month chart
+    # Fetches all partners, optionally with activity information
     #----------------------------------------------------------------------------
-    fetchRepliesChart: (partner) ->
-      return $http.get('/stats/partner_replies_chart/' + partner.id + '/').then((response) -> response.data)
+    fetchAll: (withActivity = false) ->
+      params = {with_activity: withActivity}
+      return $http.get('/partner/?' + $httpParamSerializer(params)).then((response) -> response.data.results)
 
     #----------------------------------------------------------------------------
     # Fetches users with activity statistics for the given partner
@@ -399,10 +400,45 @@ services.factory('PartnerService', ['$http', ($http) ->
 
 
 #=====================================================================
+# Statistics service
+#=====================================================================
+services.factory('StatisticsService', ['$http', '$httpParamSerializer', ($http, $httpParamSerializer) ->
+  new class StatisticsService
+
+    #----------------------------------------------------------------------------
+    # Fetches data for replies by month chart
+    #----------------------------------------------------------------------------
+    repliesChart: (partner = null, user = null) ->
+      params = {
+        partner: if partner then partner.id else null,
+        user: if user then user.id else null
+      }
+      return $http.get('/stats/replies_chart/?' + $httpParamSerializer(params)).then((response) -> response.data)
+])
+
+
+#=====================================================================
 # User service
 #=====================================================================
-services.factory('UserService', ['$http', ($http) ->
+services.factory('UserService', ['$http', '$httpParamSerializer', ($http, $httpParamSerializer) ->
   new class UserService
+
+    #----------------------------------------------------------------------------
+    # Fetches users in the given partner with optional activity statistics
+    #----------------------------------------------------------------------------
+    fetchInPartner: (partner, withActivity = false) ->
+      params = {
+        partner: if partner then partner.id else null,
+        with_activity: withActivity
+      }
+      return $http.get('/user/?' + $httpParamSerializer(params)).then((response) -> response.data.results)
+
+    #----------------------------------------------------------------------------
+    # Fetches non-partner users with optional activity statistics
+    #----------------------------------------------------------------------------
+    fetchNonPartner: (withActivity = false) ->
+      params = {non_partner: true, with_activity: withActivity}
+      return $http.get('/user/?' + $httpParamSerializer(params)).then((response) -> response.data.results)
 
     #----------------------------------------------------------------------------
     # Delete the given user

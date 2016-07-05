@@ -1,4 +1,4 @@
-- extends "cases/home_base.html"
+- extends "cases/inbox_base.html"
 - load smartmin i18n
 
 - block home-items
@@ -158,7 +158,7 @@
           [[ item.text ]]
         .message-extra{ uib-collapse:"expandedMessageId != item.id" }
           .btn-group.pull-away
-            %button.btn.btn-default{ type:"button", ng-click:"onCaseFromMessage(item)", ng-if:"partners.length > 0" }
+            %button.btn.btn-default{ type:"button", ng-click:"onCaseFromMessage(item)" }
               - trans "Open Case"
             %button.btn.btn-default{ type:"button", ng-click:"onForwardMessage(item)" }
               %span.glyphicon.glyphicon-share-alt

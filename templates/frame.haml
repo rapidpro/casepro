@@ -75,24 +75,16 @@
                         %a{ href:"{% url 'orgs_ext.org_list' %}" }
                           - trans "Orgs"
                       %li
-                        %a{ href:"{% url 'profiles.user_list' %}" }
-                          - trans "Users"
-                      %li
                         %a{ href:"{% url 'orgs_ext.task_list' %}" }
                           - trans "Tasks"
 
               - else
-                - if request.user.is_superuser or org_perms.orgs.org_home or org_perms.msgs.label_list or org_perms.cases.group_list or org_perms.profiles.profile_user_list
+                - if request.user.is_superuser or org_perms.msgs.label_list or org_perms.cases.group_list
                   %li.dropdown
                     %a.dropdown-toggle{href:"#", data-toggle:"dropdown"}
                       - trans "Administration"
                       %b.caret
                     %ul.dropdown-menu
-                      - if perms.orgs.org_home or org_perms.orgs.org_home
-                        %li
-                          %a{ href:"{% url 'orgs_ext.org_home' %}" }
-                            - trans "Organization"
-
                       - if perms.msgs.label_list or org_perms.msgs.label_list
                         %li
                           %a{ href:"{% url 'msgs.label_list' %}" }
@@ -103,15 +95,20 @@
                           %a{ href:"{% url 'contacts.group_list' %}" }
                             - trans "Groups"
 
-                      - if perms.profiles.profile_user_list or org_perms.profiles.profile_user_list
-                        %li
-                          %a{ href:"{% url 'profiles.user_list' %}" }
-                            - trans "Users"
-
                 - if perms.orgs.org_inbox or org_perms.orgs.org_inbox
                   %li
                     %a{ href:"{% url 'cases.inbox' %}" }
                       - trans "Inbox"
+
+                - if perms.orgs.org_home or org_perms.orgs.org_home
+                  %li
+                    %a{ href:"{% url 'orgs_ext.org_home' %}" }
+                      - trans "Organization"
+
+                - if user_partner
+                  %li
+                    %a{ href:"{% url 'cases.partner_read' user_partner.pk %}" }
+                      - trans "Organization"
 
                 - if perms.cases.partner_list or org_perms.cases.partner_list
                   %li
@@ -126,11 +123,6 @@
                       {{ request.user.email|default:request.user.username }}
                       %b.caret
                     %ul.dropdown-menu
-                      - if request.user.get_partner
-                        %li
-                          %a{ href:"{% url 'cases.partner_read' request.user.get_partner.pk %}" }
-                            %span.glyphicon.glyphicon-home
-                            - trans "My Organization"
                       - if request.user.profile
                         %li
                           %a{ href:"{% url 'profiles.user_read' request.user.pk %}" }

@@ -394,11 +394,13 @@ class MessageAction(models.Model):
         return action_obj
 
     def as_json(self):
-        return {'id': self.pk,
-                'action': self.action,
-                'created_by': self.created_by.as_json(),
-                'created_on': self.created_on,
-                'label': self.label.as_json() if self.label else None}
+        return {
+            'id': self.pk,
+            'action': self.action,
+            'created_by': self.created_by.as_json(full=False),
+            'created_on': self.created_on,
+            'label': self.label.as_json() if self.label else None
+        }
 
 
 @python_2_unicode_compatible
@@ -553,7 +555,7 @@ class Outgoing(models.Model):
             'time': self.created_on,
             'direction': self.DIRECTION,
             'case': self.case.as_json(full=False) if self.case else None,
-            'sender': self.created_by.as_json()
+            'sender': self.created_by.as_json(full=False)
         }
 
     def __str__(self):

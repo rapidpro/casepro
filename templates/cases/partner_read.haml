@@ -174,7 +174,10 @@
                 %a{ ng-href:"/user/read/[[ user.id ]]/" }><
                   [[ user.name ]]
               %td
-                [[ user.role ]]
+                %span{ ng-if:'user.role == "M"' }
+                  - trans "Manager"
+                %span{ ng-if:'user.role == "Y"' }
+                  - trans "Data Analyst"
               %td
                 [[ user.replies.this_month ]]
               %td

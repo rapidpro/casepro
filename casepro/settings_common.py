@@ -169,7 +169,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'dash.context_processors.lang_direction',
     'casepro.cases.context_processors.sentry_dsn',
     'casepro.cases.context_processors.server_time',
-    'casepro.profiles.context_processors.user_is_admin',
+    'casepro.profiles.context_processors.user',
 )
 
 ROOT_URLCONF = 'casepro.urls'
@@ -303,7 +303,7 @@ PERMISSIONS = {
           'delete',  # can delete an object,
           'list'),   # can view a list of the objects
 
-    'orgs.org': ('create', 'update', 'list', 'edit', 'home', 'inbox'),
+    'orgs.org': ('create', 'update', 'list', 'home', 'edit', 'inbox', 'charts'),
 
     'msgs.label': ('create', 'update', 'list'),
 
@@ -319,7 +319,7 @@ PERMISSIONS = {
 
     'case.caseexport': ('create', 'read'),
 
-    'cases.partner': ('create', 'read', 'delete', 'list', 'users'),
+    'cases.partner': ('create', 'read', 'delete', 'list'),
 
     'contacts.contact': ('read', 'list'),
 
@@ -332,9 +332,10 @@ PERMISSIONS = {
 # assigns the permissions that each group should have
 GROUP_PERMISSIONS = {
     "Administrators": (  # Org users: Administrators
-        'orgs.org_home',
-        'orgs.org_edit',
         'orgs.org_inbox',
+        'orgs.org_home',
+        'orgs.org_charts',
+        'orgs.org_edit',
 
         'msgs.label.*',
         'msgs.message.*',
@@ -356,6 +357,7 @@ GROUP_PERMISSIONS = {
     ),
     "Editors": (  # Partner users: Managers
         'orgs.org_inbox',
+        'orgs.org_charts',
 
         'msgs.message_action',
         'msgs.message_bulk_reply',
@@ -379,16 +381,17 @@ GROUP_PERMISSIONS = {
         'cases.caseexport_read',
         'cases.partner_list',
         'cases.partner_read',
-        'cases.partner_users',
 
         'contacts.contact_read',
 
         'profiles.profile_user_create_in',
         'profiles.profile_user_update',
         'profiles.profile_user_read',
+        'profiles.profile_user_list',
     ),
     "Viewers": (  # Partner users: Data Analysts
         'orgs.org_inbox',
+        'orgs.org_charts',
 
         'msgs.message_action',
         'msgs.message_bulk_reply',
@@ -412,11 +415,11 @@ GROUP_PERMISSIONS = {
         'cases.caseexport_read',
         'cases.partner_list',
         'cases.partner_read',
-        'cases.partner_users',
 
         'contacts.contact_read',
 
         'profiles.profile_user_read',
+        'profiles.profile_user_list',
     ),
 }
 

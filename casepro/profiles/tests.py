@@ -1,8 +1,13 @@
 from __future__ import absolute_import, unicode_literals
 
+import pytz
+
+from datetime import datetime
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
+from django.utils import timezone
+from mock import patch
 
 from casepro.test import BaseCasesTest
 
@@ -526,23 +531,55 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertLoginRedirect(response, 'unicef', url)
 
-        # log in as superuser
-        self.login(self.superuser)
-
-        # they can use without org to see users from all orgs
-        self.assertEqual(len(self.url_get(None, url).context['object_list']), 6)
-
-        # or with org to see users from that orgs
-        self.assertEqual(len(self.url_get('unicef', url).context['object_list']), 4)
-
-        # administrator can also see all users in their org
-        self.login(self.admin)
-
-        self.assertEqual(len(self.url_get('unicef', url).context['object_list']), 4)
-
-        # can't access as non-administrator
+        # can access all users even as non-administrator
         self.login(self.user1)
-        self.assertLoginRedirect(self.url_get('unicef', url), 'unicef', url)
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json['results'], [
+            {'id': self.user3.pk, 'name': "Carol", 'role': "M"},
+            {'id': self.user1.pk, 'name': "Evan", 'role': "M"},
+            {'id': self.admin.pk, 'name': "Kidus", 'role': "A"},
+            {'id': self.user2.pk, 'name': "Rick", 'role': "Y"},
+        ])
+
+        # can filter by partner
+        response = self.url_get('unicef', url + '?partner=%d' % self.moh.pk)
+        self.assertEqual(response.json['results'], [
+            {'id': self.user1.pk, 'name': "Evan", 'role': "M"},
+            {'id': self.user2.pk, 'name': "Rick", 'role': "Y"}
+        ])
+
+        # can filter by being a non-partner user
+        response = self.url_get('unicef', url + '?non_partner=true')
+        self.assertEqual(response.json['results'], [
+            {'id': self.admin.pk, 'name': "Kidus", 'role': "A"}
+        ])
+
+        # add some reply activity
+        ann = self.create_contact(self.unicef, "C-001", "Ann")
+        self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", ann,
+                             created_on=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC))  # April 20th
+        self.create_outgoing(self.unicef, self.user1, 203, 'C', "Hello 3", ann,
+                             created_on=datetime(2016, 3, 20, 9, 0, tzinfo=pytz.UTC))  # Mar 20th
+
+        # simulate making request in May
+        with patch.object(timezone, 'now', return_value=datetime(2016, 5, 20, 9, 0, tzinfo=pytz.UTC)):
+            response = self.url_get('unicef', url + '?partner=%d&with_activity=true' % self.moh.pk)
+
+        self.assertEqual(response.json['results'], [
+            {
+                'id': self.user1.pk,
+                'name': "Evan",
+                'role': "M",
+                'replies': {'last_month': 1, 'this_month': 0, 'total': 2}
+            },
+            {
+                'id': self.user2.pk,
+                'name': "Rick",
+                'role': "Y",
+                'replies': {'last_month': 0, 'this_month': 0, 'total': 0}
+            }
+        ])
 
     def test_self(self):
         url = reverse('profiles.user_self')
