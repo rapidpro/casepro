@@ -120,17 +120,17 @@ class JunebugBackendTest(BaseCasesTest):
     @responses.activate
     def test_pull_contacts_recently_created(self):
         self.add_identity_store_callback(
-            'created_at__lte=2016-03-14T10%3A21%3A00&created_at__gte=2016-03-14T10%3A25%3A00',
+            'created_to=2016-03-14T10%3A21%3A00&created_from=2016-03-14T10%3A25%3A00',
             self.identity_store_created_identity_callback
         )
 
         self.add_identity_store_callback(
-            'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00',
+            'updated_to=2016-03-14T10%3A21%3A00&updated_from=2016-03-14T10%3A25%3A00',
             self.identity_store_no_matches_callback
         )
 
         self.add_identity_store_callback(
-            'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00&'
+            'updated_to=2016-03-14T10%3A21%3A00&updated_from=2016-03-14T10%3A25%3A00&'
             'optout_type=forget',
             self.identity_store_no_matches_callback
         )
@@ -151,17 +151,17 @@ class JunebugBackendTest(BaseCasesTest):
         Contact.get_or_create(self.unicef, 'test_id', "test")
 
         self.add_identity_store_callback(
-            'created_at__lte=2016-03-14T10%3A21%3A00&created_at__gte=2016-03-14T10%3A25%3A00',
+            'created_to=2016-03-14T10%3A21%3A00&created_from=2016-03-14T10%3A25%3A00',
             self.identity_store_no_matches_callback
         )
 
         self.add_identity_store_callback(
-            'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00',
+            'updated_to=2016-03-14T10%3A21%3A00&updated_from=2016-03-14T10%3A25%3A00',
             self.identity_store_updated_identity_callback
         )
 
         self.add_identity_store_callback(
-            'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00&'
+            'updated_to=2016-03-14T10%3A21%3A00&updated_from=2016-03-14T10%3A25%3A00&'
             'optout_type=forget',
             self.identity_store_no_matches_callback
         )
@@ -184,17 +184,17 @@ class JunebugBackendTest(BaseCasesTest):
         self.assertTrue(contact.is_active)
 
         self.add_identity_store_callback(
-            'created_at__lte=2016-03-14T10%3A21%3A00&created_at__gte=2016-03-14T10%3A25%3A00',
+            'created_to=2016-03-14T10%3A21%3A00&created_from=2016-03-14T10%3A25%3A00',
             self.identity_store_no_matches_callback
         )
 
         self.add_identity_store_callback(
-            'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00',
+            'updated_to=2016-03-14T10%3A21%3A00&updated_from=2016-03-14T10%3A25%3A00',
             self.identity_store_no_matches_callback
         )
 
         self.add_identity_store_callback(
-            'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00&'
+            'updated_to=2016-03-14T10%3A21%3A00&updated_from=2016-03-14T10%3A25%3A00&'
             'optout_type=forget',
             self.identity_store_forgotten_identity_callback
         )
@@ -215,17 +215,17 @@ class JunebugBackendTest(BaseCasesTest):
                                language='eng')
 
         self.add_identity_store_callback(
-            'created_at__lte=2016-03-14T10%3A21%3A00&created_at__gte=2016-03-14T10%3A25%3A00',
+            'created_to=2016-03-14T10%3A21%3A00&created_from=2016-03-14T10%3A25%3A00',
             self.identity_store_no_matches_callback
         )
 
         self.add_identity_store_callback(
-            'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00',
+            'updated_to=2016-03-14T10%3A21%3A00&updated_from=2016-03-14T10%3A25%3A00',
             self.identity_store_updated_identity_callback
         )
 
         self.add_identity_store_callback(
-            'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00&'
+            'updated_to=2016-03-14T10%3A21%3A00&updated_from=2016-03-14T10%3A25%3A00&'
             'optout_type=forget',
             self.identity_store_no_matches_callback
         )
