@@ -16,7 +16,7 @@ class JunebugBackendTest(BaseCasesTest):
         self.backend = JunebugBackend()
 
     def add_identity_store_callback(self, query, callback):
-        url = 'http://localhost:8081/api/v1/identities/search/?' + query
+        url = 'http://localhost:8081/api/v1/identities/?' + query
         responses.add_callback(
             responses.GET, url, callback=callback, match_querystring=True,
             content_type='application/json')
@@ -131,7 +131,7 @@ class JunebugBackendTest(BaseCasesTest):
 
         self.add_identity_store_callback(
             'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00&'
-            'optout__optout_type=forget',
+            'optout_type=forget',
             self.identity_store_no_matches_callback
         )
 
@@ -162,7 +162,7 @@ class JunebugBackendTest(BaseCasesTest):
 
         self.add_identity_store_callback(
             'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00&'
-            'optout__optout_type=forget',
+            'optout_type=forget',
             self.identity_store_no_matches_callback
         )
 
@@ -195,7 +195,7 @@ class JunebugBackendTest(BaseCasesTest):
 
         self.add_identity_store_callback(
             'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00&'
-            'optout__optout_type=forget',
+            'optout_type=forget',
             self.identity_store_forgotten_identity_callback
         )
 
@@ -226,7 +226,7 @@ class JunebugBackendTest(BaseCasesTest):
 
         self.add_identity_store_callback(
             'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00&'
-            'optout__optout_type=forget',
+            'optout_type=forget',
             self.identity_store_no_matches_callback
         )
 

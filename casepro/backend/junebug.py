@@ -48,7 +48,7 @@ class IdentityStore(object):
 
     def get_identities(self, **params):
         '''Get the list of identities filtered by the given kwargs.'''
-        url = '%s/api/v1/identities/search/?' % self.base_url
+        url = '%s/api/v1/identities/?' % self.base_url
 
         identities = self.get_paginated_response(
             url, params=params)
@@ -59,7 +59,7 @@ class IdentityStore(object):
         return (
             IdentityStoreContact(i) for i in identities if
             i.get('details').get('name') != "redacted" or
-            'optout__optout_type' in params
+            'optout_type' in params
         )
 
 
@@ -205,7 +205,7 @@ class JunebugBackend(BaseBackend):
 
         # all identities deleted in the Identity Store in the time window
         deleted_identities = list(identity_store.get_identities(
-            optout__optout_type='forget', updated_at__gte=modified_after,
+            optout_type='forget', updated_at__gte=modified_after,
             updated_at__lte=modified_before))
 
         # the method expects fetches not lists so I faked it
