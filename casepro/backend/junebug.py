@@ -69,7 +69,7 @@ class IdentityStoreContact(object):
         for k, v in json_data.items():
             setattr(self, k, v)
 
-        # Languages in the idenity store have the country code at the end
+        # Languages in the identity store have the country code at the end
         remote_language = json_data.get('details').get('preferred_language')
         language, _, _ = remote_language.partition('_')
         self.name = json_data.get('details').get('name')
