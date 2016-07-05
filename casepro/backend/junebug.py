@@ -54,10 +54,10 @@ class IdentityStore(object):
             url, params=params)
 
         # Users who opt to be forgotten from the system have their details
-        # stored as 'removed'
+        # stored as 'redacted'
         return (
             IdentityStoreContact(i) for i in identities if
-            i.get('details').get('name') is not "removed"
+            i.get('details').get('name') is not "redacted"
         )
 
 
