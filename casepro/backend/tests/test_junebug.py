@@ -657,7 +657,7 @@ class IdentityStoreTest(BaseCasesTest):
 
         responses.add_callback(
             responses.GET,
-            'http://identitystore.org/api/v1/identities/search/?details__name=test',
+            'http://identitystore.org/api/v1/identities/?details__name=test',
             match_querystring=True, callback=self.get_identities_callback,
             content_type='application/json')
 
