@@ -91,6 +91,32 @@ class JunebugBackendTest(BaseCasesTest):
         }
         return (201, headers, json.dumps(resp))
 
+    def identity_store_forgotten_identity_callback(self, request):
+        headers = {'Content-Type': 'application/json'}
+        resp = {
+            "count": 1,
+            "next": None,
+            "previous": None,
+            "results": [
+                {
+                    "id": "test_id",
+                    "version": 1,
+                    "details": {
+                        "name": "redacted",
+                        "addresses": {},
+                        "preferred_language": "redacted",
+                    },
+                    "communicate_through": None,
+                    "operator": None,
+                    "created_at": "2016-02-14T10:21:00.258406Z",
+                    "created_by": 1,
+                    "updated_at": "2016-03-14T10:21:00.258406Z",
+                    "updated_by": 1
+                }
+            ]
+        }
+        return (201, headers, json.dumps(resp))
+
     @responses.activate
     def test_pull_contacts_recently_created(self):
         self.add_identity_store_callback(
@@ -170,7 +196,7 @@ class JunebugBackendTest(BaseCasesTest):
         self.add_identity_store_callback(
             'updated_at__lte=2016-03-14T10%3A21%3A00&updated_at__gte=2016-03-14T10%3A25%3A00&'
             'optout__optout_type=forget',
-            self.identity_store_updated_identity_callback
+            self.identity_store_forgotten_identity_callback
         )
 
         (created, updated, deleted, ignored) = self.backend.pull_contacts(

@@ -54,10 +54,12 @@ class IdentityStore(object):
             url, params=params)
 
         # Users who opt to be forgotten from the system have their details
-        # stored as 'redacted'
+        # stored as 'redacted'. We only want to return them if we are
+        # specifically looking for forgotten users.
         return (
             IdentityStoreContact(i) for i in identities if
-            i.get('details').get('name') is not "redacted"
+            i.get('details').get('name') != "redacted" or
+            'optout__optout_type' in params
         )
 
 
