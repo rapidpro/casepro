@@ -305,7 +305,7 @@ PERMISSIONS = {
 
     'orgs.org': ('create', 'update', 'list', 'home', 'edit', 'inbox', 'charts'),
 
-    'msgs.label': ('create', 'update', 'list'),
+    'msgs.label': ('create', 'update', 'read', 'delete', 'list'),
 
     'msgs.message': ('action', 'bulk_reply', 'forward', 'label', 'history', 'search', 'unlabelled'),
 
@@ -359,6 +359,7 @@ GROUP_PERMISSIONS = {
         'orgs.org_inbox',
         'orgs.org_charts',
 
+        'msgs.label_read',
         'msgs.message_action',
         'msgs.message_bulk_reply',
         'msgs.message_forward',
@@ -393,6 +394,7 @@ GROUP_PERMISSIONS = {
         'orgs.org_inbox',
         'orgs.org_charts',
 
+        'msgs.label_read',
         'msgs.message_action',
         'msgs.message_bulk_reply',
         'msgs.message_forward',

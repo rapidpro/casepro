@@ -10,11 +10,12 @@ from django.utils.translation import ugettext_lazy as _
 from el_pagination.paginators import LazyPaginator
 from smartmin.mixins import NonAtomicMixin
 from smartmin.views import SmartCRUDL, SmartTemplateView
-from smartmin.views import SmartListView, SmartCreateView, SmartUpdateView, SmartDeleteView
+from smartmin.views import SmartListView, SmartCreateView, SmartReadView, SmartUpdateView, SmartDeleteView
 from temba_client.utils import parse_iso8601
 
 from casepro.rules.mixins import RuleFormMixin
-from casepro.utils import parse_csv, str_to_bool, JSONEncoder
+from casepro.statistics.models import DailyCount
+from casepro.utils import parse_csv, str_to_bool, JSONEncoder, json_encode
 from casepro.utils.export import BaseDownloadView
 
 from .forms import LabelForm
@@ -26,7 +27,7 @@ RESPONSE_DELAY_WARN_SECONDS = 24 * 60 * 60  # show response delays > 1 day as wa
 
 
 class LabelCRUDL(SmartCRUDL):
-    actions = ('create', 'update', 'delete', 'list')
+    actions = ('create', 'update', 'read', 'delete', 'list')
     model = Label
 
     class Create(RuleFormMixin, OrgPermsMixin, SmartCreateView):
@@ -56,6 +57,7 @@ class LabelCRUDL(SmartCRUDL):
 
     class Update(RuleFormMixin, OrgObjPermsMixin, SmartUpdateView):
         form_class = LabelForm
+        success_url = 'id@msgs.label_read'
 
         def get_form_kwargs(self):
             kwargs = super(LabelCRUDL.Update, self).get_form_kwargs()
@@ -70,6 +72,25 @@ class LabelCRUDL(SmartCRUDL):
             obj.update_tests(tests)
 
             return obj
+
+    class Read(OrgObjPermsMixin, SmartReadView):
+        def get_queryset(self):
+            return Label.get_all(self.request.org, self.request.user)
+
+        def get_context_data(self, **kwargs):
+            context = super(LabelCRUDL.Read, self).get_context_data(**kwargs)
+
+            # angular app requires context data in JSON format
+            context['context_data_json'] = json_encode({
+                'label': self.object.as_json()
+            })
+            context['summary'] = self.get_summary(self.object)
+            return context
+
+        def get_summary(self, label):
+            return {
+                'total_messages': DailyCount.get_by_label([label], DailyCount.TYPE_INCOMING).total()
+            }
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
         cancel_url = '@msgs.label_list'

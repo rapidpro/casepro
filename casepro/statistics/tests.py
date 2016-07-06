@@ -15,9 +15,9 @@ from .models import DailyCount
 from .tasks import squash_counts
 
 
-class DailyCountsTest(BaseCasesTest):
+class BaseStatsTest(BaseCasesTest):
     def setUp(self):
-        super(DailyCountsTest, self).setUp()
+        super(BaseStatsTest, self).setUp()
 
         self.ann = self.create_contact(self.unicef, 'C-001', "Ann")
         self.ned = self.create_contact(self.nyaruka, 'C-002', "Ned")
@@ -49,6 +49,9 @@ class DailyCountsTest(BaseCasesTest):
 
             self.create_outgoing(self.unicef, user, self._outgoing_backend_id, 'B', "Hello", self.ann,
                                  created_on=created_on)
+
+
+class DailyCountsTest(BaseStatsTest):
 
     def test_reply_counts(self):
         self.new_outgoing(self.admin, date(2015, 1, 1), count=2)
@@ -159,18 +162,42 @@ class DailyCountsTest(BaseCasesTest):
         self.assertEqual(DailyCount.get_by_label([self.aids], 'I').day_totals(), [(date(2015, 1, 1), 0)])
         self.assertEqual(DailyCount.get_by_label([self.tea], 'I').day_totals(), [(date(2015, 1, 1), 0)])
 
+
+class ChartsTest(BaseStatsTest):
+
+    def test_incoming_chart(self):
+        url = reverse('stats.incoming_chart')
+
+        self.assertLoginRedirect(self.url_get('unicef', url), 'unicef', url)
+
+        self.new_messages(date(2016, 1, 1))  # Jan 1st
+        self.new_messages(date(2016, 1, 15))  # Jan 15th
+        self.new_messages(date(2016, 1, 20))  # Jan 20th
+        self.new_messages(date(2016, 2, 1))  # Feb 1st
+        self.new_messages(date(2016, 2, 1))  # different partner
+
+        self.login(self.user3)
+
+        # simulate making requests in April
+        with patch.object(timezone, 'now', return_value=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC)):
+            response = self.url_get('unicef', url)
+
+            self.assertEqual(response.json, {
+                'series': [0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 0, 0]
+            })
+
     def test_replies_chart(self):
         url = reverse('stats.replies_chart')
 
         self.assertLoginRedirect(self.url_get('unicef', url), 'unicef', url)
-
-        self.login(self.user3)  # even users from other partners can see this
 
         self.new_outgoing(self.admin, date(2016, 1, 1))  # Jan 1st
         self.new_outgoing(self.user1, date(2016, 1, 15))  # Jan 15th
         self.new_outgoing(self.user1, date(2016, 1, 20))  # Jan 20th
         self.new_outgoing(self.user2, date(2016, 2, 1))  # Feb 1st
         self.new_outgoing(self.user3, date(2016, 2, 1))  # different partner
+
+        self.login(self.user3)
 
         # simulate making requests in April
         with patch.object(timezone, 'now', return_value=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC)):

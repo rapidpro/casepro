@@ -406,6 +406,15 @@ services.factory('StatisticsService', ['$http', '$httpParamSerializer', ($http, 
   new class StatisticsService
 
     #----------------------------------------------------------------------------
+    # Fetches data for incoming by day chart
+    #----------------------------------------------------------------------------
+    incomingChart: (label = null) ->
+      params = {
+        label: if label then label.id else null,
+      }
+      return $http.get('/stats/incoming_chart/?' + $httpParamSerializer(params)).then((response) -> response.data)
+
+    #----------------------------------------------------------------------------
     # Fetches data for replies by month chart
     #----------------------------------------------------------------------------
     repliesChart: (partner = null, user = null) ->
