@@ -693,7 +693,7 @@ class FaqCRUDLTest(BaseCasesTest):
         self.assertEqual(len(response.json['results']), 1)
 
 
-class ImportTest(BaseCasesTest):
+class FaqImportTest(BaseCasesTest):
     def create_importtask(self, user, filename):
         task = ImportTask.objects.create(
             created_by=user,
@@ -749,6 +749,34 @@ class ImportTest(BaseCasesTest):
                          num_faqs_parents_no_translations + 3 + 3)
         self.assertEqual(FAQ.objects.filter(parent__isnull=True).exclude(translations__isnull=False).count(),
                          num_faqs_parents_have_translations + 0 + 0)
+
+    def test_bad_imports(self):
+        # store situation before import
+        num_languages = Language.objects.all().count()
+        num_faqs = FAQ.objects.all().count()
+        num_faqs_translations = FAQ.objects.filter(parent__isnull=False).count()
+        num_faqs_parents = FAQ.objects.filter(parent__isnull=True).count()
+        num_faqs_parents_no_translations = FAQ.objects.filter(parent__isnull=True).exclude(
+            translations__isnull=True).count()
+        num_faqs_parents_have_translations = FAQ.objects.filter(parent__isnull=True).exclude(
+            translations__isnull=False).count()
+
+        # Import problem: labels don't match existing labels
+        # create the importtask object
+        importtask = self.create_importtask(self.admin, 'faq_bad_import_labels.csv')
+        # run the import, expect an exception
+        with self.assertRaises(Label.DoesNotExist):
+            faq_csv_import.delay(self.unicef, importtask.pk).get()
+
+        # check situation after import - nothing should have changed
+        self.assertEqual(Language.objects.all().count(), num_languages)
+        self.assertEqual(FAQ.objects.all().count(), num_faqs)
+        self.assertEqual(FAQ.objects.filter(parent__isnull=False).count(), num_faqs_translations)
+        self.assertEqual(FAQ.objects.filter(parent__isnull=True).count(), num_faqs_parents)
+        self.assertEqual(FAQ.objects.filter(parent__isnull=True).exclude(translations__isnull=True).count(),
+                         num_faqs_parents_no_translations)
+        self.assertEqual(FAQ.objects.filter(parent__isnull=True).exclude(translations__isnull=False).count(),
+                         num_faqs_parents_have_translations)
 
 
 class MessageTest(BaseCasesTest):

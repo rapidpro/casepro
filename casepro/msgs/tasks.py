@@ -1,11 +1,13 @@
 from __future__ import absolute_import, unicode_literals
 
 import csv
+import traceback
 from celery import shared_task
 from celery.task import task
 from celery.utils.log import get_task_logger
 from django.db import transaction
 from django.utils import timezone
+from django.conf import settings
 from dash.orgs.tasks import org_task
 from datetime import timedelta
 from smartmin.csv_imports.models import ImportTask
@@ -133,7 +135,7 @@ def get_or_create_lang(org, lang_code):
         return Language.objects.create(org=org, code=lang_code)
 
 
-def get_labels(labelstring):
+def get_labels(task, labelstring):
     """
     Gets a list of label objects from a comma-seperated string of the label codes, eg. "TB, aids"
     """
@@ -141,12 +143,13 @@ def get_labels(labelstring):
     labelstrings = labelstring.split(', ')
     for labelstring in labelstrings:
         labelstring = labelstring.strip()
+
         try:
             label = Label.objects.get(name__iexact=labelstring)  # iexact removes case sensitivity
+            labels.add(label)
         except Exception as e:
-            task.log('Label does not exist! Create it first.')
+            task.log("Label %s does not exist" % labelstring)
             raise e
-        labels.add(label)
     return list(labels)
 
 
@@ -172,7 +175,7 @@ def faq_csv_import(org, task_id):  # pragma: no cover
                 parent_lang = get_or_create_lang(org, line['Parent Language'])
 
                 # Get label objects
-                labels = get_labels(line['Labels'])
+                labels = get_labels(task, line['Labels'])
 
                 # Create parent FAQ
                 parent_faq = create_faq(org, line['Parent Question'], line['Parent Answer'],
@@ -205,8 +208,8 @@ def faq_csv_import(org, task_id):  # pragma: no cover
             task.log("%d FAQ(s) added." % lines)
 
     except Exception as e:
-        import traceback
-        traceback.print_exc(e)
+        if not settings.TESTING:
+            traceback.print_exc(e)
 
         task.log("\nError: %s\n" % e)
         task.log(log.getvalue())
