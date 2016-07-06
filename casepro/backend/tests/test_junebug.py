@@ -583,3 +583,48 @@ class IdentityStoreTest(BaseCasesTest):
             {'address': '+2222'},
             {'address': '+3333'},
         ]))
+
+    def single_identity_callback(self, request):
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            'count': 1,
+            'next': None,
+            'previous': None,
+            'results': [
+                {
+                    "id": "50d62fcf-856a-489c-914a-56f6e9506ee3",
+                    "version": 1,
+                    "details": {
+                        "addresses": {
+                            "msisdn": {
+                                "+1234": {}
+                            }
+                        }
+                    },
+                    "communicate_through": None,
+                    "operator": None,
+                    "created_at": "2016-06-23T13:15:55.580070Z",
+                    "created_by": 1,
+                    "updated_at": "2016-06-23T13:15:55.580099Z",
+                    "updated_by": 1
+                },
+            ]
+        }
+        return (200, headers, json.dumps(data))
+
+    @responses.activate
+    def test_get_identities_for_address(self):
+        '''The get_identities_for_address to create the correct request to list
+        all of the identities for a specified address and address type.'''
+        identity_store = IdentityStore(
+            'http://identitystore.org/', 'auth-token', 'msisdn')
+
+        query = '?details__addresses__msisdn=%2B1234'
+        url = 'http://identitystore.org/api/v1/identities/search/'
+        responses.add_callback(
+            responses.GET, url + query, callback=self.single_identity_callback,
+            match_querystring=True, content_type='application/json')
+
+        [identity] = identity_store.get_identities_for_address('+1234')
+        self.assertEqual(
+            identity['details']['addresses']['msisdn'], {'+1234': {}})
