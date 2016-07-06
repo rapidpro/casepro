@@ -65,6 +65,21 @@ class IdentityStore(object):
             '%s/api/v1/identities/search/' % (self.base_url),
             params={'details__addresses__%s' % self.address_type: address})
 
+    def create_identity(self, address):
+        return self.session.post(
+            '%s/api/v1/identities/' % (self.base_url,),
+            json={
+                'details': {
+                    'addresses': {
+                        self.address_type: {
+                            address: {},
+                        },
+                    },
+                    'default_addr_type': 'msisdn',
+                },
+            }
+        )
+
 
 class JunebugMessageSendingError(Exception):
     '''Exception that is raised when errors occur when trying to send messages
@@ -347,11 +362,8 @@ def received_junebug_message(request):
     try:
         identity = identities.next()
     except StopIteration:
-        # TODO: Create identity
-        identity = {'id': 'test-uuid'}
+        identity = identity_store.create_identity(data.get('from'))
     contact = Contact.get_or_create(request.org, identity.get('id'))
-    contact.is_stub = False
-    contact.save()
 
     message_id = UUID(hex=data.get('message_id')).int % 2147483647
     Message.objects.create(
