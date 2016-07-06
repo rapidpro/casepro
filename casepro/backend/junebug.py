@@ -366,9 +366,9 @@ def received_junebug_message(request):
     contact = Contact.get_or_create(request.org, identity.get('id'))
 
     message_id = uuid_to_int(data.get('message_id'))
-    Message.objects.create(
+    msg = Message.objects.create(
         org=request.org, backend_id=message_id, contact=contact,
         type=Message.TYPE_INBOX, text=(data.get('content') or ''),
         created_on=datetime.now(), has_labels=True)
 
-    return JsonResponse({})
+    return JsonResponse(msg.as_json())
