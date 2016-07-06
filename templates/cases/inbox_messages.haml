@@ -15,7 +15,7 @@
             .btn-group
               - if user_is_admin
                 %a.btn.btn-default{ type:"button", ng-href:"/contact/read/[[ activeContact.id ]]/" }
-                  - trans "View Contact..."
+                  - trans "View Contact"
               %button.btn.btn-default{ type:"button", ng-click:"activateContact(null)" }
                 - trans "Back"
 
