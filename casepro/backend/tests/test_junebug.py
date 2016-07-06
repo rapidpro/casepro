@@ -725,6 +725,54 @@ class IdentityStoreTest(BaseCasesTest):
         ]))
 
 
+class IdentityStoreContactTest(BaseCasesTest):
+    def test_contact_with_defaults(self):
+        identity_data = {
+            "id": "test_id",
+            "version": 1,
+            "details": {
+                "addresses": {},
+            },
+            "communicate_through": None,
+            "operator": None,
+            "created_at": "2016-02-14T10:21:00.258406Z",
+            "created_by": 1,
+            "updated_at": None,
+            "updated_by": None
+        }
+
+        identity_contact = IdentityStoreContact(identity_data)
+        self.assertEqual(identity_contact.id, "test_id")
+        self.assertIsNone(identity_contact.name)
+        self.assertIsNone(identity_contact.language)
+
+    def test_contact_with_data(self):
+        identity_data = {
+            "id": "test_id",
+            "version": 1,
+            "details": {
+                "name": "test",
+                "addresses": {
+                    "msisdn": {
+                        "+1234": {}
+                    },
+                },
+                "preferred_language": "eng_NG",
+            },
+            "communicate_through": None,
+            "operator": None,
+            "created_at": "2016-02-14T10:21:00.258406Z",
+            "created_by": 1,
+            "updated_at": "2016-03-14T10:21:00.258406Z",
+            "updated_by": 1
+        }
+
+        identity_contact = IdentityStoreContact(identity_data)
+        self.assertEqual(identity_contact.id, "test_id")
+        self.assertEqual(identity_contact.name, "test")
+        self.assertEqual(identity_contact.language, "eng")
+
+
 class IdentityStoreContactSyncerTest(BaseCasesTest):
     syncer = IdentityStoreContactSyncer()
 
