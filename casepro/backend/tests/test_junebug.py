@@ -148,7 +148,7 @@ class JunebugBackendTest(BaseCasesTest):
 
     @responses.activate
     def test_pull_contacts_recently_updated(self):
-        Contact.get_or_create(self.unicef, 'test_id', "test")
+        Contact.get_or_create(self.unicef, 'test_id', "testing")
 
         self.add_identity_store_callback(
             'created_to=2016-03-14T10%3A21%3A00&created_from=2016-03-14T10%3A25%3A00',
