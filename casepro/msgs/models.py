@@ -92,9 +92,6 @@ class Label(models.Model):
     def lock(cls, org, uuid):
         return get_redis_connection().lock(LABEL_LOCK_KEY % (org.pk, uuid), timeout=60)
 
-    def get_partners(self):
-        return self.partners.filter(is_active=True)
-
     def release(self):
         rule = self.rule
 
