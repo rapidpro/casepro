@@ -308,8 +308,8 @@ class MessageTest(BaseCasesTest):
             setattr(message, '__data__labels', [("L-001", "Spam")])
             message.save()
 
-        # check removing a group and adding new ones
-        with self.assertNumQueries(6):
+        # check removing a label and adding new ones
+        with self.assertNumQueries(10):
             setattr(message, '__data__labels', [("L-002", "Feedback"), ("L-003", "Important")])
             message.save()
 

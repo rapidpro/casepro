@@ -66,4 +66,3 @@ def record_incoming_labelling(sender, instance, action, reverse, model, pk_set, 
     elif action == 'pre_clear':
         for label in instance.labels.all():
             DailyCount.record_removal(day, DailyCount.TYPE_INCOMING, label)
-
