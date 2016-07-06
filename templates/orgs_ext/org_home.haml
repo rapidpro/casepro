@@ -1,5 +1,5 @@
 - extends "smartmin/read.html"
-- load smartmin i18n thumbnail
+- load smartmin i18n thumbnail humanize
 
 - block pre-content
 
@@ -29,11 +29,13 @@
           .col-md-4
             %ul
               %li
-                Total replies: <strong>{{ summary.total_replies }}</strong>
+                Total messages: <strong>{{ summary.total_incoming | intcomma }}</strong>
               %li
-                Number of open cases: <strong>{{ summary.cases_open }}</strong>
+                Total replies: <strong>{{ summary.total_replies | intcomma }}</strong>
               %li
-                Number of closed cases: <strong>{{ summary.cases_closed }}</strong>
+                Number of open cases: <strong>{{ summary.cases_open | intcomma }}</strong>
+              %li
+                Number of closed cases: <strong>{{ summary.cases_closed | intcomma }}</strong>
           .col-md-8
             #chart-replies-by-month
       </uib-tab>

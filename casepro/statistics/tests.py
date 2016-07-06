@@ -22,27 +22,44 @@ class DailyCountsTest(BaseCasesTest):
         self.ann = self.create_contact(self.unicef, 'C-001', "Ann")
         self.ned = self.create_contact(self.nyaruka, 'C-002', "Ned")
 
-        self._backend_id = 200
+        self._incoming_backend_id = 100
+        self._outgoing_backend_id = 200
 
-    def send_outgoing(self, user, day, count=1):
+    @staticmethod
+    def anytime_on_day(day, tz):
+        """
+        Returns a datetime representing a random time on the given day
+        """
+        hour = random.randrange(0, 24)
+        minute = random.randrange(0, 60)
+        second = random.randrange(0, 60)
+        return tz.localize(datetime.combine(day, time(hour, minute, second, 0)))
+
+    def new_messages(self, day, count=1):
         for m in range(count):
-            self._backend_id += 1
-            hour = random.randrange(0, 24)
-            minute = random.randrange(0, 60)
-            created_on = pytz.timezone("Africa/Kampala").localize(datetime.combine(day, time(hour, minute, 0, 0)))
+            self._incoming_backend_id += 1
+            created_on = self.anytime_on_day(day, pytz.timezone("Africa/Kampala"))
 
-            self.create_outgoing(self.unicef, user, self._backend_id, 'B', "Hello", self.ann, created_on=created_on)
+            self.create_message(self.unicef, self._incoming_backend_id, self.ann, "Hello", created_on=created_on)
 
-    def test_counts(self):
-        self.send_outgoing(self.admin, date(2015, 1, 1), count=2)
-        self.send_outgoing(self.user1, date(2015, 1, 1))
-        self.send_outgoing(self.user1, date(2015, 1, 2), count=2)
-        self.send_outgoing(self.user2, date(2015, 1, 2))
-        self.send_outgoing(self.user3, date(2015, 1, 3))
-        self.send_outgoing(self.user3, date(2015, 2, 1))
-        self.send_outgoing(self.user3, date(2015, 2, 2), count=2)
-        self.send_outgoing(self.user3, date(2015, 2, 28))
-        self.send_outgoing(self.user3, date(2015, 3, 1))
+    def new_outgoing(self, user, day, count=1):
+        for m in range(count):
+            self._outgoing_backend_id += 1
+            created_on = self.anytime_on_day(day, pytz.timezone("Africa/Kampala"))
+
+            self.create_outgoing(self.unicef, user, self._outgoing_backend_id, 'B', "Hello", self.ann,
+                                 created_on=created_on)
+
+    def test_reply_counts(self):
+        self.new_outgoing(self.admin, date(2015, 1, 1), count=2)
+        self.new_outgoing(self.user1, date(2015, 1, 1))
+        self.new_outgoing(self.user1, date(2015, 1, 2), count=2)
+        self.new_outgoing(self.user2, date(2015, 1, 2))
+        self.new_outgoing(self.user3, date(2015, 1, 3))
+        self.new_outgoing(self.user3, date(2015, 2, 1))
+        self.new_outgoing(self.user3, date(2015, 2, 2), count=2)
+        self.new_outgoing(self.user3, date(2015, 2, 28))
+        self.new_outgoing(self.user3, date(2015, 3, 1))
 
         self.create_outgoing(self.unicef, self.admin, 203, 'F', "Hello", self.ann,
                              created_on=datetime(2015, 1, 1, 11, 0, tzinfo=pytz.UTC))  # admin on Jan 1st (not a reply)
@@ -108,7 +125,7 @@ class DailyCountsTest(BaseCasesTest):
         self.assertEqual(DailyCount.objects.count(), 26)
 
         # add new count on day that already has a squashed value
-        self.send_outgoing(self.admin, date(2015, 1, 1))
+        self.new_outgoing(self.admin, date(2015, 1, 1))
 
         self.assertEqual(DailyCount.get_by_org([self.unicef], 'R').total(), 13)
 
@@ -118,6 +135,30 @@ class DailyCountsTest(BaseCasesTest):
         self.assertEqual(DailyCount.objects.count(), 26)
         self.assertEqual(DailyCount.get_by_org([self.unicef], 'R').total(), 13)
 
+    def test_incoming_counts(self):
+        self.new_messages(date(2015, 1, 1), count=2)
+        self.new_messages(date(2015, 1, 2), count=1)
+
+        self.assertEqual(DailyCount.get_by_org([self.unicef], 'I').total(), 3)
+
+    def test_labelling_counts(self):
+        d1 = self.anytime_on_day(date(2015, 1, 1), pytz.timezone("Africa/Kampala"))
+        msg = self.create_message(self.unicef, 301, self.ann, "Hi", created_on=d1)
+        msg.labels.add(self.aids, self.tea)
+
+        self.assertEqual(DailyCount.get_by_label([self.aids], 'I').day_totals(), [(date(2015, 1, 1), 1)])
+        self.assertEqual(DailyCount.get_by_label([self.tea], 'I').day_totals(), [(date(2015, 1, 1), 1)])
+
+        msg.labels.remove(self.aids)
+
+        self.assertEqual(DailyCount.get_by_label([self.aids], 'I').day_totals(), [(date(2015, 1, 1), 0)])
+        self.assertEqual(DailyCount.get_by_label([self.tea], 'I').day_totals(), [(date(2015, 1, 1), 1)])
+
+        msg.labels.clear()
+
+        self.assertEqual(DailyCount.get_by_label([self.aids], 'I').day_totals(), [(date(2015, 1, 1), 0)])
+        self.assertEqual(DailyCount.get_by_label([self.tea], 'I').day_totals(), [(date(2015, 1, 1), 0)])
+
     def test_replies_chart(self):
         url = reverse('stats.replies_chart')
 
@@ -125,11 +166,11 @@ class DailyCountsTest(BaseCasesTest):
 
         self.login(self.user3)  # even users from other partners can see this
 
-        self.send_outgoing(self.admin, date(2016, 1, 1))  # Jan 1st
-        self.send_outgoing(self.user1, date(2016, 1, 15))  # Jan 15th
-        self.send_outgoing(self.user1, date(2016, 1, 20))  # Jan 20th
-        self.send_outgoing(self.user2, date(2016, 2, 1))  # Feb 1st
-        self.send_outgoing(self.user3, date(2016, 2, 1))  # different partner
+        self.new_outgoing(self.admin, date(2016, 1, 1))  # Jan 1st
+        self.new_outgoing(self.user1, date(2016, 1, 15))  # Jan 15th
+        self.new_outgoing(self.user1, date(2016, 1, 20))  # Jan 20th
+        self.new_outgoing(self.user2, date(2016, 2, 1))  # Feb 1st
+        self.new_outgoing(self.user3, date(2016, 2, 1))  # different partner
 
         # simulate making requests in April
         with patch.object(timezone, 'now', return_value=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC)):

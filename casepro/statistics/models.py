@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import pytz
 import six
 
 from dash.orgs.models import Org
@@ -8,16 +7,17 @@ from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.db import models, connection
 from django.db.models import Sum
-from django.utils.functional import SimpleLazyObject
 from django.utils.translation import ugettext_lazy as _
 
 from casepro.cases.models import Partner
+from casepro.msgs.models import Label
 
 
 class DailyCount(models.Model):
     """
     Tracks per-day counts of different items (e.g. replies, messages) in different scopes (e.g. org, user)
     """
+    TYPE_INCOMING = 'I'
     TYPE_REPLIES = 'R'
 
     day = models.DateField(help_text=_("The day this count is for"))
@@ -26,11 +26,15 @@ class DailyCount(models.Model):
 
     scope = models.CharField(max_length=32, help_text=_("The scope in which it is being counted"))
 
-    count = models.PositiveIntegerField()
+    count = models.IntegerField()
 
     @classmethod
     def record_item(cls, day, item_type, *scope_args):
         cls.objects.create(day=day, item_type=item_type, scope=cls.encode_scope(*scope_args), count=1)
+
+    @classmethod
+    def record_removal(cls, day, item_type, *scope_args):
+        cls.objects.create(day=day, item_type=item_type, scope=cls.encode_scope(*scope_args), count=-1)
 
     @staticmethod
     def encode_scope(*args):
@@ -42,6 +46,8 @@ class DailyCount(models.Model):
             return 'partner:%d' % args[0].pk
         elif types == [Org, User]:
             return 'org:%d:user:%d' % (args[0].pk, args[1].pk)
+        elif types == [Label]:
+            return 'label:%d' % args[0].pk
         else:  # pragma: no cover
             raise ValueError("Unsupported scope: %s" % ",".join([t.__name__ for t in types]))
 
@@ -85,6 +91,10 @@ class DailyCount(models.Model):
     @classmethod
     def get_by_user(cls, org, users, item_type, since=None, until=None):
         return cls._get_count_set(item_type, {cls.encode_scope(org, u): u for u in users}, since, until)
+
+    @classmethod
+    def get_by_label(cls, labels, item_type, since=None, until=None):
+        return cls._get_count_set(item_type, {cls.encode_scope(l): l for l in labels}, since, until)
 
     @classmethod
     def _get_count_set(cls, item_type, scopes, since, until):
@@ -140,26 +150,3 @@ class DailyCount(models.Model):
 
     class Meta:
         index_together = ('item_type', 'scope', 'day')
-
-
-def record_new_outgoing(outgoing):
-    """
-    Records a new outgoing being sent
-    """
-    org = outgoing.org
-    partner = outgoing.partner
-    user = outgoing.created_by
-
-    if isinstance(user, SimpleLazyObject):
-        user = User.objects.get(pk=user.pk)
-
-    # get day in org timezone
-    org_tz = pytz.timezone(org.timezone)
-    day = outgoing.created_on.astimezone(org_tz).date()
-
-    if outgoing.is_reply():
-        DailyCount.record_item(day, DailyCount.TYPE_REPLIES, org)
-        DailyCount.record_item(day, DailyCount.TYPE_REPLIES, org, user)
-
-        if outgoing.partner:
-            DailyCount.record_item(day, DailyCount.TYPE_REPLIES, partner)
