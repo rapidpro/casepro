@@ -378,7 +378,7 @@ class OutgoingCRUDL(SmartCRUDL):
                     'reply_to': {
                         'text': msg.reply_to.text,
                         'flagged': msg.reply_to.is_flagged,
-                        'labels': [l.as_json() for l in msg.reply_to.labels.all()],
+                        'labels': [l.as_json(full=False) for l in msg.reply_to.labels.all()],
                     },
                     'response': {
                         'delay': timesince(msg.reply_to.created_on, now=msg.created_on),

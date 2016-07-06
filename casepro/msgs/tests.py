@@ -200,6 +200,27 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(self.unicef.labels.count(), 3)
         self.assertEqual(self.unicef.rules.count(), 2)
 
+    def test_read(self):
+        url = reverse('msgs.label_read', args=[self.pregnancy.pk])
+
+        # log in as an administrator
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+        # log in as partner user with access to this label
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+        # log in as partner user without access to this label
+        self.login(self.user3)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 404)
+
     def test_list(self):
         url = reverse('msgs.label_list')
 

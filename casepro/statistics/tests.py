@@ -10,6 +10,7 @@ from django.utils import timezone
 from mock import patch
 
 from casepro.test import BaseCasesTest
+from casepro.utils import date_to_milliseconds
 
 from .models import DailyCount
 from .tasks import squash_counts
@@ -35,34 +36,39 @@ class BaseStatsTest(BaseCasesTest):
         second = random.randrange(0, 60)
         return tz.localize(datetime.combine(day, time(hour, minute, second, 0)))
 
-    def new_messages(self, day, count=1):
+    def new_messages(self, day, count):
+        created = []
         for m in range(count):
             self._incoming_backend_id += 1
             created_on = self.anytime_on_day(day, pytz.timezone("Africa/Kampala"))
 
-            self.create_message(self.unicef, self._incoming_backend_id, self.ann, "Hello", created_on=created_on)
+            created.append(self.create_message(self.unicef, self._incoming_backend_id, self.ann, "Hello",
+                                               created_on=created_on))
+        return created
 
-    def new_outgoing(self, user, day, count=1):
+    def new_outgoing(self, user, day, count):
+        created = []
         for m in range(count):
             self._outgoing_backend_id += 1
             created_on = self.anytime_on_day(day, pytz.timezone("Africa/Kampala"))
 
-            self.create_outgoing(self.unicef, user, self._outgoing_backend_id, 'B', "Hello", self.ann,
-                                 created_on=created_on)
+            created.append(self.create_outgoing(self.unicef, user, self._outgoing_backend_id, 'B', "Hello", self.ann,
+                                                created_on=created_on))
+        return created
 
 
 class DailyCountsTest(BaseStatsTest):
 
     def test_reply_counts(self):
-        self.new_outgoing(self.admin, date(2015, 1, 1), count=2)
-        self.new_outgoing(self.user1, date(2015, 1, 1))
-        self.new_outgoing(self.user1, date(2015, 1, 2), count=2)
-        self.new_outgoing(self.user2, date(2015, 1, 2))
-        self.new_outgoing(self.user3, date(2015, 1, 3))
-        self.new_outgoing(self.user3, date(2015, 2, 1))
-        self.new_outgoing(self.user3, date(2015, 2, 2), count=2)
-        self.new_outgoing(self.user3, date(2015, 2, 28))
-        self.new_outgoing(self.user3, date(2015, 3, 1))
+        self.new_outgoing(self.admin, date(2015, 1, 1), 2)
+        self.new_outgoing(self.user1, date(2015, 1, 1), 1)
+        self.new_outgoing(self.user1, date(2015, 1, 2), 2)
+        self.new_outgoing(self.user2, date(2015, 1, 2), 1)
+        self.new_outgoing(self.user3, date(2015, 1, 3), 1)
+        self.new_outgoing(self.user3, date(2015, 2, 1), 1)
+        self.new_outgoing(self.user3, date(2015, 2, 2), 2)
+        self.new_outgoing(self.user3, date(2015, 2, 28), 1)
+        self.new_outgoing(self.user3, date(2015, 3, 1), 1)
 
         self.create_outgoing(self.unicef, self.admin, 203, 'F', "Hello", self.ann,
                              created_on=datetime(2015, 1, 1, 11, 0, tzinfo=pytz.UTC))  # admin on Jan 1st (not a reply)
@@ -128,7 +134,7 @@ class DailyCountsTest(BaseStatsTest):
         self.assertEqual(DailyCount.objects.count(), 26)
 
         # add new count on day that already has a squashed value
-        self.new_outgoing(self.admin, date(2015, 1, 1))
+        self.new_outgoing(self.admin, date(2015, 1, 1), 1)
 
         self.assertEqual(DailyCount.get_by_org([self.unicef], 'R').total(), 13)
 
@@ -139,8 +145,8 @@ class DailyCountsTest(BaseStatsTest):
         self.assertEqual(DailyCount.get_by_org([self.unicef], 'R').total(), 13)
 
     def test_incoming_counts(self):
-        self.new_messages(date(2015, 1, 1), count=2)
-        self.new_messages(date(2015, 1, 2), count=1)
+        self.new_messages(date(2015, 1, 1), 2)
+        self.new_messages(date(2015, 1, 2), 1)
 
         self.assertEqual(DailyCount.get_by_org([self.unicef], 'I').total(), 3)
 
@@ -170,32 +176,43 @@ class ChartsTest(BaseStatsTest):
 
         self.assertLoginRedirect(self.url_get('unicef', url), 'unicef', url)
 
-        self.new_messages(date(2016, 1, 1))  # Jan 1st
-        self.new_messages(date(2016, 1, 15))  # Jan 15th
-        self.new_messages(date(2016, 1, 20))  # Jan 20th
-        self.new_messages(date(2016, 2, 1))  # Feb 1st
-        self.new_messages(date(2016, 2, 1))  # different partner
+        self.new_messages(date(2016, 1, 1), 1)  # Jan 1st
+        msgs = self.new_messages(date(2016, 1, 15), 1)  # Jan 15th
+        self.new_messages(date(2016, 1, 16), 2)  # Jan 16th
+
+        # add label to message on Jan 15th
+        msgs[0].labels.add(self.tea)
 
         self.login(self.user3)
 
-        # simulate making requests in April
-        with patch.object(timezone, 'now', return_value=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC)):
+        # simulate making requests on April 4th
+        with patch.object(timezone, 'now', return_value=datetime(2016, 4, 10, 9, 0, tzinfo=pytz.UTC)):
             response = self.url_get('unicef', url)
 
-            self.assertEqual(response.json, {
-                'series': [0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 0, 0]
-            })
+            series = response.json['data']
+            self.assertEqual(len(series), 92)
+            self.assertEqual(series[0], [date_to_milliseconds(date(2016, 1, 10)), 0])  # from Jan 10th
+            self.assertEqual(series[5], [date_to_milliseconds(date(2016, 1, 15)), 1])
+            self.assertEqual(series[6], [date_to_milliseconds(date(2016, 1, 16)), 2])
+            self.assertEqual(series[-1], [date_to_milliseconds(date(2016, 4, 10)), 0])  # to April 4th
+
+            response = self.url_get('unicef', url + '?label=%d' % self.tea.pk)
+
+            series = response.json['data']
+            self.assertEqual(len(series), 92)
+            self.assertEqual(series[5], [date_to_milliseconds(date(2016, 1, 15)), 1])
+            self.assertEqual(series[6], [date_to_milliseconds(date(2016, 1, 16)), 0])
 
     def test_replies_chart(self):
         url = reverse('stats.replies_chart')
 
         self.assertLoginRedirect(self.url_get('unicef', url), 'unicef', url)
 
-        self.new_outgoing(self.admin, date(2016, 1, 1))  # Jan 1st
-        self.new_outgoing(self.user1, date(2016, 1, 15))  # Jan 15th
-        self.new_outgoing(self.user1, date(2016, 1, 20))  # Jan 20th
-        self.new_outgoing(self.user2, date(2016, 2, 1))  # Feb 1st
-        self.new_outgoing(self.user3, date(2016, 2, 1))  # different partner
+        self.new_outgoing(self.admin, date(2016, 1, 1), 1)  # Jan 1st
+        self.new_outgoing(self.user1, date(2016, 1, 15), 1)  # Jan 15th
+        self.new_outgoing(self.user1, date(2016, 1, 20), 1)  # Jan 20th
+        self.new_outgoing(self.user2, date(2016, 2, 1), 1)  # Feb 1st
+        self.new_outgoing(self.user3, date(2016, 2, 1), 1)  # different partner
 
         self.login(self.user3)
 
