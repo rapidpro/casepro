@@ -27,7 +27,7 @@ RESPONSE_DELAY_WARN_SECONDS = 24 * 60 * 60  # show response delays > 1 day as wa
 
 
 class LabelCRUDL(SmartCRUDL):
-    actions = ('create', 'update', 'read', 'delete', 'list')
+    actions = ('create', 'update', 'read', 'delete', 'list', 'watch', 'unwatch')
     model = Label
 
     class Create(RuleFormMixin, OrgPermsMixin, SmartCreateView):
@@ -80,9 +80,13 @@ class LabelCRUDL(SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super(LabelCRUDL.Read, self).get_context_data(**kwargs)
 
+            # augment usual label JSON
+            label_json = self.object.as_json()
+            label_json['watching'] = self.object.is_watched_by(self.request.user)
+
             # angular app requires context data in JSON format
             context['context_data_json'] = json_encode({
-                'label': self.object.as_json()
+                'label': label_json
             })
             context['summary'] = self.get_summary(self.object)
             return context
@@ -120,6 +124,26 @@ class LabelCRUDL(SmartCRUDL):
                 return obj
 
             return JsonResponse({'results': [as_json(l) for l in labels]})
+
+    class Watch(OrgObjPermsMixin, SmartReadView):
+        """
+        Endpoint for watching a label
+        """
+        permission = 'msgs.label_read'
+
+        def post(self, request, *args, **kwargs):
+            self.get_object().watch(request.user)
+            return HttpResponse(status=204)
+
+    class Unwatch(OrgObjPermsMixin, SmartReadView):
+        """
+        Endpoint for unwatching a label
+        """
+        permission = 'msgs.label_read'
+
+        def post(self, request, *args, **kwargs):
+            self.get_object().unwatch(request.user)
+            return HttpResponse(status=204)
 
 
 class MessageSearchMixin(object):

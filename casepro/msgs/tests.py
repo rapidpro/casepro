@@ -244,6 +244,31 @@ class LabelCRUDLTest(BaseCasesTest):
             'messages': {'this_month': 0, 'last_month': 0}
         })
 
+    def test_watch_and_unwatch(self):
+        watch_url = reverse('msgs.label_watch', args=[self.pregnancy.pk])
+        unwatch_url = reverse('msgs.label_unwatch', args=[self.pregnancy.pk])
+
+        # log in as user with access to this label
+        self.login(self.user1)
+
+        response = self.url_post('unicef', watch_url)
+        self.assertEqual(response.status_code, 204)
+
+        self.assertIn(self.user1, self.pregnancy.watchers.all())
+
+        response = self.url_post('unicef', unwatch_url)
+        self.assertEqual(response.status_code, 204)
+
+        self.assertNotIn(self.user1, self.pregnancy.watchers.all())
+
+        # only user with label access can watch
+        self.login(self.user3)
+
+        response = self.url_post('unicef', watch_url)
+        self.assertEqual(response.status_code, 403)
+
+        self.assertNotIn(self.user3, self.pregnancy.watchers.all())
+
     def test_delete(self):
         url = reverse('msgs.label_delete', args=[self.pregnancy.pk])
 

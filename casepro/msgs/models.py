@@ -50,6 +50,9 @@ class Label(models.Model):
         help_text="Whether this label should be synced with the backend"
     )
 
+    watchers = models.ManyToManyField(User, related_name='watched_labels',
+                                      help_text="Users to be notified when label is applied to a message")
+
     is_active = models.BooleanField(default=True, help_text="Whether this label is active")
 
     @classmethod
@@ -91,6 +94,16 @@ class Label(models.Model):
     @classmethod
     def lock(cls, org, uuid):
         return get_redis_connection().lock(LABEL_LOCK_KEY % (org.pk, uuid), timeout=60)
+
+    def watch(self, user):
+        # TODO check access to this label?
+        self.watchers.add(user)
+
+    def unwatch(self, user):
+        self.watchers.remove(user)
+
+    def is_watched_by(self, user):
+        return user in self.watchers.all()
 
     def release(self):
         rule = self.rule
