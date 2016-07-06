@@ -1,11 +1,14 @@
 from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message
 from casepro.test import BaseCasesTest
+from django.conf import settings
 from django.test import override_settings
 import json
 import responses
 
-from ..junebug import IdentityStore, JunebugBackend, JunebugMessageSendingError
+from ..junebug import (
+    IdentityStore, JunebugBackend, JunebugMessageSendingError,
+    received_junebug_message)
 
 
 class JunebugBackendTest(BaseCasesTest):
@@ -382,7 +385,14 @@ class JunebugBackendTest(BaseCasesTest):
         Should return the list of url patterns needed to receive messages
         from Junebug.
         '''
-        # TODO: Implement the views needed for receiving messages.
+        [url] = self.backend.get_url_patterns()
+        self.assertEqual(url.callback, received_junebug_message)
+        self.assertEqual(url.regex.pattern, settings.JUNEBUG_INBOUND_URL)
+        self.assertEqual(url.name, 'inbound_junebug_message')
+
+        with self.settings(JUNEBUG_INBOUND_URL=r'^test/url/$'):
+            [url] = self.backend.get_url_patterns()
+            self.assertEqual(url.regex.pattern, r'^test/url/$')
 
 
 class IdentityStoreTest(BaseCasesTest):
