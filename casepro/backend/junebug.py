@@ -3,13 +3,13 @@ from django.conf import settings
 from django.conf.urls import url
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from uuid import UUID
 import json
 import requests
 
 from . import BaseBackend
 from ..contacts.models import Contact
 from ..msgs.models import Message
+from ..utils import uuid_to_int
 
 
 class IdentityStore(object):
@@ -365,7 +365,7 @@ def received_junebug_message(request):
         identity = identity_store.create_identity(data.get('from'))
     contact = Contact.get_or_create(request.org, identity.get('id'))
 
-    message_id = UUID(hex=data.get('message_id')).int % 2147483647
+    message_id = uuid_to_int(data.get('message_id'))
     Message.objects.create(
         org=request.org, backend_id=message_id, contact=contact,
         type=Message.TYPE_INBOX, text=(data.get('content') or ''),
