@@ -425,7 +425,7 @@ controllers.controller('CasesController', ['$scope', '$timeout', '$controller', 
 #============================================================================
 # Org home controller
 #============================================================================
-controllers.controller('HomeController', ['$scope', '$controller', 'PartnerService', 'StatisticsService', 'UserService', ($scope, $controller, PartnerService, StatisticsService, UserService) ->
+controllers.controller('HomeController', ['$scope', '$controller', 'LabelService', 'PartnerService', 'StatisticsService', 'UserService', ($scope, $controller, LabelService, PartnerService, StatisticsService, UserService) ->
   $controller('BaseTabsController', {$scope: $scope})
 
   $scope.partners = []
@@ -447,6 +447,10 @@ controllers.controller('HomeController', ['$scope', '$controller', 'PartnerServi
     else if tab == 'partners'
       PartnerService.fetchAll(true).then((partners) ->
         $scope.partners = partners
+      )
+    else if tab == 'labels'
+      LabelService.fetchAll(true).then((labels) ->
+        $scope.labels = labels
       )
     else if tab == 'users'
       UserService.fetchNonPartner(true).then((users) ->

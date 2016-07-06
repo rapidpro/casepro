@@ -85,11 +85,6 @@
                       - trans "Administration"
                       %b.caret
                     %ul.dropdown-menu
-                      - if perms.msgs.label_list or org_perms.msgs.label_list
-                        %li
-                          %a{ href:"{% url 'msgs.label_list' %}" }
-                            - trans "Labels"
-
                       - if perms.contacts.group_list or org_perms.contacts.group_list
                         %li
                           %a{ href:"{% url 'contacts.group_list' %}" }

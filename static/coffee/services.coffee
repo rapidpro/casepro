@@ -361,8 +361,15 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
 # Label service
 #=====================================================================
 
-services.factory('LabelService', ['$http', ($http) ->
+services.factory('LabelService', ['$http', '$httpParamSerializer', ($http, $httpParamSerializer) ->
   new class LabelService
+
+    #----------------------------------------------------------------------------
+    # Fetches all labels, optionally with activity information
+    #----------------------------------------------------------------------------
+    fetchAll: (withActivity = false) ->
+      params = {with_activity: withActivity}
+      return $http.get('/label/?' + $httpParamSerializer(params)).then((response) -> response.data.results)
 
     #----------------------------------------------------------------------------
     # Deletes a label

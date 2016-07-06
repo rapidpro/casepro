@@ -229,7 +229,20 @@ class LabelCRUDLTest(BaseCasesTest):
 
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(list(response.context['object_list']), [self.aids, self.pregnancy, self.tea])
+        self.assertEqual(response.json['results'], [
+            {'id': self.aids.pk, 'name': "AIDS", 'description': "Messages about AIDS", 'synced': True},
+            {'id': self.pregnancy.pk, 'name': "Pregnancy", 'description': "Messages about pregnancy", 'synced': True},
+            {'id': self.tea.pk, 'name': "Tea", 'description': "Messages about tea", 'synced': False}
+        ])
+
+        response = self.url_get('unicef', url + "?with_activity=true")
+        self.assertEqual(response.json['results'][0], {
+            'id': self.aids.pk,
+            'name': "AIDS",
+            'description': "Messages about AIDS",
+            'synced': True,
+            'messages': {'this_month': 0, 'last_month': 0}
+        })
 
     def test_delete(self):
         url = reverse('msgs.label_delete', args=[self.pregnancy.pk])

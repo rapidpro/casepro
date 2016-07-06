@@ -15,7 +15,7 @@ from temba_client.utils import parse_iso8601
 
 from casepro.rules.mixins import RuleFormMixin
 from casepro.statistics.models import DailyCount
-from casepro.utils import parse_csv, str_to_bool, JSONEncoder, json_encode
+from casepro.utils import parse_csv, str_to_bool, JSONEncoder, json_encode, month_range
 from casepro.utils.export import BaseDownloadView
 
 from .forms import LabelForm
@@ -101,16 +101,25 @@ class LabelCRUDL(SmartCRUDL):
             return HttpResponse(status=204)
 
     class List(OrgPermsMixin, SmartListView):
-        fields = ('name', 'description', 'partners')
-        default_order = ('name',)
+        def get(self, request, *args, **kwargs):
+            with_activity = str_to_bool(self.request.GET.get('with_activity', ''))
+            labels = Label.get_all(self.request.org, self.request.user).order_by('name')
 
-        def derive_queryset(self, **kwargs):
-            qs = super(LabelCRUDL.List, self).derive_queryset(**kwargs)
-            qs = qs.filter(org=self.request.org, is_active=True)
-            return qs
+            if with_activity:
+                # get message statistics
+                this_month = DailyCount.get_by_label(labels, DailyCount.TYPE_INCOMING, *month_range(0)).scope_totals()
+                last_month = DailyCount.get_by_label(labels, DailyCount.TYPE_INCOMING, *month_range(-1)).scope_totals()
 
-        def get_partners(self, obj):
-            return ', '.join([p.name for p in obj.get_partners()])
+            def as_json(label):
+                obj = label.as_json()
+                if with_activity:
+                    obj['messages'] = {
+                        'this_month': this_month.get(label, 0),
+                        'last_month': last_month.get(label, 0),
+                    }
+                return obj
+
+            return JsonResponse({'results': [as_json(l) for l in labels]})
 
 
 class MessageSearchMixin(object):
