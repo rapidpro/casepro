@@ -451,6 +451,28 @@ describe('services:', () ->
         )
         $httpBackend.flush()
       )
+
+      it('gets FAQs from search endpoint with multiple filters', () ->
+        $httpBackend.expectGET('/faq/search/?label=201&text=example')
+        .respond('{
+          "results": [{
+            "id": 702,
+            "question": "example question 1",
+            "answer": "example answer 1",
+            "labels": [201]
+          }],
+          "has_more": false
+        }')
+        FaqService.fetchFaqs({label: {id: 201}, text: "example"}).then((replies) ->
+          expect(replies).toEqual([{
+            id: 702,
+            question: "example question 1",
+            answer: "example answer 1",
+            labels: [201]
+          }])
+        )
+        $httpBackend.flush()
+      )
     )
   )
 
