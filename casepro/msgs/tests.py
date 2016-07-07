@@ -721,7 +721,7 @@ class FaqImportTest(BaseCasesTest):
         self.assertEqual(importtask.task_id, None)
 
         # run the import
-        result = faq_csv_import.delay(self.unicef, importtask.pk)
+        result = faq_csv_import(self.unicef, importtask.pk)
 
         # check situation after import
         self.assertEqual(Language.objects.all().count(), num_languages + 2)
@@ -733,12 +733,12 @@ class FaqImportTest(BaseCasesTest):
         self.assertEqual(FAQ.objects.filter(parent__isnull=True).exclude(translations__isnull=False).count(),
                          num_faqs_parents_have_translations + 0)
 
-        # check task_id is in returned result
-        self.assertIsNotNone(result.get().task_id)
+        # check task_id is not in returned result since we're calling directly, not using .delay
+        self.assertIsNone(result.task_id)
 
         # test running the same import again creates duplicates of the FAQs, but not the languages
         # run the import
-        result = faq_csv_import.delay(self.unicef, importtask.pk)
+        result = faq_csv_import(self.unicef, importtask.pk)
 
         # check situation after second import
         self.assertEqual(Language.objects.all().count(), num_languages + 2 + 0)
@@ -766,7 +766,7 @@ class FaqImportTest(BaseCasesTest):
         importtask = self.create_importtask(self.admin, 'faq_bad_import_labels.csv')
         # run the import, expect an exception
         with self.assertRaises(Label.DoesNotExist):
-            faq_csv_import.delay(self.unicef, importtask.pk).get()
+            faq_csv_import(self.unicef, importtask.pk).get()
 
         # check situation after import - nothing should have changed
         self.assertEqual(Language.objects.all().count(), num_languages)
