@@ -401,6 +401,7 @@ class JunebugInboundViewTest(BaseCasesTest):
 
     def setUp(self):
         self.factory = RequestFactory()
+        super(JunebugInboundViewTest, self).setUp()
 
     def test_method_not_post(self):
         '''Only POST requests should be allowed.'''
@@ -423,6 +424,129 @@ class JunebugInboundViewTest(BaseCasesTest):
             }
         )
         self.assertEqual(response.status_code, 400)
+
+    def single_identity_callback(self, request):
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            'count': 1,
+            'next': None,
+            'previous': None,
+            'results': [
+                {
+                    "id": "50d62fcf-856a-489c-914a-56f6e9506ee3",
+                    "version": 1,
+                    "details": {
+                        "addresses": {
+                            "msisdn": {
+                                "+1234": {}
+                            }
+                        }
+                    },
+                    "communicate_through": None,
+                    "operator": None,
+                    "created_at": "2016-06-23T13:15:55.580070Z",
+                    "created_by": 1,
+                    "updated_at": "2016-06-23T13:15:55.580099Z",
+                    "updated_by": 1
+                },
+            ]
+        }
+        return (200, headers, json.dumps(data))
+
+    @responses.activate
+    def test_inbound_message_identity_exists(self):
+        '''If the identity exists in the identity store, then we should use
+        that identity to create the message.'''
+        query = '?details__addresses__msisdn=%2B1234'
+        url = '%sapi/v1/identities/search/' % settings.IDENTITY_API_ROOT
+        responses.add_callback(
+            responses.GET, url + query, callback=self.single_identity_callback,
+            match_querystring=True, content_type='application/json')
+
+        request = self.factory.post(
+            self.url, content_type='application/json', data=json.dumps({
+                'message_id': '35f3336d4a1a46c7b40cd172a41c510d',
+                'content': 'test message',
+                'from': '+1234',
+            })
+        )
+        request.org = self.unicef
+        response = received_junebug_message(request)
+        resp_data = json.loads(response.content)
+
+        message = Message.objects.get(backend_id=resp_data['id'])
+        self.assertEqual(message.text, 'test message')
+        self.assertEqual(
+            message.contact.uuid, "50d62fcf-856a-489c-914a-56f6e9506ee3")
+
+    def create_identity_callback(self, request):
+        data = json.loads(request.body)
+        self.assertEqual(data.get('details'), {
+            'addresses': {
+                'msisdn': {
+                    '+1234': {},
+                },
+            },
+            'default_addr_type': 'msisdn',
+        })
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            "id": "50d62fcf-856a-489c-914a-56f6e9506ee3",
+            "version": 1,
+            "details": {
+                "addresses": {
+                    "msisdn": {
+                        "+1234": {}
+                    }
+                },
+                "default_addr_type": "msisdn",
+            },
+            "communicate_through": None,
+            "operator": None,
+            "created_at": "2016-06-23T13:15:55.580070Z",
+            "created_by": 1,
+            "updated_at": "2016-06-23T13:15:55.580099Z",
+            "updated_by": 1
+        }
+        return (201, headers, json.dumps(data))
+
+    def no_identity_callback(self, request):
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            'count': 0,
+            'next': None,
+            'previous': None,
+            'results': []
+        }
+        return (200, headers, json.dumps(data))
+
+    @responses.activate
+    def test_inbound_message_identity_doesnt_exist(self):
+        '''If the identity doesn't exist in the identity store, then the
+        one should be created.'''
+        query = '?details__addresses__msisdn=%2B1234'
+        get_url = '%sapi/v1/identities/search/' % settings.IDENTITY_API_ROOT
+        responses.add_callback(
+            responses.GET, get_url + query, callback=self.no_identity_callback,
+            match_querystring=True, content_type='application/json')
+        create_url = '%sapi/v1/identities/' % settings.IDENTITY_API_ROOT
+        responses.add_callback(
+            responses.POST, create_url, callback=self.create_identity_callback,
+            match_querystring=True, content_type='application/json')
+
+        request = self.factory.post(
+            self.url, content_type='application/json', data=json.dumps({
+                'message_id': '35f3336d4a1a46c7b40cd172a41c510d',
+                'content': 'test message',
+                'from': '+1234',
+            })
+        )
+        request.org = self.unicef
+        received_junebug_message(request)
+
+        self.assertEqual(len(responses.calls), 2)
+        self.assertEqual(responses.calls[1].request.method, 'POST')
+        self.assertEqual(responses.calls[1].request.url, create_url)
 
 
 class IdentityStoreTest(BaseCasesTest):
