@@ -57,8 +57,7 @@ modals.controller 'EditModalController', ['$scope', '$uibModalInstance', 'title'
 #=====================================================================
 # Reply to contacts modal
 #=====================================================================
-modals.controller('ReplyModalController', ['$scope','FaqService','LanguageService','$uibModalInstance', '$controller', 'maxLength', ($scope , FaqService, LanguageService, $uibModalInstance, $controller, maxLength) ->
-
+modals.controller('ReplyModalController', ['$scope', 'FaqService', 'LanguageService', '$uibModalInstance', '$controller', 'maxLength', ($scope , FaqService, LanguageService, $uibModalInstance, $controller, maxLength) ->
 
   $scope.fields = {text: {val: '', maxLength: maxLength}}
 
