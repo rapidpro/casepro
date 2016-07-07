@@ -432,6 +432,14 @@ describe('services:', () ->
         $httpBackend.flush()
       )
     )
+
+    describe('delete', () ->
+      it('posts to delete endpoint', () ->
+        $httpBackend.expectPOST('/language/delete/602/', null).respond("")
+        LanguageService.delete(test.language)
+        $httpBackend.flush()
+      )
+    )
   )
 
   #=======================================================================
@@ -493,6 +501,14 @@ describe('services:', () ->
             labels: [201]
           }])
         )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('delete', () ->
+      it('posts to delete endpoint', () ->
+        $httpBackend.expectPOST('/faq/delete/702/', null).respond("")
+        FaqService.delete(test.faq1)
         $httpBackend.flush()
       )
     )
