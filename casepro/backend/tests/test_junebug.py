@@ -2,7 +2,7 @@ from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message
 from casepro.test import BaseCasesTest
 from django.conf import settings
-from django.test import override_settings
+from django.test import override_settings, RequestFactory
 import json
 import responses
 
@@ -393,6 +393,36 @@ class JunebugBackendTest(BaseCasesTest):
         with self.settings(JUNEBUG_INBOUND_URL=r'^test/url/$'):
             [url] = self.backend.get_url_patterns()
             self.assertEqual(url.regex.pattern, r'^test/url/$')
+
+
+class JunebugInboundViewTest(BaseCasesTest):
+    '''Tests related to the inbound junebug messages view.'''
+    url = '/junebug/inbound/'
+
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    def test_method_not_post(self):
+        '''Only POST requests should be allowed.'''
+        request = self.factory.get(self.url)
+        response = received_junebug_message(request)
+        self.assertEqual(
+            json.loads(response.content), {'reason': 'Method not allowed.'})
+        self.assertEqual(response.status_code, 405)
+
+    def test_invalid_json_body(self):
+        '''If the request contains invalid JSON in the body, an appropriate
+        error message and code should be returned.'''
+        request = self.factory.post(
+            self.url, content_type='application/json', data='{')
+        response = received_junebug_message(request)
+        self.assertEqual(
+            json.loads(response.content), {
+                'reason': 'JSON decode error',
+                'details': 'Expecting object: line 1 column 1 (char 0)'
+            }
+        )
+        self.assertEqual(response.status_code, 400)
 
 
 class IdentityStoreTest(BaseCasesTest):
