@@ -409,6 +409,28 @@ describe('services:', () ->
         )
         $httpBackend.flush()
       )
+
+      it('gets Languages from search endpoint with multiple filters', () ->
+        $httpBackend.expectGET('/language/search/?location=Africa&name=afr')
+        .respond('{
+          "results": [{
+            "id": 602,
+            "code": "afr_ZA",
+            "name": "Afrikaans",
+            "location": "South Africa"
+          }],
+          "has_more": false
+        }')
+        LanguageService.fetchLanguages({name: "afr", location: "Africa"}).then((replies) ->
+          expect(replies).toEqual([{
+            id: 602,
+            code: "afr_ZA",
+            name: "Afrikaans",
+            location: "South Africa"
+          }])
+        )
+        $httpBackend.flush()
+      )
     )
   )
 
