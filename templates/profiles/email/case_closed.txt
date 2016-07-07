@@ -1,0 +1,6 @@
+{% load i18n %}
+{% blocktrans with user.email as user %}User {{ user }} closed the case with the following note:{% endblocktrans %}
+
+  {{ note }}
+
+{% include "profiles/email/common/case_notification_footer.txt" with case_url=case_url only %}

@@ -1,5 +1,5 @@
 {% load i18n %}
-A message was given labels that you watch: {% for label in labels %}{{ label.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+A message was given labels that you watch: {% for label in labels %}{{ label.name }}{% if not forloop.last %}, {% endif %}{% endfor %}.
 
 {% blocktrans with inbox_url as inbox_url %}Go to {{ inbox_url }} to view the message. You are receiving this email because you are watching those labels. You can
 unwatch from the label pages.{% endblocktrans %}

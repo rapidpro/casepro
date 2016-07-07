@@ -1,5 +1,5 @@
 {% load i18n %}
-A new message was given labels that you watch: {% for label in labels %}{{ label.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+A new message was given labels that you watch: {% for label in labels %}{{ label.name }}{% if not forloop.last %}, {% endif %}{% endfor %}.
 <br/>
 <br/>
 {% blocktrans with inbox_url as inbox_url %}

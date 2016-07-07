@@ -18,7 +18,7 @@ from xlrd import open_workbook
 from casepro.contacts.models import Contact
 from casepro.msgs.models import Message, Outgoing
 from casepro.msgs.tasks import handle_messages
-from casepro.profiles.models import ROLE_ANALYST, ROLE_MANAGER
+from casepro.profiles.models import ROLE_ANALYST, ROLE_MANAGER, Notification
 from casepro.test import BaseCasesTest
 from casepro.utils import datetime_to_microseconds, microseconds_to_datetime
 
@@ -107,7 +107,8 @@ class CaseTest(BaseCasesTest):
         msg3 = self.create_message(self.unicef, 432, self.ann, "OK", created_on=d2)
         handle_messages(self.unicef.pk)
 
-        self.assertSentMail(["evan@unicef.org"])  # user #1 notified of reply
+        # user #1 should be notified of this reply
+        Notification.objects.get(user=self.user1, type=Notification.TYPE_CASE_REPLY, message=msg3)
 
         # which will have been archived and added to the case
         mock_archive_messages.assert_called_once_with(self.unicef, [msg3])
@@ -121,15 +122,17 @@ class CaseTest(BaseCasesTest):
             # other user in MOH adds a note
             case.add_note(self.user2, "Interesting")
 
-        self.assertEqual(set(case.watchers.all()), {self.user1, self.user2})
-        self.assertSentMail(["evan@unicef.org"])  # user #1 notified of new note
-
         actions = case.actions.order_by('pk')
         self.assertEqual(len(actions), 2)
         self.assertEqual(actions[1].action, CaseAction.ADD_NOTE)
         self.assertEqual(actions[1].created_by, self.user2)
         self.assertEqual(actions[1].created_on, d2)
         self.assertEqual(actions[1].note, "Interesting")
+
+        self.assertEqual(set(case.watchers.all()), {self.user1, self.user2})
+
+        # user #1 should be notified of this new note
+        Notification.objects.get(user=self.user1, type=Notification.TYPE_CASE_ACTION, case_action=actions[1])
 
         # user from other partner org can't re-assign or close case
         self.assertRaises(PermissionDenied, case.reassign, self.user3)
@@ -139,8 +142,6 @@ class CaseTest(BaseCasesTest):
             # first user closes the case
             case.close(self.user1)
 
-        self.assertSentMail(["rick@unicef.org"])  # user #2 notified
-
         self.assertEqual(case.opened_on, d1)
         self.assertEqual(case.closed_on, d3)
 
@@ -149,6 +150,9 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(actions[2].action, CaseAction.CLOSE)
         self.assertEqual(actions[2].created_by, self.user1)
         self.assertEqual(actions[2].created_on, d3)
+
+        # user #2 should be notified
+        Notification.objects.get(user=self.user2, type=Notification.TYPE_CASE_ACTION, case_action=actions[2])
 
         # check that contacts groups were restored
         self.assertEqual(set(Contact.objects.get(pk=self.ann.pk).groups.all()),
@@ -180,6 +184,9 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(actions[3].action, CaseAction.REOPEN)
         self.assertEqual(actions[3].created_by, self.user2)
         self.assertEqual(actions[3].created_on, d4)
+
+        # user #1 should be notified
+        Notification.objects.get(user=self.user1, type=Notification.TYPE_CASE_ACTION, case_action=actions[3])
 
         # check that re-opening the case archived the contact's messages again
         mock_archive_contact_messages.assert_called_once_with(self.unicef, self.ann)

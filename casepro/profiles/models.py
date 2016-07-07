@@ -8,7 +8,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
-from casepro.cases.models import Partner
+from casepro.cases.models import CaseAction, Partner
+from casepro.msgs.models import Message
 from casepro.utils.email import send_email
 
 ROLE_ADMIN = 'A'
@@ -122,14 +123,22 @@ class Notification(models.Model):
     A notification sent to a user
     """
     TYPE_MESSAGE_LABELLING = 'L'
+    TYPE_CASE_ACTION = 'A'
+    TYPE_CASE_REPLY = 'R'
 
-    TEMPLATES = {TYPE_MESSAGE_LABELLING: 'message_labelling'}
+    TYPE_NAME = {
+        TYPE_MESSAGE_LABELLING: 'message_labelling',
+        TYPE_CASE_ACTION: 'case_action',
+        TYPE_CASE_REPLY: 'case_reply',
+    }
 
     user = models.ForeignKey(User, related_name='notifications')
 
     type = models.CharField(max_length=1)
 
-    message = models.ForeignKey('msgs.Message')
+    message = models.ForeignKey(Message, null=True)
+
+    case_action = models.ForeignKey(CaseAction, null=True)
 
     is_sent = models.BooleanField(default=False)
 
@@ -140,22 +149,60 @@ class Notification(models.Model):
         return cls.objects.get_or_create(user=user, type=cls.TYPE_MESSAGE_LABELLING, message=message)
 
     @classmethod
+    def new_case_action(cls, user, case_action):
+        return cls.objects.get_or_create(user=user, type=cls.TYPE_CASE_ACTION, case_action=case_action)
+
+    @classmethod
+    def new_case_reply(cls, user, message):
+        return cls.objects.get_or_create(user=user, type=cls.TYPE_CASE_REPLY, message=message)
+
+    @classmethod
     def send_all(cls):
         unsent = cls.objects.filter(is_sent=False).order_by('created_on')
 
         for notification in unsent:
-            template = cls.TEMPLATES[notification.type]
+            type_name = cls.TYPE_NAME[notification.type]
+            subject, template, context = getattr(notification, '_build_%s_email' % type_name)()
             template_path = 'profiles/email/%s' % template
-            subject, context = getattr(notification, '_build_%s_email' % template)()
 
             send_email([notification.user], six.text_type(subject), template_path, context)
 
         unsent.update(is_sent=True)
 
     def _build_message_labelling_email(self):
-        labels = set(self.user.watched_labels.all()).intersection(self.message.labels.all())
         context = {
-            'labels': labels,
+            'labels': set(self.user.watched_labels.all()).intersection(self.message.labels.all()),
             'inbox_url': self.message.org.make_absolute_url(reverse('cases.inbox'))
         }
-        return _("New labelled message"), context
+        return _("New labelled message"), 'message_labelling', context
+
+    def _build_case_action_email(self):
+        context = {
+            'case_url': self.message.org.make_absolute_url(reverse('cases.case_read', args=[self.pk])),
+            'user': self.case_action.created_by,
+            'note': self.case_action.note,
+            'assignee': self.case_action.assignee
+        }
+
+        if self.case_action.action == CaseAction.ADD_NOTE:
+            subject = _("New note in case #%d") % self.case.pk
+            template = 'case_new_note'
+        elif self.case_action.action == CaseAction.CLOSE:
+            subject = _("Case #%d was closed") % self.case.pk
+            template = 'case_closed'
+        elif self.case_action.action == CaseAction.REOPEN:
+            subject = _("Case #%d was reopened") % self.case.pk
+            template = 'case_reopened'
+        elif self.case_action.action == CaseAction.REASSIGN:
+            subject = _("Case #%d was reassigned") % self.case.pk
+            template = 'case_reassigned'
+        else:  # pragma: no cover
+            raise ValueError("Notifications not supported for case action type %s" % self.case_action.action)
+
+        return subject, template, context
+
+    def _build_case_reply_email(self):
+        context = {
+            'case_url': self.message.org.make_absolute_url(reverse('cases.case_read', args=[self.pk]))
+        }
+        return _("New reply in case #%d") % self.case.pk, 'case_reply', context
