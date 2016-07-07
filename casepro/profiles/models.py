@@ -1,10 +1,15 @@
 from __future__ import absolute_import, unicode_literals
 
+import six
+
 from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
 from casepro.cases.models import Partner
+from casepro.utils.email import send_email
 
 ROLE_ADMIN = 'A'
 ROLE_MANAGER = 'M'
@@ -110,3 +115,47 @@ class Profile(models.Model):
             return bool(user.profile)
         except Profile.DoesNotExist:
             return False
+
+
+class Notification(models.Model):
+    """
+    A notification sent to a user
+    """
+    TYPE_MESSAGE_LABELLING = 'L'
+
+    TEMPLATES = {TYPE_MESSAGE_LABELLING: 'message_labelling'}
+
+    user = models.ForeignKey(User, related_name='notifications')
+
+    type = models.CharField(max_length=1)
+
+    message = models.ForeignKey('msgs.Message')
+
+    is_sent = models.BooleanField(default=False)
+
+    created_on = models.DateTimeField(default=timezone.now)
+
+    @classmethod
+    def new_message_labelling(cls, user, message):
+        return cls.objects.get_or_create(user=user, type=cls.TYPE_MESSAGE_LABELLING, message=message)
+
+    @classmethod
+    def send_all(cls):
+        unsent = cls.objects.filter(is_sent=False).order_by('created_on')
+
+        for notification in unsent:
+            template = cls.TEMPLATES[notification.type]
+            template_path = 'profiles/email/%s' % template
+            subject, context = getattr(notification, '_build_%s_email' % template)()
+
+            send_email([notification.user], six.text_type(subject), template_path, context)
+
+        unsent.update(is_sent=True)
+
+    def _build_message_labelling_email(self):
+        labels = set(self.user.watched_labels.all()).intersection(self.message.labels.all())
+        context = {
+            'labels': labels,
+            'inbox_url': self.message.org.make_absolute_url(reverse('cases.inbox'))
+        }
+        return _("New labelled message"), context

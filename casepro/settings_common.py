@@ -474,6 +474,10 @@ CELERYBEAT_SCHEDULE = {
         'task': 'casepro.statistics.tasks.squash_counts',
         'schedule': timedelta(minutes=5),
     },
+    'send-notifications': {
+        'task': 'casepro.profiles.tasks.send_notifications',
+        'schedule': timedelta(minutes=1),
+    },
 }
 
 CELERY_TIMEZONE = 'UTC'

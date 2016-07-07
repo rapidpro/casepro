@@ -368,7 +368,7 @@ class MessageTest(BaseCasesTest):
             message.save()
 
         # check removing a label and adding new ones
-        with self.assertNumQueries(10):
+        with self.assertNumQueries(11):
             setattr(message, '__data__labels', [("L-002", "Feedback"), ("L-003", "Important")])
             message.save()
 
