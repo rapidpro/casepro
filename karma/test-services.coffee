@@ -371,6 +371,48 @@ describe('services:', () ->
   )
 
   #=======================================================================
+  # Tests for LanguageService
+  #=======================================================================
+  describe('LanguageService', () ->
+    LanguageService = null
+
+    beforeEach(inject((_LanguageService_) ->
+      LanguageService = _LanguageService_
+
+      test.language = {
+        id: 602,
+        code: "afr_ZA",
+        name: "Afrikaans",
+        location: "South Africa"
+      }
+    ))
+
+    describe('fetchLanguages', () ->
+      it('gets Languages from search endpoint', () ->
+        $httpBackend.expectGET('/language/search/?name=afr')
+        .respond('{
+          "results": [{
+            "id": 602,
+            "code": "afr_ZA",
+            "name": "Afrikaans",
+            "location": "South Africa"
+          }],
+          "has_more": false
+        }')
+        LanguageService.fetchLanguages({name: "afr"}).then((replies) ->
+          expect(replies).toEqual([{
+            id: 602,
+            code: "afr_ZA",
+            name: "Afrikaans",
+            location: "South Africa"
+          }])
+        )
+        $httpBackend.flush()
+      )
+    )
+  )
+
+  #=======================================================================
   # Tests for FaqService
   #=======================================================================
   describe('FaqService', () ->
