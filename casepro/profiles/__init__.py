@@ -91,6 +91,10 @@ def _user_remove_from_org(user, org):
     for case in user.watched_cases.filter(org=org):
         case.unwatch(user)
 
+    # remove as watcher of any label in this org
+    for label in user.watched_labels.filter(org=org):
+        label.unwatch(user)
+
 
 def _user_unicode(user):
     if user.has_profile():

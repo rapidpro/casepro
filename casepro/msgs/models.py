@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
+from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -96,7 +97,9 @@ class Label(models.Model):
         return get_redis_connection().lock(LABEL_LOCK_KEY % (org.pk, uuid), timeout=60)
 
     def watch(self, user):
-        # TODO check access to this label?
+        if not Label.get_all(self.org, user).filter(pk=self.pk).exists():
+            raise PermissionDenied()
+
         self.watchers.add(user)
 
     def unwatch(self, user):

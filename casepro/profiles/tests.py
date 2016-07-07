@@ -159,6 +159,9 @@ class UserTest(BaseCasesTest):
         case = self.create_case(self.unicef, ann, self.moh, msg, [self.aids], summary="Summary")
         case.watchers.add(self.admin, self.user1)
 
+        # have users watch a label too
+        self.pregnancy.watchers.add(self.admin, self.user1)
+
         # try with org admin
         self.admin.remove_from_org(self.unicef)
 
@@ -173,6 +176,7 @@ class UserTest(BaseCasesTest):
         self.assertIsNone(self.unicef.get_user_org_group(self.user1))
         self.assertIsNone(self.user1.get_partner(self.unicef))
         self.assertNotIn(self.user1, case.watchers.all())
+        self.assertNotIn(self.user1, self.pregnancy.watchers.all())
 
     def test_unicode(self):
         self.assertEqual(unicode(self.superuser), "root")
