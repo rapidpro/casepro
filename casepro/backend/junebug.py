@@ -3,6 +3,12 @@ import requests
 
 from . import BaseBackend
 
+from dash.utils import is_dict_equal
+from dash.utils.sync import BaseSyncer, sync_local_to_changes
+
+from casepro.contacts.models import Contact
+from itertools import chain
+
 
 class IdentityStore(object):
     '''Implements required methods for accessing the identity data in the
@@ -51,6 +57,76 @@ class IdentityStore(object):
             params={'default': True})
         return (
             a['address'] for a in addresses if a.get('address') is not None)
+
+    def get_identities(self, **params):
+        '''Get the list of identities filtered by the given kwargs.'''
+        url = '%s/api/v1/identities/?' % self.base_url
+
+        identities = self.get_paginated_response(
+            url, params=params)
+
+        # Users who opt to be forgotten from the system have their details
+        # stored as 'redacted'. We only want to return them if we are
+        # specifically looking for forgotten users.
+        return (
+            IdentityStoreContact(i) for i in identities if
+            i.get('details').get('name') != "redacted" or
+            'optout_type' in params
+        )
+
+
+class IdentityStoreContact(object):
+    """
+    Holds identity data for syncing
+    """
+    def __init__(self, json_data):
+        for k, v in json_data.items():
+            setattr(self, k, v)
+
+        # Languages in the identity store have the country code at the end
+        self.language = None
+        remote_language = json_data.get('details').get('preferred_language')
+        if remote_language is not None:
+            self.language, _, _ = remote_language.partition('_')
+        self.name = json_data.get('details').get('name', None)
+        self.addresses = json_data.get('details').get('addresses')
+        self.fields = {}
+        self.groups = {}
+
+
+class IdentityStoreContactSyncer(BaseSyncer):
+    """
+    Syncer for contacts from the Identity Store
+    """
+    model = Contact
+    remote_id_attr = 'id'
+
+    def local_kwargs(self, org, remote):
+        return {
+            'org': org,
+            'uuid': remote.id,
+            'name': remote.name,
+            'language': remote.language,
+            'is_blocked': False,  # TODO: Get 'is_blocked' from Opt-outs
+            'is_stub': False,
+            'fields': {},
+            Contact.SAVE_GROUPS_ATTR: {},
+        }
+
+    def update_required(self, local, remote, remote_as_kwargs):
+        if local.is_stub or local.name != remote.name or \
+                local.language != remote.language:
+            return True
+
+        if {g.uuid for g in local.groups.all()} != \
+                {g.uuid for g in remote.groups}:
+            return True
+
+        return not is_dict_equal(
+            local.get_fields(), remote.fields, ignore_none_values=True)
+
+    def delete_local(self, local):
+        local.release()
 
 
 class JunebugMessageSendingError(Exception):
@@ -104,12 +180,12 @@ class JunebugBackend(BaseBackend):
     '''
 
     def __init__(self):
-        identity_store = IdentityStore(
+        self.identity_store = IdentityStore(
             settings.IDENTITY_API_ROOT, settings.IDENTITY_AUTH_TOKEN,
             settings.IDENTITY_ADDRESS_TYPE)
         self.message_sender = JunebugMessageSender(
             settings.JUNEBUG_API_ROOT, settings.JUNEBUG_CHANNEL_ID,
-            settings.JUNEBUG_FROM_ADDRESS, identity_store)
+            settings.JUNEBUG_FROM_ADDRESS, self.identity_store)
 
     def pull_contacts(
             self, org, modified_after, modified_before,
@@ -127,7 +203,28 @@ class JunebugBackend(BaseBackend):
             tuple of the number of contacts created, updated, deleted and
             ignored
         """
-        return (0, 0, 0, 0)
+        identity_store = self.identity_store
+
+        # all identities created in the Identity Store in the time window
+        new_identities = identity_store.get_identities(
+            created_from=modified_after, created_to=modified_before)
+
+        # all identities modified in the Identity Store in the time window
+        modified_identities = identity_store.get_identities(
+            updated_from=modified_after,
+            updated_to=modified_before)
+
+        identities_to_update = list(chain(modified_identities, new_identities))
+
+        # all identities deleted in the Identity Store in the time window
+        deleted_identities = list(identity_store.get_identities(
+            optout_type='forget', updated_from=modified_after,
+            updated_to=modified_before))
+
+        # the method expects fetches not lists so I faked it
+        return sync_local_to_changes(
+            org, IdentityStoreContactSyncer(), [identities_to_update],
+            [deleted_identities], progress_callback)
 
     def pull_fields(self, org):
         """
