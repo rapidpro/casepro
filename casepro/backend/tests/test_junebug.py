@@ -628,3 +628,56 @@ class IdentityStoreTest(BaseCasesTest):
         [identity] = identity_store.get_identities_for_address('+1234')
         self.assertEqual(
             identity['details']['addresses']['msisdn'], {'+1234': {}})
+
+    def create_identity_callback(self, request):
+        data = json.loads(request.body)
+        self.assertEqual(data.get('details'), {
+            'addresses': {
+                'msisdn': {
+                    '+1234': {},
+                },
+            },
+            'default_addr_type': 'msisdn',
+        })
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            "id": "50d62fcf-856a-489c-914a-56f6e9506ee3",
+            "version": 1,
+            "details": {
+                "addresses": {
+                    "msisdn": {
+                        "+1234": {}
+                    }
+                },
+                "default_addr_type": "msisdn",
+            },
+            "communicate_through": None,
+            "operator": None,
+            "created_at": "2016-06-23T13:15:55.580070Z",
+            "created_by": 1,
+            "updated_at": "2016-06-23T13:15:55.580099Z",
+            "updated_by": 1
+        }
+        return (201, headers, json.dumps(data))
+
+    @responses.activate
+    def test_create_identity(self):
+        '''The create_identity method should make the correct request to create
+        an identity with the correct details in the identity store.'''
+        identity_store = IdentityStore(
+            'http://identitystore.org/', 'auth-token', 'msisdn')
+
+        url = 'http://identitystore.org/api/v1/identities/'
+        responses.add_callback(
+            responses.POST, url, callback=self.create_identity_callback,
+            match_querystring=True, content_type='application/json')
+
+        identity = identity_store.create_identity('+1234')
+        self.assertEqual(identity['details'], {
+            'addresses': {
+                'msisdn': {
+                    '+1234': {},
+                },
+            },
+            'default_addr_type': 'msisdn',
+        })

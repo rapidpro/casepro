@@ -66,7 +66,7 @@ class IdentityStore(object):
             params={'details__addresses__%s' % self.address_type: address})
 
     def create_identity(self, address):
-        return self.session.post(
+        identity = self.session.post(
             '%s/api/v1/identities/' % (self.base_url,),
             json={
                 'details': {
@@ -79,6 +79,7 @@ class IdentityStore(object):
                 },
             }
         )
+        return identity.json()
 
 
 class JunebugMessageSendingError(Exception):
