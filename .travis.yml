@@ -9,8 +9,6 @@ sudo: false
 cache:
   directories:
   - $HOME/.cache/pip
-env:
-  CELERY_ALWAYS_EAGER=True
 install:
 - pip install --upgrade pip
 - pip install -r pip-freeze.txt --upgrade
