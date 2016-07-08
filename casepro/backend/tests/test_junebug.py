@@ -1072,6 +1072,7 @@ class IdentityStoreTest(BaseCasesTest):
             'default_addr_type': 'msisdn',
         })
 
+
 class IdentityStoreContactTest(BaseCasesTest):
     def test_contact_with_defaults(self):
         identity_data = {
