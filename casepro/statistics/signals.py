@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-import pytz
-
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
@@ -9,14 +7,7 @@ from django.utils.functional import SimpleLazyObject
 
 from casepro.msgs.models import Message, Label, Outgoing
 
-from .models import DailyCount
-
-
-def datetime_to_date(dt, org):
-    """
-    Convert a datetime to a date using the given org's timezone
-    """
-    return dt.astimezone(pytz.timezone(org.timezone)).date()
+from .models import datetime_to_date, DailyCount
 
 
 @receiver(post_save, sender=Message)

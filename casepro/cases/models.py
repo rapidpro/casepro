@@ -429,7 +429,7 @@ class Case(models.Model):
                 'id': self.pk,
                 'assignee': self.assignee.as_json(),
                 'contact': self.contact.as_json(full=False),
-                'labels': [l.as_json() for l in self.labels.all()],
+                'labels': [l.as_json(full=False) for l in self.labels.all()],
                 'summary': self.summary,
                 'opened_on': self.opened_on,
                 'is_closed': self.is_closed

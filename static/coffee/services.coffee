@@ -361,8 +361,15 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
 # Label service
 #=====================================================================
 
-services.factory('LabelService', ['$http', ($http) ->
+services.factory('LabelService', ['$http', '$httpParamSerializer', ($http, $httpParamSerializer) ->
   new class LabelService
+
+    #----------------------------------------------------------------------------
+    # Fetches all labels, optionally with activity information
+    #----------------------------------------------------------------------------
+    fetchAll: (withActivity = false) ->
+      params = {with_activity: withActivity}
+      return $http.get('/label/?' + $httpParamSerializer(params)).then((response) -> response.data.results)
 
     #----------------------------------------------------------------------------
     # Deletes a label
@@ -404,6 +411,15 @@ services.factory('PartnerService', ['$http', '$httpParamSerializer', ($http, $ht
 #=====================================================================
 services.factory('StatisticsService', ['$http', '$httpParamSerializer', ($http, $httpParamSerializer) ->
   new class StatisticsService
+
+    #----------------------------------------------------------------------------
+    # Fetches data for incoming by day chart
+    #----------------------------------------------------------------------------
+    incomingChart: (label = null) ->
+      params = {
+        label: if label then label.id else null,
+      }
+      return $http.get('/stats/incoming_chart/?' + $httpParamSerializer(params)).then((response) -> response.data)
 
     #----------------------------------------------------------------------------
     # Fetches data for replies by month chart

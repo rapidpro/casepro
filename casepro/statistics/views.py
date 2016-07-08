@@ -3,15 +3,17 @@ from __future__ import unicode_literals
 import six
 
 from dash.orgs.views import OrgPermsMixin
+from dateutil.relativedelta import relativedelta
 from django.http import JsonResponse
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartTemplateView
 
 from casepro.cases.models import Partner
-from casepro.utils import month_range
+from casepro.msgs.models import Label
+from casepro.utils import date_to_milliseconds, month_range
 
-from .models import DailyCount
+from .models import datetime_to_date, DailyCount
 
 
 MONTH_NAMES = (
@@ -20,7 +22,50 @@ MONTH_NAMES = (
 )
 
 
-class PerMonthChart(OrgPermsMixin, SmartTemplateView):
+class BasePerDayChart(OrgPermsMixin, SmartTemplateView):
+    num_months = 3
+
+    def get(self, request, *args, **kwargs):
+        today = datetime_to_date(timezone.now(), self.request.org)
+
+        since = today - relativedelta(months=self.num_months)
+        totals = self.get_day_totals(request, since)
+        totals_by_day = {t[0]: t[1] for t in totals}
+
+        series = []
+
+        day = since
+        while day <= today:
+            total = totals_by_day.get(day, 0)
+            series.append((date_to_milliseconds(day), total))
+
+            day += relativedelta(days=1)
+
+        return JsonResponse({'data': series})
+
+    def get_day_totals(self, request, since):
+        """
+        Chart classes override this to provide a list of day/value tuples
+        """
+
+
+class IncomingPerDayChart(BasePerDayChart):
+    """
+    Chart of incoming per day for either the current org or a given label
+    """
+    permission = 'orgs.org_charts'
+
+    def get_day_totals(self, request, since):
+        label_id = request.GET.get('label')
+
+        if label_id:
+            label = Label.get_all(org=request.org).get(pk=label_id)
+            return DailyCount.get_by_label([label], DailyCount.TYPE_INCOMING, since).day_totals()
+        else:
+            return DailyCount.get_by_org([self.request.org], DailyCount.TYPE_INCOMING, since).day_totals()
+
+
+class BasePerMonthChart(OrgPermsMixin, SmartTemplateView):
     num_months = 12
 
     def get(self, request, *args, **kwargs):
@@ -30,7 +75,7 @@ class PerMonthChart(OrgPermsMixin, SmartTemplateView):
         totals = self.get_month_totals(request, since)
         totals_by_month = {t[0]: t[1] for t in totals}
 
-        # generate category labels and series over last six months
+        # generate category labels and series over last X months
         categories = []
         series = []
         this_month = now.date().month
@@ -49,7 +94,7 @@ class PerMonthChart(OrgPermsMixin, SmartTemplateView):
         """
 
 
-class RepliesPerMonthChart(PerMonthChart):
+class RepliesPerMonthChart(BasePerMonthChart):
     """
     Chart of replies per month for either the current org, a given partner, or a given user
     """

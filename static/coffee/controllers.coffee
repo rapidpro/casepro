@@ -64,15 +64,6 @@ controllers.controller('InboxController', ['$scope', '$window', '$location', 'La
 
     $scope.$broadcast('activeContactChange')
 
-  $scope.onDeleteLabel = () ->
-    UtilsService.confirmModal('Delete the label <strong>' + $scope.activeLabel.name + '</strong>?', 'danger').then(() ->
-      LabelService.delete($scope.activeLabel).then(() ->
-        $scope.labels = (l for l in $scope.labels when l.id != $scope.activeLabel.id)
-        $scope.activateLabel(null)
-        UtilsService.displayAlert('success', "Label was deleted")
-      )
-    )
-
   $scope.filterDisplayLabels = (labels) ->
     # filters out the active label from the given set of message labels
     if $scope.activeLabel then (l for l in labels when l.id != $scope.activeLabel.id) else labels
@@ -434,7 +425,7 @@ controllers.controller('CasesController', ['$scope', '$timeout', '$controller', 
 #============================================================================
 # Org home controller
 #============================================================================
-controllers.controller('HomeController', ['$scope', '$controller', 'PartnerService', 'StatisticsService', 'UserService', ($scope, $controller, PartnerService, StatisticsService, UserService) ->
+controllers.controller('HomeController', ['$scope', '$controller', 'LabelService', 'PartnerService', 'StatisticsService', 'UserService', ($scope, $controller, LabelService, PartnerService, StatisticsService, UserService) ->
   $controller('BaseTabsController', {$scope: $scope})
 
   $scope.partners = []
@@ -456,6 +447,10 @@ controllers.controller('HomeController', ['$scope', '$controller', 'PartnerServi
     else if tab == 'partners'
       PartnerService.fetchAll(true).then((partners) ->
         $scope.partners = partners
+      )
+    else if tab == 'labels'
+      LabelService.fetchAll(true).then((labels) ->
+        $scope.labels = labels
       )
     else if tab == 'users'
       UserService.fetchNonPartner(true).then((users) ->
@@ -601,7 +596,37 @@ controllers.controller('CaseTimelineController', ['$scope', '$timeout', 'CaseSer
 
 
 #============================================================================
-# Partner view controller
+# Label dashboard controller
+#============================================================================
+controllers.controller('LabelController', ['$scope', '$window', '$controller', 'UtilsService', 'LabelService', 'StatisticsService', ($scope, $window, $controller, UtilsService, LabelService, StatisticsService) ->
+  $controller('BaseTabsController', {$scope: $scope})
+
+  $scope.label = $window.contextData.label
+
+  $scope.onTabInit = (tab) ->
+    if tab == 'summary'
+      StatisticsService.incomingChart($scope.label).then((chart) ->
+        Highcharts.chart('chart-incoming-by-day', {
+          title: {text: null},
+          xAxis: {type: 'datetime'},
+          yAxis: {min: 0, title: {text: "Messages"}},
+          legend: {enabled: false},
+          series: [{data: chart.data}],
+          credits: {enabled: false}
+        })
+      )
+
+  $scope.onDeleteLabel = () ->
+    UtilsService.confirmModal("Delete this label?", 'danger').then(() ->
+      LabelService.delete($scope.label).then(() ->
+        UtilsService.navigate('/label/')
+      )
+    )
+])
+
+
+#============================================================================
+# Partner dashboard controller
 #============================================================================
 controllers.controller('PartnerController', ['$scope', '$window', '$controller', 'UtilsService', 'PartnerService', 'StatisticsService', 'UserService', ($scope, $window, $controller, UtilsService, PartnerService, StatisticsService, UserService) ->
   $controller('BaseTabsController', {$scope: $scope})
@@ -611,16 +636,16 @@ controllers.controller('PartnerController', ['$scope', '$window', '$controller',
 
   $scope.onTabInit = (tab) ->
     if tab == 'summary'
-      StatisticsService.repliesChart($scope.partner, null).then((data) ->
+      StatisticsService.repliesChart($scope.partner, null).then((chart) ->
         Highcharts.chart('chart-replies-by-month', {
           chart: {type: 'column'},
           title: {text: null},
-          xAxis: {categories: data.categories},
-          yAxis: {min: 0, title: {text: 'Replies'}},
+          xAxis: {categories: chart.categories},
+          yAxis: {min: 0, title: {text: "Replies"}},
           legend: {enabled: false},
-          series: [{name: 'Replies', data: data.series}],
+          series: [{name: "Replies", data: chart.series}],
           credits: {enabled: false}
-        });
+        })
       )
     else if tab == 'users'
       UserService.fetchInPartner($scope.partner, true).then((users) ->

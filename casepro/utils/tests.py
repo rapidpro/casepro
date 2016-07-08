@@ -12,7 +12,7 @@ from enum import Enum
 from casepro.test import BaseCasesTest
 
 from . import safe_max, normalize, match_keywords, truncate, str_to_bool, json_encode
-from . import datetime_to_microseconds, microseconds_to_datetime, month_range
+from . import date_to_milliseconds, datetime_to_microseconds, microseconds_to_datetime, month_range
 from .email import send_email
 from .middleware import JSONMiddleware
 
@@ -56,6 +56,10 @@ class UtilsTest(BaseCasesTest):
         self.assertTrue(str_to_bool("TrUE"))
         self.assertTrue(str_to_bool("Y"))
         self.assertTrue(str_to_bool("YeS"))
+
+    def test_date_to_milliseconds(self):
+        self.assertEqual(date_to_milliseconds(date(2015, 1, 1)), 1420070400000)
+        self.assertEqual(date_to_milliseconds(date(2015, 2, 1)), 1422748800000)
 
     def test_microseconds_to_datetime(self):
         d1 = datetime(2015, 10, 9, 14, 48, 30, 123456, tzinfo=pytz.utc).astimezone(pytz.timezone("Africa/Kigali"))

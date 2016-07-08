@@ -10,11 +10,12 @@ from django.utils.translation import ugettext_lazy as _
 from el_pagination.paginators import LazyPaginator
 from smartmin.mixins import NonAtomicMixin
 from smartmin.views import SmartCRUDL, SmartTemplateView
-from smartmin.views import SmartListView, SmartCreateView, SmartUpdateView, SmartDeleteView
+from smartmin.views import SmartListView, SmartCreateView, SmartReadView, SmartUpdateView, SmartDeleteView
 from temba_client.utils import parse_iso8601
 
 from casepro.rules.mixins import RuleFormMixin
-from casepro.utils import parse_csv, str_to_bool, JSONEncoder
+from casepro.statistics.models import DailyCount
+from casepro.utils import parse_csv, str_to_bool, JSONEncoder, json_encode, month_range
 from casepro.utils.export import BaseDownloadView
 
 from .forms import LabelForm
@@ -26,7 +27,7 @@ RESPONSE_DELAY_WARN_SECONDS = 24 * 60 * 60  # show response delays > 1 day as wa
 
 
 class LabelCRUDL(SmartCRUDL):
-    actions = ('create', 'update', 'delete', 'list')
+    actions = ('create', 'update', 'read', 'delete', 'list')
     model = Label
 
     class Create(RuleFormMixin, OrgPermsMixin, SmartCreateView):
@@ -56,6 +57,7 @@ class LabelCRUDL(SmartCRUDL):
 
     class Update(RuleFormMixin, OrgObjPermsMixin, SmartUpdateView):
         form_class = LabelForm
+        success_url = 'id@msgs.label_read'
 
         def get_form_kwargs(self):
             kwargs = super(LabelCRUDL.Update, self).get_form_kwargs()
@@ -71,6 +73,25 @@ class LabelCRUDL(SmartCRUDL):
 
             return obj
 
+    class Read(OrgObjPermsMixin, SmartReadView):
+        def get_queryset(self):
+            return Label.get_all(self.request.org, self.request.user)
+
+        def get_context_data(self, **kwargs):
+            context = super(LabelCRUDL.Read, self).get_context_data(**kwargs)
+
+            # angular app requires context data in JSON format
+            context['context_data_json'] = json_encode({
+                'label': self.object.as_json()
+            })
+            context['summary'] = self.get_summary(self.object)
+            return context
+
+        def get_summary(self, label):
+            return {
+                'total_messages': DailyCount.get_by_label([label], DailyCount.TYPE_INCOMING).total()
+            }
+
     class Delete(OrgObjPermsMixin, SmartDeleteView):
         cancel_url = '@msgs.label_list'
 
@@ -80,16 +101,25 @@ class LabelCRUDL(SmartCRUDL):
             return HttpResponse(status=204)
 
     class List(OrgPermsMixin, SmartListView):
-        fields = ('name', 'description', 'partners')
-        default_order = ('name',)
+        def get(self, request, *args, **kwargs):
+            with_activity = str_to_bool(self.request.GET.get('with_activity', ''))
+            labels = Label.get_all(self.request.org, self.request.user).order_by('name')
 
-        def derive_queryset(self, **kwargs):
-            qs = super(LabelCRUDL.List, self).derive_queryset(**kwargs)
-            qs = qs.filter(org=self.request.org, is_active=True)
-            return qs
+            if with_activity:
+                # get message statistics
+                this_month = DailyCount.get_by_label(labels, DailyCount.TYPE_INCOMING, *month_range(0)).scope_totals()
+                last_month = DailyCount.get_by_label(labels, DailyCount.TYPE_INCOMING, *month_range(-1)).scope_totals()
 
-        def get_partners(self, obj):
-            return ', '.join([p.name for p in obj.get_partners()])
+            def as_json(label):
+                obj = label.as_json()
+                if with_activity:
+                    obj['messages'] = {
+                        'this_month': this_month.get(label, 0),
+                        'last_month': last_month.get(label, 0),
+                    }
+                return obj
+
+            return JsonResponse({'results': [as_json(l) for l in labels]})
 
 
 class MessageSearchMixin(object):
@@ -357,7 +387,7 @@ class OutgoingCRUDL(SmartCRUDL):
                     'reply_to': {
                         'text': msg.reply_to.text,
                         'flagged': msg.reply_to.is_flagged,
-                        'labels': [l.as_json() for l in msg.reply_to.labels.all()],
+                        'labels': [l.as_json(full=False) for l in msg.reply_to.labels.all()],
                     },
                     'response': {
                         'delay': timesince(msg.reply_to.created_on, now=msg.created_on),

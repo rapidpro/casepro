@@ -79,7 +79,42 @@
 
       </uib-tab>
 
-      <uib-tab index="2" select="onTabSelect('users')">
+      <uib-tab index="2" select="onTabSelect('labels')">
+        <uib-tab-heading>
+          %i.glyphicon.glyphicon-tags{ style:"margin-right: 4px" }
+          - trans "Labels"
+        </uib-tab-heading>
+        .search-toolbar.clearfix
+          - if perms.msgs.label_create or org_perms.msgs.label_create
+            .pull-away
+              <a class="btn btn-default" href="{% url 'msgs.label_create' %}">{% trans "New..." %}</a>
+
+          .{ style:"margin-top: 7px" }
+            Total of <strong>[[ labels.length ]]</strong> labels
+
+        %table.table.table-striped
+          %thead
+            %th
+              - trans "Name"
+            %th
+              - trans "Messages (this month)"
+            %th
+              - trans "Messages (last month)"
+          %tbody
+            %tr{ ng-repeat:"label in labels" }
+              %td
+                %a{ ng-href:"/label/read/[[ label.id ]]/" }><
+                  [[ label.name ]]
+              %td
+                [[ label.messages.this_month ]]
+              %td
+                [[ label.messages.last_month ]]
+        .none{ ng-if:"!labels" }
+          - trans "None"
+
+      </uib-tab>
+
+      <uib-tab index="3" select="onTabSelect('users')">
         <uib-tab-heading>
           %span.glyphicon.glyphicon-user
           - trans "Users"

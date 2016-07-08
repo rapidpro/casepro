@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import pytz
 import six
 
 from dash.orgs.models import Org
@@ -11,6 +12,13 @@ from django.utils.translation import ugettext_lazy as _
 
 from casepro.cases.models import Partner
 from casepro.msgs.models import Label
+
+
+def datetime_to_date(dt, org):
+    """
+    Convert a datetime to a date using the given org's timezone
+    """
+    return dt.astimezone(pytz.timezone(org.timezone)).date()
 
 
 class DailyCount(models.Model):

@@ -92,9 +92,6 @@ class Label(models.Model):
     def lock(cls, org, uuid):
         return get_redis_connection().lock(LABEL_LOCK_KEY % (org.pk, uuid), timeout=60)
 
-    def get_partners(self):
-        return self.partners.filter(is_active=True)
-
     def release(self):
         rule = self.rule
 
@@ -105,8 +102,14 @@ class Label(models.Model):
         if rule:
             rule.delete()
 
-    def as_json(self):
-        return {'id': self.pk, 'name': self.name}
+    def as_json(self, full=True):
+        result = {'id': self.pk, 'name': self.name}
+
+        if full:
+            result['description'] = self.description
+            result['synced'] = self.is_synced
+
+        return result
 
     def __str__(self):
         return self.name
@@ -345,7 +348,7 @@ class Message(models.Model):
             'contact': self.contact.as_json(full=False),
             'text': self.text,
             'time': self.created_on,
-            'labels': [l.as_json() for l in self.labels.all()],
+            'labels': [l.as_json(full=False) for l in self.labels.all()],
             'flagged': self.is_flagged,
             'archived': self.is_archived,
             'direction': self.DIRECTION,
