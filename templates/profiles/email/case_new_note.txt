@@ -1,5 +1,5 @@
 {% load i18n %}
-{% blocktrans with user.email as user %}User {{ user }} added a new note:{% endblocktrans %}
+{% blocktrans with user=user.email %}User {{ user }} added a new note:{% endblocktrans %}
 
   {{ note }}
 

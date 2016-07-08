@@ -1,5 +1,5 @@
 {% load i18n %}
-{% blocktrans with user.email as user %}User {{ user }} reopened the case with the following note:{% endblocktrans %}<br/>
+{% blocktrans with user=user.email %}User {{ user }} reopened the case with the following note:{% endblocktrans %}<br/>
 <br/>
 <i>{{ note }}</i>
 <br/>
