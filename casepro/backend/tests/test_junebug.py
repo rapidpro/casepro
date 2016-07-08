@@ -425,6 +425,27 @@ class JunebugInboundViewTest(BaseCasesTest):
         )
         self.assertEqual(response.status_code, 400)
 
+    def create_identity_obj(self, **kwargs):
+        defaults = {
+            "id": "50d62fcf-856a-489c-914a-56f6e9506ee3",
+            "version": 1,
+            "details": {
+                "addresses": {
+                    "msisdn": {
+                        "+1234": {}
+                    }
+                }
+            },
+            "communicate_through": None,
+            "operator": None,
+            "created_at": "2016-06-23T13:15:55.580070Z",
+            "created_by": 1,
+            "updated_at": "2016-06-23T13:15:55.580099Z",
+            "updated_by": 1
+        }
+        defaults.update(kwargs)
+        return defaults
+
     def single_identity_callback(self, request):
         headers = {'Content-Type': 'application/json'}
         data = {
@@ -432,23 +453,7 @@ class JunebugInboundViewTest(BaseCasesTest):
             'next': None,
             'previous': None,
             'results': [
-                {
-                    "id": "50d62fcf-856a-489c-914a-56f6e9506ee3",
-                    "version": 1,
-                    "details": {
-                        "addresses": {
-                            "msisdn": {
-                                "+1234": {}
-                            }
-                        }
-                    },
-                    "communicate_through": None,
-                    "operator": None,
-                    "created_at": "2016-06-23T13:15:55.580070Z",
-                    "created_by": 1,
-                    "updated_at": "2016-06-23T13:15:55.580099Z",
-                    "updated_by": 1
-                },
+                self.create_identity_obj(),
             ]
         }
         return (200, headers, json.dumps(data))
@@ -490,25 +495,7 @@ class JunebugInboundViewTest(BaseCasesTest):
             'default_addr_type': 'msisdn',
         })
         headers = {'Content-Type': 'application/json'}
-        data = {
-            "id": "50d62fcf-856a-489c-914a-56f6e9506ee3",
-            "version": 1,
-            "details": {
-                "addresses": {
-                    "msisdn": {
-                        "+1234": {}
-                    }
-                },
-                "default_addr_type": "msisdn",
-            },
-            "communicate_through": None,
-            "operator": None,
-            "created_at": "2016-06-23T13:15:55.580070Z",
-            "created_by": 1,
-            "updated_at": "2016-06-23T13:15:55.580099Z",
-            "updated_by": 1
-        }
-        return (201, headers, json.dumps(data))
+        return (201, headers, json.dumps(self.create_identity_obj()))
 
     def no_identity_callback(self, request):
         headers = {'Content-Type': 'application/json'}
@@ -738,6 +725,28 @@ class IdentityStoreTest(BaseCasesTest):
             {'address': '+3333'},
         ]))
 
+    def create_identity_obj(self, **kwargs):
+        defaults = {
+            "id": "50d62fcf-856a-489c-914a-56f6e9506ee3",
+            "version": 1,
+            "details": {
+                "addresses": {
+                    "msisdn": {
+                        "+1234": {}
+                    }
+                },
+                'default_addr_type': 'msisdn',
+            },
+            "communicate_through": None,
+            "operator": None,
+            "created_at": "2016-06-23T13:15:55.580070Z",
+            "created_by": 1,
+            "updated_at": "2016-06-23T13:15:55.580099Z",
+            "updated_by": 1
+        }
+        defaults.update(kwargs)
+        return defaults
+
     def single_identity_callback(self, request):
         headers = {'Content-Type': 'application/json'}
         data = {
@@ -745,23 +754,7 @@ class IdentityStoreTest(BaseCasesTest):
             'next': None,
             'previous': None,
             'results': [
-                {
-                    "id": "50d62fcf-856a-489c-914a-56f6e9506ee3",
-                    "version": 1,
-                    "details": {
-                        "addresses": {
-                            "msisdn": {
-                                "+1234": {}
-                            }
-                        }
-                    },
-                    "communicate_through": None,
-                    "operator": None,
-                    "created_at": "2016-06-23T13:15:55.580070Z",
-                    "created_by": 1,
-                    "updated_at": "2016-06-23T13:15:55.580099Z",
-                    "updated_by": 1
-                },
+                self.create_identity_obj(),
             ]
         }
         return (200, headers, json.dumps(data))
@@ -794,25 +787,7 @@ class IdentityStoreTest(BaseCasesTest):
             'default_addr_type': 'msisdn',
         })
         headers = {'Content-Type': 'application/json'}
-        data = {
-            "id": "50d62fcf-856a-489c-914a-56f6e9506ee3",
-            "version": 1,
-            "details": {
-                "addresses": {
-                    "msisdn": {
-                        "+1234": {}
-                    }
-                },
-                "default_addr_type": "msisdn",
-            },
-            "communicate_through": None,
-            "operator": None,
-            "created_at": "2016-06-23T13:15:55.580070Z",
-            "created_by": 1,
-            "updated_at": "2016-06-23T13:15:55.580099Z",
-            "updated_by": 1
-        }
-        return (201, headers, json.dumps(data))
+        return (201, headers, json.dumps(self.create_identity_obj()))
 
     @responses.activate
     def test_create_identity(self):
