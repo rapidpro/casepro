@@ -28,12 +28,12 @@ class NotificationTest(BaseCasesTest):
 
         self.assertFalse(msg.notification_set.all())
 
-        msg.labels.add(self.aids)
+        msg.label(self.aids)
 
         Notification.objects.get(user=self.admin, message=msg, type=Notification.TYPE_MESSAGE_LABELLING, is_sent=False)
 
         # adding more labels won't create new notification for this message and user
-        msg.labels.add(self.pregnancy, self.aids)
+        msg.label(self.pregnancy, self.aids)
 
         self.assertEqual(Notification.objects.count(), 2)
         Notification.objects.get(user=self.admin, message=msg, type=Notification.TYPE_MESSAGE_LABELLING, is_sent=False)

@@ -305,23 +305,23 @@ class MessageTest(BaseCasesTest):
         msg = self.create_message(self.unicef, 101, self.ann, "Normal")
         self.assertFalse(msg.has_labels)
 
-        msg.labels.add(self.aids)
+        msg.label(self.aids)
         msg.refresh_from_db()
         self.assertTrue(msg.has_labels)
 
-        msg.labels.add(self.pregnancy)
+        msg.label(self.pregnancy)
         msg.refresh_from_db()
         self.assertTrue(msg.has_labels)
 
-        msg.labels.remove(self.aids)
+        msg.unlabel(self.aids)
         msg.refresh_from_db()
         self.assertTrue(msg.has_labels)
 
-        msg.labels.remove(self.pregnancy)
+        msg.unlabel(self.pregnancy)
         msg.refresh_from_db()
         self.assertFalse(msg.has_labels)
 
-        msg.labels.add(self.aids, self.pregnancy)  # add multiple
+        msg.label(self.aids, self.pregnancy)  # add multiple
         msg.refresh_from_db()
         self.assertTrue(msg.has_labels)
 
@@ -381,14 +381,14 @@ class MessageTest(BaseCasesTest):
 
         # create a non-synced label
         local_label = self.create_label(self.unicef, None, "Local", "Hmm", ["stuff"], is_synced=False)
-        message.labels.add(local_label)
+        message.label(local_label)
 
         setattr(message, '__data__labels', [])
         message.save()
 
         self.assertEqual(set(message.labels.all()), {local_label})  # non-synced label remains
 
-        message.labels.remove(local_label)
+        message.unlabel(local_label)
 
         setattr(message, '__data__labels', [("L-004", "Local")])
         message.save()

@@ -4,8 +4,6 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 
-default_app_config = 'casepro.profiles.apps.Config'
-
 
 # ================================== Monkey patching for the User class ====================================
 

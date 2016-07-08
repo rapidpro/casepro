@@ -276,6 +276,24 @@ class Message(models.Model):
         self.is_active = False
         self.save(update_fields=('is_active',))
 
+    def label(self, *labels):
+        """
+        Adds the given labels to this message
+        """
+        from casepro.profiles.models import Notification
+
+        self.labels.add(*labels)
+
+        # notify all users who watch these labels
+        for watcher in set(User.objects.filter(watched_labels__in=labels)):
+            Notification.new_message_labelling(self.org, watcher, self)
+
+    def unlabel(self, *labels):
+        """
+        Removes the given labels from this message
+        """
+        self.labels.remove(*labels)
+
     def update_labels(self, user, labels):
         """
         Updates this message's labels to match the given set, creating label and unlabel actions as necessary
@@ -316,7 +334,7 @@ class Message(models.Model):
         messages = list(messages)
         if messages:
             for msg in messages:
-                msg.labels.add(label)
+                msg.label(label)
 
             if label.is_synced:
                 get_backend().label_messages(org, messages, label)
@@ -328,7 +346,7 @@ class Message(models.Model):
         messages = list(messages)
         if messages:
             for msg in messages:
-                msg.labels.remove(label)
+                msg.unlabel(label)
 
             if label.is_synced:
                 get_backend().unlabel_messages(org, messages, label)
