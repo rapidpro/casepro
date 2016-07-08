@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 import six
 
+from dash.orgs.models import Org
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db import models
@@ -132,6 +133,8 @@ class Notification(models.Model):
         TYPE_CASE_REPLY: 'case_reply',
     }
 
+    org = models.ForeignKey(Org)
+
     user = models.ForeignKey(User, related_name='notifications')
 
     type = models.CharField(max_length=1)
@@ -145,20 +148,21 @@ class Notification(models.Model):
     created_on = models.DateTimeField(default=timezone.now)
 
     @classmethod
-    def new_message_labelling(cls, user, message):
-        return cls.objects.get_or_create(user=user, type=cls.TYPE_MESSAGE_LABELLING, message=message)
+    def new_message_labelling(cls, org, user, message):
+        return cls.objects.get_or_create(org=org, user=user, type=cls.TYPE_MESSAGE_LABELLING, message=message)
 
     @classmethod
-    def new_case_action(cls, user, case_action):
-        return cls.objects.get_or_create(user=user, type=cls.TYPE_CASE_ACTION, case_action=case_action)
+    def new_case_action(cls, org, user, case_action):
+        return cls.objects.get_or_create(org=org, user=user, type=cls.TYPE_CASE_ACTION, case_action=case_action)
 
     @classmethod
-    def new_case_reply(cls, user, message):
-        return cls.objects.get_or_create(user=user, type=cls.TYPE_CASE_REPLY, message=message)
+    def new_case_reply(cls, org, user, message):
+        return cls.objects.get_or_create(org=org, user=user, type=cls.TYPE_CASE_REPLY, message=message)
 
     @classmethod
     def send_all(cls):
-        unsent = cls.objects.filter(is_sent=False).order_by('created_on')
+        unsent = cls.objects.filter(is_sent=False)
+        unsent = unsent.select_related('org', 'user', 'message', 'case_action').order_by('created_on')
 
         for notification in unsent:
             type_name = cls.TYPE_NAME[notification.type]
@@ -172,29 +176,30 @@ class Notification(models.Model):
     def _build_message_labelling_email(self):
         context = {
             'labels': set(self.user.watched_labels.all()).intersection(self.message.labels.all()),
-            'inbox_url': self.message.org.make_absolute_url(reverse('cases.inbox'))
+            'inbox_url': self.org.make_absolute_url(reverse('cases.inbox'))
         }
         return _("New labelled message"), 'message_labelling', context
 
     def _build_case_action_email(self):
+        case = self.case_action.case
         context = {
-            'case_url': self.message.org.make_absolute_url(reverse('cases.case_read', args=[self.pk])),
             'user': self.case_action.created_by,
             'note': self.case_action.note,
-            'assignee': self.case_action.assignee
+            'assignee': self.case_action.assignee,
+            'case_url': self.org.make_absolute_url(reverse('cases.case_read', args=[case.pk]))
         }
 
         if self.case_action.action == CaseAction.ADD_NOTE:
-            subject = _("New note in case #%d") % self.case.pk
+            subject = _("New note in case #%d") % case.pk
             template = 'case_new_note'
         elif self.case_action.action == CaseAction.CLOSE:
-            subject = _("Case #%d was closed") % self.case.pk
+            subject = _("Case #%d was closed") % case.pk
             template = 'case_closed'
         elif self.case_action.action == CaseAction.REOPEN:
-            subject = _("Case #%d was reopened") % self.case.pk
+            subject = _("Case #%d was reopened") % case.pk
             template = 'case_reopened'
         elif self.case_action.action == CaseAction.REASSIGN:
-            subject = _("Case #%d was reassigned") % self.case.pk
+            subject = _("Case #%d was reassigned") % case.pk
             template = 'case_reassigned'
         else:  # pragma: no cover
             raise ValueError("Notifications not supported for case action type %s" % self.case_action.action)
@@ -202,7 +207,8 @@ class Notification(models.Model):
         return subject, template, context
 
     def _build_case_reply_email(self):
+        case = self.message.case
         context = {
-            'case_url': self.message.org.make_absolute_url(reverse('cases.case_read', args=[self.pk]))
+            'case_url': self.org.make_absolute_url(reverse('cases.case_read', args=[case.pk]))
         }
-        return _("New reply in case #%d") % self.case.pk, 'case_reply', context
+        return _("New reply in case #%d") % case.pk, 'case_reply', context

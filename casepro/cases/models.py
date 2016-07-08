@@ -35,17 +35,6 @@ class AccessLevel(IntEnum):
     update = 2
 
 
-class CaseEvent(Enum):
-    CONTACT_REPLY = ("Contact sent a new reply",)
-    NEW_NOTE = ("User %(user)s added a new note", )
-    CLOSED = ("User %(user)s closed the case.",)
-    REOPENED = ("User %(user)s reopened the case.",)
-    REASSIGNED = ("User %(user)s reassigned the case to %(assignee)s.",)
-
-    def __init__(self, message):
-        self.message = message
-
-
 @python_2_unicode_compatible
 class Partner(models.Model):
     """
@@ -383,9 +372,9 @@ class Case(models.Model):
 
         for watcher in self.watchers.all():
             if reply:
-                Notification.new_case_reply(watcher, reply)
+                Notification.new_case_reply(self.org, watcher, reply)
             elif action and watcher != action.created_by:
-                Notification.new_case_action(watcher, action)
+                Notification.new_case_action(self.org, watcher, action)
 
     def access_level(self, user):
         """

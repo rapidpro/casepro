@@ -17,4 +17,4 @@ def notify_label_watchers(sender, instance, action, reverse, model, pk_set, **kw
         watcher_ids = set(watcher_m2m.objects.filter(label_id__in=pk_set).values_list('user_id', flat=True))
 
         for watcher_id in watcher_ids:
-            Notification.new_message_labelling(User(pk=watcher_id), instance)
+            Notification.new_message_labelling(instance.org, User(pk=watcher_id), instance)

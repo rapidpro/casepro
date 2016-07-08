@@ -43,10 +43,13 @@ class NotificationTest(BaseCasesTest):
     def test_send_all(self, mock_send_email):
         self.aids.watch(self.admin)
         self.pregnancy.watch(self.user1)
-        self.create_message(self.unicef, 101, self.ann, "Hello", [self.aids])
-        self.create_message(self.unicef, 102, self.ann, "Hello", [self.pregnancy])
+        msg1 = self.create_message(self.unicef, 101, self.ann, "Hello", [self.aids])
+        msg2 = self.create_message(self.unicef, 102, self.ann, "Hello", [self.pregnancy])
 
         send_notifications()
+
+        # all notifications now marked as sent
+        self.assertEqual(Notification.objects.filter(is_sent=False).count(), 0)
 
         mock_send_email.assert_has_calls([
             call([self.admin], "New labelled message", 'profiles/email/message_labelling',
@@ -56,8 +59,75 @@ class NotificationTest(BaseCasesTest):
         ])
         mock_send_email.reset_mock()
 
-        self.assertEqual(Notification.objects.filter(is_sent=False).count(), 0)
+        case1 = self.create_case(self.unicef, self.ann, self.moh, msg1)
+        case1.watch(self.admin)
+        case1.add_reply(msg2)
 
+        send_notifications()
+
+        mock_send_email.assert_has_calls([
+            call([self.admin], "New reply in case #%d" % case1.pk, 'profiles/email/case_reply',
+                 {'case_url': "http://unicef.localhost:8000/case/read/%d/" % case1.pk})
+        ])
+        mock_send_email.reset_mock()
+
+        case1.add_note(self.user1, "General note")
+        case1.close(self.user1, "Close note")
+        case1.reopen(self.user1)
+        case1.reassign(self.admin, self.who)
+
+        send_notifications()
+
+        self.assertEqual(len(mock_send_email.mock_calls), 4)
+        mock_send_email.assert_has_calls([
+            call(
+                [self.admin],
+                "New note in case #%d" % case1.pk,
+                'profiles/email/case_new_note',
+                {
+                    'user': self.user1,
+                    'note': "General note",
+                    'assignee': None,
+                    'case_url': "http://unicef.localhost:8000/case/read/%d/" % case1.pk
+                }
+            ),
+            call(
+                [self.admin],
+                "Case #%d was closed" % case1.pk,
+                'profiles/email/case_closed',
+                {
+                    'user': self.user1,
+                    'note': "Close note",
+                    'assignee': None,
+                    'case_url': "http://unicef.localhost:8000/case/read/%d/" % case1.pk
+                }
+            ),
+            call(
+                [self.admin],
+                "Case #%d was reopened" % case1.pk,
+                'profiles/email/case_reopened',
+                {
+                    'user': self.user1,
+                    'note': None,
+                    'assignee': None,
+                    'case_url': "http://unicef.localhost:8000/case/read/%d/" % case1.pk
+                }
+            ),
+            call(
+                [self.user1],
+                "Case #%d was reassigned" % case1.pk,
+                'profiles/email/case_reassigned',
+                {
+                    'user': self.admin,
+                    'note': None,
+                    'assignee': self.who,
+                    'case_url': "http://unicef.localhost:8000/case/read/%d/" % case1.pk
+                }
+            )
+        ])
+        mock_send_email.reset_mock()
+
+        # if nothing has happened, no emails are sent
         send_notifications()
 
         self.assertNotCalled(mock_send_email)
