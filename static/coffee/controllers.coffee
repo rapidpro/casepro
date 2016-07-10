@@ -616,6 +616,16 @@ controllers.controller('LabelController', ['$scope', '$window', '$controller', '
         })
       )
 
+  $scope.onWatch = () ->
+    UtilsService.confirmModal("Receive notifications for new messages with this label?").then(() ->
+      LabelService.watch($scope.label)
+    )
+
+  $scope.onUnwatch = () ->
+    UtilsService.confirmModal("Stop receiving notifications for new messages with this label?").then(() ->
+      LabelService.unwatch($scope.label)
+    )
+
   $scope.onDeleteLabel = () ->
     UtilsService.confirmModal("Delete this label?", 'danger').then(() ->
       LabelService.delete($scope.label).then(() ->

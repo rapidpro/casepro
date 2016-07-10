@@ -244,6 +244,31 @@ class LabelCRUDLTest(BaseCasesTest):
             'messages': {'this_month': 0, 'last_month': 0}
         })
 
+    def test_watch_and_unwatch(self):
+        watch_url = reverse('msgs.label_watch', args=[self.pregnancy.pk])
+        unwatch_url = reverse('msgs.label_unwatch', args=[self.pregnancy.pk])
+
+        # log in as user with access to this label
+        self.login(self.user1)
+
+        response = self.url_post('unicef', watch_url)
+        self.assertEqual(response.status_code, 204)
+
+        self.assertIn(self.user1, self.pregnancy.watchers.all())
+
+        response = self.url_post('unicef', unwatch_url)
+        self.assertEqual(response.status_code, 204)
+
+        self.assertNotIn(self.user1, self.pregnancy.watchers.all())
+
+        # only user with label access can watch
+        self.login(self.user3)
+
+        response = self.url_post('unicef', watch_url)
+        self.assertEqual(response.status_code, 403)
+
+        self.assertNotIn(self.user3, self.pregnancy.watchers.all())
+
     def test_delete(self):
         url = reverse('msgs.label_delete', args=[self.pregnancy.pk])
 
@@ -280,23 +305,23 @@ class MessageTest(BaseCasesTest):
         msg = self.create_message(self.unicef, 101, self.ann, "Normal")
         self.assertFalse(msg.has_labels)
 
-        msg.labels.add(self.aids)
+        msg.label(self.aids)
         msg.refresh_from_db()
         self.assertTrue(msg.has_labels)
 
-        msg.labels.add(self.pregnancy)
+        msg.label(self.pregnancy)
         msg.refresh_from_db()
         self.assertTrue(msg.has_labels)
 
-        msg.labels.remove(self.aids)
+        msg.unlabel(self.aids)
         msg.refresh_from_db()
         self.assertTrue(msg.has_labels)
 
-        msg.labels.remove(self.pregnancy)
+        msg.unlabel(self.pregnancy)
         msg.refresh_from_db()
         self.assertFalse(msg.has_labels)
 
-        msg.labels.add(self.aids, self.pregnancy)  # add multiple
+        msg.label(self.aids, self.pregnancy)  # add multiple
         msg.refresh_from_db()
         self.assertTrue(msg.has_labels)
 
@@ -343,7 +368,7 @@ class MessageTest(BaseCasesTest):
             message.save()
 
         # check removing a label and adding new ones
-        with self.assertNumQueries(10):
+        with self.assertNumQueries(11):
             setattr(message, '__data__labels', [("L-002", "Feedback"), ("L-003", "Important")])
             message.save()
 
@@ -356,14 +381,14 @@ class MessageTest(BaseCasesTest):
 
         # create a non-synced label
         local_label = self.create_label(self.unicef, None, "Local", "Hmm", ["stuff"], is_synced=False)
-        message.labels.add(local_label)
+        message.label(local_label)
 
         setattr(message, '__data__labels', [])
         message.save()
 
         self.assertEqual(set(message.labels.all()), {local_label})  # non-synced label remains
 
-        message.labels.remove(local_label)
+        message.unlabel(local_label)
 
         setattr(message, '__data__labels', [("L-004", "Local")])
         message.save()

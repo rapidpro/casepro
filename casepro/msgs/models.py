@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
+from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -50,6 +51,9 @@ class Label(models.Model):
         help_text="Whether this label should be synced with the backend"
     )
 
+    watchers = models.ManyToManyField(User, related_name='watched_labels',
+                                      help_text="Users to be notified when label is applied to a message")
+
     is_active = models.BooleanField(default=True, help_text="Whether this label is active")
 
     @classmethod
@@ -91,6 +95,18 @@ class Label(models.Model):
     @classmethod
     def lock(cls, org, uuid):
         return get_redis_connection().lock(LABEL_LOCK_KEY % (org.pk, uuid), timeout=60)
+
+    def watch(self, user):
+        if not Label.get_all(self.org, user).filter(pk=self.pk).exists():
+            raise PermissionDenied()
+
+        self.watchers.add(user)
+
+    def unwatch(self, user):
+        self.watchers.remove(user)
+
+    def is_watched_by(self, user):
+        return user in self.watchers.all()
 
     def release(self):
         rule = self.rule
@@ -260,6 +276,24 @@ class Message(models.Model):
         self.is_active = False
         self.save(update_fields=('is_active',))
 
+    def label(self, *labels):
+        """
+        Adds the given labels to this message
+        """
+        from casepro.profiles.models import Notification
+
+        self.labels.add(*labels)
+
+        # notify all users who watch these labels
+        for watcher in set(User.objects.filter(watched_labels__in=labels)):
+            Notification.new_message_labelling(self.org, watcher, self)
+
+    def unlabel(self, *labels):
+        """
+        Removes the given labels from this message
+        """
+        self.labels.remove(*labels)
+
     def update_labels(self, user, labels):
         """
         Updates this message's labels to match the given set, creating label and unlabel actions as necessary
@@ -300,7 +334,7 @@ class Message(models.Model):
         messages = list(messages)
         if messages:
             for msg in messages:
-                msg.labels.add(label)
+                msg.label(label)
 
             if label.is_synced:
                 get_backend().label_messages(org, messages, label)
@@ -312,7 +346,7 @@ class Message(models.Model):
         messages = list(messages)
         if messages:
             for msg in messages:
-                msg.labels.remove(label)
+                msg.unlabel(label)
 
             if label.is_synced:
                 get_backend().unlabel_messages(org, messages, label)

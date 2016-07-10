@@ -372,6 +372,22 @@ services.factory('LabelService', ['$http', '$httpParamSerializer', ($http, $http
       return $http.get('/label/?' + $httpParamSerializer(params)).then((response) -> response.data.results)
 
     #----------------------------------------------------------------------------
+    # Watches this label (i.e. get notifications for messages)
+    #----------------------------------------------------------------------------
+    watch: (label) ->
+      return $http.post('/label/watch/' + label.id + '/').then(() ->
+        label.watching = true
+      )
+
+    #----------------------------------------------------------------------------
+    # Unwatches this label (i.e. stop getting notifications for messages)
+    #----------------------------------------------------------------------------
+    unwatch: (label) ->
+      return $http.post('/label/unwatch/' + label.id + '/').then(() ->
+        label.watching = false
+      )
+
+    #----------------------------------------------------------------------------
     # Deletes a label
     #----------------------------------------------------------------------------
     delete: (label) ->

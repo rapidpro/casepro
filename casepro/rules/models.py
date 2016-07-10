@@ -316,7 +316,7 @@ class LabelAction(Action):
 
     def apply_to(self, org, messages):
         for msg in messages:
-            msg.labels.add(self.label)
+            msg.label(self.label)
 
         if self.label.is_synced:
             get_backend().label_messages(org, messages, self.label)

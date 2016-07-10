@@ -14,6 +14,12 @@
         .page-header-buttons
           - if perms.msgs.label_update or org_perms.msgs.label_update
             .btn-group
+              %button.btn.btn-default{ type:"button", ng-if:"!label.watching", ng-click:"onWatch()" }
+                %i.glyphicon.glyphicon-eye-open
+                - trans "Watch"
+              %button.btn.btn-default{ type:"button", ng-if:"label.watching", ng-click:"onUnwatch()" }
+                %i.glyphicon.glyphicon-eye-close
+                - trans "Unwatch"
               %a.btn.btn-default{ href:"{% url 'msgs.label_update' object.pk %}", tooltip:"Edit Label" }
                 %i.glyphicon.glyphicon-pencil
               - if perms.msgs.label_delete or org_perms.msgs.label_delete
@@ -21,10 +27,10 @@
                   %i.glyphicon.glyphicon-trash
 
         %h2
-          {{ object.name }}
+          [[ label.name ]]
 
         .
-          {{ object.description }}
+          [[ label.description ]]
 
     <uib-tabset active="active">
 

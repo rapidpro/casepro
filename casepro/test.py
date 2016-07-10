@@ -113,7 +113,7 @@ class BaseCasesTest(DashTest):
             kwargs['created_on'] = now()
 
         msg = Message.objects.create(org=org, backend_id=backend_id, contact=contact, text=text, **kwargs)
-        msg.labels.add(*labels)
+        msg.label(*labels)
         return msg
 
     def create_outgoing(self, org, user, broadcast_id, activity, text, contact, **kwargs):

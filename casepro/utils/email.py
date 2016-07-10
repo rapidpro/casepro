@@ -41,4 +41,8 @@ def send_email(recipients, subject, template, context):
 
         get_connection().send_messages(messages)
     else:  # pragma: no cover
-        print("FAKE SENDING this email to %s:\n%s\n%s" % (", ".join(to_addresses), '-' * 50, text))
+        print("FAKE SENDING this email to %s:" % ", ".join(to_addresses))
+        print("--------------------------------------- text -----------------------------------------")
+        print(text)
+        print("--------------------------------------- html -----------------------------------------")
+        print(html)

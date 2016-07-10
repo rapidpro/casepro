@@ -153,12 +153,12 @@ class DailyCountsTest(BaseStatsTest):
     def test_labelling_counts(self):
         d1 = self.anytime_on_day(date(2015, 1, 1), pytz.timezone("Africa/Kampala"))
         msg = self.create_message(self.unicef, 301, self.ann, "Hi", created_on=d1)
-        msg.labels.add(self.aids, self.tea)
+        msg.label(self.aids, self.tea)
 
         self.assertEqual(DailyCount.get_by_label([self.aids], 'I').day_totals(), [(date(2015, 1, 1), 1)])
         self.assertEqual(DailyCount.get_by_label([self.tea], 'I').day_totals(), [(date(2015, 1, 1), 1)])
 
-        msg.labels.remove(self.aids)
+        msg.unlabel(self.aids)
 
         self.assertEqual(DailyCount.get_by_label([self.aids], 'I').day_totals(), [(date(2015, 1, 1), 0)])
         self.assertEqual(DailyCount.get_by_label([self.tea], 'I').day_totals(), [(date(2015, 1, 1), 1)])
@@ -181,7 +181,7 @@ class ChartsTest(BaseStatsTest):
         self.new_messages(date(2016, 1, 16), 2)  # Jan 16th
 
         # add label to message on Jan 15th
-        msgs[0].labels.add(self.tea)
+        msgs[0].label(self.tea)
 
         self.login(self.user3)
 

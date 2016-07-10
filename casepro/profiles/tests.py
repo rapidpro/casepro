@@ -7,11 +7,130 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
 from django.utils import timezone
-from mock import patch
+from mock import patch, call
 
 from casepro.test import BaseCasesTest
 
-from .models import Profile, ROLE_ADMIN, ROLE_MANAGER, ROLE_ANALYST
+from .models import Notification, Profile, ROLE_ADMIN, ROLE_MANAGER, ROLE_ANALYST
+from .tasks import send_notifications
+
+
+class NotificationTest(BaseCasesTest):
+    def setUp(self):
+        super(NotificationTest, self).setUp()
+
+        self.ann = self.create_contact(self.unicef, "C-001", "Ann")
+
+    def test_new_message_labelling(self):
+        self.aids.watch(self.admin)
+        self.pregnancy.watch(self.user1)
+        msg = self.create_message(self.unicef, 101, self.ann, "Hello")
+
+        self.assertFalse(msg.notification_set.all())
+
+        msg.label(self.aids)
+
+        Notification.objects.get(user=self.admin, message=msg, type=Notification.TYPE_MESSAGE_LABELLING, is_sent=False)
+
+        # adding more labels won't create new notification for this message and user
+        msg.label(self.pregnancy, self.aids)
+
+        self.assertEqual(Notification.objects.count(), 2)
+        Notification.objects.get(user=self.admin, message=msg, type=Notification.TYPE_MESSAGE_LABELLING, is_sent=False)
+        Notification.objects.get(user=self.user1, message=msg, type=Notification.TYPE_MESSAGE_LABELLING, is_sent=False)
+
+    @patch('casepro.profiles.models.send_email')
+    def test_send_all(self, mock_send_email):
+        self.aids.watch(self.admin)
+        self.pregnancy.watch(self.user1)
+        msg1 = self.create_message(self.unicef, 101, self.ann, "Hello", [self.aids])
+        msg2 = self.create_message(self.unicef, 102, self.ann, "Hello", [self.pregnancy])
+
+        send_notifications()
+
+        # all notifications now marked as sent
+        self.assertEqual(Notification.objects.filter(is_sent=False).count(), 0)
+
+        mock_send_email.assert_has_calls([
+            call([self.admin], "New labelled message", 'profiles/email/message_labelling',
+                 {'labels': {self.aids}, 'inbox_url': "http://unicef.localhost:8000/"}),
+            call([self.user1], "New labelled message", 'profiles/email/message_labelling',
+                 {'labels': {self.pregnancy}, 'inbox_url': "http://unicef.localhost:8000/"})
+        ])
+        mock_send_email.reset_mock()
+
+        case1 = self.create_case(self.unicef, self.ann, self.moh, msg1)
+        case1.watch(self.admin)
+        case1.add_reply(msg2)
+
+        send_notifications()
+
+        mock_send_email.assert_has_calls([
+            call([self.admin], "New reply in case #%d" % case1.pk, 'profiles/email/case_reply',
+                 {'case_url': "http://unicef.localhost:8000/case/read/%d/" % case1.pk})
+        ])
+        mock_send_email.reset_mock()
+
+        case1.add_note(self.user1, "General note")
+        case1.close(self.user1, "Close note")
+        case1.reopen(self.user1)
+        case1.reassign(self.admin, self.who)
+
+        send_notifications()
+
+        self.assertEqual(len(mock_send_email.mock_calls), 4)
+        mock_send_email.assert_has_calls([
+            call(
+                [self.admin],
+                "New note in case #%d" % case1.pk,
+                'profiles/email/case_new_note',
+                {
+                    'user': self.user1,
+                    'note': "General note",
+                    'assignee': None,
+                    'case_url': "http://unicef.localhost:8000/case/read/%d/" % case1.pk
+                }
+            ),
+            call(
+                [self.admin],
+                "Case #%d was closed" % case1.pk,
+                'profiles/email/case_closed',
+                {
+                    'user': self.user1,
+                    'note': "Close note",
+                    'assignee': None,
+                    'case_url': "http://unicef.localhost:8000/case/read/%d/" % case1.pk
+                }
+            ),
+            call(
+                [self.admin],
+                "Case #%d was reopened" % case1.pk,
+                'profiles/email/case_reopened',
+                {
+                    'user': self.user1,
+                    'note': None,
+                    'assignee': None,
+                    'case_url': "http://unicef.localhost:8000/case/read/%d/" % case1.pk
+                }
+            ),
+            call(
+                [self.user1],
+                "Case #%d was reassigned" % case1.pk,
+                'profiles/email/case_reassigned',
+                {
+                    'user': self.admin,
+                    'note': None,
+                    'assignee': self.who,
+                    'case_url': "http://unicef.localhost:8000/case/read/%d/" % case1.pk
+                }
+            )
+        ])
+        mock_send_email.reset_mock()
+
+        # if nothing has happened, no emails are sent
+        send_notifications()
+
+        self.assertNotCalled(mock_send_email)
 
 
 class ProfileTest(BaseCasesTest):
@@ -159,6 +278,9 @@ class UserTest(BaseCasesTest):
         case = self.create_case(self.unicef, ann, self.moh, msg, [self.aids], summary="Summary")
         case.watchers.add(self.admin, self.user1)
 
+        # have users watch a label too
+        self.pregnancy.watchers.add(self.admin, self.user1)
+
         # try with org admin
         self.admin.remove_from_org(self.unicef)
 
@@ -173,6 +295,7 @@ class UserTest(BaseCasesTest):
         self.assertIsNone(self.unicef.get_user_org_group(self.user1))
         self.assertIsNone(self.user1.get_partner(self.unicef))
         self.assertNotIn(self.user1, case.watchers.all())
+        self.assertNotIn(self.user1, self.pregnancy.watchers.all())
 
     def test_unicode(self):
         self.assertEqual(unicode(self.superuser), "root")

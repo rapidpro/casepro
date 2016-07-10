@@ -4,7 +4,6 @@ from dash.orgs.models import Org
 from dash.utils import intersection
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
-from django.core.urlresolvers import reverse
 from django.db import models
 from django.db.models import Q, Count, Prefetch
 from django.utils.encoding import python_2_unicode_compatible
@@ -16,7 +15,6 @@ from redis_cache import get_redis_connection
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact
 from casepro.msgs.models import Label, Message, Outgoing
-from casepro.utils.email import send_email
 from casepro.utils.export import BaseExport
 
 
@@ -35,17 +33,6 @@ class AccessLevel(IntEnum):
     none = 0
     read = 1
     update = 2
-
-
-class CaseEvent(Enum):
-    CONTACT_REPLY = ("Contact sent a new reply",)
-    NEW_NOTE = ("User %(user)s added a new note", )
-    CLOSED = ("User %(user)s closed the case.",)
-    REOPENED = ("User %(user)s reopened the case.",)
-    REASSIGNED = ("User %(user)s reassigned the case to %(assignee)s.",)
-
-    def __init__(self, message):
-        self.message = message
 
 
 @python_2_unicode_compatible
@@ -290,7 +277,7 @@ class Case(models.Model):
         message.is_archived = True
         message.save(update_fields=('case', 'is_archived'))
 
-        self.notify_watchers(CaseEvent.CONTACT_REPLY)
+        self.notify_watchers(reply=message)
 
     @case_action()
     def update_summary(self, user, summary):
@@ -301,42 +288,42 @@ class Case(models.Model):
 
     @case_action(require_update=False, become_watcher=True)
     def add_note(self, user, note):
-        CaseAction.create(self, user, CaseAction.ADD_NOTE, note=note)
+        action = CaseAction.create(self, user, CaseAction.ADD_NOTE, note=note)
 
-        self.notify_watchers(CaseEvent.NEW_NOTE, user, note)
+        self.notify_watchers(action=action)
 
     @case_action()
     def close(self, user, note=None):
         self.contact.restore_groups()
 
-        close_action = CaseAction.create(self, user, CaseAction.CLOSE, note=note)
+        action = CaseAction.create(self, user, CaseAction.CLOSE, note=note)
 
-        self.closed_on = close_action.created_on
+        self.closed_on = action.created_on
         self.save(update_fields=('closed_on',))
 
-        self.notify_watchers(CaseEvent.CLOSED, user, note)
+        self.notify_watchers(action=action)
 
     @case_action(become_watcher=True)
     def reopen(self, user, note=None, update_contact=True):
         self.closed_on = None
         self.save(update_fields=('closed_on',))
 
-        CaseAction.create(self, user, CaseAction.REOPEN, note=note)
+        action = CaseAction.create(self, user, CaseAction.REOPEN, note=note)
 
         if update_contact:
             # suspend from groups, expire flows and archive messages
             self.contact.prepare_for_case()
 
-        self.notify_watchers(CaseEvent.REOPENED, user, note)
+        self.notify_watchers(action=action)
 
     @case_action()
     def reassign(self, user, partner, note=None):
         self.assignee = partner
         self.save(update_fields=('assignee',))
 
-        CaseAction.create(self, user, CaseAction.REASSIGN, assignee=partner, note=note)
+        action = CaseAction.create(self, user, CaseAction.REASSIGN, assignee=partner, note=note)
 
-        self.notify_watchers(CaseEvent.REASSIGNED, user, note, assignee=partner)
+        self.notify_watchers(action=action)
 
     @case_action()
     def label(self, user, label):
@@ -380,21 +367,14 @@ class Case(models.Model):
     def is_watched_by(self, user):
         return user in self.watchers.all()
 
-    def notify_watchers(self, event, user=None, note=None, assignee=None):
-        subject = "Notification for case #%d" % self.pk
-        template = 'cases/email/case_notification'
-        case_url = self.org.make_absolute_url(reverse('cases.case_read', args=[self.pk]))
+    def notify_watchers(self, reply=None, action=None):
+        from casepro.profiles.models import Notification
 
-        description = event.message % {
-            'user': user.email if user else None,
-            'assignee': assignee.name if assignee else None
-        }
-
-        notify_users = [u for u in self.watchers.all() if u != user]  # don't notify user who did this
-
-        if notify_users:
-            email_context = {'description': description, 'note': note, 'case_url': case_url}
-            send_email(notify_users, subject, template, email_context)
+        for watcher in self.watchers.all():
+            if reply:
+                Notification.new_case_reply(self.org, watcher, reply)
+            elif action and watcher != action.created_by:
+                Notification.new_case_action(self.org, watcher, action)
 
     def access_level(self, user):
         """
