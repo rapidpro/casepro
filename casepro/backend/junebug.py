@@ -1,12 +1,19 @@
+from datetime import datetime
 from django.conf import settings
+from django.conf.urls import url
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
 import requests
 
 from . import BaseBackend
+from ..contacts.models import Contact
+from ..msgs.models import Message
+from ..utils import uuid_to_int
 
 from dash.utils import is_dict_equal
 from dash.utils.sync import BaseSyncer, sync_local_to_changes
 
-from casepro.contacts.models import Contact
 from itertools import chain
 
 
@@ -57,6 +64,27 @@ class IdentityStore(object):
             params={'default': True})
         return (
             a['address'] for a in addresses if a.get('address') is not None)
+
+    def get_identities_for_address(self, address):
+        return self.get_paginated_response(
+            '%s/api/v1/identities/search/' % (self.base_url),
+            params={'details__addresses__%s' % self.address_type: address})
+
+    def create_identity(self, address):
+        identity = self.session.post(
+            '%s/api/v1/identities/' % (self.base_url,),
+            json={
+                'details': {
+                    'addresses': {
+                        self.address_type: {
+                            address: {},
+                        },
+                    },
+                    'default_addr_type': 'msisdn',
+                },
+            }
+        )
+        return identity.json()
 
     def get_identities(self, **params):
         '''Get the list of identities filtered by the given kwargs.'''
@@ -404,5 +432,40 @@ class JunebugBackend(BaseBackend):
 
         :return: a list of URL patterns.
         """
-        # TODO: Implement views for receiving messages.
-        return []
+        return [
+            url(
+                settings.JUNEBUG_INBOUND_URL, received_junebug_message,
+                name='inbound_junebug_message'
+            ),
+        ]
+
+
+@csrf_exempt
+def received_junebug_message(request):
+    '''Handles MO messages from Junebug.'''
+    if request.method != 'POST':
+        return JsonResponse({'reason': 'Method not allowed.'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+    except ValueError as e:
+        return JsonResponse(
+            {'reason': 'JSON decode error', 'details': e.message}, status=400)
+
+    identity_store = IdentityStore(
+        settings.IDENTITY_API_ROOT, settings.IDENTITY_AUTH_TOKEN,
+        settings.IDENTITY_ADDRESS_TYPE)
+    identities = identity_store.get_identities_for_address(data.get('from'))
+    try:
+        identity = identities.next()
+    except StopIteration:
+        identity = identity_store.create_identity(data.get('from'))
+    contact = Contact.get_or_create(request.org, identity.get('id'))
+
+    message_id = uuid_to_int(data.get('message_id'))
+    msg = Message.objects.create(
+        org=request.org, backend_id=message_id, contact=contact,
+        type=Message.TYPE_INBOX, text=(data.get('content') or ''),
+        created_on=datetime.now(), has_labels=True)
+
+    return JsonResponse(msg.as_json())

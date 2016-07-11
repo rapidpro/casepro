@@ -28,6 +28,7 @@ enum34==1.0.4
 flake8==2.5.4
 gunicorn==19.3.0
 hamlpy==0.82.2
+hypothesis==3.4.0
 kombu==3.0.33
 microsofttranslator==0.5
 mock==1.0.1
