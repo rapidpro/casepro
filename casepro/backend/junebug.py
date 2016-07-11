@@ -66,12 +66,10 @@ class IdentityStore(object):
             url, params=params)
 
         # Users who opt to be forgotten from the system have their details
-        # stored as 'redacted'. We only want to return them if we are
-        # specifically looking for forgotten users.
+        # stored as 'redacted'.
         return (
             IdentityStoreContact(i) for i in identities if
-            i.get('details').get('name') != "redacted" or
-            'optout_type' in params
+            i.get('details').get('name') != "redacted"
         )
 
 
@@ -216,15 +214,10 @@ class JunebugBackend(BaseBackend):
 
         identities_to_update = list(chain(modified_identities, new_identities))
 
-        # all identities deleted in the Identity Store in the time window
-        deleted_identities = list(identity_store.get_identities(
-            optout_type='forget', updated_from=modified_after,
-            updated_to=modified_before))
-
         # the method expects fetches not lists so I faked it
         return sync_local_to_changes(
-            org, IdentityStoreContactSyncer(), [identities_to_update],
-            [deleted_identities], progress_callback)
+            org, IdentityStoreContactSyncer(), [identities_to_update], [],
+            progress_callback)
 
     def pull_fields(self, org):
         """
