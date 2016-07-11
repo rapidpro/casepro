@@ -73,13 +73,23 @@ controllers.controller('InboxController', ['$scope', '$window', '$location', 'La
 #============================================================================
 # Base controller class for controllers which have tabs
 #============================================================================
-controllers.controller('BaseTabsController', ['$scope', ($scope) ->
-
+controllers.controller('BaseTabsController', ['$scope', '$location', ($scope, $location) ->
   $scope.initialisedTabs = []
 
+  path = $location.path()
+  if path
+    initialTabSlug = path.substring(1)  # ignore initial /
+    $scope.active = $scope.tabSlugs.indexOf(initialTabSlug)
+  else
+    $scope.active = 0
+
   $scope.onTabSelect = (tab) ->
+    slug = $scope.tabSlugs[tab]
+
+    $location.path('/' + slug)
+
     if tab not in $scope.initialisedTabs
-      $scope.onTabInit(tab)
+      $scope.onTabInit(slug)
       $scope.initialisedTabs.push(tab)
 ])
 
@@ -426,6 +436,8 @@ controllers.controller('CasesController', ['$scope', '$timeout', '$controller', 
 # Org home controller
 #============================================================================
 controllers.controller('HomeController', ['$scope', '$controller', 'LabelService', 'PartnerService', 'StatisticsService', 'UserService', ($scope, $controller, LabelService, PartnerService, StatisticsService, UserService) ->
+  $scope.tabSlugs = ['summary', 'partners', 'labels', 'users']
+
   $controller('BaseTabsController', {$scope: $scope})
 
   $scope.partners = []
@@ -599,6 +611,8 @@ controllers.controller('CaseTimelineController', ['$scope', '$timeout', 'CaseSer
 # Label dashboard controller
 #============================================================================
 controllers.controller('LabelController', ['$scope', '$window', '$controller', 'UtilsService', 'LabelService', 'StatisticsService', ($scope, $window, $controller, UtilsService, LabelService, StatisticsService) ->
+  $scope.tabSlugs = ['summary']
+  
   $controller('BaseTabsController', {$scope: $scope})
 
   $scope.label = $window.contextData.label
@@ -639,6 +653,8 @@ controllers.controller('LabelController', ['$scope', '$window', '$controller', '
 # Partner dashboard controller
 #============================================================================
 controllers.controller('PartnerController', ['$scope', '$window', '$controller', 'UtilsService', 'PartnerService', 'StatisticsService', 'UserService', ($scope, $window, $controller, UtilsService, PartnerService, StatisticsService, UserService) ->
+  $scope.tabSlugs = ['summary', 'replies', 'users']
+
   $controller('BaseTabsController', {$scope: $scope})
 
   $scope.partner = $window.contextData.partner

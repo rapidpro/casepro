@@ -527,6 +527,59 @@ describe('controllers:', () ->
   )
 
   #=======================================================================
+  # Tests for HomeController
+  #=======================================================================
+  describe('HomeController', () ->
+    StatisticsService = null
+    PartnerService = null
+    LabelService = null
+    UserService = null
+    $scope = null
+
+    beforeEach(inject((_StatisticsService_, _PartnerService_, _LabelService_, _UserService_) ->
+      StatisticsService = _StatisticsService_
+      PartnerService = _PartnerService_
+      LabelService = _LabelService_
+      UserService = _UserService_
+
+      $scope = $rootScope.$new()
+      $controller('HomeController', {$scope: $scope})
+    ))
+
+    it('onTabSelect', () ->
+      repliesChart = spyOnPromise($q, $scope, StatisticsService, 'repliesChart')
+      fetchPartners = spyOnPromise($q, $scope, PartnerService, 'fetchAll')
+      fetchLabels = spyOnPromise($q, $scope, LabelService, 'fetchAll')
+      fetchUsers = spyOnPromise($q, $scope, UserService, 'fetchNonPartner')
+
+      $scope.onTabSelect(0)
+
+      expect(StatisticsService.repliesChart).toHaveBeenCalledWith()
+
+      $scope.onTabSelect(1)
+
+      partners = [test.moh, test.who]
+      fetchPartners.resolve(partners)
+
+      expect($scope.partners).toEqual(partners)
+
+      $scope.onTabSelect(2)
+
+      labels = [test.tea, test.coffee]
+      fetchLabels.resolve(labels)
+
+      expect($scope.labels).toEqual(labels)
+
+      $scope.onTabSelect(3)
+
+      users = [{id: 101, name: "Tom McTicket", replies: {last_month: 5, this_month: 10, total: 20}}]
+      fetchUsers.resolve(users)
+
+      expect($scope.users).toEqual(users)
+    )
+  )
+
+  #=======================================================================
   # Tests for PartnerController
   #=======================================================================
   describe('PartnerController', () ->
@@ -552,25 +605,25 @@ describe('controllers:', () ->
       fetchUsers = spyOnPromise($q, $scope, UserService, 'fetchInPartner')
       repliesChart = spyOnPromise($q, $scope, StatisticsService, 'repliesChart')
 
-      $scope.onTabSelect('summary')
+      $scope.onTabSelect(0)
 
       expect(StatisticsService.repliesChart).toHaveBeenCalledWith(test.moh, null)
-      expect($scope.initialisedTabs).toEqual(['summary'])
+      expect($scope.initialisedTabs).toEqual([0])
 
-      $scope.onTabSelect('users')
+      $scope.onTabSelect(2)
 
       users = [{id: 101, name: "Tom McTicket", replies: {last_month: 5, this_month: 10, total: 20}}]
       fetchUsers.resolve(users)
 
       expect($scope.users).toEqual(users)
-      expect($scope.initialisedTabs).toEqual(['summary', 'users'])
+      expect($scope.initialisedTabs).toEqual([0, 2])
 
       # select the users tab again
-      $scope.onTabSelect('users')
+      $scope.onTabSelect(2)
 
       # users shouldn't be re-fetched
       expect(UserService.fetchInPartner.calls.count()).toEqual(1)
-      expect($scope.initialisedTabs).toEqual(['summary', 'users'])
+      expect($scope.initialisedTabs).toEqual([0, 2])
     )
 
     it('onDeletePartner', () ->

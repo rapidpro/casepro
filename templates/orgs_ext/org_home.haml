@@ -19,7 +19,7 @@
 
     <uib-tabset active="active">
 
-      <uib-tab index="0" select="onTabSelect('summary')">
+      <uib-tab index="0" select="onTabSelect(0)">
         <uib-tab-heading>
           %span.glyphicon.glyphicon-dashboard
           - trans "Summary"
@@ -40,7 +40,7 @@
             #chart-replies-by-month
       </uib-tab>
 
-      <uib-tab index="1" select="onTabSelect('partners')">
+      <uib-tab index="1" select="onTabSelect(1)">
         <uib-tab-heading>
           %span.glyphicon.glyphicon-th-large
           - trans "Partners"
@@ -79,7 +79,7 @@
 
       </uib-tab>
 
-      <uib-tab index="2" select="onTabSelect('labels')">
+      <uib-tab index="2" select="onTabSelect(2)">
         <uib-tab-heading>
           %i.glyphicon.glyphicon-tags{ style:"margin-right: 4px" }
           - trans "Labels"
@@ -114,7 +114,7 @@
 
       </uib-tab>
 
-      <uib-tab index="3" select="onTabSelect('users')">
+      <uib-tab index="3" select="onTabSelect(3)">
         <uib-tab-heading>
           %span.glyphicon.glyphicon-user
           - trans "Users"
