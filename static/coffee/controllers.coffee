@@ -729,9 +729,26 @@ controllers.controller('PartnerRepliesController', ['$scope', '$window', '$contr
 #============================================================================
 # User view controller
 #============================================================================
-controllers.controller('UserController', ['$scope', '$window', 'UtilsService', 'UserService', ($scope, $window, UtilsService, UserService) ->
+controllers.controller('UserController', ['$scope', '$controller', '$window', 'StatisticsService', 'UserService', 'UtilsService', ($scope, $controller, $window, StatisticsService, UserService, UtilsService) ->
+  $scope.tabSlugs = ['summary']
+
+  $controller('BaseTabsController', {$scope: $scope})
 
   $scope.user = $window.contextData.user
+
+  $scope.onTabInit = (tab) ->
+    if tab == 'summary'
+      StatisticsService.repliesChart(null, $scope.user).then((chart) ->
+        Highcharts.chart('chart-replies-by-month', {
+          chart: {type: 'column'},
+          title: {text: null},
+          xAxis: {categories: chart.categories},
+          yAxis: {min: 0, title: {text: "Replies"}},
+          legend: {enabled: false},
+          series: [{name: "Replies", data: chart.series}],
+          credits: {enabled: false}
+        })
+      )
 
   $scope.onDeleteUser = () ->
     UtilsService.confirmModal("Delete this user?", 'danger').then(() ->

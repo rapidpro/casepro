@@ -1,9 +1,7 @@
 from __future__ import unicode_literals
 
-from django.contrib.auth.models import User
 from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
-from django.utils.functional import SimpleLazyObject
 
 from casepro.msgs.models import Message, Label, Outgoing
 
@@ -30,9 +28,6 @@ def record_new_outgoing(sender, instance, created, **kwargs):
         org = instance.org
         partner = instance.partner
         user = instance.created_by
-
-        if isinstance(user, SimpleLazyObject):
-            user = User.objects.get(pk=user.pk)
 
         # get day in org timezone
         day = datetime_to_date(instance.created_on, org)
