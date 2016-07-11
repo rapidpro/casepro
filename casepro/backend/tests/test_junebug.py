@@ -130,12 +130,6 @@ class JunebugBackendTest(BaseCasesTest):
             self.identity_store_no_matches_callback
         )
 
-        self.add_identity_store_callback(
-            'updated_to=2016-03-14T10%3A21%3A00&updated_from=2016-03-14T10%3A25%3A00&'
-            'optout_type=forget',
-            self.identity_store_no_matches_callback
-        )
-
         (created, updated, deleted, ignored) = self.backend.pull_contacts(
             self.unicef, '2016-03-14T10:25:00', '2016-03-14T10:21:00')
         self.assertEqual(created, 1)
@@ -161,12 +155,6 @@ class JunebugBackendTest(BaseCasesTest):
             self.identity_store_updated_identity_callback
         )
 
-        self.add_identity_store_callback(
-            'updated_to=2016-03-14T10%3A21%3A00&updated_from=2016-03-14T10%3A25%3A00&'
-            'optout_type=forget',
-            self.identity_store_no_matches_callback
-        )
-
         (created, updated, deleted, ignored) = self.backend.pull_contacts(
             self.unicef, '2016-03-14T10:25:00', '2016-03-14T10:21:00')
         self.assertEqual(created, 0)
@@ -179,24 +167,14 @@ class JunebugBackendTest(BaseCasesTest):
         self.assertEqual(contact.name, "test")
 
     @responses.activate
-    def test_pull_contacts_recently_deleted(self):
-        Contact.get_or_create(self.unicef, 'test_id', "test")
-        contact = Contact.objects.get(uuid='test_id')
-        self.assertTrue(contact.is_active)
-
+    def test_pull_contacts_forgotten(self):
         self.add_identity_store_callback(
             'created_to=2016-03-14T10%3A21%3A00&created_from=2016-03-14T10%3A25%3A00',
-            self.identity_store_no_matches_callback
+            self.identity_store_forgotten_identity_callback
         )
 
         self.add_identity_store_callback(
             'updated_to=2016-03-14T10%3A21%3A00&updated_from=2016-03-14T10%3A25%3A00',
-            self.identity_store_no_matches_callback
-        )
-
-        self.add_identity_store_callback(
-            'updated_to=2016-03-14T10%3A21%3A00&updated_from=2016-03-14T10%3A25%3A00&'
-            'optout_type=forget',
             self.identity_store_forgotten_identity_callback
         )
 
@@ -204,11 +182,9 @@ class JunebugBackendTest(BaseCasesTest):
             self.unicef, '2016-03-14T10:25:00', '2016-03-14T10:21:00')
         self.assertEqual(created, 0)
         self.assertEqual(updated, 0)
-        self.assertEqual(deleted, 1)
+        self.assertEqual(deleted, 0)
         self.assertEqual(ignored, 0)
-        self.assertEqual(Contact.objects.count(), 1)
-        contact = Contact.objects.get(uuid='test_id')
-        self.assertFalse(contact.is_active)
+        self.assertEqual(Contact.objects.count(), 0)
 
     @responses.activate
     def test_pull_contacts_no_changes(self):
@@ -223,12 +199,6 @@ class JunebugBackendTest(BaseCasesTest):
         self.add_identity_store_callback(
             'updated_to=2016-03-14T10%3A21%3A00&updated_from=2016-03-14T10%3A25%3A00',
             self.identity_store_updated_identity_callback
-        )
-
-        self.add_identity_store_callback(
-            'updated_to=2016-03-14T10%3A21%3A00&updated_from=2016-03-14T10%3A25%3A00&'
-            'optout_type=forget',
-            self.identity_store_no_matches_callback
         )
 
         (created, updated, deleted, ignored) = self.backend.pull_contacts(
