@@ -214,7 +214,8 @@ class JunebugBackend(BaseBackend):
 
         identities_to_update = list(chain(modified_identities, new_identities))
 
-        # the method expects fetches not lists so I faked it
+        # sync_local_to_changes() expects iterables for the 3rd and 4th args
+        # Deleted identities are updated via the Identity Store callback
         return sync_local_to_changes(
             org, IdentityStoreContactSyncer(), [identities_to_update], [],
             progress_callback)
