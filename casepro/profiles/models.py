@@ -124,11 +124,13 @@ class Notification(models.Model):
     A notification sent to a user
     """
     TYPE_MESSAGE_LABELLING = 'L'
+    TYPE_CASE_ASSIGNMENT = 'C'
     TYPE_CASE_ACTION = 'A'
     TYPE_CASE_REPLY = 'R'
 
     TYPE_NAME = {
         TYPE_MESSAGE_LABELLING: 'message_labelling',
+        TYPE_CASE_ASSIGNMENT: 'case_assignment',
         TYPE_CASE_ACTION: 'case_action',
         TYPE_CASE_REPLY: 'case_reply',
     }
@@ -150,6 +152,10 @@ class Notification(models.Model):
     @classmethod
     def new_message_labelling(cls, org, user, message):
         return cls.objects.get_or_create(org=org, user=user, type=cls.TYPE_MESSAGE_LABELLING, message=message)
+
+    @classmethod
+    def new_case_assignment(cls, org, user, case_action):
+        return cls.objects.get_or_create(org=org, user=user, type=cls.TYPE_CASE_ASSIGNMENT, case_action=case_action)
 
     @classmethod
     def new_case_action(cls, org, user, case_action):
@@ -179,6 +185,14 @@ class Notification(models.Model):
             'inbox_url': self.org.make_absolute_url(reverse('cases.inbox'))
         }
         return _("New labelled message"), 'message_labelling', context
+
+    def _build_case_assignment_email(self):
+        case = self.case_action.case
+        context = {
+            'user': self.case_action.created_by,
+            'case_url': self.org.make_absolute_url(reverse('cases.case_read', args=[case.pk]))
+        }
+        return _("New case assignment #%d") % case.pk, 'case_assignment', context
 
     def _build_case_action_email(self):
         case = self.case_action.case
