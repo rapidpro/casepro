@@ -42,7 +42,7 @@
 
     <uib-tabset active="active">
 
-      <uib-tab index="0" select="onTabSelect('summary')">
+      <uib-tab index="0" select="onTabSelect(0)">
         <uib-tab-heading>
           %span.glyphicon.glyphicon-dashboard
           - trans "Summary"
@@ -62,7 +62,7 @@
       </uib-tab>
 
       - if can_view_replies
-        <uib-tab index="1" select="onTabSelect('replies')">
+        <uib-tab index="1" select="onTabSelect(1)">
           <uib-tab-heading>
             %span.glyphicon.glyphicon-comment
             - trans "Replies"
@@ -143,7 +143,7 @@
               - trans "More items than can be displayed"
         </uib-tab>
 
-      <uib-tab index="2" select="onTabSelect('users')">
+      <uib-tab index="2" select="onTabSelect(2)">
         <uib-tab-heading>
           %span.glyphicon.glyphicon-user
           - trans "Users"
