@@ -213,6 +213,8 @@ class Case(models.Model):
 
     @classmethod
     def get_or_open(cls, org, user, message, summary, assignee):
+        from casepro.profiles.models import Notification
+
         r = get_redis_connection()
         with r.lock(CASE_LOCK_KEY % (org.pk, message.contact.uuid)):
             message.refresh_from_db()
@@ -235,7 +237,11 @@ class Case(models.Model):
             message.case = case
             message.save(update_fields=('case',))
 
-            CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee)
+            action = CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee)
+
+            for assignee_user in assignee.get_users():
+                if assignee_user != user:
+                    Notification.new_case_assignment(org, assignee_user, action)
 
         return case
 
@@ -318,12 +324,18 @@ class Case(models.Model):
 
     @case_action()
     def reassign(self, user, partner, note=None):
+        from casepro.profiles.models import Notification
+
         self.assignee = partner
         self.save(update_fields=('assignee',))
 
         action = CaseAction.create(self, user, CaseAction.REASSIGN, assignee=partner, note=note)
 
         self.notify_watchers(action=action)
+
+        # also notify users in the assigned partner that this case has been assigned to them
+        for user in partner.get_users():
+            Notification.new_case_assignment(self.org, user, action)
 
     @case_action()
     def label(self, user, label):

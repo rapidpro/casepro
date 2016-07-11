@@ -78,7 +78,7 @@ class NotificationTest(BaseCasesTest):
 
         send_notifications()
 
-        self.assertEqual(len(mock_send_email.mock_calls), 4)
+        self.assertEqual(len(mock_send_email.mock_calls), 5)
         mock_send_email.assert_has_calls([
             call(
                 [self.admin],
@@ -121,6 +121,15 @@ class NotificationTest(BaseCasesTest):
                     'user': self.admin,
                     'note': None,
                     'assignee': self.who,
+                    'case_url': "http://unicef.localhost:8000/case/read/%d/" % case1.pk
+                }
+            ),
+            call(
+                [self.user3],
+                "New case assignment #%d" % case1.pk,
+                'profiles/email/case_assignment',
+                {
+                    'user': self.admin,
                     'case_url': "http://unicef.localhost:8000/case/read/%d/" % case1.pk
                 }
             )

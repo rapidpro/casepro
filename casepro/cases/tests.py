@@ -103,11 +103,16 @@ class CaseTest(BaseCasesTest):
         self.assertFalse(case2.is_new)
         self.assertEqual(case, case2)
 
+        # user #2 should be notified of this new case assignment
+        self.assertEqual(Notification.objects.count(), 1)
+        Notification.objects.get(user=self.user2, type=Notification.TYPE_CASE_ASSIGNMENT, case_action=actions[0])
+
         # contact sends a reply
         msg3 = self.create_message(self.unicef, 432, self.ann, "OK", created_on=d2)
         handle_messages(self.unicef.pk)
 
         # user #1 should be notified of this reply
+        self.assertEqual(Notification.objects.count(), 2)
         Notification.objects.get(user=self.user1, type=Notification.TYPE_CASE_REPLY, message=msg3)
 
         # which will have been archived and added to the case
@@ -132,6 +137,7 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(set(case.watchers.all()), {self.user1, self.user2})
 
         # user #1 should be notified of this new note
+        self.assertEqual(Notification.objects.count(), 3)
         Notification.objects.get(user=self.user1, type=Notification.TYPE_CASE_ACTION, case_action=actions[1])
 
         # user from other partner org can't re-assign or close case
@@ -152,6 +158,7 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(actions[2].created_on, d3)
 
         # user #2 should be notified
+        self.assertEqual(Notification.objects.count(), 4)
         Notification.objects.get(user=self.user2, type=Notification.TYPE_CASE_ACTION, case_action=actions[2])
 
         # check that contacts groups were restored
@@ -186,6 +193,7 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(actions[3].created_on, d4)
 
         # user #1 should be notified
+        self.assertEqual(Notification.objects.count(), 5)
         Notification.objects.get(user=self.user1, type=Notification.TYPE_CASE_ACTION, case_action=actions[3])
 
         # check that re-opening the case archived the contact's messages again
@@ -206,6 +214,11 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(actions[4].created_by, self.user2)
         self.assertEqual(actions[4].created_on, d5)
         self.assertEqual(actions[4].assignee, self.who)
+
+        # users #1 (a watcher) and #3 (a new assignee) should be notified of this re-assignment
+        self.assertEqual(Notification.objects.count(), 7)
+        Notification.objects.get(user=self.user1, type=Notification.TYPE_CASE_ACTION, case_action=actions[4])
+        Notification.objects.get(user=self.user3, type=Notification.TYPE_CASE_ASSIGNMENT, case_action=actions[4])
 
         with patch.object(timezone, 'now', return_value=d6):
             # user from that partner re-labels it
