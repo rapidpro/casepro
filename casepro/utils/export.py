@@ -26,13 +26,9 @@ from .email import send_email
 
 class BaseExport(models.Model):
     """
-    Base class for exports based on item searches
+    Base class for exports
     """
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='%(class)ss')
-
-    partner = models.ForeignKey('cases.Partner', related_name='%(class)ss', null=True)
-
-    search = models.TextField()
 
     filename = models.CharField(max_length=512)
 
@@ -50,17 +46,12 @@ class BaseExport(models.Model):
 
     MAX_SHEET_ROWS = 65535
 
-    @classmethod
-    def create(cls, org, user, search):
-        return cls.objects.create(org=org, partner=user.get_partner(org), created_by=user, search=json_encode(search))
-
     def do_export(self):
         """
         Does actual export. Called from a celery task.
         """
         book = Workbook()
-        search = self.get_search()
-        book = self.render_book(book, search)
+        self.render_book(book)
 
         temp = NamedTemporaryFile(delete=True)
         book.save(temp)
@@ -82,15 +73,7 @@ class BaseExport(models.Model):
         import gc
         gc.collect()
 
-    def get_search(self):
-        search = json.loads(self.search)
-        if 'after' in search:
-            search['after'] = parse_iso8601(search['after'])
-        if 'before' in search:
-            search['before'] = parse_iso8601(search['before'])
-        return search
-
-    def render_book(self, book, search):  # pragma: no cover
+    def render_book(self, book):  # pragma: no cover
         """
         Child classes implement this to populate the Excel book
         """
@@ -108,6 +91,38 @@ class BaseExport(models.Model):
             sheet.write(row, col, value, self.DATE_STYLE)
         else:
             sheet.write(row, col, value)
+
+    class Meta:
+        abstract = True
+
+
+class BaseSearchExport(BaseExport):
+    """
+    Base class for exports based on item searches which may be initiated by partner users
+    """
+    partner = models.ForeignKey('cases.Partner', related_name='%(class)ss', null=True)
+
+    search = models.TextField()
+
+    @classmethod
+    def create(cls, org, user, search):
+        return cls.objects.create(org=org, partner=user.get_partner(org), created_by=user, search=json_encode(search))
+
+    def render_book(self, book):
+        search = self.get_search()
+
+        self.render_search(book, search)
+
+    def render_search(self, book, search):  # pragma: no cover
+        pass
+
+    def get_search(self):
+        search = json.loads(self.search)
+        if 'after' in search:
+            search['after'] = parse_iso8601(search['after'])
+        if 'before' in search:
+            search['before'] = parse_iso8601(search['before'])
+        return search
 
     class Meta:
         abstract = True

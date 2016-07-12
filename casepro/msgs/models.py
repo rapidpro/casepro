@@ -14,7 +14,7 @@ from redis_cache import get_redis_connection
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact, Field
 from casepro.utils import json_encode
-from casepro.utils.export import BaseExport
+from casepro.utils.export import BaseSearchExport
 
 LABEL_LOCK_KEY = 'lock:label:%d:%s'
 MESSAGE_LOCK_KEY = 'lock:message:%d:%d'
@@ -599,7 +599,7 @@ class Outgoing(models.Model):
         return self.text
 
 
-class MessageExport(BaseExport):
+class MessageExport(BaseSearchExport):
     """
     An export of messages
     """
@@ -612,7 +612,7 @@ class MessageExport(BaseExport):
         search['folder'] = MessageFolder[search['folder']]
         return search
 
-    def render_book(self, book, search):
+    def render_search(self, book, search):
         from casepro.contacts.models import Field
 
         base_fields = ["Time", "Message ID", "Flagged", "Labels", "Text", "Contact"]
@@ -652,10 +652,8 @@ class MessageExport(BaseExport):
             self.write_row(sheet, row, values)
             row += 1
 
-        return book
 
-
-class ReplyExport(BaseExport):
+class ReplyExport(BaseSearchExport):
     """
     An export of replies
     """
@@ -663,7 +661,7 @@ class ReplyExport(BaseExport):
     download_view = 'msgs.replyexport_read'
     email_templates = 'msgs/email/reply_export'
 
-    def render_book(self, book, search):
+    def render_search(self, book, search):
         base_fields = [
             "Sent On", "User", "Message", "Delay", "Reply to", "Flagged", "Case Assignee", "Labels", "Contact"
         ]
@@ -705,5 +703,3 @@ class ReplyExport(BaseExport):
 
             self.write_row(sheet, row, values)
             row += 1
-
-        return book
