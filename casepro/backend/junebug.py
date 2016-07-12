@@ -465,28 +465,40 @@ def received_junebug_message(request):
     return JsonResponse(msg.as_json())
 
 
-from django.views.generic import View
+@csrf_exempt
+def receive_identity_store_optout(request):
+    '''Handles optout notifications from the Identity Store.'''
+    if request.method != 'POST':
+        return JsonResponse({'reason': 'Method not allowed.'}, status=405)
 
+    try:
+        data = json.loads(request.body)
+    except ValueError as e:
+        return JsonResponse(
+            {'reason': 'JSON decode error', 'details': e.message}, status=400)
 
-# I'm not sure I'm subclassing the correct view here
-class IdentityStoreOptoutView(View):
-    def post(self, request, *args, **kwargs):
-        identity_id = request.body['identity_id']
-        optout_type = request.body['optout_type']
+    identity_id = data.get('identity_id')
+    optout_type = data.get('optout_type')
 
-        # I don't know how to get the org or how to get fetch_local in scope
-        local_contact = fetch_local(org, identity_id)
-        if local_contact:
-            local_contact.lock(org, identity_id)
-            if optout_type == "forget":
-                local_contact.release()
-            elif optout_type == "stop" or optout_type == "stopall":
-                local_contact.is_blocked = True
-            elif optout_type == "unsubscribe":
-                # I don't know what to do here
-                continue
+    syncer = IdentityStoreContactSyncer()
 
-        # I only delete the local contact. Should I delete the remote one as
-        # well considering that that isn't a model class?
+    # I don't know how to get the org
+    local_contact = syncer.fetch_local(org, identity_id)
+    if local_contact:
+        local_contact.lock(org, identity_id)
+        if optout_type == "forget":
+            local_contact.release()
+            # I only delete the local contact. Should I delete the remote one as
+            # well considering that IdentityStoreContact that isn't a model class?
+            return JsonResponse({"success": True})
 
-        # I'm not sure what to return because I'm not sure what View I should use
+        elif optout_type == "stop" or optout_type == "stopall":
+            local_contact.is_blocked = True
+            return JsonResponse({"success": True})
+        elif optout_type == "unsubscribe":
+            # I don't know what to do here
+            return JsonResponse({"success": True})
+
+    # The identity store currently doesn't specify the response format or do
+    # anything with the response. There's a github ticket about it
+    return JsonResponse({"success": False})
