@@ -107,8 +107,8 @@ class UtilsTest(BaseCasesTest):
 class EmailTest(BaseCasesTest):
     @override_settings(SEND_EMAILS=True)
     def test_send_email(self):
-        send_email([self.user1, 'bob@unicef.org'],
-                   "Subject", 'msgs/email/message_export', {'link': 'http://example.com'})
+        send_email([self.user1, 'bob@unicef.org'], "Subject", 'utils/email/export',
+                   {'download_url': 'http://example.com/export/1/'})
 
         self.assertEqual(len(mail.outbox), 2)
         self.assertEqual(mail.outbox[0].to, ["evan@unicef.org"])
