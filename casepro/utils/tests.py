@@ -94,20 +94,20 @@ class UtilsTest(BaseCasesTest):
 
     def test_uuid_to_int_range(self):
         '''Ensures that the integer returned will always be in the range
-        [-2147483648, 2147483647].'''
+        [0, 2147483647].'''
         self.assertEqual(
-            uuid_to_int(UUID(int=(2147483648 + 2147483647)).hex),
+            uuid_to_int(UUID(int=(2147483647)).hex),
             2147483647)
         self.assertEqual(
-            uuid_to_int(UUID(int=(2147483648 + 2147483647 + 1)).hex),
-            -2147483648)
+            uuid_to_int(UUID(int=(2147483648)).hex),
+            0)
 
     @given(st.uuids())
     def test_uuid_to_int_property(self, uuid):
         '''Property based testing to ensure that the output of the function
         is always within the limits.'''
         self.assertTrue(uuid_to_int(uuid.hex) <= 2147483647)
-        self.assertTrue(uuid_to_int(uuid.hex) >= -2147483648)
+        self.assertTrue(uuid_to_int(uuid.hex) >= 0)
 
 
 class MiddlewareTest(BaseCasesTest):
