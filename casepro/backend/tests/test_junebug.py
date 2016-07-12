@@ -769,7 +769,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
                     },
                     "preferred_language": "eng_NG",
                 },
-                'optout_type': 'forget',
+                'optout_type': optout_type,
             })
         )
 
