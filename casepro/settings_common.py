@@ -20,7 +20,6 @@ TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
     ('Nyaruka', 'code@nyaruka.com'),
-    ('Kaitlyn', 'k@c.com'),
 )
 
 MANAGERS = ADMINS
@@ -58,7 +57,7 @@ SITE_ALLOW_NO_ORG = ('orgs_ext.org_create', 'orgs_ext.org_update', 'orgs_ext.org
 # casepro configuration
 SITE_ORGS_STORAGE_ROOT = 'orgs'
 SITE_EXTERNAL_CONTACT_URL = 'http://localhost:8001/contact/read/%s/'
-SITE_BACKEND = 'casepro.backend.junebug.JunebugBackend'
+SITE_BACKEND = 'casepro.backend.NoopBackend'
 SITE_ANON_CONTACTS = False
 
 # junebug configuration
@@ -462,25 +461,21 @@ BROKER_URL = 'redis://localhost:6379/%d' % (10 if TESTING else 15)
 CELERY_RESULT_BACKEND = BROKER_URL
 
 CELERYBEAT_SCHEDULE = {
-    # 'message-pull': {
-    #     'task': 'dash.orgs.tasks.trigger_org_task',
-    #     'schedule': timedelta(minutes=1),
-    #     'args': ('casepro.msgs.tasks.pull_messages', 'sync')
-    # },
+    'message-pull': {
+        'task': 'dash.orgs.tasks.trigger_org_task',
+        'schedule': timedelta(minutes=1),
+        'args': ('casepro.msgs.tasks.pull_messages', 'sync')
+    },
     'contact-pull': {
         'task': 'dash.orgs.tasks.trigger_org_task',
         'schedule': timedelta(minutes=3),
         'args': ('casepro.contacts.tasks.pull_contacts', 'sync')
     },
-    # 'message-handle': {
-    #     'task': 'dash.orgs.tasks.trigger_org_task',
-    #     'schedule': timedelta(minutes=1),
-    #     'args': ('casepro.msgs.tasks.handle_messages', 'sync')
-    # },
+    'message-handle': {
+        'task': 'dash.orgs.tasks.trigger_org_task',
+        'schedule': timedelta(minutes=1),
+        'args': ('casepro.msgs.tasks.handle_messages', 'sync')
+    },
 }
 
 CELERY_TIMEZONE = 'UTC'
-
-PASSWORD_HASHERS = (
-    'django.contrib.auth.hashers.MD5PasswordHasher',
-)
