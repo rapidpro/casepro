@@ -497,16 +497,16 @@ def receive_identity_store_optout(request):
         local_contact.lock(org, identity_id)
         if optout_type == "forget":
             local_contact.release()
-            return JsonResponse({"success": True})
+            return JsonResponse({"success": True}, status=200)
 
         elif optout_type == "stop" or optout_type == "stopall":
             local_contact.is_blocked = True
-            return JsonResponse({"success": True})
+            return JsonResponse({"success": True}, status=200)
         elif optout_type == "unsubscribe":
             # This case is not relevant to Casepro
-            return JsonResponse({"success": True})
+            return JsonResponse({"success": True}, status=200)
 
     return JsonResponse({
-        "success": False,
-        "message": "Unrecognised value for 'optout_type': " + optout_type
-    })
+        'reason': "Unrecognised value for 'optout_type': " + optout_type},
+        status=400
+    )
