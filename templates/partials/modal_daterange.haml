@@ -4,12 +4,12 @@
   %h3.modal-title
     [[ title ]]
   .modal-body
-    %p
+    %p{ style:"margin-bottom: 1em" }
       %span{ ng-bind-html:"prompt" }
-    %form{ name:"form", novalidate:"" }
+    %form.form-inline{ name:"form", novalidate:"" }
       .date-range{ ng-controller:"DateRangeController", ng-init:'init("fields.after", "fields.before")' }
         .form-group{ ng-class:'{"has-error": form.after.$invalid}' }
-          %label.control-label
+          %label.control-label{ style:"margin-right: 1em" }
             - trans "From"
           .input-group.date-picker
             %input.form-control{ type:"text", uib-datepicker-popup:"[[ format ]]", ng-model:"fields.after", is-open:"afterOpen", datepicker-options:"afterOptions", name:"after", required:"" }
@@ -19,7 +19,7 @@
           .help-block{ ng-show:"form.after.$error.required" }
             - trans "Required"
         .form-group{ ng-class:'{"has-error": form.before.$invalid}' }
-          %label.control-label
+          %label.control-label{ style:"margin: 0 1em" }
             - trans "Until"
           .input-group.date-picker
             %input.form-control{ type:"text", uib-datepicker-popup:"[[ format ]]", ng-model:"fields.before", is-open:"beforeOpen", datepicker-options:"beforeOptions", name:"before", required:"" }
