@@ -501,6 +501,7 @@ def receive_identity_store_optout(request):
 
         elif optout_type == "stop" or optout_type == "stopall":
             local_contact.is_blocked = True
+            local_contact.save(update_fields=('is_blocked',))
             return JsonResponse({"success": True}, status=200)
         elif optout_type == "unsubscribe":
             # This case is not relevant to Casepro
