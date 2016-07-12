@@ -841,6 +841,28 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
             {'reason': "No Contact for id: tester"})
         self.assertEqual(response.status_code, 400)
 
+    @responses.activate
+    def test_optout_received_fields_missing(self):
+        '''Optouts received with fields missing should return an error'''
+        request = self.factory.post(
+            self.url, content_type='application/json', data=json.dumps({
+                'details': {
+                    "name": "testing",
+                    "addresses": {
+                        "msisdn": {
+                            "+1234": {}
+                        },
+                    },
+                    "preferred_language": "eng_NG",
+                },
+            })
+        )
+        response = receive_identity_store_optout(request)
+        self.assertEqual(
+            json.loads(response.content),
+            {'reason': 'Both "identity" and "optout_type" must be specified.'})
+        self.assertEqual(response.status_code, 400)
+
 
 class IdentityStoreTest(BaseCasesTest):
     def get_identities_callback(self, request):

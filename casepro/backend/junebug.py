@@ -482,8 +482,13 @@ def receive_identity_store_optout(request):
         return JsonResponse(
             {'reason': 'JSON decode error', 'details': e.message}, status=400)
 
-    identity_id = data.get('identity')
-    optout_type = data.get('optout_type')
+    try:
+        identity_id = data['identity']
+        optout_type = data['optout_type']
+    except KeyError as e:
+        return JsonResponse(
+            {'reason': 'Both "identity" and "optout_type" must be specified.'},
+            status=400)
 
     syncer = IdentityStoreContactSyncer()
 
