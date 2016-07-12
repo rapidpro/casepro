@@ -6,6 +6,8 @@ describe('utils:', () ->
     it('formats a date string', () ->
       expect(utils.formatIso8601(null)).toEqual(null)
       expect(utils.formatIso8601(utcdate(2016, 5, 17, 8, 49, 13, 698))).toEqual("2016-05-17T08:49:13.698Z")
+      expect(utils.formatIso8601(utcdate(2016, 5, 17, 8, 49, 13, 698), true)).toEqual("2016-05-17T08:49:13.698Z")
+      expect(utils.formatIso8601(utcdate(2016, 5, 17, 8, 49, 13, 698), false)).toEqual("2016-05-17")
     )
   )
 

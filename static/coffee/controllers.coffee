@@ -435,7 +435,7 @@ controllers.controller('CasesController', ['$scope', '$timeout', '$controller', 
 #============================================================================
 # Org home controller
 #============================================================================
-controllers.controller('HomeController', ['$scope', '$controller', 'LabelService', 'PartnerService', 'StatisticsService', 'UserService', ($scope, $controller, LabelService, PartnerService, StatisticsService, UserService) ->
+controllers.controller('HomeController', ['$scope', '$controller', 'LabelService', 'PartnerService', 'StatisticsService', 'UserService', 'UtilsService', ($scope, $controller, LabelService, PartnerService, StatisticsService, UserService, UtilsService) ->
   $scope.tabSlugs = ['summary', 'partners', 'labels', 'users']
 
   $controller('BaseTabsController', {$scope: $scope})
@@ -454,7 +454,7 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
           legend: {enabled: false},
           series: [{name: 'Replies', data: data.series}],
           credits: {enabled: false}
-        });
+        })
       )
     else if tab == 'partners'
       PartnerService.fetchAll(true).then((partners) ->
@@ -468,6 +468,20 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
       UserService.fetchNonPartner(true).then((users) ->
         $scope.users = users
       )
+
+  $scope.onExportPartnerStats = () ->
+    UtilsService.dateRangeModal("Export", "Export partner statistics between the following dates").then((data) ->
+      StatisticsService.dailyCountExport('P', data.after, data.before).then(() ->
+        UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
+      )
+    )
+
+  $scope.onExportLabelStats = () ->
+    UtilsService.dateRangeModal("Export", "Export label statistics between the following dates").then((data) ->
+      StatisticsService.dailyCountExport('L', data.after, data.before).then(() ->
+        UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
+      )
+    )
 ])
 
 

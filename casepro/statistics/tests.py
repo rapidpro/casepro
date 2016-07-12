@@ -6,13 +6,14 @@ import random
 from dash.orgs.models import Org
 from datetime import date, datetime, time
 from django.core.urlresolvers import reverse
+from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch
 
 from casepro.test import BaseCasesTest
 from casepro.utils import date_to_milliseconds
 
-from .models import DailyCount
+from .models import DailyCount, DailyCountExport
 from .tasks import squash_counts
 
 
@@ -169,10 +170,63 @@ class DailyCountsTest(BaseStatsTest):
         self.assertEqual(DailyCount.get_by_label([self.tea], 'I').day_totals(), [(date(2015, 1, 1), 0)])
 
 
+class DailyCountExportTest(BaseStatsTest):
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    def test_label_export(self):
+        url = reverse('statistics.dailycountexport_create')
+
+        self.new_messages(date(2016, 1, 1), 1)  # Jan 1st
+        msgs15 = self.new_messages(date(2016, 1, 15), 1)  # Jan 15th
+
+        # add label to message on Jan 15th
+        msgs15[0].label(self.tea)
+
+        # only org admins can access
+        self.assertLoginRedirect(self.url_get('unicef', url), 'unicef', url)
+        self.login(self.user3)
+        self.assertLoginRedirect(self.url_get('unicef', url), 'unicef', url)
+
+        self.login(self.admin)
+
+        response = self.url_post_json('unicef', url, {'type': 'L', 'after': "2016-01-01", 'before': "2016-01-31"})
+        self.assertEqual(response.status_code, 200)
+
+        export = DailyCountExport.objects.get()
+        workbook = self.openWorkbook(export.filename)
+        sheet = workbook.sheets()[0]
+
+        self.assertEqual(sheet.nrows, 32)
+        self.assertExcelRow(sheet, 0, ["Date", "AIDS", "Pregnancy", "Tea"])
+        self.assertExcelRow(sheet, 1, [date(2016, 1, 1), 0, 0, 0])
+        self.assertExcelRow(sheet, 15, [date(2016, 1, 15), 0, 0, 1])
+        self.assertExcelRow(sheet, 31, [date(2016, 1, 31), 0, 0, 0])
+
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    def test_partner_export(self):
+        url = reverse('statistics.dailycountexport_create')
+
+        self.new_outgoing(self.user1, date(2016, 1, 1), 1)  # Jan 1st
+        self.new_outgoing(self.user3, date(2016, 1, 15), 1)  # Jan 15th
+
+        self.login(self.admin)
+
+        response = self.url_post_json('unicef', url, {'type': 'P', 'after': "2016-01-01", 'before': "2016-01-31"})
+        self.assertEqual(response.status_code, 200)
+
+        export = DailyCountExport.objects.get()
+        workbook = self.openWorkbook(export.filename)
+        sheet = workbook.sheets()[0]
+
+        self.assertEqual(sheet.nrows, 32)
+        self.assertExcelRow(sheet, 0, ["Date", "MOH", "WHO"])
+        self.assertExcelRow(sheet, 1, [date(2016, 1, 1), 1, 0])
+        self.assertExcelRow(sheet, 15, [date(2016, 1, 15), 0, 1])
+
+
 class ChartsTest(BaseStatsTest):
 
     def test_incoming_chart(self):
-        url = reverse('stats.incoming_chart')
+        url = reverse('statistics.incoming_chart')
 
         self.assertLoginRedirect(self.url_get('unicef', url), 'unicef', url)
 
@@ -204,7 +258,7 @@ class ChartsTest(BaseStatsTest):
             self.assertEqual(series[6], [date_to_milliseconds(date(2016, 1, 16)), 0])
 
     def test_replies_chart(self):
-        url = reverse('stats.replies_chart')
+        url = reverse('statistics.replies_chart')
 
         self.assertLoginRedirect(self.url_get('unicef', url), 'unicef', url)
 

@@ -3,17 +3,22 @@ from __future__ import unicode_literals
 import six
 
 from dash.orgs.views import OrgPermsMixin
+from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 from django.http import JsonResponse
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
-from smartmin.views import SmartTemplateView
+from smartmin.mixins import NonAtomicMixin
+from smartmin.views import SmartCRUDL, SmartTemplateView, SmartCreateView
+from temba_client.utils import parse_iso8601
 
 from casepro.cases.models import Partner
 from casepro.msgs.models import Label
 from casepro.utils import date_to_milliseconds, month_range
+from casepro.utils.export import BaseDownloadView
 
-from .models import datetime_to_date, DailyCount
+from .models import datetime_to_date, DailyCount, DailyCountExport
+from .tasks import daily_count_export
 
 
 MONTH_NAMES = (
@@ -112,3 +117,26 @@ class RepliesPerMonthChart(BasePerMonthChart):
             return DailyCount.get_by_user(self.request.org, [user], DailyCount.TYPE_REPLIES, since).month_totals()
         else:
             return DailyCount.get_by_org([self.request.org], DailyCount.TYPE_REPLIES, since).month_totals()
+
+
+class DailyCountExportCRUDL(SmartCRUDL):
+    model = DailyCountExport
+    actions = ('create', 'read')
+
+    class Create(NonAtomicMixin, OrgPermsMixin, SmartCreateView):
+        def post(self, request, *args, **kwargs):
+            of_type = request.json['type']
+
+            # parse dates and adjust max so it's exclusive
+            after = parse_iso8601(request.json['after']).date()
+            before = parse_iso8601(request.json['before']).date() + timedelta(days=1)
+
+            export = DailyCountExport.create(self.request.org, self.request.user, of_type, after, before)
+
+            daily_count_export.delay(export.pk)
+
+            return JsonResponse({'export_id': export.pk})
+
+    class Read(BaseDownloadView):
+        title = _("Download Export")
+        filename = 'daily_count_export.xls'

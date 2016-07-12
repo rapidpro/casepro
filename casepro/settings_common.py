@@ -354,6 +354,8 @@ GROUP_PERMISSIONS = {
         'profiles.profile.*',
 
         'rules.rule.*',
+
+        'statistics.dailycountexport.*',
     ),
     "Editors": (  # Partner users: Managers
         'orgs.org_inbox',

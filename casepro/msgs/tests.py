@@ -6,13 +6,11 @@ import six
 
 from dash.orgs.models import TaskState
 from datetime import datetime
-from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
 from django.utils.timezone import now
 from mock import patch, call
 from temba_client.utils import format_iso8601
-from xlrd import open_workbook
 
 from casepro.contacts.models import Contact
 from casepro.rules.models import ContainsTest, GroupsTest, FieldTest, WordCountTest, Quantifier
@@ -865,8 +863,7 @@ class MessageCRUDLTest(BaseCasesTest):
 
 
 class MessageExportCRUDLTest(BaseCasesTest):
-    @override_settings(SITE_ORGS_STORAGE_ROOT='test_orgs', CELERY_ALWAYS_EAGER=True,
-                       CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     def test_create_and_read(self):
         ann = self.create_contact(self.unicef, "C-001", "Ann", fields={'nickname': "Annie", 'age': "28", 'state': "WA"})
         bob = self.create_contact(self.unicef, "C-002", "Bob", fields={'nickname': "Bobby", 'age': "32", 'state': "IN"})
@@ -893,7 +890,7 @@ class MessageExportCRUDLTest(BaseCasesTest):
         self.assertEqual(export.partner, self.moh)
         self.assertEqual(export.created_by, self.user1)
 
-        workbook = open_workbook("%s/%s" % (settings.MEDIA_ROOT, export.filename), 'rb')
+        workbook = self.openWorkbook(export.filename)
         sheet = workbook.sheets()[0]
 
         self.assertEqual(sheet.nrows, 3)
@@ -1194,8 +1191,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
 
 
 class ReplyExportCRUDLTest(BaseCasesTest):
-    @override_settings(SITE_ORGS_STORAGE_ROOT='test_orgs', CELERY_ALWAYS_EAGER=True,
-                       CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     def test_create_and_read(self):
         ann = self.create_contact(self.unicef, "C-001", "Ann", fields={'nickname': "Annie", 'age': "28", 'state': "WA"})
         bob = self.create_contact(self.unicef, "C-002", "Bob", fields={'nickname': "Bobby", 'age': "32", 'state': "IN"})
@@ -1226,7 +1222,7 @@ class ReplyExportCRUDLTest(BaseCasesTest):
 
         export = ReplyExport.objects.get(created_by=self.admin)
 
-        workbook = open_workbook("%s/%s" % (settings.MEDIA_ROOT, export.filename), 'rb')
+        workbook = self.openWorkbook(export.filename)
         sheet = workbook.sheets()[0]
 
         self.assertEqual(sheet.nrows, 4)

@@ -6,7 +6,7 @@ import pytz
 from dash.orgs.models import Org
 from dash.orgs.views import OrgObjPermsMixin
 from dash.utils import random_string
-from datetime import datetime
+from datetime import datetime, date
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.files import File
@@ -42,7 +42,10 @@ class BaseExport(models.Model):
     email_templates = None
 
     DATE_STYLE = XFStyle()
-    DATE_STYLE.num_format_str = 'DD-MM-YYYY HH:MM:SS'
+    DATE_STYLE.num_format_str = 'DD-MM-YYYY'
+
+    DATETIME_STYLE = XFStyle()
+    DATETIME_STYLE.num_format_str = 'DD-MM-YYYY HH:MM:SS'
 
     MAX_SHEET_ROWS = 65535
 
@@ -88,6 +91,8 @@ class BaseExport(models.Model):
             sheet.write(row, col, "Yes" if value else "No")
         elif isinstance(value, datetime):
             value = value.astimezone(pytz.UTC).replace(tzinfo=None) if value else None
+            sheet.write(row, col, value, self.DATETIME_STYLE)
+        elif isinstance(value, date):
             sheet.write(row, col, value, self.DATE_STYLE)
         else:
             sheet.write(row, col, value)

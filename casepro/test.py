@@ -3,11 +3,12 @@ from __future__ import unicode_literals
 import json
 
 from dash.test import DashTest
-from datetime import datetime
+from datetime import datetime, date, time
+from django.conf import settings
 from django.core import mail
 from django.utils.timezone import now
 from django.test import override_settings
-from xlrd import xldate_as_tuple
+from xlrd import open_workbook, xldate_as_tuple
 from xlrd.sheet import XL_CELL_DATE
 
 from casepro.backend import NoopBackend
@@ -32,6 +33,8 @@ class BaseCasesTest(DashTest):
     """
     def setUp(self):
         super(BaseCasesTest, self).setUp()
+
+        settings.SITE_ORGS_STORAGE_ROOT = 'test_orgs'
 
         # some orgs
         self.unicef = self.create_org("UNICEF", timezone="Africa/Kampala", subdomain="unicef")
@@ -148,6 +151,9 @@ class BaseCasesTest(DashTest):
         """
         self.assertEqual(len(mock.mock_calls), 0, "Expected no calls, called %d times" % len(mock.mock_calls))
 
+    def openWorkbook(self, filename):
+        return open_workbook("%s/%s" % (settings.MEDIA_ROOT, filename), 'rb')
+
     def assertExcelRow(self, sheet, row_num, values, tz=None):
         """
         Asserts the cell values in the given worksheet row. Date values are converted using the provided timezone.
@@ -157,6 +163,8 @@ class BaseCasesTest(DashTest):
             # if expected value is datetime, localize and remove microseconds
             if isinstance(expected, datetime):
                 expected = expected.astimezone(tz).replace(microsecond=0, tzinfo=None)
+            elif isinstance(expected, date):
+                expected = datetime.combine(expected, time(0, 0))
 
             expected_values.append(expected)
 

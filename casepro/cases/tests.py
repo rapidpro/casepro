@@ -5,7 +5,6 @@ import pytz
 import six
 
 from datetime import datetime, timedelta
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
@@ -13,7 +12,6 @@ from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch
 from temba_client.utils import format_iso8601
-from xlrd import open_workbook
 
 from casepro.contacts.models import Contact
 from casepro.msgs.models import Message, Outgoing
@@ -899,8 +897,7 @@ class CaseCRUDLTest(BaseCasesTest):
 
 
 class CaseExportCRUDLTest(BaseCasesTest):
-    @override_settings(SITE_ORGS_STORAGE_ROOT='test_orgs', CELERY_ALWAYS_EAGER=True,
-                       CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     def test_create_and_read(self):
         ann = self.create_contact(self.unicef, "C-001", "Ann", fields={'nickname': "Annie", 'age': "28", 'state': "WA"})
         bob = self.create_contact(self.unicef, "C-002", "Bob", fields={'age': "32", 'state': "IN"})
@@ -934,8 +931,7 @@ class CaseExportCRUDLTest(BaseCasesTest):
         export = CaseExport.objects.get()
         self.assertEqual(export.created_by, self.user1)
 
-        filename = "%s/%s" % (settings.MEDIA_ROOT, export.filename)
-        workbook = open_workbook(filename, 'rb')
+        workbook = self.openWorkbook(export.filename)
         sheet = workbook.sheets()[0]
 
         self.assertEqual(sheet.nrows, 3)

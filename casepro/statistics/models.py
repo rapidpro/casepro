@@ -13,6 +13,8 @@ from django.utils.translation import ugettext_lazy as _
 
 from casepro.cases.models import Partner
 from casepro.msgs.models import Label
+from casepro.utils import date_range
+from casepro.utils.export import BaseExport
 
 
 def datetime_to_date(dt, org):
@@ -165,3 +167,65 @@ class DailyCount(models.Model):
 
     class Meta:
         index_together = ('item_type', 'scope', 'day')
+
+
+class DailyCountExport(BaseExport):
+    """
+    Exports based on daily counts. Each row is date and columns are different scopes.
+    """
+    TYPE_LABEL = 'L'
+    TYPE_PARTNER = 'P'
+
+    type = models.CharField(max_length=1)
+
+    since = models.DateField()
+
+    until = models.DateField()
+
+    directory = 'daily_count_export'
+    download_view = 'statistics.dailycountexport_read'
+    email_templates = 'utils/email/export'
+
+    @classmethod
+    def create(cls, org, user, of_type, since, until):
+        return cls.objects.create(org=org, created_by=user, type=of_type, since=since, until=until)
+
+    def render_book(self, book):
+        if self.type == self.TYPE_LABEL:
+            sheet = book.add_sheet(six.text_type(_("Incoming Messages")))
+
+            labels = list(Label.get_all(self.org).order_by('name'))
+
+            # get each label's day counts and organise by label and day
+            totals_by_label = {}
+            for label in labels:
+                totals = DailyCount.get_by_label([label], DailyCount.TYPE_INCOMING, self.since, self.until).day_totals()
+                totals_by_label[label] = {t[0]: t[1] for t in totals}
+
+            self.write_row(sheet, 0, ["Date"] + [l.name for l in labels])
+
+            row = 1
+            for day in date_range(self.since, self.until):
+                totals = [totals_by_label.get(l, {}).get(day, 0) for l in labels]
+                self.write_row(sheet, row, [day] + totals)
+                row += 1
+
+        elif self.type == self.TYPE_PARTNER:
+            sheet = book.add_sheet(six.text_type(_("Replies Sent")))
+
+            partners = list(Partner.get_all(self.org).order_by('name'))
+
+            # get each partner's day counts and organise by partner and day
+            totals_by_partner = {}
+            for partner in partners:
+                totals = DailyCount.get_by_partner([partner], DailyCount.TYPE_REPLIES,
+                                                   self.since, self.until).day_totals()
+                totals_by_partner[partner] = {t[0]: t[1] for t in totals}
+
+            self.write_row(sheet, 0, ["Date"] + [p.name for p in partners])
+
+            row = 1
+            for day in date_range(self.since, self.until):
+                totals = [totals_by_partner.get(l, {}).get(day, 0) for l in partners]
+                self.write_row(sheet, row, [day] + totals)
+                row += 1

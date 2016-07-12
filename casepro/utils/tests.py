@@ -12,7 +12,7 @@ from enum import Enum
 from casepro.test import BaseCasesTest
 
 from . import safe_max, normalize, match_keywords, truncate, str_to_bool, json_encode
-from . import date_to_milliseconds, datetime_to_microseconds, microseconds_to_datetime, month_range
+from . import date_to_milliseconds, datetime_to_microseconds, microseconds_to_datetime, month_range, date_range
 from .email import send_email
 from .middleware import JSONMiddleware
 
@@ -93,6 +93,15 @@ class UtilsTest(BaseCasesTest):
                                                   datetime(2015, 12, 1, 0, 0, 0, 0, pytz.UTC)))
         self.assertEqual(month_range(-1, now=d1), (datetime(2015, 9, 1, 0, 0, 0, 0, pytz.UTC),
                                                    datetime(2015, 10, 1, 0, 0, 0, 0, pytz.UTC)))
+
+    def test_date_range(self):
+        self.assertEqual(list(date_range(date(2015, 1, 29), date(2015, 2, 2))), [
+            date(2015, 1, 29),
+            date(2015, 1, 30),
+            date(2015, 1, 31),
+            date(2015, 2, 1)
+        ])
+        self.assertEqual(list(date_range(date(2015, 1, 29), date(2015, 1, 29))), [])
 
 
 class EmailTest(BaseCasesTest):
