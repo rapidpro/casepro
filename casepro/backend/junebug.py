@@ -431,6 +431,10 @@ class JunebugBackend(BaseBackend):
                 settings.JUNEBUG_INBOUND_URL, received_junebug_message,
                 name='inbound_junebug_message'
             ),
+            url(
+                settings.IDENTITY_STORE_OPTOUT_URL,
+                receive_identity_store_optout, name='identity_store_optout'
+            ),
         ]
 
 
