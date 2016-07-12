@@ -507,7 +507,9 @@ def receive_identity_store_optout(request):
             # This case is not relevant to Casepro
             return JsonResponse({"success": True}, status=200)
 
+        return JsonResponse({
+            'reason': "Unrecognised value for 'optout_type': " + optout_type},
+            status=400)
+
     return JsonResponse({
-        'reason': "Unrecognised value for 'optout_type': " + optout_type},
-        status=400
-    )
+        'reason': "No Contact for id: " + identity_id}, status=400)
