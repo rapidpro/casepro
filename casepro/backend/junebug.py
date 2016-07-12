@@ -486,23 +486,22 @@ def receive_identity_store_optout(request):
 
     syncer = IdentityStoreContactSyncer()
 
+    # The identity store currently doesn't specify the response format or do
+    # anything with the response.
+
     # I don't know how to get the org
     local_contact = syncer.fetch_local(org, identity_id)
     if local_contact:
         local_contact.lock(org, identity_id)
         if optout_type == "forget":
             local_contact.release()
-            # I only delete the local contact. Should I delete the remote one as
-            # well considering that IdentityStoreContact that isn't a model class?
             return JsonResponse({"success": True})
 
         elif optout_type == "stop" or optout_type == "stopall":
             local_contact.is_blocked = True
             return JsonResponse({"success": True})
         elif optout_type == "unsubscribe":
-            # I don't know what to do here
+            # This case is not relevant to Casepro
             return JsonResponse({"success": True})
 
-    # The identity store currently doesn't specify the response format or do
-    # anything with the response. There's a github ticket about it
     return JsonResponse({"success": False})
