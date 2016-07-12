@@ -11,6 +11,7 @@ from ..contacts.models import Contact
 from ..msgs.models import Message
 from ..utils import uuid_to_int
 
+from dash.orgs.models import Org
 from dash.utils import is_dict_equal
 from dash.utils.sync import BaseSyncer, sync_local_to_changes
 
@@ -489,7 +490,8 @@ def receive_identity_store_optout(request):
     # The identity store currently doesn't specify the response format or do
     # anything with the response.
 
-    # I don't know how to get the org
+    # TODO: Support existance and usage of multiple orgs
+    org = Org.objects.first()
     local_contact = syncer.fetch_local(org, identity_id)
     if local_contact:
         local_contact.lock(org, identity_id)
