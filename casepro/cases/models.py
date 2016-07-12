@@ -499,7 +499,6 @@ class CaseExport(BaseSearchExport):
     """
     directory = 'case_exports'
     download_view = 'cases.caseexport_read'
-    email_templates = 'cases/email/case_export'
 
     def get_search(self):
         search = super(CaseExport, self).get_search()

@@ -39,7 +39,6 @@ class BaseExport(models.Model):
     # overridden by subclasses
     directory = None
     download_view = None
-    email_templates = None
 
     DATE_STYLE = XFStyle()
     DATE_STYLE.num_format_str = 'DD-MM-YYYY'
@@ -70,7 +69,7 @@ class BaseExport(models.Model):
         subject = "Your export is ready"
         download_url = self.org.make_absolute_url(reverse(self.download_view, args=[self.pk]))
 
-        send_email([self.created_by], subject, self.email_templates, {'link': download_url})
+        send_email([self.created_by], subject, 'utils/email/export', {'download_url': download_url})
 
         # force a gc
         import gc

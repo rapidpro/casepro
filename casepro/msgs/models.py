@@ -605,7 +605,6 @@ class MessageExport(BaseSearchExport):
     """
     directory = 'message_exports'
     download_view = 'msgs.messageexport_read'
-    email_templates = 'msgs/email/message_export'
 
     def get_search(self):
         search = super(MessageExport, self).get_search()
@@ -659,7 +658,6 @@ class ReplyExport(BaseSearchExport):
     """
     directory = 'reply_exports'
     download_view = 'msgs.replyexport_read'
-    email_templates = 'msgs/email/reply_export'
 
     def render_search(self, book, search):
         base_fields = [

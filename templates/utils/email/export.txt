@@ -1,14 +1,4 @@
-{% load tz %}
 {% load i18n %}
-
-{% blocktrans with link=link %}
-Hi there!
-
-Your export is ready and can be downloaded by clicking on the following link:
-
-{{ link }}
-
-Thanks,
-
-The U-Partners Team
+{% blocktrans with download_url=download_url %}
+Your export is ready and can be downloaded by clicking {{ download_url }}.
 {% endblocktrans %}

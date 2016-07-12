@@ -184,7 +184,6 @@ class DailyCountExport(BaseExport):
 
     directory = 'daily_count_export'
     download_view = 'statistics.dailycountexport_read'
-    email_templates = 'utils/email/export'
 
     @classmethod
     def create(cls, org, user, of_type, since, until):
