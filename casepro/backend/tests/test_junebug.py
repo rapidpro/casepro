@@ -756,16 +756,22 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         )
         self.assertEqual(response.status_code, 400)
 
-    def get_identity_details(self, name):
-        return {
-            "name": "testing",
-            "addresses": {
-                "msisdn": {
-                    "+1234": {}
+    def get_optout_request(self, identity, optout_type):
+        return self.factory.post(
+            self.url, content_type='application/json', data=json.dumps({
+                'identity': identity,
+                'details': {
+                    "name": "testing",
+                    "addresses": {
+                        "msisdn": {
+                            "+1234": {}
+                        },
+                    },
+                    "preferred_language": "eng_NG",
                 },
-            },
-            "preferred_language": "eng_NG",
-        }
+                'optout_type': 'forget',
+            })
+        )
 
     @responses.activate
     def test_forget_optout_received(self):
@@ -773,13 +779,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         contact = Contact.get_or_create(self.unicef, 'test_id', "testing")
         self.assertTrue(contact.is_active)
 
-        request = self.factory.post(
-            self.url, content_type='application/json', data=json.dumps({
-                'identity': contact.uuid,
-                'details': self.get_identity_details(name=contact.name),
-                'optout_type': 'forget',
-            })
-        )
+        request = self.get_optout_request(contact.uuid, 'forget')
         response = receive_identity_store_optout(request)
         self.assertEqual(response.content, '{"success": true}')
 
@@ -793,13 +793,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         contact = Contact.get_or_create(self.unicef, 'test_id', "testing")
         self.assertFalse(contact.is_blocked)
 
-        request = self.factory.post(
-            self.url, content_type='application/json', data=json.dumps({
-                'identity': contact.uuid,
-                'details': self.get_identity_details(name=contact.name),
-                'optout_type': 'stop',
-            })
-        )
+        request = self.get_optout_request(contact.uuid, 'stop')
         response = receive_identity_store_optout(request)
         self.assertEqual(response.content, '{"success": true}')
 
@@ -813,14 +807,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         original_contact = Contact.get_or_create(
             self.unicef, 'test_id', "testing")
 
-        request = self.factory.post(
-            self.url, content_type='application/json', data=json.dumps({
-                'identity': original_contact.uuid,
-                'details': self.get_identity_details(
-                    name=original_contact.name),
-                'optout_type': 'unsubscribe',
-            })
-        )
+        request = self.get_optout_request(original_contact.uuid, 'unsubscribe')
         response = receive_identity_store_optout(request)
         self.assertEqual(response.content, '{"success": true}')
 
@@ -835,14 +822,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         original_contact = Contact.get_or_create(
             self.unicef, 'test_id', "testing")
 
-        request = self.factory.post(
-            self.url, content_type='application/json', data=json.dumps({
-                'identity': original_contact.uuid,
-                'details': self.get_identity_details(
-                    name=original_contact.name),
-                'optout_type': 'unrecognised',
-            })
-        )
+        request = self.get_optout_request(original_contact.uuid, 'unrecognised')
         response = receive_identity_store_optout(request)
         self.assertEqual(
             json.loads(response.content),
@@ -852,17 +832,9 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
     @responses.activate
     def test_optout_received_no_contact(self):
         '''Optouts received for non-existant contacts should return an error'''
-        original_contact = Contact.get_or_create(
-            self.unicef, 'test_id', "testing")
+        Contact.get_or_create(self.unicef, 'test_id', "testing")
 
-        request = self.factory.post(
-            self.url, content_type='application/json', data=json.dumps({
-                'identity': 'tester',
-                'details': self.get_identity_details(
-                    name=original_contact.name),
-                'optout_type': 'unrecognised',
-            })
-        )
+        request = self.get_optout_request('tester', 'forget')
         response = receive_identity_store_optout(request)
         self.assertEqual(
             json.loads(response.content),
