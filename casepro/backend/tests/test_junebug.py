@@ -1,13 +1,14 @@
 from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message
 from casepro.test import BaseCasesTest
-from django.test import override_settings
+from django.conf import settings
+from django.test import override_settings, RequestFactory
 import json
 import responses
 
 from ..junebug import (
     IdentityStore, JunebugBackend, JunebugMessageSendingError,
-    IdentityStoreContactSyncer, IdentityStoreContact)
+    IdentityStoreContactSyncer, IdentityStoreContact, received_junebug_message)
 
 
 class JunebugBackendTest(BaseCasesTest):
@@ -129,12 +130,6 @@ class JunebugBackendTest(BaseCasesTest):
             self.identity_store_no_matches_callback
         )
 
-        self.add_identity_store_callback(
-            'updated_to=2016-03-14T10%3A21%3A00&updated_from=2016-03-14T10%3A25%3A00&'
-            'optout_type=forget',
-            self.identity_store_no_matches_callback
-        )
-
         (created, updated, deleted, ignored) = self.backend.pull_contacts(
             self.unicef, '2016-03-14T10:25:00', '2016-03-14T10:21:00')
         self.assertEqual(created, 1)
@@ -160,12 +155,6 @@ class JunebugBackendTest(BaseCasesTest):
             self.identity_store_updated_identity_callback
         )
 
-        self.add_identity_store_callback(
-            'updated_to=2016-03-14T10%3A21%3A00&updated_from=2016-03-14T10%3A25%3A00&'
-            'optout_type=forget',
-            self.identity_store_no_matches_callback
-        )
-
         (created, updated, deleted, ignored) = self.backend.pull_contacts(
             self.unicef, '2016-03-14T10:25:00', '2016-03-14T10:21:00')
         self.assertEqual(created, 0)
@@ -178,24 +167,14 @@ class JunebugBackendTest(BaseCasesTest):
         self.assertEqual(contact.name, "test")
 
     @responses.activate
-    def test_pull_contacts_recently_deleted(self):
-        Contact.get_or_create(self.unicef, 'test_id', "test")
-        contact = Contact.objects.get(uuid='test_id')
-        self.assertTrue(contact.is_active)
-
+    def test_pull_contacts_forgotten(self):
         self.add_identity_store_callback(
             'created_to=2016-03-14T10%3A21%3A00&created_from=2016-03-14T10%3A25%3A00',
-            self.identity_store_no_matches_callback
+            self.identity_store_forgotten_identity_callback
         )
 
         self.add_identity_store_callback(
             'updated_to=2016-03-14T10%3A21%3A00&updated_from=2016-03-14T10%3A25%3A00',
-            self.identity_store_no_matches_callback
-        )
-
-        self.add_identity_store_callback(
-            'updated_to=2016-03-14T10%3A21%3A00&updated_from=2016-03-14T10%3A25%3A00&'
-            'optout_type=forget',
             self.identity_store_forgotten_identity_callback
         )
 
@@ -203,11 +182,9 @@ class JunebugBackendTest(BaseCasesTest):
             self.unicef, '2016-03-14T10:25:00', '2016-03-14T10:21:00')
         self.assertEqual(created, 0)
         self.assertEqual(updated, 0)
-        self.assertEqual(deleted, 1)
+        self.assertEqual(deleted, 0)
         self.assertEqual(ignored, 0)
-        self.assertEqual(Contact.objects.count(), 1)
-        contact = Contact.objects.get(uuid='test_id')
-        self.assertFalse(contact.is_active)
+        self.assertEqual(Contact.objects.count(), 0)
 
     @responses.activate
     def test_pull_contacts_no_changes(self):
@@ -222,12 +199,6 @@ class JunebugBackendTest(BaseCasesTest):
         self.add_identity_store_callback(
             'updated_to=2016-03-14T10%3A21%3A00&updated_from=2016-03-14T10%3A25%3A00',
             self.identity_store_updated_identity_callback
-        )
-
-        self.add_identity_store_callback(
-            'updated_to=2016-03-14T10%3A21%3A00&updated_from=2016-03-14T10%3A25%3A00&'
-            'optout_type=forget',
-            self.identity_store_no_matches_callback
         )
 
         (created, updated, deleted, ignored) = self.backend.pull_contacts(
@@ -595,7 +566,155 @@ class JunebugBackendTest(BaseCasesTest):
         Should return the list of url patterns needed to receive messages
         from Junebug.
         '''
-        # TODO: Implement the views needed for receiving messages.
+        [url] = self.backend.get_url_patterns()
+        self.assertEqual(url.callback, received_junebug_message)
+        self.assertEqual(url.regex.pattern, settings.JUNEBUG_INBOUND_URL)
+        self.assertEqual(url.name, 'inbound_junebug_message')
+
+        with self.settings(JUNEBUG_INBOUND_URL=r'^test/url/$'):
+            [url] = self.backend.get_url_patterns()
+            self.assertEqual(url.regex.pattern, r'^test/url/$')
+
+
+class JunebugInboundViewTest(BaseCasesTest):
+    '''Tests related to the inbound junebug messages view.'''
+    url = '/junebug/inbound/'
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        super(JunebugInboundViewTest, self).setUp()
+
+    def test_method_not_post(self):
+        '''Only POST requests should be allowed.'''
+        request = self.factory.get(self.url)
+        response = received_junebug_message(request)
+        self.assertEqual(
+            json.loads(response.content), {'reason': 'Method not allowed.'})
+        self.assertEqual(response.status_code, 405)
+
+    def test_invalid_json_body(self):
+        '''If the request contains invalid JSON in the body, an appropriate
+        error message and code should be returned.'''
+        request = self.factory.post(
+            self.url, content_type='application/json', data='{')
+        response = received_junebug_message(request)
+        self.assertEqual(
+            json.loads(response.content), {
+                'reason': 'JSON decode error',
+                'details': 'Expecting object: line 1 column 1 (char 0)'
+            }
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def create_identity_obj(self, **kwargs):
+        defaults = {
+            "id": "50d62fcf-856a-489c-914a-56f6e9506ee3",
+            "version": 1,
+            "details": {
+                "addresses": {
+                    "msisdn": {
+                        "+1234": {}
+                    }
+                }
+            },
+            "communicate_through": None,
+            "operator": None,
+            "created_at": "2016-06-23T13:15:55.580070Z",
+            "created_by": 1,
+            "updated_at": "2016-06-23T13:15:55.580099Z",
+            "updated_by": 1
+        }
+        defaults.update(kwargs)
+        return defaults
+
+    def single_identity_callback(self, request):
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            'count': 1,
+            'next': None,
+            'previous': None,
+            'results': [
+                self.create_identity_obj(),
+            ]
+        }
+        return (200, headers, json.dumps(data))
+
+    @responses.activate
+    def test_inbound_message_identity_exists(self):
+        '''If the identity exists in the identity store, then we should use
+        that identity to create the message.'''
+        query = '?details__addresses__msisdn=%2B1234'
+        url = '%sapi/v1/identities/search/' % settings.IDENTITY_API_ROOT
+        responses.add_callback(
+            responses.GET, url + query, callback=self.single_identity_callback,
+            match_querystring=True, content_type='application/json')
+
+        request = self.factory.post(
+            self.url, content_type='application/json', data=json.dumps({
+                'message_id': '35f3336d4a1a46c7b40cd172a41c510d',
+                'content': 'test message',
+                'from': '+1234',
+            })
+        )
+        request.org = self.unicef
+        response = received_junebug_message(request)
+        resp_data = json.loads(response.content)
+
+        message = Message.objects.get(backend_id=resp_data['id'])
+        self.assertEqual(message.text, 'test message')
+        self.assertEqual(
+            message.contact.uuid, "50d62fcf-856a-489c-914a-56f6e9506ee3")
+
+    def create_identity_callback(self, request):
+        data = json.loads(request.body)
+        self.assertEqual(data.get('details'), {
+            'addresses': {
+                'msisdn': {
+                    '+1234': {},
+                },
+            },
+            'default_addr_type': 'msisdn',
+        })
+        headers = {'Content-Type': 'application/json'}
+        return (201, headers, json.dumps(self.create_identity_obj()))
+
+    def no_identity_callback(self, request):
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            'count': 0,
+            'next': None,
+            'previous': None,
+            'results': []
+        }
+        return (200, headers, json.dumps(data))
+
+    @responses.activate
+    def test_inbound_message_identity_doesnt_exist(self):
+        '''If the identity doesn't exist in the identity store, then the
+        one should be created.'''
+        query = '?details__addresses__msisdn=%2B1234'
+        get_url = '%sapi/v1/identities/search/' % settings.IDENTITY_API_ROOT
+        responses.add_callback(
+            responses.GET, get_url + query, callback=self.no_identity_callback,
+            match_querystring=True, content_type='application/json')
+        create_url = '%sapi/v1/identities/' % settings.IDENTITY_API_ROOT
+        responses.add_callback(
+            responses.POST, create_url, callback=self.create_identity_callback,
+            match_querystring=True, content_type='application/json')
+
+        request = self.factory.post(
+            self.url, content_type='application/json', data=json.dumps({
+                'message_id': '35f3336d4a1a46c7b40cd172a41c510d',
+                'content': 'test message',
+                'from': '+1234',
+            })
+        )
+        request.org = self.unicef
+        received_junebug_message(request)
+
+        self.assertEqual(len(responses.calls), 2)
+        self.assertEqual(responses.calls[1].request.method, 'POST')
+        self.assertEqual(responses.calls[1].request.url, create_url)
 
 
 class IdentityStoreTest(BaseCasesTest):
@@ -836,6 +955,92 @@ class IdentityStoreTest(BaseCasesTest):
             {'address': '+2222'},
             {'address': '+3333'},
         ]))
+
+    def create_identity_obj(self, **kwargs):
+        defaults = {
+            "id": "50d62fcf-856a-489c-914a-56f6e9506ee3",
+            "version": 1,
+            "details": {
+                "addresses": {
+                    "msisdn": {
+                        "+1234": {}
+                    }
+                },
+                'default_addr_type': 'msisdn',
+            },
+            "communicate_through": None,
+            "operator": None,
+            "created_at": "2016-06-23T13:15:55.580070Z",
+            "created_by": 1,
+            "updated_at": "2016-06-23T13:15:55.580099Z",
+            "updated_by": 1
+        }
+        defaults.update(kwargs)
+        return defaults
+
+    def single_identity_callback(self, request):
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            'count': 1,
+            'next': None,
+            'previous': None,
+            'results': [
+                self.create_identity_obj(),
+            ]
+        }
+        return (200, headers, json.dumps(data))
+
+    @responses.activate
+    def test_get_identities_for_address(self):
+        '''The get_identities_for_address to create the correct request to list
+        all of the identities for a specified address and address type.'''
+        identity_store = IdentityStore(
+            'http://identitystore.org/', 'auth-token', 'msisdn')
+
+        query = '?details__addresses__msisdn=%2B1234'
+        url = 'http://identitystore.org/api/v1/identities/search/'
+        responses.add_callback(
+            responses.GET, url + query, callback=self.single_identity_callback,
+            match_querystring=True, content_type='application/json')
+
+        [identity] = identity_store.get_identities_for_address('+1234')
+        self.assertEqual(
+            identity['details']['addresses']['msisdn'], {'+1234': {}})
+
+    def create_identity_callback(self, request):
+        data = json.loads(request.body)
+        self.assertEqual(data.get('details'), {
+            'addresses': {
+                'msisdn': {
+                    '+1234': {},
+                },
+            },
+            'default_addr_type': 'msisdn',
+        })
+        headers = {'Content-Type': 'application/json'}
+        return (201, headers, json.dumps(self.create_identity_obj()))
+
+    @responses.activate
+    def test_create_identity(self):
+        '''The create_identity method should make the correct request to create
+        an identity with the correct details in the identity store.'''
+        identity_store = IdentityStore(
+            'http://identitystore.org/', 'auth-token', 'msisdn')
+
+        url = 'http://identitystore.org/api/v1/identities/'
+        responses.add_callback(
+            responses.POST, url, callback=self.create_identity_callback,
+            match_querystring=True, content_type='application/json')
+
+        identity = identity_store.create_identity('+1234')
+        self.assertEqual(identity['details'], {
+            'addresses': {
+                'msisdn': {
+                    '+1234': {},
+                },
+            },
+            'default_addr_type': 'msisdn',
+        })
 
 
 class IdentityStoreContactTest(BaseCasesTest):

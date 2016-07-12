@@ -6,11 +6,16 @@ import pytz
 from datetime import date, datetime
 from django.http import HttpRequest
 from enum import Enum
+from hypothesis import given
+import hypothesis.strategies as st
+from uuid import UUID
 
 from casepro.test import BaseCasesTest
 
-from . import safe_max, normalize, match_keywords, truncate, str_to_bool, json_encode
-from . import datetime_to_microseconds, microseconds_to_datetime, month_range
+from . import (
+    safe_max, normalize, match_keywords, truncate, str_to_bool, json_encode,
+    datetime_to_microseconds, microseconds_to_datetime, month_range,
+    uuid_to_int)
 from .middleware import JSONMiddleware
 
 
@@ -86,6 +91,23 @@ class UtilsTest(BaseCasesTest):
                                                   datetime(2015, 12, 1, 0, 0, 0, 0, pytz.UTC)))
         self.assertEqual(month_range(-1, now=d1), (datetime(2015, 9, 1, 0, 0, 0, 0, pytz.UTC),
                                                    datetime(2015, 10, 1, 0, 0, 0, 0, pytz.UTC)))
+
+    def test_uuid_to_int_range(self):
+        '''Ensures that the integer returned will always be in the range
+        [0, 2147483647].'''
+        self.assertEqual(
+            uuid_to_int(UUID(int=(2147483647)).hex),
+            2147483647)
+        self.assertEqual(
+            uuid_to_int(UUID(int=(2147483648)).hex),
+            0)
+
+    @given(st.uuids())
+    def test_uuid_to_int_property(self, uuid):
+        '''Property based testing to ensure that the output of the function
+        is always within the limits.'''
+        self.assertTrue(uuid_to_int(uuid.hex) <= 2147483647)
+        self.assertTrue(uuid_to_int(uuid.hex) >= 0)
 
 
 class MiddlewareTest(BaseCasesTest):

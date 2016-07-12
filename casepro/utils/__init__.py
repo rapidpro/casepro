@@ -6,6 +6,7 @@ import json
 import pytz
 import re
 import unicodedata
+from uuid import UUID
 
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
@@ -123,3 +124,16 @@ def month_range(offset, now=None):
     start_of_this_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     return start_of_this_month + relativedelta(months=offset), start_of_this_month + relativedelta(months=offset + 1)
+
+
+def uuid_to_int(uuid):
+    '''
+    Converts a UUID hex string to an int within the range of a Django
+    IntegerField, and also >=0, as the URL regexes don't account for
+    negative numbers.
+
+    From https://docs.djangoproject.com/en/1.9/ref/models/fields/#integerfield
+    "Values from -2147483648 to 2147483647 are safe in all databases supported
+    by Django"
+    '''
+    return UUID(hex=uuid).int % (2147483647 + 1)

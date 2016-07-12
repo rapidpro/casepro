@@ -62,6 +62,7 @@ SITE_ANON_CONTACTS = False
 
 # junebug configuration
 JUNEBUG_API_ROOT = 'http://localhost:8080/'
+JUNEBUG_INBOUND_URL = r'^junebug/inbound$'
 JUNEBUG_CHANNEL_ID = 'replace-me'
 JUNEBUG_FROM_ADDRESS = None
 
