@@ -504,4 +504,7 @@ def receive_identity_store_optout(request):
             # This case is not relevant to Casepro
             return JsonResponse({"success": True})
 
-    return JsonResponse({"success": False})
+    return JsonResponse({
+        "success": False,
+        "message": "Unrecognised value for 'optout_type': " + optout_type
+    })
