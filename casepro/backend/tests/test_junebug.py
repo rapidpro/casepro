@@ -8,7 +8,8 @@ import responses
 
 from ..junebug import (
     IdentityStore, JunebugBackend, JunebugMessageSendingError,
-    IdentityStoreContactSyncer, IdentityStoreContact, received_junebug_message)
+    IdentityStoreContactSyncer, IdentityStoreContact, received_junebug_message,
+    receive_identity_store_optout)
 
 
 class JunebugBackendTest(BaseCasesTest):
@@ -566,14 +567,22 @@ class JunebugBackendTest(BaseCasesTest):
         Should return the list of url patterns needed to receive messages
         from Junebug.
         '''
-        [url] = self.backend.get_url_patterns()
-        self.assertEqual(url.callback, received_junebug_message)
-        self.assertEqual(url.regex.pattern, settings.JUNEBUG_INBOUND_URL)
-        self.assertEqual(url.name, 'inbound_junebug_message')
+        urls = self.backend.get_url_patterns()
+        self.assertEqual(urls[0].callback, received_junebug_message)
+        self.assertEqual(urls[0].regex.pattern, settings.JUNEBUG_INBOUND_URL)
+        self.assertEqual(urls[0].name, 'inbound_junebug_message')
+        self.assertEqual(urls[1].callback, receive_identity_store_optout)
+        self.assertEqual(urls[1].regex.pattern,
+                         settings.IDENTITY_STORE_OPTOUT_URL)
+        self.assertEqual(urls[1].name, 'identity_store_optout')
 
         with self.settings(JUNEBUG_INBOUND_URL=r'^test/url/$'):
-            [url] = self.backend.get_url_patterns()
-            self.assertEqual(url.regex.pattern, r'^test/url/$')
+            urls = self.backend.get_url_patterns()
+            self.assertEqual(urls[0].regex.pattern, r'^test/url/$')
+
+        with self.settings(IDENTITY_STORE_OPTOUT_URL=r'^test/url/$'):
+            urls = self.backend.get_url_patterns()
+            self.assertEqual(urls[1].regex.pattern, r'^test/url/$')
 
 
 class JunebugInboundViewTest(BaseCasesTest):
