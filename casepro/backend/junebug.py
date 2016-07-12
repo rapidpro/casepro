@@ -406,3 +406,30 @@ class JunebugBackend(BaseBackend):
         """
         # TODO: Implement views for receiving messages.
         return []
+
+
+from django.views.generic import View
+
+
+# I'm not sure I'm subclassing the correct view here
+class IdentityStoreOptoutView(View):
+    def post(self, request, *args, **kwargs):
+        identity_id = request.body['identity_id']
+        optout_type = request.body['optout_type']
+
+        # I don't know how to get the org or how to get fetch_local in scope
+        local_contact = fetch_local(org, identity_id)
+        if local_contact:
+            local_contact.lock(org, identity_id)
+            if optout_type == "forget":
+                local_contact.release()
+            elif optout_type == "stop" or optout_type == "stopall":
+                local_contact.is_blocked = True
+            elif optout_type == "unsubscribe":
+                # I don't know what to do here
+                continue
+
+        # I only delete the local contact. Should I delete the remote one as
+        # well considering that that isn't a model class?
+
+        # I'm not sure what to return because I'm not sure what View I should use
