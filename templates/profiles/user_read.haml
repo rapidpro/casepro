@@ -1,13 +1,15 @@
 - extends "smartmin/read.html"
-- load smartmin i18n
+- load smartmin i18n humanize
 
 - block pre-content
+
+- block content
 
   %script{ type:"text/javascript" }
     var contextData = {{ context_data_json|safe }};
 
   .ng-cloak{ ng-controller:"UserController", ng-cloak:"" }
-    .page-header.clearfix
+    .page-header.clearfix{ style:"border-bottom: none" }
       .page-header-buttons
         - if edit_button_url
           .btn-group
@@ -25,7 +27,40 @@
         &nbsp;
         [[ user.name ]]
 
-- block read-buttons
+      .header-details
+        %span{ ng-if:'user.role == "A"' }
+          - trans "Administrator"
+        %span{ ng-if:'user.role == "M" || user.role == "Y"' }
+          %span{ ng-if:'user.role == "M"' }
+            - trans "Manager"
+          %span{ ng-if:'user.role == "Y"' }
+            - trans "Analyst"
+          for
+          %a{ ng-href:"/partner/read/[[ user.partner.id ]]/" }<
+            [[ user.partner.name ]]
+        &nbsp;
+        &nbsp;
+        %i.glyphicon.glyphicon-envelope
+        %a{ ng-href:"mailto:[[ user.email ]]" }
+          [[ user.email ]]
+
+    <uib-tabset active="active">
+
+      <uib-tab index="0" select="onTabSelect(0)">
+        <uib-tab-heading>
+          %span.glyphicon.glyphicon-dashboard
+          - trans "Summary"
+        </uib-tab-heading>
+        %br
+        .row
+          .col-md-4
+            %ul
+              %li
+                Total replies: <strong>{{ summary.total_replies | intcomma }}</strong>
+          .col-md-8
+            #chart-replies-by-month
+      </uib-tab>
+    </uib-tabset>
 
 - block extra-script
   {{ block.super }}
@@ -36,3 +71,15 @@
       .then(function() { location.href = '/' });
     }
     {% endif %}
+
+
+- block extra-style
+  {{ block.super }}
+  :css
+    .header-details {
+      padding-top: 5px;
+    }
+    #chart-replies-by-month {
+      width: 100%;
+      height: 250px;
+    }

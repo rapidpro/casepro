@@ -1134,13 +1134,20 @@ class PartnerCRUDLTest(BaseCasesTest):
 
         response = self.url_get('unicef', url, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.json, {'results': [
-            {'id': self.moh.pk, 'name': "MOH"}, {'id': self.who.pk, 'name': "WHO"}
+            {'id': self.moh.pk, 'name': "MOH",  'restricted': True},
+            {'id': self.who.pk, 'name': "WHO",  'restricted': True}
         ]})
 
         response = self.url_get('unicef', url + '?with_activity=1', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.json, {'results': [
-            {'id': self.moh.pk, 'name': "MOH", 'replies': {'last_month': 0, 'this_month': 0, 'total': 0}},
-            {'id': self.who.pk, 'name': "WHO", 'replies': {'last_month': 0, 'this_month': 0, 'total': 0}}
+            {
+                'id': self.moh.pk, 'name': "MOH", 'restricted': True,
+                'replies': {'last_month': 0, 'this_month': 0, 'total': 0}
+            },
+            {
+                'id': self.who.pk, 'name': "WHO", 'restricted': True,
+                'replies': {'last_month': 0, 'this_month': 0, 'total': 0}
+            }
         ]})
 
 

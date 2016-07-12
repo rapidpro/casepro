@@ -15,16 +15,7 @@ from casepro.statistics.models import DailyCount
 from casepro.utils import json_encode, month_range, str_to_bool
 
 from .forms import UserForm, OrgUserForm, PartnerUserForm
-from .models import Profile, ROLE_ADMIN, ROLE_MANAGER, ROLE_ANALYST
-
-
-class UserFieldsMixin(object):
-    def get_name(self, obj):
-        return obj.profile.full_name
-
-    def get_partner(self, obj):
-        partner = obj.get_partner(self.request.org)
-        return partner if partner else ''
+from .models import Profile
 
 
 class UserUpdateMixin(OrgFormMixin):
@@ -203,23 +194,8 @@ class UserCRUDL(SmartCRUDL):
             obj.profile.save(update_fields=('change_password',))
             return obj
 
-    class Read(OrgPermsMixin, UserFieldsMixin, SmartReadView):
+    class Read(OrgPermsMixin, SmartReadView):
         permission = 'profiles.profile_user_read'
-
-        def derive_title(self):
-            if self.object == self.request.user:
-                return _("My Profile")
-            else:
-                return super(UserCRUDL.Read, self).derive_title()
-
-        def derive_fields(self):
-            fields = ['name', 'email']
-            if self.request.org:
-                fields += ['role']
-                if self.object.profile.partner:
-                    fields += ['partner']
-
-            return fields
 
         def get_queryset(self):
             if self.request.org:
@@ -245,18 +221,13 @@ class UserCRUDL(SmartCRUDL):
             context['context_data_json'] = json_encode({'user': self.object.as_json(full=True, org=org)})
             context['edit_button_url'] = edit_button_url
             context['can_delete'] = can_delete
+            context['summary'] = self.get_summary(org, self.object) if org else {}
             return context
 
-        def get_role(self, obj):
-            org = self.request.org
-            role = obj.profile.get_role(org)
-
-            if role == ROLE_ADMIN:
-                return _("Administrator")
-            elif role == ROLE_MANAGER:
-                return _("Manager")
-            elif role == ROLE_ANALYST:
-                return _("Data Analyst")
+        def get_summary(self, org, user):
+            return {
+                'total_replies': DailyCount.get_by_user(org, [user], DailyCount.TYPE_REPLIES, None, None).total()
+            }
 
     class Delete(OrgPermsMixin, SmartDeleteView):
         cancel_url = '@profiles.user_list'
@@ -293,7 +264,7 @@ class UserCRUDL(SmartCRUDL):
             elif non_partner:
                 users = users.filter(profile__partner=None)
 
-            users = list(users.select_related('profile').order_by('profile__full_name'))
+            users = list(users.select_related('profile__partner').order_by('profile__full_name'))
 
             # get reply statistics
             if with_activity:

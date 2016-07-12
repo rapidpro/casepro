@@ -668,23 +668,44 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json['results'], [
-            {'id': self.user3.pk, 'name': "Carol", 'role': "M"},
-            {'id': self.user1.pk, 'name': "Evan", 'role': "M"},
-            {'id': self.admin.pk, 'name': "Kidus", 'role': "A"},
-            {'id': self.user2.pk, 'name': "Rick", 'role': "Y"},
+            {
+                'id': self.user3.pk, 'name': "Carol", 'email': "carol@unicef.org", 'role': "M",
+                'partner': {'id': self.who.pk, 'name': "WHO"}
+            },
+            {
+                'id': self.user1.pk, 'name': "Evan", 'email': "evan@unicef.org", 'role': "M",
+                'partner': {'id': self.moh.pk, 'name': "MOH"}
+            },
+            {
+                'id': self.admin.pk, 'name': "Kidus", 'email': "kidus@unicef.org", 'role': "A",
+                'partner': None
+            },
+            {
+                'id': self.user2.pk, 'name': "Rick", 'email': "rick@unicef.org", 'role': "Y",
+                'partner': {'id': self.moh.pk, 'name': "MOH"}
+            },
         ])
 
         # can filter by partner
         response = self.url_get('unicef', url + '?partner=%d' % self.moh.pk)
         self.assertEqual(response.json['results'], [
-            {'id': self.user1.pk, 'name': "Evan", 'role': "M"},
-            {'id': self.user2.pk, 'name': "Rick", 'role': "Y"}
+            {
+                'id': self.user1.pk, 'name': "Evan", 'email': "evan@unicef.org", 'role': "M",
+                'partner': {'id': self.moh.pk, 'name': "MOH"}
+            },
+            {
+                'id': self.user2.pk, 'name': "Rick", 'email': "rick@unicef.org", 'role': "Y",
+                'partner': {'id': self.moh.pk, 'name': "MOH"}
+            },
         ])
 
         # can filter by being a non-partner user
         response = self.url_get('unicef', url + '?non_partner=true')
         self.assertEqual(response.json['results'], [
-            {'id': self.admin.pk, 'name': "Kidus", 'role': "A"}
+            {
+                'id': self.admin.pk, 'name': "Kidus", 'email': "kidus@unicef.org", 'role': "A",
+                'partner': None
+            }
         ])
 
         # add some reply activity
@@ -700,15 +721,13 @@ class UserCRUDLTest(BaseCasesTest):
 
         self.assertEqual(response.json['results'], [
             {
-                'id': self.user1.pk,
-                'name': "Evan",
-                'role': "M",
+                'id': self.user1.pk, 'name': "Evan", 'email': "evan@unicef.org", 'role': "M",
+                'partner': {'id': self.moh.pk, 'name': "MOH"},
                 'replies': {'last_month': 1, 'this_month': 0, 'total': 2}
             },
             {
-                'id': self.user2.pk,
-                'name': "Rick",
-                'role': "Y",
+                'id': self.user2.pk, 'name': "Rick", 'email': "rick@unicef.org", 'role': "Y",
+                'partner': {'id': self.moh.pk, 'name': "MOH"},
                 'replies': {'last_month': 0, 'this_month': 0, 'total': 0}
             }
         ])

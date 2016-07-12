@@ -90,8 +90,13 @@ class Partner(models.Model):
         self.is_active = False
         self.save(update_fields=('is_active',))
 
-    def as_json(self):
-        return {'id': self.pk, 'name': self.name}
+    def as_json(self, full=True):
+        result = {'id': self.pk, 'name': self.name}
+
+        if full:
+            result['restricted'] = self.is_restricted
+
+        return result
 
     def __str__(self):
         return self.name
@@ -419,7 +424,7 @@ class Case(models.Model):
         if full:
             return {
                 'id': self.pk,
-                'assignee': self.assignee.as_json(),
+                'assignee': self.assignee.as_json(full=False),
                 'contact': self.contact.as_json(full=False),
                 'labels': [l.as_json(full=False) for l in self.labels.all()],
                 'summary': self.summary,
@@ -429,7 +434,7 @@ class Case(models.Model):
         else:
             return {
                 'id': self.pk,
-                'assignee': self.assignee.as_json(),
+                'assignee': self.assignee.as_json(full=False),
             }
 
     def __str__(self):

@@ -107,11 +107,23 @@ def _user_unicode(user):
 
 
 def _user_as_json(user, full=True, org=None):
-    result = {'id': user.pk, 'name': user.get_full_name()}
     if full:
-        result['role'] = user.profile.get_role(org) if (org and user.has_profile()) else None
+        if org and user.has_profile():
+            role_json = user.profile.get_role(org)
+            partner_json = user.profile.partner.as_json(full=False) if user.profile.partner else None
+        else:
+            role_json = None
+            partner_json = None
 
-    return result
+        return {
+            'id': user.pk,
+            'name': user.get_full_name(),
+            'email': user.email,
+            'role': role_json,
+            'partner': partner_json
+        }
+    else:
+        return {'id': user.pk, 'name': user.get_full_name()}
 
 
 User.clean = _user_clean

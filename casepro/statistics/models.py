@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.db import models, connection
 from django.db.models import Sum
+from django.utils.functional import SimpleLazyObject
 from django.utils.translation import ugettext_lazy as _
 
 from casepro.cases.models import Partner
@@ -46,7 +47,13 @@ class DailyCount(models.Model):
 
     @staticmethod
     def encode_scope(*args):
-        types = [type(a) for a in args]
+        types = []
+        for arg in args:
+            # request.user is actually a SimpleLazyObject proxy
+            if isinstance(arg, User) and isinstance(arg, SimpleLazyObject):
+                arg = User(pk=arg.pk)
+
+            types.append(type(arg))
 
         if types == [Org]:
             return 'org:%d' % args[0].pk
