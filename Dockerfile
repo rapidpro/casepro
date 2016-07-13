@@ -1,6 +1,6 @@
 FROM praekeltfoundation/django-bootstrap
 RUN apt-get-install.sh git libjpeg-dev zlib1g-dev libtiff-dev nodejs npm \
-    nginx redis-server supervisor libpq-dev && \
+    nginx redis-server supervisor libpq-dev gcc && \
     ln -s /usr/bin/nodejs /usr/bin/node
 
 ENV DJANGO_SETTINGS_MODULE "casepro.settings_production"
