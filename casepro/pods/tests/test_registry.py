@@ -1,9 +1,12 @@
-from django.test import TestCase
+from django.test import TestCase, modify_settings
 
 from casepro.pods.registry import (
     get_class_from_app_label, load_pod, get_url_patterns)
 
 
+@modify_settings(INSTALLED_APPS={
+    'append': 'casepro.pods.PodPlugin',
+})
 class PodRegistryTests(TestCase):
     '''
     Tests related to the casepro.pods.registry module.
