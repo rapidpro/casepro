@@ -502,20 +502,20 @@ def receive_identity_store_optout(request):
         return JsonResponse({
             'reason': "No Contact for id: " + identity_id}, status=400)
 
-    local_contact.lock(org, identity_id)
-    if optout_type == "forget":
-        # TODO: Removed any identifying details from the contact
-        # (to uphold 'Right to be forgotten')
-        local_contact.release()
-        return JsonResponse({"success": True}, status=200)
+    with local_contact.lock(org, identity_id):
+        if optout_type == "forget":
+            # TODO: Removed any identifying details from the contact
+            # (to uphold 'Right to be forgotten')
+            local_contact.release()
+            return JsonResponse({"success": True}, status=200)
 
-    elif optout_type == "stop" or optout_type == "stopall":
-        local_contact.is_blocked = True
-        local_contact.save(update_fields=('is_blocked',))
-        return JsonResponse({"success": True}, status=200)
-    elif optout_type == "unsubscribe":
-        # This case is not relevant to Casepro
-        return JsonResponse({"success": True}, status=200)
+        elif optout_type == "stop" or optout_type == "stopall":
+            local_contact.is_blocked = True
+            local_contact.save(update_fields=('is_blocked',))
+            return JsonResponse({"success": True}, status=200)
+        elif optout_type == "unsubscribe":
+            # This case is not relevant to Casepro
+            return JsonResponse({"success": True}, status=200)
 
     return JsonResponse({
         'reason': "Unrecognised value for 'optout_type': " + optout_type},
