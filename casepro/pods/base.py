@@ -1,7 +1,6 @@
 from confmodel import fields, Config as ConfmodelConfig
 from django.apps import AppConfig
 from django.conf.urls import url
-from django.http import HttpResponse
 
 
 class PodConfig(ConfmodelConfig):
@@ -37,7 +36,7 @@ class Pod(object):
         '''
         Called to get the details that should appear within the pod.
         '''
-        return HttpResponse()
+        raise NotImplementedError
 
 
 class PodPlugin(AppConfig):
