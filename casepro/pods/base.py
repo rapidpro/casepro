@@ -1,5 +1,7 @@
 from confmodel import fields, Config as ConfmodelConfig
 from django.apps import AppConfig
+from django.conf.urls import url
+from django.http import HttpResponse
 
 
 class PodConfig(ConfmodelConfig):
@@ -18,13 +20,24 @@ class Pod(object):
     The base class for all pod plugins.
     '''
     config_cls = PodConfig
-    url_patterns = ()
     name = 'Default pod name'
     controller = None
     directive = None
 
     def __init__(self, config):
         self.config = self.config_cls(config)
+
+    @property
+    def url_patterns(self):
+        return (
+            url(r'read/%d/$' % self.config.index, self.request_callback),
+        )
+
+    def request_callback(self, request):
+        '''
+        Called to get the details that should appear within the pod.
+        '''
+        return HttpResponse()
 
 
 class PodPlugin(AppConfig):

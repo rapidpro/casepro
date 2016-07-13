@@ -1,4 +1,3 @@
-from django.conf.urls import url
 from django.test import TestCase
 
 from casepro.pods.registry import (
@@ -68,8 +67,7 @@ class PodRegistryTests(TestCase):
             from casepro.pods import registry
             reload(registry)
 
-        for i, pod in enumerate(registry.pods):
-            pod.url_patterns = [url('', None, name=i)]
-
         for i, url_pattern in enumerate(get_url_patterns()):
-            self.assertEqual(url_pattern.name, i)
+            self.assertEqual(
+                url_pattern.callback, registry.pods[i].request_callback)
+            self.assertEqual(url_pattern.regex.pattern, r'read/%d/$' % i)
