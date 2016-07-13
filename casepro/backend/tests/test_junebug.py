@@ -757,7 +757,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         self.assertEqual(response.status_code, 400)
 
     def get_optout_request(self, identity, optout_type):
-        return self.factory.post(
+        request = self.factory.post(
             self.url, content_type='application/json', data=json.dumps({
                 'identity': identity,
                 'details': {
@@ -772,6 +772,8 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
                 'optout_type': optout_type,
             })
         )
+        request.org = self.unicef
+        return request
 
     @responses.activate
     def test_forget_optout_received(self):

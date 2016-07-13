@@ -495,8 +495,7 @@ def receive_identity_store_optout(request):
     # The identity store currently doesn't specify the response format or do
     # anything with the response.
 
-    # TODO: Support existance and usage of multiple orgs
-    org = Org.objects.first()
+    org = request.org
     local_contact = syncer.fetch_local(org, identity_id)
     if not local_contact:
         return JsonResponse({
