@@ -11,17 +11,17 @@ module.exports = (config) ->
     # list of files / patterns to load in the browser
     files: [
       # dependencies
-      'static/js/angular-1.4.10/angular.js',
+      'static/js/angular-1.4.10/angular.min.js',
       'static/js/angular-1.4.10/angular-animate.min.js',
       'static/js/angular-1.4.10/angular-sanitize.min.js',
       'static/js/angular-1.4.10/angular-mocks.js',
       'static/js/ng-infinite-scroll.min.js',
       'static/js/raven.min.js',
       'static/js/select.min.js',
-      'static/js/ui-bootstrap-tpls-1.3.3.min.js'
+      'static/js/ui-bootstrap-tpls-1.3.3.min.js',
 
       # templates
-      'static/templates/**/*.html'
+      'static/templates/**/*.html',
 
       # the code we are testing
       'static/coffee/*.coffee',
@@ -32,7 +32,7 @@ module.exports = (config) ->
       'karma/test-services.coffee',
       'karma/test-filters.coffee',
       'karma/test-modals.coffee',
-      'karma/test-utils.coffee'
+      'karma/test-utils.coffee',
       'karma/test-directives.coffee'
     ]
 
