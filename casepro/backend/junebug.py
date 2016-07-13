@@ -504,6 +504,8 @@ def receive_identity_store_optout(request):
 
     local_contact.lock(org, identity_id)
     if optout_type == "forget":
+        # TODO: Removed any identifying details from the contact
+        # (to uphold 'Right to be forgotten')
         local_contact.release()
         return JsonResponse({"success": True}, status=200)
 
