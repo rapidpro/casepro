@@ -11,7 +11,6 @@ from ..contacts.models import Contact
 from ..msgs.models import Message
 from ..utils import uuid_to_int
 
-from dash.orgs.models import Org
 from dash.utils import is_dict_equal
 from dash.utils.sync import BaseSyncer, sync_local_to_changes
 
