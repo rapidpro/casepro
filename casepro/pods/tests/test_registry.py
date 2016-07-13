@@ -2,35 +2,35 @@ from django.conf.urls import url
 from django.test import TestCase
 
 from casepro.pods.registry import (
-    get_class_from_string, load_pod, get_url_patterns)
+    get_class_from_app_label, load_pod, get_url_patterns)
 
 
 class PodRegistryTests(TestCase):
     '''
     Tests related to the casepro.pods.registry module.
     '''
-    def test_get_class_from_string(self):
+    def test_get_class_from_app_label(self):
         '''
-        The get_class_from_string function should take a string and return
-        the correct class.
+        The get_class_from_app_label function should take an app label and
+        return the correct class.
         '''
         from casepro.pods import Pod
-        result = get_class_from_string('casepro.pods.Pod')
+        result = get_class_from_app_label('casepro.pods')
         self.assertEqual(result, Pod)
 
-    def test_get_class_from_string_invalid(self):
+    def test_get_class_from_app_label_invalid(self):
         '''
-        Invalid class names should result in import errors.
+        Invalid app labels should result in lookup errors.
         '''
-        self.assertRaises(ImportError, get_class_from_string, 'foo.bar.baz')
+        self.assertRaises(LookupError, get_class_from_app_label, 'foo.bar.baz')
 
-    def test_load_pod_class_name(self):
+    def test_load_pod_app_label(self):
         '''
-        The load_pod function should load the pod with the correct class name
+        The load_pod function should load the pod with the correct app label
         specified by 'type'.
         '''
         from casepro.pods import Pod
-        pod_instance = load_pod(0, {'type': 'casepro.pods.Pod'})
+        pod_instance = load_pod(0, {'type': 'casepro.pods'})
         self.assertTrue(isinstance(pod_instance, Pod))
 
     def test_load_pod_index(self):
@@ -38,7 +38,7 @@ class PodRegistryTests(TestCase):
         The load_pod function should set the index on the pod config.
         '''
         index = 7
-        pod_instance = load_pod(index, {'type': 'casepro.pods.Pod'})
+        pod_instance = load_pod(index, {'type': 'casepro.pods'})
         self.assertEqual(pod_instance.config.index, index)
 
     def test_pods_loaded_on_import(self):
@@ -47,8 +47,8 @@ class PodRegistryTests(TestCase):
         with correct index numbers and types.
         '''
         with self.settings(PODS=[
-                {'type': 'casepro.pods.Pod'},
-                {'type': 'casepro.pods.Pod'}]):
+                {'type': 'casepro.pods'},
+                {'type': 'casepro.pods'}]):
             from casepro.pods import registry, Pod
             reload(registry)
 
@@ -63,8 +63,8 @@ class PodRegistryTests(TestCase):
         patterns of all of the pods specified in the settings files.
         '''
         with self.settings(PODS=[
-                {'type': 'casepro.pods.Pod'},
-                {'type': 'casepro.pods.Pod'}]):
+                {'type': 'casepro.pods'},
+                {'type': 'casepro.pods'}]):
             from casepro.pods import registry
             reload(registry)
 

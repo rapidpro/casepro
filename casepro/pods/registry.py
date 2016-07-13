@@ -1,14 +1,13 @@
+from django.apps import apps
 from django.conf import settings
-import importlib
 
 
-def get_class_from_string(string):
+def get_class_from_app_label(label):
     '''
-    Given a class specified by a string, this will return that class.
+    Given the label of a pod, get the Pod class associated with it.
     '''
-    module_name, cls_name = string.rsplit('.', 1)
-    module = importlib.import_module(module_name)
-    return getattr(module, cls_name)
+    appconfig = apps.get_app_config(label)
+    return appconfig.pod_class
 
 
 def load_pod(index, config):
@@ -16,9 +15,10 @@ def load_pod(index, config):
     Given the index of the pod, and the config dictionary for the pod, this
     returns the instance of that pod.
     '''
-    class_name = config.pop('type')
+    config = config.copy()
+    app_label = config.pop('type')
     config['index'] = index
-    return get_class_from_string(class_name)(config)
+    return get_class_from_app_label(app_label)(config)
 
 
 pods = tuple(

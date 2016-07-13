@@ -2,10 +2,6 @@ from confmodel import fields, Config as ConfmodelConfig
 from django.apps import AppConfig
 
 
-class PodPlugin(AppConfig):
-    pass
-
-
 class PodConfig(ConfmodelConfig):
     '''
     This is the config that all pods should use as the base for their own
@@ -29,3 +25,9 @@ class Pod(object):
 
     def __init__(self, config):
         self.config = self.config_cls(config)
+
+
+class PodPlugin(AppConfig):
+    name = 'casepro.pods'
+    label = 'casepro.pods'
+    pod_class = Pod
