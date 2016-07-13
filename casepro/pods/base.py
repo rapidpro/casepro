@@ -19,6 +19,7 @@ class Pod(object):
     The base class for all pod plugins.
     '''
     config_cls = PodConfig
+    url_patterns = ()
     name = 'Default pod name'
     controller = None
     directive = None
@@ -26,17 +27,14 @@ class Pod(object):
     def __init__(self, config):
         self.config = self.config_cls(config)
 
-    @property
-    def url_patterns(self):
-        return (
-            url(r'read/%d/$' % self.config.index, self.request_callback),
-        )
+    def read_data(self, params):
+        '''Should return the data that should be used to create the display
+        for the pod.'''
+        return {}
 
-    def request_callback(self, request):
-        '''
-        Called to get the details that should appear within the pod.
-        '''
-        raise NotImplementedError
+    def perform_action(self, params):
+        '''Should perform the action specified by params.'''
+        return {}
 
 
 class PodPlugin(AppConfig):
