@@ -15,7 +15,7 @@ from redis_cache import get_redis_connection
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact
 from casepro.msgs.models import Label, Message, Outgoing
-from casepro.utils.export import BaseExport
+from casepro.utils.export import BaseSearchExport
 
 
 CASE_LOCK_KEY = 'org:%d:case_lock:%s'
@@ -493,20 +493,19 @@ class CaseAction(models.Model):
         }
 
 
-class CaseExport(BaseExport):
+class CaseExport(BaseSearchExport):
     """
     An export of cases
     """
     directory = 'case_exports'
     download_view = 'cases.caseexport_read'
-    email_templates = 'cases/email/case_export'
 
     def get_search(self):
         search = super(CaseExport, self).get_search()
         search['folder'] = CaseFolder[search['folder']]
         return search
 
-    def render_book(self, book, search):
+    def render_search(self, book, search):
         from casepro.contacts.models import Field
 
         base_fields = [
@@ -558,5 +557,3 @@ class CaseExport(BaseExport):
 
             self.write_row(sheet, row, values)
             row += 1
-
-        return book

@@ -446,6 +446,17 @@ services.factory('StatisticsService', ['$http', '$httpParamSerializer', ($http, 
         user: if user then user.id else null
       }
       return $http.get('/stats/replies_chart/?' + $httpParamSerializer(params)).then((response) -> response.data)
+
+    #----------------------------------------------------------------------------
+    # Initiates a daily count export
+    #----------------------------------------------------------------------------
+    dailyCountExport: (type, after, before) ->
+      params = {
+        type: type,
+        after: utils.formatIso8601(after, false),
+        before: utils.formatIso8601(before, false)
+      }
+      return $http.post('/stats/dailycountexport/create/', params)
 ])
 
 
@@ -522,4 +533,9 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
     newCaseModal: (summaryInitial, summaryMaxLength, partners) ->
       resolve = {summaryInitial: (() -> summaryInitial), summaryMaxLength: (() -> summaryMaxLength), partners: (() -> partners)}
       return $uibModal.open({templateUrl: '/partials/modal_newcase.html', controller: 'NewCaseModalController', resolve: resolve}).result
+
+    dateRangeModal: (title, prompt) ->
+      resolve = {title: (() -> title), prompt: (() -> prompt)}
+      return $uibModal.open({templateUrl: '/partials/modal_daterange.html', controller: 'DateRangeModalController', resolve: resolve}).result
+
 ])

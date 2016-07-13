@@ -14,3 +14,12 @@ def squash_counts():
     from .models import DailyCount
 
     DailyCount.squash()
+
+
+@shared_task
+def daily_count_export(export_id):
+    from .models import DailyCountExport
+
+    logger.info("Starting daily count export #%d..." % export_id)
+
+    DailyCountExport.objects.get(pk=export_id).do_export()

@@ -48,7 +48,11 @@
         .search-toolbar.clearfix
           - if perms.cases.partner_create or org_perms.cases.partner_create
             .pull-away
-              <a class="btn btn-default" href="{% url 'cases.partner_create' %}">{% trans "New..." %}</a>
+              .btn-group
+                %a.btn.btn-default{ href:"{% url 'cases.partner_create' %}" }
+                  - trans "New"
+                %button.btn.btn-default{ ng-click:"onExportPartnerStats()" }
+                  - trans "Export Stats..."
 
           .{ style:"margin-top: 7px" }
             Total of <strong>[[ partners.length ]]</strong> partners
@@ -87,7 +91,11 @@
         .search-toolbar.clearfix
           - if perms.msgs.label_create or org_perms.msgs.label_create
             .pull-away
-              <a class="btn btn-default" href="{% url 'msgs.label_create' %}">{% trans "New..." %}</a>
+              .btn-group
+                %a.btn.btn-default{ href:"{% url 'msgs.label_create' %}" }
+                  - trans "New"
+                %button.btn.btn-default{ ng-click:"onExportLabelStats()" }
+                  - trans "Export Stats..."
 
           .{ style:"margin-top: 7px" }
             Total of <strong>[[ labels.length ]]</strong> labels
@@ -122,7 +130,7 @@
         .search-toolbar.clearfix
           - if perms.profiles.user_create or org_perms.profiles.user_create
             .pull-away
-              <a class="btn btn-default" href="{% url 'profiles.user_create' %}">{% trans "New..." %}</a>
+              <a class="btn btn-default" href="{% url 'profiles.user_create' %}">{% trans "New" %}</a>
 
           .{ style:"margin-top: 7px" }
             Total of <strong>[[ users.length ]]</strong> users

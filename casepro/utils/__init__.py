@@ -7,7 +7,7 @@ import re
 import unicodedata
 
 from dateutil.relativedelta import relativedelta
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from django.utils import timezone
 from enum import Enum
 from temba_client.utils import format_iso8601
@@ -130,3 +130,11 @@ def month_range(offset, now=None):
     start_of_this_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     return start_of_this_month + relativedelta(months=offset), start_of_this_month + relativedelta(months=offset + 1)
+
+
+def date_range(start, stop):
+    """
+    A date-based range generator
+    """
+    for n in range(int((stop - start).days)):
+        yield start + timedelta(n)
