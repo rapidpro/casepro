@@ -17,6 +17,7 @@ from temba_client.utils import parse_iso8601
 
 from casepro.contacts.models import Group
 from casepro.msgs.models import Label, Message, MessageFolder, Outgoing, OutgoingFolder
+from casepro.pods import registry as pod_registry
 from casepro.utils import json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder
 from casepro.utils import month_range
 from casepro.utils.export import BaseDownloadView
@@ -75,6 +76,7 @@ class CaseCRUDL(SmartCRUDL):
             context['max_msg_chars'] = MAX_MESSAGE_CHARS
             context['can_update'] = can_update
             context['alert'] = self.request.GET.get('alert', None)
+            context['pods'] = pod_registry.pods
             return context
 
     class Open(OrgPermsMixin, SmartCreateView):
