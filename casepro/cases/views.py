@@ -15,7 +15,7 @@ from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
 
 from casepro.contacts.models import Group
-from casepro.msgs.models import Label, Message, MessageFolder, OutgoingFolder
+from casepro.msgs.models import Label, LabelCount, Message, MessageFolder, OutgoingFolder
 from casepro.statistics.models import DailyCount
 from casepro.utils import json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder, str_to_bool
 from casepro.utils import month_range
@@ -426,7 +426,9 @@ class BaseHomeView(OrgPermsMixin, SmartTemplateView):
         user = self.request.user
         partner = user.get_partner(org)
 
-        labels = Label.get_all(org, user).order_by('name')
+        labels = list(Label.get_all(org, user).order_by('name'))
+        Label.bulk_cache_initialise(labels)
+
         groups = Group.get_all(org, visible=True).order_by('name')
 
         # angular app requires context data in JSON format

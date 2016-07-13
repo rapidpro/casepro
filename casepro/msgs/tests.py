@@ -300,28 +300,52 @@ class MessageTest(BaseCasesTest):
         self.msg5 = self.create_message(self.unicef, 105, self.ann, "Inactive", is_active=False)
 
     def test_triggers(self):
-        msg = self.create_message(self.unicef, 101, self.ann, "Normal")
-        self.assertFalse(msg.has_labels)
+        msg1 = self.create_message(self.unicef, 101, self.ann, "Hello 1", is_handled=True)
+        msg2 = self.create_message(self.unicef, 102, self.ann, "Hello 2", is_handled=True)
+        self.assertFalse(msg1.has_labels)
+        self.assertFalse(msg2.has_labels)
 
-        msg.label(self.aids)
-        msg.refresh_from_db()
-        self.assertTrue(msg.has_labels)
+        msg1.label(self.aids)
+        msg2.label(self.aids)
+        msg1.refresh_from_db()
+        msg2.refresh_from_db()
 
-        msg.label(self.pregnancy)
-        msg.refresh_from_db()
-        self.assertTrue(msg.has_labels)
+        self.assertTrue(msg1.has_labels)
+        self.assertEqual(self.aids.get_counts(recalculate=True), {'inbox': 2, 'archived': 0})
+        self.assertEqual(self.pregnancy.get_counts(recalculate=True), {'inbox': 0, 'archived': 0})
 
-        msg.unlabel(self.aids)
-        msg.refresh_from_db()
-        self.assertTrue(msg.has_labels)
+        msg1.label(self.pregnancy)
+        msg1.refresh_from_db()
 
-        msg.unlabel(self.pregnancy)
-        msg.refresh_from_db()
-        self.assertFalse(msg.has_labels)
+        self.assertTrue(msg1.has_labels)
+        self.assertEqual(self.aids.get_counts(recalculate=True), {'inbox': 2, 'archived': 0})
+        self.assertEqual(self.pregnancy.get_counts(recalculate=True), {'inbox': 1, 'archived': 0})
 
-        msg.label(self.aids, self.pregnancy)  # add multiple
-        msg.refresh_from_db()
-        self.assertTrue(msg.has_labels)
+        msg1.is_archived = True
+        msg1.save()
+
+        self.assertTrue(msg1.has_labels)
+        self.assertEqual(self.aids.get_counts(recalculate=True), {'inbox': 1, 'archived': 1})
+        self.assertEqual(self.pregnancy.get_counts(recalculate=True), {'inbox': 0, 'archived': 1})
+
+        msg1.unlabel(self.aids)
+        msg1.refresh_from_db()
+
+        self.assertTrue(msg1.has_labels)
+        self.assertEqual(self.aids.get_counts(recalculate=True), {'inbox': 1, 'archived': 0})
+        self.assertEqual(self.pregnancy.get_counts(recalculate=True), {'inbox': 0, 'archived': 1})
+
+        msg1.unlabel(self.pregnancy)
+        msg1.refresh_from_db()
+        self.assertFalse(msg1.has_labels)
+        self.assertEqual(self.aids.get_counts(recalculate=True), {'inbox': 1, 'archived': 0})
+        self.assertEqual(self.pregnancy.get_counts(recalculate=True), {'inbox': 0, 'archived': 0})
+
+        msg1.label(self.aids, self.pregnancy)  # add multiple
+        msg1.refresh_from_db()
+        self.assertTrue(msg1.has_labels)
+        self.assertEqual(self.aids.get_counts(recalculate=True), {'inbox': 1, 'archived': 1})
+        self.assertEqual(self.pregnancy.get_counts(recalculate=True), {'inbox': 0, 'archived': 1})
 
     def test_save(self):
         # start with no labels or contacts
