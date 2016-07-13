@@ -19,7 +19,9 @@
               %a.btn.btn-default{ ng-click:"onDeleteUser()", tooltip:"Delete User" }
                 %i.glyphicon.glyphicon-trash
             - if perms.auth.user_mimic
-              %button.btn.btn-danger{ type:"button", onclick:"becomeUser()" }
+              %form#mimic-form{ style:"display: none", method:"post", action:"{% url 'users.user_mimic' object.id %}" }
+                {% csrf_token %}
+              %button.btn.btn-danger{ type:"button", onclick:'$("#mimic-form").submit()' }
                 - trans "Become"
 
       %h2
@@ -61,16 +63,6 @@
             #chart-replies-by-month
       </uib-tab>
     </uib-tabset>
-
-- block extra-script
-  {{ block.super }}
-  :javascript
-    {% if perms.auth.user_mimic %}
-    function becomeUser() {
-      $.post("{% url 'users.user_mimic' object.id %}", {'csrfmiddlewaretoken': '{{ csrf_token }}'})
-      .then(function() { location.href = '/' });
-    }
-    {% endif %}
 
 
 - block extra-style
