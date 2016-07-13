@@ -490,18 +490,18 @@ def receive_identity_store_optout(request):
             {'reason': 'Both "identity" and "optout_type" must be specified.'},
             status=400)
 
-    syncer = IdentityStoreContactSyncer()
-
     # The identity store currently doesn't specify the response format or do
     # anything with the response.
 
+    syncer = IdentityStoreContactSyncer()
     org = request.org
-    local_contact = syncer.fetch_local(org, identity_id)
-    if not local_contact:
-        return JsonResponse({
-            'reason': "No Contact for id: " + identity_id}, status=400)
 
-    with local_contact.lock(org, identity_id):
+    with syncer.lock(org, identity_id):
+        local_contact = syncer.fetch_local(org, identity_id)
+        if not local_contact:
+            return JsonResponse({
+                'reason': "No Contact for id: " + identity_id}, status=400)
+
         if optout_type == "forget":
             # TODO: Removed any identifying details from the contact
             # (to uphold 'Right to be forgotten')
