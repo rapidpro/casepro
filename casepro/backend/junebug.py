@@ -498,23 +498,23 @@ def receive_identity_store_optout(request):
     # TODO: Support existance and usage of multiple orgs
     org = Org.objects.first()
     local_contact = syncer.fetch_local(org, identity_id)
-    if local_contact:
-        local_contact.lock(org, identity_id)
-        if optout_type == "forget":
-            local_contact.release()
-            return JsonResponse({"success": True}, status=200)
-
-        elif optout_type == "stop" or optout_type == "stopall":
-            local_contact.is_blocked = True
-            local_contact.save(update_fields=('is_blocked',))
-            return JsonResponse({"success": True}, status=200)
-        elif optout_type == "unsubscribe":
-            # This case is not relevant to Casepro
-            return JsonResponse({"success": True}, status=200)
-
+    if not local_contact:
         return JsonResponse({
-            'reason': "Unrecognised value for 'optout_type': " + optout_type},
-            status=400)
+            'reason': "No Contact for id: " + identity_id}, status=400)
+
+    local_contact.lock(org, identity_id)
+    if optout_type == "forget":
+        local_contact.release()
+        return JsonResponse({"success": True}, status=200)
+
+    elif optout_type == "stop" or optout_type == "stopall":
+        local_contact.is_blocked = True
+        local_contact.save(update_fields=('is_blocked',))
+        return JsonResponse({"success": True}, status=200)
+    elif optout_type == "unsubscribe":
+        # This case is not relevant to Casepro
+        return JsonResponse({"success": True}, status=200)
 
     return JsonResponse({
-        'reason': "No Contact for id: " + identity_id}, status=400)
+        'reason': "Unrecognised value for 'optout_type': " + optout_type},
+        status=400)
