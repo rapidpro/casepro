@@ -41,5 +41,5 @@ class Pod(object):
 
 class PodPlugin(AppConfig):
     name = 'casepro.pods'
-    label = 'casepro.pods'
+    label = 'base_pod'
     pod_class = Pod

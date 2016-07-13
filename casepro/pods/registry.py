@@ -16,7 +16,7 @@ def load_pod(index, config):
     returns the instance of that pod.
     '''
     config = config.copy()
-    app_label = config.pop('type')
+    app_label = config.pop('app_label')
     config['index'] = index
     return get_class_from_app_label(app_label)(config)
 

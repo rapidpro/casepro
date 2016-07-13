@@ -17,7 +17,7 @@ class PodRegistryTests(TestCase):
         return the correct class.
         '''
         from casepro.pods import Pod
-        result = get_class_from_app_label('casepro.pods')
+        result = get_class_from_app_label('base_pod')
         self.assertEqual(result, Pod)
 
     def test_get_class_from_app_label_invalid(self):
@@ -32,7 +32,7 @@ class PodRegistryTests(TestCase):
         specified by 'type'.
         '''
         from casepro.pods import Pod
-        pod_instance = load_pod(0, {'type': 'casepro.pods'})
+        pod_instance = load_pod(0, {'app_label': 'base_pod'})
         self.assertTrue(isinstance(pod_instance, Pod))
 
     def test_load_pod_index(self):
@@ -40,7 +40,7 @@ class PodRegistryTests(TestCase):
         The load_pod function should set the index on the pod config.
         '''
         index = 7
-        pod_instance = load_pod(index, {'type': 'casepro.pods'})
+        pod_instance = load_pod(index, {'app_label': 'base_pod'})
         self.assertEqual(pod_instance.config.index, index)
 
     def test_pods_loaded_on_import(self):
@@ -49,8 +49,8 @@ class PodRegistryTests(TestCase):
         with correct index numbers and types.
         '''
         with self.settings(PODS=[
-                {'type': 'casepro.pods'},
-                {'type': 'casepro.pods'}]):
+                {'app_label': 'base_pod'},
+                {'app_label': 'base_pod'}]):
             from casepro.pods import registry, Pod
             reload(registry)
 
@@ -65,8 +65,8 @@ class PodRegistryTests(TestCase):
         patterns of all of the pods specified in the settings files.
         '''
         with self.settings(PODS=[
-                {'type': 'casepro.pods'},
-                {'type': 'casepro.pods'}]):
+                {'app_label': 'base_pod'},
+                {'app_label': 'base_pod'}]):
             from casepro.pods import registry
             reload(registry)
 
