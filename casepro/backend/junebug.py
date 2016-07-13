@@ -3,6 +3,8 @@ from django.conf import settings
 from django.conf.urls import url
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+
+import functools
 import json
 import requests
 
@@ -438,6 +440,26 @@ class JunebugBackend(BaseBackend):
         ]
 
 
+def token_auth_required(auth_token_func):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(request, *args, **kwargs):
+            auth_header = request.META.get('HTTP_AUTHORIZATION', None)
+            expected_auth_token = auth_token_func()
+            if not auth_header:
+                response = JsonResponse(
+                    {"reason": "Authentication required"}, status=401)
+                response['WWW-Authenticate'] = "Token"
+                return response
+            auth = auth_header.split(" ")
+            if auth != ["Token", expected_auth_token]:
+                return JsonResponse({"reason": "Forbidden"}, status=403)
+            return func(request, *args, **kwargs)
+
+        return wrapper
+    return decorator
+
+
 @csrf_exempt
 def received_junebug_message(request):
     '''Handles MO messages from Junebug.'''
@@ -469,7 +491,12 @@ def received_junebug_message(request):
     return JsonResponse(msg.as_json())
 
 
+def seed_auth_token():
+    return settings.IDENTITY_AUTH_TOKEN
+
+
 @csrf_exempt
+@token_auth_required(seed_auth_token)
 def receive_identity_store_optout(request):
     '''Handles optout notifications from the Identity Store.'''
     if request.method != 'POST':
