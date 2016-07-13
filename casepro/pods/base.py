@@ -1,6 +1,5 @@
 from confmodel import fields, Config as ConfmodelConfig
 from django.apps import AppConfig
-from django.conf.urls import url
 
 
 class PodConfig(ConfmodelConfig):
