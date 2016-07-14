@@ -637,3 +637,12 @@ controllers.controller('DateRangeController', ['$scope', ($scope) ->
     $event.stopPropagation()
     $scope.beforeOpen = true
 ])
+
+
+#============================================================================
+# Pod controller
+#============================================================================
+controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
+  PodApi.get($scope.podId)
+    .then((pod) -> $scope.pod = pod)
+])
