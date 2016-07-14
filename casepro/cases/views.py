@@ -77,6 +77,7 @@ class CaseCRUDL(SmartCRUDL):
             context['can_update'] = can_update
             context['alert'] = self.request.GET.get('alert', None)
             context['pods'] = pod_registry.pods
+            context['pod_types'] = pod_registry.pod_types
             return context
 
     class Open(OrgPermsMixin, SmartCreateView):

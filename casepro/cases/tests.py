@@ -9,7 +9,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
-from django.test.utils import override_settings
+from django.test.utils import override_settings, modify_settings
 from django.utils import timezone
 from mock import patch
 from temba_client.utils import format_iso8601
@@ -21,6 +21,7 @@ from casepro.msgs.tasks import handle_messages
 from casepro.profiles.models import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
 from casepro.utils import datetime_to_microseconds, microseconds_to_datetime
+from casepro.pods.tests.utils import DummyPodPlugin
 
 from .context_processors import sentry_dsn
 from .models import AccessLevel, Case, CaseAction, CaseExport, CaseFolder, Partner
@@ -407,6 +408,35 @@ class CaseCRUDLTest(BaseCasesTest):
 
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
+
+    @modify_settings(INSTALLED_APPS={
+        'append': 'casepro.pods.tests.utils.DummyPodPlugin'
+    })
+    @override_settings(PODS=[{
+        'label': 'dummy_pod',
+        'title': 'FooPod'
+    }])
+    def test_read_pods(self):
+        url = reverse('cases.case_read', args=[self.case.pk])
+        self.login(self.user1)
+        response = self.url_get('unicef', url)
+        self.assertContains(response, 'FooPod')
+        self.assertContains(response, DummyPodPlugin.controller)
+        self.assertContains(response, DummyPodPlugin.directive)
+
+    @modify_settings(INSTALLED_APPS={
+        'append': 'casepro.pods.tests.utils.DummyPodPlugin'
+    })
+    def test_read_pod_resources(self):
+        url = reverse('cases.case_read', args=[self.case.pk])
+        self.login(self.user1)
+        response = self.url_get('unicef', url)
+
+        for script in DummyPodPlugin.scripts:
+            self.assertContains(response, script.rstrip('.coffee'))
+
+        for script in DummyPodPlugin.styles:
+            self.assertContains(response, script.rstrip('.less'))
 
     def test_note(self):
         url = reverse('cases.case_note', args=[self.case.pk])

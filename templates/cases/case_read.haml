@@ -1,5 +1,5 @@
 - extends "smartmin/read.html"
-- load smartmin i18n
+- load compress smartmin i18n
 
 - block pre-content
 
@@ -150,15 +150,30 @@
                 : [[ val ]]
 
         - for pod in pods
-          .panel.panel-default
-            .panel-heading
-              {{ pod.name }}
-            .panel-body
-              %div{ ng-controller:"={ pod.controller }" }
-                %div{ "={ pod.directive }":"true" }
+            %div{
+              ng-controller:"={ pod.pod_type.controller }",
+              ng-init:'init && init(={ pod.config.index }, ={ pod.config_json })',
+              "={ pod.pod_type.directive }":"true"
+            }
+
+- block extra-script
+  - compress js
+    - for pod_type in pod_types
+      - for script in pod_type.scripts
+        %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}{{ script }}" }
 
 - block extra-style
   {{ block.super }}
+
+  - compress css
+    - for pod_type in pod_types
+      - for style in pod_type.styles
+        %link{
+          type:"text/less",
+          rel:"stylesheet",
+          href:"{{ STATIC_URL }}{{ style }}"
+        }
+
   :css
     .sendform {
       text-align: center;
