@@ -506,24 +506,24 @@ describe('controllers:', () ->
       $scope = $rootScope.$new()
     )
 
-    it('should attach pod data to the scope', () ->
-      $scope.podId = 21
+    describe('init', () ->
+      it('should attach pod data to the scope', () ->
+        PodApi = new class PodApi
+          get: ->
 
-      PodApi = new class PodApi
-        get: ->
+        p = $q.resolve({foo: 'bar'})
+        spyOn(PodApi, 'get').and.returnValue(p)
 
-      p = $q.resolve({foo: 'bar'})
-      spyOn(PodApi, 'get').and.returnValue(p)
+        $controller('PodController', {
+            $scope
+            PodApi
+          })
 
-      $controller('PodController', {
-        $scope
-        PodApi
-      })
-
-      return p
-        .then(() ->
-          expect(PodApi.get).toHaveBeenCalledWith(21)
-          expect($scope.pod).toEqual({foo: 'bar'}))
+        $scope.init(21)
+          .then(() ->
+            expect(PodApi.get).toHaveBeenCalledWith(21)
+            expect($scope.pod).toEqual({foo: 'bar'}))
+      )
     )
   )
 )

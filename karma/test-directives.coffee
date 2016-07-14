@@ -14,12 +14,13 @@ describe('directives:', () ->
     beforeEach(inject((_$rootScope_, _$compile_) ->
       $rootScope = _$rootScope_
       $compile = _$compile_
-      $rootScope.podTitle = 'Foo'
-      $rootScope.pod = {items: []}
+
+      $rootScope.podConfig = {title: 'Foo'}
+      $rootScope.podData = {items: []}
     ))
 
     it('should draw the pod items', () ->
-      $rootScope.podTitle = 'Foo'
+      $rootScope.podConfig.title = 'Foo'
 
       el = $compile('<div pod></div>')($rootScope)[0]
       $rootScope.$digest()
@@ -28,7 +29,7 @@ describe('directives:', () ->
     )
 
     it('should draw the pod items', ->
-      $rootScope.pod = {
+      $rootScope.podData = {
         items: [{
           name: 'Bar'
           value: 'Baz'

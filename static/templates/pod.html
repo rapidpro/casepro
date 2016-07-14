@@ -1,12 +1,12 @@
 <div class="panel panel-default">
-        <div class="pod-title panel-heading">{{ podTitle }}</div>
+    <div class="pod-title panel-heading">{{ podConfig.title }}</div>
 
-        <div class="list-group">
-            <div class="container-fluid">
-                <div class="pod-item list-group-item row" ng-repeat="item in pod.items">
-                    <div class="pod-item-name col-sm-6">{{ item.name }}</div>
-                    <div class="pod-item-value col-sm-6">{{ item.value }}</div>
-                </div>
+    <div class="list-group">
+        <div class="container-fluid">
+            <div class="pod-item list-group-item row" ng-repeat="item in podData.items">
+                <div class="pod-item-name col-sm-6">{{ item.name }}</div>
+                <div class="pod-item-value col-sm-6">{{ item.value }}</div>
             </div>
         </div>
+    </div>
 </div>

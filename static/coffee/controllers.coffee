@@ -643,6 +643,10 @@ controllers.controller('DateRangeController', ['$scope', ($scope) ->
 # Pod controller
 #============================================================================
 controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
-  PodApi.get($scope.podId)
-    .then((pod) -> $scope.pod = pod)
+  $scope.init = (id, config) ->
+    $scope.podId = id
+    $scope.podConfig = config
+
+    return PodApi.get($scope.podId)
+      .then((d) -> $scope.podData = d)
 ])
