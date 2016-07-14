@@ -1,3 +1,4 @@
+import json
 from confmodel import fields, Config as ConfmodelConfig
 from django.apps import AppConfig
 
@@ -24,6 +25,10 @@ class Pod(object):
     def __init__(self, pod_type, config):
         self.pod_type = pod_type
         self.config = config
+
+    @property
+    def config_json(self):
+        return json.dumps(self.config._config_data)
 
     def read_data(self, params):
         '''Should return the data that should be used to create the display
