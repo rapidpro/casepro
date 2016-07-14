@@ -1191,6 +1191,28 @@ class IdentityStoreTest(BaseCasesTest):
             'default_addr_type': 'msisdn',
         })
 
+    def identity_404_callback(self, request):
+        return (404, {'Content-Type': 'application/json'}, {
+            "detail": "Not found."
+        })
+
+    @responses.activate
+    def test_get_identity_404(self):
+        '''
+        If the Identity does not exist, causing the Identity Store to return
+        a 404, the get_indentity function should return None.
+        '''
+        identity_store = IdentityStore(
+            'http://identitystore.org/', 'auth-token', 'msisdn')
+
+        url = 'http://identitystore.org/api/v1/identities/identity-uuid/'
+        responses.add_callback(
+            responses.GET, url, callback=self.identity_404_callback,
+            match_querystring=True, content_type='application/json')
+
+        identity = identity_store.get_identity('identity-uuid')
+        self.assertEqual(identity, None)
+
 
 class IdentityStoreContactTest(BaseCasesTest):
     def test_contact_with_defaults(self):
