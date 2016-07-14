@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 import requests
+import pytz
 
 from . import BaseBackend
 from ..contacts.models import Contact
@@ -460,6 +461,6 @@ def received_junebug_message(request):
     msg = Message.objects.create(
         org=request.org, backend_id=message_id, contact=contact,
         type=Message.TYPE_INBOX, text=(data.get('content') or ''),
-        created_on=datetime.now(), has_labels=True)
+        created_on=datetime.now(pytz.utc), has_labels=True)
 
     return JsonResponse(msg.as_json())
