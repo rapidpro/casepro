@@ -15,5 +15,8 @@
     "karma-coveralls": "1.1.2",
     "karma-jasmine": "1.0.2",
     "karma-cli": "1.0.0"
+  },
+  "devDependencies": {
+    "karma-ng-html2js-preprocessor": "^1.0.0"
   }
 }

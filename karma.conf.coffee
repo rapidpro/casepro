@@ -18,7 +18,10 @@ module.exports = (config) ->
       'static/js/ng-infinite-scroll.min.js',
       'static/js/raven.min.js',
       'static/js/select.min.js',
-      'static/js/ui-bootstrap-tpls-1.3.3.min.js'
+      'static/js/ui-bootstrap-tpls-1.3.3.min.js',
+
+      # templates
+      'static/templates/**/*.html',
 
       # the code we are testing
       'static/coffee/*.coffee',
@@ -29,7 +32,8 @@ module.exports = (config) ->
       'karma/test-services.coffee',
       'karma/test-filters.coffee',
       'karma/test-modals.coffee',
-      'karma/test-utils.coffee'
+      'karma/test-utils.coffee',
+      'karma/test-directives.coffee'
     ]
 
     # list of files to exclude
@@ -41,6 +45,7 @@ module.exports = (config) ->
     preprocessors: {
       '**/*.coffee': ['coffee'],
       'static/**/*.coffee': ['coverage']
+      'static/templates/**/*.html': ['ng-html2js']
     }
 
     # this makes sure that we get coffeescript line numbers instead
@@ -51,6 +56,11 @@ module.exports = (config) ->
         sourceMap: true
       transformPath: (path) ->
         path.replace /\.js$/, '.coffee'
+
+    ngHtml2JsPreprocessor:
+      stripPrefix: 'static'
+      prependPrefix: '/sitestatic'
+      moduleName: 'templates'
 
     # test results reporter to use
     # possible values: 'dots', 'progress'
