@@ -1325,3 +1325,15 @@ class IdentityStoreContactSyncerTest(BaseCasesTest):
                                        name="test", language='ita')
         self.assertTrue(self.syncer.update_required(
             local, self.mk_identity_store_contact(), {}))
+
+    def test_update_required_groups_different(self):
+        '''
+        If the list of groups on the local contact differs from the list of
+        groups on the remote contact, an update should be required.
+        '''
+        local = Contact.objects.create(
+            org=self.unicef, uuid='test_id', name='test', language='eng')
+        local.groups.create(
+            org=self.unicef, uuid='group_id', name='testgroup')
+        self.assertTrue(self.syncer.update_required(
+            local, self.mk_identity_store_contact(), {}))
