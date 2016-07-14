@@ -17,19 +17,19 @@
   .ng-cloak{ ng-controller:"InboxController", ng-init:'init("{{ folder }}", {{ server_time }})', ng-cloak:"" }
     .page-header.clearfix
       %h2.pull-back
-        %span{ class:'glyphicon {{ folder_icon }}' }
-        &nbsp;
-        {{ title }}
-
-      .page-header-buttons{ ng-if:"activeLabel" }
-        .label-name
-          %span.glyphicon.glyphicon-tag
+        .{ ng-if:"!activeLabel" }
+          %i{ class:'glyphicon {{ folder_icon }}' }
+          &nbsp;
+          {{ title }}
+        .{ ng-if:"activeLabel" }
+          %i.glyphicon.glyphicon-tag
           &nbsp;
           [[ activeLabel.name ]]
+
+      .page-header-buttons{ ng-if:"activeLabel" }
         - if perms.msgs.label_read or org_perms.msgs.label_read
           %a.btn.btn-default{ ng-href:"/label/read/[[ activeLabel.id ]]/" }
-            - trans "View"
-
+            - trans "View Label"
 
     .row
       .col-md-2
@@ -113,11 +113,6 @@
     }
     .home-menu ul.label-menu a {
       display: inline-block;
-    }
-    .label-name {
-      font-size: 20px;
-      display: inline-block;
-      padding: 3px 12px 3px 0;
     }
     .search-toolbar, .contact-toolbar {
       padding: 4px;
