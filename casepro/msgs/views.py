@@ -148,11 +148,16 @@ class LabelCRUDL(SmartCRUDL):
 
 class FaqCRUDL(SmartCRUDL):
     model = FAQ
-    actions = ('list',)
+    actions = ('list', 'read')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('question', 'answer')
         default_order = ('question',)
+
+    class Read(OrgPermsMixin, SmartReadView):
+
+        def get_queryset(self):
+            return FAQ.objects.all()
 
 
 class MessageSearchMixin(object):
