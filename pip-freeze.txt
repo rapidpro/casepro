@@ -8,6 +8,7 @@ billiard==3.3.0.22
 boto==2.38.0
 celery==3.1.19
 colorama==0.3.7
+confmodel==0.2.0
 coverage==4.0.3
 -e git+https://github.com/rapidpro/dash.git@f85f7e7262a62dfc385951ad3e0199434c7db9f0#egg=dash-master
 dj-database-url==0.3.0

@@ -149,6 +149,13 @@
                   [[ key ]]
                 : [[ val ]]
 
+        - for pod in pods
+          .panel.panel-default
+            .panel-heading
+              {{ pod.name }}
+            .panel-body
+              %div{ ng-controller:"={ pod.controller }" }
+                %div{ "={ pod.directive }":"true" }
 
 - block extra-style
   {{ block.super }}
