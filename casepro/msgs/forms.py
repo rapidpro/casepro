@@ -8,7 +8,7 @@ from casepro.rules.forms import FieldTestField
 from casepro.rules.models import ContainsTest
 from casepro.utils import parse_csv, normalize
 
-from .models import Label, FAQ
+from .models import Label, FAQ, Language
 
 
 class LabelForm(forms.ModelForm):
@@ -90,3 +90,14 @@ class FaqForm(forms.ModelForm):
     class Meta:
         model = FAQ
         fields = ('question', 'answer', 'labels')
+
+
+class LanguageForm(forms.ModelForm):
+
+    code = forms.CharField(label=_("6-digit Language Code (e.g. eng_UK)"), max_length=6)
+    name = forms.CharField(label=_("Language Name (e.g. English"), max_length=100)
+    location = forms.CharField(label=_("Language Location (e.g. United Kingdom"), max_length=100)
+
+    class Meta:
+        model = Language
+        fields = ('code', 'name', 'location')
