@@ -1337,3 +1337,17 @@ class IdentityStoreContactSyncerTest(BaseCasesTest):
             org=self.unicef, uuid='group_id', name='testgroup')
         self.assertTrue(self.syncer.update_required(
             local, self.mk_identity_store_contact(), {}))
+
+    def test_delete_local(self):
+        '''
+        Deleting the local copy of the contact should deactivate it.
+        '''
+        local = Contact.objects.create(
+            org=self.unicef, uuid='test_id', name='test', language='eng')
+
+        self.assertTrue(local.is_active)
+
+        self.syncer.delete_local(local)
+
+        local.refresh_from_db()
+        self.assertFalse(local.is_active)
