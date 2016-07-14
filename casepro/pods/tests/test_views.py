@@ -85,6 +85,19 @@ class PerformPodActionView(BaseCasesTest):
             'reason': 'Pod does not exist'}
         )
 
+    def test_invalid_json(self):
+        '''
+        If the request has an invalid json body, a correct error response
+        should be returned.
+        '''
+        response = self.url_post(
+            'unicef', reverse('perform_pod_action', args=('0',)), body="{")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json, {
+            'reason': 'JSON decode error',
+            'details': 'No JSON object could be decoded'
+        })
+
     def test_pod_valid_request(self):
         '''
         If it is a valid post request, the action should be performed.
