@@ -1,7 +1,7 @@
 from django.test import TestCase, modify_settings
 
 from casepro.pods.registry import (
-    get_class_from_app_label, load_pod, get_url_patterns)
+    get_class_from_app_label, load_pod)
 
 
 @modify_settings(INSTALLED_APPS={
@@ -58,19 +58,3 @@ class PodRegistryTests(TestCase):
         for i in range(2):
             self.assertTrue(isinstance(registry.pods[i], Pod))
             self.assertEqual(registry.pods[i].config.index, i)
-
-    def test_get_url_patterns(self):
-        '''
-        The get_url_patterns function should return a list of all of the url
-        patterns of all of the pods specified in the settings files.
-        '''
-        with self.settings(PODS=[
-                {'app_label': 'base_pod'},
-                {'app_label': 'base_pod'}]):
-            from casepro.pods import registry
-            reload(registry)
-
-        for i, url_pattern in enumerate(get_url_patterns()):
-            self.assertEqual(
-                url_pattern.callback, registry.pods[i].request_callback)
-            self.assertEqual(url_pattern.regex.pattern, r'read/%d/$' % i)

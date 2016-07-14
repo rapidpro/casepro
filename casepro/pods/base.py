@@ -18,7 +18,6 @@ class Pod(object):
     The base class for all pod plugins.
     '''
     config_cls = PodConfig
-    url_patterns = ()
     name = 'Default pod name'
     controller = None
     directive = None
