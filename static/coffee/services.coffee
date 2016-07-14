@@ -6,6 +6,23 @@ services = angular.module('cases.services', ['cases.modals']);
 
 
 #=====================================================================
+# Contact service
+#=====================================================================
+
+services.factory('ContactService', ['$http', ($http) ->
+  new class ContactService
+
+    #----------------------------------------------------------------------------
+    # Fetches a contact
+    #----------------------------------------------------------------------------
+    fetch: (id) ->
+      return $http.get('/contact/fetch/' + id + '/').then((response) ->
+        return response.data
+      )
+])
+
+
+#=====================================================================
 # Incoming message service
 #=====================================================================
 
@@ -114,7 +131,7 @@ services.factory('MessageService', ['$rootScope', '$http', '$httpParamSerializer
         text: search.text,
         after: utils.formatIso8601(search.after),
         before: utils.formatIso8601(search.before),
-        groups: if search.groups then (g.uuid for g in search.groups) else null,
+        groups: if search.groups then (g.id for g in search.groups) else null,
         contact: if search.contact then search.contact.id else null,
         label: if search.label then search.label.id else null,
         archived: if search.archived then 1 else 0
@@ -231,23 +248,22 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
         params.assignee = assignee.id
 
       return $http.post('/case/open/', params).then((response) ->
-        caseObj = response.data['case']
-        caseObj.isNew = response.data['is_new']
-        return caseObj
+        return response.data
       )
 
     #----------------------------------------------------------------------------
     # Adds a note to a case
     #----------------------------------------------------------------------------
     addNote: (caseObj, note) ->
-      return $http.post('/case/note/' + caseObj.id + '/', {note: note})
+      return $http.post('/case/note/' + caseObj.id + '/', {note: note}).then(() ->
+        caseObj.watching = true
+      )
 
     #----------------------------------------------------------------------------
     # Re-assigns a case
     #----------------------------------------------------------------------------
     reassign: (caseObj, assignee) ->
-      return $http.post('/case/reassign/' + caseObj.id + '/', {assignee: assignee.id})
-      .then(() ->
+      return $http.post('/case/reassign/' + caseObj.id + '/', {assignee: assignee.id}).then(() ->
         caseObj.assignee = assignee
       )
 
@@ -255,8 +271,7 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     # Closes a case
     #----------------------------------------------------------------------------
     close: (caseObj, note) ->
-      return $http.post('/case/close/' + caseObj.id + '/', {note: note})
-      .then(() ->
+      return $http.post('/case/close/' + caseObj.id + '/', {note: note}).then(() ->
         caseObj.is_closed = true
       )
 
@@ -264,9 +279,9 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     # Re-opens a case
     #----------------------------------------------------------------------------
     reopen: (caseObj, note) ->
-      return $http.post('/case/reopen/' + caseObj.id + '/', {note: note})
-      .then(() ->
+      return $http.post('/case/reopen/' + caseObj.id + '/', {note: note}).then(() ->
         caseObj.is_closed = false
+        caseObj.watching = true
       )
 
     #----------------------------------------------------------------------------
@@ -293,7 +308,25 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     # Reply in a case
     #----------------------------------------------------------------------------
     replyTo: (caseObj, text) ->
-      return $http.post('/case/reply/' + caseObj.id + '/', {text: text})
+      return $http.post('/case/reply/' + caseObj.id + '/', {text: text}).then(() ->
+        caseObj.watching = true
+      )
+
+    #----------------------------------------------------------------------------
+    # Watches this case (i.e. get notifications for activity)
+    #----------------------------------------------------------------------------
+    watch: (caseObj) ->
+      return $http.post('/case/watch/' + caseObj.id + '/').then(() ->
+        caseObj.watching = true
+      )
+
+    #----------------------------------------------------------------------------
+    # Unwatches this case (i.e. stop getting notifications for activity)
+    #----------------------------------------------------------------------------
+    unwatch: (caseObj) ->
+      return $http.post('/case/unwatch/' + caseObj.id + '/').then(() ->
+        caseObj.watching = false
+      )
 
     #----------------------------------------------------------------------------
     # Fetches timeline events
@@ -328,8 +361,31 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
 # Label service
 #=====================================================================
 
-services.factory('LabelService', ['$http', ($http) ->
+services.factory('LabelService', ['$http', '$httpParamSerializer', ($http, $httpParamSerializer) ->
   new class LabelService
+
+    #----------------------------------------------------------------------------
+    # Fetches all labels, optionally with activity information
+    #----------------------------------------------------------------------------
+    fetchAll: (withActivity = false) ->
+      params = {with_activity: withActivity}
+      return $http.get('/label/?' + $httpParamSerializer(params)).then((response) -> response.data.results)
+
+    #----------------------------------------------------------------------------
+    # Watches this label (i.e. get notifications for messages)
+    #----------------------------------------------------------------------------
+    watch: (label) ->
+      return $http.post('/label/watch/' + label.id + '/').then(() ->
+        label.watching = true
+      )
+
+    #----------------------------------------------------------------------------
+    # Unwatches this label (i.e. stop getting notifications for messages)
+    #----------------------------------------------------------------------------
+    unwatch: (label) ->
+      return $http.post('/label/unwatch/' + label.id + '/').then(() ->
+        label.watching = false
+      )
 
     #----------------------------------------------------------------------------
     # Deletes a label
@@ -342,8 +398,15 @@ services.factory('LabelService', ['$http', ($http) ->
 #=====================================================================
 # Partner service
 #=====================================================================
-services.factory('PartnerService', ['$http', ($http) ->
+services.factory('PartnerService', ['$http', '$httpParamSerializer', ($http, $httpParamSerializer) ->
   new class PartnerService
+    
+    #----------------------------------------------------------------------------
+    # Fetches all partners, optionally with activity information
+    #----------------------------------------------------------------------------
+    fetchAll: (withActivity = false) ->
+      params = {with_activity: withActivity}
+      return $http.get('/partner/?' + $httpParamSerializer(params)).then((response) -> response.data.results)
 
     #----------------------------------------------------------------------------
     # Fetches users with activity statistics for the given partner
@@ -360,10 +423,65 @@ services.factory('PartnerService', ['$http', ($http) ->
 
 
 #=====================================================================
+# Statistics service
+#=====================================================================
+services.factory('StatisticsService', ['$http', '$httpParamSerializer', ($http, $httpParamSerializer) ->
+  new class StatisticsService
+
+    #----------------------------------------------------------------------------
+    # Fetches data for incoming by day chart
+    #----------------------------------------------------------------------------
+    incomingChart: (label = null) ->
+      params = {
+        label: if label then label.id else null,
+      }
+      return $http.get('/stats/incoming_chart/?' + $httpParamSerializer(params)).then((response) -> response.data)
+
+    #----------------------------------------------------------------------------
+    # Fetches data for replies by month chart
+    #----------------------------------------------------------------------------
+    repliesChart: (partner = null, user = null) ->
+      params = {
+        partner: if partner then partner.id else null,
+        user: if user then user.id else null
+      }
+      return $http.get('/stats/replies_chart/?' + $httpParamSerializer(params)).then((response) -> response.data)
+
+    #----------------------------------------------------------------------------
+    # Initiates a daily count export
+    #----------------------------------------------------------------------------
+    dailyCountExport: (type, after, before) ->
+      params = {
+        type: type,
+        after: utils.formatIso8601(after, false),
+        before: utils.formatIso8601(before, false)
+      }
+      return $http.post('/stats/dailycountexport/create/', params)
+])
+
+
+#=====================================================================
 # User service
 #=====================================================================
-services.factory('UserService', ['$http', ($http) ->
+services.factory('UserService', ['$http', '$httpParamSerializer', ($http, $httpParamSerializer) ->
   new class UserService
+
+    #----------------------------------------------------------------------------
+    # Fetches users in the given partner with optional activity statistics
+    #----------------------------------------------------------------------------
+    fetchInPartner: (partner, withActivity = false) ->
+      params = {
+        partner: if partner then partner.id else null,
+        with_activity: withActivity
+      }
+      return $http.get('/user/?' + $httpParamSerializer(params)).then((response) -> response.data.results)
+
+    #----------------------------------------------------------------------------
+    # Fetches non-partner users with optional activity statistics
+    #----------------------------------------------------------------------------
+    fetchNonPartner: (withActivity = false) ->
+      params = {non_partner: true, with_activity: withActivity}
+      return $http.get('/user/?' + $httpParamSerializer(params)).then((response) -> response.data.results)
 
     #----------------------------------------------------------------------------
     # Delete the given user
@@ -415,4 +533,9 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
     newCaseModal: (summaryInitial, summaryMaxLength, partners) ->
       resolve = {summaryInitial: (() -> summaryInitial), summaryMaxLength: (() -> summaryMaxLength), partners: (() -> partners)}
       return $uibModal.open({templateUrl: '/partials/modal_newcase.html', controller: 'NewCaseModalController', resolve: resolve}).result
+
+    dateRangeModal: (title, prompt) ->
+      resolve = {title: (() -> title), prompt: (() -> prompt)}
+      return $uibModal.open({templateUrl: '/partials/modal_daterange.html', controller: 'DateRangeModalController', resolve: resolve}).result
+
 ])

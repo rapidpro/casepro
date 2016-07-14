@@ -15,7 +15,7 @@ from redis_cache import get_redis_connection
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact
 from casepro.msgs.models import Label, Message, Outgoing
-from casepro.utils.export import BaseExport
+from casepro.utils.export import BaseSearchExport
 
 
 CASE_LOCK_KEY = 'org:%d:case_lock:%s'
@@ -90,8 +90,13 @@ class Partner(models.Model):
         self.is_active = False
         self.save(update_fields=('is_active',))
 
-    def as_json(self):
-        return {'id': self.pk, 'name': self.name}
+    def as_json(self, full=True):
+        result = {'id': self.pk, 'name': self.name}
+
+        if full:
+            result['restricted'] = self.is_restricted
+
+        return result
 
     def __str__(self):
         return self.name
@@ -101,14 +106,20 @@ class case_action(object):
     """
     Helper decorator for case action methods that should check the user is allowed to update the case
     """
-    def __init__(self, require_update=True):
+    def __init__(self, require_update=True, become_watcher=False):
         self.require_update = require_update
+        self.become_watcher = become_watcher
 
     def __call__(self, func):
         def wrapped(case, user, *args, **kwargs):
             access = case.access_level(user)
             if (access == AccessLevel.update) or (not self.require_update and access == AccessLevel.read):
-                return func(case, user, *args, **kwargs)
+                result = func(case, user, *args, **kwargs)
+
+                if self.become_watcher:
+                    case.watchers.add(user)
+
+                return result
             else:
                 raise PermissionDenied()
         return wrapped
@@ -136,6 +147,9 @@ class Case(models.Model):
 
     closed_on = models.DateTimeField(null=True,
                                      help_text="When this case was closed")
+
+    watchers = models.ManyToManyField(User, related_name='watched_cases',
+                                      help_text="Users to be notified of case activity")
 
     @classmethod
     def get_all(cls, org, user=None, label=None):
@@ -204,6 +218,8 @@ class Case(models.Model):
 
     @classmethod
     def get_or_open(cls, org, user, message, summary, assignee):
+        from casepro.profiles.models import Notification
+
         r = get_redis_connection()
         with r.lock(CASE_LOCK_KEY % (org.pk, message.contact.uuid)):
             message.refresh_from_db()
@@ -220,12 +236,17 @@ class Case(models.Model):
                                       summary=summary)
             case.is_new = True
             case.labels.add(*list(message.labels.all()))  # copy labels from message to new case
+            case.watchers.add(user)
 
             # attach message to this case
             message.case = case
             message.save(update_fields=('case',))
 
-            CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee)
+            action = CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee)
+
+            for assignee_user in assignee.get_users():
+                if assignee_user != user:
+                    Notification.new_case_assignment(org, assignee_user, action)
 
         return case
 
@@ -262,6 +283,13 @@ class Case(models.Model):
         # merge actions and messages and sort by time
         return sorted(messages + actions, key=lambda event: event['time'])
 
+    def add_reply(self, message):
+        message.case = self
+        message.is_archived = True
+        message.save(update_fields=('case', 'is_archived'))
+
+        self.notify_watchers(reply=message)
+
     @case_action()
     def update_summary(self, user, summary):
         self.summary = summary
@@ -269,36 +297,50 @@ class Case(models.Model):
 
         CaseAction.create(self, user, CaseAction.UPDATE_SUMMARY, note=None)
 
-    @case_action(require_update=False)
+    @case_action(require_update=False, become_watcher=True)
     def add_note(self, user, note):
-        CaseAction.create(self, user, CaseAction.ADD_NOTE, note=note)
+        action = CaseAction.create(self, user, CaseAction.ADD_NOTE, note=note)
+
+        self.notify_watchers(action=action)
 
     @case_action()
     def close(self, user, note=None):
         self.contact.restore_groups()
 
-        close_action = CaseAction.create(self, user, CaseAction.CLOSE, note=note)
+        action = CaseAction.create(self, user, CaseAction.CLOSE, note=note)
 
-        self.closed_on = close_action.created_on
+        self.closed_on = action.created_on
         self.save(update_fields=('closed_on',))
 
-    @case_action()
+        self.notify_watchers(action=action)
+
+    @case_action(become_watcher=True)
     def reopen(self, user, note=None, update_contact=True):
         self.closed_on = None
         self.save(update_fields=('closed_on',))
 
-        CaseAction.create(self, user, CaseAction.REOPEN, note=note)
+        action = CaseAction.create(self, user, CaseAction.REOPEN, note=note)
 
         if update_contact:
             # suspend from groups, expire flows and archive messages
             self.contact.prepare_for_case()
 
+        self.notify_watchers(action=action)
+
     @case_action()
     def reassign(self, user, partner, note=None):
+        from casepro.profiles.models import Notification
+
         self.assignee = partner
         self.save(update_fields=('assignee',))
 
-        CaseAction.create(self, user, CaseAction.REASSIGN, assignee=partner, note=note)
+        action = CaseAction.create(self, user, CaseAction.REASSIGN, assignee=partner, note=note)
+
+        self.notify_watchers(action=action)
+
+        # also notify users in the assigned partner that this case has been assigned to them
+        for user in partner.get_users():
+            Notification.new_case_assignment(self.org, user, action)
 
     @case_action()
     def label(self, user, label):
@@ -307,14 +349,14 @@ class Case(models.Model):
         CaseAction.create(self, user, CaseAction.LABEL, label=label)
 
     @case_action()
-    def reply(self, user, text):
-        return Outgoing.create_case_reply(self.org, user, text, self)
-
-    @case_action()
     def unlabel(self, user, label):
         self.labels.remove(label)
 
         CaseAction.create(self, user, CaseAction.UNLABEL, label=label)
+
+    @case_action(become_watcher=True)
+    def reply(self, user, text):
+        return Outgoing.create_case_reply(self.org, user, text, self)
 
     def update_labels(self, user, labels):
         """
@@ -329,6 +371,27 @@ class Case(models.Model):
             self.label(user, label)
         for label in rem_labels:
             self.unlabel(user, label)
+
+    def watch(self, user):
+        if self.access_level(user) != AccessLevel.none:
+            self.watchers.add(user)
+        else:
+            raise PermissionDenied()
+
+    def unwatch(self, user):
+        self.watchers.remove(user)
+
+    def is_watched_by(self, user):
+        return user in self.watchers.all()
+
+    def notify_watchers(self, reply=None, action=None):
+        from casepro.profiles.models import Notification
+
+        for watcher in self.watchers.all():
+            if reply:
+                Notification.new_case_reply(self.org, watcher, reply)
+            elif action and watcher != action.created_by:
+                Notification.new_case_action(self.org, watcher, action)
 
     def access_level(self, user):
         """
@@ -357,13 +420,13 @@ class Case(models.Model):
     def is_closed(self):
         return self.closed_on is not None
 
-    def as_json(self, full=True, full_contact=False):
+    def as_json(self, full=True):
         if full:
             return {
                 'id': self.pk,
-                'assignee': self.assignee.as_json(),
-                'contact': self.contact.as_json(full_contact),
-                'labels': [l.as_json() for l in self.labels.all()],
+                'assignee': self.assignee.as_json(full=False),
+                'contact': self.contact.as_json(full=False),
+                'labels': [l.as_json(full=False) for l in self.labels.all()],
                 'summary': self.summary,
                 'opened_on': self.opened_on,
                 'is_closed': self.is_closed
@@ -371,7 +434,7 @@ class Case(models.Model):
         else:
             return {
                 'id': self.pk,
-                'assignee': self.assignee.as_json(),
+                'assignee': self.assignee.as_json(full=False),
             }
 
     def __str__(self):
@@ -422,7 +485,7 @@ class CaseAction(models.Model):
         return {
             'id': self.pk,
             'action': self.action,
-            'created_by': {'id': self.created_by.pk, 'name': self.created_by.get_full_name()},
+            'created_by': self.created_by.as_json(full=False),
             'created_on': self.created_on,
             'assignee': self.assignee.as_json() if self.assignee else None,
             'label': self.label.as_json() if self.label else None,
@@ -430,20 +493,19 @@ class CaseAction(models.Model):
         }
 
 
-class CaseExport(BaseExport):
+class CaseExport(BaseSearchExport):
     """
     An export of cases
     """
     directory = 'case_exports'
     download_view = 'cases.caseexport_read'
-    email_templates = 'cases/email/case_export'
 
     def get_search(self):
         search = super(CaseExport, self).get_search()
         search['folder'] = CaseFolder[search['folder']]
         return search
 
-    def render_book(self, book, search):
+    def render_search(self, book, search):
         from casepro.contacts.models import Field
 
         base_fields = [
@@ -495,5 +557,3 @@ class CaseExport(BaseExport):
 
             self.write_row(sheet, row, values)
             row += 1
-
-        return book

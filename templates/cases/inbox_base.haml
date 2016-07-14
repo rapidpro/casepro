@@ -14,7 +14,7 @@
   %script{ type:"text/javascript" }
     var contextData = {{ context_data_json|safe }};
 
-  .ng-cloak{ ng-controller:"HomeController", ng-init:'init("{{ folder }}", {{ server_time }})', ng-cloak:"" }
+  .ng-cloak{ ng-controller:"InboxController", ng-init:'init("{{ folder }}", {{ server_time }})', ng-cloak:"" }
     .page-header.clearfix
       %h2.pull-back
         %span{ class:'glyphicon {{ folder_icon }}' }
@@ -26,14 +26,10 @@
           %span.glyphicon.glyphicon-tag
           &nbsp;
           [[ activeLabel.name ]]
-        - if org_perms.msgs.label_update or org_perms.msgs.label_delete
-          .btn-group
-            - if org_perms.msgs.label_update
-              %a.btn.btn-default{ ng-href:"/label/update/[[ activeLabel.id ]]/", tooltip:"Edit Label" }
-                %span.glyphicon.glyphicon-pencil
-            - if org_perms.msgs.label_delete
-              %button.btn.btn-default{ ng-click:"onDeleteLabel()", tooltip:"Delete Label" }
-                %span.glyphicon.glyphicon-trash
+        - if perms.msgs.label_read or org_perms.msgs.label_read
+          %a.btn.btn-default{ ng-href:"/label/read/[[ activeLabel.id ]]/" }
+            - trans "View"
+
 
     .row
       .col-md-2

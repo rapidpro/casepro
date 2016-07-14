@@ -3,9 +3,11 @@ from __future__ import unicode_literals
 from dash.orgs.views import OrgObjPermsMixin, OrgPermsMixin
 from django import forms
 from django.conf import settings
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCRUDL, SmartReadView, SmartListView, SmartFormView
+
+from casepro.utils import JSONEncoder
 
 from .models import Contact, Group, Field
 
@@ -15,7 +17,7 @@ class ContactCRUDL(SmartCRUDL):
     Simple contact CRUDL for debugging by superusers, i.e. not exposed to regular users for now
     """
     model = Contact
-    actions = ('list', 'read')
+    actions = ('list', 'read', 'fetch')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('uuid', 'name', 'language', 'created_on')
@@ -61,6 +63,15 @@ class ContactCRUDL(SmartCRUDL):
             context = super(ContactCRUDL.Read, self).get_context_data(**kwargs)
             context['backend_url'] = settings.SITE_EXTERNAL_CONTACT_URL % self.object.uuid
             return context
+
+    class Fetch(OrgObjPermsMixin, SmartReadView):
+        """
+        JSON endpoint for fetching a single contact
+        """
+        permission = 'contacts.contact_read'
+
+        def render_to_response(self, context, **response_kwargs):
+            return JsonResponse(self.object.as_json(full=True), encoder=JSONEncoder)
 
 
 class GroupCRUDL(SmartCRUDL):

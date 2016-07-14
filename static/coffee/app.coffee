@@ -6,13 +6,17 @@ app = angular.module('cases', [
   'infinite-scroll',
   'cases.services',
   'cases.controllers',
-  'cases.filters'
+  'cases.filters',
+  'cases.directives'
 ]);
 
 app.config [ '$interpolateProvider', '$httpProvider', ($interpolateProvider, $httpProvider) ->
   # Since Django uses {{ }}, we will have angular use [[ ]] instead.
   $interpolateProvider.startSymbol "[["
   $interpolateProvider.endSymbol "]]"
+
+  # so that HttpRequest.is_ajax() works
+  $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
 
   # Use Django's CSRF functionality
   $httpProvider.defaults.xsrfCookieName = 'csrftoken'

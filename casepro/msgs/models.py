@@ -1,11 +1,9 @@
 from __future__ import unicode_literals
 
-import json
-
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
+from django.core.exceptions import PermissionDenied
 from django.db import models
-from django.db.models import Count
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timesince import timesince
@@ -16,7 +14,7 @@ from redis_cache import get_redis_connection
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact, Field
 from casepro.utils import json_encode
-from casepro.utils.export import BaseExport
+from casepro.utils.export import BaseSearchExport
 
 LABEL_LOCK_KEY = 'lock:label:%d:%s'
 MESSAGE_LOCK_KEY = 'lock:message:%d:%d'
@@ -46,19 +44,23 @@ class Label(models.Model):
 
     description = models.CharField(verbose_name=_("Description"), null=True, max_length=255)
 
-    tests = models.TextField(blank=True)
+    rule = models.OneToOneField('rules.Rule', null=True)
 
     is_synced = models.BooleanField(
         default=True,
         help_text="Whether this label should be synced with the backend"
     )
 
+    watchers = models.ManyToManyField(User, related_name='watched_labels',
+                                      help_text="Users to be notified when label is applied to a message")
+
     is_active = models.BooleanField(default=True, help_text="Whether this label is active")
 
     @classmethod
     def create(cls, org, name, description, tests, is_synced):
-        return cls.objects.create(org=org, name=name, description=description,
-                                  tests=json_encode(tests), is_synced=is_synced)
+        label = cls.objects.create(org=org, name=name, description=description, is_synced=is_synced)
+        label.update_tests(tests)
+        return label
 
     @classmethod
     def get_all(cls, org, user=None):
@@ -69,25 +71,61 @@ class Label(models.Model):
 
         return org.labels.filter(is_active=True)
 
+    def update_tests(self, tests):
+        from casepro.rules.models import Rule, LabelAction
+
+        if tests:
+            if self.rule:
+                self.rule.tests = json_encode(tests)
+                self.rule.save(update_fields=('tests',))
+            else:
+                self.rule = Rule.create(self.org, tests, [LabelAction(self)])
+                self.save(update_fields=('rule',))
+        else:
+            if self.rule:
+                rule = self.rule
+                self.rule = None
+                self.save(update_fields=('rule',))
+
+                rule.delete()
+
+    def get_tests(self):
+        return self.rule.get_tests() if self.rule else []
+
     @classmethod
     def lock(cls, org, uuid):
         return get_redis_connection().lock(LABEL_LOCK_KEY % (org.pk, uuid), timeout=60)
 
-    def get_tests(self):
-        from casepro.rules.models import Test, DeserializationContext
+    def watch(self, user):
+        if not Label.get_all(self.org, user).filter(pk=self.pk).exists():
+            raise PermissionDenied()
 
-        tests_json = json.loads(self.tests) if self.tests else []
-        return [Test.from_json(t, DeserializationContext(self.org)) for t in tests_json]
+        self.watchers.add(user)
 
-    def get_partners(self):
-        return self.partners.filter(is_active=True)
+    def unwatch(self, user):
+        self.watchers.remove(user)
+
+    def is_watched_by(self, user):
+        return user in self.watchers.all()
 
     def release(self):
-        self.is_active = False
-        self.save(update_fields=('is_active',))
+        rule = self.rule
 
-    def as_json(self):
-        return {'id': self.pk, 'name': self.name}
+        self.rule = None
+        self.is_active = False
+        self.save(update_fields=('rule', 'is_active'))
+
+        if rule:
+            rule.delete()
+
+    def as_json(self, full=True):
+        result = {'id': self.pk, 'name': self.name}
+
+        if full:
+            result['description'] = self.description
+            result['synced'] = self.is_synced
+
+        return result
 
     def __str__(self):
         return self.name
@@ -160,7 +198,7 @@ class Message(models.Model):
         include_archived = search.get('include_archived')
         text = search.get('text')
         contact_id = search.get('contact')
-        group_uuids = search.get('groups')
+        group_ids = search.get('groups')
         after = search.get('after')
         before = search.get('before')
 
@@ -210,8 +248,8 @@ class Message(models.Model):
 
         if contact_id:
             queryset = queryset.filter(contact__pk=contact_id)
-        if group_uuids:
-            queryset = queryset.filter(contact__groups__uuid__in=group_uuids).distinct()
+        if group_ids:
+            queryset = queryset.filter(contact__groups__pk__in=group_ids).distinct()
 
         if after:
             queryset = queryset.filter(created_on__gt=after)
@@ -237,6 +275,24 @@ class Message(models.Model):
 
         self.is_active = False
         self.save(update_fields=('is_active',))
+
+    def label(self, *labels):
+        """
+        Adds the given labels to this message
+        """
+        from casepro.profiles.models import Notification
+
+        self.labels.add(*labels)
+
+        # notify all users who watch these labels
+        for watcher in set(User.objects.filter(watched_labels__in=labels)):
+            Notification.new_message_labelling(self.org, watcher, self)
+
+    def unlabel(self, *labels):
+        """
+        Removes the given labels from this message
+        """
+        self.labels.remove(*labels)
 
     def update_labels(self, user, labels):
         """
@@ -278,7 +334,7 @@ class Message(models.Model):
         messages = list(messages)
         if messages:
             for msg in messages:
-                msg.labels.add(label)
+                msg.label(label)
 
             if label.is_synced:
                 get_backend().label_messages(org, messages, label)
@@ -290,7 +346,7 @@ class Message(models.Model):
         messages = list(messages)
         if messages:
             for msg in messages:
-                msg.labels.remove(label)
+                msg.unlabel(label)
 
             if label.is_synced:
                 get_backend().unlabel_messages(org, messages, label)
@@ -326,7 +382,7 @@ class Message(models.Model):
             'contact': self.contact.as_json(full=False),
             'text': self.text,
             'time': self.created_on,
-            'labels': [l.as_json() for l in self.labels.all()],
+            'labels': [l.as_json(full=False) for l in self.labels.all()],
             'flagged': self.is_flagged,
             'archived': self.is_archived,
             'direction': self.DIRECTION,
@@ -375,11 +431,13 @@ class MessageAction(models.Model):
         return action_obj
 
     def as_json(self):
-        return {'id': self.pk,
-                'action': self.action,
-                'created_by': self.created_by.as_json(),
-                'created_on': self.created_on,
-                'label': self.label.as_json() if self.label else None}
+        return {
+            'id': self.pk,
+            'action': self.action,
+            'created_by': self.created_by.as_json(full=False),
+            'created_on': self.created_on,
+            'label': self.label.as_json() if self.label else None
+        }
 
 
 @python_2_unicode_compatible
@@ -392,6 +450,7 @@ class Outgoing(models.Model):
     FORWARD = 'F'
 
     ACTIVITY_CHOICES = ((BULK_REPLY, _("Bulk Reply")), (CASE_REPLY, "Case Reply"), (FORWARD, _("Forward")))
+    REPLY_ACTIVITIES = (BULK_REPLY, CASE_REPLY)
 
     DIRECTION = 'O'
 
@@ -454,7 +513,7 @@ class Outgoing(models.Model):
     def _create(cls, org, user, activity, text, reply_to, contact=None, urn=None, case=None, push=True):
         if not text:
             raise ValueError("Message text cannot be empty")
-        if not contact and not urn:
+        if not contact and not urn:  # pragma: no cover
             raise ValueError("Message must have a recipient")
 
         msg = cls.objects.create(org=org, partner=user.get_partner(org),
@@ -467,6 +526,10 @@ class Outgoing(models.Model):
             get_backend().push_outgoing(org, [msg])
 
         return msg
+
+    @classmethod
+    def get_replies(cls, org):
+        return org.outgoing_messages.filter(activity__in=cls.REPLY_ACTIVITIES)
 
     @classmethod
     def search(cls, org, user, search):
@@ -495,7 +558,7 @@ class Outgoing(models.Model):
         after = search.get('after')
         before = search.get('before')
 
-        queryset = org.outgoing_messages.filter(activity__in=(Outgoing.BULK_REPLY, Outgoing.CASE_REPLY))
+        queryset = cls.get_replies(org)
 
         user_partner = user.get_partner(org)
         if user_partner:
@@ -514,24 +577,8 @@ class Outgoing(models.Model):
 
         return queryset.order_by('-created_on')
 
-    @classmethod
-    def get_user_reply_counts(cls, org, partner, since, until):
-        """
-        Calculates aggregated counts of replies by user
-        """
-        # TODO db triggers to pre-calculate these for performance
-
-        replies = cls.objects.filter(org=org, activity__in=(Outgoing.BULK_REPLY, Outgoing.CASE_REPLY))
-
-        if partner:
-            replies = replies.filter(partner=partner)
-        if since:
-            replies = replies.filter(created_on__gte=since)
-        if until:
-            replies = replies.filter(created_on__lt=until)
-
-        counts = replies.values('created_by').annotate(replies=Count('pk'))
-        return {c['created_by']: c['replies'] for c in counts}
+    def is_reply(self):
+        return self.activity in self.REPLY_ACTIVITIES
 
     def as_json(self):
         """
@@ -545,27 +592,26 @@ class Outgoing(models.Model):
             'time': self.created_on,
             'direction': self.DIRECTION,
             'case': self.case.as_json(full=False) if self.case else None,
-            'sender': self.created_by.as_json()
+            'sender': self.created_by.as_json(full=False)
         }
 
     def __str__(self):
         return self.text
 
 
-class MessageExport(BaseExport):
+class MessageExport(BaseSearchExport):
     """
     An export of messages
     """
     directory = 'message_exports'
     download_view = 'msgs.messageexport_read'
-    email_templates = 'msgs/email/message_export'
 
     def get_search(self):
         search = super(MessageExport, self).get_search()
         search['folder'] = MessageFolder[search['folder']]
         return search
 
-    def render_book(self, book, search):
+    def render_search(self, book, search):
         from casepro.contacts.models import Field
 
         base_fields = ["Time", "Message ID", "Flagged", "Labels", "Text", "Contact"]
@@ -605,18 +651,15 @@ class MessageExport(BaseExport):
             self.write_row(sheet, row, values)
             row += 1
 
-        return book
 
-
-class ReplyExport(BaseExport):
+class ReplyExport(BaseSearchExport):
     """
     An export of replies
     """
     directory = 'reply_exports'
     download_view = 'msgs.replyexport_read'
-    email_templates = 'msgs/email/reply_export'
 
-    def render_book(self, book, search):
+    def render_search(self, book, search):
         base_fields = [
             "Sent On", "User", "Message", "Delay", "Reply to", "Flagged", "Case Assignee", "Labels", "Contact"
         ]
@@ -658,5 +701,3 @@ class ReplyExport(BaseExport):
 
             self.write_row(sheet, row, values)
             row += 1
-
-        return book

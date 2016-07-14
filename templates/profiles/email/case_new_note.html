@@ -1,0 +1,7 @@
+{% load i18n %}
+{% blocktrans with user=user.email %}User {{ user }} added a new note:{% endblocktrans %}<br/>
+<br/>
+<i>{{ note }}</i>
+<br/>
+<br/>
+{% include "profiles/email/common/case_notification_footer.html" with case_url=case_url only %}

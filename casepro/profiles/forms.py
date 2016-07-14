@@ -10,33 +10,35 @@ from casepro.cases.models import Partner
 from .models import PARTNER_ROLES, ROLE_ORG_CHOICES, ROLE_PARTNER_CHOICES
 
 
+MIN_PASSWORD_LENGTH = 10
+
+
 class PasswordValidator(object):
     """
     Basic password complexity check - should integrate with auth's validate_password functionality when we update to
     Django 1.9.
     """
-    MIN_LENGTH = 10
-
     def __call__(self, value):
-        if len(value) < self.MIN_LENGTH:
-            raise ValidationError(_("Must be at least %d characters long") % self.MIN_LENGTH)
+        if len(value) < MIN_PASSWORD_LENGTH:
+            raise ValidationError(_("Must be at least %d characters long") % MIN_PASSWORD_LENGTH)
 
 
 class UserForm(forms.ModelForm):
     """
     Base form for all user editing and used for user-editing outside of orgs by superusers
     """
+    PASSWORD_FIELD_HELP = _("Password used to log in (minimum of %d characters).") % MIN_PASSWORD_LENGTH
+
     name = forms.CharField(label=_("Name"), max_length=128)
 
     email = forms.CharField(label=_("Email"), max_length=254,
                             help_text=_("Email address and login."))
 
     password = forms.CharField(label=_("Password"), widget=forms.PasswordInput, validators=[PasswordValidator()],
-                               help_text=_("Password used to log in (minimum of 8 characters)."))
+                               help_text=PASSWORD_FIELD_HELP)
 
-    new_password = forms.CharField(widget=forms.PasswordInput, validators=[PasswordValidator()], required=False,
-                                   label=_("New password"),
-                                   help_text=_("Password used to login (minimum of 8 characters, optional)."))
+    new_password = forms.CharField(label=_("New password"), widget=forms.PasswordInput, required=False,
+                                   validators=[PasswordValidator()], help_text=PASSWORD_FIELD_HELP)
 
     confirm_password = forms.CharField(label=_("Confirm password"), widget=forms.PasswordInput, required=False)
 

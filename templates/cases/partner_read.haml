@@ -1,5 +1,5 @@
 - extends "smartmin/read.html"
-- load smartmin i18n thumbnail
+- load smartmin i18n thumbnail humanize
 
 - block pre-content
 
@@ -42,7 +42,7 @@
 
     <uib-tabset active="active">
 
-      <uib-tab index="0" select="onTabSelect('summary')">
+      <uib-tab index="0" select="onTabSelect(0)">
         <uib-tab-heading>
           %span.glyphicon.glyphicon-dashboard
           - trans "Summary"
@@ -52,17 +52,17 @@
           .col-md-4
             %ul
               %li
-                Total replies: <strong>{{ summary.total_replies }}</strong>
+                Total replies: <strong>{{ summary.total_replies | intcomma }}</strong>
               %li
-                Number of open cases: <strong>{{ summary.cases_open }}</strong>
+                Number of open cases: <strong>{{ summary.cases_open | intcomma }}</strong>
               %li
-                Number of closed cases: <strong>{{ summary.cases_closed }}</strong>
+                Number of closed cases: <strong>{{ summary.cases_closed | intcomma }}</strong>
           .col-md-8
-            .chart.chart-replies-by-month
+            #chart-replies-by-month
       </uib-tab>
 
       - if can_view_replies
-        <uib-tab index="1" select="onTabSelect('replies')">
+        <uib-tab index="1" select="onTabSelect(1)">
           <uib-tab-heading>
             %span.glyphicon.glyphicon-comment
             - trans "Replies"
@@ -134,8 +134,7 @@
                       %span.glyphicon.glyphicon-flag{ ng-if:"item.reply_to.flagged" }
                     %td{ nowrap:"" }
                       %a{ ng-href:"/contact/read/[[ item.contact.id ]]" }><
-                        %span.glyphicon.glyphicon-phone>
-                        [[ item.contact.name ]]
+                        <cp-contact contact="item.contact">
 
             .loading{ ng-if:"oldItemsLoading" }
             .none{ ng-hide:"oldItemsLoading || items.length > 0" }
@@ -144,7 +143,7 @@
               - trans "More items than can be displayed"
         </uib-tab>
 
-      <uib-tab index="2" select="onTabSelect('users')">
+      <uib-tab index="2" select="onTabSelect(2)">
         <uib-tab-heading>
           %span.glyphicon.glyphicon-user
           - trans "Users"
@@ -175,7 +174,10 @@
                 %a{ ng-href:"/user/read/[[ user.id ]]/" }><
                   [[ user.name ]]
               %td
-                [[ user.role ]]
+                %span{ ng-if:'user.role == "M"' }
+                  - trans "Manager"
+                %span{ ng-if:'user.role == "Y"' }
+                  - trans "Data Analyst"
               %td
                 [[ user.replies.this_month ]]
               %td
@@ -187,22 +189,6 @@
 
       </uib-tab>
     </uib-tabset>
-
-
-- block extra-script
-  {{ block.super }}
-  :javascript
-    $(function() {
-      $('.chart-replies-by-month').highcharts({
-        chart: { type: 'column' },
-        title: { text: null },
-        xAxis: { categories: contextData.replies_by_month[0] },
-        yAxis: { min: 0, title: { text: 'Replies' }},
-        legend: { enabled: false },
-        series: [{ name: 'Replies', data: contextData.replies_by_month[1] }],
-        credits: { enabled: false }
-      });
-    });
 
 
 - block extra-style
@@ -229,7 +215,7 @@
     .time-warning {
       color: #922
     }
-    .chart {
+    #chart-replies-by-month {
       width: 100%;
       height: 250px;
     }
