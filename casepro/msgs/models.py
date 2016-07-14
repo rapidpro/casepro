@@ -40,7 +40,7 @@ class Label(models.Model):
 
     uuid = models.CharField(max_length=36, unique=True, null=True)
 
-    name = models.CharField(verbose_name=_("Name"), max_length=32, help_text=_("Name of this label"))
+    name = models.CharField(verbose_name=_("Name"), max_length=64, help_text=_("Name of this label"))
 
     description = models.CharField(verbose_name=_("Description"), null=True, max_length=255)
 
