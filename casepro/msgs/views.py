@@ -101,7 +101,8 @@ class LabelCRUDL(SmartCRUDL):
     class List(OrgPermsMixin, SmartListView):
         def get(self, request, *args, **kwargs):
             with_activity = str_to_bool(self.request.GET.get('with_activity', ''))
-            labels = Label.get_all(self.request.org, self.request.user).order_by('name')
+            labels = list(Label.get_all(self.request.org, self.request.user).order_by('name'))
+            Label.bulk_cache_initialize(labels)
 
             if with_activity:
                 # get message statistics
@@ -111,7 +112,7 @@ class LabelCRUDL(SmartCRUDL):
             def as_json(label):
                 obj = label.as_json()
                 if with_activity:
-                    obj['messages'] = {
+                    obj['activity'] = {
                         'this_month': this_month.get(label, 0),
                         'last_month': last_month.get(label, 0),
                     }
