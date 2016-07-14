@@ -12,31 +12,35 @@
           %small
             %label.control-label
                 -trans "Labelled with"
-          %ul.nav.nav-pills.btn-group-xs.col-md-12{data-toggle:'buttons'}
-            %li.btn.btn-sm{ng-repeat:'label in labels',ng-click:'fetchFaqs(label)',aria-pressed:"true",style:"label.active{background:blue}"}
-                %input{type:'radio'}
-                  %a.glyphicon.glyphicon-tag
-                    [[label.name]]
+          .row
+            %ul.nav.nav-pills.btn-group-xs.col-md-12{data-toggle:'buttons'}
+              %li.btn.btn-sm{ng-repeat:'label in labels',ng-click:'fetchFaqs(label)',aria-pressed:"true",style:"label.active{background:blue}"}
+                  %input{type:'radio'}
+                    %a.glyphicon.glyphicon-tag
+                      [[label.name]]
+
+          %br
+          .row
+            %small.col-md-2
+              %label.control-label
+                  -trans "Containing"
+            .input-group.col-md-10
+                %input.form-control{ type:"text", placeholder:'Keyword',ng-model:'search.text',style:'width:250px' }
+                %button.btn.btn-default{ type:"button", ng-click:"fetchFaqs()" }
+                    %span.glyphicon.glyphicon-search
+                    - trans "Search"
           %br
           %small
             %label.control-label
-                -trans "Containing"
-          .input-group
-            %input.form-control{ type:"text", placeholder:'Keyword',ng-keyup:'fetchFaqs()',ng-model:'search.text' }
-            %span.input-group-addon
-              %i.glyphicon.glyphicon-search
-          %br
-          %small
-            %label.control-label
-                -trans "Written in"
+                -trans "Written in &nbsp &nbsp "
           .btn-group{ uib-dropdown:"true" }
             %button.btn.btn-default.dropdown-toggle{ type:"button", uib-dropdown-toggle:"true" }
-              - trans "Select language"
+              [[lang]]
               %span.caret
             %ul.dropdown-menu
               %li{ng-repeat:'language in languages'}
-                %a{ ng-click:"filterByLanguage(language.id)" }
-                  - trans language.name
+                %a{ ng-click:"filterByLanguage(language)" }
+                  [[language.name]]
 
       .form-group
         %ul.list-group.col-md-12.col-xs-12{style:'overflow-x:auto;max-height:20vh;'}
@@ -44,6 +48,7 @@
             %a.small.list-group-item{ng-click:"setResponse(reply.answer)"}
               %b[[reply.question]]
               %p[[reply.answer]]
+              
       .form-group
         %textarea.form-control{ ng-model:"fields.text.val", ng-maxlength:"fields.text.maxLength", name:"text", required:"" ,readonly:""}
             .help-block{ ng-show:"form.text.$error.required && (form.text.$dirty || form.submitted)" }

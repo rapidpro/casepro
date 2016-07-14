@@ -57,7 +57,7 @@ modals.controller 'EditModalController', ['$scope', '$uibModalInstance', 'title'
 #=====================================================================
 # Reply to contacts modal
 #=====================================================================
-modals.controller('ReplyModalController', ['$scope','FAQService','$uibModalInstance', '$controller', 'maxLength', ($scope , FAQService, $uibModalInstance, $controller, maxLength) ->
+modals.controller('ReplyModalController', ['$scope','FAQService','LanguageService','$uibModalInstance', '$controller', 'maxLength', ($scope , FAQService, LanguageService, $uibModalInstance, $controller, maxLength) ->
 
 
   $scope.fields = {text: {val: '', maxLength: maxLength}}
@@ -67,15 +67,17 @@ modals.controller('ReplyModalController', ['$scope','FAQService','$uibModalInsta
     $scope.search = $scope.buildSearch()
     $scope.fetchFaqs()
     $scope.setLanguages()
-
+    $scope.lang = "Select language"
 
   $scope.buildSearch = () ->
     search = angular.copy($scope.searchField)
     search.label = $scope.activeLabel
     return search
 
-  $scope.filterByLanguage = (language_id) ->
-    $scope.search.language = language_id
+  $scope.filterByLanguage = (language) ->
+    $scope.lang = language.name
+    $scope.search.language = language.id
+    $scope.replies = FAQService.fetchFaqs($scope.search)
 
   $scope.fetchFaqs = (label) ->
     if label
@@ -85,7 +87,7 @@ modals.controller('ReplyModalController', ['$scope','FAQService','$uibModalInsta
       $scope.replies = FAQService.fetchFaqs($scope.search)
 
   $scope.setLanguages = () ->
-      $scope.languages = FAQService.getFaqLanguages()
+      $scope.languages = LanguageService.getLanguages()
 
   $scope.searchFieldDefaults = () -> { text: null,language:null}
 
