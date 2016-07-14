@@ -432,6 +432,10 @@ class JunebugBackend(BaseBackend):
                 settings.JUNEBUG_INBOUND_URL, received_junebug_message,
                 name='inbound_junebug_message'
             ),
+            url(
+                settings.IDENTITY_STORE_OPTOUT_URL,
+                receive_identity_store_optout, name='identity_store_optout'
+            ),
         ]
 
 
@@ -464,3 +468,55 @@ def received_junebug_message(request):
         created_on=datetime.now(pytz.utc), has_labels=True)
 
     return JsonResponse(msg.as_json())
+
+
+@csrf_exempt
+def receive_identity_store_optout(request):
+    '''Handles optout notifications from the Identity Store.'''
+    if request.method != 'POST':
+        return JsonResponse({'reason': 'Method not allowed.'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+    except ValueError as e:
+        return JsonResponse(
+            {'reason': 'JSON decode error', 'details': e.message}, status=400)
+
+    try:
+        identity_id = data['identity']
+        optout_type = data['optout_type']
+    except KeyError as e:
+        return JsonResponse(
+            {'reason': 'Both "identity" and "optout_type" must be specified.'},
+            status=400)
+
+    # The identity store currently doesn't specify the response format or do
+    # anything with the response.
+
+    syncer = IdentityStoreContactSyncer()
+    org = request.org
+
+    with syncer.lock(org, identity_id):
+        local_contact = syncer.fetch_local(org, identity_id)
+        if not local_contact:
+            return JsonResponse({
+                'reason': "No Contact for id: " + identity_id}, status=400)
+
+        if optout_type == "forget":
+            # TODO: Removed any identifying details from the contact
+            # (to uphold 'Right to be forgotten')
+            local_contact.release()
+            return JsonResponse({"success": True}, status=200)
+
+        elif optout_type == "stop" or optout_type == "stopall":
+            local_contact.is_blocked = True
+            local_contact.save(update_fields=('is_blocked',))
+            return JsonResponse({"success": True}, status=200)
+
+        elif optout_type == "unsubscribe":
+            # This case is not relevant to Casepro
+            return JsonResponse({"success": True}, status=200)
+
+    return JsonResponse({
+        'reason': "Unrecognised value for 'optout_type': " + optout_type},
+        status=400)

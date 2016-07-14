@@ -8,7 +8,8 @@ import responses
 
 from ..junebug import (
     IdentityStore, JunebugBackend, JunebugMessageSendingError,
-    IdentityStoreContactSyncer, IdentityStoreContact, received_junebug_message)
+    IdentityStoreContactSyncer, IdentityStoreContact, received_junebug_message,
+    receive_identity_store_optout)
 
 
 class JunebugBackendTest(BaseCasesTest):
@@ -566,14 +567,22 @@ class JunebugBackendTest(BaseCasesTest):
         Should return the list of url patterns needed to receive messages
         from Junebug.
         '''
-        [url] = self.backend.get_url_patterns()
-        self.assertEqual(url.callback, received_junebug_message)
-        self.assertEqual(url.regex.pattern, settings.JUNEBUG_INBOUND_URL)
-        self.assertEqual(url.name, 'inbound_junebug_message')
+        urls = self.backend.get_url_patterns()
+        self.assertEqual(urls[0].callback, received_junebug_message)
+        self.assertEqual(urls[0].regex.pattern, settings.JUNEBUG_INBOUND_URL)
+        self.assertEqual(urls[0].name, 'inbound_junebug_message')
+        self.assertEqual(urls[1].callback, receive_identity_store_optout)
+        self.assertEqual(urls[1].regex.pattern,
+                         settings.IDENTITY_STORE_OPTOUT_URL)
+        self.assertEqual(urls[1].name, 'identity_store_optout')
 
         with self.settings(JUNEBUG_INBOUND_URL=r'^test/url/$'):
-            [url] = self.backend.get_url_patterns()
-            self.assertEqual(url.regex.pattern, r'^test/url/$')
+            urls = self.backend.get_url_patterns()
+            self.assertEqual(urls[0].regex.pattern, r'^test/url/$')
+
+        with self.settings(IDENTITY_STORE_OPTOUT_URL=r'^test/url/$'):
+            urls = self.backend.get_url_patterns()
+            self.assertEqual(urls[1].regex.pattern, r'^test/url/$')
 
 
 class JunebugInboundViewTest(BaseCasesTest):
@@ -715,6 +724,146 @@ class JunebugInboundViewTest(BaseCasesTest):
         self.assertEqual(len(responses.calls), 2)
         self.assertEqual(responses.calls[1].request.method, 'POST')
         self.assertEqual(responses.calls[1].request.url, create_url)
+
+
+class IdentityStoreOptoutViewTest(BaseCasesTest):
+    '''Tests related to the optout identity store view.'''
+    url = '/junebug/optout/'
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        super(IdentityStoreOptoutViewTest, self).setUp()
+
+    def test_method_not_post(self):
+        '''Only POST requests should be allowed.'''
+        request = self.factory.get(self.url)
+        response = receive_identity_store_optout(request)
+        self.assertEqual(
+            json.loads(response.content), {'reason': 'Method not allowed.'})
+        self.assertEqual(response.status_code, 405)
+
+    def test_invalid_json_body(self):
+        '''If the request contains invalid JSON in the body, an appropriate
+        error message and code should be returned.'''
+        request = self.factory.post(
+            self.url, content_type='application/json', data='{')
+        response = receive_identity_store_optout(request)
+        self.assertEqual(
+            json.loads(response.content), {
+                'reason': 'JSON decode error',
+                'details': 'Expecting object: line 1 column 1 (char 0)'
+            }
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def get_optout_request(self, identity, optout_type):
+        request = self.factory.post(
+            self.url, content_type='application/json', data=json.dumps({
+                'identity': identity,
+                'details': {
+                    "name": "testing",
+                    "addresses": {
+                        "msisdn": {
+                            "+1234": {}
+                        },
+                    },
+                    "preferred_language": "eng_NG",
+                },
+                'optout_type': optout_type,
+            })
+        )
+        request.org = self.unicef
+        return request
+
+    @responses.activate
+    def test_forget_optout_received(self):
+        '''Forget optouts should unset the contact's is_active flag'''
+        contact = Contact.get_or_create(self.unicef, 'test_id', "testing")
+        self.assertTrue(contact.is_active)
+
+        request = self.get_optout_request(contact.uuid, 'forget')
+        response = receive_identity_store_optout(request)
+        self.assertEqual(response.content, '{"success": true}')
+
+        # refresh contact from db
+        contact = Contact.get_or_create(self.unicef, 'test_id', "testing")
+        self.assertFalse(contact.is_active)
+
+    @responses.activate
+    def test_stop_optout_received(self):
+        '''Stop optouts should set the contact's is_blocked flag'''
+        contact = Contact.get_or_create(self.unicef, 'test_id', "testing")
+        self.assertFalse(contact.is_blocked)
+
+        request = self.get_optout_request(contact.uuid, 'stop')
+        response = receive_identity_store_optout(request)
+        self.assertEqual(response.content, '{"success": true}')
+
+        # refresh contact from db
+        contact = Contact.get_or_create(self.unicef, 'test_id', "testing")
+        self.assertTrue(contact.is_blocked)
+
+    @responses.activate
+    def test_unsubscribe_optout_received(self):
+        '''Unsubscribe optouts shouldn't change the contact'''
+        original_contact = Contact.get_or_create(
+            self.unicef, 'test_id', "testing")
+
+        request = self.get_optout_request(original_contact.uuid, 'unsubscribe')
+        response = receive_identity_store_optout(request)
+        self.assertEqual(response.content, '{"success": true}')
+
+        # refresh contact from db
+        new_contact = Contact.get_or_create(self.unicef, 'test_id', "testing")
+        self.assertEqual(original_contact.is_active, new_contact.is_active)
+        self.assertEqual(original_contact.is_blocked, new_contact.is_blocked)
+
+    @responses.activate
+    def test_unrecognised_optout_received(self):
+        '''Unrecognised optouts should return an error'''
+        original_contact = Contact.get_or_create(
+            self.unicef, 'test_id', "testing")
+
+        request = self.get_optout_request(original_contact.uuid, 'unrecognised')
+        response = receive_identity_store_optout(request)
+        self.assertEqual(
+            json.loads(response.content),
+            {'reason': "Unrecognised value for 'optout_type': unrecognised"})
+        self.assertEqual(response.status_code, 400)
+
+    @responses.activate
+    def test_optout_received_no_contact(self):
+        '''Optouts received for non-existant contacts should return an error'''
+        Contact.get_or_create(self.unicef, 'test_id', "testing")
+
+        request = self.get_optout_request('tester', 'forget')
+        response = receive_identity_store_optout(request)
+        self.assertEqual(
+            json.loads(response.content),
+            {'reason': "No Contact for id: tester"})
+        self.assertEqual(response.status_code, 400)
+
+    @responses.activate
+    def test_optout_received_fields_missing(self):
+        '''Optouts received with fields missing should return an error'''
+        request = self.factory.post(
+            self.url, content_type='application/json', data=json.dumps({
+                'details': {
+                    "name": "testing",
+                    "addresses": {
+                        "msisdn": {
+                            "+1234": {}
+                        },
+                    },
+                    "preferred_language": "eng_NG",
+                },
+            })
+        )
+        response = receive_identity_store_optout(request)
+        self.assertEqual(
+            json.loads(response.content),
+            {'reason': 'Both "identity" and "optout_type" must be specified.'})
+        self.assertEqual(response.status_code, 400)
 
 
 class IdentityStoreTest(BaseCasesTest):
