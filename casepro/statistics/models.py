@@ -60,6 +60,36 @@ class BaseCount(models.Model):
         else:  # pragma: no cover
             raise ValueError("Unsupported scope: %s" % ",".join([t.__name__ for t in types]))
 
+    @classmethod
+    def squash(cls):
+        """
+        Squashes counts so that there is a single count per item_type + scope combination
+        """
+        last_squash_id = cache.get(cls.last_squash_key, 0)
+        unsquashed_values = cls.objects.filter(pk__gt=last_squash_id)
+        unsquashed_values = unsquashed_values.values(*cls.squash_over).distinct(*cls.squash_over)
+
+        for unsquashed in unsquashed_values:
+            with connection.cursor() as cursor:
+                sql = """
+                    WITH removed as (
+                        DELETE FROM %(table_name)s WHERE %(delete_cond)s RETURNING "count"
+                    )
+                    INSERT INTO %(table_name)s(%(insert_cols)s, "count")
+                    VALUES (%(insert_vals)s, GREATEST(0, (SELECT SUM("count") FROM removed)));""" % {
+                    'table_name': cls._meta.db_table,
+                    'delete_cond': " AND ".join(['"%s" = %%s' % f for f in cls.squash_over]),
+                    'insert_cols': ", ".join(['"%s"' % f for f in cls.squash_over]),
+                    'insert_vals': ", ".join(['%s'] * len(cls.squash_over))
+                }
+
+                params = [unsquashed[f] for f in cls.squash_over]
+                cursor.execute(sql, params + params)
+
+        max_id = cls.objects.order_by('-pk').values_list('pk', flat=True).first()
+        if max_id:
+            cache.set(cls.last_squash_key, max_id)
+
     class CountSet(object):
         """
         A queryset of counts which can be aggregated in different ways
@@ -96,6 +126,9 @@ class TotalCount(BaseCount):
     """
     Tracks total counts of different items (e.g. replies, messages) in different scopes (e.g. org, user)
     """
+    squash_over = ('item_type', 'scope')
+    last_squash_key = 'total_count:last_squash'
+
     @classmethod
     def get_by_label(cls, labels, item_type):
         return cls._get_count_set(item_type, {cls.encode_scope(l): l for l in labels})
@@ -107,35 +140,6 @@ class TotalCount(BaseCount):
             counts = counts.filter(scope__in=scopes.keys())
         return BaseCount.CountSet(counts, scopes)
 
-    @classmethod
-    def squash(cls):
-        """
-        Squashes counts so that there is a single count per item_type + scope combination
-        """
-        last_squash_key = 'total_count:last_squash'
-        last_squash_id = cache.get(last_squash_key, 0)
-
-        unique_fields = ('item_type', 'scope')
-        unsquashed_values = cls.objects.filter(pk__gt=last_squash_id).values(*unique_fields).distinct(*unique_fields)
-
-        for unsquashed in unsquashed_values:
-            with connection.cursor() as cursor:
-                sql = """
-                    WITH removed as (
-                        DELETE FROM statistics_totalcount
-                        WHERE "item_type" = %s AND "scope" = %s RETURNING "count"
-                    )
-                    INSERT INTO statistics_totalcount("item_type", "scope", "count")
-                    VALUES (%s, %s, GREATEST(0, (SELECT SUM("count") FROM removed)));
-                    """
-
-                params = [unsquashed[f] for f in unique_fields]
-                cursor.execute(sql, params + params)
-
-        max_id = cls.objects.order_by('-pk').values_list('pk', flat=True).first()
-        if max_id:
-            cache.set(last_squash_key, max_id)
-
     class Meta:
         index_together = ('item_type', 'scope')
 
@@ -146,6 +150,9 @@ class DailyCount(BaseCount):
     """
     day = models.DateField(help_text=_("The day this count is for"))
 
+    squash_over = ('day', 'item_type', 'scope')
+    last_squash_key = 'daily_count:last_squash'
+
     @classmethod
     def record_item(cls, day, item_type, *scope_args):
         cls.objects.create(day=day, item_type=item_type, scope=cls.encode_scope(*scope_args), count=1)
@@ -153,35 +160,6 @@ class DailyCount(BaseCount):
     @classmethod
     def record_removal(cls, day, item_type, *scope_args):
         cls.objects.create(day=day, item_type=item_type, scope=cls.encode_scope(*scope_args), count=-1)
-
-    @classmethod
-    def squash(cls):
-        """
-        Squashes counts so that there is a single count per item_type + scope + day combination
-        """
-        last_squash_key = 'daily_count:last_squash'
-        last_squash_id = cache.get(last_squash_key, 0)
-
-        unique_fields = ('day', 'item_type', 'scope')
-        unsquashed_values = cls.objects.filter(pk__gt=last_squash_id).values(*unique_fields).distinct(*unique_fields)
-
-        for unsquashed in unsquashed_values:
-            with connection.cursor() as cursor:
-                sql = """
-                WITH removed as (
-                    DELETE FROM statistics_dailycount
-                    WHERE "day" = %s AND "item_type" = %s AND "scope" = %s RETURNING "count"
-                )
-                INSERT INTO statistics_dailycount("day", "item_type", "scope", "count")
-                VALUES (%s, %s, %s, GREATEST(0, (SELECT SUM("count") FROM removed)));
-                """
-
-                params = [unsquashed[f] for f in unique_fields]
-                cursor.execute(sql, params + params)
-
-        max_id = cls.objects.order_by('-pk').values_list('pk', flat=True).first()
-        if max_id:
-            cache.set(last_squash_key, max_id)
 
     @classmethod
     def get_by_org(cls, orgs, item_type, since=None, until=None):
