@@ -12,18 +12,18 @@ class PodConfig(ConfmodelConfig):
         "Automatically determined and set in the pod registry.",
         required=True)
 
+    title = fields.ConfigText(
+        "The title to show in the UI for this pod",
+        default=None)
+
 
 class Pod(object):
     '''
     The base class for all pod plugins.
     '''
-    config_cls = PodConfig
-    name = 'Default pod name'
-    controller = None
-    directive = None
-
-    def __init__(self, config):
-        self.config = self.config_cls(config)
+    def __init__(self, pod_type, config):
+        self.pod_type = pod_type
+        self.config = config
 
     def read_data(self, params):
         '''Should return the data that should be used to create the display
@@ -39,3 +39,10 @@ class PodPlugin(AppConfig):
     name = 'casepro.pods'
     label = 'base_pod'
     pod_class = Pod
+    config_class = PodConfig
+
+    title = 'Pod'
+
+    controller = None
+
+    directive = None
