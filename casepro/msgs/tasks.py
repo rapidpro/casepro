@@ -74,13 +74,6 @@ def handle_messages(org):
 
 
 @shared_task
-def squash_counts():
-    from .models import LabelCount
-
-    LabelCount.squash()
-
-
-@shared_task
 def message_export(export_id):
     from .models import MessageExport
 

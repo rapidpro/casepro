@@ -43,9 +43,14 @@ BEGIN
       _archived_delta := 0;
     END IF;
 
-    IF _inbox_delta != 0 OR _archived_delta != 0 THEN
-      INSERT INTO msgs_labelcount("label_id", "inbox_count", "archived_count")
-      SELECT label_id, _inbox_delta, _archived_delta FROM msgs_message_labels WHERE message_id = NEW.id;
+    IF _inbox_delta != 0 THEN
+      INSERT INTO statistics_totalcount("item_type", "scope", "count")
+      SELECT 'N', 'label:' || label_id, _inbox_delta FROM msgs_message_labels WHERE message_id = NEW.id;
+    END IF;
+
+    IF _archived_delta != 0 THEN
+      INSERT INTO statistics_totalcount("item_type", "scope", "count")
+      SELECT 'A', 'label:' || label_id, _archived_delta FROM msgs_message_labels WHERE message_id = NEW.id;
     END IF;
 
   END IF;
@@ -94,8 +99,12 @@ BEGIN
     _archived_delta := CASE WHEN msgs_is_archived(_message) THEN -1 ELSE 0 END;
   END IF;
 
-  IF _inbox_delta != 0 OR _archived_delta != 0 THEN
-    INSERT INTO msgs_labelcount("label_id", "inbox_count", "archived_count") VALUES(_row.label_id, _inbox_delta, _archived_delta);
+  IF _inbox_delta != 0 THEN
+    INSERT INTO statistics_totalcount("item_type", "scope", "count") VALUES('N', 'label:' || _row.label_id, _inbox_delta);
+  END IF;
+
+  IF _archived_delta != 0 THEN
+    INSERT INTO statistics_totalcount("item_type", "scope", "count") VALUES('A', 'label:' || _row.label_id, _archived_delta);
   END IF;
 
   RETURN NULL;

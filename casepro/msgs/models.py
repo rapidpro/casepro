@@ -5,7 +5,6 @@ from dash.utils import get_obj_cacheable
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import models
-from django.db.models import Sum
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timesince import timesince
@@ -58,7 +57,8 @@ class Label(models.Model):
 
     is_active = models.BooleanField(default=True, help_text="Whether this label is active")
 
-    COUNTS_CACHE_ATTR = '_counts'
+    INBOX_COUNT_CACHE_ATTR = '_inbox_count'
+    ARCHIVED_COUNT_CACHE_ATTR = '_archived_count'
 
     @classmethod
     def create(cls, org, name, description, tests, is_synced):
@@ -96,20 +96,41 @@ class Label(models.Model):
     def get_tests(self):
         return self.rule.get_tests() if self.rule else []
 
-    def get_counts(self, recalculate=False):
-        if recalculate and hasattr(self, self.COUNTS_CACHE_ATTR):
-            delattr(self, self.COUNTS_CACHE_ATTR)
+    def get_inbox_count(self, recalculate=False):
+        if recalculate and hasattr(self, self.INBOX_COUNT_CACHE_ATTR):
+            delattr(self, self.INBOX_COUNT_CACHE_ATTR)
 
-        return get_obj_cacheable(self, self.COUNTS_CACHE_ATTR, lambda: LabelCount.get_by_label([self])[self])
+        return get_obj_cacheable(self, self.INBOX_COUNT_CACHE_ATTR, lambda: self._get_inbox_count())
+
+    def _get_inbox_count(self, ):
+        from casepro.statistics.models import TotalCount
+
+        return TotalCount.get_by_label([self], TotalCount.TYPE_INBOX).scope_totals()[self]
+
+    def get_archived_count(self, recalculate=False):
+        if recalculate and hasattr(self, self.ARCHIVED_COUNT_CACHE_ATTR):
+            delattr(self, self.ARCHIVED_COUNT_CACHE_ATTR)
+
+        return get_obj_cacheable(self, self.ARCHIVED_COUNT_CACHE_ATTR, lambda: self._get_archived_count())
+
+    def _get_archived_count(self):
+        from casepro.statistics.models import TotalCount
+
+        return TotalCount.get_by_label([self], TotalCount.TYPE_ARCHIVED).scope_totals()[self]
 
     @classmethod
     def bulk_cache_initialize(cls, labels):
         """
         Pre-loads cached counts on a set of labels to avoid fetching counts individually for each label
         """
-        counts_by_label = LabelCount.get_by_label(labels)
+        from casepro.statistics.models import TotalCount
+
+        inbox_by_label = TotalCount.get_by_label(labels, TotalCount.TYPE_INBOX).scope_totals()
+        archived_by_label = TotalCount.get_by_label(labels, TotalCount.TYPE_ARCHIVED).scope_totals()
+
         for label in labels:
-            setattr(label, cls.COUNTS_CACHE_ATTR, counts_by_label[label])
+            setattr(label, cls.INBOX_COUNT_CACHE_ATTR, inbox_by_label[label])
+            setattr(label, cls.ARCHIVED_COUNT_CACHE_ATTR, archived_by_label[label])
 
     @classmethod
     def lock(cls, org, uuid):
@@ -143,42 +164,12 @@ class Label(models.Model):
         if full:
             result['description'] = self.description
             result['synced'] = self.is_synced
-            result['counts'] = self.get_counts()
+            result['counts'] = {'inbox': self.get_inbox_count(), 'archived': self.get_archived_count()}
 
         return result
 
     def __str__(self):
         return self.name
-
-
-class LabelCount(models.Model):
-    """
-    Counts of messages with a particular label
-    """
-    label = models.ForeignKey(Label)
-
-    inbox_count = models.IntegerField()
-
-    archived_count = models.IntegerField()
-
-    @classmethod
-    def squash(cls):
-        # TODO implement
-        pass
-
-    @classmethod
-    def get_by_label(cls, labels):
-        """
-        Fetches count totals for a list of labels
-        """
-        counts = cls.objects.filter(label__in=labels)
-        counts = counts.values('label').annotate(inbox=Sum('inbox_count'), archived=Sum('archived_count'))
-        counts_by_label_id = {c['label']: c for c in counts}
-        counts_by_label = {}
-        for label in labels:
-            label_counts = counts_by_label_id.get(label.pk, {})
-            counts_by_label[label] = {'inbox': label_counts.get('inbox', 0), 'archived': label_counts.get('archived', 0)}
-        return counts_by_label
 
 
 @python_2_unicode_compatible

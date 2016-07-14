@@ -472,11 +472,7 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(minutes=1),
         'args': ('casepro.msgs.tasks.handle_messages', 'sync')
     },
-    'squash-label-counts': {
-        'task': 'casepro.msgs.tasks.squash_counts',
-        'schedule': timedelta(minutes=5),
-    },
-    'squash-stat-counts': {
+    'squash-counts': {
         'task': 'casepro.statistics.tasks.squash_counts',
         'schedule': timedelta(minutes=5),
     },
