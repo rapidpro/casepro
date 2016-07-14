@@ -976,6 +976,7 @@ class PartnerCRUDLTest(BaseCasesTest):
         helpers = Partner.objects.get(name="Helpers")
         self.assertTrue(helpers.is_restricted)
         self.assertEqual(set(helpers.get_labels()), {self.tea})
+        self.assertEqual(helpers.timezone, "Africa/Kigali")
 
         # create unrestricted partner
         response = self.url_post('unicef', url, {'name': "Internal", 'timezone': "UTC", 'logo': None,
@@ -986,6 +987,7 @@ class PartnerCRUDLTest(BaseCasesTest):
         self.assertFalse(internal.is_restricted)
         self.assertEqual(set(internal.labels.all()), set())  # submitted labels are ignored
         self.assertEqual(set(internal.get_labels()), {self.aids, self.pregnancy, self.tea})
+        self.assertEqual(internal.timezone, "UTC")
 
     def test_read(self):
         url = reverse('cases.partner_read', args=[self.moh.pk])
@@ -1043,7 +1045,6 @@ class PartnerCRUDLTest(BaseCasesTest):
 
         moh = Partner.objects.get(pk=self.moh.pk)
         self.assertEqual(moh.name, "MOH2")
-
 
     def test_delete(self):
         url = reverse('cases.partner_delete', args=[self.moh.pk])
