@@ -18,7 +18,7 @@ from casepro.statistics.models import DailyCount
 from casepro.utils import parse_csv, str_to_bool, JSONEncoder, json_encode, month_range
 from casepro.utils.export import BaseDownloadView
 
-from .forms import LabelForm
+from .forms import LabelForm, FaqForm
 from .models import Label, FAQ, Message, MessageExport, MessageFolder, Outgoing, OutgoingFolder, ReplyExport
 from .tasks import message_export, reply_export
 
@@ -148,7 +148,7 @@ class LabelCRUDL(SmartCRUDL):
 
 class FaqCRUDL(SmartCRUDL):
     model = FAQ
-    actions = ('list', 'read')
+    actions = ('list', 'read', 'update')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('question', 'answer')
@@ -158,6 +158,9 @@ class FaqCRUDL(SmartCRUDL):
 
         def get_queryset(self):
             return FAQ.objects.all()
+
+    class Update(OrgPermsMixin, SmartUpdateView):
+        form_class = FaqForm
 
 
 class MessageSearchMixin(object):
