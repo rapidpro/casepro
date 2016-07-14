@@ -42,12 +42,24 @@ class Pod(object):
 
 class PodPlugin(AppConfig):
     name = 'casepro.pods'
-    label = 'base_pod'
     pod_class = Pod
     config_class = PodConfig
 
+    # django application label, used to determine which pod type to use when
+    # loading pods configured in `settings.PODS`
+    label = 'base_pod'
+
+    # default title to use when configuring each pod
     title = 'Pod'
 
-    controller = None
+    # override to use a different angular controller
+    controller = 'PodController'
 
-    directive = None
+    # override to use a different angular directive
+    directive = 'pod'
+
+    # override with paths to custom scripts that the pod needs
+    scripts = ()
+
+    # override with paths to custom styles that the pod needs
+    styles = ()
