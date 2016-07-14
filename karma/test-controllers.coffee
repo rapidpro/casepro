@@ -511,19 +511,20 @@ describe('controllers:', () ->
         PodApi = new class PodApi
           get: ->
 
-        p = $q.resolve({foo: 'bar'})
-        spyOn(PodApi, 'get').and.returnValue(p)
+        spyOn(PodApi, 'get').and.returnValue($q.resolve({foo: 'bar'}))
 
         $controller('PodController', {
-            $scope
-            PodApi
-          })
+          $scope
+          PodApi
+        })
 
-        $scope.init(21)
-          .then(() ->
-            expect(PodApi.get).toHaveBeenCalledWith(21)
-            expect($scope.pod).toEqual({foo: 'bar'}))
-      )
+        $scope.init(21, {title: 'Baz'})
+        $scope.$apply()
+
+        expect($scope.podId).toEqual(21)
+        expect($scope.podConfig).toEqual({title: 'Baz'})
+        expect(PodApi.get).toHaveBeenCalledWith(21)
+        expect($scope.podData).toEqual({foo: 'bar'}))
     )
   )
 )
