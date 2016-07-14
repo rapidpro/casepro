@@ -737,7 +737,10 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
     def test_method_not_post(self):
         '''Only POST requests should be allowed.'''
         request = self.factory.get(self.url)
-        response = receive_identity_store_optout(request)
+        with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
+            request.META['HTTP_AUTHORIZATION'] = "Token " + \
+                settings.IDENTITY_AUTH_TOKEN
+            response = receive_identity_store_optout(request)
         self.assertEqual(
             json.loads(response.content), {'reason': 'Method not allowed.'})
         self.assertEqual(response.status_code, 405)
@@ -747,7 +750,10 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         error message and code should be returned.'''
         request = self.factory.post(
             self.url, content_type='application/json', data='{')
-        response = receive_identity_store_optout(request)
+        with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
+            request.META['HTTP_AUTHORIZATION'] = "Token " + \
+                settings.IDENTITY_AUTH_TOKEN
+            response = receive_identity_store_optout(request)
         self.assertEqual(
             json.loads(response.content), {
                 'reason': 'JSON decode error',
@@ -782,7 +788,10 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         self.assertTrue(contact.is_active)
 
         request = self.get_optout_request(contact.uuid, 'forget')
-        response = receive_identity_store_optout(request)
+        with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
+            request.META['HTTP_AUTHORIZATION'] = "Token " + \
+                settings.IDENTITY_AUTH_TOKEN
+            response = receive_identity_store_optout(request)
         self.assertEqual(response.content, '{"success": true}')
 
         # refresh contact from db
@@ -796,7 +805,10 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         self.assertFalse(contact.is_blocked)
 
         request = self.get_optout_request(contact.uuid, 'stop')
-        response = receive_identity_store_optout(request)
+        with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
+            request.META['HTTP_AUTHORIZATION'] = "Token " + \
+                settings.IDENTITY_AUTH_TOKEN
+            response = receive_identity_store_optout(request)
         self.assertEqual(response.content, '{"success": true}')
 
         # refresh contact from db
@@ -810,7 +822,10 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
             self.unicef, 'test_id', "testing")
 
         request = self.get_optout_request(original_contact.uuid, 'unsubscribe')
-        response = receive_identity_store_optout(request)
+        with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
+            request.META['HTTP_AUTHORIZATION'] = "Token " + \
+                settings.IDENTITY_AUTH_TOKEN
+            response = receive_identity_store_optout(request)
         self.assertEqual(response.content, '{"success": true}')
 
         # refresh contact from db
@@ -825,7 +840,10 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
             self.unicef, 'test_id', "testing")
 
         request = self.get_optout_request(original_contact.uuid, 'unrecognised')
-        response = receive_identity_store_optout(request)
+        with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
+            request.META['HTTP_AUTHORIZATION'] = "Token " + \
+                settings.IDENTITY_AUTH_TOKEN
+            response = receive_identity_store_optout(request)
         self.assertEqual(
             json.loads(response.content),
             {'reason': "Unrecognised value for 'optout_type': unrecognised"})
@@ -837,7 +855,10 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         Contact.get_or_create(self.unicef, 'test_id', "testing")
 
         request = self.get_optout_request('tester', 'forget')
-        response = receive_identity_store_optout(request)
+        with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
+            request.META['HTTP_AUTHORIZATION'] = "Token " + \
+                settings.IDENTITY_AUTH_TOKEN
+            response = receive_identity_store_optout(request)
         self.assertEqual(
             json.loads(response.content),
             {'reason': "No Contact for id: tester"})
@@ -859,7 +880,10 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
                 },
             })
         )
-        response = receive_identity_store_optout(request)
+        with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
+            request.META['HTTP_AUTHORIZATION'] = "Token " + \
+                settings.IDENTITY_AUTH_TOKEN
+            response = receive_identity_store_optout(request)
         self.assertEqual(
             json.loads(response.content),
             {'reason': 'Both "identity" and "optout_type" must be specified.'})
