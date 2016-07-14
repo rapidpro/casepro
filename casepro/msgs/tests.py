@@ -259,7 +259,7 @@ class LabelCRUDLTest(BaseCasesTest):
             'description': "Messages about AIDS",
             'synced': True,
             'counts': {'inbox': 0, 'archived': 0},
-            'messages': {'this_month': 0, 'last_month': 0}
+            'activity': {'this_month': 0, 'last_month': 0}
         })
 
     def test_watch_and_unwatch(self):
