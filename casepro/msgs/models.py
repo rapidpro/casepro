@@ -8,6 +8,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timesince import timesince
 from django.utils.timezone import now
+from django.db.models import Q
 from enum import Enum
 from redis_cache import get_redis_connection
 
@@ -132,15 +133,64 @@ class Label(models.Model):
 
 
 @python_2_unicode_compatible
+class Language(models.Model):
+    """
+    Languages used, defined by the ISO 639-3 language code combined with the location code, e.g. eng_UK
+    """
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='languages')
+
+    code = models.CharField(max_length=6)  # e.g. eng_UK
+
+    name = models.CharField(max_length=100, null=True, blank=True)  # e.g. English
+
+    location = models.CharField(max_length=100, null=True, blank=True)  # e.g. United Kingdom
+
+    @classmethod
+    def search(cls, org, user, search):
+        """
+        Search for Languages
+        """
+        name = search.get('name')
+        location = search.get('location')
+
+        queryset = Language.objects.all()
+
+        # Name filtering
+        if name:
+            queryset = queryset.filter(name__icontains=name)
+
+        # Location filtering
+        if location:
+            queryset = queryset.filter(location__icontains=location)
+
+        return queryset.order_by('code')
+
+    def as_json(self):
+        return {
+            'id': self.pk,
+            'code': self.code,
+            'name': self.name,
+            'location': self.location
+        }
+
+    def __str__(self):
+        return "%s" % self.code
+
+
+@python_2_unicode_compatible
 class FAQ(models.Model):
     """
     Pre-approved questions and answers to be used when replying to a message.
     """
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='faqs')
 
-    question = models.CharField(max_length=140)
+    question = models.CharField(max_length=255)
 
-    answer = models.CharField(max_length=140)
+    answer = models.TextField()
+
+    language = models.ForeignKey(Language, verbose_name=('Language'), related_name='faqs', default=None)
+
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='translations')
 
     labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this FAQ"), related_name='faqs')
 
@@ -149,12 +199,17 @@ class FAQ(models.Model):
         """
         Search for FAQs
         """
+        language_id = search.get('language')
         label_id = search.get('label')
         text = search.get('text')
 
-        # only show non-deleted handled messages
         queryset = FAQ.objects.all()
 
+        # Language filtering
+        if language_id:
+            queryset = queryset.filter(language__pk=language_id)
+
+        # Label filtering
         labels = Label.get_all(org, user)
 
         if label_id:
@@ -163,21 +218,28 @@ class FAQ(models.Model):
             # if not filtering by a single label, need distinct to avoid duplicates
             queryset = queryset.distinct()
 
-        # queryset = queryset.filter(has_labels=True, labels__in=list(labels))
         queryset = queryset.filter(labels__in=list(labels))
 
+        # Text filtering
         if text:
-            queryset = queryset.filter(text__icontains=text)
+            queryset = queryset.filter(Q(question__icontains=text) | Q(answer__icontains=text))
 
-        queryset = queryset.prefetch_related('labels')
+        queryset = queryset.prefetch_related('language', 'labels')
 
-        return queryset.order_by('-created_on')
+        return queryset.order_by('question')
 
     def as_json(self):
+        if not self.parent:
+            parent_json = None
+        else:
+            parent_json = self.parent.id
+
         return {
             'id': self.pk,
             'question': self.question,
             'answer': self.answer,
+            'language': self.language.as_json(),
+            'parent': parent_json,
             'labels': [l.as_json() for l in self.labels.all()]
         }
 
