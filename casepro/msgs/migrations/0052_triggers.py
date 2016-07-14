@@ -8,7 +8,7 @@ from casepro.sql import InstallSQL
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('msgs', '0050_label_watchers'),
+        ('msgs', '0051_auto_20160714_0905'),
         ('statistics', '0006_totalcount'),
     ]
 
