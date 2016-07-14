@@ -51,6 +51,7 @@ class PodRegistryTests(TestCase):
         pod = load_pod(index, {'label': 'base_pod'})
         self.assertTrue(isinstance(pod.config, PodConfig))
 
+    @modify_settings(INSTALLED_APPS={'append': 'casepro.pods.PodPlugin'})
     def test_pods_loaded_on_import(self):
         '''
         On import, the pods specified in the settings file should be loaded
@@ -68,3 +69,14 @@ class PodRegistryTests(TestCase):
             self.assertTrue(isinstance(pod, Pod))
             self.assertEqual(pod.pod_type, apps.get_app_config('base_pod'))
             self.assertEqual(pod.config.index, i)
+
+    @modify_settings(INSTALLED_APPS={'append': 'casepro.pods.PodPlugin'})
+    def test_pod_types_registered_on_import(self):
+        '''
+        On import, the pod types specified in the settings file should be
+        registered.
+        '''
+        from casepro.pods import registry, PodPlugin
+        reload(registry)
+        [pod_type] = registry.pod_types
+        self.assertTrue(isinstance(pod_type, PodPlugin))

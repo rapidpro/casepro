@@ -1,5 +1,6 @@
 from django.apps import apps
 from django.conf import settings
+from casepro.pods.base import PodPlugin
 
 
 def load_pod(index, config):
@@ -18,4 +19,10 @@ def load_pod(index, config):
 
 pods = tuple(
     load_pod(i, c) for i, c in enumerate(settings.PODS)
+)
+
+
+pod_types = tuple(
+    app for app in apps.get_app_configs()
+    if isinstance(app, PodPlugin)
 )
