@@ -97,25 +97,23 @@ class Label(models.Model):
         return self.rule.get_tests() if self.rule else []
 
     def get_inbox_count(self, recalculate=False):
-        if recalculate and hasattr(self, self.INBOX_COUNT_CACHE_ATTR):
-            delattr(self, self.INBOX_COUNT_CACHE_ATTR)
-
-        return get_obj_cacheable(self, self.INBOX_COUNT_CACHE_ATTR, lambda: self._get_inbox_count())
+        """
+        Number of inbox (non-archived) messages with this label
+        """
+        return get_obj_cacheable(self, self.INBOX_COUNT_CACHE_ATTR, lambda: self._get_inbox_count(), recalculate)
 
     def _get_inbox_count(self, ):
         from casepro.statistics.models import TotalCount
-
         return TotalCount.get_by_label([self], TotalCount.TYPE_INBOX).scope_totals()[self]
 
     def get_archived_count(self, recalculate=False):
-        if recalculate and hasattr(self, self.ARCHIVED_COUNT_CACHE_ATTR):
-            delattr(self, self.ARCHIVED_COUNT_CACHE_ATTR)
-
-        return get_obj_cacheable(self, self.ARCHIVED_COUNT_CACHE_ATTR, lambda: self._get_archived_count())
+        """
+        Number of archived messages with this label
+        """
+        return get_obj_cacheable(self, self.ARCHIVED_COUNT_CACHE_ATTR, lambda: self._get_archived_count(), recalculate)
 
     def _get_archived_count(self):
         from casepro.statistics.models import TotalCount
-
         return TotalCount.get_by_label([self], TotalCount.TYPE_ARCHIVED).scope_totals()[self]
 
     @classmethod
