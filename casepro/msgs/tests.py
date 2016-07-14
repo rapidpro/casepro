@@ -341,7 +341,8 @@ class MessageTest(BaseCasesTest):
         self.assertEqual(self.aids.get_counts(recalculate=True), {'inbox': 1, 'archived': 0})
         self.assertEqual(self.pregnancy.get_counts(recalculate=True), {'inbox': 0, 'archived': 0})
 
-        msg1.label(self.aids, self.pregnancy)  # add multiple
+        msg1.label(self.aids, self.pregnancy)
+        # msg1.label()  # add multiple
         msg1.refresh_from_db()
         self.assertTrue(msg1.has_labels)
         self.assertEqual(self.aids.get_counts(recalculate=True), {'inbox': 1, 'archived': 1})

@@ -3,7 +3,7 @@
 ----------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION msgs_is_inbox(_message msgs_message) RETURNS BOOLEAN AS $$
 BEGIN
-  RETURN NOT _message.is_archived AND _message.has_labels AND _message.is_handled AND _message.is_active;
+  RETURN NOT _message.is_archived AND _message.is_handled AND _message.is_active;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -12,7 +12,7 @@ $$ LANGUAGE plpgsql;
 ----------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION msgs_is_archived(_message msgs_message) RETURNS BOOLEAN AS $$
 BEGIN
-  RETURN _message.is_archived AND _message.has_labels AND _message.is_handled AND _message.is_active;
+  RETURN _message.is_archived AND _message.is_handled AND _message.is_active;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -37,7 +37,7 @@ BEGIN
 
     IF NOT msgs_is_archived(OLD) AND msgs_is_archived(NEW) THEN
       _archived_delta := 1;
-    ELSIF msgs_is_archived(NEW) AND NOT msgs_is_archived(OLD) THEN
+    ELSIF msgs_is_archived(OLD) AND NOT msgs_is_archived(NEW) THEN
       _archived_delta := -1;
     ELSE
       _archived_delta := 0;
