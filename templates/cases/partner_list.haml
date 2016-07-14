@@ -25,6 +25,9 @@
 
         .partner-name
           {{ partner.name }}
+        .partner-timezone
+          - if partner.timezone
+            {{ partner.timezone }}
         .
           - if partner.is_restricted
             - for label in partner.get_labels
