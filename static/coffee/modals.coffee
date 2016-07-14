@@ -57,8 +57,38 @@ modals.controller 'EditModalController', ['$scope', '$uibModalInstance', 'title'
 #=====================================================================
 # Reply to contacts modal
 #=====================================================================
-modals.controller('ReplyModalController', ['$scope', '$uibModalInstance', 'maxLength', ($scope, $uibModalInstance, maxLength) ->
+modals.controller('ReplyModalController', ['$scope','FAQService','$uibModalInstance', '$controller', 'maxLength', ($scope , FAQService, $uibModalInstance, $controller, maxLength) ->
+
+
   $scope.fields = {text: {val: '', maxLength: maxLength}}
+
+  $scope.init = () ->
+    $scope.searchField = $scope.searchFieldDefaults()
+    $scope.search = $scope.buildSearch()
+    $scope.fetchFaqs()
+
+
+  $scope.buildSearch = () ->
+    search = angular.copy($scope.searchField)
+    search.label = $scope.activeLabel
+
+
+  # searching up to a date means including anything on the date
+    if search.before
+      search.before.setHours(23, 59, 59, 999)
+    return search
+
+  $scope.fetchFaqs = (label) ->
+    if label
+      $scope.search.label = label
+      $scope.replies = FAQService.fetchFaqs($scope.search)
+    else
+      $scope.replies = FAQService.fetchFaqs($scope.search)
+
+  $scope.searchFieldDefaults = () -> { text: null, groups: [], after: null, before: null, archived: false ,folder : 'inbox' }
+
+  $scope.setResponse = (faq)->
+   $scope.fields.text.val = faq
 
   $scope.ok = () ->
     $scope.form.submitted = true

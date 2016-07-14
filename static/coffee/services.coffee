@@ -37,7 +37,6 @@ services.factory('MessageService', ['$rootScope', '$http', '$httpParamSerializer
       if !search.before
         params.before = utils.formatIso8601(before)
       params.page = page
-
       return $http.get('/message/search/?' + $httpParamSerializer(params)).then((response) ->
         utils.parseDates(response.data.results, 'time')
         return {results: response.data.results, hasMore: response.data.has_more}
@@ -148,6 +147,51 @@ services.factory('MessageService', ['$rootScope', '$http', '$httpParamSerializer
       return $http.post('/message/action/' + action + '/', params)
 ])
 
+#=====================================================================
+# Frequently Asked Question Replies service
+#=====================================================================
+
+services.factory('FAQService', ['$rootScope', '$http', '$httpParamSerializer', ($rootScope, $http, $httpParamSerializer) ->
+  new class FAQService
+
+    #----------------------------------------------------------------------------
+    # Fetches replies to FAQs
+    #----------------------------------------------------------------------------
+
+    fetchFaqs: (search) ->
+      results = [
+            {
+                "id": 1,
+                "question": "example question 1",
+                "answer": "example answer 1",
+                "labels": [
+                    {'id': 101, 'name': "AIDS"},
+                    {'id': 102, 'name': "TB"}
+                ]
+            },
+            {
+                "id": 2,
+                "question": "example question 2",
+                "answer": "example answer 2",
+                "labels": [
+                    {'id': 102, 'name': "TB"},
+                    {'id': 103, 'name': "Pregnancy"},
+                ]
+              }]
+      # Comment out when API ready
+      # params = @_searchFaqsToParams(search)
+      # return $http.get('/faq/search/?'+$httpParamSerializer(params)).then((response) -> response.data.results)
+      results
+
+    #----------------------------------------------------------------------------
+    # Convert search object to URL params
+    #----------------------------------------------------------------------------
+    _searchFaqsToParams: (search) ->
+      return {
+        text: search.text,
+        label: if search.label then search.label.id else null
+      }
+])
 
 #=====================================================================
 # Incoming message service
