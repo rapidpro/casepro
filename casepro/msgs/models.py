@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from dash.orgs.models import Org
+from dash.utils import get_obj_cacheable
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import models
@@ -56,6 +57,9 @@ class Label(models.Model):
 
     is_active = models.BooleanField(default=True, help_text="Whether this label is active")
 
+    INBOX_COUNT_CACHE_ATTR = '_inbox_count'
+    ARCHIVED_COUNT_CACHE_ATTR = '_archived_count'
+
     @classmethod
     def create(cls, org, name, description, tests, is_synced):
         label = cls.objects.create(org=org, name=name, description=description, is_synced=is_synced)
@@ -92,6 +96,40 @@ class Label(models.Model):
     def get_tests(self):
         return self.rule.get_tests() if self.rule else []
 
+    def get_inbox_count(self, recalculate=False):
+        """
+        Number of inbox (non-archived) messages with this label
+        """
+        return get_obj_cacheable(self, self.INBOX_COUNT_CACHE_ATTR, lambda: self._get_inbox_count(), recalculate)
+
+    def _get_inbox_count(self, ):
+        from casepro.statistics.models import TotalCount
+        return TotalCount.get_by_label([self], TotalCount.TYPE_INBOX).scope_totals()[self]
+
+    def get_archived_count(self, recalculate=False):
+        """
+        Number of archived messages with this label
+        """
+        return get_obj_cacheable(self, self.ARCHIVED_COUNT_CACHE_ATTR, lambda: self._get_archived_count(), recalculate)
+
+    def _get_archived_count(self):
+        from casepro.statistics.models import TotalCount
+        return TotalCount.get_by_label([self], TotalCount.TYPE_ARCHIVED).scope_totals()[self]
+
+    @classmethod
+    def bulk_cache_initialize(cls, labels):
+        """
+        Pre-loads cached counts on a set of labels to avoid fetching counts individually for each label
+        """
+        from casepro.statistics.models import TotalCount
+
+        inbox_by_label = TotalCount.get_by_label(labels, TotalCount.TYPE_INBOX).scope_totals()
+        archived_by_label = TotalCount.get_by_label(labels, TotalCount.TYPE_ARCHIVED).scope_totals()
+
+        for label in labels:
+            setattr(label, cls.INBOX_COUNT_CACHE_ATTR, inbox_by_label[label])
+            setattr(label, cls.ARCHIVED_COUNT_CACHE_ATTR, archived_by_label[label])
+
     @classmethod
     def lock(cls, org, uuid):
         return get_redis_connection().lock(LABEL_LOCK_KEY % (org.pk, uuid), timeout=60)
@@ -124,6 +162,7 @@ class Label(models.Model):
         if full:
             result['description'] = self.description
             result['synced'] = self.is_synced
+            result['counts'] = {'inbox': self.get_inbox_count(), 'archived': self.get_archived_count()}
 
         return result
 

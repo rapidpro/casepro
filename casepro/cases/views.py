@@ -426,7 +426,9 @@ class BaseHomeView(OrgPermsMixin, SmartTemplateView):
         user = self.request.user
         partner = user.get_partner(org)
 
-        labels = Label.get_all(org, user).order_by('name')
+        labels = list(Label.get_all(org, user).order_by('name'))
+        Label.bulk_cache_initialize(labels)
+
         groups = Group.get_all(org, visible=True).order_by('name')
 
         # angular app requires context data in JSON format

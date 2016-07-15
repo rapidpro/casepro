@@ -14,6 +14,7 @@ from temba_client.utils import format_iso8601
 
 from casepro.contacts.models import Contact
 from casepro.rules.models import ContainsTest, GroupsTest, FieldTest, WordCountTest, Quantifier
+from casepro.statistics.tasks import squash_counts
 from casepro.test import BaseCasesTest
 
 from .models import Label, Message, MessageAction, MessageExport, MessageFolder, Outgoing, OutgoingFolder, ReplyExport
@@ -228,9 +229,27 @@ class LabelCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json['results'], [
-            {'id': self.aids.pk, 'name': "AIDS", 'description': "Messages about AIDS", 'synced': True},
-            {'id': self.pregnancy.pk, 'name': "Pregnancy", 'description': "Messages about pregnancy", 'synced': True},
-            {'id': self.tea.pk, 'name': "Tea", 'description': "Messages about tea", 'synced': False}
+            {
+                'id': self.aids.pk,
+                'name': "AIDS",
+                'description': "Messages about AIDS",
+                'synced': True,
+                'counts': {'inbox': 0, 'archived': 0}
+            },
+            {
+                'id': self.pregnancy.pk,
+                'name': "Pregnancy",
+                'description': "Messages about pregnancy",
+                'synced': True,
+                'counts': {'inbox': 0, 'archived': 0}
+            },
+            {
+                'id': self.tea.pk,
+                'name': "Tea",
+                'description': "Messages about tea",
+                'synced': False,
+                'counts': {'inbox': 0, 'archived': 0}
+            }
         ])
 
         response = self.url_get('unicef', url + "?with_activity=true")
@@ -239,7 +258,8 @@ class LabelCRUDLTest(BaseCasesTest):
             'name': "AIDS",
             'description': "Messages about AIDS",
             'synced': True,
-            'messages': {'this_month': 0, 'last_month': 0}
+            'counts': {'inbox': 0, 'archived': 0},
+            'activity': {'this_month': 0, 'last_month': 0}
         })
 
     def test_watch_and_unwatch(self):
@@ -300,28 +320,60 @@ class MessageTest(BaseCasesTest):
         self.msg5 = self.create_message(self.unicef, 105, self.ann, "Inactive", is_active=False)
 
     def test_triggers(self):
-        msg = self.create_message(self.unicef, 101, self.ann, "Normal")
-        self.assertFalse(msg.has_labels)
+        def get_label_counts():
+            return {
+                'aids.inbox': self.aids.get_inbox_count(recalculate=True),
+                'aids.archived': self.aids.get_archived_count(recalculate=True),
+                'tea.inbox': self.tea.get_inbox_count(recalculate=True),
+                'tea.archived': self.tea.get_archived_count(recalculate=True),
+            }
 
-        msg.label(self.aids)
-        msg.refresh_from_db()
-        self.assertTrue(msg.has_labels)
+        msg1 = self.create_message(self.unicef, 101, self.ann, "Hello 1", is_handled=True)
+        msg2 = self.create_message(self.unicef, 102, self.ann, "Hello 2", is_handled=True)
+        self.assertFalse(msg1.has_labels)
+        self.assertFalse(msg2.has_labels)
 
-        msg.label(self.pregnancy)
-        msg.refresh_from_db()
-        self.assertTrue(msg.has_labels)
+        msg1.label(self.aids)
+        msg2.label(self.aids)
+        msg1.refresh_from_db()
+        msg2.refresh_from_db()
 
-        msg.unlabel(self.aids)
-        msg.refresh_from_db()
-        self.assertTrue(msg.has_labels)
+        self.assertTrue(msg1.has_labels)
+        self.assertEqual(get_label_counts(), {'aids.inbox': 2, 'aids.archived': 0, 'tea.inbox': 0, 'tea.archived': 0})
 
-        msg.unlabel(self.pregnancy)
-        msg.refresh_from_db()
-        self.assertFalse(msg.has_labels)
+        msg1.label(self.tea)
+        msg1.refresh_from_db()
 
-        msg.label(self.aids, self.pregnancy)  # add multiple
-        msg.refresh_from_db()
-        self.assertTrue(msg.has_labels)
+        self.assertTrue(msg1.has_labels)
+        self.assertEqual(get_label_counts(), {'aids.inbox': 2, 'aids.archived': 0, 'tea.inbox': 1, 'tea.archived': 0})
+
+        msg1.is_archived = True
+        msg1.save()
+
+        self.assertTrue(msg1.has_labels)
+        self.assertEqual(get_label_counts(), {'aids.inbox': 1, 'aids.archived': 1, 'tea.inbox': 0, 'tea.archived': 1})
+
+        msg1.unlabel(self.aids)
+        msg1.refresh_from_db()
+
+        self.assertTrue(msg1.has_labels)
+        self.assertEqual(get_label_counts(), {'aids.inbox': 1, 'aids.archived': 0, 'tea.inbox': 0, 'tea.archived': 1})
+
+        msg1.unlabel(self.tea)
+        msg1.refresh_from_db()
+
+        self.assertFalse(msg1.has_labels)
+        self.assertEqual(get_label_counts(), {'aids.inbox': 1, 'aids.archived': 0, 'tea.inbox': 0, 'tea.archived': 0})
+
+        msg1.label(self.aids, self.tea)
+        msg1.refresh_from_db()
+
+        self.assertTrue(msg1.has_labels)
+        self.assertEqual(get_label_counts(), {'aids.inbox': 1, 'aids.archived': 1, 'tea.inbox': 0, 'tea.archived': 1})
+
+        squash_counts()
+
+        self.assertEqual(get_label_counts(), {'aids.inbox': 1, 'aids.archived': 1, 'tea.inbox': 0, 'tea.archived': 1})
 
     def test_save(self):
         # start with no labels or contacts
