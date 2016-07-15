@@ -62,11 +62,11 @@
             %th
               - trans "Name"
             %th
-              - trans "Replies (this month)"
+              - trans "Replies this month"
             %th
-              - trans "Replies (last month)"
+              - trans "Replies last month"
             %th
-              - trans "Replies (total)"
+              - trans "Total replies"
           %tbody
             %tr{ ng-repeat:"partner in partners" }
               %td
@@ -105,18 +105,22 @@
             %th
               - trans "Name"
             %th
-              - trans "Messages (this month)"
+              - trans "Messages this month"
             %th
-              - trans "Messages (last month)"
+              - trans "Messages last month"
+            %th
+              - trans "Total messages"
           %tbody
             %tr{ ng-repeat:"label in labels" }
               %td
                 %a{ ng-href:"/label/read/[[ label.id ]]/" }><
                   [[ label.name ]]
               %td
-                [[ label.messages.this_month ]]
+                [[ label.activity.this_month ]]
               %td
-                [[ label.messages.last_month ]]
+                [[ label.activity.last_month ]]
+              %td
+                [[ label.counts.inbox + label.counts.archived ]]
         .none{ ng-if:"!labels" }
           - trans "None"
 
@@ -140,11 +144,11 @@
             %th
               - trans "Name"
             %th
-              - trans "Replies (this month)"
+              - trans "Replies this month"
             %th
-              - trans "Replies (last month)"
+              - trans "Replies last month"
             %th
-              - trans "Replies (total)"
+              - trans "Total replies"
           %tbody
             %tr{ ng-repeat:"user in users" }
               %td
