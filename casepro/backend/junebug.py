@@ -441,6 +441,7 @@ class JunebugBackend(BaseBackend):
 
 
 def token_auth_required(auth_token_func):
+    '''Decorates a function so that token authentication is required to run it'''
     def decorator(func):
         @functools.wraps(func)
         def wrapper(request, *args, **kwargs):
