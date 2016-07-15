@@ -38,4 +38,9 @@ namespace('utils', (exports) ->
         dateObj.setDate(0)
 
     return dateObj
+
+  exports.findByProperty = (items, prop, value) ->
+    for item in items
+      if item[prop] == value
+        return item
 )
