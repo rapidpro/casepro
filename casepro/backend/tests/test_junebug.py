@@ -9,7 +9,7 @@ import responses
 from ..junebug import (
     IdentityStore, JunebugBackend, JunebugMessageSendingError,
     IdentityStoreContactSyncer, IdentityStoreContact, received_junebug_message,
-    receive_identity_store_optout)
+    seed_auth_token, token_auth_required, receive_identity_store_optout)
 
 
 class JunebugBackendTest(BaseCasesTest):
@@ -888,6 +888,43 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
             json.loads(response.content),
             {'reason': 'Both "identity" and "optout_type" must be specified.'})
         self.assertEqual(response.status_code, 400)
+
+
+class TokenAuthRequiredTest(BaseCasesTest):
+    url = '/junebug/optout/'
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        super(TokenAuthRequiredTest, self).setUp()
+
+    def test_no_auth_header(self):
+        '''Tests that an authentication header is required'''
+        request = self.factory.get("url")
+        func = token_auth_required(seed_auth_token)(receive_identity_store_optout)
+        response = func(request)
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(json.loads(response.content),
+                         {"reason": "Authentication required"})
+        self.assertEqual(response['WWW-Authenticate'], "Token")
+
+    def test_wrong_auth_token(self):
+        '''Tests that the decorator restricts access with an incorrect token'''
+        request = self.factory.get("url")
+        request.META['HTTP_AUTHORIZATION'] = "Token tests"
+        func = token_auth_required(seed_auth_token)(receive_identity_store_optout)
+        response = func(request)
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(json.loads(response.content), {"reason": "Forbidden"})
+
+    def test_correct_token(self):
+        '''Tests that the decorator allows correct requests'''
+        request = self.factory.get("url")
+        with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
+            request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
+            func = token_auth_required(seed_auth_token)(receive_identity_store_optout)
+            response = func(request)
+        self.assertEqual(response.status_code, 405)
+        self.assertEqual(json.loads(response.content), {'reason': 'Method not allowed.'})
 
 
 class IdentityStoreTest(BaseCasesTest):
