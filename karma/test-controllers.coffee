@@ -497,4 +497,33 @@ describe('controllers:', () ->
       expect(UtilsService.navigateBack).toHaveBeenCalled()
     )
   )
+
+
+  describe('PodController', () ->
+    $scope = null
+
+    beforeEach(() ->
+      $scope = $rootScope.$new()
+    )
+
+    it('should attach pod data to the scope', () ->
+      $scope.podId = 21
+
+      PodApi = new class PodApi
+        get: ->
+
+      p = $q.resolve({foo: 'bar'})
+      spyOn(PodApi, 'get').and.returnValue(p)
+
+      $controller('PodController', {
+        $scope
+        PodApi
+      })
+
+      return p
+        .then(() ->
+          expect(PodApi.get).toHaveBeenCalledWith(21)
+          expect($scope.pod).toEqual({foo: 'bar'}))
+    )
+  )
 )

@@ -416,3 +416,15 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
       resolve = {summaryInitial: (() -> summaryInitial), summaryMaxLength: (() -> summaryMaxLength), partners: (() -> partners)}
       return $uibModal.open({templateUrl: '/partials/modal_newcase.html', controller: 'NewCaseModalController', resolve: resolve}).result
 ])
+
+
+#=====================================================================
+# Pod API service
+#=====================================================================
+services.factory('PodApi', ['$window', '$http', ($window, $http) ->
+  new class PodApi
+    get: (podId, caseId = null) ->
+      caseId ?= $window.contextData.case_obj.id
+      $http.get("/pods/read/#{podId}/", {params: {case_id: caseId}})
+        .then((d) -> d.data)
+])
