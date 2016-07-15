@@ -2,6 +2,7 @@ from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message
 from casepro.test import BaseCasesTest
 from django.conf import settings
+from django.http import HttpResponse
 from django.test import override_settings, RequestFactory
 import json
 import responses
@@ -9,7 +10,7 @@ import responses
 from ..junebug import (
     IdentityStore, JunebugBackend, JunebugMessageSendingError,
     IdentityStoreContactSyncer, IdentityStoreContact, received_junebug_message,
-    seed_auth_token, token_auth_required, receive_identity_store_optout)
+    token_auth_required, receive_identity_store_optout)
 
 
 class JunebugBackendTest(BaseCasesTest):
@@ -897,10 +898,16 @@ class TokenAuthRequiredTest(BaseCasesTest):
         self.factory = RequestFactory()
         super(TokenAuthRequiredTest, self).setUp()
 
+    def dummy_view(self, request):
+        return HttpResponse("OK")
+
+    def dummy_auth_token(self):
+        return "test_token"
+
     def test_no_auth_header(self):
         '''Tests that an authentication header is required'''
         request = self.factory.get("url")
-        func = token_auth_required(seed_auth_token)(receive_identity_store_optout)
+        func = token_auth_required(self.dummy_auth_token)(self.dummy_view)
         response = func(request)
         self.assertEqual(response.status_code, 401)
         self.assertEqual(json.loads(response.content),
@@ -911,7 +918,7 @@ class TokenAuthRequiredTest(BaseCasesTest):
         '''Tests that the decorator restricts access with an incorrect token'''
         request = self.factory.get("url")
         request.META['HTTP_AUTHORIZATION'] = "Token tests"
-        func = token_auth_required(seed_auth_token)(receive_identity_store_optout)
+        func = token_auth_required(self.dummy_auth_token)(self.dummy_view)
         response = func(request)
         self.assertEqual(response.status_code, 403)
         self.assertEqual(json.loads(response.content), {"reason": "Forbidden"})
@@ -919,12 +926,11 @@ class TokenAuthRequiredTest(BaseCasesTest):
     def test_correct_token(self):
         '''Tests that the decorator allows correct requests'''
         request = self.factory.get("url")
-        with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
-            request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
-            func = token_auth_required(seed_auth_token)(receive_identity_store_optout)
-            response = func(request)
-        self.assertEqual(response.status_code, 405)
-        self.assertEqual(json.loads(response.content), {'reason': 'Method not allowed.'})
+        request.META['HTTP_AUTHORIZATION'] = "Token " + self.dummy_auth_token()
+        func = token_auth_required(self.dummy_auth_token)(self.dummy_view)
+        response = func(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, "OK")
 
 
 class IdentityStoreTest(BaseCasesTest):
