@@ -239,23 +239,23 @@ class ChartsTest(BaseStatsTest):
 
         self.login(self.user3)
 
-        # simulate making requests on April 4th
-        with patch.object(timezone, 'now', return_value=datetime(2016, 4, 10, 9, 0, tzinfo=pytz.UTC)):
+        # simulate making requests on March 10th
+        with patch.object(timezone, 'now', return_value=datetime(2016, 3, 10, 9, 0, tzinfo=pytz.UTC)):
             response = self.url_get('unicef', url)
 
             series = response.json['data']
-            self.assertEqual(len(series), 92)
-            self.assertEqual(series[0], [date_to_milliseconds(date(2016, 1, 10)), 0])  # from Jan 10th
-            self.assertEqual(series[5], [date_to_milliseconds(date(2016, 1, 15)), 1])
-            self.assertEqual(series[6], [date_to_milliseconds(date(2016, 1, 16)), 2])
-            self.assertEqual(series[-1], [date_to_milliseconds(date(2016, 4, 10)), 0])  # to April 4th
+            self.assertEqual(len(series), 60)
+            self.assertEqual(series[0], [date_to_milliseconds(date(2016, 1, 11)), 0])  # from Jan 11th
+            self.assertEqual(series[4], [date_to_milliseconds(date(2016, 1, 15)), 1])
+            self.assertEqual(series[5], [date_to_milliseconds(date(2016, 1, 16)), 2])
+            self.assertEqual(series[-1], [date_to_milliseconds(date(2016, 3, 10)), 0])  # to March 10th
 
             response = self.url_get('unicef', url + '?label=%d' % self.tea.pk)
 
             series = response.json['data']
-            self.assertEqual(len(series), 92)
-            self.assertEqual(series[5], [date_to_milliseconds(date(2016, 1, 15)), 1])
-            self.assertEqual(series[6], [date_to_milliseconds(date(2016, 1, 16)), 0])
+            self.assertEqual(len(series), 60)
+            self.assertEqual(series[4], [date_to_milliseconds(date(2016, 1, 15)), 1])
+            self.assertEqual(series[5], [date_to_milliseconds(date(2016, 1, 16)), 0])
 
     def test_replies_chart(self):
         url = reverse('statistics.replies_chart')

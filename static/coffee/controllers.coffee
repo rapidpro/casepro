@@ -445,15 +445,30 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
 
   $scope.onTabInit = (tab) ->
     if tab == 'summary'
-      StatisticsService.repliesChart().then((data) ->
+      StatisticsService.repliesChart().then((chart) ->
         Highcharts.chart('chart-replies-by-month', {
           chart: {type: 'column'},
           title: {text: null},
-          xAxis: {categories: data.categories},
-          yAxis: {min: 0, title: {text: 'Replies'}},
+          xAxis: {categories: chart.categories},
+          yAxis: {min: 0, title: {text: 'Replies Sent'}},
           legend: {enabled: false},
-          series: [{name: 'Replies', data: data.series}],
-          credits: {enabled: false}
+          series: [{name: 'Replies', data: chart.series}],
+        })
+      )
+      StatisticsService.labelsPieChart().then((chart) ->
+        Highcharts.chart('chart-most-common-labels', {
+          chart: {type: 'pie'},
+          title: {text: "Message labels in last 30 days"},
+          series: [{name: 'Messages', data: chart.series}],
+        })
+      )
+      StatisticsService.incomingChart().then((chart) ->
+        Highcharts.chart('chart-incoming-by-day', {
+          title: {text: null},
+          xAxis: {type: 'datetime'},
+          yAxis: {min: 0, title: {text: "Messages Received"}},
+          legend: {enabled: false},
+          series: [{name: "Messages", data: chart.data}],
         })
       )
     else if tab == 'partners'
@@ -639,8 +654,7 @@ controllers.controller('LabelController', ['$scope', '$window', '$controller', '
           xAxis: {type: 'datetime'},
           yAxis: {min: 0, title: {text: "Messages"}},
           legend: {enabled: false},
-          series: [{data: chart.data}],
-          credits: {enabled: false}
+          series: [{name: "Messages", data: chart.data}],
         })
       )
 
@@ -684,7 +698,6 @@ controllers.controller('PartnerController', ['$scope', '$window', '$controller',
           yAxis: {min: 0, title: {text: "Replies"}},
           legend: {enabled: false},
           series: [{name: "Replies", data: chart.series}],
-          credits: {enabled: false}
         })
       )
     else if tab == 'users'
@@ -759,8 +772,7 @@ controllers.controller('UserController', ['$scope', '$controller', '$window', 'S
           xAxis: {categories: chart.categories},
           yAxis: {min: 0, title: {text: "Replies"}},
           legend: {enabled: false},
-          series: [{name: "Replies", data: chart.series}],
-          credits: {enabled: false}
+          series: [{name: "Replies", data: chart.series}]
         })
       )
 

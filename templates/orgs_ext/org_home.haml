@@ -37,7 +37,14 @@
               %li
                 Number of closed cases: <strong>{{ summary.cases_closed | intcomma }}</strong>
           .col-md-8
-            #chart-replies-by-month
+            #chart-replies-by-month.chart
+        %hr
+        .row
+          .col-md-6
+            #chart-incoming-by-day.chart
+          .col-md-6
+            #chart-most-common-labels.chart{ style:"height: 300px" }
+
       </uib-tab>
 
       <uib-tab index="1" select="onTabSelect(1)">
@@ -176,7 +183,7 @@
       background-color: #f7f7f7;
       margin-top: 7px;
     }
-    #chart-replies-by-month {
+    .chart {
       width: 100%;
       height: 250px;
     }
