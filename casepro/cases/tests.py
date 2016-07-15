@@ -21,6 +21,7 @@ from casepro.msgs.tasks import handle_messages
 from casepro.profiles.models import ROLE_ANALYST, ROLE_MANAGER
 from casepro.test import BaseCasesTest
 from casepro.utils import datetime_to_microseconds, microseconds_to_datetime
+from casepro.pods import registry as pod_registry
 from casepro.pods.tests.utils import DummyPodPlugin
 
 from .context_processors import sentry_dsn
@@ -417,6 +418,7 @@ class CaseCRUDLTest(BaseCasesTest):
         'title': 'FooPod'
     }])
     def test_read_pods(self):
+        reload(pod_registry)
         url = reverse('cases.case_read', args=[self.case.pk])
         self.login(self.user1)
         response = self.url_get('unicef', url)
@@ -428,6 +430,7 @@ class CaseCRUDLTest(BaseCasesTest):
         'append': 'casepro.pods.tests.utils.DummyPodPlugin'
     })
     def test_read_pod_resources(self):
+        reload(pod_registry)
         url = reverse('cases.case_read', args=[self.case.pk])
         self.login(self.user1)
         response = self.url_get('unicef', url)
