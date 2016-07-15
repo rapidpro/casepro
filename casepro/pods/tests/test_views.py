@@ -42,7 +42,7 @@ class ViewPodDataView(BaseCasesTest):
         '''
         If it is a valid get request, the data from the pod should be returned.
         '''
-        with self.settings(PODS=[{'app_label': 'base_pod'}]):
+        with self.settings(PODS=[{'label': 'base_pod'}]):
             from casepro.pods import registry
             reload(registry)
         response = self.url_get(
@@ -102,7 +102,7 @@ class PerformPodActionView(BaseCasesTest):
         '''
         If it is a valid post request, the action should be performed.
         '''
-        with self.settings(PODS=[{'app_label': 'base_pod'}]):
+        with self.settings(PODS=[{'label': 'base_pod'}]):
             from casepro.pods import registry
             reload(registry)
         response = self.url_post_json(
