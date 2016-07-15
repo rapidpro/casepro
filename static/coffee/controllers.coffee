@@ -36,10 +36,11 @@ controllers.controller('InboxController', ['$scope', '$window', '$location', 'La
 
     $scope.$on('$locationChangeSuccess', () ->
       params = $location.search()
-      initialLabel = null
       if 'label' of params
         $window.console.log(params.label)
-        initialLabel = utils.findByProperty($scope.labels, 'name', params.label)
+        initialLabel = utils.find($scope.labels, 'name', params.label)
+      else
+        initialLabel = null
 
       if $scope.activeLabel != initialLabel
         $scope.activateLabel(initialLabel)

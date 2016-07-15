@@ -39,8 +39,9 @@ namespace('utils', (exports) ->
 
     return dateObj
 
-  exports.findByProperty = (items, prop, value) ->
+  exports.find = (items, prop, value) ->
     for item in items
-      if item[prop] == value
+      if angular.equals(item[prop], value)
         return item
+    return null
 )
