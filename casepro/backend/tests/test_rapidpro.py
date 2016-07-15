@@ -843,8 +843,9 @@ class RapidProBackendTest(BaseCasesTest):
         self.assertEqual(messages[0].keys(), outgoing.as_json().keys())
 
     def test_get_url_patterns(self):
-        '''Getting the list of url patterns for the rapidpro backend should
-        return an empty list.'''
+        '''
+        Getting the list of url patterns for the rapidpro backend should return an empty list.
+        '''
         self.assertEqual(self.backend.get_url_patterns(), [])
 
 

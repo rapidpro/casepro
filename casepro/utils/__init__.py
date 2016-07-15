@@ -143,12 +143,10 @@ def date_range(start, stop):
 
 def uuid_to_int(uuid):
     '''
-    Converts a UUID hex string to an int within the range of a Django
-    IntegerField, and also >=0, as the URL regexes don't account for
-    negative numbers.
+    Converts a UUID hex string to an int within the range of a Django IntegerField, and also >=0, as the URL regexes
+    don't account for negative numbers.
 
     From https://docs.djangoproject.com/en/1.9/ref/models/fields/#integerfield
-    "Values from -2147483648 to 2147483647 are safe in all databases supported
-    by Django"
+    "Values from -2147483648 to 2147483647 are safe in all databases supported by Django"
     '''
     return UUID(hex=uuid).int % (2147483647 + 1)

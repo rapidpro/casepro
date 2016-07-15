@@ -19,8 +19,7 @@ from itertools import chain
 
 
 class IdentityStore(object):
-    '''Implements required methods for accessing the identity data in the
-    identity store.'''
+    '''Implements required methods for accessing the identity data in the identity store.'''
     def __init__(self, base_url, auth_token, address_type):
         '''
         base_url: the base URL where the identity store is located
@@ -34,8 +33,7 @@ class IdentityStore(object):
         self.session.headers.update({'Content-Type': 'application/json'})
 
     def get_paginated_response(self, url, params={}, **kwargs):
-        '''Get the results of all pages of a response. Returns an iterator that
-        returns each of the items.'''
+        '''Get the results of all pages of a response. Returns an iterator that returns each of the items.'''
         while url is not None:
             r = self.session.get(url, params=params, **kwargs)
             data = r.json()
@@ -47,21 +45,18 @@ class IdentityStore(object):
 
     def get_identity(self, uuid):
         '''Returns the details of the identity.'''
-        r = self.session.get(
-            '%s/api/v1/identities/%s/' % (self.base_url, uuid))
+        r = self.session.get('%s/api/v1/identities/%s/' % (self.base_url, uuid))
         if r.status_code == 404:
             return None
         return r.json()
 
     def get_addresses(self, uuid):
-        '''Get the list of addresses that a message to an identity specified
-        by uuid should be sent to.'''
+        '''Get the list of addresses that a message to an identity specified by uuid should be sent to.'''
         identity = self.get_identity(uuid)
         if identity and identity.get('communicate_through') is not None:
             identity = self.get_identity(identity['communicate_through'])
         addresses = self.get_paginated_response(
-            '%s/api/v1/identities/%s/addresses/%s' % (
-                self.base_url, identity['id'], self.address_type),
+            '%s/api/v1/identities/%s/addresses/%s' % (self.base_url, identity['id'], self.address_type),
             params={'default': True})
         return (
             a['address'] for a in addresses if a.get('address') is not None)
@@ -91,15 +86,11 @@ class IdentityStore(object):
         '''Get the list of identities filtered by the given kwargs.'''
         url = '%s/api/v1/identities/?' % self.base_url
 
-        identities = self.get_paginated_response(
-            url, params=params)
+        identities = self.get_paginated_response(url, params=params)
 
         # Users who opt to be forgotten from the system have their details
         # stored as 'redacted'.
-        return (
-            IdentityStoreContact(i) for i in identities if
-            i.get('details').get('name') != "redacted"
-        )
+        return (IdentityStoreContact(i) for i in identities if i.get('details').get('name') != "redacted")
 
 
 class IdentityStoreContact(object):
@@ -141,24 +132,20 @@ class IdentityStoreContactSyncer(BaseSyncer):
         }
 
     def update_required(self, local, remote, remote_as_kwargs):
-        if local.is_stub or local.name != remote.name or \
-                local.language != remote.language:
+        if local.is_stub or local.name != remote.name or local.language != remote.language:
             return True
 
-        if {g.uuid for g in local.groups.all()} != \
-                {g.uuid for g in remote.groups}:
+        if {g.uuid for g in local.groups.all()} != {g.uuid for g in remote.groups}:
             return True
 
-        return not is_dict_equal(
-            local.get_fields(), remote.fields, ignore_none_values=True)
+        return not is_dict_equal(local.get_fields(), remote.fields, ignore_none_values=True)
 
     def delete_local(self, local):
         local.release()
 
 
 class JunebugMessageSendingError(Exception):
-    '''Exception that is raised when errors occur when trying to send messages
-    through Junebug.'''
+    '''Exception that is raised when errors occur when trying to send messages through Junebug.'''
 
 
 class JunebugMessageSender(object):
@@ -171,8 +158,7 @@ class JunebugMessageSender(object):
 
     @property
     def url(self):
-        return '%s/channels/%s/messages/' % (
-            self.base_url.rstrip('/'), self.channel_id)
+        return '%s/channels/%s/messages/' % (self.base_url.rstrip('/'), self.channel_id)
 
     def split_urn(self, urn):
         try:
@@ -190,8 +176,7 @@ class JunebugMessageSender(object):
             addresses = self.identity_store.get_addresses(uuid)
         else:
             # If we don't have an URN for a message, we cannot send it.
-            raise JunebugMessageSendingError(
-                'Cannot send message without URN: %r' % message)
+            raise JunebugMessageSendingError('Cannot send message without URN: %r' % message)
         for to_addr in addresses:
             data = {
                 'to': to_addr,
@@ -208,54 +193,40 @@ class JunebugBackend(BaseBackend):
 
     def __init__(self):
         self.identity_store = IdentityStore(
-            settings.IDENTITY_API_ROOT, settings.IDENTITY_AUTH_TOKEN,
-            settings.IDENTITY_ADDRESS_TYPE)
+            settings.IDENTITY_API_ROOT, settings.IDENTITY_AUTH_TOKEN, settings.IDENTITY_ADDRESS_TYPE)
         self.message_sender = JunebugMessageSender(
-            settings.JUNEBUG_API_ROOT, settings.JUNEBUG_CHANNEL_ID,
-            settings.JUNEBUG_FROM_ADDRESS, self.identity_store)
+            settings.JUNEBUG_API_ROOT, settings.JUNEBUG_CHANNEL_ID, settings.JUNEBUG_FROM_ADDRESS, self.identity_store)
 
-    def pull_contacts(
-            self, org, modified_after, modified_before,
-            progress_callback=None):
+    def pull_contacts(self, org, modified_after, modified_before, progress_callback=None):
         """
         Pulls contacts modified in the given time window
 
         :param org: the org
         :param datetime modified_after: pull contacts modified after this
         :param datetime modified_before: pull contacts modified before this
-        :param progress_callback:
-            callable that will be called from time to time with number of
-            contacts pulled
-        :return:
-            tuple of the number of contacts created, updated, deleted and
-            ignored
+        :param progress_callback: callable that will be called from time to time with number of contacts pulled
+        :return: tuple of the number of contacts created, updated, deleted and ignored
         """
         identity_store = self.identity_store
 
         # all identities created in the Identity Store in the time window
-        new_identities = identity_store.get_identities(
-            created_from=modified_after, created_to=modified_before)
+        new_identities = identity_store.get_identities(created_from=modified_after, created_to=modified_before)
 
         # all identities modified in the Identity Store in the time window
-        modified_identities = identity_store.get_identities(
-            updated_from=modified_after,
-            updated_to=modified_before)
+        modified_identities = identity_store.get_identities(updated_from=modified_after, updated_to=modified_before)
 
         identities_to_update = list(chain(modified_identities, new_identities))
 
         # sync_local_to_changes() expects iterables for the 3rd and 4th args
         # Deleted identities are updated via the Identity Store callback
-        return sync_local_to_changes(
-            org, IdentityStoreContactSyncer(), [identities_to_update], [],
-            progress_callback)
+        return sync_local_to_changes(org, IdentityStoreContactSyncer(), [identities_to_update], [], progress_callback)
 
     def pull_fields(self, org):
         """
         Pulls all contact fields
 
         :param org: the org
-        :return:
-            tuple of the number of fields created, updated, deleted and ignored
+        :return: tuple of the number of fields created, updated, deleted and ignored
         """
         return (0, 0, 0, 0)
 
@@ -264,8 +235,7 @@ class JunebugBackend(BaseBackend):
         Pulls all contact groups
 
         :param org: the org
-        :return:
-            tuple of the number of groups created, updated, deleted and ignored
+        :return: tuple of the number of groups created, updated, deleted and ignored
         """
         return (0, 0, 0, 0)
 
@@ -274,28 +244,20 @@ class JunebugBackend(BaseBackend):
         Pulls all message labels
 
         :param org: the org
-        :return:
-            tuple of the number of labels created, updated, deleted and ignored
+        :return: tuple of the number of labels created, updated, deleted and ignored
         """
         return (0, 0, 0, 0)
 
-    def pull_messages(
-            self, org, modified_after, modified_before, as_handled=False,
-            progress_callback=None):
+    def pull_messages(self, org, modified_after, modified_before, as_handled=False, progress_callback=None):
         """
         Pulls messages modified in the given time window
 
         :param org: the org
         :param datetime modified_after: pull messages modified after this
         :param datetime modified_before: pull messages modified before this
-        :param bool as_handled:
-            whether messages should be saved as already handled
-        :param progress_callback:
-            callable that will be called from time to time with number of
-            messages pulled
-        :return:
-            tuple of the number of messages created, updated, deleted and
-            ignored
+        :param bool as_handled: whether messages should be saved as already handled
+        :param progress_callback: callable that will be called from time to time with number of messages pulled
+        :return: tuple of the number of messages created, updated, deleted and ignored
         """
         return (0, 0, 0, 0)
 
@@ -313,9 +275,7 @@ class JunebugBackend(BaseBackend):
 
         :param org: the org
         :param outgoing: the outgoing messages
-        :param as_broadcast:
-            whether outgoing messages differ only by recipient and so can be
-            sent as single broadcast
+        :param as_broadcast: whether outgoing messages differ only by recipient and so can be sent as single broadcast
         """
         for message in outgoing:
             self.message_sender.send_message(message)
@@ -414,28 +374,20 @@ class JunebugBackend(BaseBackend):
         :param created_after: include messages created after this time
         :param created_before: include messages created before this time
         :return:
-            the messages as JSON objects in reverse chronological order. JSON
-            format should match that returned by Message.as_json() for incoming
-            messages and Outgoing.as_json() for outgoing messages.
+            the messages as JSON objects in reverse chronological order. JSON format should match that returned by
+            Message.as_json() for incoming messages and Outgoing.as_json() for outgoing messages.
         """
         return []
 
     def get_url_patterns(self):
         """
-        Returns the list of URL patterns that should be registered for this
-        backend.
+        Returns the list of URL patterns that should be registered for this backend.
 
         :return: a list of URL patterns.
         """
         return [
-            url(
-                settings.JUNEBUG_INBOUND_URL, received_junebug_message,
-                name='inbound_junebug_message'
-            ),
-            url(
-                settings.IDENTITY_STORE_OPTOUT_URL,
-                receive_identity_store_optout, name='identity_store_optout'
-            ),
+            url(settings.JUNEBUG_INBOUND_URL, received_junebug_message, name='inbound_junebug_message'),
+            url(settings.IDENTITY_STORE_OPTOUT_URL, receive_identity_store_optout, name='identity_store_optout'),
         ]
 
 
@@ -448,12 +400,10 @@ def received_junebug_message(request):
     try:
         data = json.loads(request.body)
     except ValueError as e:
-        return JsonResponse(
-            {'reason': 'JSON decode error', 'details': e.message}, status=400)
+        return JsonResponse({'reason': 'JSON decode error', 'details': e.message}, status=400)
 
     identity_store = IdentityStore(
-        settings.IDENTITY_API_ROOT, settings.IDENTITY_AUTH_TOKEN,
-        settings.IDENTITY_ADDRESS_TYPE)
+        settings.IDENTITY_API_ROOT, settings.IDENTITY_AUTH_TOKEN, settings.IDENTITY_ADDRESS_TYPE)
     identities = identity_store.get_identities_for_address(data.get('from'))
     try:
         identity = identities.next()
@@ -463,9 +413,8 @@ def received_junebug_message(request):
 
     message_id = uuid_to_int(data.get('message_id'))
     msg = Message.objects.create(
-        org=request.org, backend_id=message_id, contact=contact,
-        type=Message.TYPE_INBOX, text=(data.get('content') or ''),
-        created_on=datetime.now(pytz.utc), has_labels=True)
+        org=request.org, backend_id=message_id, contact=contact, type=Message.TYPE_INBOX,
+        text=(data.get('content') or ''), created_on=datetime.now(pytz.utc), has_labels=True)
 
     return JsonResponse(msg.as_json())
 
@@ -479,16 +428,13 @@ def receive_identity_store_optout(request):
     try:
         data = json.loads(request.body)
     except ValueError as e:
-        return JsonResponse(
-            {'reason': 'JSON decode error', 'details': e.message}, status=400)
+        return JsonResponse({'reason': 'JSON decode error', 'details': e.message}, status=400)
 
     try:
         identity_id = data['identity']
         optout_type = data['optout_type']
     except KeyError as e:
-        return JsonResponse(
-            {'reason': 'Both "identity" and "optout_type" must be specified.'},
-            status=400)
+        return JsonResponse({'reason': 'Both "identity" and "optout_type" must be specified.'}, status=400)
 
     # The identity store currently doesn't specify the response format or do
     # anything with the response.
@@ -499,8 +445,7 @@ def receive_identity_store_optout(request):
     with syncer.lock(org, identity_id):
         local_contact = syncer.fetch_local(org, identity_id)
         if not local_contact:
-            return JsonResponse({
-                'reason': "No Contact for id: " + identity_id}, status=400)
+            return JsonResponse({'reason': "No Contact for id: " + identity_id}, status=400)
 
         if optout_type == "forget":
             # TODO: Removed any identifying details from the contact
@@ -517,6 +462,4 @@ def receive_identity_store_optout(request):
             # This case is not relevant to Casepro
             return JsonResponse({"success": True}, status=200)
 
-    return JsonResponse({
-        'reason': "Unrecognised value for 'optout_type': " + optout_type},
-        status=400)
+    return JsonResponse({'reason': "Unrecognised value for 'optout_type': " + optout_type}, status=400)
