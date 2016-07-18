@@ -810,7 +810,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         response = receive_identity_store_optout(request)
         self.assertEqual(
             json.loads(response.content),
-            {'reason': "Unrecognised value for 'optout_type': unrecognised"})
+            {'reason': 'Unrecognised value for "optout_type": unrecognised'})
         self.assertEqual(response.status_code, 400)
 
     @responses.activate
