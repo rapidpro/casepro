@@ -19,8 +19,9 @@ class PartnerForm(forms.ModelForm):
         org = kwargs.pop('org')
         super(PartnerForm, self).__init__(*args, **kwargs)
 
+        self.fields['primary_contact'].queryset = org.get_users()
         self.fields['labels'].queryset = Label.get_all(org).order_by('name')
 
     class Meta:
         model = Partner
-        fields = ('name', 'description', 'timezone', 'logo', 'is_restricted', 'labels')
+        fields = ('name', 'description', 'timezone', 'primary_contact', 'logo', 'is_restricted', 'labels')
