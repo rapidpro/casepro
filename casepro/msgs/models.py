@@ -10,7 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.timesince import timesince
 from django.utils.timezone import now
 from enum import Enum
-from redis_cache import get_redis_connection
+from django_redis import get_redis_connection
 
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact, Field

@@ -6,7 +6,7 @@ from django.contrib.postgres.fields import HStoreField
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from redis_cache import get_redis_connection
+from django_redis import get_redis_connection
 
 from casepro.backend import get_backend
 
