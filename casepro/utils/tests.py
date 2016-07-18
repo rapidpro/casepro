@@ -107,21 +107,17 @@ class UtilsTest(BaseCasesTest):
         self.assertEqual(list(date_range(date(2015, 1, 29), date(2015, 1, 29))), [])
 
     def test_uuid_to_int_range(self):
-        '''
+        """
         Ensures that the integer returned will always be in the range [0, 2147483647].
-        '''
-        self.assertEqual(
-            uuid_to_int(UUID(int=(2147483647)).hex),
-            2147483647)
-        self.assertEqual(
-            uuid_to_int(UUID(int=(2147483648)).hex),
-            0)
+        """
+        self.assertEqual(uuid_to_int(UUID(int=(2147483647)).hex), 2147483647)
+        self.assertEqual(uuid_to_int(UUID(int=(2147483648)).hex), 0)
 
     @given(st.uuids())
     def test_uuid_to_int_property(self, uuid):
-        '''
+        """
         Property based testing to ensure that the output of the function is always within the limits.
-        '''
+        """
         self.assertTrue(uuid_to_int(uuid.hex) <= 2147483647)
         self.assertTrue(uuid_to_int(uuid.hex) >= 0)
 

@@ -19,21 +19,21 @@ from itertools import chain
 
 
 class IdentityStore(object):
-    '''Implements required methods for accessing the identity data in the identity store.'''
+    """Implements required methods for accessing the identity data in the identity store."""
     def __init__(self, base_url, auth_token, address_type):
-        '''
+        """
         base_url: the base URL where the identity store is located
         auth_token: the token that should be used for authorized access
         address_type: the address type of the addresses that we want
-        '''
-        self.base_url = base_url.rstrip('/')
+        """
+        self.base_url = base_url.rstrip("/")
         self.address_type = address_type
         self.session = requests.Session()
-        self.session.headers.update({'Authorization': 'Token %s' % auth_token})
-        self.session.headers.update({'Content-Type': 'application/json'})
+        self.session.headers.update({'Authorization': "Token %s" % auth_token})
+        self.session.headers.update({'Content-Type': "application/json"})
 
     def get_paginated_response(self, url, params={}, **kwargs):
-        '''Get the results of all pages of a response. Returns an iterator that returns each of the items.'''
+        """Get the results of all pages of a response. Returns an iterator that returns each of the items."""
         while url is not None:
             r = self.session.get(url, params=params, **kwargs)
             data = r.json()
@@ -44,31 +44,31 @@ class IdentityStore(object):
             params = {}
 
     def get_identity(self, uuid):
-        '''Returns the details of the identity.'''
-        r = self.session.get('%s/api/v1/identities/%s/' % (self.base_url, uuid))
+        """Returns the details of the identity."""
+        r = self.session.get("%s/api/v1/identities/%s/" % (self.base_url, uuid))
         if r.status_code == 404:
             return None
         return r.json()
 
     def get_addresses(self, uuid):
-        '''Get the list of addresses that a message to an identity specified by uuid should be sent to.'''
+        """Get the list of addresses that a message to an identity specified by uuid should be sent to."""
         identity = self.get_identity(uuid)
         if identity and identity.get('communicate_through') is not None:
             identity = self.get_identity(identity['communicate_through'])
         addresses = self.get_paginated_response(
-            '%s/api/v1/identities/%s/addresses/%s' % (self.base_url, identity['id'], self.address_type),
+            "%s/api/v1/identities/%s/addresses/%s" % (self.base_url, identity['id'], self.address_type),
             params={'default': True})
         return (
             a['address'] for a in addresses if a.get('address') is not None)
 
     def get_identities_for_address(self, address):
         return self.get_paginated_response(
-            '%s/api/v1/identities/search/' % (self.base_url),
+            "%s/api/v1/identities/search/" % (self.base_url),
             params={'details__addresses__%s' % self.address_type: address})
 
     def create_identity(self, address):
         identity = self.session.post(
-            '%s/api/v1/identities/' % (self.base_url,),
+            "%s/api/v1/identities/" % (self.base_url,),
             json={
                 'details': {
                     'addresses': {
@@ -76,14 +76,14 @@ class IdentityStore(object):
                             address: {},
                         },
                     },
-                    'default_addr_type': 'msisdn',
+                    'default_addr_type': "msisdn",
                 },
             }
         )
         return identity.json()
 
     def get_identities(self, **params):
-        '''Get the list of identities filtered by the given kwargs.'''
+        """Get the list of identities filtered by the given kwargs."""
         url = '%s/api/v1/identities/?' % self.base_url
 
         identities = self.get_paginated_response(url, params=params)
@@ -145,7 +145,7 @@ class IdentityStoreContactSyncer(BaseSyncer):
 
 
 class JunebugMessageSendingError(Exception):
-    '''Exception that is raised when errors occur when trying to send messages through Junebug.'''
+    """Exception that is raised when errors occur when trying to send messages through Junebug."""
 
 
 class JunebugMessageSender(object):
@@ -164,7 +164,7 @@ class JunebugMessageSender(object):
         try:
             type_, address = urn.split(':', 1)
         except ValueError:
-            raise JunebugMessageSendingError('Invalid URN: %s' % urn)
+            raise JunebugMessageSendingError("Invalid URN: %s" % urn)
         return type_, address
 
     def send_message(self, message):
@@ -176,7 +176,7 @@ class JunebugMessageSender(object):
             addresses = self.identity_store.get_addresses(uuid)
         else:
             # If we don't have an URN for a message, we cannot send it.
-            raise JunebugMessageSendingError('Cannot send message without URN: %r' % message)
+            raise JunebugMessageSendingError("Cannot send message without URN: %r" % message)
         for to_addr in addresses:
             data = {
                 'to': to_addr,
@@ -187,9 +187,9 @@ class JunebugMessageSender(object):
 
 
 class JunebugBackend(BaseBackend):
-    '''
+    """
     Junebug instance as a backend.
-    '''
+    """
 
     def __init__(self):
         self.identity_store = IdentityStore(
@@ -386,21 +386,21 @@ class JunebugBackend(BaseBackend):
         :return: a list of URL patterns.
         """
         return [
-            url(settings.JUNEBUG_INBOUND_URL, received_junebug_message, name='inbound_junebug_message'),
-            url(settings.IDENTITY_STORE_OPTOUT_URL, receive_identity_store_optout, name='identity_store_optout'),
+            url(settings.JUNEBUG_INBOUND_URL, received_junebug_message, name="inbound_junebug_message"),
+            url(settings.IDENTITY_STORE_OPTOUT_URL, receive_identity_store_optout, name="identity_store_optout"),
         ]
 
 
 @csrf_exempt
 def received_junebug_message(request):
-    '''Handles MO messages from Junebug.'''
-    if request.method != 'POST':
-        return JsonResponse({'reason': 'Method not allowed.'}, status=405)
+    """Handles MO messages from Junebug."""
+    if request.method != "POST":
+        return JsonResponse({'reason': "Method not allowed."}, status=405)
 
     try:
         data = json.loads(request.body)
     except ValueError as e:
-        return JsonResponse({'reason': 'JSON decode error', 'details': e.message}, status=400)
+        return JsonResponse({'reason': "JSON decode error", 'details': e.message}, status=400)
 
     identity_store = IdentityStore(
         settings.IDENTITY_API_ROOT, settings.IDENTITY_AUTH_TOKEN, settings.IDENTITY_ADDRESS_TYPE)
@@ -421,14 +421,14 @@ def received_junebug_message(request):
 
 @csrf_exempt
 def receive_identity_store_optout(request):
-    '''Handles optout notifications from the Identity Store.'''
-    if request.method != 'POST':
-        return JsonResponse({'reason': 'Method not allowed.'}, status=405)
+    """Handles optout notifications from the Identity Store."""
+    if request.method != "POST":
+        return JsonResponse({'reason': "Method not allowed."}, status=405)
 
     try:
         data = json.loads(request.body)
     except ValueError as e:
-        return JsonResponse({'reason': 'JSON decode error', 'details': e.message}, status=400)
+        return JsonResponse({'reason': "JSON decode error", 'details': e.message}, status=400)
 
     try:
         identity_id = data['identity']
@@ -451,15 +451,15 @@ def receive_identity_store_optout(request):
             # TODO: Removed any identifying details from the contact
             # (to uphold 'Right to be forgotten')
             local_contact.release()
-            return JsonResponse({"success": True}, status=200)
+            return JsonResponse({'success': True}, status=200)
 
         elif optout_type == "stop" or optout_type == "stopall":
             local_contact.is_blocked = True
-            local_contact.save(update_fields=('is_blocked',))
-            return JsonResponse({"success": True}, status=200)
+            local_contact.save(update_fields=("is_blocked",))
+            return JsonResponse({'success': True}, status=200)
 
         elif optout_type == "unsubscribe":
             # This case is not relevant to Casepro
-            return JsonResponse({"success": True}, status=200)
+            return JsonResponse({'success': True}, status=200)
 
-    return JsonResponse({'reason': "Unrecognised value for 'optout_type': " + optout_type}, status=400)
+    return JsonResponse({'reason': 'Unrecognised value for "optout_type": ' + optout_type}, status=400)
