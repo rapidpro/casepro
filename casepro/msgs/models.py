@@ -247,11 +247,11 @@ class Message(models.Model):
 
         if all_label_access:
             if folder == MessageFolder.inbox:
+                queryset = queryset.filter(has_labels=True)
                 if label_id:
                     label = Label.get_all(org, user).filter(pk=label_id).first()
                     queryset = queryset.filter(labels=label)
-                else:
-                    queryset = queryset.filter(has_labels=True)
+
             elif folder == MessageFolder.unlabelled:
                 # only show inbox messages in unlabelled
                 queryset = queryset.filter(type=Message.TYPE_INBOX, has_labels=False)
