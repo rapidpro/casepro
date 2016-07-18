@@ -132,7 +132,7 @@
           - trans "Users"
         </uib-tab-heading>
         .search-toolbar.clearfix
-          - if perms.profiles.user_create or org_perms.profiles.user_create
+          - if perms.profiles.profile_user_create or org_perms.profiles.profile_user_create
             .pull-away
               <a class="btn btn-default" href="{% url 'profiles.user_create' %}">{% trans "New" %}</a>
 
