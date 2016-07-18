@@ -467,7 +467,7 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
           xAxis: {type: 'datetime'},
           yAxis: {min: 0, title: {text: "Messages Received"}},
           legend: {enabled: false},
-          series: [{name: "Messages", data: chart.data}],
+          series: [{name: "Messages", data: chart.series}],
         })
       )
     else if tab == 'partners'
@@ -653,7 +653,7 @@ controllers.controller('LabelController', ['$scope', '$window', '$controller', '
           xAxis: {type: 'datetime'},
           yAxis: {min: 0, title: {text: "Messages"}},
           legend: {enabled: false},
-          series: [{name: "Messages", data: chart.data}],
+          series: [{name: "Messages", data: chart.series}],
         })
       )
 

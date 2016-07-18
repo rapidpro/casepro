@@ -243,7 +243,7 @@ class ChartsTest(BaseStatsTest):
         with patch.object(timezone, 'now', return_value=datetime(2016, 3, 10, 9, 0, tzinfo=pytz.UTC)):
             response = self.url_get('unicef', url)
 
-            series = response.json['data']
+            series = response.json['series']
             self.assertEqual(len(series), 60)
             self.assertEqual(series[0], [date_to_milliseconds(date(2016, 1, 11)), 0])  # from Jan 11th
             self.assertEqual(series[4], [date_to_milliseconds(date(2016, 1, 15)), 1])
@@ -252,7 +252,7 @@ class ChartsTest(BaseStatsTest):
 
             response = self.url_get('unicef', url + '?label=%d' % self.tea.pk)
 
-            series = response.json['data']
+            series = response.json['series']
             self.assertEqual(len(series), 60)
             self.assertEqual(series[4], [date_to_milliseconds(date(2016, 1, 15)), 1])
             self.assertEqual(series[5], [date_to_milliseconds(date(2016, 1, 16)), 0])
@@ -295,3 +295,42 @@ class ChartsTest(BaseStatsTest):
                                "November", "December", "January", "February", "March", "April"],
                 'series': [0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0]
             })
+
+    def test_most_used_labels_chart(self):
+        url = reverse('statistics.labels_pie_chart')
+
+        self.assertLoginRedirect(self.url_get('unicef', url), 'unicef', url)
+
+        old_msgs = self.new_messages(date(2016, 2, 1), 2)  # Feb 1st (not included)
+        old_msgs[0].label(self.aids)
+
+        cur_msgs = self.new_messages(date(2016, 2, 20), 3)  # Feb 20th (included)
+        cur_msgs[0].label(self.aids)
+        cur_msgs[1].label(self.tea)
+        cur_msgs[2].label(self.tea)
+
+        self.login(self.admin)
+
+        # simulate making requests on March 10th
+        with patch.object(timezone, 'now', return_value=datetime(2016, 3, 10, 9, 0, tzinfo=pytz.UTC)):
+            response = self.url_get('unicef', url)
+
+            series = response.json['series']
+            self.assertEqual(len(series), 2)
+            self.assertEqual(series[0], {'y': 2, 'name': "Tea"})
+            self.assertEqual(series[1], {'y': 1, 'name': "AIDS"})
+
+            # check when there are more labels than can be displayed on pie chart
+            for l in range(10):
+                new_label = self.create_label(self.unicef, 'L-20%d' % l, "Label #%d" % l, "Description")
+                cur_msgs[0].label(new_label)
+
+            response = self.url_get('unicef', url)
+
+            series = response.json['series']
+            self.assertEqual(len(series), 10)
+            self.assertEqual(series[0], {'y': 2, 'name': "Tea"})
+            self.assertEqual(series[1], {'y': 1, 'name': "AIDS"})
+            self.assertEqual(series[2], {'y': 1, 'name': "Label #0"})  # labels with same count in alphabetical order
+            self.assertEqual(series[8], {'y': 1, 'name': "Label #6"})
+            self.assertEqual(series[9], {'y': 3, 'name': "Other"})
