@@ -979,7 +979,7 @@ class PartnerCRUDLTest(BaseCasesTest):
 
         # create label restricted partner
         response = self.url_post('unicef', url, {'name': "Helpers", 'description': "Helpers Description",
-                                                 'timezone': "Africa/Kigali",
+                                                 'timezone': "Africa/Kigali", 'primary_contact': self.user1.pk,
                                                  'logo': None, 'is_restricted': True, 'labels': [self.tea.pk]})
         self.assertEqual(response.status_code, 302)
 
@@ -1060,8 +1060,7 @@ class PartnerCRUDLTest(BaseCasesTest):
         self.assertEqual(moh.name, "MOH2")
 
         # post primary contact change
-        response = self.url_post('unicef', url, {'name': "MOH", 'primary_contact': self.user1})
-        self.assertFormError(response, 'form', 'primary_contact', 'This field is required.')
+        response = self.url_post('unicef', url, {'name': "MOH", 'primary_contact': self.user1.pk})
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, 'http://unicef.localhost/partner/read/%d/' % self.moh.pk)
 
