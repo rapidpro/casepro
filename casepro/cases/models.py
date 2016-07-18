@@ -48,6 +48,8 @@ class Partner(models.Model):
     name = models.CharField(verbose_name=_("Name"), max_length=128,
                             help_text=_("Name of this partner organization"))
 
+    description = models.CharField(verbose_name=_("Description"), null=True, blank=True, max_length=255)
+
     timezone = models.CharField(
         verbose_name=_("Timezone"), max_length=64, default='UTC',
         help_text=_("The timezone the partner organization is in."))
@@ -77,11 +79,12 @@ class Partner(models.Model):
         return tzinfo
 
     @classmethod
-    def create(cls, org, name, timezone, restricted, labels, logo=None):
+    def create(cls, org, name, description, timezone, restricted, labels, logo=None):
         if labels and not restricted:
             raise ValueError("Can't specify labels for a partner which is not restricted")
 
-        partner = cls.objects.create(org=org, name=name, timezone=timezone, logo=logo, is_restricted=restricted)
+        partner = cls.objects.create(org=org, name=name, description=description, timezone=timezone, logo=logo,
+                                     is_restricted=restricted)
 
         if restricted:
             partner.labels.add(*labels)

@@ -23,4 +23,4 @@ class PartnerForm(forms.ModelForm):
 
     class Meta:
         model = Partner
-        fields = ('name', 'timezone', 'logo', 'is_restricted', 'labels')
+        fields = ('name', 'description', 'timezone', 'logo', 'is_restricted', 'labels')
