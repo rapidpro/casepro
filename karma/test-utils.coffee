@@ -29,4 +29,21 @@ describe('utils:', () ->
       ])
     )
   )
+
+  describe('addMonths', () ->
+    it('adds the given number of months to the given date', () ->
+      expect(utils.addMonths(utcdate(2016, 1, 31, 8, 49, 0, 0), 2)).toEqual(utcdate(2016, 3, 31, 8, 49, 0, 0))
+      expect(utils.addMonths(utcdate(2016, 5, 17, 8, 49, 0, 0), -1)).toEqual(utcdate(2016, 4, 17, 8, 49, 0, 0))
+      expect(utils.addMonths(utcdate(2016, 1, 31, 8, 49, 0, 0), 3)).toEqual(utcdate(2016, 4, 30, 8, 49, 0, 0))
+    )
+  )
+
+  describe('find', () ->
+    it('finds first item in a list with the given property value', () ->
+      items = [{foo: 1, bar: "X"}, {foo: 3, bar: "Y"}, {foo: 5, bar: "Z"}, {foo: 3, bar: "Z"}]
+
+      expect(utils.find(items, 'foo', 3)).toEqual({foo: 3, bar: "Y"})
+      expect(utils.find(items, 'bar', "Z")).toEqual({foo: 5, bar: "Z"})
+    )
+  )
 )
