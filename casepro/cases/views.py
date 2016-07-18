@@ -300,7 +300,7 @@ class PartnerCRUDL(SmartCRUDL):
             restricted = data['is_restricted']
             labels = data['labels'] if restricted else []
 
-            self.object = Partner.create(org, data['name'], restricted, labels, data['logo'])
+            self.object = Partner.create(org, data['name'], data['timezone'], restricted, labels, data['logo'])
 
     class Update(OrgObjPermsMixin, PartnerFormMixin, SmartUpdateView):
         form_class = PartnerForm

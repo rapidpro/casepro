@@ -925,7 +925,7 @@ class HomeViewsTest(BaseCasesTest):
 
 class PartnerTest(BaseCasesTest):
     def test_create(self):
-        wfp = Partner.create(self.unicef, "WFP", True, [self.aids, self.pregnancy])
+        wfp = Partner.create(self.unicef, "WFP", "Africa/Kigali", True, [self.aids, self.pregnancy])
         self.assertEqual(wfp.org, self.unicef)
         self.assertEqual(wfp.name, "WFP")
         self.assertEqual(six.text_type(wfp), "WFP")
@@ -940,11 +940,11 @@ class PartnerTest(BaseCasesTest):
         self.assertEqual(set(wfp.get_analysts()), {kim})
 
         # create a partner which is not restricted by labels
-        internal = Partner.create(self.unicef, "Internal", False, [])
+        internal = Partner.create(self.unicef, "Internal", "Africa/Kigali", False, [])
         self.assertEqual(set(internal.get_labels()), {self.aids, self.pregnancy, self.tea})
 
         # can't create an unrestricted partner with labels
-        self.assertRaises(ValueError, Partner.create, self.unicef, "Testers", False, [self.aids])
+        self.assertRaises(ValueError, Partner.create, self.unicef, "Testers", "Africa/Kigali", False, [self.aids])
 
     def test_release(self):
         self.who.release()
@@ -965,19 +965,21 @@ class PartnerCRUDLTest(BaseCasesTest):
         self.login(self.admin)
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['form'].fields.keys(), ['name', 'logo', 'is_restricted', 'labels', 'loc'])
+        self.assertEqual(response.context['form'].fields.keys(),
+                         ['name', 'timezone', 'logo', 'is_restricted', 'labels', 'loc'])
 
         # create label restricted partner
-        response = self.url_post('unicef', url, {'name': "Helpers", 'logo': None,
+        response = self.url_post('unicef', url, {'name': "Helpers", 'timezone': "Africa/Kigali", 'logo': None,
                                                  'is_restricted': True, 'labels': [self.tea.pk]})
         self.assertEqual(response.status_code, 302)
 
         helpers = Partner.objects.get(name="Helpers")
         self.assertTrue(helpers.is_restricted)
         self.assertEqual(set(helpers.get_labels()), {self.tea})
+        self.assertEqual(helpers.timezone, "Africa/Kigali")
 
         # create unrestricted partner
-        response = self.url_post('unicef', url, {'name': "Internal", 'logo': None,
+        response = self.url_post('unicef', url, {'name': "Internal", 'timezone': "UTC", 'logo': None,
                                                  'is_restricted': False, 'labels': [self.tea.pk]})
         self.assertEqual(response.status_code, 302)
 
@@ -985,6 +987,7 @@ class PartnerCRUDLTest(BaseCasesTest):
         self.assertFalse(internal.is_restricted)
         self.assertEqual(set(internal.labels.all()), set())  # submitted labels are ignored
         self.assertEqual(set(internal.get_labels()), {self.aids, self.pregnancy, self.tea})
+        self.assertEqual(internal.timezone, "UTC")
 
     def test_read(self):
         url = reverse('cases.partner_read', args=[self.moh.pk])
@@ -1027,9 +1030,15 @@ class PartnerCRUDLTest(BaseCasesTest):
         # login as manager user
         self.login(self.user1)
 
+        # get update page
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
 
+        # post update without name field
+        response = self.url_post('unicef', url, {'timezone': "UTC"})
+        self.assertFormError(response, 'form', 'name', 'This field is required.')
+
+        # post name change
         response = self.url_post('unicef', url, {'name': "MOH2"})
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, 'http://unicef.localhost/partner/read/%d/' % self.moh.pk)

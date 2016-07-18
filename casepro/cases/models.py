@@ -1,11 +1,14 @@
 from __future__ import absolute_import, unicode_literals
 
+import pytz
+
 from dash.orgs.models import Org
 from dash.utils import intersection
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.db.models import Q, Count, Prefetch
+from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from enum import Enum, IntEnum
@@ -45,6 +48,10 @@ class Partner(models.Model):
     name = models.CharField(verbose_name=_("Name"), max_length=128,
                             help_text=_("Name of this partner organization"))
 
+    timezone = models.CharField(
+        verbose_name=_("Timezone"), max_length=64, default='UTC',
+        help_text=_("The timezone the partner organization is in."))
+
     is_restricted = models.BooleanField(default=True, verbose_name=_("Restricted Access"),
                                         help_text=_("Whether this partner's access is restricted by labels"))
 
@@ -55,12 +62,26 @@ class Partner(models.Model):
 
     is_active = models.BooleanField(default=True, help_text="Whether this partner is active")
 
+    def set_timezone(self, timezone):
+        self.timezone = timezone
+        self._tzinfo = None
+
+    def get_timezone(self):
+        tzinfo = getattr(self, '_tzinfo', None)
+
+        if not tzinfo:
+            # we need to build the pytz timezone object with a context of now
+            tzinfo = timezone.now().astimezone(pytz.timezone(self.timezone)).tzinfo
+            self._tzinfo = tzinfo
+
+        return tzinfo
+
     @classmethod
-    def create(cls, org, name, restricted, labels, logo=None):
+    def create(cls, org, name, timezone, restricted, labels, logo=None):
         if labels and not restricted:
             raise ValueError("Can't specify labels for a partner which is not restricted")
 
-        partner = cls.objects.create(org=org, name=name, logo=logo, is_restricted=restricted)
+        partner = cls.objects.create(org=org, name=name, timezone=timezone, logo=logo, is_restricted=restricted)
 
         if restricted:
             partner.labels.add(*labels)
