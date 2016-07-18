@@ -56,7 +56,7 @@ class PodPlugin(AppConfig):
     controller = 'PodController'
 
     # override to use a different angular directive
-    directive = 'pod'
+    directive = 'cp-pod'
 
     # override with paths to custom scripts that the pod needs
     scripts = ()

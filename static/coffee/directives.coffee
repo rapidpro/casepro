@@ -7,6 +7,6 @@ directives = angular.module('cases.directives', [])
 #=====================================================================
 # Pod directive
 #=====================================================================
-directives.directive('pod', -> {
+directives.directive('cpPod', -> {
   templateUrl: -> '/sitestatic/templates/pod.html'
 })

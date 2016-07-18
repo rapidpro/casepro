@@ -4,7 +4,7 @@ describe('directives:', () ->
   #=======================================================================
   # Tests for pod
   #=======================================================================
-  describe('pod', () ->
+  describe('cpPod', () ->
     $rootScope = null
     $compile = null
 
@@ -22,7 +22,7 @@ describe('directives:', () ->
     it('should draw the pod items', () ->
       $rootScope.podConfig.title = 'Foo'
 
-      el = $compile('<div pod></div>')($rootScope)[0]
+      el = $compile('<div cp-pod></div>')($rootScope)[0]
       $rootScope.$digest()
 
       expect(el.querySelector('.pod-title').textContent).toContain('Foo')
@@ -39,7 +39,7 @@ describe('directives:', () ->
         }]
       }
 
-      el = $compile('<div pod></div>')($rootScope)[0]
+      el = $compile('<div cp-pod></div>')($rootScope)[0]
       $rootScope.$digest()
 
       item1 = el.querySelector('.pod-item:nth-child(1)')
