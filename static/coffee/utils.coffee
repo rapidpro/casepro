@@ -38,4 +38,10 @@ namespace('utils', (exports) ->
         dateObj.setDate(0)
 
     return dateObj
+
+  exports.find = (items, prop, value) ->
+    for item in items
+      if angular.equals(item[prop], value)
+        return item
+    return null
 )
