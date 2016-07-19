@@ -198,6 +198,14 @@ class BaseBackend(object):
         :return: the messages as transient Message and Outgoing instances
         """
 
+    @abstractmethod
+    def get_url_patterns(self):
+        """
+        Returns the list of URL patterns that should be registered for this backend.
+
+        :return: a list of URL patterns.
+        """
+
 
 class NoopBackend(BaseBackend):
     """

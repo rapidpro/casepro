@@ -334,3 +334,9 @@ class RapidProBackend(BaseBackend):
                             created_on=msg.created_on)
 
         return [remote_as_outgoing(m) for m in remote_messages if m.direction == 'out']
+
+    def get_url_patterns(self):
+        """
+        No urls to register as everything is pulled from RapidPro
+        """
+        return []
