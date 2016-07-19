@@ -76,11 +76,11 @@
               [[ msgCharsRemaining ]]
 
         .timeline{ ng-controller:"CaseTimelineController", ng-init:"init()" }
-          .timeline-event.clearfix{ ng-repeat:"event in timeline | reverse", ng-class:'{ "timeline-action": event.is_action, "timeline-incoming": event.is_message_in, "timeline-outgoing": event.is_message_out }' }
+          .timeline-event.clearfix{ ng-repeat:"event in timeline | reverse", ng-class:'{ "timeline-action": (event.type == "A"), "timeline-incoming": (event.type == "I"), "timeline-outgoing": (event.type == "O") }' }
             .event-time
               [[ event.time | autodate ]]
 
-            .{ ng-if:"event.is_action" }
+            .{ ng-if:'event.type == "A"' }
               %a{ ng-href:"/user/read/[[ event.item.created_by.id ]]/" }
                 [[ event.item.created_by.name ]]
 
@@ -119,10 +119,10 @@
               .action-note{ ng-if:"event.item.note" }
                 [[ event.item.note ]]
 
-            .{ ng-if:"event.is_message_in" }
+            .{ ng-if:'event.type == "I"' }
               [[ event.item.text ]]
 
-            .{ ng-if:"event.is_message_out" }
+            .{ ng-if:'event.type == "O"' }
               %span{ ng-if:"event.item.sender" }
                 %a{ ng-href:"/user/read/[[ event.item.sender.id ]]/" }><
                   [[ event.item.sender.name ]]

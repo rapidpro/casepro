@@ -11,7 +11,7 @@ from enum import Enum
 
 from casepro.test import BaseCasesTest
 
-from . import safe_max, normalize, match_keywords, truncate, str_to_bool, json_encode
+from . import safe_max, normalize, match_keywords, truncate, str_to_bool, json_encode, TimelineItem
 from . import date_to_milliseconds, datetime_to_microseconds, microseconds_to_datetime, month_range, date_range
 from .email import send_email
 from .middleware import JSONMiddleware
@@ -102,6 +102,12 @@ class UtilsTest(BaseCasesTest):
             date(2015, 2, 1)
         ])
         self.assertEqual(list(date_range(date(2015, 1, 29), date(2015, 1, 29))), [])
+
+    def test_timeline_item(self):
+        d1 = datetime(2015, 10, 1, 9, 0, 0, 0, pytz.UTC)
+        ann = self.create_contact(self.unicef, 'C-101', "Ann")
+        msg = self.create_message(self.unicef, 102, ann, "Hello", created_on=d1)
+        self.assertEqual(TimelineItem(msg).to_json(), {'time': d1, 'type': 'I', 'item': msg.as_json()})
 
 
 class EmailTest(BaseCasesTest):

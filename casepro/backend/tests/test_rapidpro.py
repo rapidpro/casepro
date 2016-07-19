@@ -15,7 +15,7 @@ from temba_client.v2.types import Contact as TembaContact, Message as TembaMessa
 from unittest import skip
 
 from casepro.contacts.models import Contact, Field, Group
-from casepro.msgs.models import Label, Message
+from casepro.msgs.models import Label, Message, Outgoing
 from casepro.test import BaseCasesTest
 
 from ..rapidpro import RapidProBackend, ContactSyncer, MessageSyncer
@@ -825,22 +825,12 @@ class RapidProBackendTest(BaseCasesTest):
 
         messages = self.backend.fetch_contact_messages(self.unicef, self.ann, d1, d3)
 
-        self.assertEqual(messages, [
-            {
-                'id': 201,  # id is the broadcast id
-                'contact': {'id': self.ann.pk, 'name': "Ann"},
-                'urn': None,
-                'text': "Welcome",
-                'time': d3,
-                'direction': 'O',
-                'case': None,
-                'sender': None,
-            }
-        ])
-
-        # check that JSON schemas match local outgoing model
-        outgoing = self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello", self.ann)
-        self.assertEqual(messages[0].keys(), outgoing.as_json().keys())
+        self.assertEqual(len(messages), 1)
+        self.assertIsInstance(messages[0], Outgoing)
+        self.assertEqual(messages[0].backend_broadcast_id, 201)
+        self.assertEqual(messages[0].contact, self.ann)
+        self.assertEqual(messages[0].text, "Welcome")
+        self.assertEqual(messages[0].created_on, d3)
 
 
 @skip
