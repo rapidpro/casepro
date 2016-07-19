@@ -35,4 +35,11 @@ describe('filters:', () ->
       expect(autodate(new Date(2016, 1, 1, 10, 0))).toEqual("Feb 1, 2016")  # year after
     )
   )
+
+  describe('urlencode', () ->
+    it('encodes URL components', () ->
+      urlencode = $filter('urlencode')
+      expect(urlencode("A & B ?")).toEqual("A%20%26%20B%20%3F")
+    )
+  )
 )

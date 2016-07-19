@@ -1,0 +1,4 @@
+{% load i18n %}
+{% blocktrans with user=user.email %}User {{ user }} assigned this case to your organization.{% endblocktrans %}
+
+{% blocktrans with case_url as case_url %}Go to {{ case_url }} to view the case.{% endblocktrans %}

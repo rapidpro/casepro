@@ -50,7 +50,7 @@ def update_message_labels(sender, instance, created, **kwargs):
             remove_from.append(l)
 
     if remove_from:
-        instance.labels.remove(*remove_from)
+        instance.unlabel(*remove_from)
 
     # add this message to any labels not in the current set
     add_to_by_uuid = {uuid: name for uuid, name in six.iteritems(new_labels_by_uuid)
@@ -70,6 +70,6 @@ def update_message_labels(sender, instance, created, **kwargs):
             if label and label.is_synced:
                 add_to_labels.append(label)
 
-        instance.labels.add(*add_to_labels)
+        instance.label(*add_to_labels)
 
     delattr(instance, Message.SAVE_LABELS_ATTR)

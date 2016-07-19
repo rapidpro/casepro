@@ -1,14 +1,14 @@
+# coding=utf-8
 from __future__ import unicode_literals
-
-import six
 
 from mock import patch, call
 
 from casepro.msgs.models import Message
 from casepro.test import BaseCasesTest
+from django.core.urlresolvers import reverse
 
 from .models import Action, LabelAction, ArchiveAction, FlagAction
-from .models import Test, ContainsTest, GroupsTest, FieldTest, Rule, DeserializationContext, Quantifier
+from .models import Test, ContainsTest, WordCountTest, GroupsTest, FieldTest, Rule, DeserializationContext, Quantifier
 
 
 class TestsTest(BaseCasesTest):
@@ -33,8 +33,7 @@ class TestsTest(BaseCasesTest):
         self.assertEqual(test.keywords, ["red", "blue"])
         self.assertEqual(test.quantifier, Quantifier.ANY)
         self.assertEqual(test.to_json(), {'type': 'contains', 'keywords': ["red", "blue"], 'quantifier': 'any'})
-        self.assertEqual(six.text_type(test), 'message contains any of "red", "blue"')
-        self.assertEqual(str(test), 'message contains any of "red", "blue"')
+        self.assertEqual(test.get_description(), 'message contains any of "red", "blue"')
 
         self.assertEqual(test, ContainsTest(["RED", "Blue"], Quantifier.ANY))
         self.assertNotEqual(test, ContainsTest(["RED", "Green"], Quantifier.ANY))
@@ -55,6 +54,21 @@ class TestsTest(BaseCasesTest):
         self.assertTest(test, self.ann, "red", False)
         self.assertTest(test, self.ann, "yo RED Blue", False)
 
+    def test_word_count(self):
+        test = Test.from_json({'type': 'words', 'minimum': 2}, self.context)
+        self.assertEqual(test.TYPE, 'words')
+        self.assertEqual(test.minimum, 2)
+        self.assertEqual(test.to_json(), {'type': 'words', 'minimum': 2})
+        self.assertEqual(test.get_description(), 'message has at least 2 words')
+
+        self.assertEqual(test, WordCountTest(2))
+        self.assertNotEqual(test, WordCountTest(3))
+
+        self.assertTest(test, self.ann, "!", False)
+        self.assertTest(test, self.ann, "no!", False)
+        self.assertTest(test, self.ann, "ok  maybe ", True)
+        self.assertTest(test, self.ann, "uh-ok-sure", True)
+
     def test_groups(self):
         test = Test.from_json(
             {'type': 'groups', 'groups': [self.females.pk, self.reporters.pk], 'quantifier': 'any'},
@@ -66,7 +80,7 @@ class TestsTest(BaseCasesTest):
         self.assertEqual(test.to_json(), {
             'type': 'groups', 'groups': [self.females.pk, self.reporters.pk], 'quantifier': 'any'
         })
-        self.assertEqual(six.text_type(test), 'contact belongs to any of Females, Reporters')
+        self.assertEqual(test.get_description(), 'contact belongs to any of Females, Reporters')
 
         self.assertTest(test, self.ann, "Yes", True)
         self.assertTest(test, self.bob, "Yes", False)
@@ -90,19 +104,20 @@ class TestsTest(BaseCasesTest):
         self.assertEqual(test.key, "city")
         self.assertEqual(test.values, ["kigali", "lusaka"])
         self.assertEqual(test.to_json(), {'type': 'field', 'key': "city", 'values': ["kigali", "lusaka"]})
-        self.assertEqual(six.text_type(test), 'contact.city is any of "kigali", "lusaka"')
+        self.assertEqual(test.get_description(), 'contact.city is any of "kigali", "lusaka"')
 
         self.assertTest(test, self.ann, "Yes", True)
         self.assertTest(test, self.bob, "Yes", False)
         self.assertTest(test, self.cat, "Yes", False)
 
     def test_is_valid_keyword(self):
+        self.assertTrue(ContainsTest.is_valid_keyword('tú'))
         self.assertTrue(ContainsTest.is_valid_keyword('kit'))
         self.assertTrue(ContainsTest.is_valid_keyword('kit-kat'))
         self.assertTrue(ContainsTest.is_valid_keyword('kit kat'))
         self.assertTrue(ContainsTest.is_valid_keyword('kit-kat wrapper'))
 
-        self.assertFalse(ContainsTest.is_valid_keyword('it'))  # too short
+        self.assertFalse(ContainsTest.is_valid_keyword('i'))  # too short
         self.assertFalse(ContainsTest.is_valid_keyword(' kitkat'))  # can't start with a space
         self.assertFalse(ContainsTest.is_valid_keyword('-kit'))  # can't start with a dash
         self.assertFalse(ContainsTest.is_valid_keyword('kat '))  # can't end with a space
@@ -121,6 +136,7 @@ class ActionsTest(BaseCasesTest):
         self.assertEqual(action.TYPE, 'label')
         self.assertEqual(action.label, self.aids)
         self.assertEqual(action.to_json(), {'type': 'label', 'label': self.aids.pk})
+        self.assertEqual(action.get_description(), "apply label 'AIDS'")
 
         self.assertEqual(action, LabelAction(self.aids))
         self.assertNotEqual(action, LabelAction(self.pregnancy))
@@ -134,6 +150,7 @@ class ActionsTest(BaseCasesTest):
         action = Action.from_json({'type': 'flag'}, self.context)
         self.assertEqual(action.TYPE, 'flag')
         self.assertEqual(action.to_json(), {'type': 'flag'})
+        self.assertEqual(action.get_description(), "flag")
 
         self.assertEqual(action, FlagAction())
         self.assertNotEqual(action, ArchiveAction())
@@ -148,6 +165,7 @@ class ActionsTest(BaseCasesTest):
         action = Action.from_json({'type': 'archive'}, self.context)
         self.assertEqual(action.TYPE, 'archive')
         self.assertEqual(action.to_json(), {'type': 'archive'})
+        self.assertEqual(action.get_description(), "archive")
 
         self.assertEqual(action, ArchiveAction())
         self.assertNotEqual(action, FlagAction())
@@ -168,13 +186,13 @@ class RuleTest(BaseCasesTest):
     def test_get_all(self):
         rules = Rule.get_all(self.unicef)
         self.assertEqual(len(rules), 3)
-        self.assertEqual(rules[0].tests, [ContainsTest(["aids", "hiv"], Quantifier.ANY)])
-        self.assertEqual(rules[0].actions, [LabelAction(self.aids)])
-        self.assertEqual(rules[1].tests, [ContainsTest(["pregnant", "pregnancy"], Quantifier.ANY)])
-        self.assertEqual(rules[1].actions, [LabelAction(self.pregnancy)])
+        self.assertEqual(rules[0].get_tests(), [ContainsTest(["aids", "hiv"], Quantifier.ANY)])
+        self.assertEqual(rules[0].get_actions(), [LabelAction(self.aids)])
+        self.assertEqual(rules[1].get_tests(), [ContainsTest(["pregnant", "pregnancy"], Quantifier.ANY)])
+        self.assertEqual(rules[1].get_actions(), [LabelAction(self.pregnancy)])
 
     def test_get_tests_description(self):
-        rule = Rule([
+        rule = self.create_rule(self.unicef, [
             ContainsTest(["aids", "HIV"], Quantifier.ANY),
             GroupsTest([self.females, self.reporters], Quantifier.ALL),
             FieldTest("city", ["Kigali", "Lusaka"])
@@ -183,6 +201,11 @@ class RuleTest(BaseCasesTest):
         self.assertEqual(rule.get_tests_description(), 'message contains any of "aids", "hiv" '
                                                        'and contact belongs to all of Females, Reporters '
                                                        'and contact.city is any of "kigali", "lusaka"')
+
+    def test_get_actions_description(self):
+        rule = self.create_rule(self.unicef, [], [LabelAction(self.tea), ArchiveAction(), FlagAction()])
+
+        self.assertEqual(rule.get_actions_description(), "apply label 'Tea' and archive and flag")
 
     @patch('casepro.test.TestBackend.label_messages')
     @patch('casepro.test.TestBackend.flag_messages')
@@ -196,9 +219,15 @@ class RuleTest(BaseCasesTest):
         msg6 = self.create_message(self.unicef, 106, self.ann, "pregnancy + AIDS")
         all_messages = [msg1, msg2, msg3, msg4, msg5, msg6]
 
-        rule1 = Rule([ContainsTest(["aids", "hiv"], Quantifier.ANY)], [LabelAction(self.aids), FlagAction()])
-        rule2 = Rule([ContainsTest(["sida"], Quantifier.ANY)], [LabelAction(self.aids), ArchiveAction()])
-        rule3 = Rule([ContainsTest(["pregnant", "pregnancy"], Quantifier.ANY)], [LabelAction(self.pregnancy)])
+        rule1 = self.create_rule(self.unicef,
+                                 [ContainsTest(["aids", "hiv"], Quantifier.ANY)],
+                                 [LabelAction(self.aids), FlagAction()])
+        rule2 = self.create_rule(self.unicef,
+                                 [ContainsTest(["sida"], Quantifier.ANY)],
+                                 [LabelAction(self.aids), ArchiveAction()])
+        rule3 = self.create_rule(self.unicef,
+                                 [ContainsTest(["pregnant", "pregnancy"], Quantifier.ANY)],
+                                 [LabelAction(self.pregnancy)])
 
         processor = Rule.BatchProcessor(self.unicef, [rule1, rule2, rule3])
 
@@ -221,3 +250,15 @@ class RuleTest(BaseCasesTest):
         mock_archive_messages.assert_called_once_with(self.unicef, {msg3, msg4})
 
         self.assertEqual(set(Message.objects.filter(is_archived=True)), {msg3, msg4})
+
+
+class RuleCRUDLTest(BaseCasesTest):
+    def test_list(self):
+        url = reverse('rules.rule_list')
+
+        # log in as an administrator
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['object_list']), 3)

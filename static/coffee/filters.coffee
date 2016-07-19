@@ -5,7 +5,7 @@ filters = angular.module('cases.filters', []);
 # Formats a date value in same style as GMail
 #----------------------------------------------------------------------------
 filters.filter('autodate', (dateFilter) ->
-  (date) ->
+  return (date) ->
     now = new Date()
     isToday = date.getDate() == now.getDate() and date.getMonth() == now.getMonth() and date.getFullYear() == now.getFullYear()
 
@@ -21,6 +21,14 @@ filters.filter('autodate', (dateFilter) ->
 # Reverses an array of items
 #----------------------------------------------------------------------------
 filters.filter('reverse', () ->
-  (items) ->
+  return (items) ->
     return items.slice().reverse()
 )
+
+#----------------------------------------------------------------------------
+# Encodes URL components
+#----------------------------------------------------------------------------
+filters.filter('urlencode', ['$window', ($window) ->
+  return (input) ->
+    return $window.encodeURIComponent(input)
+])

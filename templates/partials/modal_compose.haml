@@ -20,6 +20,9 @@
               %li
                 %a{ ng-click:'setScheme("twitter")' }
                   - trans "Twitter"
+              %li
+                %a{ ng-click:'setScheme("email")' }
+                  - trans "Email"
           %input.form-control{ type:"text", ng-model:"fields.urn.path", name:"path", required:"", style:"width: 300px" }
         .help-block{ ng-show:"form.path.$error.required && (form.path.$dirty || form.submitted)" }
           - trans "Required"

@@ -1,0 +1,8 @@
+.
+  .loading{ ng-if:"!fetched" }
+  .{ ng-if:"fetched" }
+    .{ ng-repeat:"(key, value) in contact.fields" }
+      %strong><
+        [[ key ]]
+      :
+      [[ value ]]

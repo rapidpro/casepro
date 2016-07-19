@@ -43,9 +43,9 @@ class OrgExtCRUDLTest(BaseCasesTest):
         self.login(self.admin)
 
         response = self.url_get('unicef', url)
-        self.assertEqual(response.status_code, 200)
-
-        self.assertContains(response, "Kidus (kidus@unicef.org)")
+        self.assertContains(response, "/label/create/")
+        self.assertContains(response, "/partner/create/")
+        self.assertContains(response, "/user/create/")
 
     def test_edit(self):
         url = reverse('orgs_ext.org_edit')

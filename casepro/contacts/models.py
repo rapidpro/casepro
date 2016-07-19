@@ -6,7 +6,7 @@ from django.contrib.postgres.fields import HStoreField
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from redis_cache import get_redis_connection
+from django_redis import get_redis_connection
 
 from casepro.backend import get_backend
 
@@ -59,14 +59,16 @@ class Group(models.Model):
     def lock(cls, org, uuid):
         return get_redis_connection().lock(GROUP_LOCK_KEY % (org.pk, uuid), timeout=60)
 
-    def as_json(self):
-        return {
-            'id': self.pk,
-            'uuid': self.uuid,
-            'name': self.name,
-            'count': self.count,
-            'is_dynamic': self.is_dynamic
-        }
+    def as_json(self, full=True):
+        if full:
+            return {
+                'id': self.pk,
+                'name': self.name,
+                'count': self.count,
+                'is_dynamic': self.is_dynamic
+            }
+        else:
+            return {'id': self.pk, 'name': self.name}
 
     def __str__(self):
         return self.name

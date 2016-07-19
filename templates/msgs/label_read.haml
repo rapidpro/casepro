@@ -1,0 +1,62 @@
+- extends "smartmin/read.html"
+- load smartmin i18n thumbnail
+
+- block pre-content
+
+- block content
+
+  %script{ type:"text/javascript" }
+    var contextData = {{ context_data_json|safe }};
+
+  .ng-cloak{ ng-controller:"LabelController", ng-init:"init()", ng-cloak:"" }
+    .page-header.clearfix{ style:"border-bottom: none" }
+      .clearfix{ style:"margin-bottom: 10px" }
+        .page-header-buttons
+          - if perms.msgs.label_update or org_perms.msgs.label_update
+            .btn-group
+              %button.btn.btn-default{ type:"button", ng-if:"!label.watching", ng-click:"onWatch()" }
+                %i.glyphicon.glyphicon-eye-open
+                - trans "Watch"
+              %button.btn.btn-default{ type:"button", ng-if:"label.watching", ng-click:"onUnwatch()" }
+                %i.glyphicon.glyphicon-eye-close
+                - trans "Unwatch"
+              %a.btn.btn-default{ href:"{% url 'msgs.label_update' object.pk %}", tooltip:"Edit Label" }
+                %i.glyphicon.glyphicon-pencil
+              - if perms.msgs.label_delete or org_perms.msgs.label_delete
+                %a.btn.btn-default{ ng-click:"onDeleteLabel()", tooltip:"Delete" }
+                  %i.glyphicon.glyphicon-trash
+
+        %h2
+          [[ label.name ]]
+
+        .
+          [[ label.description ]]
+
+    <uib-tabset active="active">
+
+      <uib-tab index="0" select="onTabSelect(0)">
+        <uib-tab-heading>
+          %i.glyphicon.glyphicon-dashboard
+          - trans "Summary"
+        </uib-tab-heading>
+        %br
+        .row
+          .col-md-4
+            %ul
+              %li
+                Inbox messages: <strong>[[ label.counts.inbox | number ]]</strong>
+              %li
+                Archived messages: <strong>[[ label.counts.archived | number ]]</strong>
+          .col-md-8
+            #chart-incoming-by-day
+      </uib-tab>
+    </uib-tabset>
+
+
+- block extra-style
+  {{ block.super }}
+  :css
+    #chart-incoming-by-day {
+      width: 100%;
+      height: 250px;
+    }
