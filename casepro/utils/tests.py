@@ -106,7 +106,6 @@ class UtilsTest(BaseCasesTest):
         ])
         self.assertEqual(list(date_range(date(2015, 1, 29), date(2015, 1, 29))), [])
 
-
     def test_timeline_item(self):
         d1 = datetime(2015, 10, 1, 9, 0, 0, 0, pytz.UTC)
         ann = self.create_contact(self.unicef, 'C-101', "Ann")
