@@ -423,8 +423,7 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
 #=====================================================================
 services.factory('PodApi', ['$window', '$http', ($window, $http) ->
   new class PodApi
-    get: (podId, caseId = null) ->
-      caseId ?= $window.contextData.case_obj.id
+    get: (podId, caseId) ->
       $http.get("/pods/read/#{podId}/", {params: {case_id: caseId}})
         .then((d) -> d.data)
 ])

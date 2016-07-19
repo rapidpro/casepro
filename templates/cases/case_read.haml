@@ -152,7 +152,7 @@
         - for pod in pods
             %div{
               ng-controller:"={ pod.pod_type.controller }",
-              ng-init:'init && init(={ pod.config.index }, ={ pod.config_json })',
+              ng-init:'init && init(={ pod.config.index }, ={ case_id }, ={ pod.config_json })',
               "={ pod.pod_type.directive }":"true"
             }
 

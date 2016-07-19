@@ -76,8 +76,10 @@ class CaseCRUDL(SmartCRUDL):
             context['max_msg_chars'] = MAX_MESSAGE_CHARS
             context['can_update'] = can_update
             context['alert'] = self.request.GET.get('alert', None)
+            context['case_id'] = self.object.id
             context['pods'] = pod_registry.pods
             context['pod_types'] = pod_registry.pod_types
+
             return context
 
     class Open(OrgPermsMixin, SmartCreateView):
