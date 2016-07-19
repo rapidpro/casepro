@@ -1,12 +1,145 @@
 from __future__ import absolute_import, unicode_literals
 
+import pytz
+
+from datetime import datetime
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
+from django.utils import timezone
+from mock import patch, call
 
 from casepro.test import BaseCasesTest
 
-from .models import Profile, ROLE_ADMIN, ROLE_MANAGER, ROLE_ANALYST
+from .models import Notification, Profile, ROLE_ADMIN, ROLE_MANAGER, ROLE_ANALYST
+from .tasks import send_notifications
+
+
+class NotificationTest(BaseCasesTest):
+    def setUp(self):
+        super(NotificationTest, self).setUp()
+
+        self.ann = self.create_contact(self.unicef, "C-001", "Ann")
+
+    def test_new_message_labelling(self):
+        self.aids.watch(self.admin)
+        self.pregnancy.watch(self.user1)
+        msg = self.create_message(self.unicef, 101, self.ann, "Hello")
+
+        self.assertFalse(msg.notification_set.all())
+
+        msg.label(self.aids)
+
+        Notification.objects.get(user=self.admin, message=msg, type=Notification.TYPE_MESSAGE_LABELLING, is_sent=False)
+
+        # adding more labels won't create new notification for this message and user
+        msg.label(self.pregnancy, self.aids)
+
+        self.assertEqual(Notification.objects.count(), 2)
+        Notification.objects.get(user=self.admin, message=msg, type=Notification.TYPE_MESSAGE_LABELLING, is_sent=False)
+        Notification.objects.get(user=self.user1, message=msg, type=Notification.TYPE_MESSAGE_LABELLING, is_sent=False)
+
+    @patch('casepro.profiles.models.send_email')
+    def test_send_all(self, mock_send_email):
+        self.aids.watch(self.admin)
+        self.pregnancy.watch(self.user1)
+        msg1 = self.create_message(self.unicef, 101, self.ann, "Hello", [self.aids])
+        msg2 = self.create_message(self.unicef, 102, self.ann, "Hello", [self.pregnancy])
+
+        send_notifications()
+
+        # all notifications now marked as sent
+        self.assertEqual(Notification.objects.filter(is_sent=False).count(), 0)
+
+        mock_send_email.assert_has_calls([
+            call([self.admin], "New labelled message", 'profiles/email/message_labelling',
+                 {'labels': {self.aids}, 'inbox_url': "http://unicef.localhost:8000/"}),
+            call([self.user1], "New labelled message", 'profiles/email/message_labelling',
+                 {'labels': {self.pregnancy}, 'inbox_url': "http://unicef.localhost:8000/"})
+        ])
+        mock_send_email.reset_mock()
+
+        case1 = self.create_case(self.unicef, self.ann, self.moh, msg1)
+        case1.watch(self.admin)
+        case1.add_reply(msg2)
+
+        send_notifications()
+
+        mock_send_email.assert_has_calls([
+            call([self.admin], "New reply in case #%d" % case1.pk, 'profiles/email/case_reply',
+                 {'case_url': "http://unicef.localhost:8000/case/read/%d/" % case1.pk})
+        ])
+        mock_send_email.reset_mock()
+
+        case1.add_note(self.user1, "General note")
+        case1.close(self.user1, "Close note")
+        case1.reopen(self.user1)
+        case1.reassign(self.admin, self.who)
+
+        send_notifications()
+
+        self.assertEqual(len(mock_send_email.mock_calls), 5)
+        mock_send_email.assert_has_calls([
+            call(
+                [self.admin],
+                "New note in case #%d" % case1.pk,
+                'profiles/email/case_new_note',
+                {
+                    'user': self.user1,
+                    'note': "General note",
+                    'assignee': None,
+                    'case_url': "http://unicef.localhost:8000/case/read/%d/" % case1.pk
+                }
+            ),
+            call(
+                [self.admin],
+                "Case #%d was closed" % case1.pk,
+                'profiles/email/case_closed',
+                {
+                    'user': self.user1,
+                    'note': "Close note",
+                    'assignee': None,
+                    'case_url': "http://unicef.localhost:8000/case/read/%d/" % case1.pk
+                }
+            ),
+            call(
+                [self.admin],
+                "Case #%d was reopened" % case1.pk,
+                'profiles/email/case_reopened',
+                {
+                    'user': self.user1,
+                    'note': None,
+                    'assignee': None,
+                    'case_url': "http://unicef.localhost:8000/case/read/%d/" % case1.pk
+                }
+            ),
+            call(
+                [self.user1],
+                "Case #%d was reassigned" % case1.pk,
+                'profiles/email/case_reassigned',
+                {
+                    'user': self.admin,
+                    'note': None,
+                    'assignee': self.who,
+                    'case_url': "http://unicef.localhost:8000/case/read/%d/" % case1.pk
+                }
+            ),
+            call(
+                [self.user3],
+                "New case assignment #%d" % case1.pk,
+                'profiles/email/case_assignment',
+                {
+                    'user': self.admin,
+                    'case_url': "http://unicef.localhost:8000/case/read/%d/" % case1.pk
+                }
+            )
+        ])
+        mock_send_email.reset_mock()
+
+        # if nothing has happened, no emails are sent
+        send_notifications()
+
+        self.assertNotCalled(mock_send_email)
 
 
 class ProfileTest(BaseCasesTest):
@@ -148,11 +281,21 @@ class UserTest(BaseCasesTest):
         self.assertFalse(self.user2.can_edit(self.unicef, self.user3))
 
     def test_remove_from_org(self):
+        # setup case which users are watching
+        ann = self.create_contact(self.unicef, 'C-001', "Ann")
+        msg = self.create_message(self.unicef, 101, ann, "Hello", [self.aids])
+        case = self.create_case(self.unicef, ann, self.moh, msg, [self.aids], summary="Summary")
+        case.watchers.add(self.admin, self.user1)
+
+        # have users watch a label too
+        self.pregnancy.watchers.add(self.admin, self.user1)
+
         # try with org admin
         self.admin.remove_from_org(self.unicef)
 
         self.admin.refresh_from_db()
         self.assertIsNone(self.unicef.get_user_org_group(self.admin))
+        self.assertNotIn(self.admin, case.watchers.all())
 
         # try with partner user
         self.user1.remove_from_org(self.unicef)
@@ -160,6 +303,8 @@ class UserTest(BaseCasesTest):
         self.user1.refresh_from_db()
         self.assertIsNone(self.unicef.get_user_org_group(self.user1))
         self.assertIsNone(self.user1.get_partner(self.unicef))
+        self.assertNotIn(self.user1, case.watchers.all())
+        self.assertNotIn(self.user1, self.pregnancy.watchers.all())
 
     def test_unicode(self):
         self.assertEqual(unicode(self.superuser), "root")
@@ -518,23 +663,74 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertLoginRedirect(response, 'unicef', url)
 
-        # log in as superuser
-        self.login(self.superuser)
-
-        # they can use without org to see users from all orgs
-        self.assertEqual(len(self.url_get(None, url).context['object_list']), 6)
-
-        # or with org to see users from that orgs
-        self.assertEqual(len(self.url_get('unicef', url).context['object_list']), 4)
-
-        # administrator can also see all users in their org
-        self.login(self.admin)
-
-        self.assertEqual(len(self.url_get('unicef', url).context['object_list']), 4)
-
-        # can't access as non-administrator
+        # can access all users even as non-administrator
         self.login(self.user1)
-        self.assertLoginRedirect(self.url_get('unicef', url), 'unicef', url)
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json['results'], [
+            {
+                'id': self.user3.pk, 'name': "Carol", 'email': "carol@unicef.org", 'role': "M",
+                'partner': {'id': self.who.pk, 'name': "WHO"}
+            },
+            {
+                'id': self.user1.pk, 'name': "Evan", 'email': "evan@unicef.org", 'role': "M",
+                'partner': {'id': self.moh.pk, 'name': "MOH"}
+            },
+            {
+                'id': self.admin.pk, 'name': "Kidus", 'email': "kidus@unicef.org", 'role': "A",
+                'partner': None
+            },
+            {
+                'id': self.user2.pk, 'name': "Rick", 'email': "rick@unicef.org", 'role': "Y",
+                'partner': {'id': self.moh.pk, 'name': "MOH"}
+            },
+        ])
+
+        # can filter by partner
+        response = self.url_get('unicef', url + '?partner=%d' % self.moh.pk)
+        self.assertEqual(response.json['results'], [
+            {
+                'id': self.user1.pk, 'name': "Evan", 'email': "evan@unicef.org", 'role': "M",
+                'partner': {'id': self.moh.pk, 'name': "MOH"}
+            },
+            {
+                'id': self.user2.pk, 'name': "Rick", 'email': "rick@unicef.org", 'role': "Y",
+                'partner': {'id': self.moh.pk, 'name': "MOH"}
+            },
+        ])
+
+        # can filter by being a non-partner user
+        response = self.url_get('unicef', url + '?non_partner=true')
+        self.assertEqual(response.json['results'], [
+            {
+                'id': self.admin.pk, 'name': "Kidus", 'email': "kidus@unicef.org", 'role': "A",
+                'partner': None
+            }
+        ])
+
+        # add some reply activity
+        ann = self.create_contact(self.unicef, "C-001", "Ann")
+        self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", ann,
+                             created_on=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC))  # April 20th
+        self.create_outgoing(self.unicef, self.user1, 203, 'C', "Hello 3", ann,
+                             created_on=datetime(2016, 3, 20, 9, 0, tzinfo=pytz.UTC))  # Mar 20th
+
+        # simulate making request in May
+        with patch.object(timezone, 'now', return_value=datetime(2016, 5, 20, 9, 0, tzinfo=pytz.UTC)):
+            response = self.url_get('unicef', url + '?partner=%d&with_activity=true' % self.moh.pk)
+
+        self.assertEqual(response.json['results'], [
+            {
+                'id': self.user1.pk, 'name': "Evan", 'email': "evan@unicef.org", 'role': "M",
+                'partner': {'id': self.moh.pk, 'name': "MOH"},
+                'replies': {'last_month': 1, 'this_month': 0, 'total': 2}
+            },
+            {
+                'id': self.user2.pk, 'name': "Rick", 'email': "rick@unicef.org", 'role': "Y",
+                'partner': {'id': self.moh.pk, 'name': "MOH"},
+                'replies': {'last_month': 0, 'this_month': 0, 'total': 0}
+            }
+        ])
 
     def test_self(self):
         url = reverse('profiles.user_self')

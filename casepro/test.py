@@ -2,19 +2,21 @@ from __future__ import unicode_literals
 
 import json
 
+from dash.test import DashTest
+from datetime import datetime, date, time
+from django.conf import settings
+from django.core import mail
+from django.utils.timezone import now
+from django.test import override_settings
+from xlrd import open_workbook, xldate_as_tuple
+from xlrd.sheet import XL_CELL_DATE
+
 from casepro.backend import NoopBackend
 from casepro.cases.models import Case, Partner
 from casepro.contacts.models import Contact, Group, Field
 from casepro.msgs.models import Label, Message, Outgoing
 from casepro.profiles.models import Profile, ROLE_ANALYST, ROLE_MANAGER
-from casepro.rules.models import ContainsTest, Quantifier
-from casepro.utils import json_encode
-from dash.test import DashTest
-from datetime import datetime
-from django.utils.timezone import now
-from django.test import override_settings
-from xlrd import xldate_as_tuple
-from xlrd.sheet import XL_CELL_DATE
+from casepro.rules.models import ContainsTest, Quantifier, LabelAction, Rule
 
 
 class TestBackend(NoopBackend):
@@ -31,6 +33,8 @@ class BaseCasesTest(DashTest):
     """
     def setUp(self):
         super(BaseCasesTest, self).setUp()
+
+        settings.SITE_ORGS_STORAGE_ROOT = 'test_orgs'
 
         # some orgs
         self.unicef = self.create_org("UNICEF", timezone="Africa/Kampala", subdomain="unicef")
@@ -80,10 +84,18 @@ class BaseCasesTest(DashTest):
     def create_user(self, org, partner, role, name, email):
         return Profile.create_partner_user(org, partner, role, name, email, email)
 
-    def create_label(self, org, uuid, name, description, keywords, **kwargs):
-        tests = json_encode([ContainsTest(keywords, Quantifier.ANY)])
-        return Label.objects.create(org=org, uuid=uuid, name=name, description=description,
-                                    tests=tests, **kwargs)
+    def create_label(self, org, uuid, name, description, keywords=(), **kwargs):
+        label = Label.objects.create(org=org, uuid=uuid, name=name, description=description, **kwargs)
+
+        if keywords:
+            rule = Rule.create(org, [ContainsTest(keywords, Quantifier.ANY)], [LabelAction(label)])
+            label.rule = rule
+            label.save(update_fields=('rule',))
+
+        return label
+
+    def create_rule(self, org, tests, actions):
+        return Rule.create(org, tests, actions)
 
     def create_contact(self, org, uuid, name, groups=(), fields=None, is_stub=False):
         contact = Contact.objects.create(org=org, uuid=uuid, name=name, is_stub=is_stub, fields=fields, language="eng")
@@ -104,11 +116,12 @@ class BaseCasesTest(DashTest):
             kwargs['created_on'] = now()
 
         msg = Message.objects.create(org=org, backend_id=backend_id, contact=contact, text=text, **kwargs)
-        msg.labels.add(*labels)
+        msg.label(*labels)
         return msg
 
     def create_outgoing(self, org, user, broadcast_id, activity, text, contact, **kwargs):
         return Outgoing.objects.create(org=org,
+                                       partner=user.get_partner(org),
                                        backend_broadcast_id=broadcast_id,
                                        activity=activity,
                                        text=text,
@@ -138,6 +151,9 @@ class BaseCasesTest(DashTest):
         """
         self.assertEqual(len(mock.mock_calls), 0, "Expected no calls, called %d times" % len(mock.mock_calls))
 
+    def openWorkbook(self, filename):
+        return open_workbook("%s/%s" % (settings.MEDIA_ROOT, filename), 'rb')
+
     def assertExcelRow(self, sheet, row_num, values, tz=None):
         """
         Asserts the cell values in the given worksheet row. Date values are converted using the provided timezone.
@@ -147,6 +163,8 @@ class BaseCasesTest(DashTest):
             # if expected value is datetime, localize and remove microseconds
             if isinstance(expected, datetime):
                 expected = expected.astimezone(tz).replace(microsecond=0, tzinfo=None)
+            elif isinstance(expected, date):
+                expected = datetime.combine(expected, time(0, 0))
 
             expected_values.append(expected)
 
@@ -161,3 +179,9 @@ class BaseCasesTest(DashTest):
             actual_values.append(actual)
 
         self.assertEqual(actual_values, expected_values)
+
+    def assertSentMail(self, recipients, reset_outbox=True):
+        self.assertEqual([e.to[0] for e in mail.outbox], recipients)
+
+        if reset_outbox:
+            mail.outbox = []

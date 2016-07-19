@@ -54,9 +54,7 @@ def handle_messages(org):
 
             # only apply rules if there isn't a currently open case for this contact
             if open_case:
-                msg.case = open_case
-                msg.is_archived = True
-                msg.save(update_fields=('case', 'is_archived'))
+                open_case.add_reply(msg)
 
                 case_replies.append(msg)
             else:

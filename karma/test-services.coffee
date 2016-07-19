@@ -23,7 +23,11 @@ describe('services:', () ->
 
       # partners
       moh: {id: 301, name: "MOH"},
-      who: {id: 302, name: "WHO"}
+      who: {id: 302, name: "WHO"},
+
+      # contacts
+      ann: {id: 401, name: "Ann"},
+      bob: {id: 402, name: "Bob"}
     }
   )
 
@@ -49,7 +53,9 @@ describe('services:', () ->
     describe('addNote', () ->
       it('posts to note endpoint', () ->
         $httpBackend.expectPOST('/case/note/501/', {note: "Hello there"}).respond('')
-        CaseService.addNote(test.case1, "Hello there")
+        CaseService.addNote(test.case1, "Hello there").then(() ->
+          expect(test.case1.watching).toEqual(true)
+        )
         $httpBackend.flush()
       )
     )
@@ -114,10 +120,11 @@ describe('services:', () ->
 
     describe('open', () ->
       it('posts to open endpoint', () ->
-        $httpBackend.expectPOST('/case/open/', {message: 401, summary: "Hi", assignee: 301}).respond('{"case": {"id": 501}, "is_new": true}')
+        $httpBackend.expectPOST('/case/open/', {message: 401, summary: "Hi", assignee: 301}).respond('{"id": 501, "is_new": true, "watching": true}')
         CaseService.open({id: 401, text: "Hi"}, "Hi", test.moh).then((caseObj) ->
           expect(caseObj.id).toEqual(501)
-          expect(caseObj.isNew).toEqual(true)
+          expect(caseObj.is_new).toEqual(true)
+          expect(caseObj.watching).toEqual(true)
         )
         $httpBackend.flush()
       )
@@ -140,6 +147,7 @@ describe('services:', () ->
         $httpBackend.expectPOST('/case/reopen/501/', {note: "Hello there"}).respond('')
         CaseService.reopen(test.case1, "Hello there").then(() ->
           expect(test.case1.is_closed).toEqual(false)
+          expect(test.case1.watching).toEqual(true)
         )
         $httpBackend.flush()
       )
@@ -148,7 +156,9 @@ describe('services:', () ->
     describe('replyTo', () ->
       it('posts to reply endpoint', () ->
         $httpBackend.expectPOST('/case/reply/501/', {text: "Hello there"}).respond('')
-        CaseService.replyTo(test.case1, "Hello there")
+        CaseService.replyTo(test.case1, "Hello there").then(() ->
+          expect(test.case1.watching).toEqual(true)
+        )
         $httpBackend.flush()
       )
     )
@@ -166,6 +176,47 @@ describe('services:', () ->
         $httpBackend.expectPOST('/case/update_summary/501/', {summary: "Got coffee?"}).respond('')
         CaseService.updateSummary(test.case1, "Got coffee?").then(() ->
           expect(test.case1.summary).toEqual("Got coffee?")
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('watch', () ->
+      it('posts to watch endpoint', () ->
+        $httpBackend.expectPOST('/case/watch/501/', null).respond('')
+        CaseService.watch(test.case1).then(() ->
+          expect(test.case1.watching).toEqual(true)
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('unwatch', () ->
+      it('posts to unwatch endpoint', () ->
+        $httpBackend.expectPOST('/case/unwatch/501/', null).respond('')
+        CaseService.unwatch(test.case1).then(() ->
+          expect(test.case1.watching).toEqual(false)
+        )
+        $httpBackend.flush()
+      )
+    )
+  )
+
+  #=======================================================================
+  # Tests for ContactService
+  #=======================================================================
+  describe('ContactService', () ->
+    ContactService = null
+
+    beforeEach(inject((_ContactService_) ->
+      ContactService = _ContactService_
+    ))
+
+    describe('fetch', () ->
+      it('gets contact from fetch endpoint', () ->
+        $httpBackend.expectGET('/contact/fetch/401/').respond('{"id":401, "name":"Ann", "fields":{}}')
+        ContactService.fetch(401).then((contact) ->
+          expect(contact).toEqual({id: 401, name: "Ann", fields:{}})
         )
         $httpBackend.flush()
       )
@@ -362,20 +413,31 @@ describe('services:', () ->
       PartnerService = _PartnerService_
     ))
 
-    describe('fetchUsers', () ->
-      it('fetches from users endpoint', () ->
-        $httpBackend.expectGET('/partner/users/301/').respond('{"results":[{"id": 101, "name": "Tom McTest", "replies": {}}]}')
-        PartnerService.fetchUsers(test.moh).then((users) ->
-          expect(users).toEqual([{id: 101, name: "Tom McTest", replies: {}}])
-        )
-        $httpBackend.flush()
-      )
-    )
-
     describe('delete', () ->
       it('posts to delete endpoint', () ->
         $httpBackend.expectPOST('/partner/delete/301/', null).respond('')
         PartnerService.delete(test.moh)
+        $httpBackend.flush()
+      )
+    )
+  )
+
+  #=======================================================================
+  # Tests for StatisticsService
+  #=======================================================================
+  describe('StatisticsService', () ->
+    StatisticsService = null
+
+    beforeEach(inject((_StatisticsService_) ->
+      StatisticsService = _StatisticsService_
+    ))
+
+    describe('repliesChart', () ->
+      it('fetches from replies chart endpoint', () ->
+        $httpBackend.expectGET('/stats/replies_chart/?partner=301').respond('{"categories":["Jan", "Feb"], "series":[2, 3]}')
+        StatisticsService.repliesChart(test.moh).then((data) ->
+          expect(data).toEqual({categories: ["Jan", "Feb"], series: [2, 3]})
+        )
         $httpBackend.flush()
       )
     )
@@ -390,6 +452,26 @@ describe('services:', () ->
     beforeEach(inject((_UserService_) ->
       UserService = _UserService_
     ))
+
+    describe('fetchInPartner', () ->
+      it('fetches from users endpoint', () ->
+        $httpBackend.expectGET('/user/?partner=301&with_activity=false').respond('{"results":[{"id": 101, "name": "Tom McTest", "replies": {}}]}')
+        UserService.fetchInPartner(test.moh).then((users) ->
+          expect(users).toEqual([{id: 101, name: "Tom McTest", replies: {}}])
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('fetchNonPartner', () ->
+      it('fetches from users endpoint', () ->
+        $httpBackend.expectGET('/user/?non_partner=true&with_activity=true').respond('{"results":[{"id": 101, "name": "Tom McTest", "replies": {}}]}')
+        UserService.fetchNonPartner(true).then((users) ->
+          expect(users).toEqual([{id: 101, name: "Tom McTest", replies: {}}])
+        )
+        $httpBackend.flush()
+      )
+    )
 
     describe('delete', () ->
       it('posts to delete endpoint', () ->

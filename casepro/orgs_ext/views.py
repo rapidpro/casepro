@@ -6,7 +6,9 @@ from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCRUDL, SmartUpdateView
 
+from casepro.cases.models import Case
 from casepro.contacts.models import Field, Group
+from casepro.statistics.models import DailyCount
 
 from .forms import OrgForm, OrgEditForm
 
@@ -27,19 +29,20 @@ class OrgExtCRUDL(SmartCRUDL):
         default_order = ('name',)
 
     class Home(OrgCRUDL.Home):
-        fields = ('name', 'timezone', 'api_token', 'contact_fields', 'administrators')
-        field_config = {'api_token': {'label': _("RapidPro API Token")}}
         permission = 'orgs.org_home'
 
-        def derive_title(self):
-            return _("My Organization")
+        def get_context_data(self, **kwargs):
+            context = super(OrgExtCRUDL.Home, self).get_context_data(**kwargs)
+            context['summary'] = self.get_summary(self.request.org)
+            return context
 
-        def get_contact_fields(self, obj):
-            return ', '.join([f.key for f in Field.get_all(obj, visible=True)])
-
-        def get_administrators(self, obj):
-            admins = obj.administrators.exclude(profile=None).order_by('profile__full_name').select_related('profile')
-            return '<br/>'.join([unicode(u) for u in admins])
+        def get_summary(self, org):
+            return {
+                'total_incoming': DailyCount.get_by_org([org], DailyCount.TYPE_INCOMING).total(),
+                'total_replies': DailyCount.get_by_org([org], DailyCount.TYPE_REPLIES).total(),
+                'cases_open': Case.objects.filter(org=org, closed_on=None).count(),
+                'cases_closed': Case.objects.filter(org=org).exclude(closed_on=None).count()
+            }
 
     class Edit(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
         permission = 'orgs.org_edit'

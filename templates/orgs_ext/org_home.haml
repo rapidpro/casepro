@@ -1,7 +1,182 @@
 - extends "smartmin/read.html"
-- load smartmin i18n
+- load smartmin i18n thumbnail humanize
 
-- block read-buttons
-  %a.btn.btn-default.pull-right{ href:"{% url 'orgs_ext.org_edit' %}" }
-    %span.glyphicon.glyphicon-pencil
-    - trans "Edit"
+- block pre-content
+
+- block content
+
+  .ng-cloak{ ng-controller:"HomeController", ng-init:"init()", ng-cloak:"" }
+    .page-header.clearfix{ style:"border-bottom: none" }
+      .clearfix{ style:"margin-bottom: 10px" }
+        .page-header-buttons
+          - if perms.orgs.org_edit or org_perms.orgs.org_edit
+            .btn-group
+              %a.btn.btn-default{ href:"{% url 'orgs_ext.org_edit' %}", tooltip:"Edit Organization" }
+                %span.glyphicon.glyphicon-pencil
+
+        %h2
+          - trans "My Organization"
+
+    <uib-tabset active="active">
+
+      <uib-tab index="0" select="onTabSelect(0)">
+        <uib-tab-heading>
+          %span.glyphicon.glyphicon-dashboard
+          - trans "Summary"
+        </uib-tab-heading>
+        %br
+        .row
+          .col-md-4
+            %ul
+              %li
+                Total messages: <strong>{{ summary.total_incoming | intcomma }}</strong>
+              %li
+                Total replies: <strong>{{ summary.total_replies | intcomma }}</strong>
+              %li
+                Number of open cases: <strong>{{ summary.cases_open | intcomma }}</strong>
+              %li
+                Number of closed cases: <strong>{{ summary.cases_closed | intcomma }}</strong>
+          .col-md-8
+            #chart-replies-by-month
+      </uib-tab>
+
+      <uib-tab index="1" select="onTabSelect(1)">
+        <uib-tab-heading>
+          %span.glyphicon.glyphicon-th-large
+          - trans "Partners"
+        </uib-tab-heading>
+        .search-toolbar.clearfix
+          - if perms.cases.partner_create or org_perms.cases.partner_create
+            .pull-away
+              .btn-group
+                %a.btn.btn-default{ href:"{% url 'cases.partner_create' %}" }
+                  - trans "New"
+                %button.btn.btn-default{ ng-click:"onExportPartnerStats()" }
+                  - trans "Export Stats..."
+
+          .{ style:"margin-top: 7px" }
+            Total of <strong>[[ partners.length ]]</strong> partners
+
+        %table.table.table-striped
+          %thead
+            %th
+              - trans "Name"
+            %th
+              - trans "Replies this month"
+            %th
+              - trans "Replies last month"
+            %th
+              - trans "Total replies"
+          %tbody
+            %tr{ ng-repeat:"partner in partners" }
+              %td
+                %a{ ng-href:"/partner/read/[[ partner.id ]]/" }><
+                  [[ partner.name ]]
+              %td
+                [[ partner.replies.this_month ]]
+              %td
+                [[ partner.replies.last_month ]]
+              %td
+                [[ partner.replies.total ]]
+        .none{ ng-if:"!partners" }
+          - trans "None"
+
+      </uib-tab>
+
+      <uib-tab index="2" select="onTabSelect(2)">
+        <uib-tab-heading>
+          %i.glyphicon.glyphicon-tags{ style:"margin-right: 4px" }
+          - trans "Labels"
+        </uib-tab-heading>
+        .search-toolbar.clearfix
+          - if perms.msgs.label_create or org_perms.msgs.label_create
+            .pull-away
+              .btn-group
+                %a.btn.btn-default{ href:"{% url 'msgs.label_create' %}" }
+                  - trans "New"
+                %button.btn.btn-default{ ng-click:"onExportLabelStats()" }
+                  - trans "Export Stats..."
+
+          .{ style:"margin-top: 7px" }
+            Total of <strong>[[ labels.length ]]</strong> labels
+
+        %table.table.table-striped
+          %thead
+            %th
+              - trans "Name"
+            %th
+              - trans "Messages this month"
+            %th
+              - trans "Messages last month"
+            %th
+              - trans "Total messages"
+          %tbody
+            %tr{ ng-repeat:"label in labels" }
+              %td
+                %a{ ng-href:"/label/read/[[ label.id ]]/" }><
+                  [[ label.name ]]
+              %td
+                [[ label.activity.this_month ]]
+              %td
+                [[ label.activity.last_month ]]
+              %td
+                [[ label.counts.inbox + label.counts.archived ]]
+        .none{ ng-if:"!labels" }
+          - trans "None"
+
+      </uib-tab>
+
+      <uib-tab index="3" select="onTabSelect(3)">
+        <uib-tab-heading>
+          %span.glyphicon.glyphicon-user
+          - trans "Users"
+        </uib-tab-heading>
+        .search-toolbar.clearfix
+          - if perms.profiles.profile_user_create or org_perms.profiles.profile_user_create
+            .pull-away
+              <a class="btn btn-default" href="{% url 'profiles.user_create' %}">{% trans "New" %}</a>
+
+          .{ style:"margin-top: 7px" }
+            Total of <strong>[[ users.length ]]</strong> users
+
+        %table.table.table-striped
+          %thead
+            %th
+              - trans "Name"
+            %th
+              - trans "Replies this month"
+            %th
+              - trans "Replies last month"
+            %th
+              - trans "Total replies"
+          %tbody
+            %tr{ ng-repeat:"user in users" }
+              %td
+                %a{ ng-href:"/user/read/[[ user.id ]]/" }><
+                  [[ user.name ]]
+              %td
+                [[ user.replies.this_month ]]
+              %td
+                [[ user.replies.last_month ]]
+              %td
+                [[ user.replies.total ]]
+        .none{ ng-if:"!users" }
+          - trans "None"
+
+      </uib-tab>
+
+    </uib-tabset>
+
+
+- block extra-style
+  {{ block.super }}
+  :css
+    .search-toolbar {
+      padding: 7px;
+      background-color: #f7f7f7;
+      margin-top: 7px;
+    }
+    #chart-replies-by-month {
+      width: 100%;
+      height: 250px;
+    }

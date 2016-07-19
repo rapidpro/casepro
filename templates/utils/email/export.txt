@@ -1,0 +1,4 @@
+{% load i18n %}
+{% blocktrans with download_url=download_url %}
+Your export is ready and can be downloaded by clicking {{ download_url }}.
+{% endblocktrans %}

@@ -5,6 +5,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from casepro.contacts.models import Group
 from casepro.rules.forms import FieldTestField
+from casepro.rules.models import ContainsTest
 from casepro.utils import parse_csv, normalize
 
 from .models import Label
@@ -12,19 +13,29 @@ from .models import Label
 
 class LabelForm(forms.ModelForm):
     name = forms.CharField(label=_("Name"), max_length=128)
+
     description = forms.CharField(label=_("Description"), max_length=255, widget=forms.Textarea)
+
+    is_synced = forms.BooleanField(
+        label=_("Is synced"), required=False,
+        help_text=_("Whether label should be kept synced with backend")
+    )
+
     keywords = forms.CharField(
         label=_("Keywords"), widget=forms.Textarea, required=False,
         help_text=_("Match messages containing any of these words (comma separated)")
     )
+
     groups = forms.ModelMultipleChoiceField(
         queryset=Group.objects.none(), label=_("Groups"), required=False,
         help_text=_("Match messages from these groups (select none to include all groups)")
     )
+
     field_test = forms.CharField()  # switched below in __init__
-    is_synced = forms.BooleanField(
-        label=_("Is synced"), required=False,
-        help_text=_("Whether label should be kept synced with backend")
+
+    ignore_single_words = forms.BooleanField(
+        label=_("Ignore single words"), required=False,
+        help_text=_("Whether to ignore messages consisting of a single word")
     )
 
     def __init__(self, *args, **kwargs):
@@ -53,16 +64,10 @@ class LabelForm(forms.ModelForm):
         return name
 
     def clean_keywords(self):
-        from casepro.rules.models import ContainsTest
-
         keywords = parse_csv(self.cleaned_data['keywords'])
         clean_keywords = []
         for keyword in keywords:
             clean_keyword = normalize(keyword)
-
-            if len(keyword) < ContainsTest.KEYWORD_MIN_LENGTH:
-                raise forms.ValidationError(_("Keywords must be at least %d characters long")
-                                            % ContainsTest.KEYWORD_MIN_LENGTH)
 
             if not ContainsTest.is_valid_keyword(keyword):
                 raise forms.ValidationError(_("Invalid keyword: %s") % keyword)
@@ -73,4 +78,4 @@ class LabelForm(forms.ModelForm):
 
     class Meta:
         model = Label
-        fields = ('name', 'description', 'keywords', 'groups', 'field_test', 'is_synced')
+        fields = ('name', 'description', 'is_synced', 'keywords', 'groups', 'field_test', 'ignore_single_words')

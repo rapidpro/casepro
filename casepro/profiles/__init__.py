@@ -87,6 +87,14 @@ def _user_remove_from_org(user, org):
         user.profile.partner = None
         user.profile.save(update_fields=('partner',))
 
+    # remove as watcher of any case in this org
+    for case in user.watched_cases.filter(org=org):
+        case.unwatch(user)
+
+    # remove as watcher of any label in this org
+    for label in user.watched_labels.filter(org=org):
+        label.unwatch(user)
+
 
 def _user_unicode(user):
     if user.has_profile():
@@ -98,8 +106,24 @@ def _user_unicode(user):
     return user.email or user.username
 
 
-def _user_as_json(user):
-    return {'id': user.pk, 'name': user.get_full_name()}
+def _user_as_json(user, full=True, org=None):
+    if full:
+        if org and user.has_profile():
+            role_json = user.profile.get_role(org)
+            partner_json = user.profile.partner.as_json(full=False) if user.profile.partner else None
+        else:
+            role_json = None
+            partner_json = None
+
+        return {
+            'id': user.pk,
+            'name': user.get_full_name(),
+            'email': user.email,
+            'role': role_json,
+            'partner': partner_json
+        }
+    else:
+        return {'id': user.pk, 'name': user.get_full_name()}
 
 
 User.clean = _user_clean
