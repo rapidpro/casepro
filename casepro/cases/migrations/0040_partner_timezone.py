@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cases', '0037_partner_is_restricted'),
+        ('cases', '0039_populate_case_watchers'),
     ]
 
     operations = [
