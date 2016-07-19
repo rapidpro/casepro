@@ -54,6 +54,9 @@ class Partner(models.Model):
         verbose_name=_("Timezone"), max_length=64, default='UTC',
         help_text=_("The timezone the partner organization is in."))
 
+    primary_contact = models.ForeignKey(User, verbose_name=_("Primary Contact"), related_name='partners', null=True,
+                                        blank=True)
+
     is_restricted = models.BooleanField(default=True, verbose_name=_("Restricted Access"),
                                         help_text=_("Whether this partner's access is restricted by labels"))
 
@@ -79,12 +82,12 @@ class Partner(models.Model):
         return tzinfo
 
     @classmethod
-    def create(cls, org, name, description, timezone, restricted, labels, logo=None):
+    def create(cls, org, name, description, timezone, primary_contact, restricted, labels, logo=None):
         if labels and not restricted:
             raise ValueError("Can't specify labels for a partner which is not restricted")
 
-        partner = cls.objects.create(org=org, name=name, description=description, timezone=timezone, logo=logo,
-                                     is_restricted=restricted)
+        partner = cls.objects.create(org=org, name=name, description=description, timezone=timezone,
+                                     primary_contact=primary_contact, logo=logo, is_restricted=restricted)
 
         if restricted:
             partner.labels.add(*labels)

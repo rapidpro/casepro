@@ -28,8 +28,16 @@
         %h2
           {{ object.name }}
 
+      .header-details
+        - if object.primary_contact
+          Primary contact: {{ object.primary_contact }}
+        - else
+          %i
+            - trans "No primary contact"
+
       - if object.is_restricted
         .header-details
+          %br
           - if labels
             - for label in labels
               %span.label-container

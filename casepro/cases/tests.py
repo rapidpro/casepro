@@ -925,7 +925,7 @@ class HomeViewsTest(BaseCasesTest):
 
 class PartnerTest(BaseCasesTest):
     def test_create(self):
-        wfp = Partner.create(self.unicef, "WFP", "World Food Program", "Africa/Kigali", True,
+        wfp = Partner.create(self.unicef, "WFP", "World Food Program", "Africa/Kigali", None, True,
                              [self.aids, self.pregnancy])
         self.assertEqual(wfp.org, self.unicef)
         self.assertEqual(wfp.name, "WFP")
@@ -940,13 +940,19 @@ class PartnerTest(BaseCasesTest):
         self.assertEqual(set(wfp.get_managers()), {jim})
         self.assertEqual(set(wfp.get_analysts()), {kim})
 
+        # set kim as the primary contact for the wfp partner
+        wfp.primary_contact = kim
+        wfp.save()
+
+        self.assertEqual(wfp.primary_contact, kim)
+
         # create a partner which is not restricted by labels
-        internal = Partner.create(self.unicef, "Internal", "Internal Description", "Africa/Kigali", False, [])
+        internal = Partner.create(self.unicef, "Internal", "Internal Description", "Africa/Kigali", None, False, [])
         self.assertEqual(set(internal.get_labels()), {self.aids, self.pregnancy, self.tea})
 
         # can't create an unrestricted partner with labels
         self.assertRaises(ValueError, Partner.create, self.unicef, "Testers", "Testers Description", "Africa/Kigali",
-                          False, [self.aids])
+                          None, False, [self.aids])
 
     def test_release(self):
         self.who.release()
@@ -968,12 +974,13 @@ class PartnerCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['form'].fields.keys(),
-                         ['name', 'description', 'timezone', 'logo', 'is_restricted', 'labels', 'loc'])
+                         ['name', 'description', 'timezone', 'primary_contact', 'logo', 'is_restricted', 'labels',
+                          'loc'])
 
         # create label restricted partner
         response = self.url_post('unicef', url, {'name': "Helpers", 'description': "Helpers Description",
-                                                 'timezone': "Africa/Kigali", 'logo': None,
-                                                 'is_restricted': True, 'labels': [self.tea.pk]})
+                                                 'timezone': "Africa/Kigali", 'primary_contact': self.user1.pk,
+                                                 'logo': None, 'is_restricted': True, 'labels': [self.tea.pk]})
         self.assertEqual(response.status_code, 302)
 
         helpers = Partner.objects.get(name="Helpers")
@@ -981,6 +988,7 @@ class PartnerCRUDLTest(BaseCasesTest):
         self.assertEqual(set(helpers.get_labels()), {self.tea})
         self.assertEqual(helpers.description, "Helpers Description")
         self.assertEqual(helpers.timezone, "Africa/Kigali")
+        # self.assertEqual(helpers.primary_contact, self.user1)
 
         # create unrestricted partner
         response = self.url_post('unicef', url, {'name': "Internal", 'timezone': "UTC", 'logo': None,
@@ -1050,6 +1058,14 @@ class PartnerCRUDLTest(BaseCasesTest):
 
         moh = Partner.objects.get(pk=self.moh.pk)
         self.assertEqual(moh.name, "MOH2")
+
+        # post primary contact change
+        response = self.url_post('unicef', url, {'name': "MOH", 'primary_contact': self.user1.pk})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, 'http://unicef.localhost/partner/read/%d/' % self.moh.pk)
+
+        moh = Partner.objects.get(pk=self.moh.pk)
+        self.assertEqual(moh.primary_contact, self.user1)
 
     def test_delete(self):
         url = reverse('cases.partner_delete', args=[self.moh.pk])
