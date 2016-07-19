@@ -6,11 +6,12 @@ colorama
 coverage
 django
 django-celery
+django-celery-email
 django-compressor
 django-debug-toolbar
 django-digest
 django-el-pagination
-django-redis==3.8.4
+django-redis
 django-reversion
 django-rosetta
 django-storages

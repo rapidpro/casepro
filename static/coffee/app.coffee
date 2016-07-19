@@ -15,6 +15,9 @@ app.config [ '$interpolateProvider', '$httpProvider', ($interpolateProvider, $ht
   $interpolateProvider.startSymbol "[["
   $interpolateProvider.endSymbol "]]"
 
+  # so that HttpRequest.is_ajax() works
+  $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
+
   # Use Django's CSRF functionality
   $httpProvider.defaults.xsrfCookieName = 'csrftoken'
   $httpProvider.defaults.xsrfHeaderName = 'X-CSRFToken'
