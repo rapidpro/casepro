@@ -69,7 +69,12 @@ describe('directives:', () ->
       $compile = _$compile_
 
       $rootScope.podConfig = {title: 'Foo'}
-      $rootScope.podData = {items: []}
+      $rootScope.podData = {
+        items: [],
+        actions: []
+      }
+
+      $rootScope.trigger = ->
     ))
 
     it('should draw the pod items', () ->
@@ -109,6 +114,61 @@ describe('directives:', () ->
 
       expect(item2.querySelector('.pod-item-value').textContent)
         .toContain('Corge')
+    )
+
+    it('should draw the pod actions', ->
+      $rootScope.podData.actions = [{
+        case_id: 21,
+        type: 'foo',
+        name: 'Foo',
+        payload: {bar: 'baz'}
+      }, {
+        case_id: 21,
+        type: 'quux',
+        name: 'Quux',
+        payload: {corge: 'grault'}
+      }]
+
+      el = $compile('<div cp-pod></div>')($rootScope)[0]
+      $rootScope.$digest()
+
+      action1 = el.querySelectorAll('.pod-action')[0]
+      action2 = el.querySelectorAll('.pod-action')[1]
+
+      expect(action1.textContent).toContain('Foo')
+      expect(action2.textContent).toContain('Quux')
+    )
+
+    it('should call trigger() when an action button is clicked', ->
+      $rootScope.podData.actions = [{
+        type: 'foo',
+        name: 'Foo',
+        case_id: 21,
+        payload: {a: 'b'}
+      }, {
+        type: 'bar',
+        name: 'Bar',
+        case_id: 21,
+        payload: {c: 'd'}
+      }]
+
+      $rootScope.trigger = jasmine.createSpy('trigger')
+
+      el = $compile('<div cp-pod></div>')($rootScope)[0]
+      $rootScope.$digest()
+
+      action1 = el.querySelectorAll('.pod-action')[0]
+      action2 = el.querySelectorAll('.pod-action')[1]
+
+      expect($rootScope.trigger).not.toHaveBeenCalledWith(21, 'foo', {a: 'b'})
+
+      angular.element(action1).triggerHandler('click')
+
+      expect($rootScope.trigger).toHaveBeenCalledWith(21, 'foo', {a: 'b'})
+      expect($rootScope.trigger).not.toHaveBeenCalledWith(21, 'bar', {c: 'd'})
+
+      angular.element(action2).triggerHandler('click')
+      expect($rootScope.trigger).toHaveBeenCalledWith(21, 'bar', {c: 'd'})
     )
   )
 )
