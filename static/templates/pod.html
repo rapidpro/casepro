@@ -5,7 +5,8 @@
         <div class="container-fluid">
             <div class="row">
                 <div class="col-md-12">
-                    <div class="pod-item row"
+                    <div
+                        class="pod-item row"
                         ng-repeat="item in podData.items">
                         <div class="col-md-6">
                             <div class="pod-item-name">{{ item.name }}</div>
@@ -21,7 +22,8 @@
     </div>
 
     <div class="list-group">
-        <a href="#"
+        <a
+            href="#"
             class="pod-action list-group-item"
             ng-repeat="action in podData.actions"
             ng-click="trigger(action.case_id, action.type, action.payload)">
