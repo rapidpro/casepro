@@ -32,3 +32,12 @@ filters.filter('urlencode', ['$window', ($window) ->
   return (input) ->
     return $window.encodeURIComponent(input)
 ])
+
+
+#----------------------------------------------------------------------------
+# Replaces underscores with spaces
+#----------------------------------------------------------------------------
+filters.filter('deunderscore', () ->
+    return (input) ->
+        return input.replace(/_/g, ' ')
+)
