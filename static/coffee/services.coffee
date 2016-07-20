@@ -335,12 +335,7 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
       params = {after: after}
 
       return $http.get('/case/timeline/' + caseObj.id + '/?' + $httpParamSerializer(params)).then((response) ->
-        for event in response.data.results
-          # parse datetime string
-          event.time = utils.parseIso8601(event.time)
-          event.is_action = event.type == 'A'
-          event.is_message_in = event.type == 'M' and event.item.direction == 'I'
-          event.is_message_out = event.type == 'M' and event.item.direction == 'O'
+        utils.parseDates(response.data.results, 'time')
 
         return {results: response.data.results, maxTime: response.data.max_time}
       )
