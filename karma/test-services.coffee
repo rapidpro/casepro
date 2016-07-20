@@ -634,5 +634,22 @@ describe('services:', () ->
         $httpBackend.flush()
       )
     )
+
+    describe('trigger', () ->
+      it('triggers an action', () ->
+        $httpBackend.expectPUT('/pods/action/21/', {
+            data: {
+              type: 'foo'
+              payload: {bar: 23}
+            }
+          })
+          .respond({foo: 'bar'})
+
+        PodApi.trigger(21, 'foo', {bar: 23})
+          .then((res) -> expect(res).toEqual({foo: 'bar'}))
+
+        $httpBackend.flush()
+      )
+    )
   )
 )
