@@ -75,12 +75,13 @@ controllers.controller('InboxController', ['$scope', '$window', '$location', 'La
 controllers.controller('BaseTabsController', ['$scope', '$location', ($scope, $location) ->
   $scope.initialisedTabs = []
 
-  path = $location.path()
-  if path
-    initialTabSlug = path.substring(1)  # ignore initial /
-    $scope.active = $scope.tabSlugs.indexOf(initialTabSlug)
-  else
-    $scope.active = 0
+  $scope.activateTabFromPath = () ->
+    path = $location.path()
+    if path
+      initialTabSlug = path.substring(1)  # ignore initial /
+      $scope.active = $scope.tabSlugs.indexOf(initialTabSlug)
+    else
+      $scope.active = 0
 
   $scope.onTabSelect = (tab) ->
     slug = $scope.tabSlugs[tab]
@@ -90,6 +91,9 @@ controllers.controller('BaseTabsController', ['$scope', '$location', ($scope, $l
     if tab not in $scope.initialisedTabs
       $scope.onTabInit(slug)
       $scope.initialisedTabs.push(tab)
+
+  $scope.activateTabFromPath()
+  $scope.$on('$locationChangeSuccess', () -> $scope.activateTabFromPath())
 ])
 
 
