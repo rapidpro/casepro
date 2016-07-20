@@ -621,7 +621,6 @@ describe('services:', () ->
 
     beforeEach(inject((_PodApi_) ->
       PodApi = _PodApi_
-      $window.contextData = {case_obj: {id: 23}}
     ))
 
     describe('get', () ->
@@ -630,18 +629,6 @@ describe('services:', () ->
           .respond({foo: 'bar'})
 
         PodApi.get(21, 23)
-          .then((res) -> expect(res).toEqual({foo: 'bar'}))
-
-        $httpBackend.flush()
-      )
-
-      it('defaults the case id to the global case id', ->
-        $window.contextData = {case_obj: {id: 23}}
-
-        $httpBackend.expectGET('/pods/read/21/?case_id=23')
-          .respond({foo: 'bar'})
-
-        PodApi.get(21)
           .then((res) -> expect(res).toEqual({foo: 'bar'}))
 
         $httpBackend.flush()

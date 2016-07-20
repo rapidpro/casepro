@@ -695,12 +695,13 @@ describe('controllers:', () ->
           PodApi
         })
 
-        $scope.init(21, {title: 'Baz'})
+        $scope.init(21, 23, {title: 'Baz'})
         $scope.$apply()
 
         expect($scope.podId).toEqual(21)
+        expect($scope.caseId).toEqual(23)
         expect($scope.podConfig).toEqual({title: 'Baz'})
-        expect(PodApi.get).toHaveBeenCalledWith(21)
+        expect(PodApi.get).toHaveBeenCalledWith(21, 23)
         expect($scope.podData).toEqual({foo: 'bar'}))
     )
   )

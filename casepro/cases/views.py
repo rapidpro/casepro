@@ -1,5 +1,4 @@
 from __future__ import absolute_import, unicode_literals
-from calendar import month_name
 from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from datetime import timedelta
@@ -71,8 +70,10 @@ class CaseCRUDL(SmartCRUDL):
             context['max_msg_chars'] = MAX_MESSAGE_CHARS
             context['can_update'] = can_update
             context['alert'] = self.request.GET.get('alert', None)
+            context['case_id'] = case.id
             context['pods'] = pod_registry.pods
             context['pod_types'] = pod_registry.pod_types
+
             return context
 
     class Open(OrgPermsMixin, SmartCreateView):
