@@ -26,3 +26,8 @@ DATABASES = {
         }
     }
 }
+
+# Speed improvement for test runs.
+PASSWORD_HASHERS = (
+    'django.contrib.auth.hashers.MD5PasswordHasher',
+)
