@@ -1,4 +1,4 @@
-- extends "cases/home_base.html"
+- extends "cases/inbox_base.html"
 - load smartmin i18n
 
 - block home-items
@@ -11,14 +11,13 @@
             Messages for contact
             %strong
               [[ activeContact.name ]]
-
-            - if user_is_admin
-              &nbsp;
-              %a{ ng-href:"/contact/read/[[ activeContact.id ]]/" }
-                - trans "View"
           .pull-away
-            %button.btn.btn-default{ type:"button", ng-click:"activateContact(null)" }
-              - trans "Back"
+            .btn-group
+              - if user_is_admin
+                %a.btn.btn-default{ type:"button", ng-href:"/contact/read/[[ activeContact.id ]]/" }
+                  - trans "View Contact"
+              %button.btn.btn-default{ type:"button", ng-click:"activateContact(null)" }
+                - trans "Back"
 
     .search-toolbar{ ng-if:"!activeContact" }
       .search-form-simple{ ng-if:"!advancedSearch" }
@@ -26,12 +25,12 @@
           .btn-group.pull-away
             // TODO figure out why form is double-submitted when this is moved to ng-submit on the form. jQuery conflict?
             %button.btn.btn-default{ type:"button", ng-click:"onSearch()" }
-              %span.glyphicon.glyphicon-search
+              %i.glyphicon.glyphicon-search
               - trans "Search"
             %button.btn.btn-default{ type:"button", ng-click:"setAdvancedSearch(true)" }
               - trans "Advanced..."
             %button.btn.btn-default{ type:"button", ng-click:"onExportSearch()", tooltip:"Save as Excel" }
-              %span.glyphicon.glyphicon-save
+              %i.glyphicon.glyphicon-save
 
           %span{ ng-if:'folder != "flagged"' }
             %input.form-control{ ng-model:"searchFields.text", type:"text", placeholder:"Search", style:"width: 400px" }
@@ -45,12 +44,12 @@
           .btn-group.pull-away
             // TODO figure out why form is double-submitted when this is moved to ng-submit on the form. jQuery conflict?
             %button.btn.btn-default{ type:"button", ng-click:"onSearch()" }
-              %span.glyphicon.glyphicon-search
+              %i.glyphicon.glyphicon-search
               - trans "Search"
             %button.btn.btn-default{ type:"button", ng-click:"onResetSearch()" }
               - trans "Clear"
             %button.btn.btn-default{ type:"button", ng-click:"onExportSearch()", tooltip:"Save as Excel" }
-              %span.glyphicon.glyphicon-save
+              %i.glyphicon.glyphicon-save
 
           .form-group
             %label.control-label.col-sm-2
@@ -115,14 +114,14 @@
             .btn-group{ ng-if:'folder != "archived"' }
               .btn-group{ uib-dropdown:"true" }
                 %button.btn.btn-default.dropdown-toggle{ type:"button", uib-dropdown-toggle:"true", ng-disabled:"selection.length == 0", tooltip:"Label" }
-                  %span.glyphicon.glyphicon-tag
+                  %i.glyphicon.glyphicon-tag
                   %span.caret
                 %ul.dropdown-menu
                   %li{ ng-repeat:"label in inactiveLabels" }
                     %a{ ng-click:"onLabelSelection(label)" }
                       [[ label.name ]]
               %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-if:'folder != "flagged"', ng-click:"onFlagSelection()", type:"button", tooltip:"Flag" }
-                %span.glyphicon.glyphicon-flag
+                %i.glyphicon.glyphicon-flag
               %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onReplyToSelection()", type:"button" }
                 - trans "Reply"
               %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onArchiveSelection()", type:"button" }
@@ -132,42 +131,41 @@
                 - trans "Restore"
 
     .messages{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"!isInfiniteScrollEnabled()" }
-      .stackitem.clearfix.hoverable{ ng-repeat:"message in items | filter: getItemFilter()", ng-class:"{ flagged: message.flagged, selected: message.selected, archived: message.archived }" }
+      .stackitem.clearfix.hoverable{ ng-repeat:"item in items | filter: getItemFilter()", ng-click:"onExpandMessage(item)", ng-class:"{ flagged: item.flagged, selected: item.selected, archived: item.archived }" }
         .message-actions
-          %input{ type:"checkbox", ng-model:"message.selected", ng-change:"onChangeSelection()" }
-          %a.flag{ ng-click:"onToggleMessageFlag(message)" }
-            %span.glyphicon.glyphicon-flag
+          %input{ type:"checkbox", ng-model:"item.selected", ng-change:"onChangeSelection()" }
+          %a.flag{ ng-click:"onToggleMessageFlag(item)" }
+            %i.glyphicon.glyphicon-flag
         .message-time
-          [[ message.time | autodate ]]
+          [[ item.time | autodate ]]
         .message-contact
-          %a{ ng-click:"activateContact(message.contact)", title:"View all from contact" }><
-            %span.glyphicon.glyphicon-phone>
-            [[ message.contact.name ]]
-        .message-text{ ng-click:"onExpandMessage(message)" }
-          %span.label-container{ ng-if:"message.flow" }
+          %a{ ng-click:"activateContact(item.contact)" }><
+            <cp-contact contact="item.contact">
+        .message-text
+          %span.label-container{ ng-if:"item.flow" }
             %span.label.label-info
               - trans "Flow"
             &nbsp;
-          %span.label-container{ ng-if:"message.case" }
+          %span.label-container{ ng-if:"item.case" }
             %span.label.label-warning
-              [[ message.case.assignee.name ]]
+              [[ item.case.assignee.name ]]
             &nbsp;
-          %span.label-container{ ng-repeat:"label in filterDisplayLabels(message.labels)" }
+          %span.label-container{ ng-repeat:"label in filterDisplayLabels(item.labels)" }
             %span.label.label-success
               [[ label.name ]]
             &nbsp;
-          [[ message.text ]]
-        .message-extra{ uib-collapse:"expandedMessageId != message.id" }
+          [[ item.text ]]
+        .message-extra{ uib-collapse:"expandedMessageId != item.id" }
           .btn-group.pull-away
-            %button.btn.btn-default{ type:"button", ng-click:"onCaseFromMessage(message)", ng-if:"partners.length > 0" }
+            %button.btn.btn-default{ type:"button", ng-click:"onCaseFromMessage(item)" }
               - trans "Open Case"
-            %button.btn.btn-default{ type:"button", ng-click:"onForwardMessage(message)" }
-              %span.glyphicon.glyphicon-share-alt
+            %button.btn.btn-default{ type:"button", ng-click:"onForwardMessage(item)" }
+              %i.glyphicon.glyphicon-share-alt
               - trans "Forward"
-            %button.btn.btn-default{ type:"button", ng-click:"onLabelMessage(message)" }
-              %span.glyphicon.glyphicon-tag
-            %button.btn.btn-default{ type:"button", ng-click:"onShowMessageHistory(message)" }
-              %span.glyphicon.glyphicon-time
+            %button.btn.btn-default{ type:"button", ng-click:"onLabelMessage(item)" }
+              %i.glyphicon.glyphicon-tag
+            %button.btn.btn-default{ type:"button", ng-click:"onShowMessageHistory(item)" }
+              %i.glyphicon.glyphicon-time
 
       .loading{ ng-if:"oldItemsLoading" }
       .none{ ng-hide:"oldItemsLoading || items.length > 0" }

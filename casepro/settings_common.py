@@ -12,11 +12,13 @@ from django.utils.translation import ugettext_lazy as _
 # -----------------------------------------------------------------------------------
 TESTING = sys.argv[1:2] == ['test']
 
-# Django settings for tns_glass project.
-THUMBNAIL_DEBUG = False
-
-DEBUG = True
-TEMPLATE_DEBUG = DEBUG
+if TESTING:
+    PASSWORD_HASHERS = ('django.contrib.auth.hashers.MD5PasswordHasher',)
+    DEBUG = False
+    TEMPLATE_DEBUG = False
+else:
+    DEBUG = True
+    TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
     ('Nyaruka', 'code@nyaruka.com'),
@@ -35,12 +37,8 @@ DATABASES = {
     }
 }
 
-# set the mail settings, we send throught gmail
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = 'server@nyaruka.com'
-DEFAULT_FROM_EMAIL = 'server@nyaruka.com'
-EMAIL_HOST_PASSWORD = 'NOTREAL'
-EMAIL_USE_TLS = True
+EMAIL_BACKEND = 'djcelery_email.backends.CeleryEmailBackend'
+SEND_EMAILS = TESTING  # safe to send emails during tests as these use a fake backend
 
 # dash configuration
 SITE_API_HOST = 'http://localhost:8001/'
@@ -184,17 +182,17 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'dash.context_processors.lang_direction',
     'casepro.cases.context_processors.sentry_dsn',
     'casepro.cases.context_processors.server_time',
-    'casepro.profiles.context_processors.user_is_admin',
+    'casepro.profiles.context_processors.user',
 )
 
 ROOT_URLCONF = 'casepro.urls'
 
 CACHES = {
     'default': {
-        'BACKEND': 'redis_cache.cache.RedisCache',
+        'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': '127.0.0.1:6379:15',
         'OPTIONS': {
-            'CLIENT_CLASS': 'redis_cache.client.DefaultClient',
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         }
     }
 }
@@ -215,6 +213,7 @@ INSTALLED_APPS = (
     'django.contrib.postgres',
 
     'djcelery',
+    'djcelery_email',
 
     # mo-betta permission management
     'guardian',
@@ -251,6 +250,7 @@ INSTALLED_APPS = (
     'casepro.msgs',
     'casepro.rules',
     'casepro.cases',
+    'casepro.statistics',
 )
 
 LOGGING = {
@@ -316,9 +316,9 @@ PERMISSIONS = {
           'delete',  # can delete an object,
           'list'),   # can view a list of the objects
 
-    'orgs.org': ('create', 'update', 'list', 'edit', 'home', 'inbox'),
+    'orgs.org': ('create', 'update', 'list', 'home', 'edit', 'inbox', 'charts'),
 
-    'msgs.label': ('create', 'update', 'list'),
+    'msgs.label': ('create', 'update', 'read', 'delete', 'list'),
 
     'msgs.message': ('action', 'bulk_reply', 'forward', 'label', 'history', 'search', 'unlabelled'),
 
@@ -332,7 +332,7 @@ PERMISSIONS = {
 
     'case.caseexport': ('create', 'read'),
 
-    'cases.partner': ('create', 'read', 'delete', 'list', 'users'),
+    'cases.partner': ('create', 'read', 'delete', 'list'),
 
     'contacts.contact': ('read', 'list'),
 
@@ -345,9 +345,10 @@ PERMISSIONS = {
 # assigns the permissions that each group should have
 GROUP_PERMISSIONS = {
     "Administrators": (  # Org users: Administrators
-        'orgs.org_home',
-        'orgs.org_edit',
         'orgs.org_inbox',
+        'orgs.org_home',
+        'orgs.org_charts',
+        'orgs.org_edit',
 
         'msgs.label.*',
         'msgs.message.*',
@@ -364,10 +365,16 @@ GROUP_PERMISSIONS = {
         'contacts.field.*',
 
         'profiles.profile.*',
+
+        'rules.rule.*',
+
+        'statistics.dailycountexport.*',
     ),
     "Editors": (  # Partner users: Managers
         'orgs.org_inbox',
+        'orgs.org_charts',
 
+        'msgs.label_read',
         'msgs.message_action',
         'msgs.message_bulk_reply',
         'msgs.message_forward',
@@ -390,17 +397,19 @@ GROUP_PERMISSIONS = {
         'cases.caseexport_read',
         'cases.partner_list',
         'cases.partner_read',
-        'cases.partner_users',
 
         'contacts.contact_read',
 
         'profiles.profile_user_create_in',
         'profiles.profile_user_update',
         'profiles.profile_user_read',
+        'profiles.profile_user_list',
     ),
     "Viewers": (  # Partner users: Data Analysts
         'orgs.org_inbox',
+        'orgs.org_charts',
 
+        'msgs.label_read',
         'msgs.message_action',
         'msgs.message_bulk_reply',
         'msgs.message_forward',
@@ -423,11 +432,11 @@ GROUP_PERMISSIONS = {
         'cases.caseexport_read',
         'cases.partner_list',
         'cases.partner_read',
-        'cases.partner_users',
 
         'contacts.contact_read',
 
         'profiles.profile_user_read',
+        'profiles.profile_user_list',
     ),
 }
 
@@ -475,6 +484,14 @@ CELERYBEAT_SCHEDULE = {
         'task': 'dash.orgs.tasks.trigger_org_task',
         'schedule': timedelta(minutes=1),
         'args': ('casepro.msgs.tasks.handle_messages', 'sync')
+    },
+    'squash-counts': {
+        'task': 'casepro.statistics.tasks.squash_counts',
+        'schedule': timedelta(minutes=5),
+    },
+    'send-notifications': {
+        'task': 'casepro.profiles.tasks.send_notifications',
+        'schedule': timedelta(minutes=1),
     },
 }
 

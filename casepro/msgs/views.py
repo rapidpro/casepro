@@ -10,11 +10,12 @@ from django.utils.translation import ugettext_lazy as _
 from el_pagination.paginators import LazyPaginator
 from smartmin.mixins import NonAtomicMixin
 from smartmin.views import SmartCRUDL, SmartTemplateView
-from smartmin.views import SmartListView, SmartCreateView, SmartUpdateView, SmartDeleteView
+from smartmin.views import SmartListView, SmartCreateView, SmartReadView, SmartUpdateView, SmartDeleteView
 from temba_client.utils import parse_iso8601
 
-from casepro.rules.models import ContainsTest, GroupsTest, Quantifier
-from casepro.utils import parse_csv, str_to_bool, json_encode, JSONEncoder
+from casepro.rules.mixins import RuleFormMixin
+from casepro.statistics.models import DailyCount
+from casepro.utils import parse_csv, str_to_bool, JSONEncoder, json_encode, month_range
 from casepro.utils.export import BaseDownloadView
 
 from .forms import LabelForm
@@ -25,29 +26,11 @@ from .tasks import message_export, reply_export
 RESPONSE_DELAY_WARN_SECONDS = 24 * 60 * 60  # show response delays > 1 day as warning
 
 
-class LabelFormMixin(object):
-    @staticmethod
-    def construct_tests(data):
-        keywords = parse_csv(data['keywords'])
-        groups = data['groups']
-        field_test = data['field_test']
-
-        tests = []
-        if keywords:
-            tests.append(ContainsTest(keywords, Quantifier.ANY))
-        if groups:
-            tests.append(GroupsTest(groups, Quantifier.ANY))
-        if field_test:
-            tests.append(field_test)
-
-        return tests
-
-
 class LabelCRUDL(SmartCRUDL):
-    actions = ('create', 'update', 'delete', 'list')
+    actions = ('create', 'update', 'read', 'delete', 'list', 'watch', 'unwatch')
     model = Label
 
-    class Create(LabelFormMixin, OrgPermsMixin, SmartCreateView):
+    class Create(RuleFormMixin, OrgPermsMixin, SmartCreateView):
         form_class = LabelForm
 
         def get_form_kwargs(self):
@@ -67,13 +50,14 @@ class LabelCRUDL(SmartCRUDL):
             org = self.request.org
             name = data['name']
             description = data['description']
-            tests = self.construct_tests(data)
+            tests = self.construct_tests()
             is_synced = data['is_synced']
 
             self.object = Label.create(org, name, description, tests, is_synced)
 
-    class Update(LabelFormMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Update(RuleFormMixin, OrgObjPermsMixin, SmartUpdateView):
         form_class = LabelForm
+        success_url = 'id@msgs.label_read'
 
         def get_form_kwargs(self):
             kwargs = super(LabelCRUDL.Update, self).get_form_kwargs()
@@ -81,32 +65,30 @@ class LabelCRUDL(SmartCRUDL):
             kwargs['is_create'] = False
             return kwargs
 
-        def derive_initial(self):
-            initial = super(LabelCRUDL.Update, self).derive_initial()
+        def post_save(self, obj):
+            obj = super(LabelCRUDL.Update, self).post_save(obj)
 
-            tests_by_type = {t.TYPE: t for t in self.object.get_tests()}
-            contains_test = tests_by_type.get('contains')
-            groups_test = tests_by_type.get('groups')
-            field_test = tests_by_type.get('field')
-
-            if contains_test:
-                initial['keywords'] = ", ".join(contains_test.keywords)
-
-            if groups_test:
-                initial['groups'] = groups_test.groups
-
-            if field_test:
-                initial['field_test'] = field_test
-
-            return initial
-
-        def pre_save(self, obj):
-            obj = super(LabelCRUDL.Update, self).pre_save(obj)
-
-            tests = self.construct_tests(self.form.cleaned_data)
-            obj.tests = json_encode(tests) if tests else ""
+            tests = self.construct_tests()
+            obj.update_tests(tests)
 
             return obj
+
+    class Read(OrgObjPermsMixin, SmartReadView):
+        def get_queryset(self):
+            return Label.get_all(self.request.org, self.request.user)
+
+        def get_context_data(self, **kwargs):
+            context = super(LabelCRUDL.Read, self).get_context_data(**kwargs)
+
+            # augment usual label JSON
+            label_json = self.object.as_json()
+            label_json['watching'] = self.object.is_watched_by(self.request.user)
+
+            # angular app requires context data in JSON format
+            context['context_data_json'] = json_encode({
+                'label': label_json
+            })
+            return context
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
         cancel_url = '@msgs.label_list'
@@ -117,16 +99,46 @@ class LabelCRUDL(SmartCRUDL):
             return HttpResponse(status=204)
 
     class List(OrgPermsMixin, SmartListView):
-        fields = ('name', 'description', 'partners')
-        default_order = ('name',)
+        def get(self, request, *args, **kwargs):
+            with_activity = str_to_bool(self.request.GET.get('with_activity', ''))
+            labels = list(Label.get_all(self.request.org, self.request.user).order_by('name'))
+            Label.bulk_cache_initialize(labels)
 
-        def derive_queryset(self, **kwargs):
-            qs = super(LabelCRUDL.List, self).derive_queryset(**kwargs)
-            qs = qs.filter(org=self.request.org, is_active=True)
-            return qs
+            if with_activity:
+                # get message statistics
+                this_month = DailyCount.get_by_label(labels, DailyCount.TYPE_INCOMING, *month_range(0)).scope_totals()
+                last_month = DailyCount.get_by_label(labels, DailyCount.TYPE_INCOMING, *month_range(-1)).scope_totals()
 
-        def get_partners(self, obj):
-            return ', '.join([p.name for p in obj.get_partners()])
+            def as_json(label):
+                obj = label.as_json()
+                if with_activity:
+                    obj['activity'] = {
+                        'this_month': this_month.get(label, 0),
+                        'last_month': last_month.get(label, 0),
+                    }
+                return obj
+
+            return JsonResponse({'results': [as_json(l) for l in labels]})
+
+    class Watch(OrgObjPermsMixin, SmartReadView):
+        """
+        Endpoint for watching a label
+        """
+        permission = 'msgs.label_read'
+
+        def post(self, request, *args, **kwargs):
+            self.get_object().watch(request.user)
+            return HttpResponse(status=204)
+
+    class Unwatch(OrgObjPermsMixin, SmartReadView):
+        """
+        Endpoint for unwatching a label
+        """
+        permission = 'msgs.label_read'
+
+        def post(self, request, *args, **kwargs):
+            self.get_object().unwatch(request.user)
+            return HttpResponse(status=204)
 
 
 class MessageSearchMixin(object):
@@ -135,21 +147,21 @@ class MessageSearchMixin(object):
         Collects and prepares message search parameters into JSON serializable dict
         """
         folder = MessageFolder[self.request.GET['folder']]
-        label = self.request.GET.get('label', None)
+        label_id = self.request.GET.get('label', None)
         include_archived = str_to_bool(self.request.GET.get('archived', ''))
         text = self.request.GET.get('text', None)
-        contact = self.request.GET.get('contact', None)
-        groups = parse_csv(self.request.GET.get('groups', ''))
+        contact_id = self.request.GET.get('contact', None)
+        group_ids = parse_csv(self.request.GET.get('groups', ''), as_ints=True)
         after = parse_iso8601(self.request.GET.get('after', None))
         before = parse_iso8601(self.request.GET.get('before', None))
 
         return {
             'folder': folder,
-            'label': label,
+            'label': label_id,
             'include_archived': include_archived,  # only applies to flagged folder
             'text': text,
-            'contact': contact,
-            'groups': groups,
+            'contact': contact_id,
+            'groups': group_ids,
             'after': after,
             'before': before
         }
@@ -232,14 +244,18 @@ class MessageCRUDL(SmartCRUDL):
         def post(self, request, *args, **kwargs):
             org = request.org
             user = request.user
+            user_labels = Label.get_all(self.org, user)
 
             message_id = int(kwargs['id'])
             message = org.incoming_messages.filter(org=org, backend_id=message_id).first()
 
             label_ids = request.json['labels']
-            labels = Label.get_all(org, user).filter(pk__in=label_ids)
+            specified_labels = list(user_labels.filter(pk__in=label_ids))
 
-            message.update_labels(user, labels)
+            # user can't remove labels that they can't see
+            unseen_labels = [l for l in message.labels.all() if l not in user_labels]
+
+            message.update_labels(user, specified_labels + unseen_labels)
 
             return HttpResponse(status=204)
 
@@ -390,7 +406,7 @@ class OutgoingCRUDL(SmartCRUDL):
                     'reply_to': {
                         'text': msg.reply_to.text,
                         'flagged': msg.reply_to.is_flagged,
-                        'labels': [l.as_json() for l in msg.reply_to.labels.all()],
+                        'labels': [l.as_json(full=False) for l in msg.reply_to.labels.all()],
                     },
                     'response': {
                         'delay': timesince(msg.reply_to.created_on, now=msg.created_on),

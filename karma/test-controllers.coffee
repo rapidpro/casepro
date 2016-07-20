@@ -1,6 +1,7 @@
 # Unit tests for our Angular controllers
 
 describe('controllers:', () ->
+  $httpBackend = null
   $window = null
   $controller = null
   $rootScope = null
@@ -11,7 +12,8 @@ describe('controllers:', () ->
   beforeEach(() ->
     module('cases')
 
-    inject((_$window_, _$controller_, _$rootScope_, _$q_, _UtilsService_) ->
+    inject((_$httpBackend_, _$window_, _$controller_, _$rootScope_, _$q_, _UtilsService_) ->
+      $httpBackend = _$httpBackend_
       $window = _$window_
       $controller = _$controller_
       $rootScope = _$rootScope_
@@ -34,13 +36,95 @@ describe('controllers:', () ->
       who: {id: 302, name: "WHO"},
 
       # contacts
-      contact1: {id: 401, name: "Ann"},
-      contact2: {id: 402, name: "Bob"}
+      ann: {id: 401, name: "Ann"},
+      bob: {id: 402, name: "Bob"}
     }
   )
 
   afterEach(() ->
     jasmine.clock().uninstall()
+  )
+
+  #=======================================================================
+  # Tests for CaseController
+  #=======================================================================
+  describe('CaseController', () ->
+    CaseService = null
+    ContactService = null
+    $scope = null
+
+    beforeEach(() ->
+      inject((_CaseService_, _ContactService_) ->
+        CaseService = _CaseService_
+        ContactService = _ContactService_
+      )
+
+      $window.contextData = {all_labels: [test.tea, test.coffee], all_partners: [test.moh, test.who]}
+
+      $scope = $rootScope.$new()
+      $controller('CaseController', {$scope: $scope})
+
+      # extra test data
+      test.case1 = {id: 601, contact: test.ann, summary: "Hi", opened_on: utcdate(2016, 5, 28, 10, 0)}
+    )
+
+    it('should initialize correctly', () ->
+      fetchCase = spyOnPromise($q, $scope, CaseService, 'fetchSingle')
+      fetchContact = spyOnPromise($q, $scope, ContactService, 'fetch')
+
+      $scope.init(601, 140)
+
+      expect($scope.caseId).toEqual(601)
+      expect($scope.msgCharsRemaining).toEqual(140)
+
+      fetchCase.resolve(test.case1)
+      fetchContact.resolve(test.ann)
+
+      expect($scope.caseObj).toEqual(test.case1)
+      expect($scope.contact).toEqual(test.ann)
+    )
+
+    it('addNote', () ->
+      noteModal = spyOnPromise($q, $scope, UtilsService, 'noteModal')
+      addNote = spyOnPromise($q, $scope, CaseService, 'addNote')
+
+      $scope.caseObj = test.case1
+      $scope.onAddNote()
+
+      noteModal.resolve("this is a note")
+      addNote.resolve()
+
+      expect(UtilsService.noteModal).toHaveBeenCalled()
+      expect(CaseService.addNote).toHaveBeenCalledWith(test.case1, "this is a note")
+    )
+
+    it('onWatch', () ->
+      confirmModal = spyOnPromise($q, $scope, UtilsService, 'confirmModal')
+      watchCase = spyOnPromise($q, $scope, CaseService, 'watch')
+
+      $scope.caseObj = test.case1
+      $scope.onWatch()
+
+      confirmModal.resolve()
+      watchCase.resolve()
+
+      expect(UtilsService.confirmModal).toHaveBeenCalled()
+      expect(CaseService.watch).toHaveBeenCalledWith(test.case1)
+    )
+
+    it('onUnwatch', () ->
+      confirmModal = spyOnPromise($q, $scope, UtilsService, 'confirmModal')
+      unwatchCase = spyOnPromise($q, $scope, CaseService, 'unwatch')
+
+      $scope.caseObj = test.case1
+      $scope.onUnwatch()
+
+      confirmModal.resolve()
+      unwatchCase.resolve()
+
+      expect(UtilsService.confirmModal).toHaveBeenCalled()
+      expect(CaseService.unwatch).toHaveBeenCalledWith(test.case1)
+    )
   )
 
   #=======================================================================
@@ -76,31 +160,33 @@ describe('controllers:', () ->
   )
 
   #=======================================================================
-  # Tests for any controllers which must be children of HomeController
+  # Tests for any controllers which must be children of InboxController
   #=======================================================================
-  describe('home controllers:', () ->
+  describe('inbox controllers:', () ->
     # injected services
     MessageService = null
     OutgoingService = null
     CaseService = null
+    PartnerService = null
 
-    $homeScope = null
+    $inboxScope = null
     $scope = null
     serverTime = 1464775597109  # ~ Jun 1st 2016 10:06:37 UTC
 
     beforeEach(() ->
-      inject((_MessageService_, _OutgoingService_, _CaseService_) ->
+      inject((_MessageService_, _OutgoingService_, _CaseService_, _PartnerService_) ->
         MessageService = _MessageService_
         OutgoingService = _OutgoingService_
         CaseService = _CaseService_
+        PartnerService = _PartnerService_
       )
 
-      $window.contextData = {user: test.user1, partners: [], labels: [], groups: []}
+      $window.contextData = {user: test.user1, partners: [], labels: [test.tea, test.coffee], groups: []}
 
-      $homeScope = $rootScope.$new()
-      $controller('HomeController', {$scope: $homeScope})
+      $inboxScope = $rootScope.$new()
+      $controller('InboxController', {$scope: $inboxScope})
 
-      $scope = $homeScope.$new()
+      $scope = $inboxScope.$new()
     )
 
     #=======================================================================
@@ -111,7 +197,7 @@ describe('controllers:', () ->
       beforeEach(() ->
         $controller('CasesController', {$scope: $scope})
 
-        $homeScope.init('open', serverTime)
+        $inboxScope.init('open', serverTime)
         $scope.init()
 
         # extra test data
@@ -130,6 +216,20 @@ describe('controllers:', () ->
         expect($scope.items).toEqual([test.case1])
         expect($scope.oldItemsMore).toEqual(true)
         expect($scope.isInfiniteScrollEnabled()).toEqual(true)
+      )
+
+      it('loadOldItems should report to raven on failure', () ->
+        spyOn(CaseService, 'fetchOld').and.callThrough()
+        spyOn(UtilsService, 'displayAlert')
+        spyOn(Raven, 'captureMessage')
+
+        $httpBackend.expectGET(/\/case\/search\/\?.*/).respond(() -> [500, 'Server error', {}, 'Internal error'])
+
+        $scope.loadOldItems()
+
+        $httpBackend.flush()
+        expect(UtilsService.displayAlert).toHaveBeenCalled()
+        expect(Raven.captureMessage).toHaveBeenCalled()
       )
 
       it('getItemFilter', () ->
@@ -167,13 +267,20 @@ describe('controllers:', () ->
       beforeEach(() ->
         $controller('MessagesController', {$scope: $scope})
 
-        $homeScope.init('inbox', serverTime)
+        $inboxScope.init('inbox', serverTime)
         $scope.init()
 
         # extra test data
         test.msg1 = {id: 101, text: "Hello 1", labels: [test.tea], flagged: true, archived: false}
         test.msg2 = {id: 102, text: "Hello 2", labels: [test.coffee], flagged: false, archived: false}
         test.msg3 = {id: 103, text: "Hello 3", labels: [], flagged: false, archived: false}
+      )
+
+      it('should initialize correctly', () ->
+        expect($scope.items).toEqual([])
+        expect($scope.activeLabel).toEqual(null)
+        expect($scope.activeContact).toEqual(null)
+        expect($scope.inactiveLabels).toEqual([test.tea, test.coffee])
       )
 
       it('loadOldItems', () ->
@@ -284,12 +391,14 @@ describe('controllers:', () ->
 
       describe('onCaseFromMessage', () ->
         it('should open new case if message does not have one', () ->
+          fetchPartners = spyOnPromise($q, $scope, PartnerService, 'fetchAll')
           newCaseModal = spyOnPromise($q, $scope, UtilsService, 'newCaseModal')
           openCase = spyOnPromise($q, $scope, CaseService, 'open')
           spyOn(UtilsService, 'navigate')
 
           $scope.onCaseFromMessage(test.msg1)
 
+          fetchPartners.resolve([test.moh, test.who])
           newCaseModal.resolve({summary: "New case", assignee: test.moh})
           openCase.resolve({id: 601, summary: "New case", isNew: false})
 
@@ -365,7 +474,7 @@ describe('controllers:', () ->
       beforeEach(() ->
         $controller('OutgoingController', {$scope: $scope})
 
-        $homeScope.init('sent', serverTime)
+        $inboxScope.init('sent', serverTime)
         $scope.init()
 
         # outgoing message test data
@@ -401,9 +510,9 @@ describe('controllers:', () ->
       it('activateContact', () ->
         fetchOld = spyOnPromise($q, $scope, OutgoingService, 'fetchOld')
 
-        $scope.activateContact(test.contact1)
+        $scope.activateContact(test.ann)
 
-        expect(OutgoingService.fetchOld).toHaveBeenCalledWith({folder: 'sent', text: null, contact: test.contact1}, $scope.startTime, 1)
+        expect(OutgoingService.fetchOld).toHaveBeenCalledWith({folder: 'sent', text: null, contact: test.ann}, $scope.startTime, 1)
       )
 
       it('onSearch', () ->
@@ -418,14 +527,75 @@ describe('controllers:', () ->
   )
 
   #=======================================================================
+  # Tests for HomeController
+  #=======================================================================
+  describe('HomeController', () ->
+    StatisticsService = null
+    PartnerService = null
+    LabelService = null
+    UserService = null
+    $scope = null
+
+    beforeEach(inject((_StatisticsService_, _PartnerService_, _LabelService_, _UserService_) ->
+      StatisticsService = _StatisticsService_
+      PartnerService = _PartnerService_
+      LabelService = _LabelService_
+      UserService = _UserService_
+
+      $scope = $rootScope.$new()
+      $controller('HomeController', {$scope: $scope})
+    ))
+
+    it('onTabSelect', () ->
+      repliesChart = spyOnPromise($q, $scope, StatisticsService, 'repliesChart')
+      incomingChart = spyOnPromise($q, $scope, StatisticsService, 'incomingChart')
+      labelsPieChart = spyOnPromise($q, $scope, StatisticsService, 'labelsPieChart')
+      fetchPartners = spyOnPromise($q, $scope, PartnerService, 'fetchAll')
+      fetchLabels = spyOnPromise($q, $scope, LabelService, 'fetchAll')
+      fetchUsers = spyOnPromise($q, $scope, UserService, 'fetchNonPartner')
+
+      $scope.onTabSelect(0)
+
+      expect(StatisticsService.repliesChart).toHaveBeenCalledWith()
+      expect(StatisticsService.incomingChart).toHaveBeenCalledWith()
+      expect(StatisticsService.labelsPieChart).toHaveBeenCalledWith()
+
+      $scope.onTabSelect(1)
+
+      partners = [test.moh, test.who]
+      fetchPartners.resolve(partners)
+
+      expect($scope.partners).toEqual(partners)
+
+      $scope.onTabSelect(2)
+
+      labels = [test.tea, test.coffee]
+      fetchLabels.resolve(labels)
+
+      expect($scope.labels).toEqual(labels)
+
+      $scope.onTabSelect(3)
+
+      users = [{id: 101, name: "Tom McTicket", replies: {last_month: 5, this_month: 10, total: 20}}]
+      fetchUsers.resolve(users)
+
+      expect($scope.users).toEqual(users)
+    )
+  )
+
+  #=======================================================================
   # Tests for PartnerController
   #=======================================================================
   describe('PartnerController', () ->
     PartnerService = null
+    StatisticsService = null
+    UserService = null
     $scope = null
 
-    beforeEach(inject((_PartnerService_) ->
+    beforeEach(inject((_PartnerService_, _StatisticsService_, _UserService_) ->
       PartnerService = _PartnerService_
+      StatisticsService = _StatisticsService_
+      UserService = _UserService_
 
       $scope = $rootScope.$new()
       $window.contextData = {partner: test.moh}
@@ -434,23 +604,30 @@ describe('controllers:', () ->
 
     it('onTabSelect', () ->
       expect($scope.users).toEqual([])
-      expect($scope.usersFetched).toEqual(false)
+      expect($scope.initialisedTabs).toEqual([])
 
-      fetchUsers = spyOnPromise($q, $scope, PartnerService, 'fetchUsers')
+      fetchUsers = spyOnPromise($q, $scope, UserService, 'fetchInPartner')
+      repliesChart = spyOnPromise($q, $scope, StatisticsService, 'repliesChart')
 
-      $scope.onTabSelect('users')
+      $scope.onTabSelect(0)
+
+      expect(StatisticsService.repliesChart).toHaveBeenCalledWith(test.moh, null)
+      expect($scope.initialisedTabs).toEqual([0])
+
+      $scope.onTabSelect(2)
 
       users = [{id: 101, name: "Tom McTicket", replies: {last_month: 5, this_month: 10, total: 20}}]
       fetchUsers.resolve(users)
 
       expect($scope.users).toEqual(users)
-      expect($scope.usersFetched).toEqual(true)
+      expect($scope.initialisedTabs).toEqual([0, 2])
 
       # select the users tab again
-      $scope.onTabSelect('users')
+      $scope.onTabSelect(2)
 
       # users shouldn't be re-fetched
-      expect(PartnerService.fetchUsers.calls.count()).toEqual(1)
+      expect(UserService.fetchInPartner.calls.count()).toEqual(1)
+      expect($scope.initialisedTabs).toEqual([0, 2])
     )
 
     it('onDeletePartner', () ->

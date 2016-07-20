@@ -14,29 +14,25 @@
   %script{ type:"text/javascript" }
     var contextData = {{ context_data_json|safe }};
 
-  .ng-cloak{ ng-controller:"HomeController", ng-init:'init("{{ folder }}", {{ server_time }})', ng-cloak:"" }
+  .ng-cloak{ ng-controller:"InboxController", ng-init:'init("{{ folder }}", {{ server_time }})', ng-cloak:"" }
     .page-header.clearfix
       %h2.pull-back
-        %span{ class:'glyphicon {{ folder_icon }}' }
-        &nbsp;
-        {{ title }}
+        .{ ng-if:"!activeLabel" }
+          %i{ class:'glyphicon {{ folder_icon }}' }
+          &nbsp;
+          {{ title }}
+        .{ ng-if:"activeLabel" }
+          %i.glyphicon.glyphicon-tag
+          &nbsp;
+          [[ activeLabel.name | deunderscore ]]
 
       .page-header-buttons{ ng-if:"activeLabel" }
-        .label-name
-          %span.glyphicon.glyphicon-tag
-          &nbsp;
-          [[ activeLabel.name ]]
-        - if org_perms.msgs.label_update or org_perms.msgs.label_delete
-          .btn-group
-            - if org_perms.msgs.label_update
-              %a.btn.btn-default{ ng-href:"/label/update/[[ activeLabel.id ]]/", tooltip:"Edit Label" }
-                %span.glyphicon.glyphicon-pencil
-            - if org_perms.msgs.label_delete
-              %button.btn.btn-default{ ng-click:"onDeleteLabel()", tooltip:"Delete Label" }
-                %span.glyphicon.glyphicon-trash
+        - if perms.msgs.label_read or org_perms.msgs.label_read
+          %a.btn.btn-default{ ng-href:"/label/read/[[ activeLabel.id ]]/" }
+            - trans "View Label"
 
     .row
-      .col-md-2
+      .col-md-3
         .home-menu
           %h3
             %span.glyphicon.glyphicon-envelope
@@ -48,9 +44,9 @@
                 - trans "Inbox"
               %ul.label-menu{ ng-if:"labels.length > 0" }
                 %li.label-link{ ng-repeat:"label in labels" }
-                  %a{ ng-href:"/#?label=[[ label.name ]]", ng-class:'{ strong: label == activeLabel }' }
+                  %a{ ng-href:"/#?label=[[ label.name | urlencode ]]", ng-class:'{ strong: label == activeLabel }' }
                     %span.glyphicon.glyphicon-tag{ style:"font-size: 0.75em" }
-                    [[ label.name ]]
+                    [[ label.name | deunderscore ]] ([[ label.counts.inbox ]])
             %li{ class:"{% if_url 'cases.flagged' 'active' '' %}" }
               %a{ href:"{% url 'cases.flagged' %}" }
                 - trans "Flagged"
@@ -79,7 +75,7 @@
                 - trans "Closed"
                 ({{ closed_case_count }})
 
-      .col-md-10{ ng-view:"" }
+      .col-md-9{ ng-view:"" }
         - block home-items
 
 
@@ -117,11 +113,6 @@
     }
     .home-menu ul.label-menu a {
       display: inline-block;
-    }
-    .label-name {
-      font-size: 20px;
-      display: inline-block;
-      padding: 3px 12px 3px 0;
     }
     .search-toolbar, .contact-toolbar {
       padding: 4px;

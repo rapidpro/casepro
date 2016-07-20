@@ -6,16 +6,15 @@ import six
 
 from dash.orgs.models import TaskState
 from datetime import datetime
-from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
 from django.utils.timezone import now
 from mock import patch, call
 from temba_client.utils import format_iso8601
-from xlrd import open_workbook
 
 from casepro.contacts.models import Contact
-from casepro.rules.models import ContainsTest, GroupsTest, FieldTest, Quantifier
+from casepro.rules.models import ContainsTest, GroupsTest, FieldTest, WordCountTest, Quantifier
+from casepro.statistics.tasks import squash_counts
 from casepro.test import BaseCasesTest
 
 from .models import Label, Message, MessageAction, MessageExport, MessageFolder, Outgoing, OutgoingFolder, ReplyExport
@@ -52,7 +51,12 @@ class LabelTest(BaseCasesTest):
 
     def test_release(self):
         self.aids.release()
+
+        self.aids.refresh_from_db()
+        self.assertIsNone(self.aids.rule)
         self.assertFalse(self.aids.is_active)
+
+        self.assertEqual(self.unicef.rules.count(), 2)
 
 
 class LabelCRUDLTest(BaseCasesTest):
@@ -90,7 +94,7 @@ class LabelCRUDLTest(BaseCasesTest):
         # submit with a keyword that is too short
         response = self.url_post('unicef', url, {'name': 'Ebola', 'keywords': 'a, ebola'})
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'keywords', "Keywords must be at least 3 characters long")
+        self.assertFormError(response, 'form', 'keywords', "Invalid keyword: a")
 
         # submit with a keyword that is invalid
         response = self.url_post('unicef', url, {'name': 'Ebola', 'keywords': r'ebol@?, ebola'})
@@ -105,6 +109,7 @@ class LabelCRUDLTest(BaseCasesTest):
             'groups': '%d' % self.reporters.pk,
             'field_test_0': "state",
             'field_test_1': "Kigali,Lusaka",
+            'ignore_single_words': "1"
         })
 
         self.assertEqual(response.status_code, 302)
@@ -117,7 +122,8 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(label.get_tests(), [
             ContainsTest(['ebola', 'fever'], Quantifier.ANY),
             GroupsTest([self.reporters], Quantifier.ANY),
-            FieldTest('state', ["Kigali", "Lusaka"])
+            FieldTest('state', ["Kigali", "Lusaka"]),
+            WordCountTest(2)
         ])
         self.assertEqual(label.is_synced, False)
 
@@ -150,12 +156,14 @@ class LabelCRUDLTest(BaseCasesTest):
             'groups': '%d' % self.males.pk,
             'field_test_0': "age",
             'field_test_1': "18,19,20",
-            'is_synced': "1"
+            'is_synced': "1",
+            'ignore_single_words': "1"
         })
 
         self.assertEqual(response.status_code, 302)
 
         self.pregnancy.refresh_from_db()
+        self.pregnancy.rule.refresh_from_db()
         self.assertEqual(self.pregnancy.uuid, 'L-002')
         self.assertEqual(self.pregnancy.org, self.unicef)
         self.assertEqual(self.pregnancy.name, "Pregnancy")
@@ -163,13 +171,54 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(self.pregnancy.get_tests(), [
             ContainsTest(['pregnancy', 'maternity'], Quantifier.ANY),
             GroupsTest([self.males], Quantifier.ANY),
-            FieldTest('age', ["18", "19", "20"])
+            FieldTest('age', ["18", "19", "20"]),
+            WordCountTest(2)
         ])
         self.assertEqual(self.pregnancy.is_synced, True)
 
         # view form again for recently edited label
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
+
+        # submit again with no tests
+        response = self.url_post('unicef', url, {
+            'name': "Pregnancy",
+            'description': "Msgs about maternity",
+            'keywords': "",
+            'field_test_0': "",
+            'field_test_1': "",
+            'is_synced': "1"
+        })
+
+        self.assertEqual(response.status_code, 302)
+
+        self.pregnancy.refresh_from_db()
+        self.assertEqual(self.pregnancy.rule, None)
+        self.assertEqual(self.pregnancy.get_tests(), [])
+
+        self.assertEqual(self.unicef.labels.count(), 3)
+        self.assertEqual(self.unicef.rules.count(), 2)
+
+    def test_read(self):
+        url = reverse('msgs.label_read', args=[self.pregnancy.pk])
+
+        # log in as an administrator
+        self.login(self.admin)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+        # log in as partner user with access to this label
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+        # log in as partner user without access to this label
+        self.login(self.user3)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 404)
 
     def test_list(self):
         url = reverse('msgs.label_list')
@@ -179,7 +228,64 @@ class LabelCRUDLTest(BaseCasesTest):
 
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(list(response.context['object_list']), [self.aids, self.pregnancy, self.tea])
+        self.assertEqual(response.json['results'], [
+            {
+                'id': self.aids.pk,
+                'name': "AIDS",
+                'description': "Messages about AIDS",
+                'synced': True,
+                'counts': {'inbox': 0, 'archived': 0}
+            },
+            {
+                'id': self.pregnancy.pk,
+                'name': "Pregnancy",
+                'description': "Messages about pregnancy",
+                'synced': True,
+                'counts': {'inbox': 0, 'archived': 0}
+            },
+            {
+                'id': self.tea.pk,
+                'name': "Tea",
+                'description': "Messages about tea",
+                'synced': False,
+                'counts': {'inbox': 0, 'archived': 0}
+            }
+        ])
+
+        response = self.url_get('unicef', url + "?with_activity=true")
+        self.assertEqual(response.json['results'][0], {
+            'id': self.aids.pk,
+            'name': "AIDS",
+            'description': "Messages about AIDS",
+            'synced': True,
+            'counts': {'inbox': 0, 'archived': 0},
+            'activity': {'this_month': 0, 'last_month': 0}
+        })
+
+    def test_watch_and_unwatch(self):
+        watch_url = reverse('msgs.label_watch', args=[self.pregnancy.pk])
+        unwatch_url = reverse('msgs.label_unwatch', args=[self.pregnancy.pk])
+
+        # log in as user with access to this label
+        self.login(self.user1)
+
+        response = self.url_post('unicef', watch_url)
+        self.assertEqual(response.status_code, 204)
+
+        self.assertIn(self.user1, self.pregnancy.watchers.all())
+
+        response = self.url_post('unicef', unwatch_url)
+        self.assertEqual(response.status_code, 204)
+
+        self.assertNotIn(self.user1, self.pregnancy.watchers.all())
+
+        # only user with label access can watch
+        self.login(self.user3)
+
+        response = self.url_post('unicef', watch_url)
+        self.assertEqual(response.status_code, 403)
+
+        self.assertNotIn(self.user3, self.pregnancy.watchers.all())
 
     def test_delete(self):
         url = reverse('msgs.label_delete', args=[self.pregnancy.pk])
@@ -214,28 +320,60 @@ class MessageTest(BaseCasesTest):
         self.msg5 = self.create_message(self.unicef, 105, self.ann, "Inactive", is_active=False)
 
     def test_triggers(self):
-        msg = self.create_message(self.unicef, 101, self.ann, "Normal")
-        self.assertFalse(msg.has_labels)
+        def get_label_counts():
+            return {
+                'aids.inbox': self.aids.get_inbox_count(recalculate=True),
+                'aids.archived': self.aids.get_archived_count(recalculate=True),
+                'tea.inbox': self.tea.get_inbox_count(recalculate=True),
+                'tea.archived': self.tea.get_archived_count(recalculate=True),
+            }
 
-        msg.labels.add(self.aids)
-        msg.refresh_from_db()
-        self.assertTrue(msg.has_labels)
+        msg1 = self.create_message(self.unicef, 101, self.ann, "Hello 1", is_handled=True)
+        msg2 = self.create_message(self.unicef, 102, self.ann, "Hello 2", is_handled=True)
+        self.assertFalse(msg1.has_labels)
+        self.assertFalse(msg2.has_labels)
 
-        msg.labels.add(self.pregnancy)
-        msg.refresh_from_db()
-        self.assertTrue(msg.has_labels)
+        msg1.label(self.aids)
+        msg2.label(self.aids)
+        msg1.refresh_from_db()
+        msg2.refresh_from_db()
 
-        msg.labels.remove(self.aids)
-        msg.refresh_from_db()
-        self.assertTrue(msg.has_labels)
+        self.assertTrue(msg1.has_labels)
+        self.assertEqual(get_label_counts(), {'aids.inbox': 2, 'aids.archived': 0, 'tea.inbox': 0, 'tea.archived': 0})
 
-        msg.labels.remove(self.pregnancy)
-        msg.refresh_from_db()
-        self.assertFalse(msg.has_labels)
+        msg1.label(self.tea)
+        msg1.refresh_from_db()
 
-        msg.labels.add(self.aids, self.pregnancy)  # add multiple
-        msg.refresh_from_db()
-        self.assertTrue(msg.has_labels)
+        self.assertTrue(msg1.has_labels)
+        self.assertEqual(get_label_counts(), {'aids.inbox': 2, 'aids.archived': 0, 'tea.inbox': 1, 'tea.archived': 0})
+
+        msg1.is_archived = True
+        msg1.save()
+
+        self.assertTrue(msg1.has_labels)
+        self.assertEqual(get_label_counts(), {'aids.inbox': 1, 'aids.archived': 1, 'tea.inbox': 0, 'tea.archived': 1})
+
+        msg1.unlabel(self.aids)
+        msg1.refresh_from_db()
+
+        self.assertTrue(msg1.has_labels)
+        self.assertEqual(get_label_counts(), {'aids.inbox': 1, 'aids.archived': 0, 'tea.inbox': 0, 'tea.archived': 1})
+
+        msg1.unlabel(self.tea)
+        msg1.refresh_from_db()
+
+        self.assertFalse(msg1.has_labels)
+        self.assertEqual(get_label_counts(), {'aids.inbox': 1, 'aids.archived': 0, 'tea.inbox': 0, 'tea.archived': 0})
+
+        msg1.label(self.aids, self.tea)
+        msg1.refresh_from_db()
+
+        self.assertTrue(msg1.has_labels)
+        self.assertEqual(get_label_counts(), {'aids.inbox': 1, 'aids.archived': 1, 'tea.inbox': 0, 'tea.archived': 1})
+
+        squash_counts()
+
+        self.assertEqual(get_label_counts(), {'aids.inbox': 1, 'aids.archived': 1, 'tea.inbox': 0, 'tea.archived': 1})
 
     def test_save(self):
         # start with no labels or contacts
@@ -279,8 +417,8 @@ class MessageTest(BaseCasesTest):
             setattr(message, '__data__labels', [("L-001", "Spam")])
             message.save()
 
-        # check removing a group and adding new ones
-        with self.assertNumQueries(6):
+        # check removing a label and adding new ones
+        with self.assertNumQueries(11):
             setattr(message, '__data__labels', [("L-002", "Feedback"), ("L-003", "Important")])
             message.save()
 
@@ -293,14 +431,14 @@ class MessageTest(BaseCasesTest):
 
         # create a non-synced label
         local_label = self.create_label(self.unicef, None, "Local", "Hmm", ["stuff"], is_synced=False)
-        message.labels.add(local_label)
+        message.label(local_label)
 
         setattr(message, '__data__labels', [])
         message.save()
 
         self.assertEqual(set(message.labels.all()), {local_label})  # non-synced label remains
 
-        message.labels.remove(local_label)
+        message.unlabel(local_label)
 
         setattr(message, '__data__labels', [("L-004", "Local")])
         message.save()
@@ -402,7 +540,7 @@ class MessageTest(BaseCasesTest):
         assert_search(self.admin, {'folder': MessageFolder.inbox, 'contact': bob.pk}, [msg8, msg6])
 
         # by contact group in the inbox
-        assert_search(self.admin, {'folder': MessageFolder.inbox, 'groups': [self.reporters.uuid]}, [msg8, msg6])
+        assert_search(self.admin, {'folder': MessageFolder.inbox, 'groups': [self.reporters.pk]}, [msg8, msg6])
 
         # by text
         assert_search(self.admin, {'folder': MessageFolder.inbox, 'text': "LO 5"}, [msg5])
@@ -551,7 +689,6 @@ class MessageTest(BaseCasesTest):
             'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
             'flagged': False,
             'archived': False,
-            'direction': 'I',
             'flow': False,
             'case': None
         })
@@ -683,7 +820,7 @@ class MessageCRUDLTest(BaseCasesTest):
     @patch('casepro.test.TestBackend.label_messages')
     @patch('casepro.test.TestBackend.unlabel_messages')
     def test_label(self, mock_unlabel_messages, mock_label_messages):
-        msg1 = self.create_message(self.unicef, 101, self.ann, "Normal", [self.aids])
+        msg1 = self.create_message(self.unicef, 101, self.ann, "Normal", [self.aids, self.tea])
 
         url = reverse('msgs.message_label', kwargs={'id': 101})
 
@@ -696,8 +833,9 @@ class MessageCRUDLTest(BaseCasesTest):
         mock_label_messages.assert_called_once_with(self.unicef, [msg1], self.pregnancy)
         mock_unlabel_messages.assert_called_once_with(self.unicef, [msg1], self.aids)
 
+        # check that tea label wasn't removed as this user doesn't have access to that label
         msg1.refresh_from_db()
-        self.assertEqual(set(msg1.labels.all()), {self.pregnancy})
+        self.assertEqual(set(msg1.labels.all()), {self.pregnancy, self.tea})
 
     def test_bulk_reply(self):
         self.create_message(self.unicef, 101, self.ann, "Hello")
@@ -776,8 +914,7 @@ class MessageCRUDLTest(BaseCasesTest):
 
 
 class MessageExportCRUDLTest(BaseCasesTest):
-    @override_settings(SITE_ORGS_STORAGE_ROOT='test_orgs', CELERY_ALWAYS_EAGER=True,
-                       CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     def test_create_and_read(self):
         ann = self.create_contact(self.unicef, "C-001", "Ann", fields={'nickname': "Annie", 'age': "28", 'state': "WA"})
         bob = self.create_contact(self.unicef, "C-002", "Bob", fields={'nickname': "Bobby", 'age': "32", 'state': "IN"})
@@ -797,12 +934,14 @@ class MessageExportCRUDLTest(BaseCasesTest):
                                  % reverse('msgs.messageexport_create'))
         self.assertEqual(response.status_code, 200)
 
+        self.assertSentMail(["evan@unicef.org"])  # user #1 notified that export is ready
+
         export = MessageExport.objects.get()
         self.assertEqual(export.org, self.unicef)
         self.assertEqual(export.partner, self.moh)
         self.assertEqual(export.created_by, self.user1)
 
-        workbook = open_workbook("%s/%s" % (settings.MEDIA_ROOT, export.filename), 'rb')
+        workbook = self.openWorkbook(export.filename)
         sheet = workbook.sheets()[0]
 
         self.assertEqual(sheet.nrows, 3)
@@ -915,9 +1054,9 @@ class OutgoingTest(BaseCasesTest):
 
     def test_search(self):
         out1 = self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello 1", self.ann)
-        out2 = self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann, partner=self.moh)
+        out2 = self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann)
         out3 = self.create_outgoing(self.unicef, self.admin, 203, 'C', "Hello 3", self.bob)
-        out4 = self.create_outgoing(self.unicef, self.user1, 204, 'C', "Hello 4", self.bob, partner=self.moh)
+        out4 = self.create_outgoing(self.unicef, self.user1, 204, 'C', "Hello 4", self.bob)
         out5 = self.create_outgoing(self.unicef, self.admin, 205, 'F', "Hello 5", None)
 
         # other org
@@ -941,9 +1080,9 @@ class OutgoingTest(BaseCasesTest):
 
     def test_search_replies(self):
         out1 = self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello 1", self.ann)
-        out2 = self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann, partner=self.moh)
+        out2 = self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann)
         out3 = self.create_outgoing(self.unicef, self.admin, 203, 'C', "Hello 3", self.bob)
-        out4 = self.create_outgoing(self.unicef, self.user1, 204, 'C', "Hello 4", self.bob, partner=self.moh)
+        out4 = self.create_outgoing(self.unicef, self.user1, 204, 'C', "Hello 4", self.bob)
         self.create_outgoing(self.unicef, self.admin, 205, 'F', "Hello 5", None)  # forwards are ignored
 
         # other org
@@ -964,29 +1103,6 @@ class OutgoingTest(BaseCasesTest):
         assert_search(self.admin, {'after': format_iso8601(out3.created_on)}, [out4, out3])
         assert_search(self.admin, {'before': format_iso8601(out3.created_on)}, [out3, out2, out1])
 
-    def test_get_user_reply_counts(self):
-        self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello 1", self.ann,
-                             created_on=datetime(2016, 5, 20, 9, 0, tzinfo=pytz.UTC))  # May 20th
-        self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann, partner=self.moh,
-                             created_on=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC))  # April 20th
-        self.create_outgoing(self.unicef, self.user1, 203, 'C', "Hello 3", self.bob, partner=self.moh,
-                             created_on=datetime(2016, 3, 20, 9, 0, tzinfo=pytz.UTC))  # Mar 20th
-        self.create_outgoing(self.unicef, self.admin, 205, 'F', "Hello 5", None)  # forwards are ignored
-
-        self.assertEqual(Outgoing.get_user_reply_counts(self.unicef, None, None, None), {
-            self.admin.pk: 1,
-            self.user1.pk: 2
-        })
-
-        self.assertEqual(Outgoing.get_user_reply_counts(self.unicef, self.moh, None, None), {
-            self.user1.pk: 2
-        })
-
-        since, until = datetime(2016, 3, 1, 0, 0, tzinfo=pytz.UTC), datetime(2016, 4, 30, 23, 59, tzinfo=pytz.UTC)
-        self.assertEqual(Outgoing.get_user_reply_counts(self.unicef, None, since, until), {
-            self.user1.pk: 2
-        })
-
     def test_as_json(self):
         msg1 = self.create_message(self.unicef, 101, self.ann, "Hello")
         outgoing = self.create_outgoing(self.unicef, self.user1, 201, 'B', "That's great", self.ann, reply_to=msg1)
@@ -997,7 +1113,6 @@ class OutgoingTest(BaseCasesTest):
             'urn': None,
             'text': "That's great",
             'time': outgoing.created_on,
-            'direction': 'O',
             'case': None,
             'sender': {'id': self.user1.pk, 'name': "Evan"}
         })
@@ -1016,7 +1131,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
         url = reverse('msgs.outgoing_search')
 
         out1 = self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello 1", self.ann)
-        out2 = self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann, partner=self.moh)
+        out2 = self.create_outgoing(self.unicef, self.user1, 202, 'B', "Hello 2", self.ann)
 
         # try unauthenticated
         response = self.url_get('unicef', url)
@@ -1032,7 +1147,6 @@ class OutgoingCRUDLTest(BaseCasesTest):
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'urn': None,
                 'text': "Hello 2",
-                'direction': 'O',
                 'case': None,
                 'sender': {'id': self.user1.pk, 'name': "Evan"},
                 'time': format_iso8601(out2.created_on)
@@ -1042,7 +1156,6 @@ class OutgoingCRUDLTest(BaseCasesTest):
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'urn': None,
                 'text': "Hello 1",
-                'direction': 'O',
                 'case': None,
                 'sender': {'id': self.admin.pk, 'name': "Kidus"},
                 'time': format_iso8601(out1.created_on)
@@ -1059,7 +1172,6 @@ class OutgoingCRUDLTest(BaseCasesTest):
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'urn': None,
                 'text': "Hello 2",
-                'direction': 'O',
                 'case': None,
                 'sender': {'id': self.user1.pk, 'name': "Evan"},
                 'time': format_iso8601(out2.created_on)
@@ -1095,7 +1207,6 @@ class OutgoingCRUDLTest(BaseCasesTest):
                 'contact': {'id': self.bob.pk, 'name': "Bob"},
                 'urn': None,
                 'text': "Hello 2",
-                'direction': 'O',
                 'case': None,
                 'sender': {'id': self.admin.pk, 'name': "Kidus"},
                 'time': format_iso8601(out2.created_on),
@@ -1111,7 +1222,6 @@ class OutgoingCRUDLTest(BaseCasesTest):
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'urn': None,
                 'text': "Hello 1",
-                'direction': 'O',
                 'case': {'id': case.pk, 'assignee': {'id': self.moh.pk, 'name': "MOH"}},
                 'sender': {'id': self.user1.pk, 'name': "Evan"},
                 'time': format_iso8601(out1.created_on),
@@ -1126,8 +1236,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
 
 
 class ReplyExportCRUDLTest(BaseCasesTest):
-    @override_settings(SITE_ORGS_STORAGE_ROOT='test_orgs', CELERY_ALWAYS_EAGER=True,
-                       CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     def test_create_and_read(self):
         ann = self.create_contact(self.unicef, "C-001", "Ann", fields={'nickname': "Annie", 'age': "28", 'state': "WA"})
         bob = self.create_contact(self.unicef, "C-002", "Bob", fields={'nickname': "Bobby", 'age': "32", 'state': "IN"})
@@ -1145,14 +1254,10 @@ class ReplyExportCRUDLTest(BaseCasesTest):
 
         case = self.create_case(self.unicef, ann, self.moh, msg1)
 
-        self.create_outgoing(self.unicef, self.user1, 201, 'C', "Bonjour", ann, case=case, reply_to=msg1,
-                             partner=self.moh, created_on=d4)
-        self.create_outgoing(self.unicef, self.user2, 202, 'B', "That's nice", bob, reply_to=msg2,
-                             partner=self.moh, created_on=d5)
-        self.create_outgoing(self.unicef, self.user3, 203, 'B', "Welcome", bob, reply_to=msg2,
-                             partner=self.who, created_on=d6)
-        self.create_outgoing(self.unicef, self.user3, 204, 'F', "FYI", None, reply_to=msg2,
-                             partner=self.who, created_on=d6)
+        self.create_outgoing(self.unicef, self.user1, 201, 'C', "Bonjour", ann, case=case, reply_to=msg1, created_on=d4)
+        self.create_outgoing(self.unicef, self.user2, 202, 'B', "That's nice", bob, reply_to=msg2, created_on=d5)
+        self.create_outgoing(self.unicef, self.user3, 203, 'B', "Welcome", bob, reply_to=msg2, created_on=d6)
+        self.create_outgoing(self.unicef, self.user3, 204, 'F', "FYI", None, reply_to=msg2, created_on=d6)
 
         # log in as a administrator
         self.login(self.admin)
@@ -1162,7 +1267,7 @@ class ReplyExportCRUDLTest(BaseCasesTest):
 
         export = ReplyExport.objects.get(created_by=self.admin)
 
-        workbook = open_workbook("%s/%s" % (settings.MEDIA_ROOT, export.filename), 'rb')
+        workbook = self.openWorkbook(export.filename)
         sheet = workbook.sheets()[0]
 
         self.assertEqual(sheet.nrows, 4)

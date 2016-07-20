@@ -4,7 +4,7 @@
 
 modals = angular.module('cases.modals', []);
 
-URN_SCHEMES = {tel: "Phone", twitter: "Twitter"}
+URN_SCHEMES = {tel: "Phone", twitter: "Twitter", email: "Email"}
 
 
 #=====================================================================
@@ -157,4 +157,20 @@ modals.controller('MessageHistoryModalController', ['$scope', '$uibModalInstance
   )
 
   $scope.close = () -> $uibModalInstance.dismiss(false)
+])
+
+
+#=====================================================================
+# Date range modal
+#=====================================================================
+modals.controller('DateRangeModalController', ['$scope', '$uibModalInstance', 'title', 'prompt', ($scope, $uibModalInstance, title, prompt) ->
+  $scope.title = title
+  $scope.prompt = prompt
+  $scope.fields = {after: utils.addMonths(new Date(), -6), before: new Date()}
+
+  $scope.ok = () ->
+    if $scope.form.$valid
+      $uibModalInstance.close({after: $scope.fields.after, before: $scope.fields.before})
+
+  $scope.cancel = () -> $uibModalInstance.dismiss(false)
 ])

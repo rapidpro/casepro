@@ -8,24 +8,28 @@
   %script{ type:"text/javascript" }
     var contextData = {{ context_data_json|safe }};
 
-  .ng-cloak{ ng-controller:"CaseController", ng-init:"init({{ max_msg_chars }})", ng-cloak:"" }
+  .ng-cloak{ ng-controller:"CaseController", ng-init:"init({{ object.pk }}, {{ max_msg_chars }})", ng-cloak:"" }
     .page-header
       - if alert == 'open_found_existing'
         .alert.alert-info{ ng-if:"caseObj.is_closed" }
           - trans "Could not open new case as message was already handled by this case"
         .alert.alert-info{ ng-if:"!caseObj.is_closed" }
           - trans "Could not open new case as contact already has this open case"
-      .alert.alert-danger{ ng-if:"!caseObj.contact" }
-        This case is for a contact who no longer exists in RapidPro
 
       .clearfix
         %h2.pull-back
-          %span.glyphicon{ ng-class:'{ "glyphicon-folder-close": caseObj.is_closed, "glyphicon-folder-open": !caseObj.is_closed }' }
+          %i.glyphicon{ ng-class:'{ "glyphicon-folder-close": caseObj.is_closed, "glyphicon-folder-open": !caseObj.is_closed }' }
           &nbsp;
           Case #{{ object.pk }}
 
         .page-header-buttons
           .btn-group
+            %button.btn.btn-default{ type:"button", ng-if:"!caseObj.watching", ng-click:"onWatch()" }
+              %i.glyphicon.glyphicon-eye-open
+              - trans "Watch"
+            %button.btn.btn-default{ type:"button", ng-if:"caseObj.watching", ng-click:"onUnwatch()" }
+              %i.glyphicon.glyphicon-eye-close
+              - trans "Unwatch"
             %button.btn.btn-default{ type:"button", ng-if:"!caseObj.is_closed", ng-click:"onAddNote()" }
               - trans "Add Note"
             - if can_update
@@ -72,11 +76,11 @@
               [[ msgCharsRemaining ]]
 
         .timeline{ ng-controller:"CaseTimelineController", ng-init:"init()" }
-          .timeline-event.clearfix{ ng-repeat:"event in timeline | reverse", ng-class:'{ "timeline-action": event.is_action, "timeline-incoming": event.is_message_in, "timeline-outgoing": event.is_message_out }' }
+          .timeline-event.clearfix{ ng-repeat:"event in timeline | reverse", ng-class:'{ "timeline-action": (event.type == "A"), "timeline-incoming": (event.type == "I"), "timeline-outgoing": (event.type == "O") }' }
             .event-time
               [[ event.time | autodate ]]
 
-            .{ ng-if:"event.is_action" }
+            .{ ng-if:'event.type == "A"' }
               %a{ ng-href:"/user/read/[[ event.item.created_by.id ]]/" }
                 [[ event.item.created_by.name ]]
 
@@ -115,10 +119,10 @@
               .action-note{ ng-if:"event.item.note" }
                 [[ event.item.note ]]
 
-            .{ ng-if:"event.is_message_in" }
+            .{ ng-if:'event.type == "I"' }
               [[ event.item.text ]]
 
-            .{ ng-if:"event.is_message_out" }
+            .{ ng-if:'event.type == "O"' }
               %span{ ng-if:"event.item.sender" }
                 %a{ ng-href:"/user/read/[[ event.item.sender.id ]]/" }><
                   [[ event.item.sender.name ]]
@@ -130,21 +134,19 @@
             - if can_update
               .pull-away
                 %a{ href:"#", ng-click:"onEditSummary()", style:"color: #AAA" }
-                  %span.glyphicon.glyphicon-edit
+                  %i.glyphicon.glyphicon-edit
             - trans "Summary"
           .panel-body
             [[ caseObj.summary ]]
 
-        .panel.panel-default{ ng-if:"caseObj.contact" }
+        .panel.panel-default{ ng-if:"contact" }
           .panel-heading
             - trans "Contact"
-            %a{ ng-href:"/contact/read/[[ caseObj.contact.id ]]/" }
+            %a{ ng-href:"/contact/read/[[ contact.id ]]/" }
               [[ caseObj.contact.name ]]
           .panel-body
             .contact-details
-              .none{ ng-if:"!caseObj.contact.fields" }
-                No fields configured
-              .contact-field{ ng-repeat:"(key, val) in caseObj.contact.fields" }
+              .contact-field{ ng-repeat:"(key, val) in contact.fields" }
                 %strong><
                   [[ key ]]
                 : [[ val ]]

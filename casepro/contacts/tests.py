@@ -147,6 +147,16 @@ class ContactCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertLoginRedirect(response, 'unicef', url)
 
+    def test_fetch(self):
+        url = reverse('contacts.contact_fetch', args=[self.ann.pk])
+
+        # log in as regular user
+        self.login(self.user1)
+
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, {'id': self.ann.pk, 'name': "Ann", 'fields': {'age': '32', 'nickname': None}})
+
 
 class FieldCRUDLTest(BaseCasesTest):
     def test_list(self):
@@ -176,13 +186,13 @@ class GroupTest(BaseCasesTest):
         self.assertEqual(set(Group.get_all(self.unicef, dynamic=False)),
                          {self.males, self.females, self.reporters, invisible})
 
-        self.assertEqual(invisible.as_json(), {
+        self.assertEqual(invisible.as_json(full=True), {
             'id': invisible.pk,
-            'uuid': "G-006",
             'name': "Invisible",
             'count': 12,
             'is_dynamic': False
         })
+        self.assertEqual(invisible.as_json(full=False), {'id': invisible.pk, 'name': "Invisible"})
 
 
 class GroupCRUDLTest(BaseCasesTest):

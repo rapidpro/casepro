@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 import calendar
-import datetime
 import json
 import pytz
 import re
@@ -9,6 +8,7 @@ import unicodedata
 from uuid import UUID
 
 from dateutil.relativedelta import relativedelta
+from datetime import datetime, time, timedelta
 from django.utils import timezone
 from enum import Enum
 from temba_client.utils import format_iso8601
@@ -38,7 +38,7 @@ class JSONEncoder(json.JSONEncoder):
     JSON encoder which encodes datetime values as strings
     """
     def default(self, val):
-        if isinstance(val, datetime.datetime):
+        if isinstance(val, datetime):
             return format_iso8601(val)
         elif isinstance(val, Enum):
             return val.name
@@ -96,6 +96,13 @@ def truncate(text, length=100, suffix='...'):
         return text
 
 
+def date_to_milliseconds(d):
+    """
+    Converts a date to a millisecond accuracy timestamp. Equivalent to Date.UTC(d.year, d.month-1, d.day) in Javascript
+    """
+    return calendar.timegm(datetime.combine(d, time(0, 0, 0)).replace(tzinfo=pytz.UTC).utctimetuple()) * 1000
+
+
 def datetime_to_microseconds(dt):
     """
     Converts a datetime to a microsecond accuracy timestamp
@@ -108,7 +115,7 @@ def microseconds_to_datetime(ms):
     """
     Converts a microsecond accuracy timestamp to a datetime
     """
-    return datetime.datetime.utcfromtimestamp(ms / 1000000.0).replace(tzinfo=pytz.utc)
+    return datetime.utcfromtimestamp(ms / 1000000.0).replace(tzinfo=pytz.utc)
 
 
 def month_range(offset, now=None):
@@ -126,14 +133,34 @@ def month_range(offset, now=None):
     return start_of_this_month + relativedelta(months=offset), start_of_this_month + relativedelta(months=offset + 1)
 
 
+def date_range(start, stop):
+    """
+    A date-based range generator
+    """
+    for n in range(int((stop - start).days)):
+        yield start + timedelta(n)
+
+
+class TimelineItem(object):
+    """
+    Wraps a message or action for easier inclusion in a merged timeline
+    """
+    def __init__(self, item):
+        self.item = item
+
+    def get_time(self):
+        return self.item.created_on
+
+    def to_json(self):
+        return {'time': self.get_time(), 'type': self.item.TIMELINE_TYPE, 'item': self.item.as_json()}
+
+
 def uuid_to_int(uuid):
-    '''
-    Converts a UUID hex string to an int within the range of a Django
-    IntegerField, and also >=0, as the URL regexes don't account for
-    negative numbers.
+    """
+    Converts a UUID hex string to an int within the range of a Django IntegerField, and also >=0, as the URL regexes
+    don't account for negative numbers.
 
     From https://docs.djangoproject.com/en/1.9/ref/models/fields/#integerfield
-    "Values from -2147483648 to 2147483647 are safe in all databases supported
-    by Django"
-    '''
+    "Values from -2147483648 to 2147483647 are safe in all databases supported by Django"
+    """
     return UUID(hex=uuid).int % (2147483647 + 1)
