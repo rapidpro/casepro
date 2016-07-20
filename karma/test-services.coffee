@@ -639,7 +639,7 @@ describe('services:', () ->
       it('triggers an action', () ->
         $httpBackend.expectPUT('/pods/action/21/', {
             data: {
-              type: 'foo'
+              type: 'foo',
               payload: {bar: 23}
             }
           })

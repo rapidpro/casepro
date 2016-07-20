@@ -553,7 +553,7 @@ services.factory('PodApi', ['$window', '$http', ($window, $http) ->
     trigger: (podId, type, payload = {}) ->
       $http.put("/pods/action/#{podId}/", {
           data: {
-            type
+            type,
             payload
           }
         })
