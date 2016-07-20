@@ -443,6 +443,12 @@ services.factory('StatisticsService', ['$http', '$httpParamSerializer', ($http, 
       return $http.get('/stats/replies_chart/?' + $httpParamSerializer(params)).then((response) -> response.data)
 
     #----------------------------------------------------------------------------
+    # Fetches data for replies by month chart
+    #----------------------------------------------------------------------------
+    labelsPieChart: () ->
+      return $http.get('/stats/labels_pie_chart/').then((response) -> response.data)
+
+    #----------------------------------------------------------------------------
     # Initiates a daily count export
     #----------------------------------------------------------------------------
     dailyCountExport: (type, after, before) ->

@@ -42,4 +42,11 @@ describe('filters:', () ->
       expect(urlencode("A & B ?")).toEqual("A%20%26%20B%20%3F")
     )
   )
+
+  describe('deunderscore', () ->
+    it('replaces underscores with spaces', () ->
+      deunderscore = $filter('deunderscore')
+      expect(deunderscore("A_B__C_")).toEqual("A B  C ")
+    )
+  )
 )
