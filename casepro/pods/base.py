@@ -32,7 +32,35 @@ class Pod(object):
         return json.dumps(self.config._config_data)
 
     def read_data(self, params):
-        """Should return the data that should be used to create the display for the pod."""
+        """
+        Should return the data that should be used to create the display for the pod.
+
+        For the base implementation, the data should be an object with 'items' and 'actions' keys.
+
+        The items key should be a list of objects, that have 'name' and 'value' keys, with the value of the keys being
+        what will be displayed.
+
+        The 'actions' key should be a list of objects, that have 'type', 'name' and 'payload' keys, where type and
+        payload is what is sent to the 'perform_action' function to determine which button has been pressed, and 'name'
+        is the text that is displayed on the button.
+
+        Example:
+        {
+            'items': [
+                {
+                    'name': 'EDD',
+                    'value': '2015-07-18',
+                },
+            ],
+            'actions': [
+                {
+                    'type': 'remove_edd',
+                    'name': 'Remove EDD',
+                    'payload': {},
+                },
+            ],
+        }
+        """
         return {}
 
     def perform_action(self, params):
