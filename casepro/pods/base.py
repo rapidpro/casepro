@@ -63,9 +63,17 @@ class Pod(object):
         """
         return {}
 
-    def perform_action(self, params):
-        """Should perform the action specified by params."""
-        return {}
+    def perform_action(self, type_, params):
+        """
+        Should perform the action specified by the type and params (which are specified in the read function).
+
+        Returns a tuple (success, payload), where 'success' is a boolean value indicating whether the action was
+        successful or not. If true, a case action note will be created.
+
+        For the base implementation, payload is an object with a 'message' key, which is the error message if success
+        is false, or the message to place in the case action note if success is true.
+        """
+        return (False, {'message': ''})
 
 
 class PodPlugin(AppConfig):
