@@ -637,16 +637,19 @@ describe('services:', () ->
 
     describe('trigger', () ->
       it('triggers an action', () ->
-        $httpBackend.expectPUT('/pods/action/21/', {
+        $httpBackend.expectPOST('/pods/action/21/', {
             data: {
-              type: 'foo',
-              payload: {bar: 23}
+              case_id: 23,
+              action: {
+                type: 'foo',
+                payload: {bar: 'baz'}
+              }
             }
           })
-          .respond({foo: 'bar'})
+          .respond({quux: 'corge'})
 
-        PodApi.trigger(21, 'foo', {bar: 23})
-          .then((res) -> expect(res).toEqual({foo: 'bar'}))
+        PodApi.trigger(21, 23, 'foo', {bar: 'baz'})
+          .then((res) -> expect(res).toEqual({quux: 'corge'}))
 
         $httpBackend.flush()
       )
