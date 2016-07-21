@@ -142,9 +142,14 @@
         .panel.panel-default{ ng-if:"contact" }
           .panel-heading
             - trans "Contact"
-            %a{ ng-href:"/contact/read/[[ contact.id ]]/" }
-              [[ caseObj.contact.name ]]
+            .pull-away
+              %a{ ng-href:"/contact/read/[[ caseObj.contact.id ]]/" }
+                - trans "View"
           .panel-body
+            %strong><
+              - trans "Name"
+            :
+            [[ caseObj.contact.name ]]
             <cp-contactdetails contact="contact" fields="fields" />
 
 

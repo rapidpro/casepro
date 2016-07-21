@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals
 from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from datetime import timedelta
+from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpResponse, JsonResponse
 from django.utils.timezone import now
@@ -70,6 +71,7 @@ class CaseCRUDL(SmartCRUDL):
                 'fields': [f.as_json() for f in fields]
             })
 
+            context['anon_contacts'] = getattr(settings, 'SITE_ANON_CONTACTS', False)
             context['max_msg_chars'] = MAX_MESSAGE_CHARS
             context['can_update'] = can_update
             context['alert'] = self.request.GET.get('alert', None)
