@@ -84,6 +84,11 @@ describe('controllers:', () ->
       expect($scope.contact).toEqual(test.ann)
     )
 
+    it('should should broadcast timelineChanged on podActionSuccess', (done) ->
+      $scope.$on('timelineChanged', -> done())
+      $scope.$emit('podActionSuccess')
+    )
+
     it('addNote', () ->
       noteModal = spyOnPromise($q, $scope, UtilsService, 'noteModal')
       addNote = spyOnPromise($q, $scope, CaseService, 'addNote')
@@ -723,6 +728,25 @@ describe('controllers:', () ->
 
         expect(PodApi.trigger)
           .toHaveBeenCalledWith(21, 23, 'grault', {garply: 'waldo'})
+      )
+
+      it('should emit a podActionSuccess event if successful', (done) ->
+        $scope.podId = 21
+        $scope.caseId = 23
+        $scope.podConfig = {title: 'Foo'}
+        $scope.podData = {bar: 'baz'}
+
+        $controller('PodController', {
+          $scope
+          PodApi
+        })
+
+        spyOn(PodApi, 'trigger').and.returnValue($q.resolve({success: true}))
+        $scope.trigger('grault', {garply: 'waldo'})
+
+        $scope.$on('podActionSuccess', -> done())
+
+        $scope.$apply()
       )
 
       it('should fetch and attach data to the scope if successful', () ->

@@ -502,6 +502,8 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
 
     $scope.refresh()
 
+  $scope.$on('podActionSuccess', -> $scope.$broadcast('timelineChanged'))
+
   $scope.refresh = () ->
     CaseService.fetchSingle($scope.caseId).then((caseObj) ->
       $scope.caseObj = caseObj
@@ -831,6 +833,6 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
     # TODO show failure message
 
   $scope.onTriggerSuccess = () ->
-    # TODO update notes
+    $scope.$emit('podActionSuccess')
     $scope.update()
 ])
