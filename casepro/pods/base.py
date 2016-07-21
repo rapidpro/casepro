@@ -7,12 +7,11 @@ from django.apps import AppConfig
 
 class PodConfig(ConfmodelConfig):
     """
-    This is the config that all pods should use as the base for their own
-    config.
+    This is the config that all pods should use as the base for their own config.
     """
     index = fields.ConfigInt(
-        "A unique identifier for the specific instance of this pod."
-        "Automatically determined and set in the pod registry.",
+        "A unique identifier for the specific instance of this pod. Automatically determined and set in the pod"
+        "registry.",
         required=True)
 
     title = fields.ConfigText(
@@ -33,8 +32,7 @@ class Pod(object):
         return json.dumps(self.config._config_data)
 
     def read_data(self, params):
-        """Should return the data that should be used to create the display
-        for the pod."""
+        """Should return the data that should be used to create the display for the pod."""
         return {}
 
     def perform_action(self, params):
@@ -47,8 +45,7 @@ class PodPlugin(AppConfig):
     pod_class = Pod
     config_class = PodConfig
 
-    # django application label, used to determine which pod type to use when
-    # loading pods configured in `settings.PODS`
+    # django application label, used to determine which pod type to use when loading pods configured in `settings.PODS`
     label = 'base_pod'
 
     # default title to use when configuring each pod

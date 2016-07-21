@@ -15,8 +15,7 @@ class PodRegistryTests(TestCase):
     """
     def test_load_pod_label(self):
         """
-        The load_pod function should load the pod with the correct app label
-        specified by 'type'.
+        The load_pod function should load the pod with the correct app label specified by 'type'.
         """
         from casepro.pods import Pod
         pod_instance = load_pod(0, {'label': 'base_pod'})
@@ -32,8 +31,8 @@ class PodRegistryTests(TestCase):
 
     def test_load_pod_title(self):
         """
-        The load_pod function should set the config title, or default it title
-        field to the pod type title if it isn't given.
+        The load_pod function should set the config title, or default it title field to the pod type title if it isn't
+        given.
         """
         pod = load_pod(23, {
             'label': 'base_pod',
@@ -56,8 +55,7 @@ class PodRegistryTests(TestCase):
     @modify_settings(INSTALLED_APPS={'append': 'casepro.pods.PodPlugin'})
     def test_pods_loaded_on_import(self):
         """
-        On import, the pods specified in the settings file should be loaded
-        with correct index numbers and types.
+        On import, the pods specified in the settings file should be loaded with correct index numbers and types.
         """
         with self.settings(PODS=[
                 {'label': 'base_pod'},
@@ -75,8 +73,7 @@ class PodRegistryTests(TestCase):
     @modify_settings(INSTALLED_APPS={'append': 'casepro.pods.PodPlugin'})
     def test_pod_types_registered_on_import(self):
         """
-        On import, the pod types specified in the settings file should be
-        registered.
+        On import, the pod types specified in the settings file should be registered.
         """
         from casepro.pods import registry, PodPlugin
         reload(registry)
