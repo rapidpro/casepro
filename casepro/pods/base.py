@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import json
 from confmodel import fields, Config as ConfmodelConfig
 from django.apps import AppConfig

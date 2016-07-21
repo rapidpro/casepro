@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import json
 from django.apps import apps
 from django.test import TestCase, modify_settings

@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.core.urlresolvers import reverse
 from django.test import modify_settings
 

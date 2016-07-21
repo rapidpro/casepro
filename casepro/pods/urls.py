@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.conf.urls import url
 
 from casepro.pods.views import perform_pod_action, read_pod_data
