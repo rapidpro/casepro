@@ -142,21 +142,22 @@
         .panel.panel-default{ ng-if:"contact" }
           .panel-heading
             - trans "Contact"
-            .pull-away
-              %a.btn.btn-default.btn-xs{ ng-href:"/contact/read/[[ caseObj.contact.id ]]/" }
-                - trans "View"
-          .list-group
+          .panel-body
             .container-fluid
-              .list-group-item.row
-                .col-sm-6
+              .row
+                .contact-field-label.col-sm-6
                   - trans "Name"
-                .col-sm-6
+                .contact-field-value.col-sm-6
                   [[ caseObj.contact.name ]]
-              .list-group-item.row{ ng-repeat:"field in fields" }
-                .col-sm-6
+              .row{ ng-repeat:"field in fields" }
+                .contact-field-label.col-sm-6
                   [[ field.label ]]
-                .col-sm-6
+                .contact-field-value.col-sm-6
                   [[ contact.fields[field.key] ]]
+          .list-group
+            %a.list-group-item.centered{ ng-href:"/contact/read/[[ caseObj.contact.id ]]/" }
+              %span.text-primary
+                - trans "View"
 
 
 - block extra-style
@@ -221,4 +222,7 @@
     .timeline-event .action-note {
       padding: 0.5em 0 0 2em;
       font-style: italic;
+    }
+    .contact-field-label {
+      font-weight: bold;
     }
