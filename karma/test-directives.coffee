@@ -127,7 +127,7 @@ describe('directives:', () ->
         payload: {corge: 'grault'}
       }]
 
-      el = $compile('<div cp-pod></div>')($rootScope)[0]
+      el = $compile('<cp-pod/>')($rootScope)[0]
       $rootScope.$digest()
 
       action1 = el.querySelectorAll('.pod-action')[0]
@@ -150,7 +150,7 @@ describe('directives:', () ->
 
       $rootScope.trigger = jasmine.createSpy('trigger')
 
-      el = $compile('<div cp-pod></div>')($rootScope)[0]
+      el = $compile('<cp-pod/>')($rootScope)[0]
       $rootScope.$digest()
 
       action1 = el.querySelectorAll('.pod-action')[0]
