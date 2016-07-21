@@ -24,7 +24,7 @@
         .{ ng-if:"activeLabel" }
           %i.glyphicon.glyphicon-tag
           &nbsp;
-          [[ activeLabel.name ]]
+          [[ activeLabel.name | deunderscore ]]
 
       .page-header-buttons{ ng-if:"activeLabel" }
         - if perms.msgs.label_read or org_perms.msgs.label_read
@@ -46,7 +46,7 @@
                 %li.label-link{ ng-repeat:"label in labels" }
                   %a{ ng-href:"/#?label=[[ label.name | urlencode ]]", ng-class:'{ strong: label == activeLabel }' }
                     %span.glyphicon.glyphicon-tag{ style:"font-size: 0.75em" }
-                    [[ label.name ]] ([[ label.counts.inbox ]])
+                    [[ label.name | deunderscore ]] ([[ label.counts.inbox ]])
             %li{ class:"{% if_url 'cases.flagged' 'active' '' %}" }
               %a{ href:"{% url 'cases.flagged' %}" }
                 - trans "Flagged"
