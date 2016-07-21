@@ -143,14 +143,20 @@
           .panel-heading
             - trans "Contact"
             .pull-away
-              %a{ ng-href:"/contact/read/[[ caseObj.contact.id ]]/" }
+              %a.btn.btn-default.btn-xs{ ng-href:"/contact/read/[[ caseObj.contact.id ]]/" }
                 - trans "View"
-          .panel-body
-            %strong><
-              - trans "Name"
-            :
-            [[ caseObj.contact.name ]]
-            <cp-contactdetails contact="contact" fields="fields" />
+          .list-group
+            .container-fluid
+              .list-group-item.row
+                .col-sm-6
+                  - trans "Name"
+                .col-sm-6
+                  [[ caseObj.contact.name ]]
+              .list-group-item.row{ ng-repeat:"field in fields" }
+                .col-sm-6
+                  [[ field.label ]]
+                .col-sm-6
+                  [[ contact.fields[field.key] ]]
 
 
 - block extra-style

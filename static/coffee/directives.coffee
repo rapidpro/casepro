@@ -28,14 +28,3 @@ directives.directive('cpContact', () ->
     ]      
   }
 )
-
-#----------------------------------------------------------------------------
-# A list of contact field label/value pairs
-#----------------------------------------------------------------------------
-directives.directive('cpContactdetails', () ->
-  return {
-    restrict: 'E',
-    scope: {contact: '=', fields: '='},
-    templateUrl: '/partials/directive_contact_details.html',
-  }
-)
