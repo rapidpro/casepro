@@ -813,7 +813,9 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
     $scope.podId = podId
     $scope.caseId = caseId
     $scope.podConfig = podConfig
+    $scope.update()
 
-    return PodApi.get(podId, caseId)
+  $scope.update = ->
+    PodApi.get($scope.podId, $scope.caseId)
       .then((d) -> $scope.podData = d)
 ])
