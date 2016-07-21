@@ -58,4 +58,45 @@ describe('directives:', () ->
       expect(element.isolateScope().popoverIsOpen).toEqual(false)
     )
   )
+
+  describe('fieldvalue', () ->
+    $filter = null
+
+    beforeEach(() ->
+      inject(( _$filter_) ->
+        $filter = _$filter_
+      )
+    )
+
+    it('it looksup and formats value based on type', () ->
+      $scope = $rootScope.$new()
+      $scope.ann = {id: 401, name: "Ann", fields: {nid: 1234567, edd: '2016-07-04T12:59:46.309033Z'}}
+      $scope.myfields = [
+        {key: 'nid', label: "NID", value_type:'N'},
+        {key: 'edd', label: "EDD", value_type:'D'},
+        {key: 'nickname', label: "Nickname", value_type:'T'}
+      ]
+
+      # check numerical field
+      element = $compile('<cp-fieldvalue contact="ann" field="myfields[0]" />')($scope)
+      $rootScope.$digest()
+
+      expect(element.isolateScope().contact).toEqual($scope.ann)
+      expect(element.isolateScope().field).toEqual($scope.myfields[0])
+      expect(element.isolateScope().value).toEqual("1,234,567")
+      expect(element.text()).toEqual("1,234,567")
+
+      # check date field
+      element = $compile('<cp-fieldvalue contact="ann" field="myfields[1]" />')($scope)
+      $rootScope.$digest()
+
+      expect(element.text()).toEqual("Jul 4, 2016")
+
+      # check field with no value
+      element = $compile('<cp-fieldvalue contact="ann" field="myfields[2]" />')($scope)
+      $rootScope.$digest()
+
+      expect(element.text()).toEqual("")
+    )
+  )
 )

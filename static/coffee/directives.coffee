@@ -28,3 +28,24 @@ directives.directive('cpContact', () ->
     ]      
   }
 )
+
+#----------------------------------------------------------------------------
+# A contact field value
+#----------------------------------------------------------------------------
+directives.directive('cpFieldvalue', () ->
+  return {
+    restrict: 'E',
+    scope: {contact: '=', field: '='},
+    template: '[[ value ]]',
+    controller: ['$scope', '$filter', ($scope, $filter) ->
+      raw = $scope.contact.fields[$scope.field.key]
+
+      if $scope.field.value_type == 'N'
+        $scope.value = $filter('number')(raw)
+      else if $scope.field.value_type == 'D'
+        $scope.value = $filter('date')(raw, 'mediumDate')
+      else
+        $scope.value = raw
+    ]
+  }
+)
