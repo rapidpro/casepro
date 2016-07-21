@@ -96,7 +96,7 @@ describe('directives:', () ->
       element = $compile('<cp-fieldvalue contact="ann" field="myfields[2]" />')($scope)
       $rootScope.$digest()
 
-      expect(element.text()).toEqual("")
+      expect(element.text()).toEqual("--")
     )
   )
 )

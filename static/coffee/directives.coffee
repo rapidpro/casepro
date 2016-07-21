@@ -40,12 +40,15 @@ directives.directive('cpFieldvalue', () ->
     controller: ['$scope', '$filter', ($scope, $filter) ->
       raw = $scope.contact.fields[$scope.field.key]
 
-      if $scope.field.value_type == 'N'
-        $scope.value = $filter('number')(raw)
-      else if $scope.field.value_type == 'D'
-        $scope.value = $filter('date')(raw, 'mediumDate')
+      if raw
+        if $scope.field.value_type == 'N'
+          $scope.value = $filter('number')(raw)
+        else if $scope.field.value_type == 'D'
+          $scope.value = $filter('date')(raw, 'mediumDate')
+        else
+          $scope.value = raw
       else
-        $scope.value = raw
+        $scope.value = '--'
     ]
   }
 )
