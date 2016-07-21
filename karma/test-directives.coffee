@@ -30,14 +30,17 @@ describe('directives:', () ->
       $templateCache.put('/partials/directive_contact.html', '[[ contact.name ]]')
       $scope = $rootScope.$new()
       $scope.ann = {id: 401, name: "Ann"}
+      $scope.myfields = [{key: 'age', label: "Age"}]
 
       fetch = spyOnPromise($q, $scope, ContactService, 'fetch')
 
-      element = $compile('<cp-contact contact="ann" />')($scope)
+      element = $compile('<cp-contact contact="ann" fields="myfields" />')($scope)
       $rootScope.$digest()
 
       expect(element.html()).toContain("Ann");
 
+      expect(element.isolateScope().contact).toEqual($scope.ann)
+      expect(element.isolateScope().fields).toEqual([{key: 'age', label: "Age"}])
       expect(element.isolateScope().fetched).toEqual(false)
       expect(element.isolateScope().popoverIsOpen).toEqual(false)
       expect(element.isolateScope().popoverTemplateUrl).toEqual('/partials/popover_contact.html')

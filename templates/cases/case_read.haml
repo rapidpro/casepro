@@ -145,11 +145,7 @@
             %a{ ng-href:"/contact/read/[[ contact.id ]]/" }
               [[ caseObj.contact.name ]]
           .panel-body
-            .contact-details
-              .contact-field{ ng-repeat:"(key, val) in contact.fields" }
-                %strong><
-                  [[ key ]]
-                : [[ val ]]
+            <cp-contactdetails contact="contact" fields="fields" />
 
 
 - block extra-style

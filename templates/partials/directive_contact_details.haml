@@ -1,0 +1,6 @@
+.contact-details
+  .contact-field{ ng-repeat:"field in fields" }
+    %strong><
+      [[ field.label ]]
+    :
+    [[ contact.fields[field.key] ]]
