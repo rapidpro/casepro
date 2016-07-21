@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from django.core.urlresolvers import reverse
 from django.test import modify_settings
 
+from casepro.cases.models import CaseAction
 from casepro.test import BaseCasesTest
 
 
@@ -100,6 +101,21 @@ class PerformPodActionView(BaseCasesTest):
             'details': 'No JSON object could be decoded'
         })
 
+    def test_case_id_required(self):
+        '''
+        If the case id is not present in the request, an error response should be returned.
+        '''
+        with self.settings(PODS=[{'label': 'base_pod'}]):
+            from casepro.pods import registry
+            reload(registry)
+
+        response = self.url_post_json(
+            'unicef', reverse('perform_pod_action', args=('0',)), {})
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json, {
+            'reason': 'Request object needs to have a "case" field'
+        })
+
     def test_pod_valid_request(self):
         """
         If it is a valid post request, the action should be performed.
@@ -107,7 +123,55 @@ class PerformPodActionView(BaseCasesTest):
         with self.settings(PODS=[{'label': 'base_pod'}]):
             from casepro.pods import registry
             reload(registry)
+
+        contact = self.create_contact(self.unicef, 'contact-uuid', 'contact_name')
+        msg = self.create_message(self.unicef, 0, contact, 'Test message')
+        case = self.create_case(self.unicef, contact, self.moh, msg)
+
         response = self.url_post_json(
-            'unicef', reverse('perform_pod_action', args=('0',)), {})
+            'unicef', reverse('perform_pod_action', args=('0',)), {'case_id': case.id})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json, {})
+        self.assertEqual(response.json, {
+            'success': False,
+            'payload': {
+                'message': '',
+                }
+            })
+
+    @modify_settings(INSTALLED_APPS={
+        'append': 'casepro.pods.tests.utils.SuccessActionPlugin',
+    })
+    def test_case_action_note_created_on_successful_action(self):
+        '''
+        If the action is successful, a case action note should be created.
+        '''
+        CaseAction.objects.all().delete()
+        self.login(self.admin)
+
+        with self.settings(PODS=[{'label': 'success_pod'}]):
+            from casepro.pods import registry
+            reload(registry)
+
+        contact = self.create_contact(self.unicef, 'contact-uuid', 'contact_name')
+        msg = self.create_message(self.unicef, 0, contact, 'Test message')
+        case = self.create_case(self.unicef, contact, self.moh, msg)
+
+        response = self.url_post_json(
+            'unicef', reverse('perform_pod_action', args=('0',)), {
+                'case_id': case.id,
+                'action': {
+                    'type': 'foo',
+                    'payload': {'foo': 'bar'},
+                },
+            })
+
+        self.assertEqual(response.status_code, 200)
+        message = "Type foo Params {u'foo': u'bar'}"
+        self.assertEqual(response.json, {
+            'success': True,
+            'payload': {
+                'message': message
+            }
+        })
+        [caseaction] = CaseAction.objects.all()
+        self.assertEqual(caseaction.note, message)
