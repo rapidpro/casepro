@@ -552,13 +552,11 @@ services.factory('PodApi', ['$window', '$http', ($window, $http) ->
 
     trigger: (podId, caseId, type, payload = {}) ->
       $http.post("/pods/action/#{podId}/", {
-          data: {
-            case_id: caseId
-            action: {
-              type,
-              payload
-            }
-          }
-        })
-        .then((d) -> d.data)
+        case_id: caseId
+        action: {
+          type,
+          payload
+        }
+      })
+      .then((d) -> d.data)
 ])
