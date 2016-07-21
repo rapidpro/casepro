@@ -674,16 +674,18 @@ describe('controllers:', () ->
 
   describe('PodController', () ->
     $scope = null
+    PodApi = null
 
     beforeEach(() ->
       $scope = $rootScope.$new()
+
+      PodApi = new class PodApi
+        get: -> $q.resolve({foo: 'bar'})
+        trigger: -> $q.resolve({success: true})
     )
 
     describe('init', () ->
-      it('should attach pod data to the scope', () ->
-        PodApi = new class PodApi
-          get: ->
-
+      it('should fetch and attach pod data to the scope', () ->
         spyOn(PodApi, 'get').and.returnValue($q.resolve({foo: 'bar'}))
 
         $controller('PodController', {
@@ -698,7 +700,50 @@ describe('controllers:', () ->
         expect($scope.caseId).toEqual(23)
         expect($scope.podConfig).toEqual({title: 'Baz'})
         expect(PodApi.get).toHaveBeenCalledWith(21, 23)
-        expect($scope.podData).toEqual({foo: 'bar'}))
+        expect($scope.podData).toEqual({foo: 'bar'})
+      )
+    )
+
+    describe('trigger', () ->
+      it('should trigger the given action', () ->
+        $scope.podId = 21
+        $scope.caseId = 23
+        $scope.podConfig = {title: 'Foo'}
+        $scope.podData = {bar: 'baz'}
+
+        $controller('PodController', {
+          $scope
+          PodApi
+        })
+
+        spyOn(PodApi, 'trigger').and.returnValue($q.resolve({success: true}))
+
+        $scope.trigger('grault', {garply: 'waldo'})
+        $scope.$apply()
+
+        expect(PodApi.trigger)
+          .toHaveBeenCalledWith(21, 23, 'grault', {garply: 'waldo'})
+      )
+
+      it('should fetch and attach data to the scope if successful', () ->
+        $scope.podId = 21
+        $scope.caseId = 23
+        $scope.podConfig = {title: 'Foo'}
+        $scope.podData = {bar: 'baz'}
+
+        $controller('PodController', {
+          $scope
+          PodApi
+        })
+
+        spyOn(PodApi, 'get').and.returnValue($q.resolve({quux: 'corge'}))
+        spyOn(PodApi, 'trigger').and.returnValue($q.resolve({success: true}))
+
+        $scope.trigger('grault', {garply: 'waldo'})
+        $scope.$apply()
+
+        expect($scope.podData).toEqual({quux: 'corge'})
+      )
     )
   )
 )

@@ -818,4 +818,19 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
   $scope.update = ->
     PodApi.get($scope.podId, $scope.caseId)
       .then((d) -> $scope.podData = d)
+
+  $scope.trigger = (type, payload) ->
+    PodApi.trigger($scope.podId, $scope.caseId, type, payload)
+      .then(({success, payload}) ->
+        if success
+          $scope.onTriggerSuccess()
+        else
+          $scope.onTriggerFailure(payload))
+
+  $scope.onTriggerFailure = (payload) ->
+    # TODO show failure message
+
+  $scope.onTriggerSuccess = () ->
+    # TODO update notes
+    $scope.update()
 ])
