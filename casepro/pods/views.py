@@ -21,7 +21,10 @@ def read_pod_data(request, index):
 
 
 def perform_pod_action(request, index):
-    """Deletegates to the `perform_action` function of the correct pod."""
+    """
+    Delegates to the `perform_action` function of the correct pod. If the action completes successfully, a new case
+    action note is created with the success message.
+    """
     if request.method != 'POST':
         return JsonResponse({'reason': 'Method not allowed'}, status=405)
 
@@ -46,4 +49,4 @@ def perform_pod_action(request, index):
         case = Case.objects.get(id=case_id)
         CaseAction.create(case, request.user, CaseAction.ADD_NOTE, note=payload.get('message'))
 
-    return JsonResponse(pod.perform_action(data))
+    return JsonResponse({'success': success, 'payload': payload})
