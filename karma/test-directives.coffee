@@ -118,12 +118,10 @@ describe('directives:', () ->
 
     it('should draw the pod actions', ->
       $rootScope.podData.actions = [{
-        case_id: 21,
         type: 'foo',
         name: 'Foo',
         payload: {bar: 'baz'}
       }, {
-        case_id: 21,
         type: 'quux',
         name: 'Quux',
         payload: {corge: 'grault'}
@@ -143,12 +141,10 @@ describe('directives:', () ->
       $rootScope.podData.actions = [{
         type: 'foo',
         name: 'Foo',
-        case_id: 21,
         payload: {a: 'b'}
       }, {
         type: 'bar',
         name: 'Bar',
-        case_id: 21,
         payload: {c: 'd'}
       }]
 
@@ -160,15 +156,15 @@ describe('directives:', () ->
       action1 = el.querySelectorAll('.pod-action')[0]
       action2 = el.querySelectorAll('.pod-action')[1]
 
-      expect($rootScope.trigger).not.toHaveBeenCalledWith(21, 'foo', {a: 'b'})
+      expect($rootScope.trigger).not.toHaveBeenCalledWith('foo', {a: 'b'})
 
       angular.element(action1).triggerHandler('click')
 
-      expect($rootScope.trigger).toHaveBeenCalledWith(21, 'foo', {a: 'b'})
-      expect($rootScope.trigger).not.toHaveBeenCalledWith(21, 'bar', {c: 'd'})
+      expect($rootScope.trigger).toHaveBeenCalledWith('foo', {a: 'b'})
+      expect($rootScope.trigger).not.toHaveBeenCalledWith('bar', {c: 'd'})
 
       angular.element(action2).triggerHandler('click')
-      expect($rootScope.trigger).toHaveBeenCalledWith(21, 'bar', {c: 'd'})
+      expect($rootScope.trigger).toHaveBeenCalledWith('bar', {c: 'd'})
     )
   )
 )
