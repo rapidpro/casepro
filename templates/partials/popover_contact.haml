@@ -1,8 +1,8 @@
-.
+.contact-popover
   .loading{ ng-if:"!fetched" }
   .{ ng-if:"fetched" }
-    .{ ng-repeat:"(key, value) in contact.fields" }
+    .contact-field{ ng-repeat:"field in fields" }
       %strong><
-        [[ key ]]
+        [[ field.label ]]
       :
-      [[ value ]]
+      <cp-fieldvalue contact="contact" field="field" />

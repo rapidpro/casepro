@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals
 from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from datetime import timedelta
+from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpResponse, JsonResponse
 from django.utils.timezone import now
@@ -14,7 +15,7 @@ from smartmin.views import SmartCRUDL, SmartListView, SmartCreateView, SmartRead
 from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
 
-from casepro.contacts.models import Group
+from casepro.contacts.models import Field, Group
 from casepro.msgs.models import Label, Message, MessageFolder, OutgoingFolder
 from casepro.statistics.models import DailyCount
 from casepro.utils import json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder, str_to_bool
@@ -59,14 +60,18 @@ class CaseCRUDL(SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super(CaseCRUDL.Read, self).get_context_data(**kwargs)
             case = self.get_object()
-            labels = Label.get_all(self.request.org).order_by('name')
             can_update = case.access_level(self.request.user) == AccessLevel.update
+
+            labels = Label.get_all(self.request.org).order_by('name')
+            fields = Field.get_all(self.object.org, visible=True).order_by('label')
 
             # angular app requires context data in JSON format
             context['context_data_json'] = json_encode({
-                'all_labels': [l.as_json() for l in labels]
+                'all_labels': [l.as_json() for l in labels],
+                'fields': [f.as_json() for f in fields]
             })
 
+            context['anon_contacts'] = getattr(settings, 'SITE_ANON_CONTACTS', False)
             context['max_msg_chars'] = MAX_MESSAGE_CHARS
             context['can_update'] = can_update
             context['alert'] = self.request.GET.get('alert', None)
@@ -347,9 +352,12 @@ class PartnerCRUDL(SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super(PartnerCRUDL.Read, self).get_context_data(**kwargs)
 
+            fields = Field.get_all(self.object.org, visible=True).order_by('label')
+
             # angular app requires context data in JSON format
             context['context_data_json'] = json_encode({
-                'partner': self.object.as_json()
+                'partner': self.object.as_json(),
+                'fields': [f.as_json() for f in fields]
             })
 
             user_partner = self.request.user.get_partner(self.object.org)
@@ -410,7 +418,7 @@ class PartnerCRUDL(SmartCRUDL):
             return JsonResponse({'results': [as_json(p) for p in partners]})
 
 
-class BaseHomeView(OrgPermsMixin, SmartTemplateView):
+class BaseInboxView(OrgPermsMixin, SmartTemplateView):
     """
     Mixin to add site metadata to the context in JSON format which can then used
     """
@@ -421,7 +429,7 @@ class BaseHomeView(OrgPermsMixin, SmartTemplateView):
     permission = 'orgs.org_inbox'
 
     def get_context_data(self, **kwargs):
-        context = super(BaseHomeView, self).get_context_data(**kwargs)
+        context = super(BaseInboxView, self).get_context_data(**kwargs)
         org = self.request.org
         user = self.request.user
         partner = user.get_partner(org)
@@ -430,12 +438,14 @@ class BaseHomeView(OrgPermsMixin, SmartTemplateView):
         Label.bulk_cache_initialize(labels)
 
         groups = Group.get_all(org, visible=True).order_by('name')
+        fields = Field.get_all(org, visible=True).order_by('label')
 
         # angular app requires context data in JSON format
         context['context_data_json'] = json_encode({
             'user': {'id': user.pk, 'partner': partner.as_json() if partner else None},
             'labels': [l.as_json() for l in labels],
             'groups': [g.as_json() for g in groups],
+            'fields': [f.as_json() for f in fields],
         })
 
         context['banner_text'] = org.get_banner_text()
@@ -446,7 +456,7 @@ class BaseHomeView(OrgPermsMixin, SmartTemplateView):
         return context
 
 
-class InboxView(BaseHomeView):
+class InboxView(BaseInboxView):
     """
     Inbox view
     """
@@ -456,7 +466,7 @@ class InboxView(BaseHomeView):
     template_name = 'cases/inbox_messages.haml'
 
 
-class FlaggedView(BaseHomeView):
+class FlaggedView(BaseInboxView):
     """
     Inbox view
     """
@@ -466,7 +476,7 @@ class FlaggedView(BaseHomeView):
     template_name = 'cases/inbox_messages.haml'
 
 
-class ArchivedView(BaseHomeView):
+class ArchivedView(BaseInboxView):
     """
     Archived messages view
     """
@@ -476,7 +486,7 @@ class ArchivedView(BaseHomeView):
     template_name = 'cases/inbox_messages.haml'
 
 
-class UnlabelledView(BaseHomeView):
+class UnlabelledView(BaseInboxView):
     """
     Unlabelled messages view
     """
@@ -486,7 +496,7 @@ class UnlabelledView(BaseHomeView):
     template_name = 'cases/inbox_messages.haml'
 
 
-class SentView(BaseHomeView):
+class SentView(BaseInboxView):
     """
     Outgoing messages view
     """
@@ -496,7 +506,7 @@ class SentView(BaseHomeView):
     template_name = 'cases/inbox_outgoing.haml'
 
 
-class OpenCasesView(BaseHomeView):
+class OpenCasesView(BaseInboxView):
     """
     Open cases view
     """
@@ -506,7 +516,7 @@ class OpenCasesView(BaseHomeView):
     template_name = 'cases/inbox_cases.haml'
 
 
-class ClosedCasesView(BaseHomeView):
+class ClosedCasesView(BaseInboxView):
     """
     Closed cases view
     """

@@ -25,6 +25,7 @@ controllers.controller('InboxController', ['$scope', '$window', '$location', 'La
   $scope.user = $window.contextData.user
   $scope.labels = $window.contextData.labels
   $scope.groups = $window.contextData.groups
+  $scope.fields = $window.contextData.fields
 
   $scope.activeLabel = null
   $scope.activeContact = null
@@ -509,6 +510,7 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
 controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'ContactService', 'MessageService', 'PartnerService', 'UtilsService', ($scope, $window, $timeout, CaseService, ContactService, MessageService, PartnerService, UtilsService) ->
 
   $scope.allLabels = $window.contextData.all_labels
+  $scope.fields = $window.contextData.fields
   
   $scope.caseObj = null
   $scope.contact = null
@@ -689,6 +691,7 @@ controllers.controller('PartnerController', ['$scope', '$window', '$controller',
   $controller('BaseTabsController', {$scope: $scope})
 
   $scope.partner = $window.contextData.partner
+  $scope.fields = $window.contextData.fields
   $scope.users = []
 
   $scope.onTabInit = (tab) ->
