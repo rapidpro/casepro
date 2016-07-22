@@ -9,6 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 from django_redis import get_redis_connection
 
 from casepro.backend import get_backend
+from casepro.utils import get_language_name
 
 FIELD_LOCK_KEY = 'lock:field:%d:%s'
 GROUP_LOCK_KEY = 'lock:group:%d:%s'
@@ -268,6 +269,11 @@ class Contact(models.Model):
 
         if full:
             result['fields'] = self.get_fields(visible=True)
+
+            if self.language:
+                result['language'] = {'code': self.language, 'name': get_language_name(self.language)}
+            else:
+                result['language'] = None
 
         return result
 
