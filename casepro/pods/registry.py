@@ -1,13 +1,15 @@
+from __future__ import unicode_literals
+
 from django.apps import apps
 from django.conf import settings
 from casepro.pods.base import PodPlugin
 
 
 def load_pod(index, config):
-    '''
+    """
     Given the index of the pod, and the config dictionary for the pod, this
     returns the instance of that pod.
-    '''
+    """
     config = config.copy()
     pod_type = apps.get_app_config(config.pop('label'))
 

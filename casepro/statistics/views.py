@@ -14,7 +14,7 @@ from temba_client.utils import parse_iso8601
 
 from casepro.cases.models import Partner
 from casepro.msgs.models import Label
-from casepro.utils import date_to_milliseconds, month_range
+from casepro.utils import date_to_milliseconds, month_range, JSONEncoder
 from casepro.utils.export import BaseDownloadView
 
 from .models import datetime_to_date, DailyCount, DailyCountExport
@@ -27,13 +27,25 @@ MONTH_NAMES = (
 )
 
 
-class BasePerDayChart(OrgPermsMixin, SmartTemplateView):
-    num_months = 3
+class BaseChart(OrgPermsMixin, SmartTemplateView):
+    permission = 'orgs.org_charts'
 
     def get(self, request, *args, **kwargs):
+        return JsonResponse(self.get_data(request), encoder=JSONEncoder)
+
+    def get_data(self, request):
+        """
+        Subclasses override this to provide data for the chart
+        """
+
+
+class BasePerDayChart(BaseChart):
+    num_days = 60
+
+    def get_data(self, request):
         today = datetime_to_date(timezone.now(), self.request.org)
 
-        since = today - relativedelta(months=self.num_months)
+        since = today - relativedelta(days=self.num_days - 1)
         totals = self.get_day_totals(request, since)
         totals_by_day = {t[0]: t[1] for t in totals}
 
@@ -46,34 +58,18 @@ class BasePerDayChart(OrgPermsMixin, SmartTemplateView):
 
             day += relativedelta(days=1)
 
-        return JsonResponse({'data': series})
+        return {'series': series}
 
     def get_day_totals(self, request, since):
         """
-        Chart classes override this to provide a list of day/value tuples
+        Subclasses override this to provide a list of day/value tuples
         """
 
 
-class IncomingPerDayChart(BasePerDayChart):
-    """
-    Chart of incoming per day for either the current org or a given label
-    """
-    permission = 'orgs.org_charts'
-
-    def get_day_totals(self, request, since):
-        label_id = request.GET.get('label')
-
-        if label_id:
-            label = Label.get_all(org=request.org).get(pk=label_id)
-            return DailyCount.get_by_label([label], DailyCount.TYPE_INCOMING, since).day_totals()
-        else:
-            return DailyCount.get_by_org([self.request.org], DailyCount.TYPE_INCOMING, since).day_totals()
-
-
-class BasePerMonthChart(OrgPermsMixin, SmartTemplateView):
+class BasePerMonthChart(BaseChart):
     num_months = 12
 
-    def get(self, request, *args, **kwargs):
+    def get_data(self, request):
         now = timezone.now()
 
         since = month_range(-(self.num_months - 1))[0]  # last X months including this month
@@ -91,20 +87,32 @@ class BasePerMonthChart(OrgPermsMixin, SmartTemplateView):
             categories.append(six.text_type(MONTH_NAMES[month - 1]))
             series.append(totals_by_month.get(month, 0))
 
-        return JsonResponse({'categories': categories, 'series': series})
+        return {'categories': categories, 'series': series}
 
     def get_month_totals(self, request, since):
         """
-        Chart classes override this to provide a list of month/value tuples
+        Subclasses override this to provide a list of month/value tuples
         """
+
+
+class IncomingPerDayChart(BasePerDayChart):
+    """
+    Chart of incoming per day for either the current org or a given label
+    """
+    def get_day_totals(self, request, since):
+        label_id = request.GET.get('label')
+
+        if label_id:
+            label = Label.get_all(org=request.org).get(pk=label_id)
+            return DailyCount.get_by_label([label], DailyCount.TYPE_INCOMING, since).day_totals()
+        else:
+            return DailyCount.get_by_org([self.request.org], DailyCount.TYPE_INCOMING, since).day_totals()
 
 
 class RepliesPerMonthChart(BasePerMonthChart):
     """
     Chart of replies per month for either the current org, a given partner, or a given user
     """
-    permission = 'orgs.org_charts'
-
     def get_month_totals(self, request, since):
         partner_id = request.GET.get('partner')
         user_id = request.GET.get('user')
@@ -117,6 +125,39 @@ class RepliesPerMonthChart(BasePerMonthChart):
             return DailyCount.get_by_user(self.request.org, [user], DailyCount.TYPE_REPLIES, since).month_totals()
         else:
             return DailyCount.get_by_org([self.request.org], DailyCount.TYPE_REPLIES, since).month_totals()
+
+
+class MostUsedLabelsChart(BaseChart):
+    """
+    Pie chart of top 10 labels used in last 30 days
+    """
+    num_items = 10
+    num_days = 30
+
+    def get_data(self, request):
+        since = timezone.now() - relativedelta(days=self.num_days)
+        labels = Label.get_all(request.org, request.user)
+
+        counts_by_label = DailyCount.get_by_label(labels, DailyCount.TYPE_INCOMING, since).scope_totals()
+
+        # sort by highest count DESC, label name ASC
+        by_usage = sorted(six.iteritems(counts_by_label), key=lambda c: (-c[1], c[0].name))
+        by_usage = [c for c in by_usage if c[1]]  # remove zero counts
+
+        if len(by_usage) > self.num_items:
+            label_zones = by_usage[:self.num_items - 1]
+            others = by_usage[self.num_items - 1:]
+        else:
+            label_zones = by_usage
+            others = []
+
+        series = [{'name': l[0].name, 'y': l[1]} for l in label_zones]
+
+        # if there are remaining items, merge into single "Other" zone
+        if others:
+            series.append({'name': six.text_type(_("Other")), 'y': sum([o[1] for o in others])})
+
+        return {'series': series}
 
 
 class DailyCountExportCRUDL(SmartCRUDL):

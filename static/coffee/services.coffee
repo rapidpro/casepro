@@ -448,6 +448,12 @@ services.factory('StatisticsService', ['$http', '$httpParamSerializer', ($http, 
       return $http.get('/stats/replies_chart/?' + $httpParamSerializer(params)).then((response) -> response.data)
 
     #----------------------------------------------------------------------------
+    # Fetches data for replies by month chart
+    #----------------------------------------------------------------------------
+    labelsPieChart: () ->
+      return $http.get('/stats/labels_pie_chart/').then((response) -> response.data)
+
+    #----------------------------------------------------------------------------
     # Initiates a daily count export
     #----------------------------------------------------------------------------
     dailyCountExport: (type, after, before) ->
@@ -552,13 +558,11 @@ services.factory('PodApi', ['$window', '$http', ($window, $http) ->
 
     trigger: (podId, caseId, type, payload = {}) ->
       $http.post("/pods/action/#{podId}/", {
-          data: {
-            case_id: caseId
-            action: {
-              type,
-              payload
-            }
-          }
-        })
-        .then((d) -> d.data)
+        case_id: caseId
+        action: {
+          type,
+          payload
+        }
+      })
+      .then((d) -> d.data)
 ])

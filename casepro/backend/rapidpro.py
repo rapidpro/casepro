@@ -347,5 +347,5 @@ class RapidProBackend(BaseBackend):
         return [remote_as_json(m) for m in remote_messages if m.direction == 'out']
 
     def get_url_patterns(self):
-        '''The Rapidpro backend doesn't have any urls to register.'''
+        """The Rapidpro backend doesn't have any urls to register."""
         return []

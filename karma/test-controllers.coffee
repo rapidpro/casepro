@@ -553,6 +553,8 @@ describe('controllers:', () ->
 
     it('onTabSelect', () ->
       repliesChart = spyOnPromise($q, $scope, StatisticsService, 'repliesChart')
+      incomingChart = spyOnPromise($q, $scope, StatisticsService, 'incomingChart')
+      labelsPieChart = spyOnPromise($q, $scope, StatisticsService, 'labelsPieChart')
       fetchPartners = spyOnPromise($q, $scope, PartnerService, 'fetchAll')
       fetchLabels = spyOnPromise($q, $scope, LabelService, 'fetchAll')
       fetchUsers = spyOnPromise($q, $scope, UserService, 'fetchNonPartner')
@@ -560,6 +562,8 @@ describe('controllers:', () ->
       $scope.onTabSelect(0)
 
       expect(StatisticsService.repliesChart).toHaveBeenCalledWith()
+      expect(StatisticsService.incomingChart).toHaveBeenCalledWith()
+      expect(StatisticsService.labelsPieChart).toHaveBeenCalledWith()
 
       $scope.onTabSelect(1)
 
