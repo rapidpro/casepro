@@ -684,13 +684,26 @@ describe('controllers:', () ->
       $scope = $rootScope.$new()
 
       PodApi = new class PodApi
-        get: -> $q.resolve({foo: 'bar'})
+        get: -> $q.resolve({
+          items: [],
+          actions: []
+        })
         trigger: -> $q.resolve({success: true})
     )
 
     describe('init', () ->
       it('should fetch and attach pod data to the scope', () ->
-        spyOn(PodApi, 'get').and.returnValue($q.resolve({foo: 'bar'}))
+        spyOn(PodApi, 'get').and.returnValue($q.resolve({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }]
+          actions: [{
+            type: 'baz',
+            name: 'Baz',
+            payload: {}
+          }]
+        }))
 
         $controller('PodController', {
           $scope
@@ -704,7 +717,18 @@ describe('controllers:', () ->
         expect($scope.caseId).toEqual(23)
         expect($scope.podConfig).toEqual({title: 'Baz'})
         expect(PodApi.get).toHaveBeenCalledWith(21, 23)
-        expect($scope.podData).toEqual({foo: 'bar'})
+        expect($scope.podData).toEqual({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }]
+          actions: [{
+            type: 'baz',
+            name: 'Baz',
+            isBusy: false,
+            payload: {}
+          }]
+        })
       )
     )
 
@@ -713,7 +737,6 @@ describe('controllers:', () ->
         $scope.podId = 21
         $scope.caseId = 23
         $scope.podConfig = {title: 'Foo'}
-        $scope.podData = {bar: 'baz'}
 
         $controller('PodController', {
           $scope
@@ -733,20 +756,41 @@ describe('controllers:', () ->
         $scope.podId = 21
         $scope.caseId = 23
         $scope.podConfig = {title: 'Foo'}
-        $scope.podData = {bar: 'baz'}
 
         $controller('PodController', {
           $scope
           PodApi
         })
 
-        spyOn(PodApi, 'get').and.returnValue($q.resolve({quux: 'corge'}))
+        spyOn(PodApi, 'get').and.returnValue($q.resolve({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }]
+          actions: [{
+            type: 'baz',
+            name: 'Baz',
+            payload: {}
+          }]
+        }))
+
         spyOn(PodApi, 'trigger').and.returnValue($q.resolve({success: true}))
 
         $scope.trigger('grault', {garply: 'waldo'})
         $scope.$apply()
 
-        expect($scope.podData).toEqual({quux: 'corge'})
+        expect($scope.podData).toEqual({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }]
+          actions: [{
+            type: 'baz',
+            name: 'Baz',
+            isBusy: false,
+            payload: {}
+          }]
+        })
       )
     )
   )

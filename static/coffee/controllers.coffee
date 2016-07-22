@@ -829,6 +829,7 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
 
   $scope.update = ->
     PodApi.get($scope.podId, $scope.caseId)
+      .then(parsePodData)
       .then((d) -> $scope.podData = d)
 
   $scope.trigger = (type, payload) ->
@@ -845,4 +846,18 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
   $scope.onTriggerSuccess = () ->
     # TODO update notes
     $scope.update()
+
+  parsePodData = (d) ->
+    d = angular.extend({
+      items: [],
+      actions: []
+    }, d)
+
+    d.actions = d.actions
+      .map(parsePodAction)
+
+    d
+
+  parsePodAction = (d) ->
+    angular.extend({isBusy: false}, d)
 ])
