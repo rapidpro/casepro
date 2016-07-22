@@ -840,7 +840,7 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
           $scope.onTriggerFailure(payload))
 
   $scope.onTriggerFailure = (payload) ->
-    # TODO show failure message
+    $scope.$emit('podActionFailure', payload)
 
   $scope.onTriggerSuccess = () ->
     # TODO update notes

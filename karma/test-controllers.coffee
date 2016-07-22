@@ -729,6 +729,24 @@ describe('controllers:', () ->
           .toHaveBeenCalledWith(21, 23, 'grault', {garply: 'waldo'})
       )
 
+      it('should emit a podActionFailure event if successful', (done) ->
+        $scope.podId = 21
+        $scope.caseId = 23
+        $scope.podConfig = {title: 'Foo'}
+        $scope.podData = {bar: 'baz'}
+
+        $controller('PodController', {
+          $scope
+          PodApi
+        })
+
+        spyOn(PodApi, 'trigger').and.returnValue($q.resolve({success: false}))
+        $scope.trigger('grault', {garply: 'waldo'})
+
+        $scope.$on('podActionFailure', -> done())
+        $scope.$apply()
+      )
+
       it('should fetch and attach data to the scope if successful', () ->
         $scope.podId = 21
         $scope.caseId = 23
