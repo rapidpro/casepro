@@ -738,6 +738,11 @@ describe('controllers:', () ->
         $scope.caseId = 23
         $scope.podConfig = {title: 'Foo'}
 
+        $scope.podData = {
+          items: [],
+          actions: []
+        }
+
         $controller('PodController', {
           $scope
           PodApi
@@ -752,10 +757,46 @@ describe('controllers:', () ->
           .toHaveBeenCalledWith(21, 23, 'grault', {garply: 'waldo'})
       )
 
+      it('should mark the action as busy', () ->
+        $scope.podId = 21
+        $scope.caseId = 23
+        $scope.podConfig = {title: 'Foo'}
+
+        $scope.podData = {
+          items: [],
+          actions: [{
+            type: 'grault'
+            isBusy: false,
+            payload: {}
+          }, {
+            type: 'fred',
+            isBusy: false,
+            payload: {}
+          }]
+        }
+
+        $controller('PodController', {
+          $scope
+          PodApi
+        })
+
+        spyOn(PodApi, 'trigger').and.returnValue($q.resolve({success: true}))
+
+        $scope.trigger('grault', {garply: 'waldo'})
+        expect($scope.podData.actions[0].isBusy).toBe(true)
+
+        $scope.$apply()
+      )
+
       it('should fetch and attach data to the scope if successful', () ->
         $scope.podId = 21
         $scope.caseId = 23
         $scope.podConfig = {title: 'Foo'}
+
+        $scope.podData = {
+          items: [],
+          actions: []
+        }
 
         $controller('PodController', {
           $scope

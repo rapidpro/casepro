@@ -833,12 +833,10 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
       .then((d) -> $scope.podData = d)
 
   $scope.trigger = (type, payload) ->
+    $scope.podData.actions = updateAction(type, {isBusy: true})
+
     PodApi.trigger($scope.podId, $scope.caseId, type, payload)
-      .then(({success, payload}) ->
-        if success
-          $scope.onTriggerSuccess()
-        else
-          $scope.onTriggerFailure(payload))
+      .then((res) -> triggerDone(type, res))
 
   $scope.onTriggerFailure = (payload) ->
     # TODO show failure message
@@ -846,6 +844,16 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
   $scope.onTriggerSuccess = () ->
     # TODO update notes
     $scope.update()
+
+  triggerDone = (type, {success, payload}) ->
+    if success
+      $scope.onTriggerSuccess()
+    else
+      $scope.onTriggerFailure(payload)
+
+  updateAction = (type, props) ->
+    $scope.podData.actions
+      .map((d) -> if d.type == type then angular.extend({}, d, props) else d)
 
   parsePodData = (d) ->
     d = angular.extend({
@@ -859,5 +867,5 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
     d
 
   parsePodAction = (d) ->
-    angular.extend({isBusy: false}, d)
+    angular.extend({}, d, {isBusy: false})
 ])
