@@ -113,7 +113,7 @@ class PerformPodActionView(BaseCasesTest):
             'unicef', reverse('perform_pod_action', args=('0',)), {})
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json, {
-            'reason': 'Request object needs to have a "case" field'
+            'reason': 'Request object needs to have a "case_id" field'
         })
 
     def test_pod_valid_request(self):
