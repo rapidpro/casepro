@@ -91,10 +91,23 @@ class ContactTest(BaseCasesTest):
     def test_as_json(self):
         self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "Ann"})
 
-        # full=True means include visible contact fields
-        self.assertEqual(self.ann.as_json(full=True), {'id': self.ann.pk,
-                                                       'name': "Ann",
-                                                       'fields': {'nickname': None, 'age': "32"}})
+        # full=True means include visible contact fields and laanguage etc
+        self.assertEqual(self.ann.as_json(full=True), {
+            'id': self.ann.pk,
+            'name': "Ann",
+            'fields': {'nickname': None, 'age': "32"},
+            'language': {'code': 'eng', 'name': "English"}
+        })
+
+        self.ann.language = None
+        self.ann.save()
+
+        self.assertEqual(self.ann.as_json(full=True), {
+            'id': self.ann.pk,
+            'name': "Ann",
+            'fields': {'nickname': None, 'age': "32"},
+            'language': None
+        })
 
         # if site uses anon contacts then name is obscured
         with override_settings(SITE_ANON_CONTACTS=True):
@@ -155,7 +168,12 @@ class ContactCRUDLTest(BaseCasesTest):
 
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json, {'id': self.ann.pk, 'name': "Ann", 'fields': {'age': '32', 'nickname': None}})
+        self.assertEqual(response.json, {
+            'id': self.ann.pk,
+            'name': "Ann",
+            'fields': {'age': '32', 'nickname': None},
+            'language': {'code': 'eng', 'name': "English"}
+        })
 
 
 class FieldCRUDLTest(BaseCasesTest):

@@ -149,6 +149,11 @@
                   - trans "Name"
                 .contact-field-value.col-sm-6
                   [[ caseObj.contact.name ]]
+              .row{ ng-if:"contact.language" }
+                .contact-field-label.col-sm-6
+                  - trans "Language"
+                .contact-field-value.col-sm-6
+                  [[ contact.language.name ]]
               .row{ ng-repeat:"field in fields" }
                 .contact-field-label.col-sm-6
                   [[ field.label ]]

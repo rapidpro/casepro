@@ -7,7 +7,7 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCRUDL, SmartReadView, SmartListView, SmartFormView
 
-from casepro.utils import JSONEncoder
+from casepro.utils import JSONEncoder, get_language_name
 
 from .models import Contact, Group, Field
 
@@ -43,6 +43,9 @@ class ContactCRUDL(SmartCRUDL):
                 fields += self.superuser_fields
 
             return fields
+
+        def get_language(self, obj):
+            return get_language_name(obj.language) if obj.language else None
 
         def get_groups(self, obj):
             return ", ".join([g.name for g in obj.groups.all()])
