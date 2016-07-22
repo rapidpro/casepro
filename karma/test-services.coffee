@@ -638,12 +638,10 @@ describe('services:', () ->
     describe('trigger', () ->
       it('triggers an action', () ->
         $httpBackend.expectPOST('/pods/action/21/', {
-            data: {
-              case_id: 23,
-              action: {
-                type: 'foo',
-                payload: {bar: 'baz'}
-              }
+            case_id: 23,
+            action: {
+              type: 'foo',
+              payload: {bar: 'baz'}
             }
           })
           .respond({quux: 'corge'})
