@@ -202,8 +202,7 @@ class BaseBackend(object):
     @abstractmethod
     def get_url_patterns(self):
         """
-        Returns the list of URL patterns that should be registered for this
-        backend.
+        Returns the list of URL patterns that should be registered for this backend.
 
         :return: a list of URL patterns.
         """
