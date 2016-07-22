@@ -84,6 +84,17 @@ describe('controllers:', () ->
       expect($scope.contact).toEqual(test.ann)
     )
 
+    it('should should add a notification on podActionFailure', () ->
+      $scope.notifications = []
+
+      $scope.$emit('podActionFailure', {message: 'o_O'})
+
+      expect($scope.notifications).toEqual([{
+        type: 'danger',
+        message: 'o_O'
+      }])
+    )
+
     it('addNote', () ->
       noteModal = spyOnPromise($q, $scope, UtilsService, 'noteModal')
       addNote = spyOnPromise($q, $scope, CaseService, 'addNote')
