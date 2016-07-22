@@ -7,7 +7,8 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCRUDL, SmartReadView, SmartListView, SmartFormView
 
-from casepro.utils import JSONEncoder, get_language_name
+from casepro.cases.models import Case
+from casepro.utils import json_encode, JSONEncoder
 
 from .models import Contact, Group, Field
 
@@ -17,7 +18,7 @@ class ContactCRUDL(SmartCRUDL):
     Simple contact CRUDL for debugging by superusers, i.e. not exposed to regular users for now
     """
     model = Contact
-    actions = ('list', 'read', 'fetch')
+    actions = ('list', 'read', 'fetch', 'cases')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('uuid', 'name', 'language', 'created_on')
@@ -26,44 +27,15 @@ class ContactCRUDL(SmartCRUDL):
             return self.model.objects.filter(org=self.request.org)
 
     class Read(OrgObjPermsMixin, SmartReadView):
-        base_fields = ['language', 'groups']
-        superuser_fields = ['uuid', 'created_on', 'is_blocked', 'is_active']
-
-        def get_queryset(self, **kwargs):
-            contact_fields = Field.get_all(self.request.org, visible=True)
-            self.contact_field_keys = [f.key for f in contact_fields]
-            self.contact_field_labels = {f.key: f.label for f in contact_fields}
-
-            return self.model.objects.filter(org=self.request.org)
-
-        def derive_fields(self):
-            fields = self.base_fields + self.contact_field_keys
-
-            if self.request.user.is_superuser:
-                fields += self.superuser_fields
-
-            return fields
-
-        def get_language(self, obj):
-            return get_language_name(obj.language) if obj.language else None
-
-        def get_groups(self, obj):
-            return ", ".join([g.name for g in obj.groups.all()])
-
-        def lookup_field_value(self, context, obj, field):
-            if field in self.base_fields or field in self.superuser_fields:
-                return super(ContactCRUDL.Read, self).lookup_field_value(context, obj, field)
-            else:
-                return obj.get_fields().get(field)
-
-        def lookup_field_label(self, context, field, default=None):
-            if field in self.base_fields or field in self.superuser_fields:
-                return super(ContactCRUDL.Read, self).lookup_field_label(context, field, default)
-            else:
-                return self.contact_field_labels.get(field, default)
-
         def get_context_data(self, **kwargs):
             context = super(ContactCRUDL.Read, self).get_context_data(**kwargs)
+
+            fields = Field.get_all(self.object.org, visible=True).order_by('label')
+
+            context['context_data_json'] = json_encode({
+                'contact': self.object.as_json(full=True),
+                'fields': [f.as_json() for f in fields]
+            })
             context['backend_url'] = settings.SITE_EXTERNAL_CONTACT_URL % self.object.uuid
             return context
 
@@ -75,6 +47,24 @@ class ContactCRUDL(SmartCRUDL):
 
         def render_to_response(self, context, **response_kwargs):
             return JsonResponse(self.object.as_json(full=True), encoder=JSONEncoder)
+
+    class Cases(OrgObjPermsMixin, SmartReadView):
+        """
+        JSON endpoint for fetching a contact's cases
+        """
+        permission = 'contacts.contact_read'
+
+        def get_context_data(self, **kwargs):
+            context = super(ContactCRUDL.Cases, self).get_context_data(**kwargs)
+
+            cases = Case.get_all(self.request.org, self.request.user).filter(contact=self.object).order_by('-opened_on')
+            cases = cases.prefetch_related('labels').select_related('contact', 'assignee')
+
+            context['object_list'] = cases
+            return context
+
+        def render_to_response(self, context, **response_kwargs):
+            return JsonResponse({'results': [c.as_json() for c in context['object_list']]}, encoder=JSONEncoder)
 
 
 class GroupCRUDL(SmartCRUDL):

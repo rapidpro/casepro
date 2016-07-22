@@ -642,6 +642,21 @@ controllers.controller('CaseTimelineController', ['$scope', '$timeout', 'CaseSer
 
 
 #============================================================================
+# Contact dashboard controller
+#============================================================================
+controllers.controller('ContactController', ['$scope', '$window', 'ContactService', ($scope, $window, ContactService) ->
+
+  $scope.contact = $window.contextData.contact
+  $scope.fields = $window.contextData.fields
+
+  $scope.init = () ->
+    ContactService.fetchCases($scope.contact).then((cases) ->
+      $scope.cases = cases
+    )
+])
+
+
+#============================================================================
 # Label dashboard controller
 #============================================================================
 controllers.controller('LabelController', ['$scope', '$window', '$controller', 'UtilsService', 'LabelService', 'StatisticsService', ($scope, $window, $controller, UtilsService, LabelService, StatisticsService) ->
