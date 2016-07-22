@@ -142,18 +142,12 @@ class ContactCRUDLTest(BaseCasesTest):
         self.login(self.user1)
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Age")
+        self.assertNotContains(response, "View External")
 
         # administrators get button linking to backend
         self.login(self.admin)
         response = self.url_get('unicef', url)
         self.assertContains(response, "View External")
-
-        # superusers see extra fields
-        self.login(self.superuser)
-        response = self.url_get('unicef', url)
-        self.assertContains(response, "Is Blocked")
-        self.assertContains(response, "Is Active")
 
         # users from other orgs get nothing
         self.login(self.user4)
@@ -174,6 +168,34 @@ class ContactCRUDLTest(BaseCasesTest):
             'fields': {'age': '32', 'nickname': None},
             'language': {'code': 'eng', 'name': "English"}
         })
+
+    def test_cases(self):
+        url = reverse('contacts.contact_cases', args=[self.ann.pk])
+
+        msg1 = self.create_message(self.unicef, 101, self.ann, "What is tea?")
+        case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [])
+        case1.close(self.admin)
+        msg2 = self.create_message(self.unicef, 102, self.ann, "I'm pregnant")
+        case2 = self.create_case(self.unicef, self.ann, self.moh, msg2, [self.pregnancy, self.aids])
+
+        # log in as admin
+        self.login(self.admin)
+
+        # should see all cases in reverse chronological order
+        response = self.url_get('unicef', url)
+        self.assertEqual([c['id'] for c in response.json['results']], [case2.pk, case1.pk])
+
+        self.login(self.user1)
+
+        # should see both cases because of assignment/labels
+        response = self.url_get('unicef', url)
+        self.assertEqual([c['id'] for c in response.json['results']], [case2.pk, case1.pk])
+
+        self.login(self.user3)
+
+        # should see only case with pregnancy label
+        response = self.url_get('unicef', url)
+        self.assertEqual([c['id'] for c in response.json['results']], [case2.pk])
 
 
 class FieldCRUDLTest(BaseCasesTest):
