@@ -129,12 +129,14 @@ class UtilsTest(BaseCasesTest):
         self.assertTrue(uuid_to_int(uuid.hex) >= 0)
 
     def test_get_language_name(self):
-        self.assertEquals('French', get_language_name('fre'))
-        self.assertEquals('French', get_language_name('fre'))  # from cache
-        self.assertEquals('Creoles and pidgins, English based', get_language_name('cpe'))
+        self.assertEqual(get_language_name('fre'), "French")
+        self.assertEqual(get_language_name('fre'), "French")  # from cache
+        self.assertEqual(get_language_name('cpe'), "Creoles and pidgins, English based")
 
         # should strip off anything after an open paren or semicolon
-        self.assertEquals('Official Aramaic', get_language_name('arc'))
+        self.assertEqual(get_language_name('arc'), "Official Aramaic")
+
+        self.assertIsNone(get_language_name('xxxxx'))
 
 
 class EmailTest(BaseCasesTest):

@@ -99,6 +99,16 @@ class ContactTest(BaseCasesTest):
             'language': {'code': 'eng', 'name': "English"}
         })
 
+        self.ann.language = None
+        self.ann.save()
+
+        self.assertEqual(self.ann.as_json(full=True), {
+            'id': self.ann.pk,
+            'name': "Ann",
+            'fields': {'nickname': None, 'age': "32"},
+            'language': None
+        })
+
         # if site uses anon contacts then name is obscured
         with override_settings(SITE_ANON_CONTACTS=True):
             self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "7B7DD8"})

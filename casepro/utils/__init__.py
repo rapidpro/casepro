@@ -172,10 +172,7 @@ def uuid_to_int(uuid):
 
 def get_language_name(iso_code):
     """
-    Gets a language name for a given ISO639-2 code.
-
-    Args:
-        iso_code: three character iso_code
+    Gets the language name for the given ISO639-2 code.
     """
     if iso_code not in LANGUAGES_BY_CODE:
         try:
