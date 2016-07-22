@@ -201,6 +201,12 @@ class Contact(models.Model):
         else:
             return fields
 
+    def get_language(self):
+        if self.language:
+            return {'code': self.language, 'name': get_language_name(self.language)}
+        else:
+            return None
+
     def prepare_for_case(self):
         """
         Prepares this contact to be put in a case
@@ -269,11 +275,7 @@ class Contact(models.Model):
 
         if full:
             result['fields'] = self.get_fields(visible=True)
-
-            if self.language:
-                result['language'] = {'code': self.language, 'name': get_language_name(self.language)}
-            else:
-                result['language'] = None
+            result['language'] = self.get_language()
 
         return result
 
