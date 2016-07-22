@@ -46,11 +46,11 @@
             - trans "Details"
           .panel-body
             .container-fluid
-              .row{ ng-if:"contact.language" }
+              .row
                 .contact-field-label.col-sm-6
                   - trans "Language"
                 .contact-field-value.col-sm-6
-                  [[ contact.language.name ]]
+                  [[ contact.language.name || "--" ]]
               .row{ ng-repeat:"field in fields" }
                 .contact-field-label.col-sm-6
                   [[ field.label ]]
