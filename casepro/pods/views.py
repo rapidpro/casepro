@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import json
 from django.http import JsonResponse
 
+from casepro.cases.models import Case, CaseAction
 from casepro.pods import registry
 
 
@@ -33,5 +34,16 @@ def perform_pod_action(request, index):
         data = json.loads(request.body)
     except ValueError as e:
         return JsonResponse({'reason': 'JSON decode error', 'details': e.message}, status=400)
+
+    case_id = data.get('case_id')
+    if case_id is None:
+        return JsonResponse(
+            {'reason': 'Request object needs to have a "case_id" field'}, status=400)
+
+    action_data = data.get('action', {})
+    success, payload = pod.perform_action(action_data.get('type'), action_data.get('payload', {}))
+    if success is True:
+        case = Case.objects.get(id=case_id)
+        CaseAction.create(case, request.user, CaseAction.ADD_NOTE, note=payload.get('message'))
 
     return JsonResponse(pod.perform_action(data))
