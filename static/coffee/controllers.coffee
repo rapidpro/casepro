@@ -836,9 +836,9 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
     $scope.podData.actions = updateAction(type, {isBusy: true})
 
     PodApi.trigger($scope.podId, $scope.caseId, type, payload)
-      .then((res) -> triggerDone(type, res))
+      .then((res) -> onTriggerDone(type, res))
 
-  triggerDone = (type, {success, payload}) ->
+  onTriggerDone = (type, {success, payload}) ->
     if success
       onTriggerSuccess()
     else
