@@ -96,6 +96,7 @@ class ContactTest(BaseCasesTest):
             'id': self.ann.pk,
             'name': "Ann",
             'fields': {'nickname': None, 'age': "32"},
+            'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
             'language': {'code': 'eng', 'name': "English"}
         })
 
@@ -105,6 +106,7 @@ class ContactTest(BaseCasesTest):
         self.assertEqual(self.ann.as_json(full=True), {
             'id': self.ann.pk,
             'name': "Ann",
+            'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
             'fields': {'nickname': None, 'age': "32"},
             'language': None
         })
@@ -166,6 +168,7 @@ class ContactCRUDLTest(BaseCasesTest):
             'id': self.ann.pk,
             'name': "Ann",
             'fields': {'age': '32', 'nickname': None},
+            'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
             'language': {'code': 'eng', 'name': "English"}
         })
 

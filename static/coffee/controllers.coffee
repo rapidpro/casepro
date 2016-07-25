@@ -648,9 +648,7 @@ controllers.controller('ContactController', ['$scope', '$window', 'ContactServic
 
   $scope.contact = $window.contextData.contact
   $scope.fields = $window.contextData.fields
-
-  $scope.contact.groups = []
-
+  
   $scope.init = () ->
     ContactService.fetchCases($scope.contact).then((cases) ->
       $scope.cases = cases
