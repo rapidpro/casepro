@@ -19,7 +19,19 @@
         %span.glyphicon.glyphicon-phone
         [[ contact.name ]]
 
-      %br
+      %ul.header-details
+        %li{ ng-if:"contact.blocked || contact.stopped" }
+          %strong><
+            - trans "Status"
+          :
+          %span.label-container{ ng-if:"contact.blocked" }
+            %span.label.label-danger
+              - trans "Blocked"
+            &nbsp;
+          %span.label-container{ ng-if:"contact.stopped" }
+            %span.label.label-danger
+              - trans "Stopped"
+            &nbsp;
 
     .row
       .col-md-8

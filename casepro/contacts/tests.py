@@ -96,7 +96,9 @@ class ContactTest(BaseCasesTest):
             'id': self.ann.pk,
             'name': "Ann",
             'fields': {'nickname': None, 'age': "32"},
-            'language': {'code': 'eng', 'name': "English"}
+            'language': {'code': 'eng', 'name': "English"},
+            'blocked': False,
+            'stopped': False
         })
 
         self.ann.language = None
@@ -106,7 +108,9 @@ class ContactTest(BaseCasesTest):
             'id': self.ann.pk,
             'name': "Ann",
             'fields': {'nickname': None, 'age': "32"},
-            'language': None
+            'language': None,
+            'blocked': False,
+            'stopped': False
         })
 
         # if site uses anon contacts then name is obscured
@@ -166,7 +170,9 @@ class ContactCRUDLTest(BaseCasesTest):
             'id': self.ann.pk,
             'name': "Ann",
             'fields': {'age': '32', 'nickname': None},
-            'language': {'code': 'eng', 'name': "English"}
+            'language': {'code': 'eng', 'name': "English"},
+            'blocked': False,
+            'stopped': False,
         })
 
     def test_cases(self):
