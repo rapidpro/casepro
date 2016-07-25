@@ -868,6 +868,12 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
 
     d
 
-  parsePodAction = (d) ->
-    angular.extend({}, d, {isBusy: false})
+  parsePodAction = ({type, name, busy_text, payload}) ->
+    {
+      type,
+      name,
+      payload,
+      busyText: busy_text ? name,
+      isBusy: false
+    }
 ])

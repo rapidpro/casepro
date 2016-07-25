@@ -725,6 +725,102 @@ describe('controllers:', () ->
           actions: [{
             type: 'baz',
             name: 'Baz',
+            busyText: 'Baz',
+            isBusy: false,
+            payload: {}
+          }]
+        })
+      )
+    )
+
+    describe('update', () ->
+      it('should fetch and update pod data', () ->
+        $scope.podId = 21
+        $scope.caseId = 23
+
+        spyOn(PodApi, 'get').and.returnValue($q.resolve({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }]
+          actions: [{
+            type: 'baz',
+            name: 'Baz',
+            payload: {}
+          }]
+        }))
+
+        $controller('PodController', {
+          $scope
+          PodApi
+        })
+
+        $scope.update()
+        $scope.$apply()
+
+        expect(PodApi.get).toHaveBeenCalledWith(21, 23)
+
+        expect($scope.podData).toEqual({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }]
+          actions: [{
+            type: 'baz',
+            name: 'Baz',
+            busyText: 'Baz',
+            isBusy: false,
+            payload: {}
+          }]
+        })
+      )
+
+      it("should default an action's busy text to the action's name", () ->
+        $scope.podId = 21
+        $scope.caseId = 23
+
+        spyOn(PodApi, 'get').and.returnValue($q.resolve({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }]
+          actions: [{
+            type: 'baz',
+            name: 'Baz',
+            busy_text: 'Bazzing',
+            payload: {}
+          }, {
+            type: 'quux',
+            name: 'Quux',
+            payload: {}
+          }]
+        }))
+
+        $controller('PodController', {
+          $scope
+          PodApi
+        })
+
+        $scope.update()
+        $scope.$apply()
+
+        expect(PodApi.get).toHaveBeenCalledWith(21, 23)
+
+        expect($scope.podData).toEqual({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }]
+          actions: [{
+            type: 'baz',
+            name: 'Baz',
+            busyText: 'Bazzing',
+            isBusy: false,
+            payload: {}
+          }, {
+            type: 'quux',
+            name: 'Quux',
+            busyText: 'Quux',
             isBusy: false,
             payload: {}
           }]
@@ -832,6 +928,7 @@ describe('controllers:', () ->
           actions: [{
             type: 'baz',
             name: 'Baz',
+            busyText: 'Baz',
             isBusy: false,
             payload: {}
           }]
