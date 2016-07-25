@@ -120,10 +120,14 @@ describe('directives:', () ->
       $rootScope.podData.actions = [{
         type: 'foo',
         name: 'Foo',
+        busyText: 'Foo',
+        isBusy: false,
         payload: {bar: 'baz'}
       }, {
         type: 'quux',
         name: 'Quux',
+        busyText: 'Quux',
+        isBusy: false,
         payload: {corge: 'grault'}
       }]
 
@@ -137,14 +141,35 @@ describe('directives:', () ->
       expect(action2.textContent).toContain('Quux')
     )
 
+    it('should draw busy pod actions', ->
+      $rootScope.podData.actions = [{
+        type: 'baz',
+        name: 'Baz',
+        isBusy: true,
+        busyText: 'Bazzing',
+        payload: {}
+      }]
+
+      el = $compile('<cp-pod/>')($rootScope)[0]
+      $rootScope.$digest()
+
+      action1 = el.querySelectorAll('.pod-action')[0]
+      expect(action1.textContent).toContain('Bazzing')
+      expect(action1.classList.contains('disabled')).toBe(true)
+    )
+
     it('should call trigger() when an action button is clicked', ->
       $rootScope.podData.actions = [{
         type: 'foo',
         name: 'Foo',
+        busyText: 'Foo',
+        isBusy: false,
         payload: {a: 'b'}
       }, {
         type: 'bar',
         name: 'Bar',
+        busyText: 'Bar',
+        isBusy: false,
         payload: {c: 'd'}
       }]
 
