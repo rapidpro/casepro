@@ -551,18 +551,32 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
 # Pod API service
 #=====================================================================
 services.factory('PodApi', ['$window', '$http', ($window, $http) ->
-  new class PodApi
-    get: (podId, caseId) ->
-      $http.get("/pods/read/#{podId}/", {params: {case_id: caseId}})
+  method = (fn) ->
+    res = (args...) ->
+      $http(fn(args...))
         .then((d) -> d.data)
 
-    trigger: (podId, caseId, type, payload = {}) ->
-      $http.post("/pods/action/#{podId}/", {
+    res.fn = fn
+    res
+
+  new class PodApi
+    method: method,
+
+    get: method((podId, caseId) -> {
+      method: 'GET',
+      url: "/pods/read/#{podId}/",
+      params: {case_id: caseId}
+    })
+
+    trigger: method((podId, caseId, type, payload = {}) -> {
+      method: 'POST',
+      url: "/pods/action/#{podId}/",
+      data: {
         case_id: caseId
         action: {
           type,
           payload
         }
-      })
-      .then((d) -> d.data)
+      }
+    })
 ])
