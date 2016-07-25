@@ -39,9 +39,14 @@ describe('controllers:', () ->
       nickname: {key: 'nickname', label: "Nickname", value_type: 'T'},
       age: {key: 'age', label: "Age", value_type: 'N'},
 
+      # groups
+      females: {id: 701, name: "Females"},
+      males: {id: 702, name: "Males"},
+      ureporters: {id: 703, name: "U-Reporters"},
+
       # contacts
-      ann: {id: 401, name: "Ann", fields: {'age': 35}},
-      bob: {id: 402, name: "Bob", fields: {}}
+      ann: {id: 401, name: "Ann", fields: {'age': 35}, groups: [{id: 701, name: "Females"}, {id: 703, name: "U-Reporters"}]},
+      bob: {id: 402, name: "Bob", fields: {}, groups: []}
     }
   )
 
@@ -558,6 +563,10 @@ describe('controllers:', () ->
 
       expect(ContactService.fetchCases).toHaveBeenCalledWith(test.ann)
       expect($scope.cases).toEqual(cases)
+    )
+
+    it('getGroups', () ->
+      expect($scope.getGroups()).toEqual("Females, U-Reporters")
     )
   )
 
