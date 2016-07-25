@@ -838,20 +838,21 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
     PodApi.trigger($scope.podId, $scope.caseId, type, payload)
       .then((res) -> triggerDone(type, res))
 
-  $scope.onTriggerFailure = (payload) ->
-    # TODO show failure message
-
-  $scope.onTriggerSuccess = () ->
-    # TODO update notes
-    $scope.update()
-
   triggerDone = (type, {success, payload}) ->
     if success
-      $scope.onTriggerSuccess()
+      onTriggerSuccess()
     else
-      $scope.onTriggerFailure(payload)
+      onTriggerFailure(payload)
 
     $scope.podData.actions = updateAction(type, {isBusy: false})
+
+  onTriggerFailure = (payload) ->
+    $scope.$emit('podActionFailure', payload)
+    # TODO show failure message
+
+  onTriggerSuccess = () ->
+    $scope.$emit('podActionSuccess')
+    $scope.update()
 
   updateAction = (type, props) ->
     $scope.podData.actions
@@ -868,12 +869,11 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
 
     d
 
-  parsePodAction = ({type, name, busy_text, payload}) ->
-    {
-      type,
-      name,
-      payload,
-      busyText: busy_text ? name,
-      isBusy: false
-    }
+  parsePodAction = ({type, name, busy_text, payload}) -> {
+    type,
+    name,
+    payload,
+    busyText: busy_text ? name,
+    isBusy: false
+  }
 ])
