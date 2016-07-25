@@ -19,8 +19,6 @@
         %span.glyphicon.glyphicon-phone
         [[ contact.name ]]
 
-      %br
-
     .row
       .col-md-8
         .panel.panel-default
@@ -56,6 +54,15 @@
                   [[ field.label ]]
                 .contact-field-value.col-sm-6
                   <cp-fieldvalue contact="contact" field="field" />
+
+        .panel.panel-default
+          .panel-heading
+            - trans "Groups"
+          .panel-body
+            %span{ ng-if:"contact.groups.length > 0" }
+              [[ getGroups() ]]
+            .none{ ng-if:"contact.groups.length == 0", style:"padding: 0em" }
+              - trans "None"
 
 
 - block extra-style

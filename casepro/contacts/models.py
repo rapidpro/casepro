@@ -274,6 +274,7 @@ class Contact(models.Model):
         result = {'id': self.pk, 'name': self.get_display_name()}
 
         if full:
+            result['groups'] = [g.as_json(full=False) for g in self.groups.all()]
             result['fields'] = self.get_fields(visible=True)
             result['language'] = self.get_language()
 
