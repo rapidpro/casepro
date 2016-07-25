@@ -95,8 +95,9 @@ class ContactTest(BaseCasesTest):
         self.assertEqual(self.ann.as_json(full=True), {
             'id': self.ann.pk,
             'name': "Ann",
-            'fields': {'nickname': None, 'age': "32"},
             'language': {'code': 'eng', 'name': "English"},
+            'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
+            'fields': {'nickname': None, 'age': "32"},
             'blocked': False,
             'stopped': False
         })
@@ -107,8 +108,9 @@ class ContactTest(BaseCasesTest):
         self.assertEqual(self.ann.as_json(full=True), {
             'id': self.ann.pk,
             'name': "Ann",
-            'fields': {'nickname': None, 'age': "32"},
             'language': None,
+            'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
+            'fields': {'nickname': None, 'age': "32"},
             'blocked': False,
             'stopped': False
         })
@@ -169,10 +171,11 @@ class ContactCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json, {
             'id': self.ann.pk,
             'name': "Ann",
-            'fields': {'age': '32', 'nickname': None},
             'language': {'code': 'eng', 'name': "English"},
+            'fields': {'age': '32', 'nickname': None},
+            'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
             'blocked': False,
-            'stopped': False,
+            'stopped': False
         })
 
     def test_cases(self):
