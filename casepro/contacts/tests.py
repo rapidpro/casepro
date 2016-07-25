@@ -95,9 +95,11 @@ class ContactTest(BaseCasesTest):
         self.assertEqual(self.ann.as_json(full=True), {
             'id': self.ann.pk,
             'name': "Ann",
-            'fields': {'nickname': None, 'age': "32"},
+            'language': {'code': 'eng', 'name': "English"},
             'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
-            'language': {'code': 'eng', 'name': "English"}
+            'fields': {'nickname': None, 'age': "32"},
+            'blocked': False,
+            'stopped': False
         })
 
         self.ann.language = None
@@ -106,9 +108,11 @@ class ContactTest(BaseCasesTest):
         self.assertEqual(self.ann.as_json(full=True), {
             'id': self.ann.pk,
             'name': "Ann",
+            'language': None,
             'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
             'fields': {'nickname': None, 'age': "32"},
-            'language': None
+            'blocked': False,
+            'stopped': False
         })
 
         # if site uses anon contacts then name is obscured
@@ -167,9 +171,11 @@ class ContactCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json, {
             'id': self.ann.pk,
             'name': "Ann",
+            'language': {'code': 'eng', 'name': "English"},
             'fields': {'age': '32', 'nickname': None},
             'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
-            'language': {'code': 'eng', 'name': "English"}
+            'blocked': False,
+            'stopped': False
         })
 
     def test_cases(self):

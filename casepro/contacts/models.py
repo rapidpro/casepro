@@ -153,6 +153,8 @@ class Contact(models.Model):
 
     is_blocked = models.BooleanField(default=False, help_text="Whether this contact is blocked")
 
+    is_stopped = models.BooleanField(default=False, help_text="Whether this contact opted out of receiving messages")
+
     is_stub = models.BooleanField(default=False, help_text="Whether this contact is just a stub")
 
     suspended_groups = models.ManyToManyField(Group, help_text=_("Groups this contact has been suspended from"))
@@ -277,6 +279,8 @@ class Contact(models.Model):
             result['groups'] = [g.as_json(full=False) for g in self.groups.all()]
             result['fields'] = self.get_fields(visible=True)
             result['language'] = self.get_language()
+            result['blocked'] = self.is_blocked
+            result['stopped'] = self.is_stopped
 
         return result
 
