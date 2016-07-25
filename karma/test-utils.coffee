@@ -46,4 +46,19 @@ describe('utils:', () ->
       expect(utils.find(items, 'bar', "Z")).toEqual({foo: 5, bar: "Z"})
     )
   )
+
+  describe('trap', () ->
+    it('should call the accept function for values of the given type', () ->
+      class Foo
+      foo = new Foo()
+      expect(utils.trap(Foo, ((v) -> v), (-> null))(foo)).toEqual(foo)
+    )
+
+    it('should call the reject function for values not of the given type', () ->
+      class Foo
+      class Bar
+      bar = new Bar()
+      expect(utils.trap(Foo, ((v) -> v), (-> null))(bar)).toEqual(null)
+    )
+  )
 )
