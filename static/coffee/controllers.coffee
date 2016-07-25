@@ -851,6 +851,8 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
     else
       $scope.onTriggerFailure(payload)
 
+    $scope.podData.actions = updateAction(type, {isBusy: false})
+
   updateAction = (type, props) ->
     $scope.podData.actions
       .map((d) -> if d.type == type then angular.extend({}, d, props) else d)

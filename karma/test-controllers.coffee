@@ -780,6 +780,10 @@ describe('controllers:', () ->
           PodApi
         })
 
+        # defer getting new data indefinitely to prevent isBusy being set to
+        # false when we retrieve new data
+        spyOn(PodApi, 'get').and.returnValue($q.defer().promise)
+
         spyOn(PodApi, 'trigger').and.returnValue($q.resolve({success: true}))
 
         $scope.trigger('grault', {garply: 'waldo'})
