@@ -639,6 +639,22 @@ describe('services:', () ->
 
         $httpBackend.flush()
       )
+
+      it('rejects response errors as PodApiErrors', () ->
+        $httpBackend.expectGET('/pods/foo/')
+          .respond(500)
+
+        method = PodApi.method(-> {
+          method: 'GET',
+          url: "/pods/foo/"
+        })
+
+        method()
+          .catch((e) -> e)
+          .then((e) -> expect(e instanceof PodApi.PodApiError).toBe(true))
+
+        $httpBackend.flush()
+      )
     )
 
     describe('get', () ->
