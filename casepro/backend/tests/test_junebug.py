@@ -2,13 +2,14 @@ from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message
 from casepro.test import BaseCasesTest
 from django.conf import settings
+from django.http import HttpResponse
 from django.test import override_settings, RequestFactory
 import json
 import responses
 
 from ..junebug import (
     IdentityStore, JunebugBackend, JunebugMessageSendingError, IdentityStoreContactSyncer, IdentityStoreContact,
-    received_junebug_message, receive_identity_store_optout)
+    received_junebug_message, token_auth_required, receive_identity_store_optout)
 
 
 class JunebugBackendTest(BaseCasesTest):
@@ -714,7 +715,9 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         Only POST requests should be allowed.
         """
         request = self.factory.get(self.url)
-        response = receive_identity_store_optout(request)
+        with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
+            request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
+            response = receive_identity_store_optout(request)
         self.assertEqual(json.loads(response.content), {'reason': "Method not allowed."})
         self.assertEqual(response.status_code, 405)
 
@@ -723,7 +726,9 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         If the request contains invalid JSON in the body, an appropriate error message and code should be returned.
         """
         request = self.factory.post(self.url, content_type="application/json", data="{")
-        response = receive_identity_store_optout(request)
+        with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
+            request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
+            response = receive_identity_store_optout(request)
         self.assertEqual(
             json.loads(response.content), {
                 'reason': "JSON decode error",
@@ -760,7 +765,9 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         self.assertTrue(contact.is_active)
 
         request = self.get_optout_request(contact.uuid, "forget")
-        response = receive_identity_store_optout(request)
+        with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
+            request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
+            response = receive_identity_store_optout(request)
         self.assertEqual(response.content, '{"success": true}')
 
         # refresh contact from db
@@ -776,7 +783,9 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         self.assertFalse(contact.is_blocked)
 
         request = self.get_optout_request(contact.uuid, "stop")
-        response = receive_identity_store_optout(request)
+        with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
+            request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
+            response = receive_identity_store_optout(request)
         self.assertEqual(response.content, '{"success": true}')
 
         # refresh contact from db
@@ -791,7 +800,9 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         original_contact = Contact.get_or_create(self.unicef, "test_id", "testing")
 
         request = self.get_optout_request(original_contact.uuid, "unsubscribe")
-        response = receive_identity_store_optout(request)
+        with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
+            request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
+            response = receive_identity_store_optout(request)
         self.assertEqual(response.content, '{"success": true}')
 
         # refresh contact from db
@@ -807,7 +818,9 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         original_contact = Contact.get_or_create(self.unicef, "test_id", "testing")
 
         request = self.get_optout_request(original_contact.uuid, "unrecognised")
-        response = receive_identity_store_optout(request)
+        with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
+            request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
+            response = receive_identity_store_optout(request)
         self.assertEqual(
             json.loads(response.content),
             {'reason': 'Unrecognised value for "optout_type": unrecognised'})
@@ -821,7 +834,9 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         Contact.get_or_create(self.unicef, "test_id", "testing")
 
         request = self.get_optout_request("tester", "forget")
-        response = receive_identity_store_optout(request)
+        with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
+            request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
+            response = receive_identity_store_optout(request)
         self.assertEqual(json.loads(response.content), {'reason': "No Contact for id: tester"})
         self.assertEqual(response.status_code, 400)
 
@@ -843,11 +858,55 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
                 },
             })
         )
-        response = receive_identity_store_optout(request)
+        with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
+            request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
+            response = receive_identity_store_optout(request)
         self.assertEqual(
             json.loads(response.content),
             {'reason': 'Both "identity" and "optout_type" must be specified.'})
         self.assertEqual(response.status_code, 400)
+
+
+class TokenAuthRequiredTest(BaseCasesTest):
+    url = '/junebug/optout/'
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        super(TokenAuthRequiredTest, self).setUp()
+
+    def dummy_view(self, request):
+        return HttpResponse("OK")
+
+    def dummy_auth_token(self):
+        return "test_token"
+
+    def test_no_auth_header(self):
+        '''Tests that an authentication header is required'''
+        request = self.factory.get("url")
+        func = token_auth_required(self.dummy_auth_token)(self.dummy_view)
+        response = func(request)
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(json.loads(response.content),
+                         {"reason": "Authentication required"})
+        self.assertEqual(response['WWW-Authenticate'], "Token")
+
+    def test_wrong_auth_token(self):
+        '''Tests that the decorator restricts access with an incorrect token'''
+        request = self.factory.get("url")
+        request.META['HTTP_AUTHORIZATION'] = "Token tests"
+        func = token_auth_required(self.dummy_auth_token)(self.dummy_view)
+        response = func(request)
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(json.loads(response.content), {"reason": "Forbidden"})
+
+    def test_correct_token(self):
+        '''Tests that the decorator allows correct requests'''
+        request = self.factory.get("url")
+        request.META['HTTP_AUTHORIZATION'] = "Token " + self.dummy_auth_token()
+        func = token_auth_required(self.dummy_auth_token)(self.dummy_view)
+        response = func(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, "OK")
 
 
 class IdentityStoreTest(BaseCasesTest):
