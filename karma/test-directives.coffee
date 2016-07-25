@@ -192,4 +192,66 @@ describe('directives:', () ->
       expect($rootScope.trigger).toHaveBeenCalledWith('bar', {c: 'd'})
     )
   )
+
+  #=======================================================================
+  # Tests for pod
+  #=======================================================================
+  describe('cpNotifications', () ->
+    $rootScope = null
+    $compile = null
+
+    beforeEach(inject((_$rootScope_, _$compile_) ->
+      $rootScope = _$rootScope_
+      $compile = _$compile_
+
+      $rootScope.notifications = []
+      $rootScope.removeNotification = ->
+    ))
+
+    it('should draw the notifications', () ->
+      $rootScope.notifications = [{
+        type: 'danger',
+        message: 'Foo'
+      }, {
+        type: 'success',
+        message: 'Bar'
+      }]
+
+      el = $compile('<cp-notifications></cp-notifications>')($rootScope)[0]
+      $rootScope.$digest()
+
+      notification1 = el.querySelector('.alert:nth-child(1)')
+      notification2 = el.querySelector('.alert:nth-child(2)')
+
+      expect(notification1.classList.contains('alert-danger')).toBe(true)
+      expect(notification1.textContent).toMatch('Foo')
+
+      expect(notification2.classList.contains('alert-success')).toBe(true)
+      expect(notification2.textContent).toMatch('Bar')
+    )
+
+    it('should call removeNotification() when a notification is closed', ->
+      $rootScope.notifications = [{
+        type: 'danger',
+        message: 'Foo'
+      }, {
+        type: 'success',
+        message: 'Bar'
+      }]
+
+      $rootScope.removeNotification = jasmine.createSpy('removeNotification')
+
+      el = $compile('<cp-notifications></cp-notifications>')($rootScope)[0]
+      $rootScope.$digest()
+
+      angular.element(el.querySelector('.alert:nth-child(2) .close'))
+        .triggerHandler('click')
+
+      expect($rootScope.removeNotification.calls.mostRecent().args[0])
+        .toEqual(jasmine.objectContaining({
+          type: 'success',
+          message: 'Bar'
+        }))
+    )
+  )
 )

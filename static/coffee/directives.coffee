@@ -31,6 +31,12 @@ directives.directive('cpContact', () ->
   }
 )
 
+
+directives.directive('cpNotifications', -> {
+  templateUrl: -> '/sitestatic/templates/notifications.html'
+})
+
+
 #=====================================================================
 # Pod directive
 #=====================================================================

@@ -84,6 +84,17 @@ describe('controllers:', () ->
       expect($scope.contact).toEqual(test.ann)
     )
 
+    it('should should add a notification on podActionFailure', () ->
+      $scope.notifications = []
+
+      $scope.$emit('podActionFailure', {message: 'o_O'})
+
+      expect($scope.notifications).toEqual([{
+        type: 'danger',
+        message: 'o_O'
+      }])
+    )
+
     it('addNote', () ->
       noteModal = spyOnPromise($q, $scope, UtilsService, 'noteModal')
       addNote = spyOnPromise($q, $scope, CaseService, 'addNote')
@@ -905,6 +916,28 @@ describe('controllers:', () ->
         $scope.trigger('grault', {garply: 'waldo'})
         expect($scope.podData.actions[0].isBusy).toBe(true)
 
+        $scope.$apply()
+      )
+
+      it('should emit a podActionFailure event if successful', (done) ->
+        $scope.podId = 21
+        $scope.caseId = 23
+        $scope.podConfig = {title: 'Foo'}
+
+        $scope.podData = {
+          items: [],
+          actions: []
+        }
+
+        $controller('PodController', {
+          $scope
+          PodApi
+        })
+
+        spyOn(PodApi, 'trigger').and.returnValue($q.resolve({success: false}))
+        $scope.trigger('grault', {garply: 'waldo'})
+
+        $scope.$on('podActionFailure', -> done())
         $scope.$apply()
       )
 
