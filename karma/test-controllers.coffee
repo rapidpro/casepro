@@ -679,11 +679,14 @@ describe('controllers:', () ->
   describe('PodController', () ->
     $scope = null
     PodApi = null
+    class PodApiError
 
     beforeEach(() ->
       $scope = $rootScope.$new()
 
       PodApi = new class PodApi
+        PodApiError: PodApiError,
+
         get: -> $q.resolve({
           items: [],
           actions: []
@@ -826,6 +829,23 @@ describe('controllers:', () ->
           }]
         })
       )
+
+      it('should emit a podApiError if the api call fails', (done) ->
+        $scope.podId = 21
+        $scope.caseId = 23
+
+        spyOn(PodApi, 'get')
+          .and.returnValue($q.reject(new PodApiError(null)))
+
+        $controller('PodController', {
+          $scope
+          PodApi
+        })
+
+        $scope.$on('podApiError', -> done())
+        $scope.update()
+        $scope.$apply()
+      )
     )
 
     describe('trigger', () ->
@@ -933,6 +953,29 @@ describe('controllers:', () ->
             payload: {}
           }]
         })
+      )
+
+      it('should emit a podApiError if the api call fails', (done) ->
+        $scope.podId = 21
+        $scope.caseId = 23
+        $scope.podConfig = {title: 'Foo'}
+
+        $scope.podData = {
+          items: [],
+          actions: []
+        }
+
+        spyOn(PodApi, 'trigger')
+          .and.returnValue($q.reject(new PodApiError(null)))
+
+        $controller('PodController', {
+          $scope
+          PodApi
+        })
+
+        $scope.$on('podApiError', -> done())
+        $scope.trigger('grault', {garply: 'waldo'})
+        $scope.$apply()
       )
     )
   )

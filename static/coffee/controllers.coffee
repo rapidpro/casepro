@@ -820,7 +820,7 @@ controllers.controller('DateRangeController', ['$scope', ($scope) ->
 #============================================================================
 # Pod controller
 #============================================================================
-controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
+controllers.controller('PodController', ['$q', '$scope', 'PodApi', ($q, $scope, PodApi) ->
   $scope.init = (podId, caseId, podConfig) ->
     $scope.podId = podId
     $scope.caseId = caseId
@@ -831,12 +831,14 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
     PodApi.get($scope.podId, $scope.caseId)
       .then(parsePodData)
       .then((d) -> $scope.podData = d)
+      .catch(utils.trap(PodApi.PodApiError, onApiError, $q.reject))
 
   $scope.trigger = (type, payload) ->
     $scope.podData.actions = updateAction(type, {isBusy: true})
 
     PodApi.trigger($scope.podId, $scope.caseId, type, payload)
       .then((res) -> onTriggerDone(type, res))
+      .catch(utils.trap(PodApi.PodApiError, onApiError, $q.reject))
 
   onTriggerDone = (type, {success, payload}) ->
     if success
@@ -845,6 +847,9 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
       onTriggerFailure(payload)
 
     $scope.podData.actions = updateAction(type, {isBusy: false})
+
+  onApiError = ->
+    $scope.$emit('podApiError')
 
   onTriggerFailure = (payload) ->
     $scope.$emit('podActionFailure', payload)
