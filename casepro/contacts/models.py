@@ -278,7 +278,7 @@ class Contact(models.Model):
         if full:
             result['fields'] = self.get_fields(visible=True)
             result['language'] = self.get_language()
-            result['blocked'] = True # self.is_blocked
+            result['blocked'] = self.is_blocked
             result['stopped'] = self.is_stopped
 
         return result
