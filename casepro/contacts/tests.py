@@ -91,10 +91,23 @@ class ContactTest(BaseCasesTest):
     def test_as_json(self):
         self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "Ann"})
 
-        # full=True means include visible contact fields
-        self.assertEqual(self.ann.as_json(full=True), {'id': self.ann.pk,
-                                                       'name': "Ann",
-                                                       'fields': {'nickname': None, 'age': "32"}})
+        # full=True means include visible contact fields and laanguage etc
+        self.assertEqual(self.ann.as_json(full=True), {
+            'id': self.ann.pk,
+            'name': "Ann",
+            'fields': {'nickname': None, 'age': "32"},
+            'language': {'code': 'eng', 'name': "English"}
+        })
+
+        self.ann.language = None
+        self.ann.save()
+
+        self.assertEqual(self.ann.as_json(full=True), {
+            'id': self.ann.pk,
+            'name': "Ann",
+            'fields': {'nickname': None, 'age': "32"},
+            'language': None
+        })
 
         # if site uses anon contacts then name is obscured
         with override_settings(SITE_ANON_CONTACTS=True):
@@ -129,18 +142,12 @@ class ContactCRUDLTest(BaseCasesTest):
         self.login(self.user1)
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Age")
+        self.assertNotContains(response, "View External")
 
         # administrators get button linking to backend
         self.login(self.admin)
         response = self.url_get('unicef', url)
         self.assertContains(response, "View External")
-
-        # superusers see extra fields
-        self.login(self.superuser)
-        response = self.url_get('unicef', url)
-        self.assertContains(response, "Is Blocked")
-        self.assertContains(response, "Is Active")
 
         # users from other orgs get nothing
         self.login(self.user4)
@@ -155,7 +162,40 @@ class ContactCRUDLTest(BaseCasesTest):
 
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json, {'id': self.ann.pk, 'name': "Ann", 'fields': {'age': '32', 'nickname': None}})
+        self.assertEqual(response.json, {
+            'id': self.ann.pk,
+            'name': "Ann",
+            'fields': {'age': '32', 'nickname': None},
+            'language': {'code': 'eng', 'name': "English"}
+        })
+
+    def test_cases(self):
+        url = reverse('contacts.contact_cases', args=[self.ann.pk])
+
+        msg1 = self.create_message(self.unicef, 101, self.ann, "What is tea?")
+        case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [])
+        case1.close(self.admin)
+        msg2 = self.create_message(self.unicef, 102, self.ann, "I'm pregnant")
+        case2 = self.create_case(self.unicef, self.ann, self.moh, msg2, [self.pregnancy, self.aids])
+
+        # log in as admin
+        self.login(self.admin)
+
+        # should see all cases in reverse chronological order
+        response = self.url_get('unicef', url)
+        self.assertEqual([c['id'] for c in response.json['results']], [case2.pk, case1.pk])
+
+        self.login(self.user1)
+
+        # should see both cases because of assignment/labels
+        response = self.url_get('unicef', url)
+        self.assertEqual([c['id'] for c in response.json['results']], [case2.pk, case1.pk])
+
+        self.login(self.user3)
+
+        # should see only case with pregnancy label
+        response = self.url_get('unicef', url)
+        self.assertEqual([c['id'] for c in response.json['results']], [case2.pk])
 
 
 class FieldCRUDLTest(BaseCasesTest):

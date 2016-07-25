@@ -140,7 +140,7 @@
           [[ item.time | autodate ]]
         .message-contact
           %a{ ng-click:"activateContact(item.contact)" }><
-            <cp-contact contact="item.contact">
+            <cp-contact contact="item.contact" fields="fields">
         .message-text
           %span.label-container{ ng-if:"item.flow" }
             %span.label.label-info
