@@ -368,6 +368,7 @@ GROUP_PERMISSIONS = {
         'orgs.org_charts',
 
         'msgs.label_read',
+        'msgs.faq_search',
         'msgs.message_action',
         'msgs.message_bulk_reply',
         'msgs.message_forward',
