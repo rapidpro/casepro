@@ -51,18 +51,22 @@ class BaseCasesTest(DashTest):
         self.tea = self.create_label(self.unicef, None, "Tea", 'Messages about tea', ["tea", "chai"], is_synced=False)
         self.code = self.create_label(self.nyaruka, "L-101", "Code", 'Messages about code', ["java", "python", "go"])
 
-        # some message faqs
-        self.pregnancy_faq1 = self.create_faq(self.unicef, "How do I know I'm pregnant?", "Do a pregnancy test.",
-                                              [self.pregnancy])
-        self.pregnancy_faq2 = self.create_faq(self.unicef, "How do I prevent HIV transfer to my baby?",
-                                              "Take ARVs.", [self.pregnancy, self.aids])
-        self.tea_faq1 = self.create_faq(self.unicef, "Does tea contain caffeine?", "It varies - black tea does.",
-                                        [self.tea])
-
         # some languages
         self.eng_za = self.create_language(self.unicef, "eng_ZA", "English", "South Africa")
         self.cgg_ug = self.create_language(self.unicef, "cgg_UG", "Rukiga", "Uganda")
         self.lug_ug = self.create_language(self.unicef, "lug_UG", "Luganda", "Uganda")
+
+        # some message faqs
+        self.preg_faq1_eng = self.create_faq(self.unicef, "How do I know I'm pregnant?", "Do a pregnancy test.",
+                                             self.eng_za, None, [self.pregnancy])
+        self.preg_faq1_cgg = self.create_faq(self.unicef, "CGG How do I know I'm pregnant?", "CGG Do a pregnancy test.",
+                                             self.cgg_ug, self.preg_faq1_eng, [self.pregnancy])
+        self.preg_faq1_lug = self.create_faq(self.unicef, "LUG How do I know I'm pregnant?", "LUG Do a pregnancy test.",
+                                             self.lug_ug, self.preg_faq1_eng, [self.pregnancy])
+        self.preg_faq2_eng = self.create_faq(self.unicef, "How do I prevent HIV transfer to my baby?", "Take ARVs.",
+                                             self.eng_za, None, [self.pregnancy, self.aids])
+        self.tea_faq1_eng = self.create_faq(self.unicef, "Does tea contain caffeine?", "It varies - black tea does.",
+                                            self.eng_za, None, [self.tea])
 
         # some partners
         self.moh = self.create_partner(self.unicef, "MOH", [self.aids, self.pregnancy])
@@ -110,8 +114,8 @@ class BaseCasesTest(DashTest):
     def create_rule(self, org, tests, actions):
         return Rule.create(org, tests, actions)
 
-    def create_faq(self, org, question, answer, labels=(), **kwargs):
-        faq = FAQ.objects.create(org=org, question=question, answer=answer, **kwargs)
+    def create_faq(self, org, question, answer, language, parent, labels=(), **kwargs):
+        faq = FAQ.objects.create(org=org, question=question, answer=answer, language=language, parent=parent, **kwargs)
         faq.labels.add(*labels)
         return faq
 
