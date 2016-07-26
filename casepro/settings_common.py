@@ -307,6 +307,8 @@ PERMISSIONS = {
 
     'msgs.label': ('create', 'update', 'read', 'delete', 'list'),
 
+    'msgs.language': ('create', 'read', 'update', 'delete', 'list', 'search'),
+
     'msgs.faq': ('create', 'read', 'update', 'delete', 'list', 'search'),
 
     'msgs.language': ('create', 'read', 'update', 'delete', 'list'),
@@ -368,6 +370,7 @@ GROUP_PERMISSIONS = {
         'orgs.org_charts',
 
         'msgs.label_read',
+        'msgs.language_search',
         'msgs.faq_search',
         'msgs.message_action',
         'msgs.message_bulk_reply',

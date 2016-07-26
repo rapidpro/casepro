@@ -109,7 +109,8 @@ class LabelCRUDL(SmartCRUDL):
     class List(OrgPermsMixin, SmartListView):
         def get(self, request, *args, **kwargs):
             with_activity = str_to_bool(self.request.GET.get('with_activity', ''))
-            labels = Label.get_all(self.request.org, self.request.user).order_by('name')
+            labels = list(Label.get_all(self.request.org, self.request.user).order_by('name'))
+            Label.bulk_cache_initialize(labels)
 
             if with_activity:
                 # get message statistics
@@ -119,7 +120,7 @@ class LabelCRUDL(SmartCRUDL):
             def as_json(label):
                 obj = label.as_json()
                 if with_activity:
-                    obj['messages'] = {
+                    obj['activity'] = {
                         'this_month': this_month.get(label, 0),
                         'last_month': last_month.get(label, 0),
                     }
@@ -127,25 +128,96 @@ class LabelCRUDL(SmartCRUDL):
 
             return JsonResponse({'results': [as_json(l) for l in labels]})
 
-    class Watch(OrgObjPermsMixin, SmartReadView):
+
+class LanguageSearchMixin(object):
+    def derive_search(self):
         """
-        Endpoint for watching a label
+        Collects and prepares Language search parameters into JSON serializable dict
         """
-        permission = 'msgs.label_read'
+        name = self.request.GET.get('name', None)
+        location = self.request.GET.get('location', None)
+
+        return {
+            'name': name,
+            'location': location,
+        }
+
+
+class LanguageCRUDL(SmartCRUDL):
+    model = Language
+    actions = ('list', 'create', 'read', 'update', 'delete', 'search')
+
+    class List(OrgPermsMixin, SmartListView):
+        fields = ('code', 'name', 'location')
+        default_order = ('code',)
+
+    class Create(OrgPermsMixin, SmartCreateView):
+        form_class = LanguageForm
+
+        def get_form_kwargs(self):
+            kwargs = super(LanguageCRUDL.Create, self).get_form_kwargs()
+            return kwargs
+
+        def save(self, obj):
+            data = self.form.cleaned_data
+            org = self.request.org
+            code = data['code']
+            name = data['name']
+            location = data['location']
+
+            self.object = Language.objects.create(org=org, code=code, name=name, location=location)
+
+    class Read(OrgPermsMixin, SmartReadView):
+        fields = ['code', 'name', 'location']
+
+        def get_queryset(self):
+            return Language.objects.all()
+
+        def get_context_data(self, **kwargs):
+            context = super(LanguageCRUDL.Read, self).get_context_data(**kwargs)
+            edit_button_url = reverse('msgs.language_update', args=[self.object.pk])
+            context['context_data_json'] = json_encode({'language': self.object.as_json()})
+            context['edit_button_url'] = edit_button_url
+            context['can_delete'] = True
+
+            return context
+
+    class Update(OrgPermsMixin, SmartUpdateView):
+        form_class = LanguageForm
+
+    class Delete(OrgPermsMixin, SmartDeleteView):
+        cancel_url = '@msgs.language_list'
 
         def post(self, request, *args, **kwargs):
-            self.get_object().watch(request.user)
+            language = self.get_object()
+            language.delete()
+
             return HttpResponse(status=204)
 
-    class Unwatch(OrgObjPermsMixin, SmartReadView):
+    class Search(OrgPermsMixin, LanguageSearchMixin, SmartTemplateView):
         """
-        Endpoint for unwatching a label
+        JSON endpoint for searching Languages
         """
-        permission = 'msgs.label_read'
+        def get_context_data(self, **kwargs):
+            context = super(LanguageCRUDL.Search, self).get_context_data(**kwargs)
 
-        def post(self, request, *args, **kwargs):
-            self.get_object().unwatch(request.user)
-            return HttpResponse(status=204)
+            org = self.request.org
+            user = self.request.user
+            page = int(self.request.GET.get('page', 1))
+
+            search = self.derive_search()
+            languages = Language.search(org, user, search)
+            paginator = LazyPaginator(languages, per_page=50)
+
+            context['object_list'] = paginator.page(page)
+            context['has_more'] = paginator.num_pages > page
+            return context
+
+        def render_to_response(self, context, **response_kwargs):
+            return JsonResponse({
+                'results': [m.as_json() for m in context['object_list']],
+                'has_more': context['has_more']
+            }, encoder=JSONEncoder)
 
 
 class FaqSearchMixin(object):
