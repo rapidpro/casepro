@@ -309,7 +309,7 @@ PERMISSIONS = {
 
     'msgs.language': ('create', 'read', 'update', 'delete', 'list', 'search'),
 
-    'msgs.faq': ('create', 'read', 'update', 'delete', 'list', 'search'),
+    'msgs.faq': ('create', 'read', 'update', 'delete', 'list', 'search', 'import'),
 
     'msgs.language': ('create', 'read', 'update', 'delete', 'list'),
 
@@ -342,6 +342,8 @@ GROUP_PERMISSIONS = {
         'orgs.org_home',
         'orgs.org_charts',
         'orgs.org_edit',
+
+        'csv_imports.importtask.*',
 
         'msgs.label.*',
         'msgs.faq.*',

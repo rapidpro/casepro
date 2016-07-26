@@ -8,10 +8,13 @@ from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.core.urlresolvers import reverse
 from django.utils.timesince import timesince
 from django.utils.translation import ugettext_lazy as _
+from django.utils.timezone import now
 from el_pagination.paginators import LazyPaginator
 from smartmin.mixins import NonAtomicMixin
 from smartmin.views import SmartCRUDL, SmartTemplateView
-from smartmin.views import SmartListView, SmartCreateView, SmartReadView, SmartUpdateView, SmartDeleteView
+from smartmin.views import (SmartListView, SmartCreateView, SmartUpdateView, SmartDeleteView, SmartReadView,
+                            SmartCSVImportView)
+from smartmin.csv_imports.models import ImportTask
 from temba_client.utils import parse_iso8601
 
 from casepro.rules.mixins import RuleFormMixin
@@ -28,6 +31,40 @@ from .tasks import message_export, reply_export
 RESPONSE_DELAY_WARN_SECONDS = 24 * 60 * 60  # show response delays > 1 day as warning
 
 
+# Override the ImportTask start method so we can use our self-defined task
+def override_start(self, org):
+    from .tasks import faq_csv_import
+    self.log("Queued import at %s" % now())
+    self.save(update_fields=['import_log'])
+
+    # trigger task
+    result = faq_csv_import.delay(org, self.pk)
+
+    self.task_id = result.task_id
+    self.save(update_fields=['task_id'])
+
+ImportTask.start = override_start
+
+
+class LabelFormMixin(object):
+    @staticmethod
+    def construct_tests(data):
+        keywords = parse_csv(data['keywords'])
+        groups = data['groups']
+        field_test = data['field_test']
+
+        tests = []
+        if keywords:
+            tests.append(ContainsTest(keywords, Quantifier.ANY))
+        if groups:
+            tests.append(GroupsTest(groups, Quantifier.ANY))
+        if field_test:
+            tests.append(field_test)
+
+        return tests
+
+
+>>>>>>> d39f990... first rough draft of uploader
 class LabelCRUDL(SmartCRUDL):
     actions = ('create', 'update', 'read', 'delete', 'list', 'watch', 'unwatch')
     model = Label
@@ -238,7 +275,7 @@ class FaqSearchMixin(object):
 
 class FaqCRUDL(SmartCRUDL):
     model = FAQ
-    actions = ('list', 'create', 'read', 'update', 'delete', 'search')
+    actions = ('list', 'create', 'read', 'update', 'delete', 'search', 'import')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('question', 'answer', 'language', 'parent')
@@ -325,6 +362,19 @@ class FaqCRUDL(SmartCRUDL):
                 'results': [m.as_json() for m in context['object_list']],
                 'has_more': context['has_more']
             }, encoder=JSONEncoder)
+
+    class Import(OrgPermsMixin, SmartCSVImportView):
+        model = ImportTask
+        fields = ('csv_file',)
+        success_message = 'CSV File Uploaded. Successfully loaded FAQs should appear here soon (hit Refresh)'
+        success_url = '@msgs.faq_list'
+
+        def derive_title(self):
+            return _("Import FAQs")
+
+        def post_save(self, task):
+            task.start(self.org)
+            return task
 
 
 class LanguageCRUDL(SmartCRUDL):
