@@ -12,11 +12,13 @@ from django.utils.translation import ugettext_lazy as _
 # -----------------------------------------------------------------------------------
 TESTING = sys.argv[1:2] == ['test']
 
-# Django settings for tns_glass project.
-THUMBNAIL_DEBUG = False
-
-DEBUG = True
-TEMPLATE_DEBUG = DEBUG
+if TESTING:
+    PASSWORD_HASHERS = ('django.contrib.auth.hashers.MD5PasswordHasher',)
+    DEBUG = False
+    TEMPLATE_DEBUG = False
+else:
+    DEBUG = True
+    TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
     ('Nyaruka', 'code@nyaruka.com'),
@@ -56,6 +58,17 @@ SITE_EXTERNAL_CONTACT_URL = 'http://localhost:8001/contact/read/%s/'
 SITE_BACKEND = 'casepro.backend.NoopBackend'
 SITE_ANON_CONTACTS = False
 
+# junebug configuration
+JUNEBUG_API_ROOT = 'http://localhost:8080/'
+JUNEBUG_INBOUND_URL = r'^junebug/inbound$'
+JUNEBUG_CHANNEL_ID = 'replace-me'
+JUNEBUG_FROM_ADDRESS = None
+
+# identity store configuration
+IDENTITY_API_ROOT = 'http://localhost:8081/'
+IDENTITY_AUTH_TOKEN = 'replace-with-auth-token'
+IDENTITY_ADDRESS_TYPE = 'msisdn'
+IDENTITY_STORE_OPTOUT_URL = r'^junebug/optout$'
 
 # On Unix systems, a value of None will cause Django to use the same
 # timezone as the operating system.

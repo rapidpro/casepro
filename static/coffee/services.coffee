@@ -335,12 +335,7 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
       params = {after: after}
 
       return $http.get('/case/timeline/' + caseObj.id + '/?' + $httpParamSerializer(params)).then((response) ->
-        for event in response.data.results
-          # parse datetime string
-          event.time = utils.parseIso8601(event.time)
-          event.is_action = event.type == 'A'
-          event.is_message_in = event.type == 'M' and event.item.direction == 'I'
-          event.is_message_out = event.type == 'M' and event.item.direction == 'O'
+        utils.parseDates(response.data.results, 'time')
 
         return {results: response.data.results, maxTime: response.data.max_time}
       )
@@ -448,6 +443,12 @@ services.factory('StatisticsService', ['$http', '$httpParamSerializer', ($http, 
       return $http.get('/stats/replies_chart/?' + $httpParamSerializer(params)).then((response) -> response.data)
 
     #----------------------------------------------------------------------------
+    # Fetches data for replies by month chart
+    #----------------------------------------------------------------------------
+    labelsPieChart: () ->
+      return $http.get('/stats/labels_pie_chart/').then((response) -> response.data)
+
+    #----------------------------------------------------------------------------
     # Initiates a daily count export
     #----------------------------------------------------------------------------
     dailyCountExport: (type, after, before) ->
@@ -550,12 +551,13 @@ services.factory('PodApi', ['$window', '$http', ($window, $http) ->
       $http.get("/pods/read/#{podId}/", {params: {case_id: caseId}})
         .then((d) -> d.data)
 
-    trigger: (podId, type, payload = {}) ->
-      $http.put("/pods/action/#{podId}/", {
-          data: {
-            type,
-            payload
-          }
-        })
-        .then((d) -> d.data)
+    trigger: (podId, caseId, type, payload = {}) ->
+      $http.post("/pods/action/#{podId}/", {
+        case_id: caseId
+        action: {
+          type,
+          payload
+        }
+      })
+      .then((d) -> d.data)
 ])

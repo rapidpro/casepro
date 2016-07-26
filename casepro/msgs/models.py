@@ -180,10 +180,10 @@ class Message(models.Model):
 
     TYPE_CHOICES = ((TYPE_INBOX, _("Inbox")), (TYPE_FLOW, _("Flow")))
 
-    DIRECTION = 'I'
-
     SAVE_CONTACT_ATTR = '__data__contact'
     SAVE_LABELS_ATTR = '__data__labels'
+
+    TIMELINE_TYPE = 'I'
 
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='incoming_messages')
 
@@ -424,7 +424,6 @@ class Message(models.Model):
             'labels': [l.as_json(full=False) for l in self.labels.all()],
             'flagged': self.is_flagged,
             'archived': self.is_archived,
-            'direction': self.DIRECTION,
             'flow': self.type == self.TYPE_FLOW,
             'case': self.case.as_json(full=False) if self.case else None
         }
@@ -491,7 +490,7 @@ class Outgoing(models.Model):
     ACTIVITY_CHOICES = ((BULK_REPLY, _("Bulk Reply")), (CASE_REPLY, "Case Reply"), (FORWARD, _("Forward")))
     REPLY_ACTIVITIES = (BULK_REPLY, CASE_REPLY)
 
-    DIRECTION = 'O'
+    TIMELINE_TYPE = 'O'
 
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='outgoing_messages')
 
@@ -619,6 +618,16 @@ class Outgoing(models.Model):
     def is_reply(self):
         return self.activity in self.REPLY_ACTIVITIES
 
+    def get_sender(self):
+        """
+        Convenience method for accessing created_by since it can be null on transient instances returned from
+        Backend.fetch_contact_messages
+        """
+        try:
+            return self.created_by
+        except User.DoesNotExist:
+            return None
+
     def as_json(self):
         """
         Prepares this outgoing message for JSON serialization
@@ -629,9 +638,8 @@ class Outgoing(models.Model):
             'urn': self.urn,
             'text': self.text,
             'time': self.created_on,
-            'direction': self.DIRECTION,
             'case': self.case.as_json(full=False) if self.case else None,
-            'sender': self.created_by.as_json(full=False)
+            'sender': self.get_sender().as_json(full=False) if self.get_sender() else None
         }
 
     def __str__(self):

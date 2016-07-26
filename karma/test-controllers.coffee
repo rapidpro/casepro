@@ -548,6 +548,8 @@ describe('controllers:', () ->
 
     it('onTabSelect', () ->
       repliesChart = spyOnPromise($q, $scope, StatisticsService, 'repliesChart')
+      incomingChart = spyOnPromise($q, $scope, StatisticsService, 'incomingChart')
+      labelsPieChart = spyOnPromise($q, $scope, StatisticsService, 'labelsPieChart')
       fetchPartners = spyOnPromise($q, $scope, PartnerService, 'fetchAll')
       fetchLabels = spyOnPromise($q, $scope, LabelService, 'fetchAll')
       fetchUsers = spyOnPromise($q, $scope, UserService, 'fetchNonPartner')
@@ -555,6 +557,8 @@ describe('controllers:', () ->
       $scope.onTabSelect(0)
 
       expect(StatisticsService.repliesChart).toHaveBeenCalledWith()
+      expect(StatisticsService.incomingChart).toHaveBeenCalledWith()
+      expect(StatisticsService.labelsPieChart).toHaveBeenCalledWith()
 
       $scope.onTabSelect(1)
 
@@ -586,12 +590,14 @@ describe('controllers:', () ->
     PartnerService = null
     StatisticsService = null
     UserService = null
+    $location = null
     $scope = null
 
-    beforeEach(inject((_PartnerService_, _StatisticsService_, _UserService_) ->
+    beforeEach(inject((_PartnerService_, _StatisticsService_, _UserService_, _$location_) ->
       PartnerService = _PartnerService_
       StatisticsService = _StatisticsService_
       UserService = _UserService_
+      $location = _$location_
 
       $scope = $rootScope.$new()
       $window.contextData = {partner: test.moh}
@@ -609,6 +615,7 @@ describe('controllers:', () ->
 
       expect(StatisticsService.repliesChart).toHaveBeenCalledWith(test.moh, null)
       expect($scope.initialisedTabs).toEqual([0])
+      expect($location.path()).toEqual('/summary')
 
       $scope.onTabSelect(2)
 
@@ -617,6 +624,7 @@ describe('controllers:', () ->
 
       expect($scope.users).toEqual(users)
       expect($scope.initialisedTabs).toEqual([0, 2])
+      expect($location.path()).toEqual('/users')
 
       # select the users tab again
       $scope.onTabSelect(2)
@@ -624,6 +632,7 @@ describe('controllers:', () ->
       # users shouldn't be re-fetched
       expect(UserService.fetchInPartner.calls.count()).toEqual(1)
       expect($scope.initialisedTabs).toEqual([0, 2])
+      expect($location.path()).toEqual('/users')
     )
 
     it('onDeletePartner', () ->
@@ -674,16 +683,18 @@ describe('controllers:', () ->
 
   describe('PodController', () ->
     $scope = null
+    PodApi = null
 
     beforeEach(() ->
       $scope = $rootScope.$new()
+
+      PodApi = new class PodApi
+        get: -> $q.resolve({foo: 'bar'})
+        trigger: -> $q.resolve({success: true})
     )
 
     describe('init', () ->
-      it('should attach pod data to the scope', () ->
-        PodApi = new class PodApi
-          get: ->
-
+      it('should fetch and attach pod data to the scope', () ->
         spyOn(PodApi, 'get').and.returnValue($q.resolve({foo: 'bar'}))
 
         $controller('PodController', {
@@ -698,7 +709,50 @@ describe('controllers:', () ->
         expect($scope.caseId).toEqual(23)
         expect($scope.podConfig).toEqual({title: 'Baz'})
         expect(PodApi.get).toHaveBeenCalledWith(21, 23)
-        expect($scope.podData).toEqual({foo: 'bar'}))
+        expect($scope.podData).toEqual({foo: 'bar'})
+      )
+    )
+
+    describe('trigger', () ->
+      it('should trigger the given action', () ->
+        $scope.podId = 21
+        $scope.caseId = 23
+        $scope.podConfig = {title: 'Foo'}
+        $scope.podData = {bar: 'baz'}
+
+        $controller('PodController', {
+          $scope
+          PodApi
+        })
+
+        spyOn(PodApi, 'trigger').and.returnValue($q.resolve({success: true}))
+
+        $scope.trigger('grault', {garply: 'waldo'})
+        $scope.$apply()
+
+        expect(PodApi.trigger)
+          .toHaveBeenCalledWith(21, 23, 'grault', {garply: 'waldo'})
+      )
+
+      it('should fetch and attach data to the scope if successful', () ->
+        $scope.podId = 21
+        $scope.caseId = 23
+        $scope.podConfig = {title: 'Foo'}
+        $scope.podData = {bar: 'baz'}
+
+        $controller('PodController', {
+          $scope
+          PodApi
+        })
+
+        spyOn(PodApi, 'get').and.returnValue($q.resolve({quux: 'corge'}))
+        spyOn(PodApi, 'trigger').and.returnValue($q.resolve({success: true}))
+
+        $scope.trigger('grault', {garply: 'waldo'})
+        $scope.$apply()
+
+        expect($scope.podData).toEqual({quux: 'corge'})
+      )
     )
   )
 )
