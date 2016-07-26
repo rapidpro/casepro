@@ -64,7 +64,6 @@ class LabelFormMixin(object):
         return tests
 
 
->>>>>>> d39f990... first rough draft of uploader
 class LabelCRUDL(SmartCRUDL):
     actions = ('create', 'update', 'read', 'delete', 'list', 'watch', 'unwatch')
     model = Label
