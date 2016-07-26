@@ -153,24 +153,14 @@ class FaqSearchMixin(object):
         """
         Collects and prepares FAQ search parameters into JSON serializable dict
         """
-        # folder = MessageFolder[self.request.GET['folder']]
         label = self.request.GET.get('label', None)
-        # include_archived = str_to_bool(self.request.GET.get('archived', ''))
-        text = self.request.GET.get('text', None)
-        # contact = self.request.GET.get('contact', None)
-        # groups = parse_csv(self.request.GET.get('groups', ''))
-        # after = parse_iso8601(self.request.GET.get('after', None))
-        # before = parse_iso8601(self.request.GET.get('before', None))
+        question = self.request.GET.get('question', None)
+        language = self.request.GET.get('language', None)
 
         return {
-            # 'folder': folder,
             'label': label,
-            # 'include_archived': include_archived,  # only applies to flagged folder
-            'text': text,
-            # 'contact': contact,
-            # 'groups': groups,
-            # 'after': after,
-            # 'before': before
+            'question': question,
+            'language': language,
         }
 
 
