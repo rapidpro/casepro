@@ -689,7 +689,6 @@ class MessageTest(BaseCasesTest):
             'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
             'flagged': False,
             'archived': False,
-            'direction': 'I',
             'flow': False,
             'case': None
         })
@@ -1114,7 +1113,6 @@ class OutgoingTest(BaseCasesTest):
             'urn': None,
             'text': "That's great",
             'time': outgoing.created_on,
-            'direction': 'O',
             'case': None,
             'sender': {'id': self.user1.pk, 'name': "Evan"}
         })
@@ -1149,7 +1147,6 @@ class OutgoingCRUDLTest(BaseCasesTest):
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'urn': None,
                 'text': "Hello 2",
-                'direction': 'O',
                 'case': None,
                 'sender': {'id': self.user1.pk, 'name': "Evan"},
                 'time': format_iso8601(out2.created_on)
@@ -1159,7 +1156,6 @@ class OutgoingCRUDLTest(BaseCasesTest):
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'urn': None,
                 'text': "Hello 1",
-                'direction': 'O',
                 'case': None,
                 'sender': {'id': self.admin.pk, 'name': "Kidus"},
                 'time': format_iso8601(out1.created_on)
@@ -1176,7 +1172,6 @@ class OutgoingCRUDLTest(BaseCasesTest):
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'urn': None,
                 'text': "Hello 2",
-                'direction': 'O',
                 'case': None,
                 'sender': {'id': self.user1.pk, 'name': "Evan"},
                 'time': format_iso8601(out2.created_on)
@@ -1212,7 +1207,6 @@ class OutgoingCRUDLTest(BaseCasesTest):
                 'contact': {'id': self.bob.pk, 'name': "Bob"},
                 'urn': None,
                 'text': "Hello 2",
-                'direction': 'O',
                 'case': None,
                 'sender': {'id': self.admin.pk, 'name': "Kidus"},
                 'time': format_iso8601(out2.created_on),
@@ -1228,7 +1222,6 @@ class OutgoingCRUDLTest(BaseCasesTest):
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'urn': None,
                 'text': "Hello 1",
-                'direction': 'O',
                 'case': {'id': case.pk, 'assignee': {'id': self.moh.pk, 'name': "MOH"}},
                 'sender': {'id': self.user1.pk, 'name': "Evan"},
                 'time': format_iso8601(out1.created_on),

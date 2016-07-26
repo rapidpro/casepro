@@ -141,6 +141,20 @@ def date_range(start, stop):
         yield start + timedelta(n)
 
 
+class TimelineItem(object):
+    """
+    Wraps a message or action for easier inclusion in a merged timeline
+    """
+    def __init__(self, item):
+        self.item = item
+
+    def get_time(self):
+        return self.item.created_on
+
+    def to_json(self):
+        return {'time': self.get_time(), 'type': self.item.TIMELINE_TYPE, 'item': self.item.as_json()}
+
+
 def uuid_to_int(uuid):
     """
     Converts a UUID hex string to an int within the range of a Django IntegerField, and also >=0, as the URL regexes
