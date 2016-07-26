@@ -75,9 +75,11 @@ modals.controller('ReplyModalController', ['$scope','FAQService','LanguageServic
     return search
 
   $scope.filterByLanguage = (language) ->
-    $scope.lang = language.name
+    $scope.lang = language.code
     $scope.search.language = language.id
-    $scope.replies = FAQService.fetchFaqs($scope.search)
+    FAQService.fetchFaqs($scope.search).then((results) ->
+        $scope.replies = results
+      )
 
   $scope.fetchFaqs = (label) ->
     if label
@@ -91,7 +93,7 @@ modals.controller('ReplyModalController', ['$scope','FAQService','LanguageServic
       )
 
   $scope.fetchLanguages = () ->
-    LanguageService.fetchLanguages().then((results) ->
+    LanguageService.fetchLanguages($scope.search).then((results) ->
       $scope.languages = results
     )
 
