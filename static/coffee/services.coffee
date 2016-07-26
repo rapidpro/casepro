@@ -195,7 +195,6 @@ services.factory('LanguageService', ['$rootScope', '$http', '$httpParamSerialize
         return response.data.results
       )
 
-
     #----------------------------------------------------------------------------
     # Convert search object to URL params
     #----------------------------------------------------------------------------
