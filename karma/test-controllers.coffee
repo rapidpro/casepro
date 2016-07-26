@@ -848,23 +848,6 @@ describe('controllers:', () ->
           }]
         })
       )
-
-      it('should emit a podApiError if the api call fails', (done) ->
-        $scope.podId = 21
-        $scope.caseId = 23
-
-        spyOn(PodApi, 'get')
-          .and.returnValue($q.reject(new PodApiError(null)))
-
-        $controller('PodController', {
-          $scope
-          PodApi
-        })
-
-        $scope.$on('podApiError', -> done())
-        $scope.update()
-        $scope.$apply()
-      )
     )
 
     describe('trigger', () ->
@@ -956,6 +939,60 @@ describe('controllers:', () ->
         $scope.$apply()
       )
 
+      it('should emit a notification if trigger api method fails', (done) ->
+        $scope.podId = 21
+        $scope.caseId = 23
+        $scope.podConfig = {title: 'Foo'}
+
+        $scope.podData = {
+          items: [],
+          actions: []
+        }
+
+        $controller('PodController', {
+          $scope
+          PodApi
+        })
+
+        spyOn(PodApi, 'trigger')
+          .and.returnValue($q.reject(new PodApiError(null)))
+
+        $scope.trigger('grault', {garply: 'waldo'})
+
+        $scope.$on('notification', (e, {type, payload}) ->
+          expect(type).toEqual('pod_action_api_failure')
+          done())
+
+        $scope.$apply()
+      )
+
+      it('should emit a notification if get api method fails', (done) ->
+        $scope.podId = 21
+        $scope.caseId = 23
+        $scope.podConfig = {title: 'Foo'}
+
+        $scope.podData = {
+          items: [],
+          actions: []
+        }
+
+        $controller('PodController', {
+          $scope
+          PodApi
+        })
+
+        spyOn(PodApi, 'get')
+          .and.returnValue($q.reject(new PodApiError(null)))
+
+        $scope.trigger('grault', {garply: 'waldo'})
+
+        $scope.$on('notification', (e, {type, payload}) ->
+          expect(type).toEqual('pod_action_api_failure')
+          done())
+
+        $scope.$apply()
+      )
+
       it('should fetch and attach data to the scope if successful', () ->
         $scope.podId = 21
         $scope.caseId = 23
@@ -1001,29 +1038,6 @@ describe('controllers:', () ->
             payload: {}
           }]
         })
-      )
-
-      it('should emit a podApiError if the api call fails', (done) ->
-        $scope.podId = 21
-        $scope.caseId = 23
-        $scope.podConfig = {title: 'Foo'}
-
-        $scope.podData = {
-          items: [],
-          actions: []
-        }
-
-        spyOn(PodApi, 'trigger')
-          .and.returnValue($q.reject(new PodApiError(null)))
-
-        $controller('PodController', {
-          $scope
-          PodApi
-        })
-
-        $scope.$on('podApiError', -> done())
-        $scope.trigger('grault', {garply: 'waldo'})
-        $scope.$apply()
       )
     )
   )

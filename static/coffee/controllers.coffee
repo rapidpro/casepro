@@ -839,31 +839,35 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApi', ($q, $scope, 
     $scope.podId = podId
     $scope.caseId = caseId
     $scope.podConfig = podConfig
+
+    # TODO handle api failures
     $scope.update()
 
   $scope.update = ->
     PodApi.get($scope.podId, $scope.caseId)
       .then(parsePodData)
       .then((d) -> $scope.podData = d)
-      .catch(utils.trap(PodApi.PodApiError, onApiError, $q.reject))
 
   $scope.trigger = (type, payload) ->
     $scope.podData.actions = updateAction(type, {isBusy: true})
 
     PodApi.trigger($scope.podId, $scope.caseId, type, payload)
       .then((res) -> onTriggerDone(type, res))
-      .catch(utils.trap(PodApi.PodApiError, onApiError, $q.reject))
+      .catch(utils.trap(PodApi.PodApiError, onTriggerApiError, $q.reject))
 
   onTriggerDone = (type, {success, payload}) ->
     if success
-      onTriggerSuccess()
+      p = onTriggerSuccess()
     else
-      onTriggerFailure(payload)
+      p = onTriggerFailure(payload)
 
-    $scope.podData.actions = updateAction(type, {isBusy: false})
+    p.then(->
+      $scope.podData.actions = updateAction(type, {isBusy: false}))
 
-  onApiError = ->
-    $scope.$emit('podApiError')
+  onTriggerApiError = ->
+    $scope.$emit('notification', {
+      type: 'pod_action_api_failure'
+    })
 
   onTriggerFailure = (payload) ->
     $scope.$emit('notification', {
