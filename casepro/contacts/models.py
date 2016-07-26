@@ -117,6 +117,12 @@ class Field(models.Model):
     def __str__(self):
         return self.key
 
+    def as_json(self):
+        """
+        Prepares a contact for JSON serialization
+        """
+        return {'key': self.key, 'label': self.label, 'value_type': self.value_type}
+
     class Meta:
         unique_together = ('org', 'key')
 
