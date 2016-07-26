@@ -81,17 +81,6 @@ class LabelForm(forms.ModelForm):
         fields = ('name', 'description', 'is_synced', 'keywords', 'groups', 'field_test', 'ignore_single_words')
 
 
-class FaqForm(forms.ModelForm):
-
-    question = forms.CharField(label=_("Question"), max_length=140)
-    answer = forms.CharField(label=_("Answer"), max_length=140)
-    labels = forms.ModelMultipleChoiceField(queryset=Label.objects.filter())
-
-    class Meta:
-        model = FAQ
-        fields = ('question', 'answer', 'labels')
-
-
 class LanguageForm(forms.ModelForm):
 
     code = forms.CharField(label=_("Code"), max_length=6,
@@ -116,3 +105,30 @@ class LanguageForm(forms.ModelForm):
     class Meta:
         model = Language
         fields = ('code', 'name', 'location')
+
+
+class FaqForm(forms.ModelForm):
+
+    question = forms.CharField(label=_("Question"), max_length=140)
+    answer = forms.CharField(label=_("Answer"), max_length=140)
+    language = forms.ModelChoiceField(queryset=Language.objects.filter())
+    # limit the parent choices to FAQs that have a ForeignKey parent that is None
+    parent = forms.ModelChoiceField(queryset=FAQ.objects.filter(parent=None), required=False)
+    labels = forms.ModelMultipleChoiceField(queryset=Label.objects.filter())
+
+    def clean_labels(self):
+        labels = self.cleaned_data['labels']
+        parent = self.cleaned_data['parent']
+
+        if parent is not None:
+            parent_labels = parent.labels.all()
+            if list(parent_labels) != list(labels):
+                reqd_labels = ", ".join([str(label.name) for label in list(parent_labels)])
+                raise forms.ValidationError(
+                    "%s - %s" % (_("Labels should be the same as the parent FAQ's labels"), reqd_labels))
+
+        return labels
+
+    class Meta:
+        model = FAQ
+        fields = ('question', 'answer', 'language', 'parent', 'labels')

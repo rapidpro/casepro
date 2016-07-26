@@ -153,7 +153,7 @@ class FaqCRUDL(SmartCRUDL):
     actions = ('list', 'create', 'read', 'update', 'delete')
 
     class List(OrgPermsMixin, SmartListView):
-        fields = ('question', 'answer')
+        fields = ('question', 'answer', 'language', 'parent')
         default_order = ('question',)
 
     class Create(OrgPermsMixin, SmartCreateView):
@@ -168,15 +168,17 @@ class FaqCRUDL(SmartCRUDL):
             org = self.request.org
             question = data['question']
             answer = data['answer']
+            language = data['language']
+            parent = data['parent']
             labels = data['labels']
 
-            faq = FAQ.objects.create(org=org, question=question, answer=answer)
+            faq = FAQ.objects.create(org=org, question=question, answer=answer, language=language, parent=parent)
             faq.labels.add(*labels)
             faq.save()
             self.object = faq
 
     class Read(OrgPermsMixin, SmartReadView):
-        fields = ['question', 'answer']
+        fields = ['question', 'answer', 'language', 'parent']
 
         def get_queryset(self):
             return FAQ.objects.all()
