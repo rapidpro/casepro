@@ -84,9 +84,10 @@ describe('controllers:', () ->
       expect($scope.contact).toEqual(test.ann)
     )
 
-    it('should should broadcast timelineChanged on podActionSuccess', (done) ->
+    it('should should proxy timelineChanged events from child scopes', (done) ->
       $scope.$on('timelineChanged', -> done())
-      $scope.$emit('podActionSuccess')
+      child = $scope.$new(false)
+      child.$emit('timelineChanged')
     )
 
     it('addNote', () ->
@@ -734,7 +735,7 @@ describe('controllers:', () ->
           .toHaveBeenCalledWith(21, 23, 'grault', {garply: 'waldo'})
       )
 
-      it('should emit a podActionSuccess event if successful', (done) ->
+      it('should emit a timelineChanged event if successful', (done) ->
         $scope.podId = 21
         $scope.caseId = 23
         $scope.podConfig = {title: 'Foo'}
@@ -748,7 +749,7 @@ describe('controllers:', () ->
         spyOn(PodApi, 'trigger').and.returnValue($q.resolve({success: true}))
         $scope.trigger('grault', {garply: 'waldo'})
 
-        $scope.$on('podActionSuccess', -> done())
+        $scope.$on('timelineChanged', -> done())
 
         $scope.$apply()
       )
