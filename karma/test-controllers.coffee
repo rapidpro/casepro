@@ -596,12 +596,14 @@ describe('controllers:', () ->
     PartnerService = null
     StatisticsService = null
     UserService = null
+    $location = null
     $scope = null
 
-    beforeEach(inject((_PartnerService_, _StatisticsService_, _UserService_) ->
+    beforeEach(inject((_PartnerService_, _StatisticsService_, _UserService_, _$location_) ->
       PartnerService = _PartnerService_
       StatisticsService = _StatisticsService_
       UserService = _UserService_
+      $location = _$location_
 
       $scope = $rootScope.$new()
       $window.contextData = {partner: test.moh}
@@ -619,6 +621,7 @@ describe('controllers:', () ->
 
       expect(StatisticsService.repliesChart).toHaveBeenCalledWith(test.moh, null)
       expect($scope.initialisedTabs).toEqual([0])
+      expect($location.path()).toEqual('/summary')
 
       $scope.onTabSelect(2)
 
@@ -627,6 +630,7 @@ describe('controllers:', () ->
 
       expect($scope.users).toEqual(users)
       expect($scope.initialisedTabs).toEqual([0, 2])
+      expect($location.path()).toEqual('/users')
 
       # select the users tab again
       $scope.onTabSelect(2)
@@ -634,6 +638,7 @@ describe('controllers:', () ->
       # users shouldn't be re-fetched
       expect(UserService.fetchInPartner.calls.count()).toEqual(1)
       expect($scope.initialisedTabs).toEqual([0, 2])
+      expect($location.path()).toEqual('/users')
     )
 
     it('onDeletePartner', () ->

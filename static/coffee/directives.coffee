@@ -2,14 +2,12 @@ directives = angular.module('cases.directives', []);
 
 
 #----------------------------------------------------------------------------
-#
+# A contact reference which displays a popover when hovered over
 #----------------------------------------------------------------------------
 directives.directive('cpContact', () ->
   return {
     restrict: 'E',
-    scope: {
-      contact: '=contact'
-    },
+    scope: {contact: '=', fields: '='},
     templateUrl: '/partials/directive_contact.html',
     controller: ['$scope', 'ContactService', ($scope, ContactService) ->
       $scope.fetched = false
@@ -28,6 +26,30 @@ directives.directive('cpContact', () ->
       $scope.closePopover = () ->
         $scope.popoverIsOpen = false
     ]      
+  }
+)
+
+#----------------------------------------------------------------------------
+# A contact field value
+#----------------------------------------------------------------------------
+directives.directive('cpFieldvalue', () ->
+  return {
+    restrict: 'E',
+    scope: {contact: '=', field: '='},
+    template: '[[ value ]]',
+    controller: ['$scope', '$filter', ($scope, $filter) ->
+      raw = $scope.contact.fields[$scope.field.key]
+
+      if raw
+        if $scope.field.value_type == 'N'
+          $scope.value = $filter('number')(raw)
+        else if $scope.field.value_type == 'D'
+          $scope.value = $filter('date')(raw, 'mediumDate')
+        else
+          $scope.value = raw
+      else
+        $scope.value = '--'
+    ]
   }
 )
 
