@@ -195,8 +195,7 @@ class BaseBackend(object):
         :param contact: the contact
         :param created_after: include messages created after this time
         :param created_before: include messages created before this time
-        :return: the messages as JSON objects in reverse chronological order. JSON format should match that returned by
-                 Message.as_json() for incoming messages and Outgoing.as_json() for outgoing messages.
+        :return: the messages as transient Message and Outgoing instances
         """
 
     @abstractmethod

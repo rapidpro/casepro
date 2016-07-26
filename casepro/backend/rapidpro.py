@@ -325,27 +325,18 @@ class RapidProBackend(BaseBackend):
         """
         Used to grab messages sent to the contact from RapidPro that we won't have in CasePro
         """
-        contact_json = contact.as_json(full=False)
-
         # fetch remote messages for contact
         client = self._get_client(org, 2)
         remote_messages = client.get_messages(contact=contact.uuid, after=created_after, before=created_before).all()
 
-        def remote_as_json(msg):
-            # should match schema of Outgoing.as_json()
-            return {
-                'id': msg.broadcast,
-                'contact': contact_json,
-                'urn': None,
-                'text': msg.text,
-                'time': msg.created_on,
-                'direction': Outgoing.DIRECTION,
-                'case': None,
-                'sender': None
-            }
+        def remote_as_outgoing(msg):
+            return Outgoing(backend_broadcast_id=msg.broadcast, contact=contact, text=msg.text,
+                            created_on=msg.created_on)
 
-        return [remote_as_json(m) for m in remote_messages if m.direction == 'out']
+        return [remote_as_outgoing(m) for m in remote_messages if m.direction == 'out']
 
     def get_url_patterns(self):
-        """The Rapidpro backend doesn't have any urls to register."""
+        """
+        No urls to register as everything is pulled from RapidPro
+        """
         return []
