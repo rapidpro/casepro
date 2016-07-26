@@ -28,6 +28,12 @@ describe('services:', () ->
       # contacts
       ann: {id: 401, name: "Ann"},
       bob: {id: 402, name: "Bob"}
+
+      # languages
+      eng_ng: {id: 601, name: "English"},
+
+      # faqs
+      pregnant: {id: 701, name: "Pregnant"},
     }
   )
 
@@ -64,7 +70,9 @@ describe('services:', () ->
       it('gets cases from search endpoint', () ->
         $httpBackend.expectGET('/case/search/?folder=open').respond('{"results":[{"id":501,"opened_on":"2016-05-17T08:49:13.698864"}],"has_more":true}')
         CaseService.fetchOld({folder: "open"}).then((data) ->
-          expect(data.results).toEqual([{id: 501, opened_on: utcdate(2016, 5, 17, 8, 49, 13, 698)}])
+          expect(data.results).toEqual([{
+            id: 501,
+            opened_on: utcdate(2016, 5, 17, 8, 49, 13, 698)}])
           expect(data.hasMore).toEqual(true)
         )
         $httpBackend.flush()
@@ -361,41 +369,46 @@ describe('services:', () ->
       )
     )
   )
+
   #=======================================================================
   # Tests for FaqService
   #=======================================================================
-  describe('FaqService',() ->
-    faqService = null
+  describe('FaqService', () ->
+    FaqService = null
 
-    beforeEach(inject((_FAQService_) ->
-      faqService = _FAQService_
+    beforeEach(inject((_FaqService_) ->
+      FaqService = _FaqService_
+
+      test.faq1 = {
+        id: 702,
+        question: "test question 2",
+        answer: "test answer 2",
+        labels: [test.tea]
+      }
     ))
 
-    # Dummy Replies to be removed when API ready
-
-    describe ('fetchFaqs',() ->
-      it('Should fetch faq replies', () ->
-        $httpBackEnd.expectGET('/faqs/search/label=12')
-        respond("results:[{
-                "id": 1,
-                "question": "example question 1",
-                "answer": "example answer 1",
-                "labels": [
-                    {'id': 101, 'name': "AIDS"},
-                    {'id': 102, 'name': "TB"}
-                  ]
-                },
-                {
-                  "id": 2,
-                  "question": "example question 2",
-                  "answer": "example answer 2",
-                  "labels": [
-                      {'id': 102, 'name': "TB"},
-                      {'id': 103, 'name': "Pregnancy"},
-                  ]
-                }")
-        faqService.fetchFaqs({label:{name:'HIV',id:12}})
-        $httpBackEnd.flush()
+    describe('fetchFaqs', () ->
+      it('gets FAQs from search endpoint', () ->
+        $httpBackend.expectGET('/faq/search/?label=201')
+        .respond('{
+          "results": [{
+            "id": 702,
+            "question": "example question 1",
+            "answer": "example answer 1",
+            "labels": [201]
+          }],
+          "has_more": false
+        }')
+        FaqService.fetchFaqs({label: {id: 201}}).then((replies) ->
+          expect(replies).toEqual([{
+            id: 702,
+            question: "example question 1",
+            answer: "example answer 1",
+            labels: [201]
+          }])
+        )
+        $httpBackend.flush()
+      )
     )
   )
 
