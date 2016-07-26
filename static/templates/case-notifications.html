@@ -4,4 +4,10 @@
       [[ notification.payload.message ]]
     </cp-alert>
   </div>
+
+  <div ng-switch-when="pod_action_api_failure">
+    <cp-alert type="danger">
+      Sorry, we encountered a problem on our side while completing your action.
+    </cp-alert>
+  </div>
 </div>

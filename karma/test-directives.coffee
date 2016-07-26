@@ -286,5 +286,22 @@ describe('directives:', () ->
       expect(notification2.classList.contains('alert-danger')).toBe(true)
       expect(notification2.textContent).toMatch('Bar')
     )
+
+    it('should draw pod_action_api_failure notifications', () ->
+      $rootScope.notifications = [{
+        type: 'pod_action_api_failure'
+      }, {
+        type: 'pod_action_api_failure'
+      }]
+
+      template = $compile('<cp-case-notifications></cp-case-notifications>')
+      el = template($rootScope)[0]
+      $rootScope.$digest()
+
+      [notification1, notification2] = el.querySelectorAll('.alert')
+
+      expect(notification1.classList.contains('alert-danger')).toBe(true)
+      expect(notification2.classList.contains('alert-danger')).toBe(true)
+    )
   )
 )
