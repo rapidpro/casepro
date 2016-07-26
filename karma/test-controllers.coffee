@@ -84,17 +84,6 @@ describe('controllers:', () ->
       expect($scope.contact).toEqual(test.ann)
     )
 
-    it('should should add a notification on podActionFailure', () ->
-      $scope.notifications = []
-
-      $scope.$emit('podActionFailure', {message: 'o_O'})
-
-      expect($scope.notifications).toEqual([{
-        type: 'danger',
-        message: 'o_O'
-      }])
-    )
-
     it('addNote', () ->
       noteModal = spyOnPromise($q, $scope, UtilsService, 'noteModal')
       addNote = spyOnPromise($q, $scope, CaseService, 'addNote')
@@ -135,6 +124,20 @@ describe('controllers:', () ->
 
       expect(UtilsService.confirmModal).toHaveBeenCalled()
       expect(CaseService.unwatch).toHaveBeenCalledWith(test.case1)
+    )
+
+    it('should should add a notification on notification events', () ->
+      $scope.notifications = []
+      $scope.$emit('notification', {type: 'foo'})
+      expect($scope.notifications).toEqual([{type: 'foo'}])
+    )
+
+    describe('addNotification', () ->
+      it('should add the given notification', () ->
+        $scope.notifications = []
+        $scope.addNotification({type: 'foo'})
+        expect($scope.notifications).toEqual([{type: 'foo'}])
+      )
     )
   )
 
@@ -745,7 +748,7 @@ describe('controllers:', () ->
           .toHaveBeenCalledWith(21, 23, 'grault', {garply: 'waldo'})
       )
 
-      it('should emit a podActionFailure event if successful', (done) ->
+      it('should emit a notification event if unsuccessful', (done) ->
         $scope.podId = 21
         $scope.caseId = 23
         $scope.podConfig = {title: 'Foo'}
@@ -756,10 +759,17 @@ describe('controllers:', () ->
           PodApi
         })
 
-        spyOn(PodApi, 'trigger').and.returnValue($q.resolve({success: false}))
+        spyOn(PodApi, 'trigger').and.returnValue($q.resolve({
+          success: false,
+          payload: {fred: 'xxyyxx'}
+        }))
+
         $scope.trigger('grault', {garply: 'waldo'})
 
-        $scope.$on('podActionFailure', -> done())
+        $scope.$on('notification', (e, {type, payload}) ->
+          expect(type).toEqual('pod_action_failure')
+          expect(payload).toEqual({fred: 'xxyyxx'})
+          done())
         $scope.$apply()
       )
 

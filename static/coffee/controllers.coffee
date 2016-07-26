@@ -524,18 +524,11 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
 
     $scope.refresh()
 
-  $scope.$on('podActionFailure', (e, {message}) ->
-    $scope.addNotification({
-      type: 'danger',
-      message
-    }))
+  $scope.$on('notification', (e, notification) ->
+    $scope.addNotification(notification))
 
   $scope.addNotification = (notification) ->
     $scope.notifications.push(notification)
-
-  $scope.removeNotification = (notification) ->
-    $scope.notifications = $scope.notifications
-      .filter((d) -> d != notification)
 
   $scope.refresh = () ->
     CaseService.fetchSingle($scope.caseId).then((caseObj) ->
@@ -856,14 +849,17 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
     PodApi.trigger($scope.podId, $scope.caseId, type, payload)
       .then(({success, payload}) ->
         if success
-          $scope.onTriggerSuccess()
+          onTriggerSuccess()
         else
-          $scope.onTriggerFailure(payload))
+          onTriggerFailure(payload))
 
-  $scope.onTriggerFailure = (payload) ->
-    $scope.$emit('podActionFailure', payload)
+  onTriggerFailure = (payload) ->
+    $scope.$emit('notification', {
+      type: 'pod_action_failure',
+      payload
+    })
 
-  $scope.onTriggerSuccess = () ->
+  onTriggerSuccess = () ->
     # TODO update notes
     $scope.update()
 ])

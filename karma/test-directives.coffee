@@ -158,64 +158,52 @@ describe('directives:', () ->
   )
 
   #=======================================================================
-  # Tests for pod
+  # Tests for cpAlert
   #=======================================================================
-  describe('cpNotifications', () ->
-    $rootScope = null
-    $compile = null
-
-    beforeEach(inject((_$rootScope_, _$compile_) ->
-      $rootScope = _$rootScope_
-      $compile = _$compile_
-
+  describe('cpAlert', () ->
+    beforeEach(() ->
       $rootScope.notifications = []
-      $rootScope.removeNotification = ->
-    ))
+    )
 
-    it('should draw the notifications', () ->
-      $rootScope.notifications = [{
-        type: 'danger',
-        message: 'Foo'
-      }, {
-        type: 'success',
-        message: 'Bar'
-      }]
-
-      el = $compile('<cp-notifications></cp-notifications>')($rootScope)[0]
+    it('should draw the alert', () ->
+      template = $compile('<cp-alert type="danger">Foo</cp-alert>')
+      el = template($rootScope)[0]
       $rootScope.$digest()
 
-      notification1 = el.querySelector('.alert:nth-child(1)')
-      notification2 = el.querySelector('.alert:nth-child(2)')
+      alert = el.querySelector('.alert')
+      expect(alert.classList.contains('alert-danger')).toBe(true)
+      expect(alert.textContent).toMatch('Foo')
+    )
+  )
+
+  #=======================================================================
+  # Tests for cpCaseNotifications
+  #=======================================================================
+  describe('cpCaseNotifications', () ->
+    beforeEach(() ->
+      $rootScope.notifications = []
+    )
+
+    it('should draw pod_action_failure notifications', () ->
+      $rootScope.notifications = [{
+        type: 'pod_action_failure',
+        payload: {message: 'Foo'}
+      }, {
+        type: 'pod_action_failure',
+        payload: {message: 'Bar'}
+      }]
+
+      template = $compile('<cp-case-notifications></cp-case-notifications>')
+      el = template($rootScope)[0]
+      $rootScope.$digest()
+
+      [notification1, notification2] = el.querySelectorAll('.alert')
 
       expect(notification1.classList.contains('alert-danger')).toBe(true)
       expect(notification1.textContent).toMatch('Foo')
 
-      expect(notification2.classList.contains('alert-success')).toBe(true)
+      expect(notification2.classList.contains('alert-danger')).toBe(true)
       expect(notification2.textContent).toMatch('Bar')
-    )
-
-    it('should call removeNotification() when a notification is closed', ->
-      $rootScope.notifications = [{
-        type: 'danger',
-        message: 'Foo'
-      }, {
-        type: 'success',
-        message: 'Bar'
-      }]
-
-      $rootScope.removeNotification = jasmine.createSpy('removeNotification')
-
-      el = $compile('<cp-notifications></cp-notifications>')($rootScope)[0]
-      $rootScope.$digest()
-
-      angular.element(el.querySelector('.alert:nth-child(2) .close'))
-        .triggerHandler('click')
-
-      expect($rootScope.removeNotification.calls.mostRecent().args[0])
-        .toEqual(jasmine.objectContaining({
-          type: 'success',
-          message: 'Bar'
-        }))
     )
   )
 )
