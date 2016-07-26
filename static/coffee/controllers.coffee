@@ -25,6 +25,7 @@ controllers.controller('InboxController', ['$scope', '$window', '$location', 'La
   $scope.user = $window.contextData.user
   $scope.labels = $window.contextData.labels
   $scope.groups = $window.contextData.groups
+  $scope.fields = $window.contextData.fields
 
   $scope.activeLabel = null
   $scope.activeContact = null
@@ -75,12 +76,13 @@ controllers.controller('InboxController', ['$scope', '$window', '$location', 'La
 controllers.controller('BaseTabsController', ['$scope', '$location', ($scope, $location) ->
   $scope.initialisedTabs = []
 
-  path = $location.path()
-  if path
-    initialTabSlug = path.substring(1)  # ignore initial /
-    $scope.active = $scope.tabSlugs.indexOf(initialTabSlug)
-  else
-    $scope.active = 0
+  $scope.activateTabFromPath = () ->
+    path = $location.path()
+    if path
+      initialTabSlug = path.substring(1)  # ignore initial /
+      $scope.active = $scope.tabSlugs.indexOf(initialTabSlug)
+    else
+      $scope.active = 0
 
   $scope.onTabSelect = (tab) ->
     slug = $scope.tabSlugs[tab]
@@ -90,6 +92,9 @@ controllers.controller('BaseTabsController', ['$scope', '$location', ($scope, $l
     if tab not in $scope.initialisedTabs
       $scope.onTabInit(slug)
       $scope.initialisedTabs.push(tab)
+
+  $scope.activateTabFromPath()
+  $scope.$on('$locationChangeSuccess', () -> $scope.activateTabFromPath())
 ])
 
 
@@ -505,6 +510,7 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
 controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'ContactService', 'MessageService', 'PartnerService', 'UtilsService', ($scope, $window, $timeout, CaseService, ContactService, MessageService, PartnerService, UtilsService) ->
 
   $scope.allLabels = $window.contextData.all_labels
+  $scope.fields = $window.contextData.fields
   
   $scope.caseObj = null
   $scope.contact = null
@@ -518,18 +524,11 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
 
     $scope.refresh()
 
-  $scope.$on('podActionFailure', (e, {message}) ->
-    $scope.addNotification({
-      type: 'danger',
-      message
-    }))
+  $scope.$on('notification', (e, notification) ->
+    $scope.addNotification(notification))
 
   $scope.addNotification = (notification) ->
     $scope.notifications.push(notification)
-
-  $scope.removeNotification = (notification) ->
-    $scope.notifications = $scope.notifications
-      .filter((d) -> d != notification)
 
   $scope.refresh = () ->
     CaseService.fetchSingle($scope.caseId).then((caseObj) ->
@@ -699,6 +698,7 @@ controllers.controller('PartnerController', ['$scope', '$window', '$controller',
   $controller('BaseTabsController', {$scope: $scope})
 
   $scope.partner = $window.contextData.partner
+  $scope.fields = $window.contextData.fields
   $scope.users = []
 
   $scope.onTabInit = (tab) ->
@@ -866,9 +866,13 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApi', ($q, $scope, 
     $scope.$emit('podApiError')
 
   onTriggerFailure = (payload) ->
-    $scope.$emit('podActionFailure', payload)
+    $scope.$emit('notification', {
+      type: 'pod_action_failure',
+      payload
+    })
 
   onTriggerSuccess = () ->
+    # TODO update notes
     $scope.update()
 
   updateAction = (type, props) ->

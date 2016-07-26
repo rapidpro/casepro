@@ -1,0 +1,7 @@
+<div ng-repeat="notification in notifications" ng-switch="notification.type">
+  <div ng-switch-when="pod_action_failure">
+    <cp-alert type="danger">
+      [[ notification.payload.message ]]
+    </cp-alert>
+  </div>
+</div>

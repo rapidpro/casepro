@@ -687,16 +687,8 @@ class CaseCRUDLTest(BaseCasesTest):
         CaseAction.create(case, self.user1, CaseAction.OPEN, assignee=self.moh)
 
         # backend has a message in the case time window that we don't have locally
-        remote_message1 = {
-            'id': 102,
-            'contact': {'id': self.ann.pk, 'name': "Ann"},
-            'urn': None,
-            'text': "Non casepro message...",
-            'time': d2,
-            'direction': 'O',
-            'case': None,
-            'sender': None,
-        }
+        remote_message1 = Outgoing(backend_broadcast_id=102, contact=self.ann, text="Non casepro message...",
+                                   created_on=d2)
         mock_fetch_contact_messages.return_value = [remote_message1]
 
         timeline_url = reverse('cases.case_timeline', args=[case.pk])
@@ -709,14 +701,12 @@ class CaseCRUDLTest(BaseCasesTest):
         t0 = microseconds_to_datetime(response.json['max_time'])
 
         self.assertEqual(len(response.json['results']), 3)
-        self.assertEqual(response.json['results'][0]['type'], 'M')
+        self.assertEqual(response.json['results'][0]['type'], 'I')
         self.assertEqual(response.json['results'][0]['item']['text'], "What is AIDS?")
         self.assertEqual(response.json['results'][0]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
-        self.assertEqual(response.json['results'][0]['item']['direction'], 'I')
-        self.assertEqual(response.json['results'][1]['type'], 'M')
+        self.assertEqual(response.json['results'][1]['type'], 'O')
         self.assertEqual(response.json['results'][1]['item']['text'], "Non casepro message...")
         self.assertEqual(response.json['results'][1]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
-        self.assertEqual(response.json['results'][1]['item']['direction'], 'O')
         self.assertEqual(response.json['results'][2]['type'], 'A')
         self.assertEqual(response.json['results'][2]['item']['action'], 'O')
 
@@ -757,9 +747,8 @@ class CaseCRUDLTest(BaseCasesTest):
         t3 = microseconds_to_datetime(response.json['max_time'])
 
         self.assertEqual(len(response.json['results']), 1)
-        self.assertEqual(response.json['results'][0]['type'], 'M')
+        self.assertEqual(response.json['results'][0]['type'], 'O')
         self.assertEqual(response.json['results'][0]['item']['text'], "It's bad")
-        self.assertEqual(response.json['results'][0]['item']['direction'], 'O')
 
         # contact sends a reply
         d4 = timezone.now()
@@ -771,9 +760,8 @@ class CaseCRUDLTest(BaseCasesTest):
         t4 = microseconds_to_datetime(response.json['max_time'])
 
         self.assertEqual(len(response.json['results']), 1)
-        self.assertEqual(response.json['results'][0]['type'], 'M')
+        self.assertEqual(response.json['results'][0]['type'], 'I')
         self.assertEqual(response.json['results'][0]['item']['text'], "OK thanks")
-        self.assertEqual(response.json['results'][0]['item']['direction'], 'I')
 
         # page again looks for new timeline activity
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t4)))
@@ -807,16 +795,7 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # backend has the message sent during the case as well as the unrelated message
         mock_fetch_contact_messages.return_value = [
-            {
-                'id': 202,
-                'contact': {'id': self.ann.pk, 'name': "Ann"},
-                'urn': None,
-                'text': "It's bad",
-                'time': d3,
-                'direction': 'O',
-                'case': None,
-                'sender': None,
-            },
+            Outgoing(backend_broadcast_id=202, contact=self.ann, text="It's bad", created_on=d3),
             remote_message1
         ]
 
@@ -825,24 +804,21 @@ class CaseCRUDLTest(BaseCasesTest):
         items = response.json['results']
 
         self.assertEqual(len(items), 7)
-        self.assertEqual(items[0]['type'], 'M')
+        self.assertEqual(items[0]['type'], 'I')
         self.assertEqual(items[0]['item']['text'], "What is AIDS?")
         self.assertEqual(items[0]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
-        self.assertEqual(items[0]['item']['direction'], 'I')
-        self.assertEqual(items[1]['type'], 'M')
+        self.assertEqual(items[1]['type'], 'O')
         self.assertEqual(items[1]['item']['text'], "Non casepro message...")
         self.assertEqual(items[1]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
-        self.assertEqual(items[1]['item']['direction'], 'O')
         self.assertEqual(items[1]['item']['sender'], None)
         self.assertEqual(items[2]['type'], 'A')
         self.assertEqual(items[2]['item']['action'], 'O')
         self.assertEqual(items[3]['type'], 'A')
         self.assertEqual(items[3]['item']['action'], 'N')
-        self.assertEqual(items[4]['type'], 'M')
-        self.assertEqual(items[4]['item']['direction'], 'O')
+        self.assertEqual(items[4]['type'], 'O')
         self.assertEqual(items[4]['item']['sender'], {'id': self.user1.pk, 'name': "Evan"})
-        self.assertEqual(items[5]['type'], 'M')
-        self.assertEqual(items[5]['item']['direction'], 'I')
+        self.assertEqual(items[5]['type'], 'I')
+        self.assertEqual(items[5]['item']['text'], "OK thanks")
         self.assertEqual(items[6]['type'], 'A')
         self.assertEqual(items[6]['item']['action'], 'C')
 

@@ -31,14 +31,17 @@ describe('directives:', () ->
       $templateCache.put('/partials/directive_contact.html', '[[ contact.name ]]')
       $scope = $rootScope.$new()
       $scope.ann = {id: 401, name: "Ann"}
+      $scope.myfields = [{key: 'age', label: "Age"}]
 
       fetch = spyOnPromise($q, $scope, ContactService, 'fetch')
 
-      element = $compile('<cp-contact contact="ann" />')($scope)
+      element = $compile('<cp-contact contact="ann" fields="myfields" />')($scope)
       $rootScope.$digest()
 
       expect(element.html()).toContain("Ann");
 
+      expect(element.isolateScope().contact).toEqual($scope.ann)
+      expect(element.isolateScope().fields).toEqual([{key: 'age', label: "Age"}])
       expect(element.isolateScope().fetched).toEqual(false)
       expect(element.isolateScope().popoverIsOpen).toEqual(false)
       expect(element.isolateScope().popoverTemplateUrl).toEqual('/partials/popover_contact.html')
@@ -56,6 +59,48 @@ describe('directives:', () ->
       expect(element.isolateScope().popoverIsOpen).toEqual(false)
     )
   )
+
+  describe('fieldvalue', () ->
+    $filter = null
+
+    beforeEach(() ->
+      inject(( _$filter_) ->
+        $filter = _$filter_
+      )
+    )
+
+    it('it looksup and formats value based on type', () ->
+      $scope = $rootScope.$new()
+      $scope.ann = {id: 401, name: "Ann", fields: {nid: 1234567, edd: '2016-07-04T12:59:46.309033Z'}}
+      $scope.myfields = [
+        {key: 'nid', label: "NID", value_type:'N'},
+        {key: 'edd', label: "EDD", value_type:'D'},
+        {key: 'nickname', label: "Nickname", value_type:'T'}
+      ]
+
+      # check numerical field
+      element = $compile('<cp-fieldvalue contact="ann" field="myfields[0]" />')($scope)
+      $rootScope.$digest()
+
+      expect(element.isolateScope().contact).toEqual($scope.ann)
+      expect(element.isolateScope().field).toEqual($scope.myfields[0])
+      expect(element.isolateScope().value).toEqual("1,234,567")
+      expect(element.text()).toEqual("1,234,567")
+
+      # check date field
+      element = $compile('<cp-fieldvalue contact="ann" field="myfields[1]" />')($scope)
+      $rootScope.$digest()
+
+      expect(element.text()).toEqual("Jul 4, 2016")
+
+      # check field with no value
+      element = $compile('<cp-fieldvalue contact="ann" field="myfields[2]" />')($scope)
+      $rootScope.$digest()
+
+      expect(element.text()).toEqual("--")
+    )
+  )
+
 
   #=======================================================================
   # Tests for pod
@@ -194,64 +239,52 @@ describe('directives:', () ->
   )
 
   #=======================================================================
-  # Tests for pod
+  # Tests for cpAlert
   #=======================================================================
-  describe('cpNotifications', () ->
-    $rootScope = null
-    $compile = null
-
-    beforeEach(inject((_$rootScope_, _$compile_) ->
-      $rootScope = _$rootScope_
-      $compile = _$compile_
-
+  describe('cpAlert', () ->
+    beforeEach(() ->
       $rootScope.notifications = []
-      $rootScope.removeNotification = ->
-    ))
+    )
 
-    it('should draw the notifications', () ->
-      $rootScope.notifications = [{
-        type: 'danger',
-        message: 'Foo'
-      }, {
-        type: 'success',
-        message: 'Bar'
-      }]
-
-      el = $compile('<cp-notifications></cp-notifications>')($rootScope)[0]
+    it('should draw the alert', () ->
+      template = $compile('<cp-alert type="danger">Foo</cp-alert>')
+      el = template($rootScope)[0]
       $rootScope.$digest()
 
-      notification1 = el.querySelector('.alert:nth-child(1)')
-      notification2 = el.querySelector('.alert:nth-child(2)')
+      alert = el.querySelector('.alert')
+      expect(alert.classList.contains('alert-danger')).toBe(true)
+      expect(alert.textContent).toMatch('Foo')
+    )
+  )
+
+  #=======================================================================
+  # Tests for cpCaseNotifications
+  #=======================================================================
+  describe('cpCaseNotifications', () ->
+    beforeEach(() ->
+      $rootScope.notifications = []
+    )
+
+    it('should draw pod_action_failure notifications', () ->
+      $rootScope.notifications = [{
+        type: 'pod_action_failure',
+        payload: {message: 'Foo'}
+      }, {
+        type: 'pod_action_failure',
+        payload: {message: 'Bar'}
+      }]
+
+      template = $compile('<cp-case-notifications></cp-case-notifications>')
+      el = template($rootScope)[0]
+      $rootScope.$digest()
+
+      [notification1, notification2] = el.querySelectorAll('.alert')
 
       expect(notification1.classList.contains('alert-danger')).toBe(true)
       expect(notification1.textContent).toMatch('Foo')
 
-      expect(notification2.classList.contains('alert-success')).toBe(true)
+      expect(notification2.classList.contains('alert-danger')).toBe(true)
       expect(notification2.textContent).toMatch('Bar')
-    )
-
-    it('should call removeNotification() when a notification is closed', ->
-      $rootScope.notifications = [{
-        type: 'danger',
-        message: 'Foo'
-      }, {
-        type: 'success',
-        message: 'Bar'
-      }]
-
-      $rootScope.removeNotification = jasmine.createSpy('removeNotification')
-
-      el = $compile('<cp-notifications></cp-notifications>')($rootScope)[0]
-      $rootScope.$digest()
-
-      angular.element(el.querySelector('.alert:nth-child(2) .close'))
-        .triggerHandler('click')
-
-      expect($rootScope.removeNotification.calls.mostRecent().args[0])
-        .toEqual(jasmine.objectContaining({
-          type: 'success',
-          message: 'Bar'
-        }))
     )
   )
 )
