@@ -1,0 +1,9 @@
+- extends "smartmin/list.html"
+- load smartmin i18n
+
+- block table-controls
+  .clearfix
+    .pull-away.buttons
+    %a.btn.btn-default.pull-right{ href:"{% url 'msgs.language_create' %}" }
+      %span.glyphicon.glyphicon-plus
+      - trans "Add"

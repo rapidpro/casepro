@@ -489,7 +489,7 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
 controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'ContactService', 'MessageService', 'PartnerService', 'UtilsService', ($scope, $window, $timeout, CaseService, ContactService, MessageService, PartnerService, UtilsService) ->
 
   $scope.allLabels = $window.contextData.all_labels
-  
+
   $scope.caseObj = null
   $scope.contact = null
   $scope.newMessage = ''
@@ -624,7 +624,7 @@ controllers.controller('CaseTimelineController', ['$scope', '$timeout', 'CaseSer
 #============================================================================
 controllers.controller('LabelController', ['$scope', '$window', '$controller', 'UtilsService', 'LabelService', 'StatisticsService', ($scope, $window, $controller, UtilsService, LabelService, StatisticsService) ->
   $scope.tabSlugs = ['summary']
-  
+
   $controller('BaseTabsController', {$scope: $scope})
 
   $scope.label = $window.contextData.label
@@ -772,6 +772,22 @@ controllers.controller('UserController', ['$scope', '$controller', '$window', 'S
 
 
 #============================================================================
+# Language view controller
+#============================================================================
+controllers.controller('LanguageController', ['$scope', '$window', 'UtilsService', 'LanguageService', ($scope, $window, UtilsService, LanguageService) ->
+
+  $scope.language = $window.contextData.language
+
+  $scope.onDeleteLanguage = () ->
+    UtilsService.confirmModal("Delete this Language?", 'danger').then(() ->
+      LanguageService.delete($scope.language).then(() ->
+        UtilsService.navigate('/language/')
+      )
+    )
+])
+
+
+#============================================================================
 # Faq view controller
 #============================================================================
 controllers.controller('FaqController', ['$scope', '$window', 'UtilsService', 'FaqService', ($scope, $window, UtilsService, FaqService) ->
@@ -779,9 +795,9 @@ controllers.controller('FaqController', ['$scope', '$window', 'UtilsService', 'F
   $scope.faq = $window.contextData.faq
 
   $scope.onDeleteFaq = () ->
-    UtilsService.confirmModal("Delete this FAQ?", 'danger').then(() ->
+    UtilsService.confirmModal("Warning! If this FAQ has any linked translation FAQs, they will be also be deleted. Delete this FAQ?", 'danger').then(() ->
       FaqService.delete($scope.faq).then(() ->
-        UtilsService.navigateBack()
+        UtilsService.navigate('/faq/')
       )
     )
 ])

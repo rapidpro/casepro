@@ -147,156 +147,69 @@ services.factory('MessageService', ['$rootScope', '$http', '$httpParamSerializer
 ])
 
 #=====================================================================
-# Frequently Asked Question Replies service
+# FAQ service
 #=====================================================================
-services.factory('FAQService', ['$rootScope', '$http', '$httpParamSerializer', ($rootScope, $http, $httpParamSerializer) ->
-  new class FAQService
+services.factory('FaqService', ['$rootScope', '$http', '$httpParamSerializer', ($rootScope, $http, $httpParamSerializer) ->
+  new class FaqService
 
     #----------------------------------------------------------------------------
-    # Fetches replies to FAQs
+    # Fetch FAQs to use in replies
     #----------------------------------------------------------------------------
-
     fetchFaqs: (search) ->
-      # Dummy results; to be removed when API ready
-      results = [{
-          "id": 1,
-          "question": "Can I get infected from touching an HIV+ person's blood ?",
-          "answer": "Contact with an HIV+'s blood may lead to infection . Please contact 0865000342 for for urgent assistance if you may have conme into contact with an HIV+'s blood",
-          "labels": [
-              {'id': 12, 'name': "AIDS"}
-          ]
-      },
-      {
-          "id": 2,
-          "question": "Can my baby also be HIV+ ?",
-          "answer": "It depends on wether you had used the Vital B medication prescribed to pregnant mothers.",
-          "labels": [
-              {'id': 12, 'name': "HIV"},
-              {'id': 15, 'name': "Pregnancy"}
-          ]
-        },
-        {
-          "id": 2,
-          "question": "Must I close the windows if I have TB ?",
-          "answer": "Please be advised all windows are to be kept open at all times",
-          "labels": [
-              {'id': 13, 'name': "TB"}
-          ]
-        },
-        {
-          "id": 2,
-          "question": "How will I know If I am pregnant ?",
-          "answer": "Please visit www.amipregnant.com",
-          "labels": [
-              {'id': 15, 'name': "Pregnancy"}
-          ]
-        },
-        {
-          "id": 2,
-          "question": "example question 5",
-          "answer": "example answer 5",
-          "labels": [
-              {'id': 102, 'name': "TB"},
-              {'id': 103, 'name': "Pregnancy"},
-          ]
-        },
-        {
-          "id": 2,
-          "question": "example question 6",
-          "answer": "example answer 6",
-          "labels": [
-              {'id': 102, 'name': "TB"},
-              {'id': 103, 'name': "Pregnancy"},
-          ]
-        },
-        {
-          "id": 11,
-          "question": "Will my child get Ebola if I'm HIV positive ?",
-          "answer": "No , your child will not get Ebola , unless he/she is exposed to the virus",
-          "labels": [
-              {'id': 15, 'name': "HIV"}
-
-          ]
-        },
-        {
-          "id": 13,
-          "question": "Bablo selesa ikomu saniolo Ebola bu HIV positive lesa?",
-          "answer": "Manase roja bokolo ya virus sleyona mkonena wer wer vetar",
-          "labels": [
-              {'id': 15, 'name': "HIV"}
-
-          ]
-        },
-        {
-          "id": 6,
-          "question": "Nkri nkri boro wayelsa ?",
-          "answer": "Machukana e natenda www.amipregnat.com  vaeslav",
-          "labels": [
-              {'id': 13, 'name': "Pregnancy"},
-          ]
-          }
-      ]
-      if search.label
-        if search.label.name == 'TB'
-          results = [results[2]]
-        else if search.label.name == 'HIV'
-          if search.text
-            if search.text.toLowerCase() == "ebola"
-              if search.language == 3
-                results = [results[7]]
-              else
-                results = [results[6]]
-
-            else
-              results = [results[0],results[1]]
-        else
-          if search.language == 3
-            results =[results[8]]
-          else
-            results = [results[3],results[4],results[5]]
-      else
-        results
-
-      # Comment out when API ready
-      # params = @_searchFaqsToParams(search)
-      # return $http.get('/faq/search/?'+$httpParamSerializer(params)).then((response) -> response.data.results)
-      results
+      params = @_searchFaqsToParams(search)
+      return $http.get('/faq/search/?' + $httpParamSerializer(params)).then((response) ->
+        return response.data.results
+      )
 
     #----------------------------------------------------------------------------
     # Convert search object to URL params
     #----------------------------------------------------------------------------
     _searchFaqsToParams: (search) ->
       return {
+        label: if search.label then search.label.id else null,
         text: search.text,
-        label: if search.label then search.label.id else null
+        language: search.language
       }
+
+    #----------------------------------------------------------------------------
+    # Delete the given FAQ
+    #----------------------------------------------------------------------------
+    delete: (faq) ->
+      return $http.post('/faq/delete/' + faq.id + '/')
+
 ])
+
 
 #=====================================================================
 # Language service
 #=====================================================================
-services.factory('LanguageService', ['$rootScope', '$http', ($rootScope, $http, $httpParamSerializer) ->
+services.factory('LanguageService', ['$rootScope', '$http', '$httpParamSerializer', ($rootScope, $http, $httpParamSerializer) ->
   new class LanguageService
-      getLanguages : () ->
-          # COMMENT OUT WHEN API READY
-          # return $http.get('/lang).then((response) -> response.data.results)
-          dummy_languages = [{
-            id:1,
-            name:'English Nigeria',
-            code:'eng_ng'
-          },
-          {
-            id:2,
-            name:'English South Africa',
-            code:'eng_za'
-          },
-          {
-            id:3,
-            name:'French Nigeria',
-            code:'fr_ng'
-          }]
-          return dummy_languages
 
+    #----------------------------------------------------------------------------
+    # Fetch a list of available languages
+    #----------------------------------------------------------------------------
+    fetchLanguages: (search) ->
+      params = @_searchLanguageToParams(search)
+      return $http.get('/language/search/?' + $httpParamSerializer(params)).then((response) ->
+        return response.data.results
+      )
+
+
+    #----------------------------------------------------------------------------
+    # Convert search object to URL params
+    #----------------------------------------------------------------------------
+    _searchLanguageToParams: (search) ->
+      return {
+        name: search.name
+        location: search.location,
+      }
+
+    #----------------------------------------------------------------------------
+    # Delete the given language
+    #----------------------------------------------------------------------------
+    delete: (language) ->
+      return $http.post('/language/delete/' + language.id + '/')
 
   ])
 
@@ -636,20 +549,6 @@ services.factory('UserService', ['$http', '$httpParamSerializer', ($http, $httpP
     #----------------------------------------------------------------------------
     delete: (user) ->
       return $http.post('/user/delete/' + user.id + '/')
-])
-
-
-#=====================================================================
-# Faq service
-#=====================================================================
-services.factory('FaqService', ['$http', ($http) ->
-  new class FaqService
-
-    #----------------------------------------------------------------------------
-    # Delete the given faq
-    #----------------------------------------------------------------------------
-    delete: (faq) ->
-      return $http.post('/faq/delete/' + faq.id + '/')
 ])
 
 
