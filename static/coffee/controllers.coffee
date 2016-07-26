@@ -869,7 +869,6 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApi', ($q, $scope, 
     $scope.$emit('podActionFailure', payload)
 
   onTriggerSuccess = () ->
-    $scope.$emit('podActionSuccess')
     $scope.update()
 
   updateAction = (type, props) ->
