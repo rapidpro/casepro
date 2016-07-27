@@ -9,6 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 from django_redis import get_redis_connection
 
 from casepro.backend import get_backend
+from casepro.utils import get_language_name
 
 FIELD_LOCK_KEY = 'lock:field:%d:%s'
 GROUP_LOCK_KEY = 'lock:group:%d:%s'
@@ -152,6 +153,8 @@ class Contact(models.Model):
 
     is_blocked = models.BooleanField(default=False, help_text="Whether this contact is blocked")
 
+    is_stopped = models.BooleanField(default=False, help_text="Whether this contact opted out of receiving messages")
+
     is_stub = models.BooleanField(default=False, help_text="Whether this contact is just a stub")
 
     suspended_groups = models.ManyToManyField(Group, help_text=_("Groups this contact has been suspended from"))
@@ -199,6 +202,12 @@ class Contact(models.Model):
             return {k: fields.get(k) for k in keys}
         else:
             return fields
+
+    def get_language(self):
+        if self.language:
+            return {'code': self.language, 'name': get_language_name(self.language)}
+        else:
+            return None
 
     def prepare_for_case(self):
         """
@@ -267,7 +276,11 @@ class Contact(models.Model):
         result = {'id': self.pk, 'name': self.get_display_name()}
 
         if full:
+            result['groups'] = [g.as_json(full=False) for g in self.groups.all()]
             result['fields'] = self.get_fields(visible=True)
+            result['language'] = self.get_language()
+            result['blocked'] = self.is_blocked
+            result['stopped'] = self.is_stopped
 
         return result
 

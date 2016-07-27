@@ -16,6 +16,7 @@ from casepro.test import BaseCasesTest
 
 from . import safe_max, normalize, match_keywords, truncate, str_to_bool, json_encode, TimelineItem, uuid_to_int
 from . import date_to_milliseconds, datetime_to_microseconds, microseconds_to_datetime, month_range, date_range
+from . import get_language_name
 from .email import send_email
 from .middleware import JSONMiddleware
 
@@ -126,6 +127,16 @@ class UtilsTest(BaseCasesTest):
         """
         self.assertTrue(uuid_to_int(uuid.hex) <= 2147483647)
         self.assertTrue(uuid_to_int(uuid.hex) >= 0)
+
+    def test_get_language_name(self):
+        self.assertEqual(get_language_name('fre'), "French")
+        self.assertEqual(get_language_name('fre'), "French")  # from cache
+        self.assertEqual(get_language_name('cpe'), "Creoles and pidgins, English based")
+
+        # should strip off anything after an open paren or semicolon
+        self.assertEqual(get_language_name('arc'), "Official Aramaic")
+
+        self.assertIsNone(get_language_name('xxxxx'))
 
 
 class EmailTest(BaseCasesTest):

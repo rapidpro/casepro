@@ -42,6 +42,7 @@ class ContactSyncerTest(BaseCasesTest):
             'name': "Bob McFlow",
             'language': "eng",
             'is_blocked': False,
+            'is_stopped': False,
             'is_stub': False,
             'fields': {'age': "34"},
             '__data__groups': [("G-001", "Customers")],
@@ -60,6 +61,7 @@ class ContactSyncerTest(BaseCasesTest):
             fields={},
             language=None,
             blocked=False,
+            stopped=False,
             modified_on=now()
         ), {}))
 
@@ -78,6 +80,7 @@ class ContactSyncerTest(BaseCasesTest):
             fields={'chat_name': "ann", 'age': None},
             language='eng',
             blocked=False,
+            stopped=False,
             modified_on=now()
         ), {}))
 
@@ -90,6 +93,7 @@ class ContactSyncerTest(BaseCasesTest):
             fields={'chat_name': "ann"},
             language='eng',
             blocked=False,
+            stopped=False,
             modified_on=now()
         ), {}))
 
@@ -102,6 +106,7 @@ class ContactSyncerTest(BaseCasesTest):
             fields={'chat_name': "ann"},
             language='eng',
             blocked=False,
+            stopped=False,
             modified_on=now()
         ), {}))
 
@@ -114,6 +119,7 @@ class ContactSyncerTest(BaseCasesTest):
             fields={'chat_name': "ann8111"},
             language='eng',
             blocked=False,
+            stopped=False,
             modified_on=now()
         ), {}))
 
@@ -126,6 +132,7 @@ class ContactSyncerTest(BaseCasesTest):
             fields={'chat_name': "ann", 'age': "35"},
             language='eng',
             blocked=False,
+            stopped=False,
             modified_on=now()
         ), {}))
 
