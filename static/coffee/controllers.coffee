@@ -879,8 +879,8 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApi', ($q, $scope, 
     else
       p = onTriggerFailure(payload)
 
-    p.then(->
-      $scope.podData.actions = updateAction(type, {isBusy: false}))
+    $q.resolve(p)
+      .then(-> $scope.podData.actions = updateAction(type, {isBusy: false}))
 
   onTriggerApiError = ->
     $scope.$emit('notification', {
