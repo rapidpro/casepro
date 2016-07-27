@@ -19,6 +19,15 @@ services.factory('ContactService', ['$http', ($http) ->
       return $http.get('/contact/fetch/' + id + '/').then((response) ->
         return response.data
       )
+
+    #----------------------------------------------------------------------------
+    # Fetches a contact's cases
+    #----------------------------------------------------------------------------
+    fetchCases: (contact) ->
+      return $http.get('/contact/cases/' + contact.id + '/').then((response) ->
+        utils.parseDates(response.data.results, 'opened_on')
+        return response.data.results
+      )
 ])
 
 

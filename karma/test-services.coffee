@@ -218,6 +218,16 @@ describe('services:', () ->
         $httpBackend.flush()
       )
     )
+
+    describe('fetchCases', () ->
+      it('gets contacts cases from fetch endpoint', () ->
+        $httpBackend.expectGET('/contact/cases/401/').respond('{"results":[{"id": 501, "opened_on": "2016-05-17T08:49:13.698864"}]}')
+        ContactService.fetchCases(test.ann).then((cases) ->
+          expect(cases).toEqual([{id: 501, opened_on: utcdate(2016, 5, 17, 8, 49, 13, 698)}])
+        )
+        $httpBackend.flush()
+      )
+    )
   )
 
   #=======================================================================
