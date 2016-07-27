@@ -45,13 +45,18 @@ class ContactSyncer(BaseSyncer):
             'name': remote.name,
             'language': remote.language,
             'is_blocked': remote.blocked,
+            'is_stopped': remote.stopped,
             'is_stub': False,
             'fields': fields,
             Contact.SAVE_GROUPS_ATTR: groups,
         }
 
     def update_required(self, local, remote, remote_as_kwargs):
-        if local.is_stub or local.name != remote.name or local.language != remote.language:
+        if local.is_stub \
+                or local.name != remote.name \
+                or local.language != remote.language \
+                or local.is_blocked != remote.blocked \
+                or local.is_stopped != remote.stopped:
             return True
 
         if {g.uuid for g in local.groups.all()} != {g.uuid for g in remote.groups}:
