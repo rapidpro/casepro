@@ -845,7 +845,7 @@ controllers.controller('DateRangeController', ['$scope', ($scope) ->
 #============================================================================
 # Pod controller
 #============================================================================
-controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
+controllers.controller('PodController', ['$q', '$scope', 'PodApi', ($q, $scope, PodApi) ->
   $scope.init = (podId, caseId, podConfig) ->
     $scope.podId = podId
     $scope.caseId = caseId
@@ -865,11 +865,12 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
 
   onTriggerDone = (type, {success, payload}) ->
     if success
-      onTriggerSuccess()
+      p = onTriggerSuccess()
     else
-      onTriggerFailure(payload)
+      p = onTriggerFailure(payload)
 
-    $scope.podData.actions = updateAction(type, {isBusy: false})
+    $q.resolve(p)
+      .then(-> $scope.podData.actions = updateAction(type, {isBusy: false}))
 
   onTriggerFailure = (payload) ->
     $scope.$emit('podActionFailure', payload)
