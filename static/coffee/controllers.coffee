@@ -891,7 +891,7 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApi', ($q, $scope, 
       .then(-> $scope.podData.actions = updateAction(type, {isBusy: false}))
 
   onLoadApiFailure = ->
-    $scope.status = 'loading-failed'
+    $scope.status = 'loading_failed'
 
     $scope.$emit('notification', {
       type: 'pod_load_api_failure'
