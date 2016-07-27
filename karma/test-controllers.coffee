@@ -141,6 +141,17 @@ describe('controllers:', () ->
       expect($scope.notifications).toEqual([{type: 'foo'}])
     )
 
+    it('should should ignore duplicate pod_load_api_failure notifications', () ->
+      $scope.notifications = []
+
+      $scope.$emit('notification', {type: 'pod_load_api_failure'})
+      expect($scope.notifications).toEqual([{type: 'pod_load_api_failure'}])
+
+      $scope.$emit('notification', {type: 'pod_load_api_failure'})
+      $scope.$emit('notification', {type: 'pod_load_api_failure'})
+      expect($scope.notifications).toEqual([{type: 'pod_load_api_failure'}])
+    )
+
     describe('addNotification', () ->
       it('should add the given notification', () ->
         $scope.notifications = []

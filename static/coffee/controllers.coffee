@@ -16,6 +16,7 @@ CASE_SUMMARY_MAX_LEN = 255
 CASE_NOTE_MAX_LEN = 1024
 OUTGOING_TEXT_MAX_LEN = 480
 
+SINGLETON_NOTIFICATIONS = ['pod_load_api_failure']
 
 #============================================================================
 # Inbox controller (DOM parent of messages and cases)
@@ -508,7 +509,6 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
 # Case view controller
 #============================================================================
 controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'ContactService', 'MessageService', 'PartnerService', 'UtilsService', ($scope, $window, $timeout, CaseService, ContactService, MessageService, PartnerService, UtilsService) ->
-
   $scope.allLabels = $window.contextData.all_labels
   $scope.fields = $window.contextData.fields
   
@@ -516,6 +516,7 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
   $scope.contact = null
   $scope.newMessage = ''
   $scope.sending = false
+
   $scope.notifications = []
 
   $scope.init = (caseId, maxMsgChars) ->
@@ -528,7 +529,12 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
     $scope.addNotification(notification))
 
   $scope.addNotification = (notification) ->
-    $scope.notifications.push(notification)
+    if (not shouldIgnoreNotification(notification))
+      $scope.notifications.push(notification)
+
+  shouldIgnoreNotification = ({type}) ->
+    type in SINGLETON_NOTIFICATIONS and
+    $scope.notifications.some((d) -> type == d.type)
 
   $scope.refresh = () ->
     CaseService.fetchSingle($scope.caseId).then((caseObj) ->
@@ -885,6 +891,10 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApi', ($q, $scope, 
 
   onLoadApiFailure = ->
     $scope.status = 'loading-failed'
+
+    $scope.$emit('notification', {
+      type: 'pod_load_api_failure'
+    })
 
   onTriggerApiFailure = ->
     $scope.$emit('notification', {
