@@ -297,7 +297,10 @@ describe('directives:', () ->
         type: 'pod_action_api_failure'
       }]
 
-      template = $compile('<cp-case-notifications></cp-case-notifications>')
+      template = $compile('
+        <cp-case-notifications notifications="notifications">
+        </cp-case-notifications>
+      ')
       el = template($rootScope)[0]
       $rootScope.$digest()
 
