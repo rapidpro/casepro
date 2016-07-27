@@ -239,13 +239,22 @@ describe('directives:', () ->
       expect($rootScope.trigger).toHaveBeenCalledWith('bar', {c: 'd'})
     )
 
-    it('should draw when it is loading', () ->
+    it('should draw whether it is loading', () ->
       $rootScope.status = 'loading'
 
       el = $compile('<cp-pod/>')($rootScope)[0]
       $rootScope.$digest()
 
       expect(el.textContent).toMatch('Loading')
+    )
+
+    it('should draw whether loading has failed', () ->
+      $rootScope.status = 'loading-failed'
+
+      el = $compile('<cp-pod/>')($rootScope)[0]
+      $rootScope.$digest()
+
+      expect(el.textContent).toMatch('Could not load')
     )
   )
 

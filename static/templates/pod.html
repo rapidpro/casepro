@@ -2,7 +2,11 @@
     <div class="pod-title panel-heading">[[ podConfig.title ]]</div>
 
     <div class="panel-body" ng-if="status === 'loading'">
-        <span class="text-muted">Loading...</span>
+        <i class="text-muted">Loading...</i>
+    </div>
+
+    <div class="panel-body" ng-if="status === 'loading-failed'">
+        <i class="text-muted">Could not load</i>
     </div>
 
     <div class="panel-body panel-body-pod" ng-if="status === 'idle'">

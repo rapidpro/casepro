@@ -822,6 +822,19 @@ describe('controllers:', () ->
 
         expect($scope.status).toEqual('idle')
       )
+
+      it("should set the pod status to loading-failed if loading fails", () ->
+        spyOn(PodApi, 'get').and.returnValue($q.reject(new PodApiError(null)))
+
+        $controller('PodController', {
+          $scope
+          PodApi
+        })
+
+        $scope.init(21, 23, {title: 'Baz'})
+        $scope.$apply()
+        expect($scope.status).toEqual('loading-failed')
+      )
     )
 
     describe('update', () ->
