@@ -756,6 +756,7 @@ describe('controllers:', () ->
           items: [],
           actions: []
         })
+
         trigger: -> $q.resolve({success: true})
     )
 
@@ -798,6 +799,28 @@ describe('controllers:', () ->
             payload: {}
           }]
         })
+      )
+
+      it("should set the pod status to loading while it is loading", () ->
+        d = $q.defer()
+
+        spyOn(PodApi, 'get').and.returnValue(d.promise.then(-> $q.resolve({
+          items: []
+          actions: []
+        })))
+
+        $controller('PodController', {
+          $scope
+          PodApi
+        })
+
+        $scope.init(21, 23, {title: 'Baz'})
+        expect($scope.status).toEqual('loading')
+
+        d.resolve()
+        $scope.$apply()
+
+        expect($scope.status).toEqual('idle')
       )
     )
 

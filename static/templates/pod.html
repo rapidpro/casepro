@@ -1,7 +1,11 @@
 <div class="panel panel-default">
     <div class="pod-title panel-heading">[[ podConfig.title ]]</div>
 
-    <div class="panel-body panel-body-pod">
+    <div class="panel-body" ng-if="status === 'loading'">
+        <span class="text-muted">Loading...</span>
+    </div>
+
+    <div class="panel-body panel-body-pod" ng-if="status === 'idle'">
         <div class="container-fluid">
             <div class="row">
                 <div class="col-md-12">
@@ -21,7 +25,7 @@
         </div>
     </div>
 
-    <div class="list-group">
+    <div class="list-group" ng-if="status === 'idle'">
         <a
             href=""
             class="pod-action list-group-item"

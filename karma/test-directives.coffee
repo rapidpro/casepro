@@ -114,11 +114,13 @@ describe('directives:', () ->
       $compile = _$compile_
 
       $rootScope.podConfig = {title: 'Foo'}
+
       $rootScope.podData = {
         items: [],
         actions: []
       }
 
+      $rootScope.status = 'idle'
       $rootScope.trigger = ->
     ))
 
@@ -235,6 +237,15 @@ describe('directives:', () ->
 
       angular.element(action2).triggerHandler('click')
       expect($rootScope.trigger).toHaveBeenCalledWith('bar', {c: 'd'})
+    )
+
+    it('should draw when it is loading', () ->
+      $rootScope.status = 'loading'
+
+      el = $compile('<cp-pod/>')($rootScope)[0]
+      $rootScope.$digest()
+
+      expect(el.textContent).toMatch('Loading')
     )
   )
 

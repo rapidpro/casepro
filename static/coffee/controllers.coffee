@@ -857,9 +857,11 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApi', ($q, $scope, 
     $scope.podId = podId
     $scope.caseId = caseId
     $scope.podConfig = podConfig
+    $scope.status = 'loading'
 
     # TODO handle api failures
     $scope.update()
+      .then(-> $scope.status = 'idle')
 
   $scope.update = ->
     PodApi.get($scope.podId, $scope.caseId)
@@ -879,8 +881,7 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApi', ($q, $scope, 
     else
       p = onTriggerFailure(payload)
 
-    p.then(->
-      $scope.podData.actions = updateAction(type, {isBusy: false}))
+    p.then(-> $scope.podData.actions = updateAction(type, {isBusy: false}))
 
   onTriggerApiError = ->
     $scope.$emit('notification', {
