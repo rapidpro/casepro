@@ -35,9 +35,18 @@ describe('controllers:', () ->
       moh: {id: 301, name: "MOH"},
       who: {id: 302, name: "WHO"},
 
+      # fields
+      nickname: {key: 'nickname', label: "Nickname", value_type: 'T'},
+      age: {key: 'age', label: "Age", value_type: 'N'},
+
+      # groups
+      females: {id: 701, name: "Females"},
+      males: {id: 702, name: "Males"},
+      ureporters: {id: 703, name: "U-Reporters"},
+
       # contacts
-      ann: {id: 401, name: "Ann"},
-      bob: {id: 402, name: "Bob"}
+      ann: {id: 401, name: "Ann", fields: {'age': 35}, groups: [{id: 701, name: "Females"}, {id: 703, name: "U-Reporters"}]},
+      bob: {id: 402, name: "Bob", fields: {}, groups: []}
     }
   )
 
@@ -529,6 +538,43 @@ describe('controllers:', () ->
 
         expect(OutgoingService.fetchOld).toHaveBeenCalledWith({folder: 'sent', text: "test", contact: null}, $scope.startTime, 1)
       )
+    )
+  )
+
+  #=======================================================================
+  # Tests for ContactController
+  #=======================================================================
+  describe('ContactController', () ->
+    ContactService = null
+    $scope = null
+
+    beforeEach(inject((_ContactService_) ->
+      ContactService = _ContactService_
+
+      $scope = $rootScope.$new()
+      $window.contextData = {contact: test.ann, fields: [test.age, test.nickname]}
+      $controller('ContactController', {$scope: $scope})
+    ))
+
+    it('init should fetch contact cases', () ->
+      expect($scope.contact).toEqual(test.ann)
+      expect($scope.fields).toEqual([test.age, test.nickname])
+
+      fetchCases = spyOnPromise($q, $scope, ContactService, 'fetchCases')
+
+      $scope.init()
+
+      cases = [{id: 501, opened_on: utcdate(2016, 5, 17, 8, 49, 13, 698)}]
+      fetchCases.resolve(cases)
+
+      expect(ContactService.fetchCases).toHaveBeenCalledWith(test.ann)
+      expect($scope.cases).toEqual(cases)
+    )
+
+    it('getGroups', () ->
+      console.log($scope.contact)
+
+      expect($scope.getGroups()).toEqual("Females, U-Reporters")
     )
   )
 
