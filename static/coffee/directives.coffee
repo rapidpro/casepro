@@ -62,7 +62,8 @@ directives.directive('cpAlert', -> {
 
 
 directives.directive('cpCaseNotifications', -> {
-  templateUrl: '/sitestatic/templates/case-notifications.html'
+  templateUrl: '/sitestatic/templates/case-notifications.html',
+  scope: {notifications: '='}
 })
 
 #=====================================================================

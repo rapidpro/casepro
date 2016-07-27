@@ -193,7 +193,10 @@ describe('directives:', () ->
         payload: {message: 'Bar'}
       }]
 
-      template = $compile('<cp-case-notifications></cp-case-notifications>')
+      template = $compile('
+        <cp-case-notifications notifications="notifications">
+        </cp-case-notifications>
+      ')
       el = template($rootScope)[0]
       $rootScope.$digest()
 
