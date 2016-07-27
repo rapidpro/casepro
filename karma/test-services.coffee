@@ -73,15 +73,12 @@ describe('services:', () ->
 
     describe('fetchTimeline', () ->
       it('gets cases from timeline endpoint', () ->
-        $httpBackend.expectGET('/case/timeline/501/?after=2016-05-28T09:00:00.000Z').respond('{"results":[{"id":501,"time":"2016-05-17T08:49:13.698864","type":"A"}]}')
+        $httpBackend.expectGET('/case/timeline/501/?after=2016-05-28T09:00:00.000Z').respond('{"results":[{"time":"2016-05-17T08:49:13.698864","type":"A","item":{}}]}')
         CaseService.fetchTimeline(test.case1, utcdate(2016, 5, 28, 9, 0, 0, 0)).then((data) ->
           expect(data.results).toEqual([{
-            id: 501,
             time: utcdate(2016, 5, 17, 8, 49, 13, 698),
             type: 'A',
-            is_action: true,
-            is_message_in: false,
-            is_message_out: false
+            item: {}
           }])
         )
         $httpBackend.flush()
@@ -217,6 +214,16 @@ describe('services:', () ->
         $httpBackend.expectGET('/contact/fetch/401/').respond('{"id":401, "name":"Ann", "fields":{}}')
         ContactService.fetch(401).then((contact) ->
           expect(contact).toEqual({id: 401, name: "Ann", fields:{}})
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('fetchCases', () ->
+      it('gets contacts cases from fetch endpoint', () ->
+        $httpBackend.expectGET('/contact/cases/401/').respond('{"results":[{"id": 501, "opened_on": "2016-05-17T08:49:13.698864"}]}')
+        ContactService.fetchCases(test.ann).then((cases) ->
+          expect(cases).toEqual([{id: 501, opened_on: utcdate(2016, 5, 17, 8, 49, 13, 698)}])
         )
         $httpBackend.flush()
       )

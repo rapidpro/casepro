@@ -76,11 +76,11 @@
               [[ msgCharsRemaining ]]
 
         .timeline{ ng-controller:"CaseTimelineController", ng-init:"init()" }
-          .timeline-event.clearfix{ ng-repeat:"event in timeline | reverse", ng-class:'{ "timeline-action": event.is_action, "timeline-incoming": event.is_message_in, "timeline-outgoing": event.is_message_out }' }
+          .timeline-event.clearfix{ ng-repeat:"event in timeline | reverse", ng-class:'{ "timeline-action": (event.type == "A"), "timeline-incoming": (event.type == "I"), "timeline-outgoing": (event.type == "O") }' }
             .event-time
               [[ event.time | autodate ]]
 
-            .{ ng-if:"event.is_action" }
+            .{ ng-if:'event.type == "A"' }
               %a{ ng-href:"/user/read/[[ event.item.created_by.id ]]/" }
                 [[ event.item.created_by.name ]]
 
@@ -119,10 +119,10 @@
               .action-note{ ng-if:"event.item.note" }
                 [[ event.item.note ]]
 
-            .{ ng-if:"event.is_message_in" }
+            .{ ng-if:'event.type == "I"' }
               [[ event.item.text ]]
 
-            .{ ng-if:"event.is_message_out" }
+            .{ ng-if:'event.type == "O"' }
               %span{ ng-if:"event.item.sender" }
                 %a{ ng-href:"/user/read/[[ event.item.sender.id ]]/" }><
                   [[ event.item.sender.name ]]
@@ -142,14 +142,39 @@
         .panel.panel-default{ ng-if:"contact" }
           .panel-heading
             - trans "Contact"
-            %a{ ng-href:"/contact/read/[[ contact.id ]]/" }
-              [[ caseObj.contact.name ]]
           .panel-body
-            .contact-details
-              .contact-field{ ng-repeat:"(key, val) in contact.fields" }
-                %strong><
-                  [[ key ]]
-                : [[ val ]]
+            .container-fluid
+              .row
+                .contact-field-label.col-sm-6
+                  - trans "Name"
+                .contact-field-value.col-sm-6
+                  [[ caseObj.contact.name ]]
+              .row{ ng-if:"contact.language" }
+                .contact-field-label.col-sm-6
+                  - trans "Language"
+                .contact-field-value.col-sm-6
+                  [[ contact.language.name ]]
+              .row{ ng-repeat:"field in fields" }
+                .contact-field-label.col-sm-6
+                  [[ field.label ]]
+                .contact-field-value.col-sm-6
+                  <cp-fieldvalue contact="contact" field="field" />
+              .row{ ng-if:"contact.blocked || contact.stopped" }
+                .contact-field-label.col-sm-6
+                  - trans "Status"
+                .contact-field-value.col-sm-6
+                  %span.label-container{ ng-if:"contact.blocked" }
+                    %span.label.label-danger
+                      - trans "Blocked"
+                    &nbsp;
+                  %span.label-container{ ng-if:"contact.stopped" }
+                    %span.label.label-danger
+                      - trans "Stopped"
+                    &nbsp;
+          .list-group
+            %a.list-group-item.centered{ ng-href:"/contact/read/[[ caseObj.contact.id ]]/" }
+              %span.text-primary
+                - trans "View"
 
         - for pod in pods
             %div{
@@ -236,4 +261,7 @@
     .timeline-event .action-note {
       padding: 0.5em 0 0 2em;
       font-style: italic;
+    }
+    .contact-field-label {
+      font-weight: bold;
     }

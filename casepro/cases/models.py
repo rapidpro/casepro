@@ -15,6 +15,7 @@ from django_redis import get_redis_connection
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact
 from casepro.msgs.models import Label, Message, Outgoing
+from casepro.utils import TimelineItem
 from casepro.utils.export import BaseSearchExport
 
 
@@ -259,8 +260,7 @@ class Case(models.Model):
         local_incoming = local_incoming.order_by('-created_on')
 
         # merge local incoming and outgoing
-        local_messages = chain(local_outgoing, local_incoming)
-        messages = [{'time': msg.created_on, 'type': 'M', 'item': msg.as_json()} for msg in local_messages]
+        timeline = [TimelineItem(msg) for msg in chain(local_outgoing, local_incoming)]
 
         if merge_from_backend:
             # if this is the initial request, fetch additional messages from the backend
@@ -272,16 +272,16 @@ class Case(models.Model):
                 local_broadcast_ids = {o.backend_broadcast_id for o in local_outgoing if o.backend_broadcast_id}
 
                 for msg in backend_messages:
-                    if msg['id'] not in local_broadcast_ids:
-                        messages.append({'time': msg['time'], 'type': 'M', 'item': msg})
+                    if msg.backend_broadcast_id not in local_broadcast_ids:
+                        timeline.append(TimelineItem(msg))
 
-        # fetch actions in chronological order
+        # fetch and append actions
         actions = self.actions.filter(created_on__gte=after, created_on__lte=before)
-        actions = actions.select_related('assignee', 'created_by').order_by('pk')
-        actions = [{'time': a.created_on, 'type': 'A', 'item': a.as_json()} for a in actions]
+        actions = actions.select_related('assignee', 'created_by')
+        timeline += [TimelineItem(a) for a in actions]
 
-        # merge actions and messages and sort by time
-        return sorted(messages + actions, key=lambda event: event['time'])
+        # sort timeline by reverse chronological order
+        return sorted(timeline, key=lambda item: item.get_time())
 
     def add_reply(self, message):
         message.case = self
@@ -461,6 +461,8 @@ class CaseAction(models.Model):
                       (UNLABEL, _("Remove Label")),
                       (CLOSE, _("Close")),
                       (REOPEN, _("Reopen")))
+
+    TIMELINE_TYPE = 'A'
 
     case = models.ForeignKey(Case, related_name="actions")
 
