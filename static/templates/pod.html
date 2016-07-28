@@ -1,12 +1,33 @@
 <div class="panel panel-default">
-    <div class="pod-title panel-heading">{{ podConfig.title }}</div>
+    <div class="pod-title panel-heading">[[ podConfig.title ]]</div>
 
-    <div class="list-group">
+    <div class="panel-body panel-body-pod">
         <div class="container-fluid">
-            <div class="pod-item list-group-item row" ng-repeat="item in podData.items">
-                <div class="pod-item-name col-sm-6">{{ item.name }}</div>
-                <div class="pod-item-value col-sm-6">{{ item.value }}</div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div
+                        class="pod-item row"
+                        ng-repeat="item in podData.items">
+                        <div class="col-md-6">
+                            <div class="pod-item-name">[[ item.name ]]</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="pod-item-value">[[ item.value ]]</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+    </div>
+
+    <div class="list-group">
+        <a
+            href=""
+            class="pod-action list-group-item"
+            ng-repeat="action in podData.actions"
+            ng-click="trigger(action.type, action.payload)">
+            <span class="text-primary">[[ action.name ]]</span>
+        </a>
     </div>
 </div>
