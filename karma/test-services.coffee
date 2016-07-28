@@ -3,14 +3,17 @@
 describe('services:', () ->
   $httpBackend = null
   $window = null
+  $rootScope = null
   test = null
 
   beforeEach(() ->
+    module('templates')
     module('cases')
 
-    inject((_$httpBackend_, _$window_) ->
+    inject((_$httpBackend_, _$window_, _$rootScope_) ->
       $httpBackend = _$httpBackend_
       $window = _$window_
+      $rootScope = _$rootScope_
     )
 
     test = {
@@ -687,6 +690,74 @@ describe('services:', () ->
             }
           }
         })
+      )
+    )
+  )
+
+  #=======================================================================
+  # Tests for CaseModals
+  #=======================================================================
+  describe('CaseModals', () ->
+    CaseModals = null
+
+    beforeEach(inject((_CaseModals_) ->
+      CaseModals = _CaseModals_
+    ))
+
+    describe('confirm', () ->
+      describe('pod_action_confirm', () ->
+        it('should draw the modal', () ->
+          CaseModals.confirm({
+            type: 'pod_action_confirm'
+            payload: {name: 'Opt out'}
+          })
+
+          $rootScope.$apply()
+
+          expect(document.querySelector('.modal-header').textContent)
+            .toMatch('Opt out')
+
+          expect(document.querySelector('.modal-body').textContent)
+            .toMatch('Are you sure you want to perform this action?')
+        )
+
+        it('should fulfill if the modal is accepted', () ->
+          fulfilled = false
+
+          CaseModals.confirm({
+            type: 'pod_action_confirm'
+            payload: {name: 'Opt out'}
+          })
+          .then(-> fulfilled = true)
+
+          $rootScope.$apply()
+          expect(fulfilled).toBe(false)
+
+          angular.element(document.querySelector('.btn-modal-accept'))
+            .triggerHandler('click')
+
+          $rootScope.$apply()
+          expect(fulfilled).toBe(true)
+        )
+
+        it('should reject if the modal is cancelled', () ->
+          rejected = false
+
+          CaseModals.confirm({
+            type: 'pod_action_confirm'
+            payload: {name: 'Opt out'}
+          })
+          .catch(-> rejected = true)
+
+          $rootScope.$apply()
+          expect(rejected).toBe(false)
+
+          angular.element(document.querySelector('.btn-modal-cancel'))
+            .triggerHandler('click')
+
+          $rootScope.$apply()
+          expect(rejected).toBe(true)
+        )
       )
     )
   )

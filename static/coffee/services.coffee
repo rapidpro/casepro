@@ -552,6 +552,23 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
 
 
 #=====================================================================
+# Case Modals service
+#=====================================================================
+services.factory('CaseModals', ['$rootScope', '$uibModal', ($rootScope, $uibModal) ->
+  new class CaseModals
+    confirm: (ctx) ->
+      $uibModal.open({
+        templateUrl: '/sitestatic/templates/case-confirm-modals.html',
+        scope: angular.extend($rootScope.$new(true), ctx),
+        controller: ($scope, $uibModalInstance) ->
+          $scope.ok = -> $uibModalInstance.close()
+          $scope.cancel = -> $uibModalInstance.dismiss()
+      })
+      .result
+])
+
+
+#=====================================================================
 # Pod API service
 #=====================================================================
 services.factory('PodApi', ['$q', '$window', '$http', ($q, $window, $http) ->
