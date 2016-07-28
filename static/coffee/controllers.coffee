@@ -858,7 +858,7 @@ controllers.controller('DateRangeController', ['$scope', ($scope) ->
 #============================================================================
 # Pod controller
 #============================================================================
-controllers.controller('PodController', ['$q', '$scope', 'PodApi', ($q, $scope, PodApi) ->
+controllers.controller('PodController', ['$q', '$scope', 'PodApi', 'CaseModals', ($q, $scope, PodApi, CaseModals) ->
   $scope.init = (podId, caseId, podConfig) ->
     $scope.podId = podId
     $scope.caseId = caseId
@@ -874,10 +874,11 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApi', ($q, $scope, 
       .then(parsePodData)
       .then((d) -> $scope.podData = d)
 
-  $scope.trigger = (type, payload) ->
-    $scope.podData.actions = updateAction(type, {isBusy: true})
-
-    PodApi.trigger($scope.podId, $scope.caseId, type, payload)
+  $scope.trigger = ({type, name, payload, confirm}) ->
+    $q.resolve()
+      .then(-> confirmAction(name) if confirm)
+      .then(-> $scope.podData.actions = updateAction(type, {isBusy: true}))
+      .then(-> PodApi.trigger($scope.podId, $scope.caseId, type, payload))
       .then((res) -> onTriggerDone(type, res))
       .catch(utils.trap(PodApi.PodApiError, onTriggerApiFailure, $q.reject))
 
@@ -889,6 +890,12 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApi', ($q, $scope, 
 
     $q.resolve(p)
       .then(-> $scope.podData.actions = updateAction(type, {isBusy: false}))
+
+  confirmAction = (name) ->
+    CaseModals.confirm({
+      type: 'pod_action_confirm',
+      payload: {name}
+    })
 
   onLoadApiFailure = ->
     $scope.status = 'loading-failed'
@@ -927,10 +934,11 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApi', ($q, $scope, 
 
     d
 
-  parsePodAction = ({type, name, busy_text, payload}) -> {
+  parsePodAction = ({type, name, busy_text, confirm, payload}) -> {
     type,
     name,
     payload,
+    confirm: confirm ? false,
     busyText: busy_text ? name,
     isBusy: false
   }

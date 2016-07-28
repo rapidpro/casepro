@@ -206,7 +206,7 @@ describe('directives:', () ->
     )
 
     it('should call trigger() when an action button is clicked', ->
-      $rootScope.podData.actions = [{
+      $rootScope.podData.actions = [datum1, datum2] = [{
         type: 'foo',
         name: 'Foo',
         busyText: 'Foo',
@@ -228,15 +228,16 @@ describe('directives:', () ->
       action1 = el.querySelectorAll('.pod-action')[0]
       action2 = el.querySelectorAll('.pod-action')[1]
 
-      expect($rootScope.trigger).not.toHaveBeenCalledWith('foo', {a: 'b'})
+      expect($rootScope.trigger).not.toHaveBeenCalledWith(datum1)
 
       angular.element(action1).triggerHandler('click')
 
-      expect($rootScope.trigger).toHaveBeenCalledWith('foo', {a: 'b'})
-      expect($rootScope.trigger).not.toHaveBeenCalledWith('bar', {c: 'd'})
+      expect($rootScope.trigger).toHaveBeenCalledWith(datum1)
+      expect($rootScope.trigger).not.toHaveBeenCalledWith(datum2)
 
       angular.element(action2).triggerHandler('click')
-      expect($rootScope.trigger).toHaveBeenCalledWith('bar', {c: 'd'})
+
+      expect($rootScope.trigger).toHaveBeenCalledWith(datum2)
     )
 
     it('should draw whether it is loading', () ->

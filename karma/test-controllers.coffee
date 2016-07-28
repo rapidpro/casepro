@@ -755,10 +755,26 @@ describe('controllers:', () ->
   describe('PodController', () ->
     $scope = null
     PodApi = null
+    CaseModals = null
     class PodApiError
+
+    bindController = (deps) ->
+      $controller('PodController', angular.extend({}, deps, {
+        $scope,
+        PodApi,
+        CaseModals
+      }))
 
     beforeEach(() ->
       $scope = $rootScope.$new()
+
+      $scope.podData = {
+        items: [],
+        actions: []
+      }
+
+      CaseModals = new class CaseModals
+        confirm: -> $q.resolve()
 
       PodApi = new class PodApi
         PodApiError: PodApiError,
@@ -785,10 +801,7 @@ describe('controllers:', () ->
           }]
         }))
 
-        $controller('PodController', {
-          $scope
-          PodApi
-        })
+        bindController()
 
         $scope.init(21, 23, {title: 'Baz'})
         $scope.$apply()
@@ -801,14 +814,14 @@ describe('controllers:', () ->
           items: [{
             name: 'Foo',
             value: 'Bar'
-          }]
-          actions: [{
-            type: 'baz',
-            name: 'Baz',
-            busyText: 'Baz',
-            isBusy: false,
-            payload: {}
-          }]
+          }],
+          actions: [
+            jasmine.objectContaining({
+              type: 'baz'
+              name: 'Baz',
+              payload: {}
+            })
+          ]
         })
       )
 
@@ -820,10 +833,7 @@ describe('controllers:', () ->
           actions: []
         })))
 
-        $controller('PodController', {
-          $scope
-          PodApi
-        })
+        bindController()
 
         $scope.init(21, 23, {title: 'Baz'})
         expect($scope.status).toEqual('loading')
@@ -837,10 +847,7 @@ describe('controllers:', () ->
       it("should set the pod status to loading-failed if loading fails", () ->
         spyOn(PodApi, 'get').and.returnValue($q.reject(new PodApiError(null)))
 
-        $controller('PodController', {
-          $scope
-          PodApi
-        })
+        bindController()
 
         $scope.init(21, 23, {title: 'Baz'})
         $scope.$apply()
@@ -865,10 +872,7 @@ describe('controllers:', () ->
           }]
         }))
 
-        $controller('PodController', {
-          $scope
-          PodApi
-        })
+        bindController()
 
         $scope.update()
         $scope.$apply()
@@ -879,14 +883,14 @@ describe('controllers:', () ->
           items: [{
             name: 'Foo',
             value: 'Bar'
-          }]
-          actions: [{
-            type: 'baz',
-            name: 'Baz',
-            busyText: 'Baz',
-            isBusy: false,
-            payload: {}
-          }]
+          }],
+          actions: [
+            jasmine.objectContaining({
+              type: 'baz'
+              name: 'Baz',
+              payload: {}
+            })
+          ]
         })
       )
 
@@ -911,35 +915,23 @@ describe('controllers:', () ->
           }]
         }))
 
-        $controller('PodController', {
-          $scope
-          PodApi
-        })
+        bindController()
 
         $scope.update()
         $scope.$apply()
 
         expect(PodApi.get).toHaveBeenCalledWith(21, 23)
 
-        expect($scope.podData).toEqual({
-          items: [{
-            name: 'Foo',
-            value: 'Bar'
-          }]
-          actions: [{
-            type: 'baz',
-            name: 'Baz',
-            busyText: 'Bazzing',
-            isBusy: false,
-            payload: {}
-          }, {
+        expect($scope.podData.actions).toEqual([
+          jasmine.objectContaining({
+            type: 'baz'
+            busyText: 'Bazzing'
+          }),
+          jasmine.objectContaining({
             type: 'quux',
-            name: 'Quux',
-            busyText: 'Quux',
-            isBusy: false,
-            payload: {}
-          }]
-        })
+            busyText: 'Quux'
+          })
+        ])
       )
     )
 
@@ -954,14 +946,15 @@ describe('controllers:', () ->
           actions: []
         }
 
-        $controller('PodController', {
-          $scope
-          PodApi
-        })
+        bindController()
 
         spyOn(PodApi, 'trigger').and.returnValue($q.resolve({success: true}))
 
-        $scope.trigger('grault', {garply: 'waldo'})
+        $scope.trigger({
+          type: 'grault',
+          payload: {garply: 'waldo'}
+        })
+
         $scope.$apply()
 
         expect(PodApi.trigger)
@@ -986,10 +979,7 @@ describe('controllers:', () ->
           }]
         }
 
-        $controller('PodController', {
-          $scope
-          PodApi
-        })
+        bindController()
 
         # defer getting new data indefinitely to prevent isBusy being set to
         # false when we retrieve new data
@@ -997,10 +987,14 @@ describe('controllers:', () ->
 
         spyOn(PodApi, 'trigger').and.returnValue($q.resolve({success: true}))
 
-        $scope.trigger('grault', {garply: 'waldo'})
-        expect($scope.podData.actions[0].isBusy).toBe(true)
+        $scope.trigger({
+          type: 'grault',
+          payload: {garply: 'waldo'}
+        })
 
         $scope.$apply()
+
+        expect($scope.podData.actions[0].isBusy).toBe(true)
       )
 
       it('should emit a notification event if unsuccessful', (done) ->
@@ -1013,22 +1007,23 @@ describe('controllers:', () ->
           actions: []
         }
 
-        $controller('PodController', {
-          $scope
-          PodApi
-        })
+        bindController()
 
         spyOn(PodApi, 'trigger').and.returnValue($q.resolve({
           success: false,
           payload: {fred: 'xxyyxx'}
         }))
 
-        $scope.trigger('grault', {garply: 'waldo'})
+        $scope.trigger({
+          type: 'grault',
+          payload: {garply: 'waldo'}
+        })
 
         $scope.$on('notification', (e, {type, payload}) ->
           expect(type).toEqual('pod_action_failure')
           expect(payload).toEqual({fred: 'xxyyxx'})
           done())
+
         $scope.$apply()
       )
 
@@ -1042,15 +1037,15 @@ describe('controllers:', () ->
           actions: []
         }
 
-        $controller('PodController', {
-          $scope
-          PodApi
-        })
+        bindController()
 
         spyOn(PodApi, 'trigger')
           .and.returnValue($q.reject(new PodApiError(null)))
 
-        $scope.trigger('grault', {garply: 'waldo'})
+        $scope.trigger({
+          type: 'grault',
+          payload: {garply: 'waldo'}
+        })
 
         $scope.$on('notification', (e, {type, payload}) ->
           expect(type).toEqual('pod_action_api_failure')
@@ -1069,15 +1064,15 @@ describe('controllers:', () ->
           actions: []
         }
 
-        $controller('PodController', {
-          $scope
-          PodApi
-        })
+        bindController()
 
         spyOn(PodApi, 'get')
           .and.returnValue($q.reject(new PodApiError(null)))
 
-        $scope.trigger('grault', {garply: 'waldo'})
+        $scope.trigger({
+          type: 'grault',
+          payload: {garply: 'waldo'}
+        })
 
         $scope.$on('notification', (e, {type, payload}) ->
           expect(type).toEqual('pod_action_api_failure')
@@ -1096,10 +1091,7 @@ describe('controllers:', () ->
           actions: []
         }
 
-        $controller('PodController', {
-          $scope
-          PodApi
-        })
+        bindController()
 
         spyOn(PodApi, 'get').and.returnValue($q.resolve({
           items: [{
@@ -1115,22 +1107,46 @@ describe('controllers:', () ->
 
         spyOn(PodApi, 'trigger').and.returnValue($q.resolve({success: true}))
 
-        $scope.trigger('grault', {garply: 'waldo'})
+        $scope.trigger({
+          type: 'grault',
+          payload: {garply: 'waldo'}
+        })
+
         $scope.$apply()
 
         expect($scope.podData).toEqual({
           items: [{
             name: 'Foo',
             value: 'Bar'
-          }]
-          actions: [{
-            type: 'baz',
-            name: 'Baz',
-            busyText: 'Baz',
-            isBusy: false,
-            payload: {}
-          }]
+          }],
+          actions: [
+            jasmine.objectContaining({
+              type: 'baz'
+              name: 'Baz',
+              payload: {}
+            })
+          ]
         })
+      )
+
+      it('should show a confirmation model if the action requires it', () ->
+        bindController()
+
+        spyOn(CaseModals, 'confirm')
+
+        $scope.trigger({
+          type: 'grault',
+          name: 'Grault',
+          confirm: true,
+          payload: {garply: 'waldo'}
+        })
+
+        $scope.$apply()
+
+        expect(CaseModals.confirm.calls.allArgs()).toEqual([[{
+          type: 'pod_action_confirm',
+          payload: {name: 'Grault'}
+        }]])
       )
     )
   )
