@@ -768,6 +768,10 @@ describe('controllers:', () ->
     beforeEach(() ->
       $scope = $rootScope.$new()
 
+      $scope.podId = 21
+      $scope.caseId = 23
+      $scope.podConfig = {title: 'Foo'}
+
       $scope.podData = {
         items: [],
         actions: []
@@ -939,12 +943,6 @@ describe('controllers:', () ->
       it('should trigger the given action', () ->
         $scope.podId = 21
         $scope.caseId = 23
-        $scope.podConfig = {title: 'Foo'}
-
-        $scope.podData = {
-          items: [],
-          actions: []
-        }
 
         bindController()
 
@@ -962,22 +960,15 @@ describe('controllers:', () ->
       )
 
       it('should mark the action as busy', () ->
-        $scope.podId = 21
-        $scope.caseId = 23
-        $scope.podConfig = {title: 'Foo'}
-
-        $scope.podData = {
-          items: [],
-          actions: [{
-            type: 'grault'
-            isBusy: false,
-            payload: {}
-          }, {
-            type: 'fred',
-            isBusy: false,
-            payload: {}
-          }]
-        }
+        $scope.podData.actions = [{
+          type: 'grault'
+          isBusy: false,
+          payload: {}
+        }, {
+          type: 'fred',
+          isBusy: false,
+          payload: {}
+        }]
 
         bindController()
 
@@ -998,15 +989,6 @@ describe('controllers:', () ->
       )
 
       it('should emit a notification event if unsuccessful', (done) ->
-        $scope.podId = 21
-        $scope.caseId = 23
-        $scope.podConfig = {title: 'Foo'}
-
-        $scope.podData = {
-          items: [],
-          actions: []
-        }
-
         bindController()
 
         spyOn(PodApi, 'trigger').and.returnValue($q.resolve({
@@ -1028,15 +1010,6 @@ describe('controllers:', () ->
       )
 
       it('should emit a notification if trigger api method fails', (done) ->
-        $scope.podId = 21
-        $scope.caseId = 23
-        $scope.podConfig = {title: 'Foo'}
-
-        $scope.podData = {
-          items: [],
-          actions: []
-        }
-
         bindController()
 
         spyOn(PodApi, 'trigger')
@@ -1055,15 +1028,6 @@ describe('controllers:', () ->
       )
 
       it('should emit a notification if get api method fails', (done) ->
-        $scope.podId = 21
-        $scope.caseId = 23
-        $scope.podConfig = {title: 'Foo'}
-
-        $scope.podData = {
-          items: [],
-          actions: []
-        }
-
         bindController()
 
         spyOn(PodApi, 'get')
@@ -1082,15 +1046,6 @@ describe('controllers:', () ->
       )
 
       it('should fetch and attach data to the scope if successful', () ->
-        $scope.podId = 21
-        $scope.caseId = 23
-        $scope.podConfig = {title: 'Foo'}
-
-        $scope.podData = {
-          items: [],
-          actions: []
-        }
-
         bindController()
 
         spyOn(PodApi, 'get').and.returnValue($q.resolve({
