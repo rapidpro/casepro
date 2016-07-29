@@ -554,22 +554,22 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
 #=====================================================================
 # Pod API service
 #=====================================================================
-services.factory('PodApi', ['$q', '$window', '$http', ($q, $window, $http) ->
-  class PodApiError extends Error
+services.factory('PodApiService', ['$q', '$window', '$http', ($q, $window, $http) ->
+  class PodApiServiceError extends Error
     constructor: (error) ->
       this.error = error
 
   method = (fn) ->
     res = (args...) ->
       $http(fn(args...))
-        .catch((e) -> $q.reject(new PodApiError(e)))
+        .catch((e) -> $q.reject(new PodApiServiceError(e)))
         .then((d) -> d.data)
 
     res.fn = fn
     res
 
-  new class PodApi
-    PodApiError: PodApiError,
+  new class PodApiService
+    PodApiServiceError: PodApiServiceError,
 
     method: method,
 
