@@ -528,6 +528,9 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
   $scope.$on('notification', (e, notification) ->
     $scope.addNotification(notification))
 
+  $scope.$on('timelineChange', (e) ->
+    $scope.$broadcast('timelineChanged') if e.targetScope != $scope)
+
   $scope.addNotification = (notification) ->
     if (not shouldIgnoreNotification(notification))
       $scope.notifications.push(notification)
@@ -858,7 +861,7 @@ controllers.controller('DateRangeController', ['$scope', ($scope) ->
 #============================================================================
 # Pod controller
 #============================================================================
-controllers.controller('PodController', ['$q', '$scope', 'PodApi', ($q, $scope, PodApi) ->
+controllers.controller('PodController', ['$q', '$scope', 'PodApiService', ($q, $scope, PodApiService) ->
   $scope.init = (podId, caseId, podConfig) ->
     $scope.podId = podId
     $scope.caseId = caseId
@@ -867,19 +870,19 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApi', ($q, $scope, 
 
     $scope.update()
       .then(-> $scope.status = 'idle')
-      .catch(utils.trap(PodApi.PodApiError, onLoadApiFailure, $q.reject))
+      .catch(utils.trap(PodApiService.PodApiServiceError, onLoadApiFailure, $q.reject))
 
   $scope.update = ->
-    PodApi.get($scope.podId, $scope.caseId)
+    PodApiService.get($scope.podId, $scope.caseId)
       .then(parsePodData)
       .then((d) -> $scope.podData = d)
 
   $scope.trigger = (type, payload) ->
     $scope.podData.actions = updateAction(type, {isBusy: true})
 
-    PodApi.trigger($scope.podId, $scope.caseId, type, payload)
+    PodApiService.trigger($scope.podId, $scope.caseId, type, payload)
       .then((res) -> onTriggerDone(type, res))
-      .catch(utils.trap(PodApi.PodApiError, onTriggerApiFailure, $q.reject))
+      .catch(utils.trap(PodApiService.PodApiServiceError, onTriggerApiFailure, $q.reject))
 
   onTriggerDone = (type, {success, payload}) ->
     if success
@@ -909,7 +912,7 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApi', ($q, $scope, 
     })
 
   onTriggerSuccess = () ->
-    # TODO update notes
+    $scope.$emit('timelineChanged')
     $scope.update()
 
   updateAction = (type, props) ->
