@@ -101,7 +101,6 @@ describe('directives:', () ->
     )
   )
 
-
   #=======================================================================
   # Tests for pod
   #=======================================================================
@@ -250,7 +249,7 @@ describe('directives:', () ->
     )
 
     it('should draw whether loading has failed', () ->
-      $rootScope.status = 'loading-failed'
+      $rootScope.status = 'loading_failed'
 
       el = $compile('<cp-pod/>')($rootScope)[0]
       $rootScope.$digest()
