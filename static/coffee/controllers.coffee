@@ -516,6 +516,7 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
   $scope.contact = null
   $scope.newMessage = ''
   $scope.sending = false
+  $scope.notifications = []
 
   $scope.init = (caseId, maxMsgChars) ->
     $scope.caseId = caseId
@@ -523,8 +524,14 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
 
     $scope.refresh()
 
+  $scope.$on('notification', (e, notification) ->
+    $scope.addNotification(notification))
+
   $scope.$on('timelineChange', (e) ->
     $scope.$broadcast('timelineChanged') if e.targetScope != $scope)
+
+  $scope.addNotification = (notification) ->
+    $scope.notifications.push(notification)
 
   $scope.refresh = () ->
     CaseService.fetchSingle($scope.caseId).then((caseObj) ->
@@ -876,8 +883,10 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApiService', ($q, $
       .then(-> $scope.podData.actions = updateAction(type, {isBusy: false}))
 
   onTriggerFailure = (payload) ->
-    $scope.$emit('podActionFailure', payload)
-    # TODO show failure message
+    $scope.$emit('notification', {
+      type: 'pod_action_failure',
+      payload
+    })
 
   onTriggerSuccess = () ->
     $scope.$emit('timelineChanged')

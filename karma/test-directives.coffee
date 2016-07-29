@@ -236,4 +236,57 @@ describe('directives:', () ->
       expect($rootScope.trigger).toHaveBeenCalledWith('bar', {c: 'd'})
     )
   )
+
+  #=======================================================================
+  # Tests for cpAlert
+  #=======================================================================
+  describe('cpAlert', () ->
+    beforeEach(() ->
+      $rootScope.notifications = []
+    )
+
+    it('should draw the alert', () ->
+      template = $compile('<cp-alert type="danger">Foo</cp-alert>')
+      el = template($rootScope)[0]
+      $rootScope.$digest()
+
+      alert = el.querySelector('.alert')
+      expect(alert.classList.contains('alert-danger')).toBe(true)
+      expect(alert.textContent).toMatch('Foo')
+    )
+  )
+
+  #=======================================================================
+  # Tests for cpCaseNotifications
+  #=======================================================================
+  describe('cpCaseNotifications', () ->
+    beforeEach(() ->
+      $rootScope.notifications = []
+    )
+
+    it('should draw pod_action_failure notifications', () ->
+      $rootScope.notifications = [{
+        type: 'pod_action_failure',
+        payload: {message: 'Foo'}
+      }, {
+        type: 'pod_action_failure',
+        payload: {message: 'Bar'}
+      }]
+
+      template = $compile('
+        <cp-case-notifications notifications="notifications">
+        </cp-case-notifications>
+      ')
+      el = template($rootScope)[0]
+      $rootScope.$digest()
+
+      [notification1, notification2] = el.querySelectorAll('.alert')
+
+      expect(notification1.classList.contains('alert-danger')).toBe(true)
+      expect(notification1.textContent).toMatch('Foo')
+
+      expect(notification2.classList.contains('alert-danger')).toBe(true)
+      expect(notification2.textContent).toMatch('Bar')
+    )
+  )
 )

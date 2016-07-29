@@ -140,6 +140,20 @@ describe('controllers:', () ->
       expect(UtilsService.confirmModal).toHaveBeenCalled()
       expect(CaseService.unwatch).toHaveBeenCalledWith(test.case1)
     )
+
+    it('should should add a notification on notification events', () ->
+      $scope.notifications = []
+      $scope.$emit('notification', {type: 'foo'})
+      expect($scope.notifications).toEqual([{type: 'foo'}])
+    )
+
+    describe('addNotification', () ->
+      it('should add the given notification', () ->
+        $scope.notifications = []
+        $scope.addNotification({type: 'foo'})
+        expect($scope.notifications).toEqual([{type: 'foo'}])
+      )
+    )
   )
 
   #=======================================================================
@@ -902,7 +916,9 @@ describe('controllers:', () ->
           PodApiService
         })
 
-        spyOn(PodApiService, 'trigger').and.returnValue($q.resolve({success: true}))
+        spyOn(PodApiService, 'trigger').and.returnValue($q.resolve({
+          success: true
+        }))
 
         $scope.trigger('grault', {garply: 'waldo'})
         $scope.$apply()
@@ -942,6 +958,36 @@ describe('controllers:', () ->
 
         $scope.trigger('grault', {garply: 'waldo'})
         expect($scope.podData.actions[0].isBusy).toBe(true)
+        $scope.$apply()
+      )
+
+      it('should emit a notification event if unsuccessful', (done) ->
+        $scope.podId = 21
+        $scope.caseId = 23
+        $scope.podConfig = {title: 'Foo'}
+
+        $scope.podData = {
+          items: [],
+          actions: []
+        }
+
+        $controller('PodController', {
+          $scope
+          PodApiService
+        })
+
+        spyOn(PodApiService, 'trigger').and.returnValue($q.resolve({
+          success: false,
+          payload: {fred: 'xxyyxx'}
+        }))
+
+        $scope.trigger('grault', {garply: 'waldo'})
+
+        $scope.$on('notification', (e, {type, payload}) ->
+          expect(type).toEqual('pod_action_failure')
+          expect(payload).toEqual({fred: 'xxyyxx'})
+          done())
+
         $scope.$apply()
       )
 

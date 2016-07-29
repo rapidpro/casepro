@@ -66,6 +66,8 @@
 
     .row
       .col-md-8
+        <cp-case-notifications notifications="notifications"></cp-case-notifications>
+
         %form.sendform{ ng-if:"!caseObj.is_closed" }
           // TODO maxlength not working
           %textarea.form-control{ type:"text", autocomplete:"off", placeholder:"Enter message", ng-maxlength:"{{ maxMsgChars }}", ng-model:"$parent.newMessage", ng-disabled:"sending", ng-change:"onNewMessageChanged()", ng-trim:"false" }
