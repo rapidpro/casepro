@@ -52,3 +52,10 @@ directives.directive('cpFieldvalue', () ->
     ]
   }
 )
+
+#=====================================================================
+# Pod directive
+#=====================================================================
+directives.directive('cpPod', -> {
+  templateUrl: -> '/sitestatic/templates/pod.html'
+})

@@ -1,5 +1,4 @@
 from __future__ import absolute_import, unicode_literals
-
 from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from datetime import timedelta
@@ -17,6 +16,7 @@ from temba_client.utils import parse_iso8601
 
 from casepro.contacts.models import Field, Group
 from casepro.msgs.models import Label, Message, MessageFolder, OutgoingFolder
+from casepro.pods import registry as pod_registry
 from casepro.statistics.models import DailyCount
 from casepro.utils import json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder, str_to_bool
 from casepro.utils import month_range
@@ -75,6 +75,10 @@ class CaseCRUDL(SmartCRUDL):
             context['max_msg_chars'] = MAX_MESSAGE_CHARS
             context['can_update'] = can_update
             context['alert'] = self.request.GET.get('alert', None)
+            context['case_id'] = case.id
+            context['pods'] = pod_registry.pods
+            context['pod_types'] = pod_registry.pod_types
+
             return context
 
     class Open(OrgPermsMixin, SmartCreateView):

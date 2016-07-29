@@ -619,4 +619,27 @@ describe('services:', () ->
       )
     )
   )
+
+  #=======================================================================
+  # Tests for PodApiService
+  #=======================================================================
+  describe('PodApiService', () ->
+    PodApiService = null
+
+    beforeEach(inject((_PodApiService_) ->
+      PodApiService = _PodApiService_
+    ))
+
+    describe('get', () ->
+      it('gets a pod', () ->
+        $httpBackend.expectGET('/pods/read/21/?case_id=23')
+          .respond({foo: 'bar'})
+
+        PodApiService.get(21, 23)
+          .then((res) -> expect(res).toEqual({foo: 'bar'}))
+
+        $httpBackend.flush()
+      )
+    )
+  )
 )

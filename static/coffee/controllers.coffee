@@ -840,3 +840,17 @@ controllers.controller('DateRangeController', ['$scope', ($scope) ->
     $event.stopPropagation()
     $scope.beforeOpen = true
 ])
+
+
+#============================================================================
+# Pod controller
+#============================================================================
+controllers.controller('PodController', ['$scope', 'PodApiService', ($scope, PodApiService) ->
+  $scope.init = (podId, caseId, podConfig) ->
+    $scope.podId = podId
+    $scope.caseId = caseId
+    $scope.podConfig = podConfig
+
+    return PodApiService.get(podId, caseId)
+      .then((d) -> $scope.podData = d)
+])

@@ -549,3 +549,14 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
       return $uibModal.open({templateUrl: '/partials/modal_daterange.html', controller: 'DateRangeModalController', resolve: resolve}).result
 
 ])
+
+
+#=====================================================================
+# Pod API service
+#=====================================================================
+services.factory('PodApiService', ['$window', '$http', ($window, $http) ->
+  new class PodApiService
+    get: (podId, caseId) ->
+      $http.get("/pods/read/#{podId}/", {params: {case_id: caseId}})
+        .then((d) -> d.data)
+])
