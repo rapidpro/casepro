@@ -527,6 +527,9 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
   $scope.$on('notification', (e, notification) ->
     $scope.addNotification(notification))
 
+  $scope.$on('timelineChange', (e) ->
+    $scope.$broadcast('timelineChanged') if e.targetScope != $scope)
+
   $scope.addNotification = (notification) ->
     $scope.notifications.push(notification)
 
@@ -852,7 +855,7 @@ controllers.controller('DateRangeController', ['$scope', ($scope) ->
 #============================================================================
 # Pod controller
 #============================================================================
-controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
+controllers.controller('PodController', ['$scope', 'PodApiService', ($scope, PodApiService) ->
   $scope.init = (podId, caseId, podConfig) ->
     $scope.podId = podId
     $scope.caseId = caseId
@@ -860,11 +863,11 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
     $scope.update()
 
   $scope.update = ->
-    PodApi.get($scope.podId, $scope.caseId)
+    PodApiService.get($scope.podId, $scope.caseId)
       .then((d) -> $scope.podData = d)
 
   $scope.trigger = (type, payload) ->
-    PodApi.trigger($scope.podId, $scope.caseId, type, payload)
+    PodApiService.trigger($scope.podId, $scope.caseId, type, payload)
       .then(({success, payload}) ->
         if success
           onTriggerSuccess()
@@ -878,6 +881,6 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
     })
 
   onTriggerSuccess = () ->
-    # TODO update notes
+    $scope.$emit('timelineChanged')
     $scope.update()
 ])

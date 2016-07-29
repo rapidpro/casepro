@@ -101,7 +101,6 @@ describe('directives:', () ->
     )
   )
 
-
   #=======================================================================
   # Tests for pod
   #=======================================================================
@@ -114,7 +113,12 @@ describe('directives:', () ->
       $compile = _$compile_
 
       $rootScope.podConfig = {title: 'Foo'}
-      $rootScope.podData = {items: []}
+      $rootScope.podData = {
+        items: [],
+        actions: []
+      }
+
+      $rootScope.trigger = ->
     ))
 
     it('should draw the pod items', () ->
@@ -154,6 +158,57 @@ describe('directives:', () ->
 
       expect(item2.querySelector('.pod-item-value').textContent)
         .toContain('Corge')
+    )
+
+    it('should draw the pod actions', ->
+      $rootScope.podData.actions = [{
+        type: 'foo',
+        name: 'Foo',
+        payload: {bar: 'baz'}
+      }, {
+        type: 'quux',
+        name: 'Quux',
+        payload: {corge: 'grault'}
+      }]
+
+      el = $compile('<cp-pod/>')($rootScope)[0]
+      $rootScope.$digest()
+
+      action1 = el.querySelectorAll('.pod-action')[0]
+      action2 = el.querySelectorAll('.pod-action')[1]
+
+      expect(action1.textContent).toContain('Foo')
+      expect(action2.textContent).toContain('Quux')
+    )
+
+    it('should call trigger() when an action button is clicked', ->
+      $rootScope.podData.actions = [{
+        type: 'foo',
+        name: 'Foo',
+        payload: {a: 'b'}
+      }, {
+        type: 'bar',
+        name: 'Bar',
+        payload: {c: 'd'}
+      }]
+
+      $rootScope.trigger = jasmine.createSpy('trigger')
+
+      el = $compile('<cp-pod/>')($rootScope)[0]
+      $rootScope.$digest()
+
+      action1 = el.querySelectorAll('.pod-action')[0]
+      action2 = el.querySelectorAll('.pod-action')[1]
+
+      expect($rootScope.trigger).not.toHaveBeenCalledWith('foo', {a: 'b'})
+
+      angular.element(action1).triggerHandler('click')
+
+      expect($rootScope.trigger).toHaveBeenCalledWith('foo', {a: 'b'})
+      expect($rootScope.trigger).not.toHaveBeenCalledWith('bar', {c: 'd'})
+
+      angular.element(action2).triggerHandler('click')
+      expect($rootScope.trigger).toHaveBeenCalledWith('bar', {c: 'd'})
     )
   )
 
