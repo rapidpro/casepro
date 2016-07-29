@@ -735,23 +735,23 @@ describe('controllers:', () ->
 
   describe('PodController', () ->
     $scope = null
-    PodApi = null
+    PodApiService = null
 
     beforeEach(() ->
       $scope = $rootScope.$new()
 
-      PodApi = new class PodApi
+      PodApiService = new class PodApiService
         get: -> $q.resolve({foo: 'bar'})
         trigger: -> $q.resolve({success: true})
     )
 
     describe('init', () ->
       it('should fetch and attach pod data to the scope', () ->
-        spyOn(PodApi, 'get').and.returnValue($q.resolve({foo: 'bar'}))
+        spyOn(PodApiService, 'get').and.returnValue($q.resolve({foo: 'bar'}))
 
         $controller('PodController', {
           $scope
-          PodApi
+          PodApiService
         })
 
         $scope.init(21, 23, {title: 'Baz'})
@@ -760,7 +760,7 @@ describe('controllers:', () ->
         expect($scope.podId).toEqual(21)
         expect($scope.caseId).toEqual(23)
         expect($scope.podConfig).toEqual({title: 'Baz'})
-        expect(PodApi.get).toHaveBeenCalledWith(21, 23)
+        expect(PodApiService.get).toHaveBeenCalledWith(21, 23)
         expect($scope.podData).toEqual({foo: 'bar'})
       )
     )
@@ -774,15 +774,15 @@ describe('controllers:', () ->
 
         $controller('PodController', {
           $scope
-          PodApi
+          PodApiService
         })
 
-        spyOn(PodApi, 'trigger').and.returnValue($q.resolve({success: true}))
+        spyOn(PodApiService, 'trigger').and.returnValue($q.resolve({success: true}))
 
         $scope.trigger('grault', {garply: 'waldo'})
         $scope.$apply()
 
-        expect(PodApi.trigger)
+        expect(PodApiService.trigger)
           .toHaveBeenCalledWith(21, 23, 'grault', {garply: 'waldo'})
       )
 
@@ -794,10 +794,10 @@ describe('controllers:', () ->
 
         $controller('PodController', {
           $scope
-          PodApi
+          PodApiService
         })
 
-        spyOn(PodApi, 'trigger').and.returnValue($q.resolve({success: true}))
+        spyOn(PodApiService, 'trigger').and.returnValue($q.resolve({success: true}))
         $scope.trigger('grault', {garply: 'waldo'})
 
         $scope.$on('timelineChanged', -> done())
@@ -813,11 +813,11 @@ describe('controllers:', () ->
 
         $controller('PodController', {
           $scope
-          PodApi
+          PodApiService
         })
 
-        spyOn(PodApi, 'get').and.returnValue($q.resolve({quux: 'corge'}))
-        spyOn(PodApi, 'trigger').and.returnValue($q.resolve({success: true}))
+        spyOn(PodApiService, 'get').and.returnValue($q.resolve({quux: 'corge'}))
+        spyOn(PodApiService, 'trigger').and.returnValue($q.resolve({success: true}))
 
         $scope.trigger('grault', {garply: 'waldo'})
         $scope.$apply()

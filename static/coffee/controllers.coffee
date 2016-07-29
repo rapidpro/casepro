@@ -848,7 +848,7 @@ controllers.controller('DateRangeController', ['$scope', ($scope) ->
 #============================================================================
 # Pod controller
 #============================================================================
-controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
+controllers.controller('PodController', ['$scope', 'PodApiService', ($scope, PodApiService) ->
   $scope.init = (podId, caseId, podConfig) ->
     $scope.podId = podId
     $scope.caseId = caseId
@@ -856,11 +856,11 @@ controllers.controller('PodController', ['$scope', 'PodApi', ($scope, PodApi) ->
     $scope.update()
 
   $scope.update = ->
-    PodApi.get($scope.podId, $scope.caseId)
+    PodApiService.get($scope.podId, $scope.caseId)
       .then((d) -> $scope.podData = d)
 
   $scope.trigger = (type, payload) ->
-    PodApi.trigger($scope.podId, $scope.caseId, type, payload)
+    PodApiService.trigger($scope.podId, $scope.caseId, type, payload)
       .then(({success, payload}) ->
         if success
           $scope.onTriggerSuccess()
