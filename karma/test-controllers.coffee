@@ -1011,9 +1011,7 @@ describe('controllers:', () ->
           PodApiService
         })
 
-        spyOn(PodApiService, 'trigger').and.returnValue($q.resolve({
-          success: true
-        }))
+        spyOn(PodApiService, 'trigger').and.returnValue($q.resolve({success: true}))
 
         $scope.trigger('grault', {garply: 'waldo'})
 
