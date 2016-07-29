@@ -523,6 +523,9 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
 
     $scope.refresh()
 
+  $scope.$on('timelineChange', (e) ->
+    $scope.$broadcast('timelineChanged') if e.targetScope != $scope)
+
   $scope.refresh = () ->
     CaseService.fetchSingle($scope.caseId).then((caseObj) ->
       $scope.caseObj = caseObj
@@ -845,7 +848,7 @@ controllers.controller('DateRangeController', ['$scope', ($scope) ->
 #============================================================================
 # Pod controller
 #============================================================================
-controllers.controller('PodController', ['$q', '$scope', 'PodApi', ($q, $scope, PodApi) ->
+controllers.controller('PodController', ['$q', '$scope', 'PodApiService', ($q, $scope, PodApiService) ->
   $scope.init = (podId, caseId, podConfig) ->
     $scope.podId = podId
     $scope.caseId = caseId
@@ -853,14 +856,14 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApi', ($q, $scope, 
     $scope.update()
 
   $scope.update = ->
-    PodApi.get($scope.podId, $scope.caseId)
+    PodApiService.get($scope.podId, $scope.caseId)
       .then(parsePodData)
       .then((d) -> $scope.podData = d)
 
   $scope.trigger = (type, payload) ->
     $scope.podData.actions = updateAction(type, {isBusy: true})
 
-    PodApi.trigger($scope.podId, $scope.caseId, type, payload)
+    PodApiService.trigger($scope.podId, $scope.caseId, type, payload)
       .then((res) -> onTriggerDone(type, res))
 
   onTriggerDone = (type, {success, payload}) ->
@@ -877,7 +880,7 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApi', ($q, $scope, 
     # TODO show failure message
 
   onTriggerSuccess = () ->
-    $scope.$emit('podActionSuccess')
+    $scope.$emit('timelineChanged')
     $scope.update()
 
   updateAction = (type, props) ->
