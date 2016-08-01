@@ -517,7 +517,7 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
   $scope.newMessage = ''
   $scope.sending = false
 
-  $scope.notifications = []
+  $scope.alerts = []
 
   $scope.init = (caseId, maxMsgChars) ->
     $scope.caseId = caseId
@@ -525,19 +525,19 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
 
     $scope.refresh()
 
-  $scope.$on('notification', (e, notification) ->
-    $scope.addNotification(notification))
+  $scope.$on('alert', (e, alert) ->
+    $scope.addAlert(alert))
 
   $scope.$on('timelineChanged', (e) ->
     $scope.$broadcast('timelineChanged') if e.targetScope != $scope)
 
-  $scope.addNotification = (notification) ->
-    if (not shouldIgnoreNotification(notification))
-      $scope.notifications.push(notification)
+  $scope.addAlert = (alert) ->
+    if (not shouldIgnoreAlert(alert))
+      $scope.alerts.push(alert)
 
-  shouldIgnoreNotification = ({type}) ->
+  shouldIgnoreAlert = ({type}) ->
     type in SINGLETON_NOTIFICATIONS and
-    $scope.notifications.some((d) -> type == d.type)
+    $scope.alerts.some((d) -> type == d.type)
 
   $scope.refresh = () ->
     CaseService.fetchSingle($scope.caseId).then((caseObj) ->
@@ -589,12 +589,12 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
   #----------------------------------------------------------------------------
 
   $scope.onWatch = () ->
-    UtilsService.confirmModal("Receive notifications for activity in this case?").then(() ->
+    UtilsService.confirmModal("Receive alerts for activity in this case?").then(() ->
       CaseService.watch($scope.caseObj)
     )
 
   $scope.onUnwatch = () ->
-    UtilsService.confirmModal("Stop receiving notifications for activity in this case?").then(() ->
+    UtilsService.confirmModal("Stop receiving alerts for activity in this case?").then(() ->
       CaseService.unwatch($scope.caseObj)
     )
 
@@ -698,12 +698,12 @@ controllers.controller('LabelController', ['$scope', '$window', '$controller', '
       )
 
   $scope.onWatch = () ->
-    UtilsService.confirmModal("Receive notifications for new messages with this label?").then(() ->
+    UtilsService.confirmModal("Receive alerts for new messages with this label?").then(() ->
       LabelService.watch($scope.label)
     )
 
   $scope.onUnwatch = () ->
-    UtilsService.confirmModal("Stop receiving notifications for new messages with this label?").then(() ->
+    UtilsService.confirmModal("Stop receiving alerts for new messages with this label?").then(() ->
       LabelService.unwatch($scope.label)
     )
 
@@ -901,17 +901,17 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApiService', 'PodUI
   onLoadApiFailure = ->
     $scope.status = 'loading_failed'
 
-    $scope.$emit('notification', {
+    $scope.$emit('alert', {
       type: 'pod_load_api_failure'
     })
 
   onTriggerApiFailure = ->
-    $scope.$emit('notification', {
+    $scope.$emit('alert', {
       type: 'pod_action_api_failure'
     })
 
   onTriggerFailure = (payload) ->
-    $scope.$emit('notification', {
+    $scope.$emit('alert', {
       type: 'pod_action_failure',
       payload
     })
