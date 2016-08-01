@@ -763,7 +763,7 @@ describe('services:', () ->
       describe('if a template url is given', () ->
         it('should draw the modal', () ->
           ModalService.confirm({
-            templateUrl: '/sitestatic/templates/dummy-confirm.html',
+            templateUrl: '/sitestatic/templates/modals/dummy-confirm.html',
             context: {title: 'Foo'}
           })
 
@@ -780,7 +780,7 @@ describe('services:', () ->
           fulfilled = false
 
           ModalService.confirm({
-            templateUrl: '/sitestatic/templates/dummy-confirm.html',
+            templateUrl: '/sitestatic/templates/modals/dummy-confirm.html',
             context: {title: 'Foo'}
           })
           .then(-> fulfilled = true)
@@ -799,7 +799,7 @@ describe('services:', () ->
           rejected = false
 
           ModalService.confirm({
-            templateUrl: '/sitestatic/templates/dummy-confirm.html',
+            templateUrl: '/sitestatic/templates/modals/dummy-confirm.html',
             context: {title: 'Foo'}
           })
           .catch(-> rejected = true)

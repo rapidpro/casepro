@@ -560,7 +560,7 @@ services.factory('ModalService', ['$rootScope', '$uibModal', ($rootScope, $uibMo
       context = {},
       title = null,
       prompt = null,
-      templateUrl = '/sitestatic/templates/confirm.html'
+      templateUrl = '/sitestatic/templates/modals/confirm.html'
     } = {}) ->
       $uibModal.open({
         templateUrl,
@@ -584,7 +584,7 @@ services.factory('PodUIService', ['ModalService', (ModalService) ->
   new class PodUIService
     confirmAction: (name) ->
       ModalService.confirm({
-        templateUrl: '/sitestatic/templates/pod-action-confirm.html',
+        templateUrl: '/sitestatic/templates/modals/pod-action-confirm.html',
         context: {name}
       })
 ])
