@@ -94,8 +94,10 @@ describe('controllers:', () ->
     )
 
     it('should should proxy timelineChanged events from child scopes', (done) ->
-      $scope.$on('timelineChanged', -> done())
       child = $scope.$new(false)
+      sibling = $scope.$new(false)
+
+      sibling.$on('timelineChanged', -> done())
       child.$emit('timelineChanged')
     )
 

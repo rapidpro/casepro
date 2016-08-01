@@ -528,7 +528,7 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
   $scope.$on('notification', (e, notification) ->
     $scope.addNotification(notification))
 
-  $scope.$on('timelineChange', (e) ->
+  $scope.$on('timelineChanged', (e) ->
     $scope.$broadcast('timelineChanged') if e.targetScope != $scope)
 
   $scope.addNotification = (notification) ->
