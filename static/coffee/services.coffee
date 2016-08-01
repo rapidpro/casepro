@@ -552,14 +552,23 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
 
 
 #=====================================================================
-# Case Modals service
+# Modals service
 #=====================================================================
-services.factory('CaseModals', ['$rootScope', '$uibModal', ($rootScope, $uibModal) ->
-  new class CaseModals
-    confirm: (ctx) ->
+services.factory('ModalService', ['$rootScope', '$uibModal', ($rootScope, $uibModal) ->
+  new class ModalService
+    confirm: ({
+      context = {},
+      title = null,
+      prompt = null,
+      templateUrl = '/sitestatic/templates/confirm.html'
+    } = {}) ->
       $uibModal.open({
-        templateUrl: '/sitestatic/templates/case-confirm-modals.html',
-        scope: angular.extend($rootScope.$new(true), ctx),
+        templateUrl,
+        scope: angular.extend($rootScope.$new(true), {
+          title,
+          prompt,
+          context
+        }),
         controller: ($scope, $uibModalInstance) ->
           $scope.ok = -> $uibModalInstance.close()
           $scope.cancel = -> $uibModalInstance.dismiss()

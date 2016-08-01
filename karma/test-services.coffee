@@ -695,38 +695,38 @@ describe('services:', () ->
   )
 
   #=======================================================================
-  # Tests for CaseModals
+  # Tests for ModalService
   #=======================================================================
-  describe('CaseModals', () ->
-    CaseModals = null
+  describe('ModalService', () ->
+    ModalService = null
 
-    beforeEach(inject((_CaseModals_) ->
-      CaseModals = _CaseModals_
+    beforeEach(inject((_ModalService_) ->
+      ModalService = _ModalService_
     ))
 
     describe('confirm', () ->
-      describe('pod_action_confirm', () ->
+      describe('if no template url is given', () ->
         it('should draw the modal', () ->
-          CaseModals.confirm({
-            type: 'pod_action_confirm'
-            payload: {name: 'Opt out'}
+          ModalService.confirm({
+            title: 'Foo',
+            prompt: 'Bar?'
           })
 
           $rootScope.$apply()
 
-          expect(document.querySelector('.modal-header').textContent)
-            .toMatch('Opt out')
+          expect(document.querySelector('.modal-title').textContent)
+            .toMatch('Foo')
 
           expect(document.querySelector('.modal-body').textContent)
-            .toMatch('Are you sure you want to perform this action?')
+            .toMatch('Bar?')
         )
 
         it('should fulfill if the modal is accepted', () ->
           fulfilled = false
 
-          CaseModals.confirm({
-            type: 'pod_action_confirm'
-            payload: {name: 'Opt out'}
+          ModalService.confirm({
+            title: 'Foo',
+            prompt: 'Bar?'
           })
           .then(-> fulfilled = true)
 
@@ -743,9 +743,64 @@ describe('services:', () ->
         it('should reject if the modal is cancelled', () ->
           rejected = false
 
-          CaseModals.confirm({
-            type: 'pod_action_confirm'
-            payload: {name: 'Opt out'}
+          ModalService.confirm({
+            title: 'Foo',
+            prompt: 'Bar?'
+          })
+          .catch(-> rejected = true)
+
+          $rootScope.$apply()
+          expect(rejected).toBe(false)
+
+          angular.element(document.querySelector('.btn-modal-cancel'))
+            .triggerHandler('click')
+
+          $rootScope.$apply()
+          expect(rejected).toBe(true)
+        )
+      )
+
+      describe('if a template url is given', () ->
+        it('should draw the modal', () ->
+          ModalService.confirm({
+            templateUrl: '/sitestatic/templates/dummy-confirm.html',
+            context: {title: 'Foo'}
+          })
+
+          $rootScope.$apply()
+
+          expect(document.querySelector('.modal-title').textContent)
+            .toMatch('Foo')
+
+          expect(document.querySelector('.modal-body').textContent)
+            .toMatch('Are you sure you want to do this?')
+        )
+
+        it('should fulfill if the modal is accepted', () ->
+          fulfilled = false
+
+          ModalService.confirm({
+            templateUrl: '/sitestatic/templates/dummy-confirm.html',
+            context: {title: 'Foo'}
+          })
+          .then(-> fulfilled = true)
+
+          $rootScope.$apply()
+          expect(fulfilled).toBe(false)
+
+          angular.element(document.querySelector('.btn-modal-accept'))
+            .triggerHandler('click')
+
+          $rootScope.$apply()
+          expect(fulfilled).toBe(true)
+        )
+
+        it('should reject if the modal is cancelled', () ->
+          rejected = false
+
+          ModalService.confirm({
+            templateUrl: '/sitestatic/templates/dummy-confirm.html',
+            context: {title: 'Foo'}
           })
           .catch(-> rejected = true)
 
