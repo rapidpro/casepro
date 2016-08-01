@@ -587,6 +587,19 @@ services.factory('PodUIService', ['ModalService', (ModalService) ->
         templateUrl: '/sitestatic/templates/modals/pod-action-confirm.html',
         context: {name}
       })
+
+    alertActionFailure: (message) -> {
+      templateUrl: '/sitestatic/templates/alerts/pod-action-failure.html',
+      context: {message}
+    }
+
+    alertActionApiFailure: () -> {
+      templateUrl: '/sitestatic/templates/alerts/pod-action-api-failure.html'
+    }
+
+    alertLoadApiFailure: () -> {
+      templateUrl: '/sitestatic/templates/alerts/pod-load-api-failure.html'
+    }
 ])
 
 

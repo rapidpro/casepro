@@ -16,7 +16,7 @@ CASE_SUMMARY_MAX_LEN = 255
 CASE_NOTE_MAX_LEN = 1024
 OUTGOING_TEXT_MAX_LEN = 480
 
-SINGLETON_NOTIFICATIONS = ['pod_load_api_failure']
+SINGLETON_ALERTS = ['pod_load_api_failure']
 
 #============================================================================
 # Inbox controller (DOM parent of messages and cases)
@@ -532,11 +532,10 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
     $scope.$broadcast('timelineChanged') if e.targetScope != $scope)
 
   $scope.addAlert = (alert) ->
-    if (not shouldIgnoreAlert(alert))
-      $scope.alerts.push(alert)
+    $scope.alerts.push(alert) if (not shouldIgnoreAlert(alert))
 
   shouldIgnoreAlert = ({type}) ->
-    type in SINGLETON_NOTIFICATIONS and
+    type in SINGLETON_ALERTS and
     $scope.alerts.some((d) -> type == d.type)
 
   $scope.refresh = () ->
@@ -896,21 +895,13 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApiService', 'PodUI
 
   onLoadApiFailure = ->
     $scope.status = 'loading_failed'
-
-    $scope.$emit('alert', {
-      type: 'pod_load_api_failure'
-    })
+    $scope.$emit('alert', PodUIService.alertLoadApiFailure())
 
   onTriggerApiFailure = ->
-    $scope.$emit('alert', {
-      type: 'pod_action_api_failure'
-    })
+    $scope.$emit('alert', PodUIService.alertActionApiFailure())
 
-  onTriggerFailure = (payload) ->
-    $scope.$emit('alert', {
-      type: 'pod_action_failure',
-      payload
-    })
+  onTriggerFailure = ({message}) ->
+    $scope.$emit('alert', PodUIService.alertActionFailure(message))
 
   onTriggerSuccess = () ->
     $scope.$emit('timelineChanged')

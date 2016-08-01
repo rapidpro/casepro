@@ -821,9 +821,11 @@ describe('services:', () ->
   # Tests for PodUIService
   #=======================================================================
   describe('PodUIService', () ->
+    $compile = null
     PodUIService = null
 
-    beforeEach(inject((_PodUIService_) ->
+    beforeEach(inject((_$compile_, _PodUIService_) ->
+      $compile = _$compile_
       PodUIService = _PodUIService_
     ))
 
@@ -867,6 +869,57 @@ describe('services:', () ->
 
         $rootScope.$apply()
         expect(rejected).toBe(true)
+      )
+    )
+
+    describe('alertActionFailure', () ->
+      it('should draw the alert', () ->
+        $rootScope.alerts = [PodUIService.alertActionFailure('Foo')]
+
+        template = $compile('
+          <cp-alerts alerts="alerts">
+          </cp-alerts>
+        ')
+
+        el = template($rootScope)[0]
+        $rootScope.$digest()
+
+        alert = el.querySelector('.alert')
+        expect(alert.textContent).toMatch('Foo')
+      )
+    )
+
+    describe('alertActionApiFailure', () ->
+      it('should draw the alert', () ->
+        $rootScope.alerts = [PodUIService.alertActionApiFailure()]
+
+        template = $compile('
+          <cp-alerts alerts="alerts">
+          </cp-alerts>
+        ')
+
+        el = template($rootScope)[0]
+        $rootScope.$digest()
+
+        alert = el.querySelector('.alert')
+        expect(alert.textContent).toMatch('action')
+      )
+    )
+
+    describe('alertLoadApiFailure', () ->
+      it('should draw the alert', () ->
+        $rootScope.alerts = [PodUIService.alertLoadApiFailure()]
+
+        template = $compile('
+          <cp-alerts alerts="alerts">
+          </cp-alerts>
+        ')
+
+        el = template($rootScope)[0]
+        $rootScope.$digest()
+
+        alert = el.querySelector('.alert')
+        expect(alert.textContent).toMatch('load')
       )
     )
   )

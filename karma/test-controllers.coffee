@@ -787,6 +787,9 @@ describe('controllers:', () ->
 
       PodUIService = new class PodUIService
         confirmAction: -> $q.resolve()
+        alertActionFailure: () -> null
+        alertActionApiFailure: () -> null
+        alertLoadApiFailure: () -> null
 
       PodApiService = new class PodApiService
         PodApiServiceError: PodApiServiceError,
@@ -999,22 +1002,27 @@ describe('controllers:', () ->
         expect($scope.podData.actions[0].isBusy).toBe(true)
       )
 
-      it('should emit a alert event if unsuccessful', (done) ->
+      it('should emit an alert event if unsuccessful', (done) ->
         bindController()
 
         spyOn(PodApiService, 'trigger').and.returnValue($q.resolve({
           success: false,
-          payload: {fred: 'xxyyxx'}
+          payload: {message: 'Foo'}
         }))
+
+        spyOn(PodUIService, 'alertActionFailure').and.returnValue('fakeResult')
 
         $scope.trigger({
           type: 'grault',
           payload: {garply: 'waldo'}
         })
 
-        $scope.$on('alert', (e, {type, payload}) ->
-          expect(type).toEqual('pod_action_failure')
-          expect(payload).toEqual({fred: 'xxyyxx'})
+        $scope.$on('alert', (e, res) ->
+          expect(res).toEqual('fakeResult')
+
+          expect(PodUIService.alertActionFailure.calls.allArgs())
+            .toEqual([['Foo']])
+
           done())
 
         $scope.$apply()
@@ -1031,37 +1039,43 @@ describe('controllers:', () ->
         $scope.$apply()
       )
 
-      it('should emit a alert if trigger api method fails', (done) ->
+      it('should emit an alert if trigger api method fails', (done) ->
         bindController()
 
         spyOn(PodApiService, 'trigger')
           .and.returnValue($q.reject(new PodApiServiceError(null)))
 
+        spyOn(PodUIService, 'alertActionApiFailure')
+          .and.returnValue('fakeResult')
+
         $scope.trigger({
           type: 'grault',
           payload: {garply: 'waldo'}
         })
 
-        $scope.$on('alert', (e, {type, payload}) ->
-          expect(type).toEqual('pod_action_api_failure')
+        $scope.$on('alert', (e, res) ->
+          expect(res).toEqual('fakeResult')
           done())
 
         $scope.$apply()
       )
 
-      it('should emit a alert if get api method fails', (done) ->
+      it('should emit an alert if get api method fails', (done) ->
         bindController()
 
         spyOn(PodApiService, 'get')
           .and.returnValue($q.reject(new PodApiServiceError(null)))
+
+        spyOn(PodUIService, 'alertActionApiFailure')
+          .and.returnValue('fakeResult')
 
         $scope.trigger({
           type: 'grault',
           payload: {garply: 'waldo'}
         })
 
-        $scope.$on('alert', (e, {type, payload}) ->
-          expect(type).toEqual('pod_action_api_failure')
+        $scope.$on('alert', (e, res) ->
+          expect(res).toEqual('fakeResult')
           done())
 
         $scope.$apply()

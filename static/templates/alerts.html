@@ -1,20 +1,9 @@
-<div ng-repeat="alert in alerts" ng-switch="alert.type">
-  <div ng-switch-when="pod_action_failure">
-    <cp-alert type="danger">
-      [[ alert.payload.message ]]
-    </cp-alert>
+<div ng-repeat="alert in alerts">
+  <div ng-if="!alert.templateUrl">
+    <cp-alert type="[[ alert.type ]]">[[ alert.message ]]</cp-alert>
   </div>
 
-  <div ng-switch-when="pod_action_api_failure">
-    <cp-alert type="danger">
-      Sorry, we encountered a problem on our side while completing your action.
-    </cp-alert>
-  </div>
-
-  <div ng-switch-when="pod_load_api_failure">
-    <cp-alert type="warning">
-      Sorry, a problem on our side prevented some of the information on this
-      page from loading.
-    </cp-alert>
+  <div ng-if="alert.templateUrl">
+    <div ng-include="alert.templateUrl"></div>
   </div>
 </div>
