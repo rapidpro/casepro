@@ -862,6 +862,8 @@ controllers.controller('DateRangeController', ['$scope', ($scope) ->
 # Pod controller
 #============================================================================
 controllers.controller('PodController', ['$q', '$scope', 'PodApiService', 'CaseModals', ($q, $scope, PodApiService, CaseModals) ->
+  {PodApiServiceError} = PodApiService
+
   $scope.init = (podId, caseId, podConfig) ->
     $scope.podId = podId
     $scope.caseId = caseId
@@ -870,7 +872,7 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApiService', 'CaseM
 
     $scope.update()
       .then(-> $scope.status = 'idle')
-      .catch(utils.trap(PodApiService.PodApiServiceError, onLoadApiFailure, $q.reject))
+      .catch(utils.trap(PodApiServiceError, onLoadApiFailure, $q.reject))
 
   $scope.update = ->
     PodApiService.get($scope.podId, $scope.caseId)
@@ -883,16 +885,14 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApiService', 'CaseM
       .then(-> $scope.podData.actions = updateAction(type, {isBusy: true}))
       .then(-> PodApiService.trigger($scope.podId, $scope.caseId, type, payload))
       .then((res) -> onTriggerDone(type, res))
-      .catch(utils.trap(PodApiService.PodApiServiceError, onTriggerApiFailure, $q.reject))
+      .catch(utils.trap(PodApiServiceError, onTriggerApiFailure, $q.reject))
+      .then(-> $scope.podData.actions = updateAction(type, {isBusy: false}))
 
   onTriggerDone = (type, {success, payload}) ->
     if success
-      p = onTriggerSuccess()
+      onTriggerSuccess()
     else
-      p = onTriggerFailure(payload)
-
-    $q.resolve(p)
-      .then(-> $scope.podData.actions = updateAction(type, {isBusy: false}))
+      onTriggerFailure(payload)
 
   confirmAction = (name) ->
     CaseModals.confirm({
