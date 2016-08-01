@@ -862,10 +862,6 @@ controllers.controller('DateRangeController', ['$scope', ($scope) ->
 # Pod controller
 #============================================================================
 controllers.controller('PodController', ['$q', '$scope', 'PodApiService', 'PodUIService', ($q, $scope, PodApiService, PodUIService) ->
-  TEMPLATE_URLS = {
-    ACTION_CONFIRM: '/sitestatic/templates/pod-action-confirm.html'
-  }
-
   $scope.init = (podId, caseId, podConfig) ->
     $scope.podId = podId
     $scope.caseId = caseId
