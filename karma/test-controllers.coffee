@@ -93,6 +93,12 @@ describe('controllers:', () ->
       expect($scope.contact).toEqual(test.ann)
     )
 
+    it('should should proxy timelineChanged events from child scopes', (done) ->
+      $scope.$on('timelineChanged', -> done())
+      child = $scope.$new(false)
+      child.$emit('timelineChanged')
+    )
+
     it('addNote', () ->
       noteModal = spyOnPromise($q, $scope, UtilsService, 'noteModal')
       addNote = spyOnPromise($q, $scope, CaseService, 'addNote')
@@ -133,6 +139,31 @@ describe('controllers:', () ->
 
       expect(UtilsService.confirmModal).toHaveBeenCalled()
       expect(CaseService.unwatch).toHaveBeenCalledWith(test.case1)
+    )
+
+    it('should should add a notification on notification events', () ->
+      $scope.notifications = []
+      $scope.$emit('notification', {type: 'foo'})
+      expect($scope.notifications).toEqual([{type: 'foo'}])
+    )
+
+    it('should should ignore duplicate pod_load_api_failure notifications', () ->
+      $scope.notifications = []
+
+      $scope.$emit('notification', {type: 'pod_load_api_failure'})
+      expect($scope.notifications).toEqual([{type: 'pod_load_api_failure'}])
+
+      $scope.$emit('notification', {type: 'pod_load_api_failure'})
+      $scope.$emit('notification', {type: 'pod_load_api_failure'})
+      expect($scope.notifications).toEqual([{type: 'pod_load_api_failure'}])
+    )
+
+    describe('addNotification', () ->
+      it('should add the given notification', () ->
+        $scope.notifications = []
+        $scope.addNotification({type: 'foo'})
+        expect($scope.notifications).toEqual([{type: 'foo'}])
+      )
     )
   )
 
@@ -729,17 +760,36 @@ describe('controllers:', () ->
 
   describe('PodController', () ->
     $scope = null
+    PodApiService = null
+    class PodApiServiceError
 
     beforeEach(() ->
       $scope = $rootScope.$new()
+
+      PodApiService = new class PodApiService
+        PodApiServiceError: PodApiServiceError,
+
+        get: -> $q.resolve({
+          items: [],
+          actions: []
+        })
+
+        trigger: -> $q.resolve({success: true})
     )
 
     describe('init', () ->
-      it('should attach pod data to the scope', () ->
-        PodApiService = new class PodApiService
-          get: ->
-
-        spyOn(PodApiService, 'get').and.returnValue($q.resolve({foo: 'bar'}))
+      it('should fetch and attach pod data to the scope', () ->
+        spyOn(PodApiService, 'get').and.returnValue($q.resolve({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }]
+          actions: [{
+            type: 'baz',
+            name: 'Baz',
+            payload: {}
+          }]
+        }))
 
         $controller('PodController', {
           $scope
@@ -753,7 +803,369 @@ describe('controllers:', () ->
         expect($scope.caseId).toEqual(23)
         expect($scope.podConfig).toEqual({title: 'Baz'})
         expect(PodApiService.get).toHaveBeenCalledWith(21, 23)
-        expect($scope.podData).toEqual({foo: 'bar'}))
+
+        expect($scope.podData).toEqual({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }]
+          actions: [{
+            type: 'baz',
+            name: 'Baz',
+            busyText: 'Baz',
+            isBusy: false,
+            payload: {}
+          }]
+        })
+      )
+
+      it("should set the pod status to loading while it is loading", () ->
+        d = $q.defer()
+
+        spyOn(PodApiService, 'get').and.returnValue(d.promise.then(-> $q.resolve({
+          items: []
+          actions: []
+        })))
+
+        $controller('PodController', {
+          $scope
+          PodApiService
+        })
+
+        $scope.init(21, 23, {title: 'Baz'})
+        expect($scope.status).toEqual('loading')
+
+        d.resolve()
+        $scope.$apply()
+
+        expect($scope.status).toEqual('idle')
+      )
+
+      it("should set the pod status to loading_failed if loading fails", () ->
+        spyOn(PodApiService, 'get').and.returnValue($q.reject(new PodApiServiceError(null)))
+
+        $controller('PodController', {
+          $scope
+          PodApiService
+        })
+
+        $scope.init(21, 23, {title: 'Baz'})
+        $scope.$apply()
+        expect($scope.status).toEqual('loading_failed')
+      )
+    )
+
+    describe('update', () ->
+      it('should fetch and update pod data', () ->
+        $scope.podId = 21
+        $scope.caseId = 23
+
+        spyOn(PodApiService, 'get').and.returnValue($q.resolve({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }]
+          actions: [{
+            type: 'baz',
+            name: 'Baz',
+            payload: {}
+          }]
+        }))
+
+        $controller('PodController', {
+          $scope
+          PodApiService
+        })
+
+        $scope.update()
+        $scope.$apply()
+
+        expect(PodApiService.get).toHaveBeenCalledWith(21, 23)
+
+        expect($scope.podData).toEqual({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }]
+          actions: [{
+            type: 'baz',
+            name: 'Baz',
+            busyText: 'Baz',
+            isBusy: false,
+            payload: {}
+          }]
+        })
+      )
+
+      it("should default an action's busy text to the action's name", () ->
+        $scope.podId = 21
+        $scope.caseId = 23
+
+        spyOn(PodApiService, 'get').and.returnValue($q.resolve({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }]
+          actions: [{
+            type: 'baz',
+            name: 'Baz',
+            busy_text: 'Bazzing',
+            payload: {}
+          }, {
+            type: 'quux',
+            name: 'Quux',
+            payload: {}
+          }]
+        }))
+
+        $controller('PodController', {
+          $scope
+          PodApiService
+        })
+
+        $scope.update()
+        $scope.$apply()
+
+        expect(PodApiService.get).toHaveBeenCalledWith(21, 23)
+
+        expect($scope.podData).toEqual({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }]
+          actions: [{
+            type: 'baz',
+            name: 'Baz',
+            busyText: 'Bazzing',
+            isBusy: false,
+            payload: {}
+          }, {
+            type: 'quux',
+            name: 'Quux',
+            busyText: 'Quux',
+            isBusy: false,
+            payload: {}
+          }]
+        })
+      )
+    )
+
+    describe('trigger', () ->
+      it('should trigger the given action', () ->
+        $scope.podId = 21
+        $scope.caseId = 23
+        $scope.podConfig = {title: 'Foo'}
+
+        $scope.podData = {
+          items: [],
+          actions: []
+        }
+
+        $controller('PodController', {
+          $scope
+          PodApiService
+        })
+
+        spyOn(PodApiService, 'trigger').and.returnValue($q.resolve({
+          success: true
+        }))
+
+        $scope.trigger('grault', {garply: 'waldo'})
+        $scope.$apply()
+
+        expect(PodApiService.trigger)
+          .toHaveBeenCalledWith(21, 23, 'grault', {garply: 'waldo'})
+      )
+
+      it('should mark the action as busy', () ->
+        $scope.podId = 21
+        $scope.caseId = 23
+        $scope.podConfig = {title: 'Foo'}
+
+        $scope.podData = {
+          items: [],
+          actions: [{
+            type: 'grault'
+            isBusy: false,
+            payload: {}
+          }, {
+            type: 'fred',
+            isBusy: false,
+            payload: {}
+          }]
+        }
+
+        $controller('PodController', {
+          $scope
+          PodApiService
+        })
+
+        # defer getting new data indefinitely to prevent isBusy being set to
+        # false when we retrieve new data
+        spyOn(PodApiService, 'get').and.returnValue($q.defer().promise)
+
+        spyOn(PodApiService, 'trigger').and.returnValue($q.resolve({success: true}))
+
+        $scope.trigger('grault', {garply: 'waldo'})
+        expect($scope.podData.actions[0].isBusy).toBe(true)
+
+        $scope.$apply()
+      )
+
+      it('should emit a notification event if unsuccessful', (done) ->
+        $scope.podId = 21
+        $scope.caseId = 23
+        $scope.podConfig = {title: 'Foo'}
+
+        $scope.podData = {
+          items: [],
+          actions: []
+        }
+
+        $controller('PodController', {
+          $scope
+          PodApiService
+        })
+
+        spyOn(PodApiService, 'trigger').and.returnValue($q.resolve({
+          success: false,
+          payload: {fred: 'xxyyxx'}
+        }))
+
+        $scope.trigger('grault', {garply: 'waldo'})
+
+        $scope.$on('notification', (e, {type, payload}) ->
+          expect(type).toEqual('pod_action_failure')
+          expect(payload).toEqual({fred: 'xxyyxx'})
+          done())
+
+        $scope.$apply()
+      )
+
+      it('should emit a timelineChanged event if successful', (done) ->
+        $scope.podId = 21
+        $scope.caseId = 23
+        $scope.podConfig = {title: 'Foo'}
+
+        $scope.podData = {
+          items: [],
+          actions: []
+        }
+
+        $controller('PodController', {
+          $scope
+          PodApiService
+        })
+
+        spyOn(PodApiService, 'trigger').and.returnValue($q.resolve({success: true}))
+
+        $scope.trigger('grault', {garply: 'waldo'})
+
+        $scope.$on('timelineChanged', -> done())
+
+        $scope.$apply()
+      )
+
+      it('should emit a notification if trigger api method fails', (done) ->
+        $scope.podId = 21
+        $scope.caseId = 23
+        $scope.podConfig = {title: 'Foo'}
+
+        $scope.podData = {
+          items: [],
+          actions: []
+        }
+
+        $controller('PodController', {
+          $scope
+          PodApiService
+        })
+
+        spyOn(PodApiService, 'trigger')
+          .and.returnValue($q.reject(new PodApiServiceError(null)))
+
+        $scope.trigger('grault', {garply: 'waldo'})
+
+        $scope.$on('notification', (e, {type, payload}) ->
+          expect(type).toEqual('pod_action_api_failure')
+          done())
+
+        $scope.$apply()
+      )
+
+      it('should emit a notification if get api method fails', (done) ->
+        $scope.podId = 21
+        $scope.caseId = 23
+        $scope.podConfig = {title: 'Foo'}
+
+        $scope.podData = {
+          items: [],
+          actions: []
+        }
+
+        $controller('PodController', {
+          $scope
+          PodApiService
+        })
+
+        spyOn(PodApiService, 'get')
+          .and.returnValue($q.reject(new PodApiServiceError(null)))
+
+        $scope.trigger('grault', {garply: 'waldo'})
+
+        $scope.$on('notification', (e, {type, payload}) ->
+          expect(type).toEqual('pod_action_api_failure')
+          done())
+
+        $scope.$apply()
+      )
+
+      it('should fetch and attach data to the scope if successful', () ->
+        $scope.podId = 21
+        $scope.caseId = 23
+        $scope.podConfig = {title: 'Foo'}
+
+        $scope.podData = {
+          items: [],
+          actions: []
+        }
+
+        $controller('PodController', {
+          $scope
+          PodApiService
+        })
+
+        spyOn(PodApiService, 'get').and.returnValue($q.resolve({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }]
+          actions: [{
+            type: 'baz',
+            name: 'Baz',
+            payload: {}
+          }]
+        }))
+
+        spyOn(PodApiService, 'trigger').and.returnValue($q.resolve({success: true}))
+
+        $scope.trigger('grault', {garply: 'waldo'})
+        $scope.$apply()
+
+        expect($scope.podData).toEqual({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }]
+          actions: [{
+            type: 'baz',
+            name: 'Baz',
+            busyText: 'Baz',
+            isBusy: false,
+            payload: {}
+          }]
+        })
+      )
     )
   )
 )

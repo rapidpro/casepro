@@ -113,7 +113,14 @@ describe('directives:', () ->
       $compile = _$compile_
 
       $rootScope.podConfig = {title: 'Foo'}
-      $rootScope.podData = {items: []}
+
+      $rootScope.podData = {
+        items: [],
+        actions: []
+      }
+
+      $rootScope.status = 'idle'
+      $rootScope.trigger = ->
     ))
 
     it('should draw the pod items', () ->
@@ -153,6 +160,173 @@ describe('directives:', () ->
 
       expect(item2.querySelector('.pod-item-value').textContent)
         .toContain('Corge')
+    )
+
+    it('should draw the pod actions', ->
+      $rootScope.podData.actions = [{
+        type: 'foo',
+        name: 'Foo',
+        busyText: 'Foo',
+        isBusy: false,
+        payload: {bar: 'baz'}
+      }, {
+        type: 'quux',
+        name: 'Quux',
+        busyText: 'Quux',
+        isBusy: false,
+        payload: {corge: 'grault'}
+      }]
+
+      el = $compile('<cp-pod/>')($rootScope)[0]
+      $rootScope.$digest()
+
+      action1 = el.querySelectorAll('.pod-action')[0]
+      action2 = el.querySelectorAll('.pod-action')[1]
+
+      expect(action1.textContent).toContain('Foo')
+      expect(action2.textContent).toContain('Quux')
+    )
+
+    it('should draw busy pod actions', ->
+      $rootScope.podData.actions = [{
+        type: 'baz',
+        name: 'Baz',
+        isBusy: true,
+        busyText: 'Bazzing',
+        payload: {}
+      }]
+
+      el = $compile('<cp-pod/>')($rootScope)[0]
+      $rootScope.$digest()
+
+      action1 = el.querySelectorAll('.pod-action')[0]
+      expect(action1.textContent).toContain('Bazzing')
+      expect(action1.classList.contains('disabled')).toBe(true)
+    )
+
+    it('should call trigger() when an action button is clicked', ->
+      $rootScope.podData.actions = [{
+        type: 'foo',
+        name: 'Foo',
+        busyText: 'Foo',
+        isBusy: false,
+        payload: {a: 'b'}
+      }, {
+        type: 'bar',
+        name: 'Bar',
+        busyText: 'Bar',
+        isBusy: false,
+        payload: {c: 'd'}
+      }]
+
+      $rootScope.trigger = jasmine.createSpy('trigger')
+
+      el = $compile('<cp-pod/>')($rootScope)[0]
+      $rootScope.$digest()
+
+      action1 = el.querySelectorAll('.pod-action')[0]
+      action2 = el.querySelectorAll('.pod-action')[1]
+
+      expect($rootScope.trigger).not.toHaveBeenCalledWith('foo', {a: 'b'})
+
+      angular.element(action1).triggerHandler('click')
+
+      expect($rootScope.trigger).toHaveBeenCalledWith('foo', {a: 'b'})
+      expect($rootScope.trigger).not.toHaveBeenCalledWith('bar', {c: 'd'})
+
+      angular.element(action2).triggerHandler('click')
+      expect($rootScope.trigger).toHaveBeenCalledWith('bar', {c: 'd'})
+    )
+
+    it('should draw whether it is loading', () ->
+      $rootScope.status = 'loading'
+
+      el = $compile('<cp-pod/>')($rootScope)[0]
+      $rootScope.$digest()
+
+      expect(el.textContent).toMatch('Loading')
+    )
+
+    it('should draw whether loading has failed', () ->
+      $rootScope.status = 'loading_failed'
+
+      el = $compile('<cp-pod/>')($rootScope)[0]
+      $rootScope.$digest()
+
+      expect(el.textContent).toMatch('Could not load')
+    )
+  )
+
+  #=======================================================================
+  # Tests for cpAlert
+  #=======================================================================
+  describe('cpAlert', () ->
+    beforeEach(() ->
+      $rootScope.notifications = []
+    )
+
+    it('should draw the alert', () ->
+      template = $compile('<cp-alert type="danger">Foo</cp-alert>')
+      el = template($rootScope)[0]
+      $rootScope.$digest()
+
+      alert = el.querySelector('.alert')
+      expect(alert.classList.contains('alert-danger')).toBe(true)
+      expect(alert.textContent).toMatch('Foo')
+    )
+  )
+
+  #=======================================================================
+  # Tests for cpCaseNotifications
+  #=======================================================================
+  describe('cpCaseNotifications', () ->
+    beforeEach(() ->
+      $rootScope.notifications = []
+    )
+
+    it('should draw pod_action_failure notifications', () ->
+      $rootScope.notifications = [{
+        type: 'pod_action_failure',
+        payload: {message: 'Foo'}
+      }, {
+        type: 'pod_action_failure',
+        payload: {message: 'Bar'}
+      }]
+
+      template = $compile('
+        <cp-case-notifications notifications="notifications">
+        </cp-case-notifications>
+      ')
+      el = template($rootScope)[0]
+      $rootScope.$digest()
+
+      [notification1, notification2] = el.querySelectorAll('.alert')
+
+      expect(notification1.classList.contains('alert-danger')).toBe(true)
+      expect(notification1.textContent).toMatch('Foo')
+
+      expect(notification2.classList.contains('alert-danger')).toBe(true)
+      expect(notification2.textContent).toMatch('Bar')
+    )
+
+    it('should draw pod_action_api_failure notifications', () ->
+      $rootScope.notifications = [{
+        type: 'pod_action_api_failure'
+      }, {
+        type: 'pod_action_api_failure'
+      }]
+
+      template = $compile('
+        <cp-case-notifications notifications="notifications">
+        </cp-case-notifications>
+      ')
+      el = template($rootScope)[0]
+      $rootScope.$digest()
+
+      [notification1, notification2] = el.querySelectorAll('.alert')
+
+      expect(notification1.classList.contains('alert-danger')).toBe(true)
+      expect(notification2.classList.contains('alert-danger')).toBe(true)
     )
   )
 )

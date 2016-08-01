@@ -554,9 +554,40 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
 #=====================================================================
 # Pod API service
 #=====================================================================
-services.factory('PodApiService', ['$window', '$http', ($window, $http) ->
-  new class PodApiService
-    get: (podId, caseId) ->
-      $http.get("/pods/read/#{podId}/", {params: {case_id: caseId}})
+services.factory('PodApiService', ['$q', '$window', '$http', ($q, $window, $http) ->
+  class PodApiServiceError extends Error
+    constructor: (error) ->
+      this.error = error
+
+  method = (fn) ->
+    res = (args...) ->
+      $http(fn(args...))
+        .catch((e) -> $q.reject(new PodApiServiceError(e)))
         .then((d) -> d.data)
+
+    res.fn = fn
+    res
+
+  new class PodApiService
+    PodApiServiceError: PodApiServiceError,
+
+    method: method,
+
+    get: method((podId, caseId) -> {
+      method: 'GET',
+      url: "/pods/read/#{podId}/",
+      params: {case_id: caseId}
+    })
+
+    trigger: method((podId, caseId, type, payload = {}) -> {
+      method: 'POST',
+      url: "/pods/action/#{podId}/",
+      data: {
+        case_id: caseId
+        action: {
+          type,
+          payload
+        }
+      }
+    })
 ])

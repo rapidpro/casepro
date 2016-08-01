@@ -16,6 +16,7 @@ CASE_SUMMARY_MAX_LEN = 255
 CASE_NOTE_MAX_LEN = 1024
 OUTGOING_TEXT_MAX_LEN = 480
 
+SINGLETON_NOTIFICATIONS = ['pod_load_api_failure']
 
 #============================================================================
 # Inbox controller (DOM parent of messages and cases)
@@ -508,7 +509,6 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
 # Case view controller
 #============================================================================
 controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'ContactService', 'MessageService', 'PartnerService', 'UtilsService', ($scope, $window, $timeout, CaseService, ContactService, MessageService, PartnerService, UtilsService) ->
-
   $scope.allLabels = $window.contextData.all_labels
   $scope.fields = $window.contextData.fields
   
@@ -517,11 +517,27 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
   $scope.newMessage = ''
   $scope.sending = false
 
+  $scope.notifications = []
+
   $scope.init = (caseId, maxMsgChars) ->
     $scope.caseId = caseId
     $scope.msgCharsRemaining = $scope.maxMsgChars = maxMsgChars
 
     $scope.refresh()
+
+  $scope.$on('notification', (e, notification) ->
+    $scope.addNotification(notification))
+
+  $scope.$on('timelineChange', (e) ->
+    $scope.$broadcast('timelineChanged') if e.targetScope != $scope)
+
+  $scope.addNotification = (notification) ->
+    if (not shouldIgnoreNotification(notification))
+      $scope.notifications.push(notification)
+
+  shouldIgnoreNotification = ({type}) ->
+    type in SINGLETON_NOTIFICATIONS and
+    $scope.notifications.some((d) -> type == d.type)
 
   $scope.refresh = () ->
     CaseService.fetchSingle($scope.caseId).then((caseObj) ->
@@ -845,12 +861,80 @@ controllers.controller('DateRangeController', ['$scope', ($scope) ->
 #============================================================================
 # Pod controller
 #============================================================================
-controllers.controller('PodController', ['$scope', 'PodApiService', ($scope, PodApiService) ->
+controllers.controller('PodController', ['$q', '$scope', 'PodApiService', ($q, $scope, PodApiService) ->
   $scope.init = (podId, caseId, podConfig) ->
     $scope.podId = podId
     $scope.caseId = caseId
     $scope.podConfig = podConfig
+    $scope.status = 'loading'
 
-    return PodApiService.get(podId, caseId)
+    $scope.update()
+      .then(-> $scope.status = 'idle')
+      .catch(utils.trap(PodApiService.PodApiServiceError, onLoadApiFailure, $q.reject))
+
+  $scope.update = ->
+    PodApiService.get($scope.podId, $scope.caseId)
+      .then(parsePodData)
       .then((d) -> $scope.podData = d)
+
+  $scope.trigger = (type, payload) ->
+    $scope.podData.actions = updateAction(type, {isBusy: true})
+
+    PodApiService.trigger($scope.podId, $scope.caseId, type, payload)
+      .then((res) -> onTriggerDone(type, res))
+      .catch(utils.trap(PodApiService.PodApiServiceError, onTriggerApiFailure, $q.reject))
+
+  onTriggerDone = (type, {success, payload}) ->
+    if success
+      p = onTriggerSuccess()
+    else
+      p = onTriggerFailure(payload)
+
+    $q.resolve(p)
+      .then(-> $scope.podData.actions = updateAction(type, {isBusy: false}))
+
+  onLoadApiFailure = ->
+    $scope.status = 'loading_failed'
+
+    $scope.$emit('notification', {
+      type: 'pod_load_api_failure'
+    })
+
+  onTriggerApiFailure = ->
+    $scope.$emit('notification', {
+      type: 'pod_action_api_failure'
+    })
+
+  onTriggerFailure = (payload) ->
+    $scope.$emit('notification', {
+      type: 'pod_action_failure',
+      payload
+    })
+
+  onTriggerSuccess = () ->
+    $scope.$emit('timelineChanged')
+    $scope.update()
+
+  updateAction = (type, props) ->
+    $scope.podData.actions
+      .map((d) -> if d.type == type then angular.extend({}, d, props) else d)
+
+  parsePodData = (d) ->
+    d = angular.extend({
+      items: [],
+      actions: []
+    }, d)
+
+    d.actions = d.actions
+      .map(parsePodAction)
+
+    d
+
+  parsePodAction = ({type, name, busy_text, payload}) -> {
+    type,
+    name,
+    payload,
+    busyText: busy_text ? name,
+    isBusy: false
+  }
 ])

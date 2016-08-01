@@ -53,6 +53,19 @@ directives.directive('cpFieldvalue', () ->
   }
 )
 
+directives.directive('cpAlert', -> {
+  restrict: 'E',
+  transclude: true,
+  scope: {type: '@'},
+  templateUrl: '/sitestatic/templates/alert.html'
+})
+
+
+directives.directive('cpCaseNotifications', -> {
+  templateUrl: '/sitestatic/templates/case-notifications.html',
+  scope: {notifications: '='}
+})
+
 #=====================================================================
 # Pod directive
 #=====================================================================

@@ -630,15 +630,63 @@ describe('services:', () ->
       PodApiService = _PodApiService_
     ))
 
-    describe('get', () ->
-      it('gets a pod', () ->
-        $httpBackend.expectGET('/pods/read/21/?case_id=23')
+    describe('method', () ->
+      it('constructs a pod api method', () ->
+        $httpBackend.expectGET('/pods/foo/21/?bar=23')
           .respond({foo: 'bar'})
 
-        PodApiService.get(21, 23)
+        method = PodApiService.method((id, bar) -> {
+          method: 'GET',
+          url: "/pods/foo/#{id}/",
+          params: {bar}
+        })
+
+        method(21, 23)
           .then((res) -> expect(res).toEqual({foo: 'bar'}))
 
         $httpBackend.flush()
+      )
+
+      it('rejects response errors as PodApiServiceErrors', () ->
+        $httpBackend.expectGET('/pods/foo/')
+          .respond(500)
+
+        method = PodApiService.method(-> {
+          method: 'GET',
+          url: "/pods/foo/"
+        })
+
+        method()
+          .catch((e) -> e)
+          .then((e) -> expect(e instanceof PodApiService.PodApiServiceError).toBe(true))
+
+        $httpBackend.flush()
+      )
+    )
+
+    describe('get', () ->
+      it('gets a pod', () ->
+        expect(PodApiService.get.fn(21, 23)).toEqual({
+          method: 'GET',
+          url: "/pods/read/21/",
+          params: {case_id: 23}
+        })
+      )
+    )
+
+    describe('trigger', () ->
+      it('triggers an action', () ->
+        expect(PodApiService.trigger.fn(21, 23, 'foo', {bar: 'baz'})).toEqual({
+          method: 'POST',
+          url: "/pods/action/21/",
+          data: {
+            case_id: 23
+            action: {
+              type: 'foo',
+              payload: {bar: 'baz'}
+            }
+          }
+        })
       )
     )
   )

@@ -1,0 +1,20 @@
+<div ng-repeat="notification in notifications" ng-switch="notification.type">
+  <div ng-switch-when="pod_action_failure">
+    <cp-alert type="danger">
+      [[ notification.payload.message ]]
+    </cp-alert>
+  </div>
+
+  <div ng-switch-when="pod_action_api_failure">
+    <cp-alert type="danger">
+      Sorry, we encountered a problem on our side while completing your action.
+    </cp-alert>
+  </div>
+
+  <div ng-switch-when="pod_load_api_failure">
+    <cp-alert type="warning">
+      Sorry, a problem on our side prevented some of the information on this
+      page from loading.
+    </cp-alert>
+  </div>
+</div>
