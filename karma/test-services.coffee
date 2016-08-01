@@ -816,4 +816,58 @@ describe('services:', () ->
       )
     )
   )
+
+  #=======================================================================
+  # Tests for PodUIService
+  #=======================================================================
+  describe('PodUIService', () ->
+    PodUIService = null
+
+    beforeEach(inject((_PodUIService_) ->
+      PodUIService = _PodUIService_
+    ))
+
+    describe('confirmAction', () ->
+      it('should draw the modal', () ->
+        PodUIService.confirmAction('Foo')
+
+        $rootScope.$apply()
+
+        expect(document.querySelector('.modal-title').textContent)
+          .toMatch('Foo')
+      )
+
+      it('should fulfill if the modal is accepted', () ->
+        fulfilled = false
+
+        PodUIService.confirmAction('Foo')
+          .then(-> fulfilled = true)
+
+        $rootScope.$apply()
+        expect(fulfilled).toBe(false)
+
+        angular.element(document.querySelector('.btn-modal-accept'))
+          .triggerHandler('click')
+
+        $rootScope.$apply()
+        expect(fulfilled).toBe(true)
+      )
+
+      it('should reject if the modal is cancelled', () ->
+        rejected = false
+
+        PodUIService.confirmAction('Foo')
+          .catch(-> rejected = true)
+
+        $rootScope.$apply()
+        expect(rejected).toBe(false)
+
+        angular.element(document.querySelector('.btn-modal-cancel'))
+          .triggerHandler('click')
+
+        $rootScope.$apply()
+        expect(rejected).toBe(true)
+      )
+    )
+  )
 )

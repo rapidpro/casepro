@@ -578,6 +578,19 @@ services.factory('ModalService', ['$rootScope', '$uibModal', ($rootScope, $uibMo
 
 
 #=====================================================================
+# PodUIService service
+#=====================================================================
+services.factory('PodUIService', ['ModalService', (ModalService) ->
+  new class PodUIService
+    confirmAction: (name) ->
+      ModalService.confirm({
+        templateUrl: '/sitestatic/templates/pod-action-confirm.html',
+        context: {name}
+      })
+])
+
+
+#=====================================================================
 # Pod API service
 #=====================================================================
 services.factory('PodApiService', ['$q', '$window', '$http', ($q, $window, $http) ->
