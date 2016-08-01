@@ -861,7 +861,11 @@ controllers.controller('DateRangeController', ['$scope', ($scope) ->
 #============================================================================
 # Pod controller
 #============================================================================
-controllers.controller('PodController', ['$q', '$scope', 'PodApiService', 'CaseModals', ($q, $scope, PodApiService, CaseModals) ->
+controllers.controller('PodController', ['$q', '$scope', 'PodApiService', 'PodUIService', ($q, $scope, PodApiService, PodUIService) ->
+  TEMPLATE_URLS = {
+    ACTION_CONFIRM: '/sitestatic/templates/pod-action-confirm.html'
+  }
+
   $scope.init = (podId, caseId, podConfig) ->
     $scope.podId = podId
     $scope.caseId = caseId
@@ -879,7 +883,7 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApiService', 'CaseM
 
   $scope.trigger = ({type, name, payload, confirm}) ->
     $q.resolve()
-      .then(-> confirmAction(name) if confirm)
+      .then(-> PodUIService.confirmAction(name) if confirm)
       .then(-> $scope.podData.actions = updateAction(type, {isBusy: true}))
       .then(-> PodApiService.trigger($scope.podId, $scope.caseId, type, payload))
       .then((res) -> onTriggerDone(type, res))
@@ -893,12 +897,6 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApiService', 'CaseM
 
     $q.resolve(p)
       .then(-> $scope.podData.actions = updateAction(type, {isBusy: false}))
-
-  confirmAction = (name) ->
-    CaseModals.confirm({
-      type: 'pod_action_confirm',
-      payload: {name}
-    })
 
   onLoadApiFailure = ->
     $scope.status = 'loading_failed'

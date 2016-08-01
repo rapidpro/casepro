@@ -762,7 +762,7 @@ describe('controllers:', () ->
 
   describe('PodController', () ->
     $scope = null
-    CaseModals = null
+    PodUIService = null
     PodApiService = null
     class PodApiServiceError
 
@@ -770,7 +770,7 @@ describe('controllers:', () ->
       $controller('PodController', angular.extend({}, deps, {
         $scope,
         PodApiService,
-        CaseModals
+        PodUIService
       }))
 
     beforeEach(() ->
@@ -785,8 +785,8 @@ describe('controllers:', () ->
         actions: []
       }
 
-      CaseModals = new class CaseModals
-        confirm: -> $q.resolve()
+      PodUIService = new class PodUIService
+        confirmAction: -> $q.resolve()
 
       PodApiService = new class PodApiService
         PodApiServiceError: PodApiServiceError,
@@ -1108,8 +1108,7 @@ describe('controllers:', () ->
 
       it('should show a confirmation model if the action requires it', () ->
         bindController()
-
-        spyOn(CaseModals, 'confirm')
+        spyOn(PodUIService, 'confirmAction')
 
         $scope.trigger({
           type: 'grault',
@@ -1119,11 +1118,7 @@ describe('controllers:', () ->
         })
 
         $scope.$apply()
-
-        expect(CaseModals.confirm.calls.allArgs()).toEqual([[{
-          type: 'pod_action_confirm',
-          payload: {name: 'Grault'}
-        }]])
+        expect(PodUIService.confirmAction.calls.allArgs()).toEqual([['Grault']])
       )
     )
   )
