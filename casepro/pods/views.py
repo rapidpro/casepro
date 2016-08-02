@@ -7,6 +7,9 @@ from casepro.cases.models import Case, CaseAction
 from casepro.pods import registry
 
 
+ACTION_NOTE_CONTENT = "%(username)s %(message)s"
+
+
 def read_pod_data(request, index):
     """Delegates to the `read_data` function of the correct pod."""
     if request.method != 'GET':
@@ -47,6 +50,10 @@ def perform_pod_action(request, index):
     success, payload = pod.perform_action(action_data.get('type'), action_data.get('payload', {}))
     if success is True:
         case = Case.objects.get(id=case_id)
-        CaseAction.create(case, request.user, CaseAction.ADD_NOTE, note=payload.get('message'))
+        note = ACTION_NOTE_CONTENT % {
+            'username': request.user.username,
+            'message': payload.get('message'),
+        }
+        CaseAction.create(case, request.user, CaseAction.ADD_NOTE, note=note)
 
     return JsonResponse({'success': success, 'payload': payload})
