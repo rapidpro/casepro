@@ -1002,6 +1002,32 @@ describe('controllers:', () ->
         expect($scope.podData.actions[0].isBusy).toBe(true)
       )
 
+      it('should mark the action as not busy after api failure', () ->
+        $scope.podData.actions = [{
+          type: 'grault'
+          isBusy: false,
+          payload: {}
+        }, {
+          type: 'fred',
+          isBusy: false,
+          payload: {}
+        }]
+
+        bindController()
+
+        spyOn(PodApiService, 'get')
+          .and.returnValue($q.reject(new PodApiServiceError(null)))
+
+        $scope.trigger({
+          type: 'grault',
+          payload: {garply: 'waldo'}
+        })
+
+        $scope.$apply()
+
+        expect($scope.podData.actions[0].isBusy).toBe(false)
+      )
+
       it('should emit an alert event if unsuccessful', (done) ->
         bindController()
 
