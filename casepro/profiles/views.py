@@ -90,6 +90,16 @@ class UserCRUDL(SmartCRUDL):
             else:
                 self.object = Profile.create_user(name, email, password, change_password)
 
+        def get_success_url(self):
+            if self.request.org:
+                partner = self.object.get_partner(self.request.org)
+                if partner:
+                    return reverse('cases.partner_read', args=[partner.pk]) + '#/users'
+                else:
+                    return reverse('orgs_ext.org_home') + '#/users'
+            else:
+                return reverse('orgs_ext.org_list')
+
     class CreateIn(PartnerPermsMixin, OrgFormMixin, SmartCreateView):
         """
         Form for creating partner-level users in a specific partner
@@ -117,7 +127,7 @@ class UserCRUDL(SmartCRUDL):
             self.object = Profile.create_partner_user(org, partner, role, name, email, password, change_password)
 
         def get_success_url(self):
-            return reverse('cases.partner_read', args=[self.kwargs['partner_id']])
+            return reverse('cases.partner_read', args=[self.kwargs['partner_id']]) + '#/users'
 
     class Update(PartnerPermsMixin, UserUpdateMixin, SmartUpdateView):
         """
