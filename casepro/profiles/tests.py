@@ -333,7 +333,7 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_post(None, url, {'name': "McAdmin", 'email': "mcadmin@casely.com",
                                              'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, 'http://testserver/user/')
+        self.assertEqual(response.url, 'http://testserver/org/')
 
         user = User.objects.get(email='mcadmin@casely.com')
         self.assertEqual(user.get_full_name(), "McAdmin")
@@ -362,7 +362,7 @@ class UserCRUDLTest(BaseCasesTest):
                                                  'role': ROLE_ADMIN,
                                                  'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, 'http://unicef.localhost/user/')
+        self.assertEqual(response.url, 'http://unicef.localhost/org/home/#/users')
 
         user = User.objects.get(email='adrian@casely.com')
         self.assertEqual(user.get_full_name(), "Adrian Admin")
@@ -393,7 +393,7 @@ class UserCRUDLTest(BaseCasesTest):
                                                  'partner': self.moh.pk, 'role': ROLE_ANALYST,
                                                  'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, 'http://unicef.localhost/user/')
+        self.assertEqual(response.url, 'http://unicef.localhost/partner/read/%d/#/users' % self.moh.pk)
 
         # check new user and profile
         user = User.objects.get(email="mo@casely.com")
@@ -433,7 +433,7 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_post('unicef', url, {'name': "Mo Cases", 'email': "mo@casely.com", 'role': ROLE_ANALYST,
                                                  'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, 'http://unicef.localhost/partner/read/%d/' % self.moh.pk)
+        self.assertEqual(response.url, 'http://unicef.localhost/partner/read/%d/#/users' % self.moh.pk)
 
         user = User.objects.get(email='mo@casely.com')
         self.assertEqual(user.profile.partner, self.moh)
