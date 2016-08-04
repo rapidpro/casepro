@@ -373,9 +373,13 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(case.access_level(self.user4), AccessLevel.none)  # user from different org
 
 
+@modify_settings(INSTALLED_APPS={'append': 'casepro.pods.tests.utils.DummyPodPlugin'})
+@override_settings(PODS=[{'label': 'dummy_pod', 'title': 'FooPod'}])
 class CaseCRUDLTest(BaseCasesTest):
     def setUp(self):
         super(CaseCRUDLTest, self).setUp()
+
+        reload(pod_registry)
 
         self.ann = self.create_contact(self.unicef, 'C-001', "Ann",
                                        fields={'age': "34"}, groups=[self.females, self.reporters])
@@ -437,36 +441,17 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
 
-    @modify_settings(INSTALLED_APPS={
-        'append': 'casepro.pods.tests.utils.DummyPodPlugin'
-    })
-    @override_settings(PODS=[{
-        'label': 'dummy_pod',
-        'title': 'FooPod'
-    }])
-    def test_read_pods(self):
-        reload(pod_registry)
-        url = reverse('cases.case_read', args=[self.case.pk])
-        self.login(self.user1)
-        response = self.url_get('unicef', url)
+        # check testing pod has been included
         self.assertContains(response, 'FooPod')
         self.assertContains(response, DummyPodPlugin.controller)
         self.assertContains(response, DummyPodPlugin.directive)
 
-    @modify_settings(INSTALLED_APPS={
-        'append': 'casepro.pods.tests.utils.DummyPodPlugin'
-    })
-    def test_read_pod_resources(self):
-        reload(pod_registry)
-        url = reverse('cases.case_read', args=[self.case.pk])
-        self.login(self.user1)
-        response = self.url_get('unicef', url)
-
+        # along with its resources
         for script in DummyPodPlugin.scripts:
-            self.assertContains(response, script.rstrip('.coffee'))
+            self.assertContains(response, script)
 
         for script in DummyPodPlugin.styles:
-            self.assertContains(response, script.rstrip('.less'))
+            self.assertContains(response, script)
 
     def test_note(self):
         url = reverse('cases.case_note', args=[self.case.pk])
