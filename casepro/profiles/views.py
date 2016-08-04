@@ -26,7 +26,7 @@ class UserUpdateMixin(OrgFormMixin):
         initial = super(UserUpdateMixin, self).derive_initial()
         initial['name'] = self.object.profile.full_name
         if self.request.org:
-            initial['role'] = self.object.profile.get_role(self.request.org)
+            initial['role'] = self.object.get_role(self.request.org)
             initial['partner'] = self.object.get_partner(self.request.org)
         return initial
 
@@ -40,7 +40,7 @@ class UserUpdateMixin(OrgFormMixin):
         if 'role' in data:
             role = data['role']
             partner = data['partner'] if 'partner' in data else self.get_partner()
-            obj.profile.update_role(self.request.org, role, partner)
+            obj.update_role(self.request.org, role, partner)
 
         # set new password if provided
         password = data['new_password']

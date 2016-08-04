@@ -57,7 +57,7 @@ class Profile(models.Model):
         Creates an org-level user (for now these are always admins)
         """
         user = cls.create_user(name, email, password, change_password=change_password)
-        user.profile.update_role(org, ROLE_ADMIN)
+        user.update_role(org, ROLE_ADMIN)
         return user
 
     @classmethod
@@ -69,48 +69,8 @@ class Profile(models.Model):
             raise ValueError("Can't create partner user without valid partner for org")
 
         user = cls.create_user(name, email, password, change_password=change_password)
-        user.profile.update_role(org, role, partner)
+        user.update_role(org, role, partner)
         return user
-
-    def update_role(self, org, role, partner=None):
-        if partner and partner.org != org:  # pragma: no cover
-            raise ValueError("Can only update partner to partner in same org")
-
-        if role in PARTNER_ROLES and not partner:
-            raise ValueError("Role %s requires a partner org" % role)
-        elif role not in PARTNER_ROLES and partner:
-            raise ValueError("Cannot specify a partner for role %s" % role)
-
-        # remove user from any partners for this org
-        self.user.partners.remove(*self.user.partners.filter(org=org))
-
-        if partner:
-            self.user.partners.add(partner)
-
-        if role == ROLE_ADMIN:
-            org.administrators.add(self.user)
-            org.editors.remove(self.user)
-            org.viewers.remove(self.user)
-        elif role == ROLE_MANAGER:
-            org.administrators.remove(self.user)
-            org.editors.add(self.user)
-            org.viewers.remove(self.user)
-        elif role == ROLE_ANALYST:
-            org.administrators.remove(self.user)
-            org.editors.remove(self.user)
-            org.viewers.add(self.user)
-        else:  # pragma: no cover
-            raise ValueError("Invalid user role: %s" % role)
-
-    def get_role(self, org):
-        if self.user in org.administrators.all():
-            return ROLE_ADMIN
-        elif self.user in org.editors.all():
-            return ROLE_MANAGER
-        elif self.user in org.viewers.all():
-            return ROLE_ANALYST
-        else:
-            return None
 
     @classmethod
     def exists_for(cls, user):

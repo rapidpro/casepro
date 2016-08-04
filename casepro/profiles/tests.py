@@ -173,52 +173,6 @@ class ProfileTest(BaseCasesTest):
         user5 = Profile.create_user("Lou", "lou123456789012345678901234567890@moh.com", "Qwerty123")
         self.assertEqual(user5.email, "lou123456789012345678901234567890@moh.com")
 
-    def test_update_role(self):
-        self.user1.profile.update_role(self.unicef, ROLE_ANALYST, self.who)
-
-        self.assertEqual(set(self.user1.partners.all()), {self.who})
-        self.assertTrue(self.user1 not in self.unicef.administrators.all())
-        self.assertTrue(self.user1 not in self.unicef.editors.all())
-        self.assertTrue(self.user1 in self.unicef.viewers.all())
-
-        self.user1.profile.update_role(self.unicef, ROLE_MANAGER, self.moh)
-
-        self.assertEqual(set(self.user1.partners.all()), {self.moh})
-        self.assertTrue(self.user1 not in self.unicef.administrators.all())
-        self.assertTrue(self.user1 in self.unicef.editors.all())
-        self.assertTrue(self.user1 not in self.unicef.viewers.all())
-
-        self.user1.profile.update_role(self.unicef, ROLE_ADMIN, None)
-
-        self.assertEqual(set(self.user1.partners.all()), set())
-        self.assertIn(self.user1, self.unicef.administrators.all())
-        self.assertNotIn(self.user1, self.unicef.editors.all())
-        self.assertNotIn(self.user1, self.unicef.viewers.all())
-
-        # can add them as partner user in another org without changing admin status in this org
-        self.user1.profile.update_role(self.nyaruka, ROLE_ANALYST, self.klab)
-
-        self.assertEqual(set(self.user1.partners.all()), {self.klab})
-        self.assertIn(self.user1, self.unicef.administrators.all())
-        self.assertNotIn(self.user1, self.unicef.editors.all())
-        self.assertNotIn(self.user1, self.unicef.viewers.all())
-        self.assertNotIn(self.user1, self.nyaruka.administrators.all())
-        self.assertNotIn(self.user1, self.nyaruka.editors.all())
-        self.assertIn(self.user1, self.nyaruka.viewers.all())
-
-        # error if partner provided for non-partner role
-        self.assertRaises(ValueError, self.user1.profile.update_role, self.unicef, ROLE_ADMIN, self.who)
-
-        # error if no partner provided for partner role
-        self.assertRaises(ValueError, self.user1.profile.update_role, self.unicef, ROLE_MANAGER, None)
-
-    def test_get_role(self):
-        self.assertEqual(self.admin.profile.get_role(self.unicef), ROLE_ADMIN)
-        self.assertEqual(self.user1.profile.get_role(self.unicef), ROLE_MANAGER)
-        self.assertEqual(self.user2.profile.get_role(self.unicef), ROLE_ANALYST)
-        self.assertEqual(self.user4.profile.get_role(self.unicef), None)
-        self.assertEqual(self.admin.profile.get_role(self.nyaruka), None)
-
 
 class UserTest(BaseCasesTest):
     def test_has_profile(self):
@@ -230,6 +184,52 @@ class UserTest(BaseCasesTest):
         self.assertEqual(self.superuser.get_full_name(), "")
         self.assertEqual(self.admin.get_full_name(), "Kidus")
         self.assertEqual(self.user1.get_full_name(), "Evan")
+
+    def test_get_role(self):
+        self.assertEqual(self.admin.get_role(self.unicef), ROLE_ADMIN)
+        self.assertEqual(self.user1.get_role(self.unicef), ROLE_MANAGER)
+        self.assertEqual(self.user2.get_role(self.unicef), ROLE_ANALYST)
+        self.assertEqual(self.user4.get_role(self.unicef), None)
+        self.assertEqual(self.admin.get_role(self.nyaruka), None)
+
+    def test_update_role(self):
+        self.user1.update_role(self.unicef, ROLE_ANALYST, self.who)
+
+        self.assertEqual(set(self.user1.partners.all()), {self.who})
+        self.assertTrue(self.user1 not in self.unicef.administrators.all())
+        self.assertTrue(self.user1 not in self.unicef.editors.all())
+        self.assertTrue(self.user1 in self.unicef.viewers.all())
+
+        self.user1.update_role(self.unicef, ROLE_MANAGER, self.moh)
+
+        self.assertEqual(set(self.user1.partners.all()), {self.moh})
+        self.assertTrue(self.user1 not in self.unicef.administrators.all())
+        self.assertTrue(self.user1 in self.unicef.editors.all())
+        self.assertTrue(self.user1 not in self.unicef.viewers.all())
+
+        self.user1.update_role(self.unicef, ROLE_ADMIN, None)
+
+        self.assertEqual(set(self.user1.partners.all()), set())
+        self.assertIn(self.user1, self.unicef.administrators.all())
+        self.assertNotIn(self.user1, self.unicef.editors.all())
+        self.assertNotIn(self.user1, self.unicef.viewers.all())
+
+        # can add them as partner user in another org without changing admin status in this org
+        self.user1.update_role(self.nyaruka, ROLE_ANALYST, self.klab)
+
+        self.assertEqual(set(self.user1.partners.all()), {self.klab})
+        self.assertIn(self.user1, self.unicef.administrators.all())
+        self.assertNotIn(self.user1, self.unicef.editors.all())
+        self.assertNotIn(self.user1, self.unicef.viewers.all())
+        self.assertNotIn(self.user1, self.nyaruka.administrators.all())
+        self.assertNotIn(self.user1, self.nyaruka.editors.all())
+        self.assertIn(self.user1, self.nyaruka.viewers.all())
+
+        # error if partner provided for non-partner role
+        self.assertRaises(ValueError, self.user1.update_role, self.unicef, ROLE_ADMIN, self.who)
+
+        # error if no partner provided for partner role
+        self.assertRaises(ValueError, self.user1.update_role, self.unicef, ROLE_MANAGER, None)
 
     def test_can_administer(self):
         # superusers can administer any org
@@ -299,7 +299,7 @@ class UserTest(BaseCasesTest):
         case.watchers.add(self.admin, self.user1)
 
         # add our admin as a partner user in a different org
-        self.admin.profile.update_role(self.nyaruka, ROLE_ANALYST, self.klab)
+        self.admin.update_role(self.nyaruka, ROLE_ANALYST, self.klab)
 
         # have users watch a label too
         self.pregnancy.watchers.add(self.admin, self.user1)
