@@ -298,6 +298,9 @@ class UserTest(BaseCasesTest):
         case = self.create_case(self.unicef, ann, self.moh, msg, [self.aids], summary="Summary")
         case.watchers.add(self.admin, self.user1)
 
+        # add our admin as a partner user in a different org
+        self.admin.profile.update_role(self.nyaruka, ROLE_ANALYST, self.klab)
+
         # have users watch a label too
         self.pregnancy.watchers.add(self.admin, self.user1)
 
@@ -307,6 +310,10 @@ class UserTest(BaseCasesTest):
         self.admin.refresh_from_db()
         self.assertIsNone(self.unicef.get_user_org_group(self.admin))
         self.assertNotIn(self.admin, case.watchers.all())
+
+        # their status in other org shouldn't be affected
+        self.assertIn(self.admin, self.nyaruka.viewers.all())
+        self.assertIn(self.admin, self.klab.users.all())
 
         # try with partner user
         self.user1.remove_from_org(self.unicef)
