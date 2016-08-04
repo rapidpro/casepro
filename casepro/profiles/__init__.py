@@ -33,10 +33,7 @@ def _user_get_partner(user, org):
     """
     Gets the partner org for this user in the given org
     """
-    if user.has_profile() and user.profile.partner and user.profile.partner.org == org:
-        return user.profile.partner
-    else:
-        return None
+    return user.partners.filter(org=org, is_active=True).first()
 
 
 def _user_can_administer(user, org):
@@ -82,10 +79,8 @@ def _user_remove_from_org(user, org):
     org.editors.remove(user)
     org.viewers.remove(user)
 
-    # remove from any partner for this org
-    if user.profile.partner and user.profile.partner.org == org:
-        user.profile.partner = None
-        user.profile.save(update_fields=('partner',))
+    # remove user from any partners for this org
+    user.partners.remove(*user.partners.filter(org=org))
 
     # remove as watcher of any case in this org
     for case in user.watched_cases.filter(org=org):
@@ -109,8 +104,9 @@ def _user_unicode(user):
 def _user_as_json(user, full=True, org=None):
     if full:
         if org and user.has_profile():
+            partner = user.get_partner(org)
+            partner_json = partner.as_json(full=False) if partner else None
             role_json = user.profile.get_role(org)
-            partner_json = user.profile.partner.as_json(full=False) if user.profile.partner else None
         else:
             role_json = None
             partner_json = None

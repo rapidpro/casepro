@@ -9,7 +9,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
-from casepro.cases.models import CaseAction, Partner
+from casepro.cases.models import CaseAction
 from casepro.msgs.models import Message
 from casepro.utils.email import send_email
 
@@ -31,8 +31,6 @@ class Profile(models.Model):
     Extension for the user class
     """
     user = models.OneToOneField(User)
-
-    partner = models.ForeignKey(Partner, null=True, related_name='user_profiles')
 
     full_name = models.CharField(verbose_name=_("Full name"), max_length=128, null=True)
 
@@ -83,8 +81,11 @@ class Profile(models.Model):
         elif role not in PARTNER_ROLES and partner:
             raise ValueError("Cannot specify a partner for role %s" % role)
 
-        self.partner = partner
-        self.save(update_fields=('partner',))
+        # remove user from any partners for this org
+        self.user.partners.remove(*self.user.partners.filter(org=org))
+
+        if partner:
+            self.user.partners.add(partner)
 
         if role == ROLE_ADMIN:
             org.administrators.add(self.user)

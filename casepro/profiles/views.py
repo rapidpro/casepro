@@ -27,7 +27,7 @@ class UserUpdateMixin(OrgFormMixin):
         initial['name'] = self.object.profile.full_name
         if self.request.org:
             initial['role'] = self.object.profile.get_role(self.request.org)
-            initial['partner'] = self.object.profile.partner
+            initial['partner'] = self.object.get_partner(self.request.org)
         return initial
 
     def post_save(self, obj):
@@ -267,14 +267,14 @@ class UserCRUDL(SmartCRUDL):
             non_partner = str_to_bool(self.request.GET.get('non_partner', ''))
             with_activity = str_to_bool(self.request.GET.get('with_activity', ''))
 
-            users = request.org.get_users()
+            if non_partner:
+                users = org.administrators.all()
+            elif partner_id:
+                users = Partner.objects.get(org=org, pk=partner_id).get_users()
+            else:
+                users = org.get_users()
 
-            if partner_id:
-                users = users.filter(profile__partner__pk=partner_id)
-            elif non_partner:
-                users = users.filter(profile__partner=None)
-
-            users = list(users.select_related('profile__partner').order_by('profile__full_name'))
+            users = list(users.order_by('profile__full_name'))
 
             # get reply statistics
             if with_activity:
