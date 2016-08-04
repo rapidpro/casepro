@@ -1,14 +1,11 @@
 from __future__ import absolute_import, unicode_literals
 
-import pytz
-
 from dash.orgs.models import Org
 from dash.utils import intersection
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.db.models import Q, Count, Prefetch
-from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from enum import Enum, IntEnum
@@ -50,10 +47,6 @@ class Partner(models.Model):
 
     description = models.CharField(verbose_name=_("Description"), null=True, blank=True, max_length=255)
 
-    timezone = models.CharField(
-        verbose_name=_("Timezone"), max_length=64, default='UTC',
-        help_text=_("The timezone the partner organization is in."))
-
     primary_contact = models.ForeignKey(User, verbose_name=_("Primary Contact"), related_name='partners', null=True,
                                         blank=True)
 
@@ -67,27 +60,13 @@ class Partner(models.Model):
 
     is_active = models.BooleanField(default=True, help_text="Whether this partner is active")
 
-    def set_timezone(self, timezone):
-        self.timezone = timezone
-        self._tzinfo = None
-
-    def get_timezone(self):
-        tzinfo = getattr(self, '_tzinfo', None)
-
-        if not tzinfo:
-            # we need to build the pytz timezone object with a context of now
-            tzinfo = timezone.now().astimezone(pytz.timezone(self.timezone)).tzinfo
-            self._tzinfo = tzinfo
-
-        return tzinfo
-
     @classmethod
-    def create(cls, org, name, description, timezone, primary_contact, restricted, labels, logo=None):
+    def create(cls, org, name, description, primary_contact, restricted, labels, logo=None):
         if labels and not restricted:
             raise ValueError("Can't specify labels for a partner which is not restricted")
 
-        partner = cls.objects.create(org=org, name=name, description=description, timezone=timezone,
-                                     primary_contact=primary_contact, logo=logo, is_restricted=restricted)
+        partner = cls.objects.create(org=org, name=name, description=description, primary_contact=primary_contact,
+                                     logo=logo, is_restricted=restricted)
 
         if restricted:
             partner.labels.add(*labels)

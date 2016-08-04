@@ -52,11 +52,11 @@ class BaseCasesTest(DashTest):
         self.code = self.create_label(self.nyaruka, "L-101", "Code", 'Messages about code', ["java", "python", "go"])
 
         # some partners
-        self.moh = self.create_partner(self.unicef, "MOH", "Ministry of Health", "Africa/Kampala", None,
+        self.moh = self.create_partner(self.unicef, "MOH", "Ministry of Health", None,
                                        [self.aids, self.pregnancy])
-        self.who = self.create_partner(self.unicef, "WHO", "World Health Organisation", "Africa/Kampala", None,
+        self.who = self.create_partner(self.unicef, "WHO", "World Health Organisation", None,
                                        [self.aids])
-        self.klab = self.create_partner(self.nyaruka, "kLab", "Kigali Lab", "Africa/Kigali", None, [self.code])
+        self.klab = self.create_partner(self.nyaruka, "kLab", "Kigali Lab", None, [self.code])
 
         # some users in those partners
         self.user1 = self.create_user(self.unicef, self.moh, ROLE_MANAGER, "Evan", "evan@unicef.org")
@@ -77,8 +77,8 @@ class BaseCasesTest(DashTest):
         self.state = self.create_field(self.unicef, 'state', "State", value_type='S', is_visible=False)
         self.motorbike = self.create_field(self.nyaruka, 'motorbike', "Moto", value_type='T')
 
-    def create_partner(self, org, name, description, timezone, primary_contact, labels=(), restricted=True):
-        return Partner.create(org, name, description, timezone, primary_contact, restricted, labels, None)
+    def create_partner(self, org, name, description, primary_contact, labels=(), restricted=True):
+        return Partner.create(org, name, description, primary_contact, restricted, labels, None)
 
     def create_admin(self, org, name, email):
         return Profile.create_org_user(org, name, email, email)
