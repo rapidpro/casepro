@@ -35,9 +35,18 @@ describe('controllers:', () ->
       moh: {id: 301, name: "MOH"},
       who: {id: 302, name: "WHO"},
 
+      # fields
+      nickname: {key: 'nickname', label: "Nickname", value_type: 'T'},
+      age: {key: 'age', label: "Age", value_type: 'N'},
+
+      # groups
+      females: {id: 701, name: "Females"},
+      males: {id: 702, name: "Males"},
+      ureporters: {id: 703, name: "U-Reporters"},
+
       # contacts
-      ann: {id: 401, name: "Ann"},
-      bob: {id: 402, name: "Bob"}
+      ann: {id: 401, name: "Ann", fields: {'age': 35}, groups: [{id: 701, name: "Females"}, {id: 703, name: "U-Reporters"}]},
+      bob: {id: 402, name: "Bob", fields: {}, groups: []}
     }
   )
 
@@ -527,6 +536,43 @@ describe('controllers:', () ->
   )
 
   #=======================================================================
+  # Tests for ContactController
+  #=======================================================================
+  describe('ContactController', () ->
+    ContactService = null
+    $scope = null
+
+    beforeEach(inject((_ContactService_) ->
+      ContactService = _ContactService_
+
+      $scope = $rootScope.$new()
+      $window.contextData = {contact: test.ann, fields: [test.age, test.nickname]}
+      $controller('ContactController', {$scope: $scope})
+    ))
+
+    it('init should fetch contact cases', () ->
+      expect($scope.contact).toEqual(test.ann)
+      expect($scope.fields).toEqual([test.age, test.nickname])
+
+      fetchCases = spyOnPromise($q, $scope, ContactService, 'fetchCases')
+
+      $scope.init()
+
+      cases = [{id: 501, opened_on: utcdate(2016, 5, 17, 8, 49, 13, 698)}]
+      fetchCases.resolve(cases)
+
+      expect(ContactService.fetchCases).toHaveBeenCalledWith(test.ann)
+      expect($scope.cases).toEqual(cases)
+    )
+
+    it('getGroups', () ->
+      console.log($scope.contact)
+
+      expect($scope.getGroups()).toEqual("Females, U-Reporters")
+    )
+  )
+
+  #=======================================================================
   # Tests for HomeController
   #=======================================================================
   describe('HomeController', () ->
@@ -548,6 +594,8 @@ describe('controllers:', () ->
 
     it('onTabSelect', () ->
       repliesChart = spyOnPromise($q, $scope, StatisticsService, 'repliesChart')
+      incomingChart = spyOnPromise($q, $scope, StatisticsService, 'incomingChart')
+      labelsPieChart = spyOnPromise($q, $scope, StatisticsService, 'labelsPieChart')
       fetchPartners = spyOnPromise($q, $scope, PartnerService, 'fetchAll')
       fetchLabels = spyOnPromise($q, $scope, LabelService, 'fetchAll')
       fetchUsers = spyOnPromise($q, $scope, UserService, 'fetchNonPartner')
@@ -555,6 +603,8 @@ describe('controllers:', () ->
       $scope.onTabSelect(0)
 
       expect(StatisticsService.repliesChart).toHaveBeenCalledWith()
+      expect(StatisticsService.incomingChart).toHaveBeenCalledWith()
+      expect(StatisticsService.labelsPieChart).toHaveBeenCalledWith()
 
       $scope.onTabSelect(1)
 
@@ -586,12 +636,14 @@ describe('controllers:', () ->
     PartnerService = null
     StatisticsService = null
     UserService = null
+    $location = null
     $scope = null
 
-    beforeEach(inject((_PartnerService_, _StatisticsService_, _UserService_) ->
+    beforeEach(inject((_PartnerService_, _StatisticsService_, _UserService_, _$location_) ->
       PartnerService = _PartnerService_
       StatisticsService = _StatisticsService_
       UserService = _UserService_
+      $location = _$location_
 
       $scope = $rootScope.$new()
       $window.contextData = {partner: test.moh}
@@ -609,6 +661,7 @@ describe('controllers:', () ->
 
       expect(StatisticsService.repliesChart).toHaveBeenCalledWith(test.moh, null)
       expect($scope.initialisedTabs).toEqual([0])
+      expect($location.path()).toEqual('/summary')
 
       $scope.onTabSelect(2)
 
@@ -617,6 +670,7 @@ describe('controllers:', () ->
 
       expect($scope.users).toEqual(users)
       expect($scope.initialisedTabs).toEqual([0, 2])
+      expect($location.path()).toEqual('/users')
 
       # select the users tab again
       $scope.onTabSelect(2)
@@ -624,6 +678,7 @@ describe('controllers:', () ->
       # users shouldn't be re-fetched
       expect(UserService.fetchInPartner.calls.count()).toEqual(1)
       expect($scope.initialisedTabs).toEqual([0, 2])
+      expect($location.path()).toEqual('/users')
     )
 
     it('onDeletePartner', () ->
@@ -668,6 +723,37 @@ describe('controllers:', () ->
 
       expect(UserService.delete).toHaveBeenCalledWith(test.user1)
       expect(UtilsService.navigateBack).toHaveBeenCalled()
+    )
+  )
+
+
+  describe('PodController', () ->
+    $scope = null
+
+    beforeEach(() ->
+      $scope = $rootScope.$new()
+    )
+
+    describe('init', () ->
+      it('should attach pod data to the scope', () ->
+        PodApiService = new class PodApiService
+          get: ->
+
+        spyOn(PodApiService, 'get').and.returnValue($q.resolve({foo: 'bar'}))
+
+        $controller('PodController', {
+          $scope
+          PodApiService
+        })
+
+        $scope.init(21, 23, {title: 'Baz'})
+        $scope.$apply()
+
+        expect($scope.podId).toEqual(21)
+        expect($scope.caseId).toEqual(23)
+        expect($scope.podConfig).toEqual({title: 'Baz'})
+        expect(PodApiService.get).toHaveBeenCalledWith(21, 23)
+        expect($scope.podData).toEqual({foo: 'bar'}))
     )
   )
 )

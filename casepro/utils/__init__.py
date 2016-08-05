@@ -1,17 +1,21 @@
 from __future__ import unicode_literals
 
 import calendar
+import iso639
 import json
 import pytz
 import re
 import unicodedata
-from uuid import UUID
 
 from dateutil.relativedelta import relativedelta
 from datetime import datetime, time, timedelta
 from django.utils import timezone
 from enum import Enum
 from temba_client.utils import format_iso8601
+from uuid import UUID
+
+
+LANGUAGES_BY_CODE = {}  # cache of language lookups
 
 
 def parse_csv(csv, as_ints=False):
@@ -141,6 +145,20 @@ def date_range(start, stop):
         yield start + timedelta(n)
 
 
+class TimelineItem(object):
+    """
+    Wraps a message or action for easier inclusion in a merged timeline
+    """
+    def __init__(self, item):
+        self.item = item
+
+    def get_time(self):
+        return self.item.created_on
+
+    def to_json(self):
+        return {'time': self.get_time(), 'type': self.item.TIMELINE_TYPE, 'item': self.item.as_json()}
+
+
 def uuid_to_int(uuid):
     """
     Converts a UUID hex string to an int within the range of a Django IntegerField, and also >=0, as the URL regexes
@@ -150,3 +168,20 @@ def uuid_to_int(uuid):
     "Values from -2147483648 to 2147483647 are safe in all databases supported by Django"
     """
     return UUID(hex=uuid).int % (2147483647 + 1)
+
+
+def get_language_name(iso_code):
+    """
+    Gets the language name for the given ISO639-2 code.
+    """
+    if iso_code not in LANGUAGES_BY_CODE:
+        try:
+            lang = iso639.to_name(iso_code)
+        except iso639.NonExistentLanguageError:
+            return None
+
+        # we only show up to the first semi or paren
+        lang = re.split(';|\(', lang)[0].strip()
+        LANGUAGES_BY_CODE[iso_code] = lang
+
+    return LANGUAGES_BY_CODE[iso_code]

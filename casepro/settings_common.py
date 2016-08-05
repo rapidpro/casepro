@@ -12,11 +12,13 @@ from django.utils.translation import ugettext_lazy as _
 # -----------------------------------------------------------------------------------
 TESTING = sys.argv[1:2] == ['test']
 
-# Django settings for tns_glass project.
-THUMBNAIL_DEBUG = False
-
-DEBUG = True
-TEMPLATE_DEBUG = DEBUG
+if TESTING:
+    PASSWORD_HASHERS = ('django.contrib.auth.hashers.MD5PasswordHasher',)
+    DEBUG = False
+    TEMPLATE_DEBUG = False
+else:
+    DEBUG = True
+    TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
     ('Nyaruka', 'code@nyaruka.com'),
@@ -494,3 +496,6 @@ CELERYBEAT_SCHEDULE = {
 }
 
 CELERY_TIMEZONE = 'UTC'
+
+# Pods
+PODS = []

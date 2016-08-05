@@ -25,6 +25,7 @@ controllers.controller('InboxController', ['$scope', '$window', '$location', 'La
   $scope.user = $window.contextData.user
   $scope.labels = $window.contextData.labels
   $scope.groups = $window.contextData.groups
+  $scope.fields = $window.contextData.fields
 
   $scope.activeLabel = null
   $scope.activeContact = null
@@ -75,12 +76,13 @@ controllers.controller('InboxController', ['$scope', '$window', '$location', 'La
 controllers.controller('BaseTabsController', ['$scope', '$location', ($scope, $location) ->
   $scope.initialisedTabs = []
 
-  path = $location.path()
-  if path
-    initialTabSlug = path.substring(1)  # ignore initial /
-    $scope.active = $scope.tabSlugs.indexOf(initialTabSlug)
-  else
-    $scope.active = 0
+  $scope.activateTabFromPath = () ->
+    path = $location.path()
+    if path
+      initialTabSlug = path.substring(1)  # ignore initial /
+      $scope.active = $scope.tabSlugs.indexOf(initialTabSlug)
+    else
+      $scope.active = 0
 
   $scope.onTabSelect = (tab) ->
     slug = $scope.tabSlugs[tab]
@@ -90,6 +92,9 @@ controllers.controller('BaseTabsController', ['$scope', '$location', ($scope, $l
     if tab not in $scope.initialisedTabs
       $scope.onTabInit(slug)
       $scope.initialisedTabs.push(tab)
+
+  $scope.activateTabFromPath()
+  $scope.$on('$locationChangeSuccess', () -> $scope.activateTabFromPath())
 ])
 
 
@@ -444,15 +449,30 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
 
   $scope.onTabInit = (tab) ->
     if tab == 'summary'
-      StatisticsService.repliesChart().then((data) ->
+      StatisticsService.repliesChart().then((chart) ->
         Highcharts.chart('chart-replies-by-month', {
           chart: {type: 'column'},
           title: {text: null},
-          xAxis: {categories: data.categories},
-          yAxis: {min: 0, title: {text: 'Replies'}},
+          xAxis: {categories: chart.categories},
+          yAxis: {min: 0, title: {text: 'Replies Sent'}},
           legend: {enabled: false},
-          series: [{name: 'Replies', data: data.series}],
-          credits: {enabled: false}
+          series: [{name: 'Replies', data: chart.series}],
+        })
+      )
+      StatisticsService.labelsPieChart().then((chart) ->
+        Highcharts.chart('chart-most-common-labels', {
+          chart: {type: 'pie'},
+          title: {text: "Message labels in last 30 days"},
+          series: [{name: 'Messages', data: chart.series}],
+        })
+      )
+      StatisticsService.incomingChart().then((chart) ->
+        Highcharts.chart('chart-incoming-by-day', {
+          title: {text: null},
+          xAxis: {type: 'datetime'},
+          yAxis: {min: 0, title: {text: "Messages Received"}},
+          legend: {enabled: false},
+          series: [{name: "Messages", data: chart.series}],
         })
       )
     else if tab == 'partners'
@@ -490,6 +510,7 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
 controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'ContactService', 'MessageService', 'PartnerService', 'UtilsService', ($scope, $window, $timeout, CaseService, ContactService, MessageService, PartnerService, UtilsService) ->
 
   $scope.allLabels = $window.contextData.all_labels
+  $scope.fields = $window.contextData.fields
   
   $scope.caseObj = null
   $scope.contact = null
@@ -621,6 +642,24 @@ controllers.controller('CaseTimelineController', ['$scope', '$timeout', 'CaseSer
 
 
 #============================================================================
+# Contact dashboard controller
+#============================================================================
+controllers.controller('ContactController', ['$scope', '$window', 'ContactService', ($scope, $window, ContactService) ->
+
+  $scope.contact = $window.contextData.contact
+  $scope.fields = $window.contextData.fields
+  
+  $scope.init = () ->
+    ContactService.fetchCases($scope.contact).then((cases) ->
+      $scope.cases = cases
+    )
+
+  $scope.getGroups = () ->
+    return (g.name for g in $scope.contact.groups).join(", ")
+])
+
+
+#============================================================================
 # Label dashboard controller
 #============================================================================
 controllers.controller('LabelController', ['$scope', '$window', '$controller', 'UtilsService', 'LabelService', 'StatisticsService', ($scope, $window, $controller, UtilsService, LabelService, StatisticsService) ->
@@ -638,8 +677,7 @@ controllers.controller('LabelController', ['$scope', '$window', '$controller', '
           xAxis: {type: 'datetime'},
           yAxis: {min: 0, title: {text: "Messages"}},
           legend: {enabled: false},
-          series: [{data: chart.data}],
-          credits: {enabled: false}
+          series: [{name: "Messages", data: chart.series}],
         })
       )
 
@@ -671,6 +709,7 @@ controllers.controller('PartnerController', ['$scope', '$window', '$controller',
   $controller('BaseTabsController', {$scope: $scope})
 
   $scope.partner = $window.contextData.partner
+  $scope.fields = $window.contextData.fields
   $scope.users = []
 
   $scope.onTabInit = (tab) ->
@@ -683,7 +722,6 @@ controllers.controller('PartnerController', ['$scope', '$window', '$controller',
           yAxis: {min: 0, title: {text: "Replies"}},
           legend: {enabled: false},
           series: [{name: "Replies", data: chart.series}],
-          credits: {enabled: false}
         })
       )
     else if tab == 'users'
@@ -758,8 +796,7 @@ controllers.controller('UserController', ['$scope', '$controller', '$window', 'S
           xAxis: {categories: chart.categories},
           yAxis: {min: 0, title: {text: "Replies"}},
           legend: {enabled: false},
-          series: [{name: "Replies", data: chart.series}],
-          credits: {enabled: false}
+          series: [{name: "Replies", data: chart.series}]
         })
       )
 
@@ -802,4 +839,18 @@ controllers.controller('DateRangeController', ['$scope', ($scope) ->
     $event.preventDefault()
     $event.stopPropagation()
     $scope.beforeOpen = true
+])
+
+
+#============================================================================
+# Pod controller
+#============================================================================
+controllers.controller('PodController', ['$scope', 'PodApiService', ($scope, PodApiService) ->
+  $scope.init = (podId, caseId, podConfig) ->
+    $scope.podId = podId
+    $scope.caseId = caseId
+    $scope.podConfig = podConfig
+
+    return PodApiService.get(podId, caseId)
+      .then((d) -> $scope.podData = d)
 ])

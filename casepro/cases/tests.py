@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
-from django.test.utils import override_settings
+from django.test.utils import override_settings, modify_settings
 from django.utils import timezone
 from mock import patch
 from temba_client.utils import format_iso8601
@@ -19,6 +19,8 @@ from casepro.msgs.tasks import handle_messages
 from casepro.profiles.models import ROLE_ANALYST, ROLE_MANAGER, Notification
 from casepro.test import BaseCasesTest
 from casepro.utils import datetime_to_microseconds, microseconds_to_datetime
+from casepro.pods import registry as pod_registry
+from casepro.pods.tests.utils import DummyPodPlugin
 
 from .context_processors import sentry_dsn
 from .models import AccessLevel, Case, CaseAction, CaseExport, CaseFolder, Partner
@@ -371,9 +373,13 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(case.access_level(self.user4), AccessLevel.none)  # user from different org
 
 
+@modify_settings(INSTALLED_APPS={'append': 'casepro.pods.tests.utils.DummyPodPlugin'})
+@override_settings(PODS=[{'label': 'dummy_pod', 'title': 'FooPod'}])
 class CaseCRUDLTest(BaseCasesTest):
     def setUp(self):
         super(CaseCRUDLTest, self).setUp()
+
+        reload(pod_registry)
 
         self.ann = self.create_contact(self.unicef, 'C-001', "Ann",
                                        fields={'age': "34"}, groups=[self.females, self.reporters])
@@ -434,6 +440,18 @@ class CaseCRUDLTest(BaseCasesTest):
 
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
+
+        # check testing pod has been included
+        self.assertContains(response, 'FooPod')
+        self.assertContains(response, DummyPodPlugin.controller)
+        self.assertContains(response, DummyPodPlugin.directive)
+
+        # along with its resources
+        for script in DummyPodPlugin.scripts:
+            self.assertContains(response, script)
+
+        for script in DummyPodPlugin.styles:
+            self.assertContains(response, script)
 
     def test_note(self):
         url = reverse('cases.case_note', args=[self.case.pk])
@@ -654,16 +672,8 @@ class CaseCRUDLTest(BaseCasesTest):
         CaseAction.create(case, self.user1, CaseAction.OPEN, assignee=self.moh)
 
         # backend has a message in the case time window that we don't have locally
-        remote_message1 = {
-            'id': 102,
-            'contact': {'id': self.ann.pk, 'name': "Ann"},
-            'urn': None,
-            'text': "Non casepro message...",
-            'time': d2,
-            'direction': 'O',
-            'case': None,
-            'sender': None,
-        }
+        remote_message1 = Outgoing(backend_broadcast_id=102, contact=self.ann, text="Non casepro message...",
+                                   created_on=d2)
         mock_fetch_contact_messages.return_value = [remote_message1]
 
         timeline_url = reverse('cases.case_timeline', args=[case.pk])
@@ -676,14 +686,12 @@ class CaseCRUDLTest(BaseCasesTest):
         t0 = microseconds_to_datetime(response.json['max_time'])
 
         self.assertEqual(len(response.json['results']), 3)
-        self.assertEqual(response.json['results'][0]['type'], 'M')
+        self.assertEqual(response.json['results'][0]['type'], 'I')
         self.assertEqual(response.json['results'][0]['item']['text'], "What is AIDS?")
         self.assertEqual(response.json['results'][0]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
-        self.assertEqual(response.json['results'][0]['item']['direction'], 'I')
-        self.assertEqual(response.json['results'][1]['type'], 'M')
+        self.assertEqual(response.json['results'][1]['type'], 'O')
         self.assertEqual(response.json['results'][1]['item']['text'], "Non casepro message...")
         self.assertEqual(response.json['results'][1]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
-        self.assertEqual(response.json['results'][1]['item']['direction'], 'O')
         self.assertEqual(response.json['results'][2]['type'], 'A')
         self.assertEqual(response.json['results'][2]['item']['action'], 'O')
 
@@ -724,9 +732,8 @@ class CaseCRUDLTest(BaseCasesTest):
         t3 = microseconds_to_datetime(response.json['max_time'])
 
         self.assertEqual(len(response.json['results']), 1)
-        self.assertEqual(response.json['results'][0]['type'], 'M')
+        self.assertEqual(response.json['results'][0]['type'], 'O')
         self.assertEqual(response.json['results'][0]['item']['text'], "It's bad")
-        self.assertEqual(response.json['results'][0]['item']['direction'], 'O')
 
         # contact sends a reply
         d4 = timezone.now()
@@ -738,9 +745,8 @@ class CaseCRUDLTest(BaseCasesTest):
         t4 = microseconds_to_datetime(response.json['max_time'])
 
         self.assertEqual(len(response.json['results']), 1)
-        self.assertEqual(response.json['results'][0]['type'], 'M')
+        self.assertEqual(response.json['results'][0]['type'], 'I')
         self.assertEqual(response.json['results'][0]['item']['text'], "OK thanks")
-        self.assertEqual(response.json['results'][0]['item']['direction'], 'I')
 
         # page again looks for new timeline activity
         response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t4)))
@@ -774,16 +780,7 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # backend has the message sent during the case as well as the unrelated message
         mock_fetch_contact_messages.return_value = [
-            {
-                'id': 202,
-                'contact': {'id': self.ann.pk, 'name': "Ann"},
-                'urn': None,
-                'text': "It's bad",
-                'time': d3,
-                'direction': 'O',
-                'case': None,
-                'sender': None,
-            },
+            Outgoing(backend_broadcast_id=202, contact=self.ann, text="It's bad", created_on=d3),
             remote_message1
         ]
 
@@ -792,24 +789,21 @@ class CaseCRUDLTest(BaseCasesTest):
         items = response.json['results']
 
         self.assertEqual(len(items), 7)
-        self.assertEqual(items[0]['type'], 'M')
+        self.assertEqual(items[0]['type'], 'I')
         self.assertEqual(items[0]['item']['text'], "What is AIDS?")
         self.assertEqual(items[0]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
-        self.assertEqual(items[0]['item']['direction'], 'I')
-        self.assertEqual(items[1]['type'], 'M')
+        self.assertEqual(items[1]['type'], 'O')
         self.assertEqual(items[1]['item']['text'], "Non casepro message...")
         self.assertEqual(items[1]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
-        self.assertEqual(items[1]['item']['direction'], 'O')
         self.assertEqual(items[1]['item']['sender'], None)
         self.assertEqual(items[2]['type'], 'A')
         self.assertEqual(items[2]['item']['action'], 'O')
         self.assertEqual(items[3]['type'], 'A')
         self.assertEqual(items[3]['item']['action'], 'N')
-        self.assertEqual(items[4]['type'], 'M')
-        self.assertEqual(items[4]['item']['direction'], 'O')
+        self.assertEqual(items[4]['type'], 'O')
         self.assertEqual(items[4]['item']['sender'], {'id': self.user1.pk, 'name': "Evan"})
-        self.assertEqual(items[5]['type'], 'M')
-        self.assertEqual(items[5]['item']['direction'], 'I')
+        self.assertEqual(items[5]['type'], 'I')
+        self.assertEqual(items[5]['item']['text'], "OK thanks")
         self.assertEqual(items[6]['type'], 'A')
         self.assertEqual(items[6]['item']['action'], 'C')
 
