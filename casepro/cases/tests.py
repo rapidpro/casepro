@@ -502,7 +502,7 @@ class CaseCRUDLTest(BaseCasesTest):
 
         self.case.refresh_from_db()
         self.assertEqual(self.case.assignee, self.who)
-        self.assertEqual(self.case.assignee_user, self.user2)
+        self.assertEqual(self.case.user_assignee, self.user2)
 
         # only user from assigned partner can re-assign
         response = self.url_post_json('unicef', url, {'assignee': self.moh.pk})
