@@ -588,12 +588,12 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
   #----------------------------------------------------------------------------
 
   $scope.onWatch = () ->
-    UtilsService.confirmModal("Receive alerts for activity in this case?").then(() ->
+    UtilsService.confirmModal("Receive notifications for activity in this case?").then(() ->
       CaseService.watch($scope.caseObj)
     )
 
   $scope.onUnwatch = () ->
-    UtilsService.confirmModal("Stop receiving alerts for activity in this case?").then(() ->
+    UtilsService.confirmModal("Stop receiving notifications for activity in this case?").then(() ->
       CaseService.unwatch($scope.caseObj)
     )
 
@@ -697,12 +697,12 @@ controllers.controller('LabelController', ['$scope', '$window', '$controller', '
       )
 
   $scope.onWatch = () ->
-    UtilsService.confirmModal("Receive alerts for new messages with this label?").then(() ->
+    UtilsService.confirmModal("Receive notifications for new messages with this label?").then(() ->
       LabelService.watch($scope.label)
     )
 
   $scope.onUnwatch = () ->
-    UtilsService.confirmModal("Stop receiving alerts for new messages with this label?").then(() ->
+    UtilsService.confirmModal("Stop receiving notifications for new messages with this label?").then(() ->
       LabelService.unwatch($scope.label)
     )
 
