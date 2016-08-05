@@ -90,13 +90,19 @@ modals.controller 'NewCaseModalController', ['$scope', '$uibModalInstance', 'sum
 #=====================================================================
 # Assign to partner modal
 #=====================================================================
-modals.controller 'AssignModalController', ['$scope', '$uibModalInstance', 'title', 'prompt', 'partners', ($scope, $uibModalInstance, title, prompt, partners) ->
+modals.controller 'AssignModalController', ['$scope', '$uibModalInstance', 'title', 'prompt', 'partners', 'users', 'UserService', ($scope, $uibModalInstance, title, prompt, partners, users, UserService) ->
   $scope.title = title
   $scope.prompt = prompt
   $scope.partners = partners
-  $scope.fields = { assignee: partners[0] }
+  $scope.users = users
+  $scope.fields = { assignee: partners[0], user: null }
 
-  $scope.ok = () -> $uibModalInstance.close($scope.fields.assignee)
+  $scope.refreshUserList = () ->
+    UserService.fetchInPartner($scope.fields.assignee, true).then((users) ->
+      $scope.users = users
+    )
+
+  $scope.ok = () -> $uibModalInstance.close({assignee: $scope.fields.assignee, user: $scope.fields.user})
   $scope.cancel = () -> $uibModalInstance.dismiss(false)
 ]
 

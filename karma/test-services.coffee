@@ -572,13 +572,14 @@ describe('services:', () ->
 
     describe('assignModal', () ->
       it('opens assign modal', () ->
-        UtilsService.assignModal("Assign", "this...", [test.moh, test.who])
+        UtilsService.assignModal("Assign", "this...", [test.moh, test.who], [test.user1])
 
         modalOptions = $uibModal.open.calls.mostRecent().args[0]
         expect(modalOptions.templateUrl).toEqual('/partials/modal_assign.html')
         expect(modalOptions.resolve.title()).toEqual("Assign")
         expect(modalOptions.resolve.prompt()).toEqual("this...")
         expect(modalOptions.resolve.partners()).toEqual([test.moh, test.who])
+        expect(modalOptions.resolve.users()).toEqual([test.user1])
       )
     )
 

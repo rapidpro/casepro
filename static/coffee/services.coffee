@@ -532,8 +532,8 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
       resolve = {title: (() -> title), initial: (() -> initial), maxLength: (() -> maxLength)}
       return $uibModal.open({templateUrl: '/partials/modal_compose.html', controller: 'ComposeModalController', resolve: resolve}).result
 
-    assignModal: (title, prompt, partners) ->
-      resolve = {title: (() -> title), prompt: (() -> prompt), partners: (() -> partners)}
+    assignModal: (title, prompt, partners, users) ->
+      resolve = {title: (() -> title), prompt: (() -> prompt), partners: (() -> partners), users: (() -> users) }
       return $uibModal.open({templateUrl: '/partials/modal_assign.html', controller: 'AssignModalController', resolve: resolve}).result
 
     noteModal: (title, prompt, style, maxLength) ->

@@ -5,6 +5,7 @@ describe('modals:', () ->
   $rootScope = null
   $q = null
   MessageService = null
+  UserService = null
 
   $scope = null
   modalInstance = null
@@ -13,11 +14,12 @@ describe('modals:', () ->
   beforeEach(() ->
     module('cases')
 
-    inject((_$controller_, _$rootScope_, _$q_, _MessageService_) ->
+    inject((_$controller_, _$rootScope_, _$q_, _MessageService_, _UserService_) ->
       $controller = _$controller_
       $rootScope = _$rootScope_
       $q = _$q_
       MessageService = _MessageService_
+      UserService = _UserService_
     )
 
     $scope = $rootScope.$new()
@@ -44,19 +46,35 @@ describe('modals:', () ->
   )
 
   it('AssignModalController', () ->
-    $controller('AssignModalController', {$scope: $scope, $uibModalInstance: modalInstance, title: "Title", prompt: "OK?", partners: [test.moh, test.who]})
+    $controller('AssignModalController', {$scope: $scope, $uibModalInstance: modalInstance, title: "Title", prompt: "OK?", partners: [test.moh, test.who], users: [test.user1]})
 
     expect($scope.fields.assignee).toEqual(test.moh)
+    expect($scope.fields.user).toEqual(null)
+    expect($scope.users).toEqual([test.user1])
 
     $scope.fields.assignee = test.who
+    $scope.fields.user = test.user1
     $scope.form = {$valid: true}
     $scope.ok()
 
-    expect(modalInstance.close).toHaveBeenCalledWith(test.who)
+    expect(modalInstance.close).toHaveBeenCalledWith({assignee: test.who, user: test.user1})
 
     $scope.cancel()
 
     expect(modalInstance.dismiss).toHaveBeenCalledWith(false)
+  )
+
+  it('AssignModalController.refreshUserList', () ->
+    $controller('AssignModalController', {$scope: $scope, $uibModalInstance: modalInstance, title: "Title", prompt: "OK?", partners: [test.moh, test.who], users: []})
+
+    usersForPartner = spyOnPromise($q, $scope, UserService, 'fetchInPartner')
+
+    expect($scope.users).toEqual([])
+
+    $scope.refreshUserList()
+    usersForPartner.resolve([test.user1])
+
+    expect($scope.users).toEqual([test.user1])
   )
 
   it('ComposeModalController', () ->
