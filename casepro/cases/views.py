@@ -5,6 +5,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
@@ -129,8 +130,11 @@ class CaseCRUDL(SmartCRUDL):
 
         def post(self, request, *args, **kwargs):
             assignee = Partner.get_all(request.org).get(pk=request.json['assignee'])
+            user = request.json.get('user_assignee')
+            if user is not None:
+                user = get_object_or_404(assignee.get_users(), pk=user)
             case = self.get_object()
-            case.reassign(request.user, assignee)
+            case.reassign(request.user, assignee, user)
             return HttpResponse(status=204)
 
     class Close(OrgObjPermsMixin, SmartUpdateView):
