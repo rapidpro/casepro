@@ -44,6 +44,15 @@ class Pod(object):
         payload is what is sent to the 'perform_action' function to determine which button has been pressed, and 'name'
         is the text that is displayed on the button.
 
+        Each action may include the following optional fields:
+            - ``busy_text``: used as the action's corresponding
+            button's text while waiting on a response from the pod's api side
+            when the action is triggered. Defaults to the value of the ``name``
+            field.
+            - ``confirm``: whether a confirmation modal should be shown to
+            confirm whether the user would like to perform the action. Defaults
+            to ``false``.
+
         Example:
         {
             'items': [
@@ -57,6 +66,8 @@ class Pod(object):
                     'type': 'remove_edd',
                     'name': 'Remove EDD',
                     'payload': {},
+                    'busy_text': 'Removing EDD',
+                    'confirm': True
                 },
             ],
         }
