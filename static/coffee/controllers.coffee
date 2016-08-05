@@ -507,7 +507,7 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
 #============================================================================
 # Case view controller
 #============================================================================
-controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'ContactService', 'MessageService', 'PartnerService', 'UtilsService', ($scope, $window, $timeout, CaseService, ContactService, MessageService, PartnerService, UtilsService) ->
+controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'ContactService', 'MessageService', 'PartnerService', 'UserService', 'UtilsService', ($scope, $window, $timeout, CaseService, ContactService, MessageService, PartnerService, UserService, UtilsService) ->
 
   $scope.allLabels = $window.contextData.all_labels
   $scope.fields = $window.contextData.fields
@@ -591,9 +591,12 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
 
   $scope.onReassign = () ->
     PartnerService.fetchAll().then((partners) ->
-      UtilsService.assignModal("Re-assign", null, partners).then((assignee) ->
-        CaseService.reassign($scope.caseObj, assignee).then(() ->
-          $scope.$broadcast('timelineChanged')
+      UserService.fetchInPartner(partners[0], true).then((users) ->
+        UtilsService.assignModal("Re-assign", null, partners, users).then((result) ->
+          {assignee, user} = result
+          CaseService.reassign($scope.caseObj, assignee, user).then(() ->
+            $scope.$broadcast('timelineChanged')
+          )
         )
       )
     )
