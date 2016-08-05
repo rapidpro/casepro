@@ -60,12 +60,16 @@ describe('controllers:', () ->
   describe('CaseController', () ->
     CaseService = null
     ContactService = null
+    PartnerService = null
+    UserService = null
     $scope = null
 
     beforeEach(() ->
-      inject((_CaseService_, _ContactService_) ->
+      inject((_CaseService_, _ContactService_, _PartnerService_, _UserService_) ->
         CaseService = _CaseService_
         ContactService = _ContactService_
+        PartnerService = _PartnerService_
+        UserService = _UserService_
       )
 
       $window.contextData = {all_labels: [test.tea, test.coffee], all_partners: [test.moh, test.who]}
@@ -141,6 +145,32 @@ describe('controllers:', () ->
 
       expect(UtilsService.confirmModal).toHaveBeenCalled()
       expect(CaseService.unwatch).toHaveBeenCalledWith(test.case1)
+    )
+
+    it('onReassign', () ->
+      reassignModal = spyOnPromise($q, $scope, UtilsService, 'assignModal')
+      reassignCase = spyOnPromise($q, $scope, CaseService, 'reassign')
+      partnerFetch = spyOnPromise($q, $scope, PartnerService, 'fetchAll')
+      usersForPartner = spyOnPromise($q, $scope, UserService, 'fetchInPartner')
+
+
+      $scope.caseObj = test.case1
+      $scope.onReassign()
+
+      partnerFetch.resolve([test.moh, test.who])
+      usersForPartner.resolve([test.user1])
+      reassignModal.resolve({assignee: test.moh, user: test.user1})
+      reassignCase.resolve()
+
+      # List of partners should be fetched
+      expect(PartnerService.fetchAll).toHaveBeenCalled()
+      # List of users for first partner should be fetched
+      expect(UserService.fetchInPartner).toHaveBeenCalledWith(test.moh, true)
+      # Modal should be sent list of partners and list of users for first partner
+      expect(UtilsService.assignModal).toHaveBeenCalledWith(
+        'Re-assign', null, [test.moh, test.who], [test.user1])
+      # Result of modal selection should be sent to reassign the case
+      expect(CaseService.reassign).toHaveBeenCalledWith(test.case1, test.moh, test.user1)
     )
 
     it('should should add a alert on alert events', () ->
