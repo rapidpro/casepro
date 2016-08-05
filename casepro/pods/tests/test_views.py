@@ -166,6 +166,7 @@ class PerformPodActionView(BaseCasesTest):
             })
 
         self.assertEqual(response.status_code, 200)
+
         message = "Type foo Params {u'foo': u'bar'}"
         self.assertEqual(response.json, {
             'success': True,
@@ -173,5 +174,8 @@ class PerformPodActionView(BaseCasesTest):
                 'message': message
             }
         })
+
         [caseaction] = CaseAction.objects.all()
-        self.assertEqual(caseaction.note, message)
+        self.assertEqual(
+            caseaction.note,
+            "%s %s" % (self.admin.username, message))
