@@ -52,6 +52,9 @@ class Partner(models.Model):
     labels = models.ManyToManyField(Label, verbose_name=_("Labels"), related_name='partners',
                                     help_text=_("Labels that this partner can access"))
 
+    users = models.ManyToManyField(User, related_name='partners',
+                                   help_text=_("Users that belong to this partner"))
+
     logo = models.ImageField(verbose_name=_("Logo"), upload_to='partner_logos', null=True, blank=True)
 
     is_active = models.BooleanField(default=True, help_text="Whether this partner is active")
@@ -76,7 +79,7 @@ class Partner(models.Model):
         return self.labels.filter(is_active=True) if self.is_restricted else Label.get_all(self.org)
 
     def get_users(self):
-        return User.objects.filter(profile__partner=self, is_active=True)
+        return self.users.all()
 
     def get_managers(self):
         return self.get_users().filter(org_editors=self.org_id)
@@ -85,9 +88,6 @@ class Partner(models.Model):
         return self.get_users().filter(org_viewers=self.org_id)
 
     def release(self):
-        # detach all users
-        self.user_profiles.update(partner=None)
-
         self.is_active = False
         self.save(update_fields=('is_active',))
 
