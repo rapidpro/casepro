@@ -30,7 +30,9 @@
 
       .header-details
         - if object.primary_contact
-          Primary contact: {{ object.primary_contact }}
+          Primary contact:&nbsp
+          %a{ ng-href:"/user/read/{{ object.primary_contact.id }}/" }><
+            {{ object.primary_contact.get_full_name }}
         - else
           %i
             - trans "No primary contact"
