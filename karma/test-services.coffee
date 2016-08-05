@@ -97,8 +97,9 @@ describe('services:', () ->
 
     describe('reassign', () ->
       it('posts to reassign endpoint', () ->
-        $httpBackend.expectPOST('/case/reassign/501/', {assignee: 302}).respond('')
-        CaseService.reassign(test.case1, test.who).then(() ->
+        $httpBackend.expectPOST(
+          '/case/reassign/501/', {assignee: test.who.id, user: test.user1.id}).respond('')
+        CaseService.reassign(test.case1, test.who, test.user1).then(() ->
           expect(test.case1.assignee).toEqual(test.who)
         )
         $httpBackend.flush()
