@@ -271,8 +271,12 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     #----------------------------------------------------------------------------
     # Re-assigns a case
     #----------------------------------------------------------------------------
-    reassign: (caseObj, assignee) ->
-      return $http.post('/case/reassign/' + caseObj.id + '/', {assignee: assignee.id}).then(() ->
+    reassign: (caseObj, assignee, user) ->
+      params = {assignee: assignee.id, user: user}
+      if user
+        params.user = user.id
+
+      return $http.post('/case/reassign/' + caseObj.id + '/', params).then(() ->
         caseObj.assignee = assignee
       )
 
