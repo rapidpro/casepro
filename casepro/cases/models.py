@@ -48,8 +48,8 @@ class Partner(models.Model):
 
     description = models.CharField(verbose_name=_("Description"), null=True, blank=True, max_length=255)
 
-    primary_contact = models.ForeignKey(User, verbose_name=_("Primary Contact"), related_name='partners', null=True,
-                                        blank=True)
+    primary_contact = models.ForeignKey(User, verbose_name=_("Primary Contact"), related_name='partners_primary',
+                                        null=True, blank=True)
 
     is_restricted = models.BooleanField(default=True, verbose_name=_("Restricted Access"),
                                         help_text=_("Whether this partner's access is restricted by labels"))

@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('cases', '0039_populate_case_watchers'),
+        ('cases', '0041_populate_partner_users'),
     ]
 
     operations = [
@@ -21,6 +21,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='partner',
             name='primary_contact',
-            field=models.ForeignKey(related_name='partners', verbose_name='Primary Contact', blank=True, to=settings.AUTH_USER_MODEL, null=True),
+            field=models.ForeignKey(related_name='partners_primary', verbose_name='Primary Contact', blank=True, to=settings.AUTH_USER_MODEL, null=True),
         ),
     ]
