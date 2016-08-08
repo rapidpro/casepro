@@ -96,9 +96,7 @@ modals.controller 'AssignModalController', ['$scope', '$uibModalInstance', 'titl
   $scope.partners = partners
 
   user_list_from_users = (users) ->
-    userlist = [{id: null, name: "Anyone"}].concat(users)
-    console.log(userlist)
-    return userlist
+    return [{id: null, name: "Anyone"}].concat(users)
 
   $scope.users = user_list_from_users(users)
   $scope.fields = { assignee: partners[0], user: $scope.users[0] }
