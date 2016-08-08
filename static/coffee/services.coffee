@@ -251,10 +251,12 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     #----------------------------------------------------------------------------
     # Opens a new case
     #----------------------------------------------------------------------------
-    open: (message, summary, assignee) ->
+    open: (message, summary, assignee, user) ->
       params = {message: message.id, summary: summary}
       if assignee
         params.assignee = assignee.id
+      if user
+        params.user_assignee = user.id
 
       return $http.post('/case/open/', params).then((response) ->
         return response.data
