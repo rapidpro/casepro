@@ -135,7 +135,7 @@ class CaseCRUDL(SmartCRUDL):
             if user is not None:
                 user = get_object_or_404(assignee.get_users(), pk=user)
             case = self.get_object()
-            case.reassign(request.user, assignee, user)
+            case.reassign(request.user, assignee, user_assignee=user)
             return HttpResponse(status=204)
 
     class Close(OrgObjPermsMixin, SmartUpdateView):

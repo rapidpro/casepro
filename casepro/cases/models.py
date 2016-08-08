@@ -338,7 +338,7 @@ class Case(models.Model):
         self.notify_watchers(action=action)
 
     @case_action()
-    def reassign(self, user, partner, user_assignee=None, note=None):
+    def reassign(self, user, partner, note=None, user_assignee=None):
         from casepro.profiles.models import Notification
 
         self.assignee = partner
