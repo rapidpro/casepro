@@ -49,8 +49,8 @@ describe('modals:', () ->
     $controller('AssignModalController', {$scope: $scope, $uibModalInstance: modalInstance, title: "Title", prompt: "OK?", partners: [test.moh, test.who], users: [test.user1]})
 
     expect($scope.fields.assignee).toEqual(test.moh)
-    expect($scope.fields.user).toEqual(null)
-    expect($scope.users).toEqual([test.user1])
+    expect($scope.fields.user).toEqual({id: null, name: "Anyone"})
+    expect($scope.users).toEqual([{id: null, name: "Anyone"}, test.user1])
 
     $scope.fields.assignee = test.who
     $scope.fields.user = test.user1
@@ -69,12 +69,12 @@ describe('modals:', () ->
 
     usersForPartner = spyOnPromise($q, $scope, UserService, 'fetchInPartner')
 
-    expect($scope.users).toEqual([])
+    expect($scope.users).toEqual([{id: null, name: "Anyone"}])
 
     $scope.refreshUserList()
     usersForPartner.resolve([test.user1])
 
-    expect($scope.users).toEqual([test.user1])
+    expect($scope.users).toEqual([{id: null, name: "Anyone"}, test.user1])
   )
 
   it('ComposeModalController', () ->
