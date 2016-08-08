@@ -96,15 +96,15 @@ modals.controller 'AssignModalController', ['$scope', '$uibModalInstance', 'titl
   $scope.prompt = prompt
   $scope.partners = partners
 
-  user_list_from_users = (users) ->
+  userListFromUsers = (users) ->
     return [{id: null, name: "Anyone"}].concat(users)
 
-  $scope.users = user_list_from_users(users)
+  $scope.users = userListFromUsers(users)
   $scope.fields = { assignee: partners[0], user: $scope.users[0] }
 
   $scope.refreshUserList = () ->
     UserService.fetchInPartner($scope.fields.assignee, true).then((users) ->
-      $scope.users = user_list_from_users(users)
+      $scope.users = userListFromUsers(users)
     )
 
   $scope.ok = () -> $uibModalInstance.close({assignee: $scope.fields.assignee, user: $scope.fields.user})
