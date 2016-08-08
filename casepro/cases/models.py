@@ -137,6 +137,10 @@ class Case(models.Model):
 
     assignee = models.ForeignKey(Partner, related_name='cases')
 
+    user_assignee = models.ForeignKey(
+        User, null=True, on_delete=models.SET_NULL, related_name='cases',
+        help_text="The (optional) user that this case is assigned to")
+
     contact = models.ForeignKey(Contact, related_name='cases')
 
     initial_message = models.OneToOneField(Message, related_name='initial_case')
