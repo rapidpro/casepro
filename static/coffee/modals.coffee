@@ -73,17 +73,33 @@ modals.controller('ReplyModalController', ['$scope', '$uibModalInstance', 'selec
 #=====================================================================
 # Open new case modal
 #=====================================================================
-modals.controller 'NewCaseModalController', ['$scope', '$uibModalInstance', 'summaryInitial', 'summaryMaxLength', 'partners', ($scope, $uibModalInstance, summaryInitial, summaryMaxLength, partners) ->
+modals.controller 'NewCaseModalController', ['$scope', '$uibModalInstance', 'summaryInitial', 'summaryMaxLength', 'partners', 'users', 'UserService', ($scope, $uibModalInstance, summaryInitial, summaryMaxLength, partners, users, UserService) ->
   $scope.partners = partners
+
+  userListFromUsers = (users) ->
+    return [{id: null, name: "Anyone"}].concat(users)
+
+  $scope.users = userListFromUsers(users)
+
   $scope.fields = {
     summary: {val: summaryInitial, maxLength: summaryMaxLength},
-    assignee: {val: if partners then partners[0] else null}
+    assignee: {val: if partners then partners[0] else null},
+    user: {val: $scope.users[0]}
   }
+
+  $scope.refreshUserList = () ->
+    UserService.fetchInPartner($scope.fields.assignee.val, true).then((users) ->
+      $scope.users = userListFromUsers(users)
+    )
 
   $scope.ok = () ->
     $scope.form.submitted = true
     if $scope.form.$valid
-      $uibModalInstance.close({summary: $scope.fields.summary.val, assignee: $scope.fields.assignee.val})
+      $uibModalInstance.close({
+        summary: $scope.fields.summary.val,
+        assignee: $scope.fields.assignee.val,
+        user: $scope.fields.user.val
+      })
   $scope.cancel = () -> $uibModalInstance.dismiss(false)
 ]
 
