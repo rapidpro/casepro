@@ -313,10 +313,10 @@ describe('directives:', () ->
 
     it('should draw alert with template urls', () ->
       $rootScope.alerts = [{
-        templateUrl: '/sitestatic/templates/alerts/dummy-alert.html'
+        templateUrl: '/sitestatic/karma/templates/alerts/dummy-alert.html'
         context: {message: 'Foo'}
       }, {
-        templateUrl: '/sitestatic/templates/alerts/dummy-alert.html'
+        templateUrl: '/sitestatic/karma/templates/alerts/dummy-alert.html'
         context: {message: 'Bar'}
       }]
 
