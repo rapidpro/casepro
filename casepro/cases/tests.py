@@ -403,7 +403,8 @@ class CaseCRUDLTest(BaseCasesTest):
         # log in as an administrator
         self.login(self.admin)
 
-        response = self.url_post_json('unicef', url, {'message': 101, 'summary': "Summary", 'assignee': self.moh.pk})
+        response = self.url_post_json('unicef', url, {
+            'message': 101, 'summary': "Summary", 'assignee': self.moh.pk, 'user_assignee': self.user1.pk})
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(response.json['summary'], "Summary")
@@ -414,6 +415,7 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(case1.initial_message, msg1)
         self.assertEqual(case1.summary, "Summary")
         self.assertEqual(case1.assignee, self.moh)
+        self.assertEqual(case1.user_assignee, self.user1)
         self.assertEqual(set(case1.labels.all()), {self.aids})
 
         # try again as a non-administrator who can't create cases for other partner orgs
@@ -431,6 +433,19 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(case2.summary, "Summary")
         self.assertEqual(case2.assignee, self.moh)
         self.assertEqual(set(case2.labels.all()), {self.aids})
+
+    def test_open_user_assignee_not_member_of_partner(self):
+        """
+        If the user specified in user_assignee is not a member of the partner specified by assignee, then a not found
+        error should be returned.
+        """
+        self.login(self.admin)
+        msg = self.create_message(self.unicef, 102, self.ann, "Hello", [self.aids])
+
+        response = self.url_post_json('unicef', reverse('cases.case_open'), {
+            'message': msg.backend_id, 'summary': "Summary", 'assignee': self.moh.pk, 'user_assignee': self.user3.pk
+            })
+        self.assertEqual(response.status_code, 404)
 
     def test_read(self):
         url = reverse('cases.case_read', args=[self.case.pk])

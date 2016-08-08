@@ -93,15 +93,19 @@ class CaseCRUDL(SmartCRUDL):
             summary = request.json['summary']
 
             assignee_id = request.json.get('assignee', None)
+            user_assignee = request.json.get('user_assignee', None)
             if assignee_id:
                 assignee = Partner.get_all(request.org).get(pk=assignee_id)
+                if user_assignee:
+                    user_assignee = get_object_or_404(assignee.get_users(), pk=user_assignee)
             else:
                 assignee = request.user.get_partner(self.request.org)
+                user_assignee = request.user
 
             message_id = int(request.json['message'])
             message = Message.objects.get(org=request.org, backend_id=message_id)
 
-            case = Case.get_or_open(request.org, request.user, message, summary, assignee)
+            case = Case.get_or_open(request.org, request.user, message, summary, assignee, user_assignee=user_assignee)
 
             # augment regular case JSON
             case_json = case.as_json()
