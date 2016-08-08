@@ -118,8 +118,8 @@ describe('services:', () ->
 
     describe('open', () ->
       it('posts to open endpoint', () ->
-        $httpBackend.expectPOST('/case/open/', {message: 401, summary: "Hi", assignee: 301}).respond('{"id": 501, "is_new": true, "watching": true}')
-        CaseService.open({id: 401, text: "Hi"}, "Hi", test.moh).then((caseObj) ->
+        $httpBackend.expectPOST('/case/open/', {message: 401, summary: "Hi", assignee: 301, user_assignee: test.user1.id}).respond('{"id": 501, "is_new": true, "watching": true}')
+        CaseService.open({id: 401, text: "Hi"}, "Hi", test.moh, test.user1).then((caseObj) ->
           expect(caseObj.id).toEqual(501)
           expect(caseObj.is_new).toEqual(true)
           expect(caseObj.watching).toEqual(true)
