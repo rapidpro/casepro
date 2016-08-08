@@ -97,8 +97,9 @@ describe('services:', () ->
 
     describe('reassign', () ->
       it('posts to reassign endpoint', () ->
-        $httpBackend.expectPOST('/case/reassign/501/', {assignee: 302}).respond('')
-        CaseService.reassign(test.case1, test.who).then(() ->
+        $httpBackend.expectPOST(
+          '/case/reassign/501/', {assignee: test.who.id, user_assignee: test.user1.id}).respond('')
+        CaseService.reassign(test.case1, test.who, test.user1).then(() ->
           expect(test.case1.assignee).toEqual(test.who)
         )
         $httpBackend.flush()
@@ -571,13 +572,14 @@ describe('services:', () ->
 
     describe('assignModal', () ->
       it('opens assign modal', () ->
-        UtilsService.assignModal("Assign", "this...", [test.moh, test.who])
+        UtilsService.assignModal("Assign", "this...", [test.moh, test.who], [test.user1])
 
         modalOptions = $uibModal.open.calls.mostRecent().args[0]
         expect(modalOptions.templateUrl).toEqual('/partials/modal_assign.html')
         expect(modalOptions.resolve.title()).toEqual("Assign")
         expect(modalOptions.resolve.prompt()).toEqual("this...")
         expect(modalOptions.resolve.partners()).toEqual([test.moh, test.who])
+        expect(modalOptions.resolve.users()).toEqual([test.user1])
       )
     )
 

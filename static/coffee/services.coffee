@@ -271,8 +271,12 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     #----------------------------------------------------------------------------
     # Re-assigns a case
     #----------------------------------------------------------------------------
-    reassign: (caseObj, assignee) ->
-      return $http.post('/case/reassign/' + caseObj.id + '/', {assignee: assignee.id}).then(() ->
+    reassign: (caseObj, assignee, user) ->
+      params = {assignee: assignee.id, user_assignee: user}
+      if user
+        params.user_assignee = user.id
+
+      return $http.post('/case/reassign/' + caseObj.id + '/', params).then(() ->
         caseObj.assignee = assignee
       )
 
@@ -528,8 +532,8 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
       resolve = {title: (() -> title), initial: (() -> initial), maxLength: (() -> maxLength)}
       return $uibModal.open({templateUrl: '/partials/modal_compose.html', controller: 'ComposeModalController', resolve: resolve}).result
 
-    assignModal: (title, prompt, partners) ->
-      resolve = {title: (() -> title), prompt: (() -> prompt), partners: (() -> partners)}
+    assignModal: (title, prompt, partners, users) ->
+      resolve = {title: (() -> title), prompt: (() -> prompt), partners: (() -> partners), users: (() -> users) }
       return $uibModal.open({templateUrl: '/partials/modal_assign.html', controller: 'AssignModalController', resolve: resolve}).result
 
     noteModal: (title, prompt, style, maxLength) ->
