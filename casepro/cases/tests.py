@@ -291,6 +291,40 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(set(Case.get_closed(self.unicef)), {case2})
         self.assertEqual(set(Case.get_closed(self.unicef, user=self.user1, label=self.pregnancy)), {case2})
 
+    def test_get_all_passed_response_time(self):
+        bob = self.create_contact(self.unicef, 'C-002', "Bob")
+        cat = self.create_contact(self.unicef, 'C-003', "Cat")
+        nic = self.create_contact(self.nyaruka, 'C-104', "Nic")
+
+        msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
+        msg2 = self.create_message(self.unicef, 234, bob, "Hello 2", [self.aids, self.pregnancy])
+        msg3 = self.create_message(self.unicef, 345, cat, "Hello 3", [self.pregnancy])
+        msg4 = self.create_message(self.nyaruka, 456, nic, "Hello 4", [self.code])
+
+        case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [self.aids])
+        case2 = self.create_case(self.unicef, bob, self.who, msg2, [self.aids, self.pregnancy])
+        case3 = self.create_case(self.unicef, cat, self.who, msg3, [self.pregnancy])
+        case4 = self.create_case(self.nyaruka, nic, self.klab, msg4, [self.code])
+
+        # test with no last_reassigned_on value set
+        self.assertEqual(set(Case.get_all_passed_response_time()), set())
+
+        # test with specified date
+        case1.last_reassigned_on = datetime(2016, 8, 5, 10, 0, tzinfo=pytz.UTC)
+        case1.save()
+        case2.last_reassigned_on = datetime(2016, 8, 6, 10, 0, tzinfo=pytz.UTC)
+        case2.save()
+        check_datetime = datetime(2016, 8, 6, 12, 0, tzinfo=pytz.UTC)
+        self.assertEqual(set(Case.get_all_passed_response_time(check_datetime)), {case1})
+
+        # test with computed date
+        self.assertEqual(set(Case.get_all_passed_response_time()), {case1, case2})
+
+        # test with closed case
+        case2.closed_on = timezone.now()
+        case2.save()
+        self.assertEqual(set(Case.get_all_passed_response_time()), {case1})
+
     def test_get_open_for_contact_on(self):
         d0 = datetime(2014, 1, 5, 0, 0, tzinfo=pytz.UTC)
         d1 = datetime(2014, 1, 10, 0, 0, tzinfo=pytz.UTC)
