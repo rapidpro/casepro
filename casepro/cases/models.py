@@ -222,7 +222,7 @@ class Case(models.Model):
         return queryset.order_by('-opened_on')
 
     @classmethod
-    def get_or_open(cls, org, user, message, summary, assignee):
+    def get_or_open(cls, org, user, message, summary, assignee, user_assignee=None):
         from casepro.profiles.models import Notification
 
         r = get_redis_connection()
@@ -238,7 +238,7 @@ class Case(models.Model):
             message.contact.prepare_for_case()
 
             case = cls.objects.create(org=org, assignee=assignee, initial_message=message, contact=message.contact,
-                                      summary=summary)
+                                      summary=summary, user_assignee=user_assignee)
             case.is_new = True
             case.labels.add(*list(message.labels.all()))  # copy labels from message to new case
             case.watchers.add(user)
