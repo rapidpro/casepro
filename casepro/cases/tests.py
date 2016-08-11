@@ -1269,13 +1269,9 @@ class TasksTest(BaseCasesTest):
 
         msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
         msg2 = self.create_message(self.unicef, 234, bob, "Hello 2", [self.aids, self.pregnancy])
-        msg3 = self.create_message(self.unicef, 345, cat, "Hello 3", [self.pregnancy])
-        msg4 = self.create_message(self.nyaruka, 456, nic, "Hello 4", [self.code])
 
         case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [self.aids])
         case2 = self.create_case(self.unicef, bob, self.who, msg2, [self.aids, self.pregnancy])
-        case3 = self.create_case(self.unicef, cat, self.who, msg3, [self.pregnancy])
-        case4 = self.create_case(self.nyaruka, nic, self.klab, msg4, [self.code])
 
         case1.reassign(self.user1, self.who)
         # manually adjust the reassigned date to an expired date
@@ -1286,7 +1282,7 @@ class TasksTest(BaseCasesTest):
         self.assertEqual(case1.assignee, self.moh)
 
         # don't reassign a case if it hasn't passed the expected window
-        case2.reassign(self.user1, self.moh)
+        case2.reassign(self.user3, self.moh)
         reassign_case(case2.pk)
         case2.refresh_from_db()
         self.assertEqual(case1.assignee, self.moh)
