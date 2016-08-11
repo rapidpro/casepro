@@ -38,5 +38,9 @@ def reassign_case(case_id):
         logger.warn("Could not load case #%d for re-assignment" % case_id)
         return
 
+    if not case.has_passed_response_time:
+        # the case has been reassigned more recently that our expected window, do nothing
+        return
+
     note = _("This case's required response time as passed and therefor has been re-assigned")
     case.reassign(None, case.last_assignee, note=note, user_assignee=case.last_user_assignee)

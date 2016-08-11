@@ -453,6 +453,19 @@ class Case(models.Model):
     def is_closed(self):
         return self.closed_on is not None
 
+    @property
+    def has_passed_response_time(self):
+        response_required_in = getattr(settings, 'SITE_CASE_RESPONSE_REQUIRED_TIME', None)
+        if response_required_in is None:
+            return False
+
+        minutes_since_reassigned = (now() - self.last_reassigned_on).total_seconds() // 60
+        if minutes_since_reassigned > response_required_in:
+            return True
+        else:
+            return False
+
+
     def as_json(self, full=True):
         if full:
             return {
