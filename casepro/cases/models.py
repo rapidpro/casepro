@@ -157,7 +157,12 @@ class Case(models.Model):
                                      help_text="When this case was closed")
 
     last_reassigned_on = models.DateTimeField(null=True,
-                                     help_text="When this case was last reassigned")
+                                              help_text="When this case was last reassigned")
+
+    last_assignee = models.ForeignKey(Partner, null=True, related_name='previously_assigned_cases')
+
+    last_user_assignee = models.ForeignKey(User, null=True,
+                                           on_delete=models.SET_NULL, related_name='previously_assigned_cases')
 
     watchers = models.ManyToManyField(User, related_name='watched_cases',
                                       help_text="Users to be notified of case activity")
@@ -355,10 +360,12 @@ class Case(models.Model):
     def reassign(self, user, partner, note=None, user_assignee=None):
         from casepro.profiles.models import Notification
 
+        self.last_reassigned_on = now()
+        self.last_assignee = self.assignee
+        self.last_user_assignee = self.user_assignee
         self.assignee = partner
         self.user_assignee = user_assignee
-        self.last_reassigned_on = now()
-        self.save(update_fields=('assignee', 'user_assignee', 'last_reassigned_on'))
+        self.save()
 
         action = CaseAction.create(self, user, CaseAction.REASSIGN, assignee=partner, note=note)
 
