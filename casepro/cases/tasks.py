@@ -31,7 +31,7 @@ def get_all_cases_passed_response_time():
 
 @shared_task(ignore_result=True)
 def reassign_case(case_id):
-    from .models import Case
+    from .models import Case, CaseAction
     try:
         case = Case.objects.get(pk=case_id)
     except Case.DoesNotExist:
@@ -40,6 +40,12 @@ def reassign_case(case_id):
 
     if not case.has_passed_response_time:
         # the case has been reassigned more recently that our expected window, do nothing
+        return
+
+    action = case.actions.filter(action=CaseAction.REASSIGN).latest('created_on')
+    if action.created_by is None:
+        # The last time this case was reassigned was by the system, we should do nothing now, otherwise the
+        # assignment will just keep flipping back and forth
         return
 
     note = _("This case's required response time as passed and therefor has been re-assigned")
