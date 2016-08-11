@@ -8,7 +8,7 @@ from django.conf import settings
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cases', '0041_populate_partner_users'),
+        ('cases', '0040_case_user_assignee'),
     ]
 
     operations = [
