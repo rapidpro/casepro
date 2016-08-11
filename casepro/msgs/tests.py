@@ -758,8 +758,8 @@ class MessageCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'][0]['contact'], {'id': cat.pk, 'name': "Cat"})
         self.assertEqual(response.json['results'][0]['text'], "AIDS??")
         self.assertEqual(response.json['results'][0]['labels'], [{'id': self.aids.pk, 'name': "AIDS"}])
-        self.assertEqual(response.json['results'][0]['case'], {'id': case.pk,
-                                                               'assignee': {'id': self.moh.pk, 'name': "MOH"}})
+        self.assertEqual(response.json['results'][0]['case'], {
+            'id': case.pk, 'assignee': {'id': self.moh.pk, 'name': "MOH"}, 'user_assignee': None})
         self.assertEqual(response.json['results'][1]['id'], 104)
 
     @patch('casepro.test.TestBackend.flag_messages')
@@ -1222,7 +1222,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'urn': None,
                 'text': "Hello 1",
-                'case': {'id': case.pk, 'assignee': {'id': self.moh.pk, 'name': "MOH"}},
+                'case': {'id': case.pk, 'assignee': {'id': self.moh.pk, 'name': "MOH"}, 'user_assignee': None},
                 'sender': {'id': self.user1.pk, 'name': "Evan"},
                 'time': format_iso8601(out1.created_on),
                 'reply_to': {

@@ -380,8 +380,9 @@ class CaseCRUDLTest(BaseCasesTest):
         self.ann = self.create_contact(self.unicef, 'C-001', "Ann",
                                        fields={'age': "34"}, groups=[self.females, self.reporters])
 
-        msg = self.create_message(self.unicef, 101, self.ann, "Hello", [self.aids])
-        self.case = self.create_case(self.unicef, self.ann, self.moh, msg, [self.aids], summary="Summary")
+        self.msg = self.create_message(self.unicef, 101, self.ann, "Hello", [self.aids])
+        self.case = self.create_case(
+            self.unicef, self.ann, self.moh, self.msg, [self.aids], summary="Summary", user_assignee=self.user1)
 
     @patch('casepro.test.TestBackend.archive_contact_messages')
     @patch('casepro.test.TestBackend.stop_runs')
@@ -689,7 +690,8 @@ class CaseCRUDLTest(BaseCasesTest):
             'summary': "Summary",
             'opened_on': format_iso8601(self.case.opened_on),
             'is_closed': False,
-            'watching': False
+            'watching': False,
+            'user_assignee': {'id': self.user1.pk, 'name': "Evan"},
         })
 
         # users with label access can also fetch
@@ -875,6 +877,7 @@ class CaseCRUDLTest(BaseCasesTest):
             {
                 'id': case2.pk,
                 'assignee': {'id': self.who.pk, 'name': "WHO"},
+                'user_assignee': None,
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'labels': [],
                 'summary': "",
@@ -884,6 +887,7 @@ class CaseCRUDLTest(BaseCasesTest):
             {
                 'id': self.case.pk,
                 'assignee': {'id': self.moh.pk, 'name': "MOH"},
+                'user_assignee': {'id': self.user1.pk, 'name': "Evan"},
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
                 'summary': "Summary",
@@ -900,6 +904,7 @@ class CaseCRUDLTest(BaseCasesTest):
             {
                 'id': self.case.pk,
                 'assignee': {'id': self.moh.pk, 'name': "MOH"},
+                'user_assignee': {'id': self.user1.pk, 'name': "Evan"},
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
                 'summary': "Summary",

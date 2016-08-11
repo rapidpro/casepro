@@ -430,6 +430,7 @@ class Case(models.Model):
             return {
                 'id': self.pk,
                 'assignee': self.assignee.as_json(full=False),
+                'user_assignee': self.user_assignee.as_json(full=False) if self.user_assignee else None,
                 'contact': self.contact.as_json(full=False),
                 'labels': [l.as_json(full=False) for l in self.labels.all()],
                 'summary': self.summary,
@@ -440,6 +441,7 @@ class Case(models.Model):
             return {
                 'id': self.pk,
                 'assignee': self.assignee.as_json(full=False),
+                'user_assignee': self.user_assignee.as_json(full=False) if self.user_assignee else None,
             }
 
     def __str__(self):
