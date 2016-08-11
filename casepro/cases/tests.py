@@ -24,6 +24,7 @@ from casepro.pods.tests.utils import DummyPodPlugin
 
 from .context_processors import sentry_dsn
 from .models import AccessLevel, Case, CaseAction, CaseExport, CaseFolder, Partner
+from .tasks import reassign_case
 
 
 class CaseTest(BaseCasesTest):
@@ -1249,3 +1250,27 @@ class InternalViewsTest(BaseCasesTest):
 
             response = self.url_get('unicef', url)
             self.assertEqual(response.status_code, 500)
+
+
+
+class TasksTest(BaseCasesTest):
+    def setUp(self):
+        super(TasksTest, self).setUp()
+
+        self.ann = self.create_contact(self.unicef, 'C-001', "Ann",
+                                       fields={'age': "34"},
+                                       groups=[self.females, self.reporters, self.registered])
+
+
+    def test_reassign_case(self):
+        msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
+        case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [self.aids])
+
+
+        case1.reassign(self.user1, self.who)
+        # manually adjust the reassigned date to an expired date
+        case1.last_reassigned_on = datetime(2016, 8, 5, 10, 0, tzinfo=pytz.UTC)
+        case1.save()
+        reassign_case(case1.pk)
+        case1.refresh_from_db()
+        self.assertEqual(case1.assignee, self.moh)
