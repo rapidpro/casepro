@@ -988,6 +988,42 @@ class CaseExportCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 302)
 
 
+class CaseActionTest(BaseCasesTest):
+    def setUp(self):
+        super(CaseActionTest, self).setUp()
+
+        self.ann = self.create_contact(self.unicef, 'C-001', "Ann",
+                                       fields={'age': "34"},
+                                       groups=[self.females, self.reporters, self.registered])
+        d0 = datetime(2014, 1, 2, 12, 0, tzinfo=pytz.UTC)
+        msg1 = self.create_message(self.unicef, 101, self.ann, "Test Message", [self.aids], created_on=d0)
+        self.case = self.create_case(self.unicef, self.ann, self.moh, msg1)
+
+    def test_create_no_user(self):
+        CaseAction.create(self.case, None, CaseAction.ADD_NOTE, note="test note")
+
+        actions = CaseAction.objects.all()
+        self.assertEqual(len(actions), 1)
+        self.assertIsNone(actions[0].created_by)
+        self.assertEqual(actions[0].note, "test note")
+
+    def test_as_json(self):
+        action = CaseAction.create(self.case, None, CaseAction.ADD_NOTE, note="test note")
+
+        expected = {
+            'id': action.pk,
+            'action': action.action,
+            'created_by': action.created_by,
+            'created_on': action.created_on,
+            'assignee': action.assignee,
+            'label': action.label,
+            'note': action.note
+        }
+
+        actual = action.as_json()
+        self.assertEqual(expected, actual)
+
+
 class InboxViewsTest(BaseCasesTest):
     def test_inbox(self):
         url = reverse('cases.inbox')
