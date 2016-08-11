@@ -492,7 +492,8 @@ class CaseAction(models.Model):
         return {
             'id': self.pk,
             'action': self.action,
-            'created_by': self.created_by.as_json(full=False),
+            'created_by': self.created_by.as_json(full=False)
+            if self.created_by else None,
             'created_on': self.created_on,
             'assignee': self.assignee.as_json() if self.assignee else None,
             'label': self.label.as_json() if self.label else None,
