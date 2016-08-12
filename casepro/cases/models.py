@@ -123,6 +123,8 @@ class case_action(object):
 
     def __call__(self, func):
         def wrapped(case, user, *args, **kwargs):
+            if isinstance(user, SystemUser):
+                return func(case, user, *args, **kwargs)
             access = case.access_level(user)
             if (access == AccessLevel.update) or (not self.require_update and access == AccessLevel.read):
                 result = func(case, user, *args, **kwargs)
