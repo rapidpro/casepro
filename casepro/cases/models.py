@@ -247,7 +247,7 @@ class Case(models.Model):
             message.case = case
             message.save(update_fields=('case',))
 
-            action = CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee)
+            action = CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee, user_assignee=user_assignee)
 
             for assignee_user in assignee.get_users():
                 if assignee_user != user:
@@ -490,9 +490,10 @@ class CaseAction(models.Model):
     note = models.CharField(null=True, max_length=1024)
 
     @classmethod
-    def create(cls, case, user, action, assignee=None, label=None, note=None):
-        return CaseAction.objects.create(case=case, action=action,
-                                         created_by=user, assignee=assignee, label=label, note=note)
+    def create(cls, case, user, action, assignee=None, label=None, note=None, user_assignee=None):
+        return CaseAction.objects.create(
+            case=case, action=action, created_by=user, assignee=assignee, label=label, note=note,
+            user_assignee=user_assignee)
 
     def as_json(self):
         return {
