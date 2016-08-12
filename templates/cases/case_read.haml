@@ -90,6 +90,8 @@
                 opened this case and assigned it to
                 %a{ ng-href:"/partner/read/[[ event.item.assignee.id ]]/" }
                   [[ event.item.assignee.name ]]
+                %a{ ng-href:"/user/read/[[ event.item.user_assignee.id ]]/", ng-if:"event.item.user_assignee" }
+                  ([[ event.item.user_assignee.name ]])
 
               %span{ ng-if:'event.item.action == "S"' }
                 changed the summary
@@ -111,6 +113,8 @@
                 re-assigned this case to
                 %a{ ng-href:"/partner/read/[[ event.item.assignee.id ]]/" }
                   [[ event.item.assignee.name ]]
+                %a{ ng-href:"/user/read/[[ event.item.user_assignee.id ]]/", ng-if:"event.item.user_assignee" }
+                  ([[ event.item.user_assignee.name ]])
 
               %span{ ng-if:'event.item.action == "C"' }
                 closed this case
