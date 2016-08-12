@@ -1011,6 +1011,19 @@ class SystemUserTest(BaseCasesTest):
         self.assertEqual(actions[0].created_by.pk, sysUser.pk)
         self.assertEqual(actions[0].note, "test note")
 
+    def test_reassign_as_system_user(self):
+        # System reassigns case
+        self.assertEqual(self.case.assignee, self.moh)
+        partner = Partner.create(self.unicef, "Internal", False, [])
+        sysUser = SystemUser.get_or_create()
+        self.case.reassign(sysUser, partner)
+
+        actions = CaseAction.objects.all()
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].created_by.pk, sysUser.pk)
+        self.assertEqual(actions[0].assignee, partner)
+        self.assertEqual(actions[0].action, 'A')
+
 
 class CaseActionTest(BaseCasesTest):
     def setUp(self):
