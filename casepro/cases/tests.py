@@ -1036,7 +1036,7 @@ class PartnerCRUDLTest(BaseCasesTest):
         self.assertTrue(helpers.is_restricted)
         self.assertEqual(set(helpers.get_labels()), {self.tea})
         self.assertEqual(helpers.description, "Helpers Description")
-        # self.assertEqual(helpers.primary_contact, self.user1)
+        self.assertEqual(helpers.primary_contact, self.user1)
 
         # create unrestricted partner
         response = self.url_post('unicef', url, {'name': "Internal", 'logo': None, 'is_restricted': False,
