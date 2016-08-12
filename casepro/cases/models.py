@@ -473,7 +473,7 @@ class CaseAction(models.Model):
 
     action = models.CharField(max_length=1, choices=ACTION_CHOICES)
 
-    created_by = models.ForeignKey(User, related_name="case_actions", null=True)
+    created_by = models.ForeignKey(User, related_name="case_actions")
 
     created_on = models.DateTimeField(db_index=True, auto_now_add=True)
 
@@ -492,7 +492,7 @@ class CaseAction(models.Model):
         return {
             'id': self.pk,
             'action': self.action,
-            'created_by': self.created_by.as_json(full=False) if self.created_by else None,
+            'created_by': self.created_by.as_json(full=False),
             'created_on': self.created_on,
             'assignee': self.assignee.as_json() if self.assignee else None,
             'label': self.label.as_json() if self.label else None,

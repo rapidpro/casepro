@@ -700,7 +700,6 @@ class CaseCRUDLTest(BaseCasesTest):
         msg1 = self.create_message(self.unicef, 101, self.ann, "What is AIDS?", [self.aids], created_on=d1)
         case = self.create_case(self.unicef, self.ann, self.moh, msg1)
         CaseAction.create(case, self.user1, CaseAction.OPEN, assignee=self.moh)
-        CaseAction.create(case, None, CaseAction.ADD_NOTE, note="test note")
 
         # backend has a message in the case time window that we don't have locally
         remote_message1 = Outgoing(backend_broadcast_id=102, contact=self.ann, text="Non casepro message...",
@@ -716,7 +715,7 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', '%s?after=' % timeline_url)
         t0 = microseconds_to_datetime(response.json['max_time'])
 
-        self.assertEqual(len(response.json['results']), 4)
+        self.assertEqual(len(response.json['results']), 3)
         self.assertEqual(response.json['results'][0]['type'], 'I')
         self.assertEqual(response.json['results'][0]['item']['text'], "What is AIDS?")
         self.assertEqual(response.json['results'][0]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
@@ -725,8 +724,6 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'][1]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
         self.assertEqual(response.json['results'][2]['type'], 'A')
         self.assertEqual(response.json['results'][2]['item']['action'], 'O')
-        self.assertEqual(response.json['results'][3]['type'], 'A')
-        self.assertEqual(response.json['results'][3]['item']['note'], "test note")
 
         # as this was the initial request, messages will have been fetched from the backend
         mock_fetch_contact_messages.assert_called_once_with(self.unicef, self.ann, d1, t0)
@@ -821,7 +818,7 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', '%s?after=' % timeline_url)
         items = response.json['results']
 
-        self.assertEqual(len(items), 8)
+        self.assertEqual(len(items), 7)
         self.assertEqual(items[0]['type'], 'I')
         self.assertEqual(items[0]['item']['text'], "What is AIDS?")
         self.assertEqual(items[0]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
@@ -833,14 +830,12 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(items[2]['item']['action'], 'O')
         self.assertEqual(items[3]['type'], 'A')
         self.assertEqual(items[3]['item']['action'], 'N')
-        self.assertEqual(items[4]['type'], 'A')
-        self.assertEqual(items[4]['item']['action'], 'N')
-        self.assertEqual(items[5]['type'], 'O')
-        self.assertEqual(items[5]['item']['sender'], {'id': self.user1.pk, 'name': "Evan"})
-        self.assertEqual(items[6]['type'], 'I')
-        self.assertEqual(items[6]['item']['text'], "OK thanks")
-        self.assertEqual(items[7]['type'], 'A')
-        self.assertEqual(items[7]['item']['action'], 'C')
+        self.assertEqual(items[4]['type'], 'O')
+        self.assertEqual(items[4]['item']['sender'], {'id': self.user1.pk, 'name': "Evan"})
+        self.assertEqual(items[5]['type'], 'I')
+        self.assertEqual(items[5]['item']['text'], "OK thanks")
+        self.assertEqual(items[6]['type'], 'A')
+        self.assertEqual(items[6]['item']['action'], 'C')
 
         # as this was the initial request, messages will have been fetched from the backend
         mock_fetch_contact_messages.assert_called_once_with(self.unicef, self.ann, d1, case.closed_on)
@@ -1000,20 +995,20 @@ class CaseActionTest(BaseCasesTest):
         self.case = self.create_case(self.unicef, self.ann, self.moh, msg1)
 
     def test_create_no_user(self):
-        CaseAction.create(self.case, None, CaseAction.ADD_NOTE, note="test note")
+        CaseAction.create(self.case, self.user1, CaseAction.ADD_NOTE, note="test note")
 
         actions = CaseAction.objects.all()
         self.assertEqual(len(actions), 1)
-        self.assertIsNone(actions[0].created_by)
+        self.assertEqual(actions[0].created_by, self.user1)
         self.assertEqual(actions[0].note, "test note")
 
     def test_as_json(self):
-        action = CaseAction.create(self.case, None, CaseAction.ADD_NOTE, note="test note")
+        action = CaseAction.create(self.case, self.user1, CaseAction.ADD_NOTE, note="test note")
 
         expected = {
             'id': action.pk,
             'action': action.action,
-            'created_by': action.created_by,
+            'created_by': action.created_by.as_json(full=False),
             'created_on': action.created_on,
             'assignee': action.assignee,
             'label': action.label,

@@ -81,11 +81,8 @@
               [[ event.time | autodate ]]
 
             .{ ng-if:'event.type == "A"' }
-              %span{ ng-if:'event.item.created_by === null' }
-                System
-              %span.{ ng-if:'event.item.created_by !== null' }
-                %a{ ng-href:"/user/read/[[ event.item.created_by.id ]]/" }
-                  [[ event.item.created_by.name ]]
+              %a{ ng-href:"/user/read/[[ event.item.created_by.id ]]/" }
+                [[ event.item.created_by.name ]]
 
               %span{ ng-if:'event.item.action == "O"' }
                 opened this case and assigned it to
