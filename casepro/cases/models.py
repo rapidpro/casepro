@@ -339,7 +339,8 @@ class Case(models.Model):
         self.user_assignee = user_assignee
         self.save(update_fields=('assignee', 'user_assignee'))
 
-        action = CaseAction.create(self, user, CaseAction.REASSIGN, assignee=partner, note=note)
+        action = CaseAction.create(
+            self, user, CaseAction.REASSIGN, assignee=partner, note=note, user_assignee=user_assignee)
 
         self.notify_watchers(action=action)
 
