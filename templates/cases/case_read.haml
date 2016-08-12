@@ -47,6 +47,8 @@
           :
           %a{ ng-href:"/partner/read/[[ caseObj.assignee.id ]]/" }
             [[ caseObj.assignee.name ]]
+          %a{ ng-href:"/user/read/[[ caseObj.user_assignee.id ]]/", ng-if:"caseObj.user_assignee" }
+            ([[ caseObj.user_assignee.name ]])
         %li
           %strong><
             - trans "Status"
