@@ -487,6 +487,10 @@ class CaseAction(models.Model):
 
     assignee = models.ForeignKey(Partner, null=True, related_name="case_actions")
 
+    user_assignee = models.ForeignKey(
+        User, null=True, on_delete=models.SET_NULL, related_name='case_assigned_actions',
+        help_text="The (optional) user that the case was assigned to.")
+
     label = models.ForeignKey(Label, null=True)
 
     note = models.CharField(null=True, max_length=1024)
