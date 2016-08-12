@@ -103,6 +103,16 @@ class Partner(models.Model):
         return self.name
 
 
+class SystemUser(User):
+
+    @classmethod
+    def get_or_create(cls):
+        systemUsers = cls.objects.filter()
+        if len(systemUsers) > 0:
+            return systemUsers[0]
+        return cls.objects.create(username="System")
+
+
 class case_action(object):
     """
     Helper decorator for case action methods that should check the user is allowed to update the case
