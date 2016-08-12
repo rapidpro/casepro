@@ -287,7 +287,7 @@ class Case(models.Model):
 
         # fetch and append actions
         actions = self.actions.filter(created_on__gte=after, created_on__lte=before)
-        actions = actions.select_related('assignee', 'created_by')
+        actions = actions.select_related('assignee', 'user_assignee', 'created_by')
         timeline += [TimelineItem(a) for a in actions]
 
         # sort timeline by reverse chronological order
@@ -509,6 +509,7 @@ class CaseAction(models.Model):
             'created_by': self.created_by.as_json(full=False),
             'created_on': self.created_on,
             'assignee': self.assignee.as_json() if self.assignee else None,
+            'user_assignee': self.user_assignee.as_json() if self.user_assignee else None,
             'label': self.label.as_json() if self.label else None,
             'note': self.note
         }
