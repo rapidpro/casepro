@@ -110,7 +110,7 @@ class SystemUser(User):
         systemUsers = cls.objects.filter()
         if len(systemUsers) > 0:
             return systemUsers[0]
-        return cls.objects.create(username="System")
+        return cls.objects.create(username="System", first_name="System")
 
 
 class case_action(object):
