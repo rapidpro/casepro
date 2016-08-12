@@ -320,18 +320,6 @@ class CaseTest(BaseCasesTest):
         open_case = Case.get_open_for_contact_on(self.unicef, self.ann, datetime(2014, 1, 16, 0, 0, tzinfo=pytz.UTC))
         self.assertEqual(open_case, case2)
 
-    def test_get_open_with_user_assignee(self):
-        '''If a case is opened with the user_assignee field set, the created case should have the assigned user, and
-        the created case action should also have the assigned user.'''
-        msg = self.create_message(
-            self.unicef, 123, self.ann, "Hello", created_on=datetime(2014, 1, 5, 0, 0, tzinfo=pytz.UTC))
-        case = Case.get_or_open(self.unicef, self.user2, msg, 'Hello', self.moh, user_assignee=self.user1)
-
-        self.assertEqual(case.user_assignee, self.user1)
-
-        case_action = CaseAction.objects.get(case=case)
-        self.assertEqual(case_action.user_assignee, self.user1)
-
     def test_search(self):
         d1 = datetime(2014, 1, 9, 0, 0, tzinfo=pytz.UTC)
         d2 = datetime(2014, 1, 10, 0, 0, tzinfo=pytz.UTC)
@@ -542,7 +530,6 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(action.case, self.case)
         self.assertEqual(action.action, CaseAction.REASSIGN)
         self.assertEqual(action.created_by, self.user1)
-        self.assertEqual(action.user_assignee, self.user3)
 
         self.case.refresh_from_db()
         self.assertEqual(self.case.assignee, self.who)
@@ -728,8 +715,8 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # create and open case
         msg1 = self.create_message(self.unicef, 101, self.ann, "What is AIDS?", [self.aids], created_on=d1)
-        case = self.create_case(self.unicef, self.ann, self.moh, msg1, user_assignee=self.user1)
-        CaseAction.create(case, self.user1, CaseAction.OPEN, assignee=self.moh, user_assignee=self.user1)
+        case = self.create_case(self.unicef, self.ann, self.moh, msg1)
+        CaseAction.create(case, self.user1, CaseAction.OPEN, assignee=self.moh)
 
         # backend has a message in the case time window that we don't have locally
         remote_message1 = Outgoing(backend_broadcast_id=102, contact=self.ann, text="Non casepro message...",
@@ -749,8 +736,6 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'][0]['type'], 'I')
         self.assertEqual(response.json['results'][0]['item']['text'], "What is AIDS?")
         self.assertEqual(response.json['results'][0]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
-        self.assertEqual(
-            response.json['results'][0]['item']['case']['user_assignee'], {'id': self.user1.pk, 'name': "Evan"})
         self.assertEqual(response.json['results'][1]['type'], 'O')
         self.assertEqual(response.json['results'][1]['item']['text'], "Non casepro message...")
         self.assertEqual(response.json['results'][1]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
