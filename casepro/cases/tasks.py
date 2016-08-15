@@ -31,7 +31,7 @@ def get_all_cases_passed_response_time():
 
 @shared_task(ignore_result=True)
 def reassign_case(case_id):
-    from .models import Case, CaseAction
+    from .models import Case, CaseAction, SystemUser
     try:
         case = Case.objects.get(pk=case_id)
     except Case.DoesNotExist:
@@ -48,5 +48,6 @@ def reassign_case(case_id):
         # assignment will just keep flipping back and forth
         return
 
+    system_user = SystemUser.get_or_create()
     note = _("This case's required response time as passed and therefor has been re-assigned")
-    case.reassign(None, case.last_assignee, note=note, user_assignee=case.last_user_assignee)
+    case.reassign(system_user, case.last_assignee, note=note, user_assignee=case.last_user_assignee)
