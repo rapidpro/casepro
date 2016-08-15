@@ -251,10 +251,12 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     #----------------------------------------------------------------------------
     # Opens a new case
     #----------------------------------------------------------------------------
-    open: (message, summary, assignee) ->
+    open: (message, summary, assignee, user) ->
       params = {message: message.id, summary: summary}
       if assignee
         params.assignee = assignee.id
+      if user
+        params.user_assignee = user.id
 
       return $http.post('/case/open/', params).then((response) ->
         return response.data
@@ -544,8 +546,8 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
       resolve = {title: (() -> title), prompt: (() -> prompt), labels: (() -> labels), initial: (() -> initial)}
       return $uibModal.open({templateUrl: '/partials/modal_label.html', controller: 'LabelModalController', resolve: resolve}).result
 
-    newCaseModal: (summaryInitial, summaryMaxLength, partners) ->
-      resolve = {summaryInitial: (() -> summaryInitial), summaryMaxLength: (() -> summaryMaxLength), partners: (() -> partners)}
+    newCaseModal: (summaryInitial, summaryMaxLength, partners, users) ->
+      resolve = {summaryInitial: (() -> summaryInitial), summaryMaxLength: (() -> summaryMaxLength), partners: (() -> partners), users: (() -> users)}
       return $uibModal.open({templateUrl: '/partials/modal_newcase.html', controller: 'NewCaseModalController', resolve: resolve}).result
 
     dateRangeModal: (title, prompt) ->

@@ -207,17 +207,19 @@ describe('controllers:', () ->
     OutgoingService = null
     CaseService = null
     PartnerService = null
+    UserService = null
 
     $inboxScope = null
     $scope = null
     serverTime = 1464775597109  # ~ Jun 1st 2016 10:06:37 UTC
 
     beforeEach(() ->
-      inject((_MessageService_, _OutgoingService_, _CaseService_, _PartnerService_) ->
+      inject((_MessageService_, _OutgoingService_, _CaseService_, _PartnerService_, _UserService_) ->
         MessageService = _MessageService_
         OutgoingService = _OutgoingService_
         CaseService = _CaseService_
         PartnerService = _PartnerService_
+        UserService = _UserService_
       )
 
       $window.contextData = {user: test.user1, partners: [], labels: [test.tea, test.coffee], groups: []}
@@ -433,15 +435,18 @@ describe('controllers:', () ->
           fetchPartners = spyOnPromise($q, $scope, PartnerService, 'fetchAll')
           newCaseModal = spyOnPromise($q, $scope, UtilsService, 'newCaseModal')
           openCase = spyOnPromise($q, $scope, CaseService, 'open')
+          fetchUsersForPartner = spyOnPromise($q, $scope, UserService, 'fetchInPartner')
           spyOn(UtilsService, 'navigate')
 
           $scope.onCaseFromMessage(test.msg1)
 
           fetchPartners.resolve([test.moh, test.who])
-          newCaseModal.resolve({summary: "New case", assignee: test.moh})
+          fetchUsersForPartner.resolve([test.user1])
+          newCaseModal.resolve({summary: "New case", assignee: test.moh, user: test.user1})
           openCase.resolve({id: 601, summary: "New case", isNew: false})
 
-          expect(CaseService.open).toHaveBeenCalledWith(test.msg1, "New case", test.moh)
+          expect(UserService.fetchInPartner).toHaveBeenCalledWith(test.moh, true)
+          expect(CaseService.open).toHaveBeenCalledWith(test.msg1, "New case", test.moh, test.user1)
           expect(UtilsService.navigate).toHaveBeenCalledWith('/case/read/601/?alert=open_found_existing')
         )
 
