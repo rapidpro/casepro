@@ -292,6 +292,7 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(set(Case.get_closed(self.unicef)), {case2})
         self.assertEqual(set(Case.get_closed(self.unicef, user=self.user1, label=self.pregnancy)), {case2})
 
+    @override_settings(SITE_CASE_RESPONSE_REQUIRED_TIME=1440)
     def test_get_all_passed_response_time(self):
         bob = self.create_contact(self.unicef, 'C-002', "Bob")
 
