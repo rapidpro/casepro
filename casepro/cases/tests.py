@@ -23,7 +23,7 @@ from casepro.pods import registry as pod_registry
 from casepro.pods.tests.utils import DummyPodPlugin
 
 from .context_processors import sentry_dsn
-from .models import AccessLevel, Case, CaseAction, CaseExport, CaseFolder, Partner
+from .models import AccessLevel, Case, CaseAction, CaseExport, CaseFolder, Partner, SystemUser
 
 
 class CaseTest(BaseCasesTest):
@@ -1016,6 +1016,48 @@ class CaseExportCRUDLTest(BaseCasesTest):
 
         response = self.url_get('unicef', read_url)
         self.assertEqual(response.status_code, 302)
+
+
+class SystemUserTest(BaseCasesTest):
+    def setUp(self):
+        super(SystemUserTest, self).setUp()
+
+        self.ann = self.create_contact(self.unicef, 'C-001', "Ann")
+        d0 = datetime(2014, 1, 2, 12, 0, tzinfo=pytz.UTC)
+        msg1 = self.create_message(self.unicef, 101, self.ann, "Test Message", [self.aids], created_on=d0)
+        self.case = self.create_case(self.unicef, self.ann, self.moh, msg1)
+
+    def test_get_or_create_no_user(self):
+        # SystemUser.get_or_create() should return an existing instance or create a new one if none exists
+        self.assertEqual(SystemUser.objects.count(), 0)
+        user1 = SystemUser.get_or_create()
+        self.assertEqual(SystemUser.objects.count(), 1)
+        user2 = SystemUser.get_or_create()
+        self.assertEqual(SystemUser.objects.count(), 1)
+        self.assertEqual(user1, user2)
+
+    def test_add_note_as_system_user(self):
+        # SystemUsers should be able to access methods wrapped by the decorator
+        sysUser = SystemUser.get_or_create()
+        self.case.add_note(sysUser, "test note")
+
+        actions = CaseAction.objects.all()
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].created_by.pk, sysUser.pk)
+        self.assertEqual(actions[0].note, "test note")
+
+    def test_reassign_as_system_user(self):
+        # System reassigns case
+        self.assertEqual(self.case.assignee, self.moh)
+        partner = Partner.create(self.unicef, "Internal", False, [])
+        sysUser = SystemUser.get_or_create()
+        self.case.reassign(sysUser, partner)
+
+        actions = CaseAction.objects.all()
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].created_by.pk, sysUser.pk)
+        self.assertEqual(actions[0].assignee, partner)
+        self.assertEqual(actions[0].action, 'A')
 
 
 class InboxViewsTest(BaseCasesTest):

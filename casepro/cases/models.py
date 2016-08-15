@@ -103,6 +103,15 @@ class Partner(models.Model):
         return self.name
 
 
+class SystemUser(User):
+
+    @classmethod
+    def get_or_create(cls):
+        if cls.objects.count() > 0:
+            return cls.objects.first()
+        return cls.objects.create(username="System", first_name="System")
+
+
 class case_action(object):
     """
     Helper decorator for case action methods that should check the user is allowed to update the case
@@ -113,6 +122,8 @@ class case_action(object):
 
     def __call__(self, func):
         def wrapped(case, user, *args, **kwargs):
+            if isinstance(user, SystemUser):
+                return func(case, user, *args, **kwargs)
             access = case.access_level(user)
             if (access == AccessLevel.update) or (not self.require_update and access == AccessLevel.read):
                 result = func(case, user, *args, **kwargs)
