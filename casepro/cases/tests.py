@@ -1088,6 +1088,7 @@ class CaseActionTest(BaseCasesTest):
             'created_by': action.created_by.as_json(full=False),
             'created_on': action.created_on,
             'assignee': action.assignee,
+            'user_assignee': action.user_assignee,
             'label': action.label,
             'note': action.note
         }
