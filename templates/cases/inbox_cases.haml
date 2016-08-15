@@ -25,13 +25,13 @@
         .case-time
           [[ item.opened_on | autodate ]]
         .case-text
-          %span.label-container
+          %span.label-container{ ng-if:"!item.user_assignee" }
             %span.label.label-warning
               [[ item.assignee.name ]]
             &nbsp;
-          %span.label-container{ ng-if:"item.user_assignee.name" }
+          %span.label-container{ ng-if:"item.user_assignee" }
             %span.label.label-warning
-              [[ item.user_assignee.name ]]
+              [[ item.assignee.name ]] ([[ item.user_assignee.name ]])
             &nbsp;
           %span.label-container{ ng-repeat:"label in filterDisplayLabels(item.labels)" }
             %span.label.label-success
