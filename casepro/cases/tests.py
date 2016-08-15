@@ -294,8 +294,6 @@ class CaseTest(BaseCasesTest):
 
     def test_get_all_passed_response_time(self):
         bob = self.create_contact(self.unicef, 'C-002', "Bob")
-        cat = self.create_contact(self.unicef, 'C-003', "Cat")
-        nic = self.create_contact(self.nyaruka, 'C-104', "Nic")
 
         msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
         msg2 = self.create_message(self.unicef, 234, bob, "Hello 2", [self.aids, self.pregnancy])
@@ -578,6 +576,9 @@ class CaseCRUDLTest(BaseCasesTest):
         self.case.refresh_from_db()
         self.assertEqual(self.case.assignee, self.who)
         self.assertEqual(self.case.user_assignee, self.user3)
+        self.assertIsNotNone(self.case.last_reassigned_on)
+        self.assertEqual(self.case.last_assignee, self.moh)
+        self.assertEqual(self.case.last_user_assignee, self.user1)
 
         # only user from assigned partner can re-assign
         response = self.url_post_json('unicef', url, {'assignee': self.moh.pk})
