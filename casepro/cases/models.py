@@ -106,6 +106,15 @@ class Partner(models.Model):
         return self.name
 
 
+class SystemUser(User):
+
+    @classmethod
+    def get_or_create(cls):
+        if cls.objects.count() > 0:
+            return cls.objects.first()
+        return cls.objects.create(username="System", first_name="System")
+
+
 class case_action(object):
     """
     Helper decorator for case action methods that should check the user is allowed to update the case
@@ -116,6 +125,8 @@ class case_action(object):
 
     def __call__(self, func):
         def wrapped(case, user, *args, **kwargs):
+            if isinstance(user, SystemUser):
+                return func(case, user, *args, **kwargs)
             access = case.access_level(user)
             if (access == AccessLevel.update) or (not self.require_update and access == AccessLevel.read):
                 result = func(case, user, *args, **kwargs)
@@ -247,7 +258,7 @@ class Case(models.Model):
         return queryset.order_by('-opened_on')
 
     @classmethod
-    def get_or_open(cls, org, user, message, summary, assignee):
+    def get_or_open(cls, org, user, message, summary, assignee, user_assignee=None):
         from casepro.profiles.models import Notification
 
         r = get_redis_connection()
@@ -263,7 +274,7 @@ class Case(models.Model):
             message.contact.prepare_for_case()
 
             case = cls.objects.create(org=org, assignee=assignee, initial_message=message, contact=message.contact,
-                                      summary=summary)
+                                      summary=summary, user_assignee=user_assignee)
             case.is_new = True
             case.labels.add(*list(message.labels.all()))  # copy labels from message to new case
             case.watchers.add(user)
@@ -272,7 +283,7 @@ class Case(models.Model):
             message.case = case
             message.save(update_fields=('case',))
 
-            action = CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee)
+            action = CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee, user_assignee=user_assignee)
 
             for assignee_user in assignee.get_users():
                 if assignee_user != user:
@@ -306,7 +317,7 @@ class Case(models.Model):
 
         # fetch and append actions
         actions = self.actions.filter(created_on__gte=after, created_on__lte=before)
-        actions = actions.select_related('assignee', 'created_by')
+        actions = actions.select_related('assignee', 'user_assignee', 'created_by')
         timeline += [TimelineItem(a) for a in actions]
 
         # sort timeline by reverse chronological order
@@ -367,7 +378,8 @@ class Case(models.Model):
         self.user_assignee = user_assignee
         self.save()
 
-        action = CaseAction.create(self, user, CaseAction.REASSIGN, assignee=partner, note=note)
+        action = CaseAction.create(
+            self, user, CaseAction.REASSIGN, assignee=partner, note=note, user_assignee=user_assignee)
 
         self.notify_watchers(action=action)
 
@@ -471,6 +483,7 @@ class Case(models.Model):
             return {
                 'id': self.pk,
                 'assignee': self.assignee.as_json(full=False),
+                'user_assignee': self.user_assignee.as_json(full=False) if self.user_assignee else None,
                 'contact': self.contact.as_json(full=False),
                 'labels': [l.as_json(full=False) for l in self.labels.all()],
                 'summary': self.summary,
@@ -481,6 +494,7 @@ class Case(models.Model):
             return {
                 'id': self.pk,
                 'assignee': self.assignee.as_json(full=False),
+                'user_assignee': self.user_assignee.as_json(full=False) if self.user_assignee else None,
             }
 
     def __str__(self):
@@ -520,14 +534,19 @@ class CaseAction(models.Model):
 
     assignee = models.ForeignKey(Partner, null=True, related_name="case_actions")
 
+    user_assignee = models.ForeignKey(
+        User, null=True, on_delete=models.SET_NULL, related_name='case_assigned_actions',
+        help_text="The (optional) user that the case was assigned to.")
+
     label = models.ForeignKey(Label, null=True)
 
     note = models.CharField(null=True, max_length=1024)
 
     @classmethod
-    def create(cls, case, user, action, assignee=None, label=None, note=None):
-        return CaseAction.objects.create(case=case, action=action,
-                                         created_by=user, assignee=assignee, label=label, note=note)
+    def create(cls, case, user, action, assignee=None, label=None, note=None, user_assignee=None):
+        return CaseAction.objects.create(
+            case=case, action=action, created_by=user, assignee=assignee, label=label, note=note,
+            user_assignee=user_assignee)
 
     def as_json(self):
         return {
@@ -536,6 +555,7 @@ class CaseAction(models.Model):
             'created_by': self.created_by.as_json(full=False),
             'created_on': self.created_on,
             'assignee': self.assignee.as_json() if self.assignee else None,
+            'user_assignee': self.user_assignee.as_json() if self.user_assignee else None,
             'label': self.label.as_json() if self.label else None,
             'note': self.note
         }

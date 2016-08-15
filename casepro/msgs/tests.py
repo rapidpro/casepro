@@ -718,7 +718,7 @@ class MessageCRUDLTest(BaseCasesTest):
         # labelled and cased/archived
         self.create_message(self.unicef, 104, self.bob, "raids", [self.aids], is_handled=True, is_archived=True)
         msg5 = self.create_message(self.unicef, 105, cat, "AIDS??", [self.aids], is_handled=True, is_archived=True)
-        case = self.create_case(self.unicef, cat, self.moh, msg5)
+        case = self.create_case(self.unicef, cat, self.moh, msg5, user_assignee=self.user1)
 
         # unlabelled
         self.create_message(self.unicef, 106, don, "RapidCon 2016", is_handled=True)
@@ -758,8 +758,9 @@ class MessageCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'][0]['contact'], {'id': cat.pk, 'name': "Cat"})
         self.assertEqual(response.json['results'][0]['text'], "AIDS??")
         self.assertEqual(response.json['results'][0]['labels'], [{'id': self.aids.pk, 'name': "AIDS"}])
-        self.assertEqual(response.json['results'][0]['case'], {'id': case.pk,
-                                                               'assignee': {'id': self.moh.pk, 'name': "MOH"}})
+        self.assertEqual(response.json['results'][0]['case'], {
+            'id': case.pk, 'assignee': {'id': self.moh.pk, 'name': "MOH"},
+            'user_assignee': {'id': self.user1.pk, 'name': "Evan"}})
         self.assertEqual(response.json['results'][1]['id'], 104)
 
     @patch('casepro.test.TestBackend.flag_messages')
@@ -1222,7 +1223,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'urn': None,
                 'text': "Hello 1",
-                'case': {'id': case.pk, 'assignee': {'id': self.moh.pk, 'name': "MOH"}},
+                'case': {'id': case.pk, 'assignee': {'id': self.moh.pk, 'name': "MOH"}, 'user_assignee': None},
                 'sender': {'id': self.user1.pk, 'name': "Evan"},
                 'time': format_iso8601(out1.created_on),
                 'reply_to': {
