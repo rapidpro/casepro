@@ -494,6 +494,10 @@ CELERYBEAT_SCHEDULE = {
         'task': 'casepro.profiles.tasks.send_notifications',
         'schedule': timedelta(minutes=1),
     },
+    'reassign-case-passed-response-time': {
+        'task': 'casepro.cases.tasks.get_all_cases_passed_response_time',
+        'schedule': timedelta(minutes=60),
+    },
 }
 
 CELERY_TIMEZONE = 'UTC'
