@@ -1024,19 +1024,18 @@ class PartnerCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['form'].fields.keys(),
-                         ['name', 'description', 'primary_contact', 'logo', 'is_restricted', 'labels', 'loc'])
+                         ['name', 'description', 'logo', 'is_restricted', 'labels', 'loc'])
 
         # create label restricted partner
         response = self.url_post('unicef', url, {'name': "Helpers", 'description': "Helpers Description",
-                                                 'primary_contact': self.user1.pk, 'logo': None, 'is_restricted': True,
-                                                 'labels': [self.tea.pk]})
+                                                 'logo': None, 'is_restricted': True, 'labels': [self.tea.pk]})
         self.assertEqual(response.status_code, 302)
 
         helpers = Partner.objects.get(name="Helpers")
         self.assertTrue(helpers.is_restricted)
         self.assertEqual(set(helpers.get_labels()), {self.tea})
         self.assertEqual(helpers.description, "Helpers Description")
-        self.assertEqual(helpers.primary_contact, self.user1)
+        self.assertEqual(helpers.primary_contact, None)
 
         # create unrestricted partner
         response = self.url_post('unicef', url, {'name': "Internal", 'logo': None, 'is_restricted': False,
@@ -1094,6 +1093,8 @@ class PartnerCRUDLTest(BaseCasesTest):
         # get update page
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['form'].fields.keys(),
+                         ['name', 'description', 'primary_contact', 'logo', 'is_restricted', 'labels', 'loc'])
 
         # post update without name field
         response = self.url_post('unicef', url)

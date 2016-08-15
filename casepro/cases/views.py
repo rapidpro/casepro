@@ -23,7 +23,7 @@ from casepro.utils import month_range
 from casepro.utils.export import BaseDownloadView
 
 from . import MAX_MESSAGE_CHARS
-from .forms import PartnerForm
+from .forms import PartnerCreateForm, PartnerUpdateForm
 from .models import AccessLevel, Case, CaseFolder, CaseExport, Partner
 from .tasks import case_export
 
@@ -332,7 +332,7 @@ class PartnerCRUDL(SmartCRUDL):
     model = Partner
 
     class Create(OrgPermsMixin, PartnerFormMixin, SmartCreateView):
-        form_class = PartnerForm
+        form_class = PartnerCreateForm
 
         def save(self, obj):
             data = self.form.cleaned_data
@@ -340,11 +340,11 @@ class PartnerCRUDL(SmartCRUDL):
             restricted = data['is_restricted']
             labels = data['labels'] if restricted else []
 
-            self.object = Partner.create(org, data['name'], data['description'], data['primary_contact'], restricted,
+            self.object = Partner.create(org, data['name'], data['description'], None, restricted,
                                          labels, data['logo'])
 
     class Update(OrgObjPermsMixin, PartnerFormMixin, SmartUpdateView):
-        form_class = PartnerForm
+        form_class = PartnerUpdateForm
         success_url = 'id@cases.partner_read'
 
         def has_permission(self, request, *args, **kwargs):
