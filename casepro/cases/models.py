@@ -109,7 +109,7 @@ class SystemUser(User):
     def get_or_create(cls):
         systemUsers = cls.objects.filter()
         if len(systemUsers) > 0:
-            return systemUsers[0]
+            return systemUsers.first()
         return cls.objects.create(username="System", first_name="System")
 
 
