@@ -43,7 +43,7 @@ def reassign_case(case_id):
         return
 
     action = case.actions.filter(action=CaseAction.REASSIGN).latest('created_on')
-    if action.created_by is None:
+    if isinstance(action.created_by, SystemUser):
         # The last time this case was reassigned was by the system, we should do nothing now, otherwise the
         # assignment will just keep flipping back and forth
         return

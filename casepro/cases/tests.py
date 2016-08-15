@@ -1334,6 +1334,7 @@ class TasksTest(BaseCasesTest):
                                        fields={'age': "34"},
                                        groups=[self.females, self.reporters, self.registered])
 
+    @override_settings(SITE_CASE_RESPONSE_REQUIRED_TIME=1440)
     def test_reassign_case(self):
         bob = self.create_contact(self.unicef, 'C-002', "Bob")
 
