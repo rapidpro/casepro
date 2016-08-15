@@ -57,7 +57,7 @@ SITE_ORGS_STORAGE_ROOT = 'orgs'
 SITE_EXTERNAL_CONTACT_URL = 'http://localhost:8001/contact/read/%s/'
 SITE_BACKEND = 'casepro.backend.NoopBackend'
 SITE_ANON_CONTACTS = False
-SITE_CASE_RESPONSE_REQUIRED_TIME = 1440  # 24 hours in minutes
+SITE_CASE_RESPONSE_REQUIRED_TIME = None  # specified in minutes, None to disable
 
 # junebug configuration
 JUNEBUG_API_ROOT = 'http://localhost:8080/'
