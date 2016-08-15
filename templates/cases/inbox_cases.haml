@@ -25,7 +25,7 @@
         .case-time
           [[ item.opened_on | autodate ]]
         .case-text
-          %span.label-containe{ ng-if:"!item.user_assignee.name" }
+          %span.label-container{ ng-if:"!item.user_assignee.name" }
             %span.label.label-warning
               [[ item.assignee.name ]]
             &nbsp;
