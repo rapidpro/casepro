@@ -477,7 +477,6 @@ class Case(models.Model):
         else:
             return False
 
-
     def as_json(self, full=True):
         if full:
             return {

@@ -304,8 +304,6 @@ class CaseTest(BaseCasesTest):
 
         case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [self.aids])
         case2 = self.create_case(self.unicef, bob, self.who, msg2, [self.aids, self.pregnancy])
-        case3 = self.create_case(self.unicef, cat, self.who, msg3, [self.pregnancy])
-        case4 = self.create_case(self.nyaruka, nic, self.klab, msg4, [self.code])
 
         # test with no last_reassigned_on value set
         self.assertEqual(set(Case.get_all_passed_response_time()), set())
@@ -1329,7 +1327,6 @@ class InternalViewsTest(BaseCasesTest):
             self.assertEqual(response.status_code, 500)
 
 
-
 class TasksTest(BaseCasesTest):
     def setUp(self):
         super(TasksTest, self).setUp()
@@ -1338,11 +1335,8 @@ class TasksTest(BaseCasesTest):
                                        fields={'age': "34"},
                                        groups=[self.females, self.reporters, self.registered])
 
-
     def test_reassign_case(self):
         bob = self.create_contact(self.unicef, 'C-002', "Bob")
-        cat = self.create_contact(self.unicef, 'C-003', "Cat")
-        nic = self.create_contact(self.nyaruka, 'C-104', "Nic")
 
         msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
         msg2 = self.create_message(self.unicef, 234, bob, "Hello 2", [self.aids, self.pregnancy])
