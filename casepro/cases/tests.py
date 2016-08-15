@@ -299,8 +299,6 @@ class CaseTest(BaseCasesTest):
 
         msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
         msg2 = self.create_message(self.unicef, 234, bob, "Hello 2", [self.aids, self.pregnancy])
-        msg3 = self.create_message(self.unicef, 345, cat, "Hello 3", [self.pregnancy])
-        msg4 = self.create_message(self.nyaruka, 456, nic, "Hello 4", [self.code])
 
         case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [self.aids])
         case2 = self.create_case(self.unicef, bob, self.who, msg2, [self.aids, self.pregnancy])
