@@ -472,10 +472,7 @@ class Case(models.Model):
             return False
 
         minutes_since_reassigned = (now() - self.last_reassigned_on).total_seconds() // 60
-        if minutes_since_reassigned > response_required_in:
-            return True
-        else:
-            return False
+        return minutes_since_reassigned > response_required_in
 
     def as_json(self, full=True):
         if full:
