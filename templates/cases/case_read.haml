@@ -185,16 +185,6 @@
 
 - block extra-script
   {{ block.super }}
-  :javascript
-    $(function() {
-        $('.timeline').on('mouseover', '.event-time', function() {
-          $(this).children('.long').removeClass('hide');
-          $(this).children('.short').addClass('hide');
-        }).on('mouseleave', '.event-time', function() {
-          $(this).children('.short').removeClass('hide');
-          $(this).children('.long').addClass('hide');
-        });
-    });
 
   - for pod_type in pod_types
     - for script in pod_type.scripts
