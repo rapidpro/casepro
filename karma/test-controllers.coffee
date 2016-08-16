@@ -171,6 +171,7 @@ describe('controllers:', () ->
         'Re-assign', null, [test.moh, test.who], [test.user1])
       # Result of modal selection should be sent to reassign the case
       expect(CaseService.reassign).toHaveBeenCalledWith(test.case1, test.moh, test.user1)
+    )
 
     it('should should add a alert on alert events', () ->
       $scope.alerts = []
