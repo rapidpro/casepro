@@ -59,3 +59,15 @@ directives.directive('cpFieldvalue', () ->
 directives.directive('cpPod', -> {
   templateUrl: -> '/sitestatic/templates/pod.html'
 })
+
+#=====================================================================
+# Tooltip directive
+# Shows 'displayText' with a tooltip at 'position' containing 'tooltipText'
+#=====================================================================
+directives.directive('cpTooltip', () ->
+  return {
+    restrict: 'E',
+    scope: {displayText: '@', tooltipText: '@', position: '@'},
+    templateUrl: '/sitestatic/templates/tooltip.html',
+  }
+)
