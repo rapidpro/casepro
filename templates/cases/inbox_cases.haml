@@ -23,7 +23,7 @@
     .cases{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"!isInfiniteScrollEnabled()" }
       .stackitem.clearfix.hoverable{ ng-repeat:"item in items | filter: getItemFilter()", ng-click:"onClickCase(item)" }
         .case-time
-          [[ item.opened_on | autodate ]]
+          <cp-tooltip display-text="[[ item.opened_on | autodate]]" tooltip-text="[[ item.opened_on | fulldate ]]" position="top-right"><cp-tooltip>
         .case-text
           %span.label-container
             %span.label.label-warning

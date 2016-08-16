@@ -112,7 +112,7 @@
                 %tbody
                   %tr{ ng-repeat:"item in items" }
                     %td{ nowrap:"" }
-                      [[ item.time | autodate ]]
+                      <cp-tooltip display-text="[[ item.time | autodate]]" tooltip-text="[[ item.time | fulldate ]]" position="top-left"><cp-tooltip>
                     %td
                       %a{ ng-href:"/user/read/[[ item.sender.id ]]/" }><
                         [[ item.sender.name ]]
