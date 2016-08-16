@@ -60,5 +60,5 @@ def record_new_case(sender, instance, created, **kwargs):
     if not created:
         return
 
-    day = datetime_to_date(instance.created_on, instance.org)
+    day = datetime_to_date(instance.opened_on, instance.org)
     DailyCount.record_item(day, DailyCount.TYPE_CASE, instance.org, instance)
