@@ -11,7 +11,7 @@ from django.db.models import Sum
 from django.utils.functional import SimpleLazyObject
 from django.utils.translation import ugettext_lazy as _
 
-from casepro.cases.models import Partner
+from casepro.cases.models import Partner, Case
 from casepro.msgs.models import Label
 from casepro.utils import date_range
 from casepro.utils.export import BaseExport
@@ -32,6 +32,7 @@ class BaseCount(models.Model):
     TYPE_INBOX = 'N'
     TYPE_ARCHIVED = 'A'
     TYPE_REPLIES = 'R'
+    TYPE_CASE = 'C'
 
     item_type = models.CharField(max_length=1, help_text=_("The thing being counted"))
 
@@ -55,6 +56,8 @@ class BaseCount(models.Model):
             return 'partner:%d' % args[0].pk
         elif types == [Org, User]:
             return 'org:%d:user:%d' % (args[0].pk, args[1].pk)
+        elif types == [Org, Case]:
+            return 'org:%d:case:%d' % (args[0].pk, args[1].pk)
         elif types == [Label]:
             return 'label:%d' % args[0].pk
         else:  # pragma: no cover

@@ -4,6 +4,7 @@ from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
 
 from casepro.msgs.models import Message, Label, Outgoing
+from casepro.cases.models import Case
 
 from .models import datetime_to_date, DailyCount
 
@@ -52,3 +53,12 @@ def record_incoming_labelling(sender, instance, action, reverse, model, pk_set, 
     elif action == 'pre_clear':
         for label in instance.labels.all():
             DailyCount.record_removal(day, DailyCount.TYPE_INCOMING, label)
+
+
+@receiver(post_save, sender=Case)
+def record_new_case(sender, instance, created, **kwargs):
+    if not created:
+        return
+
+    day = datetime_to_date(instance.created_on, instance.org)
+    DailyCount.record_item(day, DailyCount.TYPE_CASE, instance.org, instance)
