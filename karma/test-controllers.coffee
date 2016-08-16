@@ -97,6 +97,14 @@ describe('controllers:', () ->
       expect($scope.contact).toEqual(test.ann)
     )
 
+    it('should should proxy timelineChanged events from child scopes', (done) ->
+      child = $scope.$new(false)
+      sibling = $scope.$new(false)
+
+      sibling.$on('timelineChanged', -> done())
+      child.$emit('timelineChanged')
+    )
+
     it('addNote', () ->
       noteModal = spyOnPromise($q, $scope, UtilsService, 'noteModal')
       addNote = spyOnPromise($q, $scope, CaseService, 'addNote')
@@ -163,6 +171,30 @@ describe('controllers:', () ->
         'Re-assign', null, [test.moh, test.who], [test.user1])
       # Result of modal selection should be sent to reassign the case
       expect(CaseService.reassign).toHaveBeenCalledWith(test.case1, test.moh, test.user1)
+
+    it('should should add a alert on alert events', () ->
+      $scope.alerts = []
+      $scope.$emit('alert', {type: 'foo'})
+      expect($scope.alerts).toEqual([{type: 'foo'}])
+    )
+
+    it('should should ignore duplicate pod_load_api_failure alerts', () ->
+      $scope.alerts = []
+
+      $scope.$emit('alert', {type: 'pod_load_api_failure'})
+      expect($scope.alerts).toEqual([{type: 'pod_load_api_failure'}])
+
+      $scope.$emit('alert', {type: 'pod_load_api_failure'})
+      $scope.$emit('alert', {type: 'pod_load_api_failure'})
+      expect($scope.alerts).toEqual([{type: 'pod_load_api_failure'}])
+    )
+
+    describe('addAlert', () ->
+      it('should add the given alert', () ->
+        $scope.alerts = []
+        $scope.addAlert({type: 'foo'})
+        expect($scope.alerts).toEqual([{type: 'foo'}])
+      )
     )
   )
 
@@ -764,22 +796,61 @@ describe('controllers:', () ->
 
   describe('PodController', () ->
     $scope = null
+    PodUIService = null
+    PodApiService = null
+    class PodApiServiceError
+
+    bindController = (deps) ->
+      $controller('PodController', angular.extend({}, deps, {
+        $scope,
+        PodApiService,
+        PodUIService
+      }))
 
     beforeEach(() ->
       $scope = $rootScope.$new()
+
+      $scope.podId = 21
+      $scope.caseId = 23
+      $scope.podConfig = {title: 'Foo'}
+
+      $scope.podData = {
+        items: [],
+        actions: []
+      }
+
+      PodUIService = new class PodUIService
+        confirmAction: -> $q.resolve()
+        alertActionFailure: () -> null
+        alertActionApiFailure: () -> null
+        alertLoadApiFailure: () -> null
+
+      PodApiService = new class PodApiService
+        PodApiServiceError: PodApiServiceError,
+
+        get: -> $q.resolve({
+          items: [],
+          actions: []
+        })
+
+        trigger: -> $q.resolve({success: true})
     )
 
     describe('init', () ->
-      it('should attach pod data to the scope', () ->
-        PodApiService = new class PodApiService
-          get: ->
+      it('should fetch and attach pod data to the scope', () ->
+        spyOn(PodApiService, 'get').and.returnValue($q.resolve({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }]
+          actions: [{
+            type: 'baz',
+            name: 'Baz',
+            payload: {}
+          }]
+        }))
 
-        spyOn(PodApiService, 'get').and.returnValue($q.resolve({foo: 'bar'}))
-
-        $controller('PodController', {
-          $scope
-          PodApiService
-        })
+        bindController()
 
         $scope.init(21, 23, {title: 'Baz'})
         $scope.$apply()
@@ -788,7 +859,341 @@ describe('controllers:', () ->
         expect($scope.caseId).toEqual(23)
         expect($scope.podConfig).toEqual({title: 'Baz'})
         expect(PodApiService.get).toHaveBeenCalledWith(21, 23)
-        expect($scope.podData).toEqual({foo: 'bar'}))
+
+        expect($scope.podData).toEqual({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }],
+          actions: [
+            jasmine.objectContaining({
+              type: 'baz'
+              name: 'Baz',
+              payload: {}
+            })
+          ]
+        })
+      )
+
+      it("should set the pod status to loading while it is loading", () ->
+        d = $q.defer()
+
+        spyOn(PodApiService, 'get').and.returnValue(d.promise.then(-> $q.resolve({
+          items: []
+          actions: []
+        })))
+
+        bindController()
+
+        $scope.init(21, 23, {title: 'Baz'})
+        expect($scope.status).toEqual('loading')
+
+        d.resolve()
+        $scope.$apply()
+
+        expect($scope.status).toEqual('idle')
+      )
+
+      it("should set the pod status to loading_failed if loading fails", () ->
+        spyOn(PodApiService, 'get').and.returnValue($q.reject(new PodApiServiceError(null)))
+
+        bindController()
+
+        $scope.init(21, 23, {title: 'Baz'})
+        $scope.$apply()
+        expect($scope.status).toEqual('loading_failed')
+      )
+    )
+
+    describe('update', () ->
+      it('should fetch and update pod data', () ->
+        $scope.podId = 21
+        $scope.caseId = 23
+
+        spyOn(PodApiService, 'get').and.returnValue($q.resolve({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }]
+          actions: [{
+            type: 'baz',
+            name: 'Baz',
+            payload: {}
+          }]
+        }))
+
+        bindController()
+
+        $scope.update()
+        $scope.$apply()
+
+        expect(PodApiService.get).toHaveBeenCalledWith(21, 23)
+
+        expect($scope.podData).toEqual({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }],
+          actions: [
+            jasmine.objectContaining({
+              type: 'baz'
+              name: 'Baz',
+              payload: {}
+            })
+          ]
+        })
+      )
+
+      it("should default an action's busy text to the action's name", () ->
+        $scope.podId = 21
+        $scope.caseId = 23
+
+        spyOn(PodApiService, 'get').and.returnValue($q.resolve({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }]
+          actions: [{
+            type: 'baz',
+            name: 'Baz',
+            busy_text: 'Bazzing',
+            payload: {}
+          }, {
+            type: 'quux',
+            name: 'Quux',
+            payload: {}
+          }]
+        }))
+
+        bindController()
+
+        $scope.update()
+        $scope.$apply()
+
+        expect(PodApiService.get).toHaveBeenCalledWith(21, 23)
+
+        expect($scope.podData.actions).toEqual([
+          jasmine.objectContaining({
+            type: 'baz'
+            busyText: 'Bazzing'
+          }),
+          jasmine.objectContaining({
+            type: 'quux',
+            busyText: 'Quux'
+          })
+        ])
+      )
+    )
+
+    describe('trigger', () ->
+      it('should trigger the given action', () ->
+        $scope.podId = 21
+        $scope.caseId = 23
+
+        bindController()
+
+        spyOn(PodApiService, 'trigger').and.returnValue($q.resolve({
+          success: true
+        }))
+
+        $scope.trigger({
+          type: 'grault',
+          payload: {garply: 'waldo'}
+        })
+
+        $scope.$apply()
+
+        expect(PodApiService.trigger)
+          .toHaveBeenCalledWith(21, 23, 'grault', {garply: 'waldo'})
+      )
+
+      it('should mark the action as busy', () ->
+        $scope.podData.actions = [{
+          type: 'grault'
+          isBusy: false,
+          payload: {}
+        }, {
+          type: 'fred',
+          isBusy: false,
+          payload: {}
+        }]
+
+        bindController()
+
+        # defer getting new data indefinitely to prevent isBusy being set to
+        # false when we retrieve new data
+        spyOn(PodApiService, 'get').and.returnValue($q.defer().promise)
+
+        spyOn(PodApiService, 'trigger').and.returnValue($q.resolve({success: true}))
+
+        $scope.trigger({
+          type: 'grault',
+          payload: {garply: 'waldo'}
+        })
+
+        $scope.$apply()
+
+        expect($scope.podData.actions[0].isBusy).toBe(true)
+      )
+
+      it('should mark the action as not busy after api failure', () ->
+        $scope.podData.actions = [{
+          type: 'grault'
+          isBusy: false,
+          payload: {}
+        }, {
+          type: 'fred',
+          isBusy: false,
+          payload: {}
+        }]
+
+        bindController()
+
+        spyOn(PodApiService, 'get')
+          .and.returnValue($q.reject(new PodApiServiceError(null)))
+
+        $scope.trigger({
+          type: 'grault',
+          payload: {garply: 'waldo'}
+        })
+
+        $scope.$apply()
+
+        expect($scope.podData.actions[0].isBusy).toBe(false)
+      )
+
+      it('should emit an alert event if unsuccessful', (done) ->
+        bindController()
+
+        spyOn(PodApiService, 'trigger').and.returnValue($q.resolve({
+          success: false,
+          payload: {message: 'Foo'}
+        }))
+
+        spyOn(PodUIService, 'alertActionFailure').and.returnValue('fakeResult')
+
+        $scope.trigger({
+          type: 'grault',
+          payload: {garply: 'waldo'}
+        })
+
+        $scope.$on('alert', (e, res) ->
+          expect(res).toEqual('fakeResult')
+
+          expect(PodUIService.alertActionFailure.calls.allArgs())
+            .toEqual([['Foo']])
+
+          done())
+
+        $scope.$apply()
+      )
+
+      it('should emit a timelineChanged event if successful', (done) ->
+        bindController()
+        spyOn(PodApiService, 'trigger').and.returnValue($q.resolve({success: true}))
+
+        $scope.trigger('grault', {garply: 'waldo'})
+
+        $scope.$on('timelineChanged', -> done())
+
+        $scope.$apply()
+      )
+
+      it('should emit an alert if trigger api method fails', (done) ->
+        bindController()
+
+        spyOn(PodApiService, 'trigger')
+          .and.returnValue($q.reject(new PodApiServiceError(null)))
+
+        spyOn(PodUIService, 'alertActionApiFailure')
+          .and.returnValue('fakeResult')
+
+        $scope.trigger({
+          type: 'grault',
+          payload: {garply: 'waldo'}
+        })
+
+        $scope.$on('alert', (e, res) ->
+          expect(res).toEqual('fakeResult')
+          done())
+
+        $scope.$apply()
+      )
+
+      it('should emit an alert if get api method fails', (done) ->
+        bindController()
+
+        spyOn(PodApiService, 'get')
+          .and.returnValue($q.reject(new PodApiServiceError(null)))
+
+        spyOn(PodUIService, 'alertActionApiFailure')
+          .and.returnValue('fakeResult')
+
+        $scope.trigger({
+          type: 'grault',
+          payload: {garply: 'waldo'}
+        })
+
+        $scope.$on('alert', (e, res) ->
+          expect(res).toEqual('fakeResult')
+          done())
+
+        $scope.$apply()
+      )
+
+      it('should fetch and attach data to the scope if successful', () ->
+        bindController()
+
+        spyOn(PodApiService, 'get').and.returnValue($q.resolve({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }]
+          actions: [{
+            type: 'baz',
+            name: 'Baz',
+            payload: {}
+          }]
+        }))
+
+        spyOn(PodApiService, 'trigger').and.returnValue($q.resolve({success: true}))
+
+        $scope.trigger({
+          type: 'grault',
+          payload: {garply: 'waldo'}
+        })
+
+        $scope.$apply()
+
+        expect($scope.podData).toEqual({
+          items: [{
+            name: 'Foo',
+            value: 'Bar'
+          }],
+          actions: [
+            jasmine.objectContaining({
+              type: 'baz'
+              name: 'Baz',
+              payload: {}
+            })
+          ]
+        })
+      )
+
+      it('should show a confirmation model if the action requires it', () ->
+        bindController()
+        spyOn(PodUIService, 'confirmAction')
+
+        $scope.trigger({
+          type: 'grault',
+          name: 'Grault',
+          confirm: true,
+          payload: {garply: 'waldo'}
+        })
+
+        $scope.$apply()
+        expect(PodUIService.confirmAction.calls.allArgs()).toEqual([['Grault']])
+      )
     )
   )
 )

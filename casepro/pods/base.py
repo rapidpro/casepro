@@ -32,12 +32,59 @@ class Pod(object):
         return json.dumps(self.config._config_data)
 
     def read_data(self, params):
-        """Should return the data that should be used to create the display for the pod."""
+        """
+        Should return the data that should be used to create the display for the pod.
+
+        For the base implementation, the data should be an object with 'items' and 'actions' keys.
+
+        The items key should be a list of objects, that have 'name' and 'value' keys, with the value of the keys being
+        what will be displayed.
+
+        The 'actions' key should be a list of objects, that have 'type', 'name' and 'payload' keys, where type and
+        payload is what is sent to the 'perform_action' function to determine which button has been pressed, and 'name'
+        is the text that is displayed on the button.
+
+        Each action may include the following optional fields:
+            - ``busy_text``: used as the action's corresponding
+            button's text while waiting on a response from the pod's api side
+            when the action is triggered. Defaults to the value of the ``name``
+            field.
+            - ``confirm``: whether a confirmation modal should be shown to
+            confirm whether the user would like to perform the action. Defaults
+            to ``false``.
+
+        Example:
+        {
+            'items': [
+                {
+                    'name': 'EDD',
+                    'value': '2015-07-18',
+                },
+            ],
+            'actions': [
+                {
+                    'type': 'remove_edd',
+                    'name': 'Remove EDD',
+                    'payload': {},
+                    'busy_text': 'Removing EDD',
+                    'confirm': True
+                },
+            ],
+        }
+        """
         return {}
 
-    def perform_action(self, params):
-        """Should perform the action specified by params."""
-        return {}
+    def perform_action(self, type_, params):
+        """
+        Should perform the action specified by the type and params (which are specified in the read function).
+
+        Returns a tuple (success, payload), where 'success' is a boolean value indicating whether the action was
+        successful or not. If true, a case action note will be created.
+
+        For the base implementation, payload is an object with a 'message' key, which is the error message if success
+        is false, or the message to place in the case action note if success is true.
+        """
+        return (False, {'message': ''})
 
 
 class PodPlugin(AppConfig):

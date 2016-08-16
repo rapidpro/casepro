@@ -44,4 +44,10 @@ namespace('utils', (exports) ->
       if angular.equals(item[prop], value)
         return item
     return null
+
+  exports.trap = (type, acceptFn, rejectFn) -> (v) ->
+    if v instanceof type
+      acceptFn(v)
+    else
+      rejectFn(v)
 )

@@ -68,6 +68,8 @@
 
     .row
       .col-md-8
+        <cp-alerts alerts="alerts"></cp-alerts>
+
         %form.sendform{ ng-if:"!caseObj.is_closed" }
           // TODO maxlength not working
           %textarea.form-control{ type:"text", autocomplete:"off", placeholder:"Enter message", ng-maxlength:"{{ maxMsgChars }}", ng-model:"$parent.newMessage", ng-disabled:"sending", ng-change:"onNewMessageChanged()", ng-trim:"false" }
@@ -186,29 +188,25 @@
                 - trans "View"
 
         - for pod in pods
-            %div{
-              ng-controller:"={ pod.pod_type.controller }",
-              ng-init:'init && init(={ pod.config.index }, ={ case_id }, ={ pod.config_json })'
-            }
-              <={ pod.pod_type.directive }/>
+          %div{
+            ng-controller:"{{ pod.pod_type.controller }}",
+            ng-init:'init && init({{ pod.config.index }}, {{ case_id }}, {{ pod.config_json }})'
+          }
+          <{{ pod.pod_type.directive }} />
 
 - block extra-script
-  - compress js
-    - for pod_type in pod_types
-      - for script in pod_type.scripts
-        %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}{{ script }}" }
+  {{ block.super }}
+
+  - for pod_type in pod_types
+    - for script in pod_type.scripts
+      %script{ type:"text/javascript", src:"{{ STATIC_URL }}{{ script }}" }
 
 - block extra-style
   {{ block.super }}
 
-  - compress css
-    - for pod_type in pod_types
-      - for style in pod_type.styles
-        %link{
-          type:"text/less",
-          rel:"stylesheet",
-          href:"{{ STATIC_URL }}{{ style }}"
-        }
+  - for pod_type in pod_types
+    - for style in pod_type.styles
+      %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}{{ style }}" }
 
   :css
     .sendform {
