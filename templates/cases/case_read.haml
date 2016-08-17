@@ -183,7 +183,7 @@
             ng-controller:"{{ pod.pod_type.controller }}",
             ng-init:'init && init({{ pod.config.index }}, {{ case_id }}, {{ pod.config_json }})'
           }
-          <{{ pod.pod_type.directive }} />
+            <{{ pod.pod_type.directive }} />
 
 - block extra-script
   {{ block.super }}
