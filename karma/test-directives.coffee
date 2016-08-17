@@ -66,7 +66,6 @@ describe('directives:', () ->
   describe('cpTooltip', () ->
 
     it('adds an element with a tooltip to the dom', () ->
-      $templateCache.put('/sitestatic/templates/tooltip.html')
       $scope = $rootScope.$new()
 
       template = $compile('<cp-tooltip display-text="hello" tooltip-text="world" position="top" ></cp-tooltip>')
