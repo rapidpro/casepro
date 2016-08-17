@@ -33,6 +33,13 @@ class BaseCount(models.Model):
     TYPE_ARCHIVED = 'A'
     TYPE_REPLIES = 'R'
 
+    squash_sql = """
+        WITH removed as (
+            DELETE FROM %(table_name)s WHERE %(delete_cond)s RETURNING "count"
+        )
+        INSERT INTO %(table_name)s(%(insert_cols)s, "count")
+        VALUES (%(insert_vals)s, GREATEST(0, (SELECT SUM("count") FROM removed)));"""
+
     item_type = models.CharField(max_length=1, help_text=_("The thing being counted"))
 
     scope = models.CharField(max_length=32, help_text=_("The scope in which it is being counted"))
@@ -71,12 +78,7 @@ class BaseCount(models.Model):
 
         for unsquashed in unsquashed_values:
             with connection.cursor() as cursor:
-                sql = """
-                    WITH removed as (
-                        DELETE FROM %(table_name)s WHERE %(delete_cond)s RETURNING "count"
-                    )
-                    INSERT INTO %(table_name)s(%(insert_cols)s, "count")
-                    VALUES (%(insert_vals)s, GREATEST(0, (SELECT SUM("count") FROM removed)));""" % {
+                sql = cls.squash_sql % {
                     'table_name': cls._meta.db_table,
                     'delete_cond': " AND ".join(['"%s" = %%s' % f for f in cls.squash_over]),
                     'insert_cols': ", ".join(['"%s"' % f for f in cls.squash_over]),
@@ -117,6 +119,30 @@ class BaseCount(models.Model):
                 total_by_scope[scope] = total_by_encoded_scope.get(encoded_scope, 0)
 
             return total_by_scope
+
+    class Meta:
+        abstract = True
+
+
+class BaseAverage(BaseCount):
+    """
+    Tracks total minute counts of different items (e.g. time since assigned ) in different scopes (e.g. org, user)
+    """
+    TYPE_ASSIGNED_TILL_REPLIED = 'A'
+    TYPE_ASSIGNED_TILL_CLOSED = 'C'
+
+    squash_sql = """
+        WITH removed as (
+            DELETE FROM %(table_name)s WHERE %(delete_cond)s RETURNING "count", "total"
+        )
+        INSERT INTO %(table_name)s(%(insert_cols)s, "count", "total")
+        VALUES (
+            %(insert_vals)s,
+            GREATEST(0, (SELECT SUM("count") FROM removed)),
+            GREATEST(0, (SELECT SUM("total") FROM removed))
+        );"""
+
+    total = models.IntegerField()
 
     class Meta:
         abstract = True
