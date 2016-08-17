@@ -128,8 +128,8 @@ class BaseAverage(BaseCount):
     """
     Tracks total minute counts of different items (e.g. time since assigned ) in different scopes (e.g. org, user)
     """
-    TYPE_ASSIGNED_TILL_REPLIED = 'A'
-    TYPE_ASSIGNED_TILL_CLOSED = 'C'
+    TYPE_TILL_REPLIED = 'A'
+    TYPE_TILL_CLOSED = 'C'
 
     squash_sql = """
         WITH removed as (
