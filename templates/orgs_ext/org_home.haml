@@ -74,6 +74,12 @@
               - trans "Replies last month"
             %th
               - trans "Total replies"
+            %th
+              - trans "Cases Opened this month"
+            %th
+              - trans "Cases Closed this month"
+            %th
+              - trans "Total Cases opened"
           %tbody
             %tr{ ng-repeat:"partner in partners" }
               %td
@@ -85,6 +91,12 @@
                 [[ partner.replies.last_month ]]
               %td
                 [[ partner.replies.total ]]
+              %td
+                [[ partner.cases.opened_this_month ]]
+              %td
+                [[ partner.cases.closed_this_month ]]
+              %td
+                [[ partner.cases.total ]]
         .none{ ng-if:"!partners" }
           - trans "None"
 

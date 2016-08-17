@@ -403,20 +403,34 @@ class PartnerCRUDL(SmartCRUDL):
         def render_as_json(self, partners, with_activity):
             if with_activity:
                 # get reply statistics
-                total = DailyCount.get_by_partner(partners, DailyCount.TYPE_REPLIES, None, None).scope_totals()
-                this_month = DailyCount.get_by_partner(partners, DailyCount.TYPE_REPLIES,
-                                                       *month_range(0)).scope_totals()
-                last_month = DailyCount.get_by_partner(partners, DailyCount.TYPE_REPLIES,
-                                                       *month_range(-1)).scope_totals()
+                replies_total = DailyCount.get_by_partner(partners, DailyCount.TYPE_REPLIES, None, None).scope_totals()
+                replies_this_month = DailyCount.get_by_partner(
+                    partners, DailyCount.TYPE_REPLIES, *month_range(0)).scope_totals()
+                replies_last_month = DailyCount.get_by_partner(
+                    partners, DailyCount.TYPE_REPLIES, *month_range(-1)).scope_totals()
+
+                # get cases statistics
+                cases_total = DailyCount.get_by_partner(partners, DailyCount.TYPE_CASE, None, None).scope_totals()
+                cases_opened_this_month = DailyCount.get_by_partner(
+                    partners, DailyCount.TYPE_CASE, *month_range(0)).scope_totals()
+                cases_closed_this_month = DailyCount.get_by_partner(
+                    partners, DailyCount.TYPE_CASE, *month_range(-1)).scope_totals()
 
             def as_json(partner):
                 obj = partner.as_json()
                 if with_activity:
-                    obj['replies'] = {
-                        'this_month': this_month.get(partner, 0),
-                        'last_month': last_month.get(partner, 0),
-                        'total': total.get(partner, 0)
-                    }
+                    obj.update({
+                        'replies': {
+                            'this_month': replies_this_month.get(partner, 0),
+                            'last_month': replies_last_month.get(partner, 0),
+                            'total': replies_total.get(partner, 0)
+                        },
+                        'cases': {
+                            'opened_this_month': cases_opened_this_month.get(partner, 0),
+                            'closed_this_month': cases_closed_this_month.get(partner, 0),
+                            'total': cases_total.get(partner, 0)
+                        }
+                    })
                 return obj
 
             return JsonResponse({'results': [as_json(p) for p in partners]})
