@@ -61,4 +61,4 @@ def record_new_case(sender, instance, created, **kwargs):
         return
 
     day = datetime_to_date(instance.opened_on, instance.org)
-    DailyCount.record_item(day, DailyCount.TYPE_CASE, instance.org, instance)
+    DailyCount.record_item(day, DailyCount.TYPE_CASE, instance)

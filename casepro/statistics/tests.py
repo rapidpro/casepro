@@ -12,6 +12,7 @@ from mock import patch
 
 from casepro.test import BaseCasesTest
 from casepro.utils import date_to_milliseconds
+from casepro.cases.models import Case
 
 from .models import DailyCount, DailyCountExport
 from .tasks import squash_counts
@@ -168,6 +169,19 @@ class DailyCountsTest(BaseStatsTest):
 
         self.assertEqual(DailyCount.get_by_label([self.aids], 'I').day_totals(), [(date(2015, 1, 1), 0)])
         self.assertEqual(DailyCount.get_by_label([self.tea], 'I').day_totals(), [(date(2015, 1, 1), 0)])
+
+    def test_case_counts(self):
+        d1 = self.anytime_on_day(date(2015, 1, 1), pytz.UTC)
+        msg2 = self.create_message(
+            self.unicef, 234, self.ann, "Hello again", [self.aids],
+            created_on=d1)
+
+        with patch.object(timezone, 'now', return_value=d1):
+            case = Case.get_or_open(
+                self.unicef, self.user1, msg2, "Summary", self.moh)
+        self.assertEqual(
+            DailyCount.get_by_case([case], DailyCount.TYPE_CASE).day_totals(),
+            [(date(2015, 1, 1), 1)])
 
 
 class DailyCountExportTest(BaseStatsTest):
