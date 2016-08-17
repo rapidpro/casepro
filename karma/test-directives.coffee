@@ -60,6 +60,29 @@ describe('directives:', () ->
     )
   )
 
+  #=======================================================================
+  # Tests for tooltip
+  #=======================================================================
+  describe('cpTooltip', () ->
+
+    it('adds an element with a tooltip to the dom', () ->
+      $templateCache.put('/sitestatic/templates/tooltip.html')
+      $scope = $rootScope.$new()
+
+      template = $compile('<cp-tooltip display-text="hello" tooltip-text="world" position="top" ></cp-tooltip>')
+      element = template($scope)[0]
+      $rootScope.$digest()
+
+      expect(element.textContent).toMatch("hello")
+
+      div = element.querySelector('div')
+      expect(div.hasAttribute("uib-tooltip")).toBe(true)
+      expect(div.getAttribute("uib-tooltip")).toMatch("world")
+      expect(div.hasAttribute("tooltip-placement")).toBe(true)
+      expect(div.getAttribute("tooltip-placement")).toMatch("top")
+    )
+  )
+
   describe('fieldvalue', () ->
     $filter = null
 
