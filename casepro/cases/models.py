@@ -249,7 +249,7 @@ class Case(models.Model):
         if before:
             queryset = queryset.filter(opened_on__lte=before)
 
-        queryset = queryset.select_related('contact', 'assignee')
+        queryset = queryset.select_related('contact', 'assignee', 'user_assignee')
 
         queryset = queryset.prefetch_related(
             Prefetch('labels', Label.objects.filter(is_active=True))
