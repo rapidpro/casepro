@@ -891,6 +891,19 @@ class CaseCRUDLTest(BaseCasesTest):
         mock_fetch_contact_messages.assert_called_once_with(self.unicef, self.ann, d1, case.closed_on)
         mock_fetch_contact_messages.reset_mock()
 
+    def test_timeline_no_initial_message(self):
+        '''If a case has no initial message, the timeline should start from the datetime it was opened.'''
+        case = self.create_case(self.unicef, self.ann, self.moh, message=None, user_assignee=self.user1)
+        caseaction = CaseAction.create(case, self.user1, CaseAction.OPEN, assignee=self.moh, user_assignee=self.user1)
+
+        timeline_url = reverse('cases.case_timeline', args=[case.pk])
+        self.login(self.user1)
+        response = self.url_get('unicef', '%s?after=' % timeline_url)
+
+        [case_open] = response.json['results']
+        self.assertEqual(case_open['item']['action'], CaseAction.OPEN)
+        self.assertEqual(case_open['item']['id'], caseaction.pk)
+
     def test_search(self):
         url = reverse('cases.case_search')
 
