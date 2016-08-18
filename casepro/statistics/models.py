@@ -180,10 +180,6 @@ class DailyCount(BaseCount):
         return cls._get_count_set(item_type, {cls.encode_scope(l): l for l in labels}, since, until)
 
     @classmethod
-    def get_by_case(cls, cases, item_type, since=None, until=None):
-        return cls._get_count_set(item_type, {cls.encode_scope(c.assignee): c for c in cases}, since, until)
-
-    @classmethod
     def _get_count_set(cls, item_type, scopes, since, until):
         counts = cls.objects.filter(item_type=item_type)
         if scopes:

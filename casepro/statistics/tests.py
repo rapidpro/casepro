@@ -180,10 +180,10 @@ class DailyCountsTest(BaseStatsTest):
             case = Case.get_or_open(
                 self.unicef, self.user1, msg2, "Summary", self.moh)
         self.assertEqual(
-            DailyCount.get_by_case([case], DailyCount.TYPE_CASE_OPENED).day_totals(),
+            DailyCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_OPENED).day_totals(),
             [(date(2015, 1, 1), 1)])
         self.assertEqual(
-            DailyCount.get_by_case([case], DailyCount.TYPE_CASE_CLOSED).day_totals(),
+            DailyCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_CLOSED).day_totals(),
             [])
 
     def test_case_counts_closed(self):
@@ -198,10 +198,10 @@ class DailyCountsTest(BaseStatsTest):
             case.close(self.user1, note='closing case')
 
         self.assertEqual(
-            DailyCount.get_by_case([case], DailyCount.TYPE_CASE_OPENED).day_totals(),
+            DailyCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_OPENED).day_totals(),
             [(date(2015, 1, 1), 1)])
         self.assertEqual(
-            DailyCount.get_by_case([case], DailyCount.TYPE_CASE_CLOSED).day_totals(),
+            DailyCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_CLOSED).day_totals(),
             [(date(2015, 1, 1), 1)])
 
 
