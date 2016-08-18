@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
                 ('item_type', models.CharField(help_text='The thing being counted', max_length=1)),
                 ('scope', models.CharField(help_text='The scope in which it is being counted', max_length=32)),
                 ('count', models.IntegerField()),
-                ('total', models.IntegerField()),
+                ('minutes', models.IntegerField()),
             ],
             options={
                 'abstract': False,

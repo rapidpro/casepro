@@ -133,16 +133,16 @@ class BaseMinuteTotal(BaseCount):
 
     squash_sql = """
         WITH removed as (
-            DELETE FROM %(table_name)s WHERE %(delete_cond)s RETURNING "count", "total"
+            DELETE FROM %(table_name)s WHERE %(delete_cond)s RETURNING "count", "minutes"
         )
-        INSERT INTO %(table_name)s(%(insert_cols)s, "count", "total")
+        INSERT INTO %(table_name)s(%(insert_cols)s, "count", "minutes")
         VALUES (
             %(insert_vals)s,
             GREATEST(0, (SELECT SUM("count") FROM removed)),
-            COALESCE((SELECT SUM("total") FROM removed), 0)
+            COALESCE((SELECT SUM("minutes") FROM removed), 0)
         );"""
 
-    total = models.IntegerField()
+    minutes = models.IntegerField()
 
     class Meta:
         abstract = True
@@ -305,5 +305,28 @@ class MinuteTotalCount(BaseMinuteTotal):
     last_squash_key = 'minute_total_count:last_squash'
 
     @classmethod
-    def record_item(cls, total, item_type, *scope_args):
-        cls.objects.create(item_type=item_type, scope=cls.encode_scope(*scope_args), count=1, total=total)
+    def record_item(cls, minutes, item_type, *scope_args):
+        cls.objects.create(item_type=item_type, scope=cls.encode_scope(*scope_args), count=1, minutes=minutes)
+
+    @classmethod
+    def get_by_org(cls, orgs, item_type, since=None, until=None):
+        return cls._get_count_set(item_type, {cls.encode_scope(o): o for o in orgs}, since, until)
+
+    @classmethod
+    def get_by_partner(cls, partners, item_type, since=None, until=None):
+        return cls._get_count_set(item_type, {cls.encode_scope(p): p for p in partners}, since, until)
+
+    @classmethod
+    def get_by_user(cls, org, users, item_type, since=None, until=None):
+        return cls._get_count_set(item_type, {cls.encode_scope(org, u): u for u in users}, since, until)
+
+    @classmethod
+    def _get_count_set(cls, item_type, scopes, since, until):
+        counts = cls.objects.filter(item_type=item_type)
+        if scopes:
+            counts = counts.filter(scope__in=scopes.keys())
+        if since:
+            counts = counts.filter(day__gte=since)
+        if until:
+            counts = counts.filter(day__lt=until)
+        return MinuteTotalCount.CountSet(counts, scopes)
