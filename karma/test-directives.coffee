@@ -5,16 +5,18 @@ describe('directives:', () ->
   $rootScope = null
   $templateCache = null
   $q = null
+  $filter = null
 
   beforeEach(() ->
     module('templates')
     module('cases')
 
-    inject((_$compile_, _$rootScope_, _$templateCache_, _$q_) ->
+    inject((_$compile_, _$rootScope_, _$templateCache_, _$q_, _$filter_) ->
       $compile = _$compile_
       $rootScope = _$rootScope_
       $templateCache = _$templateCache_
       $q = _$q_
+      $filter = _$filter_
     )
   )
 
@@ -67,16 +69,19 @@ describe('directives:', () ->
 
     it('adds an element with a tooltip to the dom', () ->
       $scope = $rootScope.$new()
+      $scope.time = new Date "December 25, 2016 23:15:00"
 
-      template = $compile('<cp-date-tooltip display-text="hello" tooltip-text="world" position="top" />')
+      template = $compile('<cp-date-tooltip time=time position="top-right" />')
       element = template($scope)[0]
       $rootScope.$digest()
 
-      expect(element.textContent).toMatch("hello")
+      autodate = $filter('autodate')
+      expect(element.textContent).toMatch(autodate($scope.time))
 
       div = element.querySelector('div')
       expect(div.hasAttribute("uib-tooltip")).toBe(true)
-      expect(div.getAttribute("uib-tooltip")).toMatch("world")
+      fulldate = $filter('fulldate')
+      expect(div.getAttribute("uib-tooltip")).toMatch(fulldate($scope.time))
       expect(div.hasAttribute("tooltip-placement")).toBe(true)
       expect(div.getAttribute("tooltip-placement")).toMatch("top")
     )
