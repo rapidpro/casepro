@@ -166,6 +166,20 @@ class BaseMinuteTotal(BaseCount):
             total = self.counts.aggregate(total_minutes=Sum('minutes'))
             return total['total_minutes'] if total['total_minutes'] is not None else 0
 
+        def scope_averages(self):
+            """
+            Calculates per-scope averages over a set of counts
+            """
+            totals = list(self.counts.values_list('scope').annotate(cases=Sum('count'), minutes=Sum('minutes')))
+            total_by_encoded_scope = {t[0]: (t[1], t[2]) for t in totals}
+
+            average_by_scope = {}
+            for encoded_scope, scope in six.iteritems(self.scopes):
+                cases, minutes = total_by_encoded_scope.get(encoded_scope, (1, 0))
+                average_by_scope[scope] = float(minutes) / cases
+
+            return average_by_scope
+
     class Meta:
         abstract = True
 
