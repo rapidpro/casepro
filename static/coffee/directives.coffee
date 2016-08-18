@@ -67,7 +67,7 @@ directives.directive('cpPod', -> {
 directives.directive('cpDateTooltip', () ->
   return {
     restrict: 'E',
-    scope: {displayText: '@', tooltipText: '@', position: '@'},
+    scope: {time: '=', position: '@'},
     templateUrl: '/sitestatic/templates/tooltip.html',
   }
 )

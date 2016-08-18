@@ -32,7 +32,7 @@
     .messages{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"!isInfiniteScrollEnabled()" }
       .stackitem.clearfix.hoverable{ ng-repeat:"item in items" }
         .message-time
-          <cp-date-tooltip display-text="[[ item.time | autodate]]" tooltip-text="[[ item.time | fulldate ]]" position="top-right" />
+          <cp-date-tooltip time=item.time position="top-right" />
         .message-sender
           %a{ ng-href:"/user/read/[[ item.sender.id ]]/" }><
             [[ item.sender.name ]]
