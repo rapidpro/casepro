@@ -124,9 +124,9 @@ class BaseCount(models.Model):
         abstract = True
 
 
-class BaseAverage(BaseCount):
+class BaseMinuteTotal(BaseCount):
     """
-    Tracks total minute counts of different items (e.g. time since assigned ) in different scopes (e.g. org, user)
+    Tracks total minutes and counts of different items (e.g. time since assigned ) in different scopes (e.g. org, user)
     """
     TYPE_TILL_REPLIED = 'A'
     TYPE_TILL_CLOSED = 'C'
@@ -139,7 +139,7 @@ class BaseAverage(BaseCount):
         VALUES (
             %(insert_vals)s,
             GREATEST(0, (SELECT SUM("count") FROM removed)),
-            GREATEST(0, (SELECT SUM("total") FROM removed))
+            COALESCE((SELECT SUM("total") FROM removed), 0)
         );"""
 
     total = models.IntegerField()
