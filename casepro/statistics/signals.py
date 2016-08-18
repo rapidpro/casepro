@@ -4,7 +4,7 @@ from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
 
 from casepro.msgs.models import Message, Label, Outgoing
-from casepro.cases.models import Case
+from casepro.cases.models import Case, CaseAction
 
 from .models import datetime_to_date, DailyCount
 
@@ -62,3 +62,25 @@ def record_new_case(sender, instance, created, **kwargs):
         DailyCount.record_item(day, DailyCount.TYPE_CASE_CLOSED, instance.assignee)
     else:
         DailyCount.record_item(day, DailyCount.TYPE_CASE_OPENED, instance.assignee)
+
+
+@receiver(post_save, sender=CaseAction)
+def record_new_case_action(sender, instance, created, **kwargs):
+    org = instance.case.org
+    user = instance.created_by
+
+    day = datetime_to_date(instance.created_on, instance.case.org)
+    if instance.action in [CaseAction.OPEN, CaseAction.REOPEN]:
+        DailyCount.record_item(day, DailyCount.TYPE_CASE_OPENED, org, user)
+    elif instance.action == CaseAction.REASSIGN:
+
+        DailyCount.record_item(day, DailyCount.TYPE_CASE_OPENED, org, user)
+
+        previous_user = CaseAction.objects.filter(
+            case=instance.case).order_by('-created_by').first()
+        if previous_user:
+            DailyCount.record_item(
+                day, DailyCount.TYPE_CASE_CLOSED, org, previous_user)
+    elif instance.action == CaseAction.CLOSE:
+        DailyCount.record_item(
+            day, DailyCount.TYPE_CASE_CLOSED, org, user)
