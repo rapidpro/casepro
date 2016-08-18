@@ -171,7 +171,7 @@ class DailyCountsTest(BaseStatsTest):
         self.assertEqual(DailyCount.get_by_label([self.tea], 'I').day_totals(), [(date(2015, 1, 1), 0)])
 
     def test_case_counts_opened(self):
-        d1 = self.anytime_on_day(date(2015, 1, 1), pytz.UTC)
+        d1 = self.anytime_on_day(date(2015, 1, 1), pytz.timezone("Africa/Kampala"))
         msg2 = self.create_message(
             self.unicef, 234, self.ann, "Hello again", [self.aids],
             created_on=d1)
@@ -187,8 +187,15 @@ class DailyCountsTest(BaseStatsTest):
             DailyCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_CLOSED).day_totals(),
             [])
 
+        self.assertEqual(
+            DailyCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_OPENED).day_totals(),
+            [(date(2015, 1, 1), 1)])
+        self.assertEqual(
+            DailyCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_CLOSED).day_totals(),
+            [])
+
     def test_case_counts_closed(self):
-        d1 = self.anytime_on_day(date(2015, 1, 1), pytz.UTC)
+        d1 = self.anytime_on_day(date(2015, 1, 1), pytz.timezone("Africa/Kampala"))
         msg2 = self.create_message(
             self.unicef, 234, self.ann, "Hello again", [self.aids],
             created_on=d1)
@@ -203,6 +210,13 @@ class DailyCountsTest(BaseStatsTest):
             [(date(2015, 1, 1), 1)])
         self.assertEqual(
             DailyCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_CLOSED).day_totals(),
+            [(date(2015, 1, 1), 1)])
+
+        self.assertEqual(
+            DailyCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_OPENED).day_totals(),
+            [(date(2015, 1, 1), 1)])
+        self.assertEqual(
+            DailyCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_CLOSED).day_totals(),
             [(date(2015, 1, 1), 1)])
 
 
