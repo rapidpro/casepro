@@ -57,8 +57,8 @@ def record_incoming_labelling(sender, instance, action, reverse, model, pk_set, 
 
 @receiver(post_save, sender=Case)
 def record_new_case(sender, instance, created, **kwargs):
-    if not created:
-        return
-
     day = datetime_to_date(instance.opened_on, instance.org)
-    DailyCount.record_item(day, DailyCount.TYPE_CASE, instance.assignee)
+    if instance.closed_on:
+        DailyCount.record_item(day, DailyCount.TYPE_CASE_CLOSED, instance.assignee)
+    else:
+        DailyCount.record_item(day, DailyCount.TYPE_CASE_OPENED, instance.assignee)

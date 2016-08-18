@@ -32,7 +32,8 @@ class BaseCount(models.Model):
     TYPE_INBOX = 'N'
     TYPE_ARCHIVED = 'A'
     TYPE_REPLIES = 'R'
-    TYPE_CASE = 'C'
+    TYPE_CASE_OPENED = 'C'
+    TYPE_CASE_CLOSED = 'D'
 
     item_type = models.CharField(max_length=1, help_text=_("The thing being counted"))
 

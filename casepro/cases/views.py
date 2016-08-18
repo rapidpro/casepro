@@ -403,18 +403,20 @@ class PartnerCRUDL(SmartCRUDL):
         def render_as_json(self, partners, with_activity):
             if with_activity:
                 # get reply statistics
-                replies_total = DailyCount.get_by_partner(partners, DailyCount.TYPE_REPLIES, None, None).scope_totals()
+                replies_total = DailyCount.get_by_partner(
+                    partners, DailyCount.TYPE_REPLIES, None, None).scope_totals()
                 replies_this_month = DailyCount.get_by_partner(
                     partners, DailyCount.TYPE_REPLIES, *month_range(0)).scope_totals()
                 replies_last_month = DailyCount.get_by_partner(
                     partners, DailyCount.TYPE_REPLIES, *month_range(-1)).scope_totals()
 
                 # get cases statistics
-                cases_total = DailyCount.get_by_partner(partners, DailyCount.TYPE_CASE, None, None).scope_totals()
+                cases_total = DailyCount.get_by_partner(
+                    partners, DailyCount.TYPE_CASE_OPENED, None, None).scope_totals()
                 cases_opened_this_month = DailyCount.get_by_partner(
-                    partners, DailyCount.TYPE_CASE, *month_range(0)).scope_totals()
+                    partners, DailyCount.TYPE_CASE_OPENED, *month_range(0)).scope_totals()
                 cases_closed_this_month = DailyCount.get_by_partner(
-                    partners, DailyCount.TYPE_CASE, *month_range(-1)).scope_totals()
+                    partners, DailyCount.TYPE_CASE_CLOSED, *month_range(-1)).scope_totals()
 
             def as_json(partner):
                 obj = partner.as_json()

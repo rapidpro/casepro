@@ -170,7 +170,7 @@ class DailyCountsTest(BaseStatsTest):
         self.assertEqual(DailyCount.get_by_label([self.aids], 'I').day_totals(), [(date(2015, 1, 1), 0)])
         self.assertEqual(DailyCount.get_by_label([self.tea], 'I').day_totals(), [(date(2015, 1, 1), 0)])
 
-    def test_case_counts(self):
+    def test_case_counts_opened(self):
         d1 = self.anytime_on_day(date(2015, 1, 1), pytz.UTC)
         msg2 = self.create_message(
             self.unicef, 234, self.ann, "Hello again", [self.aids],
@@ -180,7 +180,28 @@ class DailyCountsTest(BaseStatsTest):
             case = Case.get_or_open(
                 self.unicef, self.user1, msg2, "Summary", self.moh)
         self.assertEqual(
-            DailyCount.get_by_case([case], DailyCount.TYPE_CASE).day_totals(),
+            DailyCount.get_by_case([case], DailyCount.TYPE_CASE_OPENED).day_totals(),
+            [(date(2015, 1, 1), 1)])
+        self.assertEqual(
+            DailyCount.get_by_case([case], DailyCount.TYPE_CASE_CLOSED).day_totals(),
+            [])
+
+    def test_case_counts_closed(self):
+        d1 = self.anytime_on_day(date(2015, 1, 1), pytz.UTC)
+        msg2 = self.create_message(
+            self.unicef, 234, self.ann, "Hello again", [self.aids],
+            created_on=d1)
+
+        with patch.object(timezone, 'now', return_value=d1):
+            case = Case.get_or_open(
+                self.unicef, self.user1, msg2, "Summary", self.moh)
+            case.close(self.user1, note='closing case')
+
+        self.assertEqual(
+            DailyCount.get_by_case([case], DailyCount.TYPE_CASE_OPENED).day_totals(),
+            [(date(2015, 1, 1), 1)])
+        self.assertEqual(
+            DailyCount.get_by_case([case], DailyCount.TYPE_CASE_CLOSED).day_totals(),
             [(date(2015, 1, 1), 1)])
 
 
