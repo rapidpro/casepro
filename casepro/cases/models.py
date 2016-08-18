@@ -157,7 +157,7 @@ class Case(models.Model):
 
     contact = models.ForeignKey(Contact, related_name='cases')
 
-    initial_message = models.OneToOneField(Message, related_name='initial_case')
+    initial_message = models.OneToOneField(Message, null=True, related_name='initial_case')
 
     summary = models.CharField(verbose_name=_("Summary"), max_length=255)
 
