@@ -11,7 +11,7 @@ from django.db.models import Sum
 from django.utils.functional import SimpleLazyObject
 from django.utils.translation import ugettext_lazy as _
 
-from casepro.cases.models import Partner, Case
+from casepro.cases.models import Partner
 from casepro.msgs.models import Label
 from casepro.utils import date_range
 from casepro.utils.export import BaseExport
@@ -56,8 +56,6 @@ class BaseCount(models.Model):
             return 'partner:%d' % args[0].pk
         elif types == [Org, User]:
             return 'org:%d:user:%d' % (args[0].pk, args[1].pk)
-        elif types == [Case]:
-            return 'case:%d' % (args[0].pk,)
         elif types == [Label]:
             return 'label:%d' % args[0].pk
         else:  # pragma: no cover
@@ -182,7 +180,7 @@ class DailyCount(BaseCount):
 
     @classmethod
     def get_by_case(cls, cases, item_type, since=None, until=None):
-        return cls._get_count_set(item_type, {cls.encode_scope(c): c for c in cases}, since, until)
+        return cls._get_count_set(item_type, {cls.encode_scope(c.assignee): c for c in cases}, since, until)
 
     @classmethod
     def _get_count_set(cls, item_type, scopes, since, until):
