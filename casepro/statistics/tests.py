@@ -10,10 +10,11 @@ from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch
 
+from casepro.msgs.models import Outgoing
 from casepro.test import BaseCasesTest
 from casepro.utils import date_to_milliseconds
 
-from .models import DailyCount, DailyCountExport
+from .models import DailyCount, DailyCountExport, MinuteTotalCount
 from .tasks import squash_counts
 
 
@@ -334,3 +335,31 @@ class ChartsTest(BaseStatsTest):
             self.assertEqual(series[2], {'y': 1, 'name': "Label #0"})  # labels with same count in alphabetical order
             self.assertEqual(series[8], {'y': 1, 'name': "Label #6"})
             self.assertEqual(series[9], {'y': 3, 'name': "Other"})
+
+
+class MinuteTotalCountsTest(BaseStatsTest):
+
+    def test_first_reply_counts(self):
+        msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
+        msg2 = self.create_message(self.unicef, 234, self.ned, "Hello 2", [self.aids, self.pregnancy])
+        msg3 = self.create_message(self.unicef, 345, self.ann, "Hello 3", [self.pregnancy])
+        msg4 = self.create_message(self.nyaruka, 456, self.ned, "Hello 4", [self.code])
+
+        case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [self.aids])
+        case2 = self.create_case(self.unicef, self.ned, self.moh, msg2, [self.aids, self.pregnancy])
+        case3 = self.create_case(self.unicef, self.ann, self.who, msg3, [self.pregnancy])
+        case4 = self.create_case(self.unicef, self.ned, self.who, msg4, [self.code])
+
+        self.create_outgoing(self.unicef, self.user1, 201, Outgoing.CASE_REPLY, "Good question", self.ann, case=case1)
+        self.create_outgoing(self.unicef, self.user1, 201, Outgoing.CASE_REPLY, "Good question", self.ned, case=case2)
+        self.create_outgoing(self.unicef, self.user3, 201, Outgoing.CASE_REPLY, "Good question", self.ann, case=case3)
+        self.create_outgoing(self.unicef, self.user3, 201, Outgoing.CASE_REPLY, "Good question", self.ned, case=case4)
+
+        self.assertEqual(MinuteTotalCount.get_by_org([self.unicef], 'A').total(), 4)
+        self.assertEqual(MinuteTotalCount.get_by_org([self.unicef], 'A').minutes(), 4)
+        self.assertEqual(MinuteTotalCount.get_by_partner([self.moh], 'A').total(), 2)
+        self.assertEqual(MinuteTotalCount.get_by_partner([self.moh], 'A').minutes(), 2)
+        self.assertEqual(MinuteTotalCount.get_by_partner([self.moh], 'A').average(), 1)
+        self.assertEqual(MinuteTotalCount.get_by_partner([self.who], 'A').total(), 2)
+        self.assertEqual(MinuteTotalCount.get_by_partner([self.who], 'A').minutes(), 2)
+        self.assertEqual(MinuteTotalCount.get_by_partner([self.who], 'A').average(), 1)
