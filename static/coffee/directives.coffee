@@ -64,7 +64,7 @@ directives.directive('cpPod', -> {
 # Tooltip directive
 # Shows 'displayText' with a tooltip at 'position' containing 'tooltipText'
 #=====================================================================
-directives.directive('cpTooltip', () ->
+directives.directive('cpDateTooltip', () ->
   return {
     restrict: 'E',
     scope: {displayText: '@', tooltipText: '@', position: '@'},

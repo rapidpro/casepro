@@ -63,12 +63,12 @@ describe('directives:', () ->
   #=======================================================================
   # Tests for tooltip
   #=======================================================================
-  describe('cpTooltip', () ->
+  describe('cpDateTooltip', () ->
 
     it('adds an element with a tooltip to the dom', () ->
       $scope = $rootScope.$new()
 
-      template = $compile('<cp-tooltip display-text="hello" tooltip-text="world" position="top" ></cp-tooltip>')
+      template = $compile('<cp-date-tooltip display-text="hello" tooltip-text="world" position="top" />')
       element = template($scope)[0]
       $rootScope.$digest()
 

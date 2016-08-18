@@ -41,7 +41,7 @@
           .list-group
             %a.list-group-item{ ng-repeat:"item in cases", ng-href:"/case/read/[[ item.id ]]/" }
               .case-time
-                <cp-tooltip display-text="[[ item.opened_on | autodate]]" tooltip-text="[[ item.opened_on | fulldate ]]" position="top-right"><cp-tooltip>
+                <cp-date-tooltip display-text="[[ item.opened_on | autodate]]" tooltip-text="[[ item.opened_on | fulldate ]]" position="top-right" />
               .case-text
                 %span.label-container
                   %span.label.label-warning

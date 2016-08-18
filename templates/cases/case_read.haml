@@ -78,7 +78,7 @@
         .timeline{ ng-controller:"CaseTimelineController", ng-init:"init()" }
           .timeline-event.clearfix{ ng-repeat:"event in timeline | reverse", ng-class:'{ "timeline-action": (event.type == "A"), "timeline-incoming": (event.type == "I"), "timeline-outgoing": (event.type == "O") }' }
             .event-time
-              <cp-tooltip display-text="[[ event.time | autodate]]" tooltip-text="[[ event.time | fulldate ]]" position="top-right"><cp-tooltip>
+              <cp-date-tooltip display-text="[[ event.time | autodate]]" tooltip-text="[[ event.time | fulldate ]]" position="top-right" />
 
             .{ ng-if:'event.type == "A"' }
               %a{ ng-href:"/user/read/[[ event.item.created_by.id ]]/" }
