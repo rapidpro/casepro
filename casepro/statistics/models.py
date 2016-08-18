@@ -294,3 +294,16 @@ class DailyCountExport(BaseExport):
                 totals = [totals_by_partner.get(l, {}).get(day, 0) for l in partners]
                 self.write_row(sheet, row, [day] + totals)
                 row += 1
+
+
+class MinuteTotalCount(BaseMinuteTotal):
+    """
+    Tracks total minutes and count of different items in different scopes (e.g. org, user)
+    """
+
+    squash_over = ('item_type', 'scope')
+    last_squash_key = 'minute_total_count:last_squash'
+
+    @classmethod
+    def record_item(cls, total, item_type, *scope_args):
+        cls.objects.create(item_type=item_type, scope=cls.encode_scope(*scope_args), count=1, total=total)
