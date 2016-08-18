@@ -416,7 +416,7 @@ class PartnerCRUDL(SmartCRUDL):
                 cases_opened_this_month = DailyCount.get_by_partner(
                     partners, DailyCount.TYPE_CASE_OPENED, *month_range(0)).scope_totals()
                 cases_closed_this_month = DailyCount.get_by_partner(
-                    partners, DailyCount.TYPE_CASE_CLOSED, *month_range(-1)).scope_totals()
+                    partners, DailyCount.TYPE_CASE_CLOSED, *month_range(0)).scope_totals()
 
             def as_json(partner):
                 obj = partner.as_json()

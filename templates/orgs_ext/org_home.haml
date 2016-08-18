@@ -168,6 +168,12 @@
               - trans "Replies last month"
             %th
               - trans "Total replies"
+            %th
+              - trans "Cases Opened this month"
+            %th
+              - trans "Cases Closed this month"
+            %th
+              - trans "Total Cases opened"
           %tbody
             %tr{ ng-repeat:"user in users" }
               %td
@@ -179,6 +185,12 @@
                 [[ user.replies.last_month ]]
               %td
                 [[ user.replies.total ]]
+              %td
+                [[ user.cases.opened_this_month ]]
+              %td
+                [[ user.cases.closed_this_month ]]
+              %td
+                [[ user.cases.total ]]
         .none{ ng-if:"!users" }
           - trans "None"
 
