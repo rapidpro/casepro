@@ -144,6 +144,25 @@ class BaseMinuteTotal(BaseCount):
 
     minutes = models.IntegerField()
 
+    class CountSet(BaseCount.CountSet):
+        """
+        A queryset of counts which can be aggregated in different ways
+        """
+        def average(self):
+            """
+            Calculates the overall total over a set of counts
+            """
+            totals = self.counts.aggregate(total=Sum('count'), minutes=Sum('minutes'))
+            average = float(totals['minutes']) / totals['total']
+            return average
+
+        def minutes(self):
+            """
+            Calculates the overall total of minutes over a set of counts
+            """
+            total = self.counts.aggregate(total_minutes=Sum('minutes'))
+            return total['total_minutes'] if total['total_minutes'] is not None else 0
+
     class Meta:
         abstract = True
 
