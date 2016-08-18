@@ -1133,12 +1133,12 @@ class PartnerCRUDLTest(BaseCasesTest):
             {
                 'id': self.moh.pk, 'name': "MOH", 'restricted': True,
                 'replies': {'last_month': 0, 'this_month': 0, 'total': 0},
-                'cases': {'last_month': 0, 'this_month': 0, 'total': 0},
+                'cases': {'opened_this_month': 0, 'closed_this_month': 0, 'total': 0},
             },
             {
                 'id': self.who.pk, 'name': "WHO", 'restricted': True,
                 'replies': {'last_month': 0, 'this_month': 0, 'total': 0},
-                'cases': {'last_month': 0, 'this_month': 0, 'total': 0},
+                'cases': {'opened_this_month': 0, 'closed_this_month': 0, 'total': 0},
             }
         ]})
 

@@ -76,11 +76,12 @@ def record_new_case_action(sender, instance, created, **kwargs):
 
         DailyCount.record_item(day, DailyCount.TYPE_CASE_OPENED, org, user)
 
-        previous_user = CaseAction.objects.filter(
+        previous_action = CaseAction.objects.filter(
             case=instance.case).order_by('-created_by').first()
-        if previous_user:
+        if previous_action:
             DailyCount.record_item(
-                day, DailyCount.TYPE_CASE_CLOSED, org, previous_user)
+                day, DailyCount.TYPE_CASE_CLOSED, org,
+                previous_action.created_by)
     elif instance.action == CaseAction.CLOSE:
         DailyCount.record_item(
             day, DailyCount.TYPE_CASE_CLOSED, org, user)
