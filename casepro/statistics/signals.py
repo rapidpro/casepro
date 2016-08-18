@@ -4,6 +4,7 @@ from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
 from math import ceil
 
+from casepro.cases.models import CaseAction
 from casepro.msgs.models import Message, Label, Outgoing
 
 from .models import datetime_to_date, DailyCount, MinuteTotalCount
@@ -51,8 +52,13 @@ def record_new_outgoing(sender, instance, created, **kwargs):
                 # count the first response by this partner
                 if instance == case.outgoing_messages.filter(partner=partner).earliest('created_on'):
                     # only count the time since this case was (re)assigned to this partner
-                    action = case.actions.filter(assignee=partner).latest('created_on')
-                    td = instance.created_on - action.created_on
+                    try:
+                        action = case.actions.filter(assignee=partner).latest('created_on')
+                        start_date = action.created_on
+                    except CaseAction.DoesNotExist:
+                        start_date = case.opened_on
+
+                    td = instance.created_on - start_date
                     minutes_since_open = ceil(td.total_seconds() / 60)
                     MinuteTotalCount.record_item(minutes_since_open, MinuteTotalCount.TYPE_TILL_REPLIED, partner)
 
