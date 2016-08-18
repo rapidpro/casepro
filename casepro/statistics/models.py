@@ -153,6 +153,9 @@ class BaseMinuteTotal(BaseCount):
             Calculates the overall total over a set of counts
             """
             totals = self.counts.aggregate(total=Sum('count'), minutes=Sum('minutes'))
+            if totals['minutes'] is None or totals['total'] is None:
+                return 0
+
             average = float(totals['minutes']) / totals['total']
             return average
 

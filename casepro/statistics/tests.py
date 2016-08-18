@@ -364,6 +364,9 @@ class MinuteTotalCountsTest(BaseStatsTest):
         self.assertEqual(MinuteTotalCount.get_by_partner([self.who], 'A').minutes(), 2)
         self.assertEqual(MinuteTotalCount.get_by_partner([self.who], 'A').average(), 1)
 
+        # check empty partner metrics
+        self.assertEqual(MinuteTotalCount.get_by_partner([self.klab], 'A').average(), 0)
+
         self.assertEqual(MinuteTotalCount.objects.count(), 8)
         squash_counts()
         self.assertEqual(MinuteTotalCount.objects.count(), 3)
