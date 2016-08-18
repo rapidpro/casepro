@@ -68,6 +68,6 @@ directives.directive('cpDateTooltip', () ->
   return {
     restrict: 'E',
     scope: {time: '=', position: '@'},
-    templateUrl: '/sitestatic/templates/tooltip.html',
+    templateUrl: '/sitestatic/templates/date.html',
   }
 )
