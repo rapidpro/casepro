@@ -742,7 +742,7 @@ class UserCRUDLTest(BaseCasesTest):
                 'id': self.user1.pk, 'name': "Evan", 'email': "evan@unicef.org", 'role': "M",
                 'partner': {'id': self.moh.pk, 'name': "MOH"},
                 'replies': {'last_month': 1, 'this_month': 0, 'total': 2},
-                'cases': {'opened_this_month': 0, 'closed_this_month': 0, 'total': 0}
+                'cases': {'opened_this_month': 0, 'closed_this_month': 0, 'total': 2}
             },
             {
                 'id': self.user2.pk, 'name': "Rick", 'email': "rick@unicef.org", 'role': "Y",

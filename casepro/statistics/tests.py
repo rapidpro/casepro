@@ -179,6 +179,7 @@ class DailyCountsTest(BaseStatsTest):
         with patch.object(timezone, 'now', return_value=d1):
             case = Case.get_or_open(
                 self.unicef, self.user1, msg2, "Summary", self.moh)
+
         self.assertEqual(
             DailyCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_OPENED).day_totals(),
             [(date(2015, 1, 1), 1)])

@@ -57,6 +57,9 @@ def record_incoming_labelling(sender, instance, action, reverse, model, pk_set, 
 
 @receiver(post_save, sender=Case)
 def record_new_case(sender, instance, created, **kwargs):
+    """
+    This is where we keep track of DailyCounts for partners
+    """
     day = datetime_to_date(instance.opened_on, instance.org)
     if instance.closed_on:
         DailyCount.record_item(day, DailyCount.TYPE_CASE_CLOSED, instance.assignee)
@@ -66,6 +69,9 @@ def record_new_case(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=CaseAction)
 def record_new_case_action(sender, instance, created, **kwargs):
+    """
+    This is where we keep track of DailyCounts for users within organisations
+    """
     org = instance.case.org
     user = instance.created_by
 
