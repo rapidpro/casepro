@@ -67,11 +67,11 @@ describe('directives:', () ->
   #=======================================================================
   describe('cpDateTooltip', () ->
 
-    it('adds an element with a tooltip to the dom', () ->
+    it('adds tooltip at the specified position on the date', () ->
       $scope = $rootScope.$new()
       $scope.time = new Date "December 25, 2016 23:15:00"
 
-      template = $compile('<cp-date-tooltip time=time position="top-right" />')
+      template = $compile('<cp-date-tooltip time=time position="top-left" />')
       element = template($scope)[0]
       $rootScope.$digest()
 
@@ -81,9 +81,28 @@ describe('directives:', () ->
       div = element.querySelector('div')
       expect(div.hasAttribute("uib-tooltip")).toBe(true)
       fulldate = $filter('fulldate')
-      expect(div.getAttribute("uib-tooltip")).toMatch(fulldate($scope.time))
+      expect(div.getAttribute("uib-tooltip")).toEqual(fulldate($scope.time))
       expect(div.hasAttribute("tooltip-placement")).toBe(true)
-      expect(div.getAttribute("tooltip-placement")).toMatch("top")
+      expect(div.getAttribute("tooltip-placement")).toEqual("top-left")
+    )
+
+    it('adds tooltip at default position on the date', () ->
+      $scope = $rootScope.$new()
+      $scope.time = new Date "December 25, 2016 23:15:00"
+
+      template = $compile('<cp-date-tooltip time=time />')
+      element = template($scope)[0]
+      $rootScope.$digest()
+
+      autodate = $filter('autodate')
+      expect(element.textContent).toMatch(autodate($scope.time))
+
+      div = element.querySelector('div')
+      expect(div.hasAttribute("uib-tooltip")).toBe(true)
+      fulldate = $filter('fulldate')
+      expect(div.getAttribute("uib-tooltip")).toEqual(fulldate($scope.time))
+      expect(div.hasAttribute("tooltip-placement")).toBe(true)
+      expect(div.getAttribute("tooltip-placement")).toEqual("top-right")
     )
   )
 

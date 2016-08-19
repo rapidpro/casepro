@@ -69,5 +69,8 @@ directives.directive('cpDateTooltip', () ->
     restrict: 'E',
     scope: {time: '=', position: '@'},
     templateUrl: '/sitestatic/templates/date.html',
+    controller: ($scope) ->
+        if $scope.position is undefined
+            $scope.position = "top-right";
   }
 )
