@@ -180,6 +180,21 @@ class BaseMinuteTotal(BaseCount):
 
             return average_by_scope
 
+        def day_totals(self):
+            """
+            Calculates per-day totals over a set of counts
+            """
+            return list(self.counts.values_list('day')
+                        .annotate(cases=Sum('count'), minutes=Sum('minutes')).order_by('day'))
+
+        def month_totals(self):
+            """
+            Calculates per-month totals over a set of counts
+            """
+            counts = self.counts.extra(select={'month': 'EXTRACT(month FROM "day")'})
+            return list(counts.values_list('month')
+                        .annotate(cases=Sum('count'), minutes=Sum('minutes')).order_by('month'))
+
     class Meta:
         abstract = True
 
@@ -313,22 +328,30 @@ class DailyCountExport(BaseExport):
 
         elif self.type == self.TYPE_PARTNER:
             sheet = book.add_sheet(six.text_type(_("Replies Sent")))
+            ave_sheet = book.add_sheet(six.text_type(_("Average Reply Time")))
 
             partners = list(Partner.get_all(self.org).order_by('name'))
 
             # get each partner's day counts and organise by partner and day
             totals_by_partner = {}
+            averages_by_partner = {}
             for partner in partners:
                 totals = DailyCount.get_by_partner([partner], DailyCount.TYPE_REPLIES,
                                                    self.since, self.until).day_totals()
                 totals_by_partner[partner] = {t[0]: t[1] for t in totals}
+                minute_totals = DailyMinuteTotalCount.get_by_partner([partner], DailyMinuteTotalCount.TYPE_TILL_REPLIED,
+                                                                     self.since, self.until).day_totals()
+                averages_by_partner[partner] = {t[0]: (float(t[2]) / t[1]) for t in minute_totals}
 
             self.write_row(sheet, 0, ["Date"] + [p.name for p in partners])
+            self.write_row(ave_sheet, 0, ["Date"] + [p.name for p in partners])
 
             row = 1
             for day in date_range(self.since, self.until):
                 totals = [totals_by_partner.get(l, {}).get(day, 0) for l in partners]
                 self.write_row(sheet, row, [day] + totals)
+                averages = [averages_by_partner.get(l, {}).get(day, 0) for l in partners]
+                self.write_row(ave_sheet, row, [day] + averages)
                 row += 1
 
 
