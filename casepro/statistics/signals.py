@@ -4,7 +4,7 @@ from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
 
 from casepro.msgs.models import Message, Label, Outgoing
-from casepro.cases.models import Case, CaseAction
+from casepro.cases.models import CaseAction
 
 from .models import datetime_to_date, DailyCount
 
