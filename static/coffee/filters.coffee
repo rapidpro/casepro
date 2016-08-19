@@ -16,6 +16,13 @@ filters.filter('autodate', (dateFilter) ->
     else
       return dateFilter(date, 'MMM d, yyyy')
 )
+#----------------------------------------------------------------------------
+# Formats a date value as a full timestamp
+#----------------------------------------------------------------------------
+filters.filter('fulldate', (dateFilter) ->
+  return (date) ->
+    return dateFilter(date, 'MMM d, yyyy HH:mm')
+)
 
 #----------------------------------------------------------------------------
 # Reverses an array of items

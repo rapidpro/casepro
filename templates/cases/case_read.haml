@@ -80,7 +80,7 @@
         .timeline{ ng-controller:"CaseTimelineController", ng-init:"init()" }
           .timeline-event.clearfix{ ng-repeat:"event in timeline | reverse", ng-class:'{ "timeline-action": (event.type == "A"), "timeline-incoming": (event.type == "I"), "timeline-outgoing": (event.type == "O") }' }
             .event-time
-              [[ event.time | autodate ]]
+              <cp-date time="event.time" />
 
             .{ ng-if:'event.type == "A"' }
               %a{ ng-href:"/user/read/[[ event.item.created_by.id ]]/" }
