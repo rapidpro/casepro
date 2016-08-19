@@ -9,6 +9,7 @@ from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
 from el_pagination.paginators import LazyPaginator
+from math import ceil
 from smartmin.mixins import NonAtomicMixin
 from smartmin.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView
 from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
@@ -393,9 +394,10 @@ class PartnerCRUDL(SmartCRUDL):
         @staticmethod
         def humanise_minutes(minutes):
             if minutes < 60:
-                return "%.1fm" % minutes
+                return "%.0fm" % ceil(minutes)
             else:
-                return "%.fh %0.1fm" % divmod(minutes, 60)
+                hrs, mins = divmod(minutes, 60)
+                return "%.fh %.0fm" % (hrs, ceil(mins))
 
         def get_queryset(self, **kwargs):
             return Partner.get_all(self.request.org).order_by('name')
