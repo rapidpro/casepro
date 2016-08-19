@@ -67,10 +67,10 @@ directives.directive('cpPod', -> {
 directives.directive('cpDate', () ->
   return {
     restrict: 'E',
-    scope: {time: '=', position: '@'},
+    scope: {time: '=', tooltipPosition: '@'},
     templateUrl: '/sitestatic/templates/date.html',
     controller: ($scope) ->
-        if $scope.position is undefined
-            $scope.position = "top-right";
+        if $scope.tooltipPosition is undefined
+            $scope.tooltipPosition = "top-right";
   }
 )

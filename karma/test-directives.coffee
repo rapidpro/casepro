@@ -71,7 +71,7 @@ describe('directives:', () ->
       $scope = $rootScope.$new()
       $scope.time = new Date "December 25, 2016 23:15:00"
 
-      template = $compile('<cp-date time="time" position="top-left" />')
+      template = $compile('<cp-date time="time" tooltip-position="top-left" />')
       element = template($scope)[0]
       $rootScope.$digest()
 
