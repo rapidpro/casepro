@@ -307,8 +307,7 @@ class Case(models.Model):
     def close(self, user, note=None):
         self.contact.restore_groups()
 
-        action = CaseAction.create(
-            self, user, CaseAction.CLOSE, note=note, assignee=self.assignee)
+        action = CaseAction.create(self, user, CaseAction.CLOSE, note=note)
 
         self.closed_on = action.created_on
         self.save(update_fields=('closed_on',))

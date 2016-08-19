@@ -98,7 +98,7 @@ class NotificationTest(BaseCasesTest):
                 {
                     'user': self.user1,
                     'note': "Close note",
-                    'assignee': self.moh,
+                    'assignee': None,
                     'case_url': "http://unicef.localhost:8000/case/read/%d/" % case1.pk
                 }
             ),

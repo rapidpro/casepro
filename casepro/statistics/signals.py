@@ -62,7 +62,7 @@ def record_new_case_action(sender, instance, created, **kwargs):
     """
     org = instance.case.org
     user = instance.created_by
-    partner = instance.assignee
+    partner = instance.case.assignee
 
     day = datetime_to_date(instance.created_on, instance.case.org)
     if instance.action == CaseAction.OPEN:
