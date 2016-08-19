@@ -137,7 +137,7 @@
           %a.flag{ ng-click:"onToggleMessageFlag(item)" }
             %i.glyphicon.glyphicon-flag
         .message-time
-          <cp-date-tooltip time=item.time position="top-right" />
+          <cp-date-tooltip time=item.time />
         .message-contact
           %a{ ng-click:"activateContact(item.contact)" }><
             <cp-contact contact="item.contact" fields="fields">
