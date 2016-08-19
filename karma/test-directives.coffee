@@ -63,15 +63,15 @@ describe('directives:', () ->
   )
 
   #=======================================================================
-  # Tests for tooltip
+  # Tests for date tooltip
   #=======================================================================
-  describe('cpDateTooltip', () ->
+  describe('cpDate', () ->
 
     it('adds tooltip at the specified position on the date', () ->
       $scope = $rootScope.$new()
       $scope.time = new Date "December 25, 2016 23:15:00"
 
-      template = $compile('<cp-date-tooltip time=time position="top-left" />')
+      template = $compile('<cp-date time="time" position="top-left" />')
       element = template($scope)[0]
       $rootScope.$digest()
 
@@ -90,7 +90,7 @@ describe('directives:', () ->
       $scope = $rootScope.$new()
       $scope.time = new Date "December 25, 2016 23:15:00"
 
-      template = $compile('<cp-date-tooltip time=time />')
+      template = $compile('<cp-date time="time" />')
       element = template($scope)[0]
       $rootScope.$digest()
 

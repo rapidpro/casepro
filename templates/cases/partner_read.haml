@@ -112,7 +112,7 @@
                 %tbody
                   %tr{ ng-repeat:"item in items" }
                     %td{ nowrap:"" }
-                      <cp-date-tooltip time=item.time position="top-left" />
+                      <cp-date time="item.time" position="top-left" />
                     %td
                       %a{ ng-href:"/user/read/[[ item.sender.id ]]/" }><
                         [[ item.sender.name ]]
