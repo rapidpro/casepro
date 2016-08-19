@@ -14,7 +14,7 @@ from casepro.msgs.models import Outgoing
 from casepro.test import BaseCasesTest
 from casepro.utils import date_to_milliseconds
 
-from .models import DailyCount, DailyCountExport, MinuteTotalCount
+from .models import DailyCount, DailyCountExport, DailyMinuteTotalCount
 from .tasks import squash_counts
 
 
@@ -355,18 +355,18 @@ class MinuteTotalCountsTest(BaseStatsTest):
         self.create_outgoing(self.unicef, self.user3, 201, Outgoing.CASE_REPLY, "Good question", self.ann, case=case3)
         self.create_outgoing(self.unicef, self.user3, 201, Outgoing.CASE_REPLY, "Good question", self.ned, case=case4)
 
-        self.assertEqual(MinuteTotalCount.get_by_org([self.unicef], 'A').total(), 4)
-        self.assertEqual(MinuteTotalCount.get_by_org([self.unicef], 'A').minutes(), 4)
-        self.assertEqual(MinuteTotalCount.get_by_partner([self.moh], 'A').total(), 2)
-        self.assertEqual(MinuteTotalCount.get_by_partner([self.moh], 'A').minutes(), 2)
-        self.assertEqual(MinuteTotalCount.get_by_partner([self.moh], 'A').average(), 1)
-        self.assertEqual(MinuteTotalCount.get_by_partner([self.who], 'A').total(), 2)
-        self.assertEqual(MinuteTotalCount.get_by_partner([self.who], 'A').minutes(), 2)
-        self.assertEqual(MinuteTotalCount.get_by_partner([self.who], 'A').average(), 1)
+        self.assertEqual(DailyMinuteTotalCount.get_by_org([self.unicef], 'A').total(), 4)
+        self.assertEqual(DailyMinuteTotalCount.get_by_org([self.unicef], 'A').minutes(), 4)
+        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.moh], 'A').total(), 2)
+        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.moh], 'A').minutes(), 2)
+        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.moh], 'A').average(), 1)
+        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.who], 'A').total(), 2)
+        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.who], 'A').minutes(), 2)
+        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.who], 'A').average(), 1)
 
         # check empty partner metrics
-        self.assertEqual(MinuteTotalCount.get_by_partner([self.klab], 'A').average(), 0)
+        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.klab], 'A').average(), 0)
 
-        self.assertEqual(MinuteTotalCount.objects.count(), 8)
+        self.assertEqual(DailyMinuteTotalCount.objects.count(), 8)
         squash_counts()
-        self.assertEqual(MinuteTotalCount.objects.count(), 3)
+        self.assertEqual(DailyMinuteTotalCount.objects.count(), 3)

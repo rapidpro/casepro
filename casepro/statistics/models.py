@@ -332,17 +332,19 @@ class DailyCountExport(BaseExport):
                 row += 1
 
 
-class MinuteTotalCount(BaseMinuteTotal):
+class DailyMinuteTotalCount(BaseMinuteTotal):
     """
     Tracks total minutes and count of different items in different scopes (e.g. org, user)
     """
 
-    squash_over = ('item_type', 'scope')
-    last_squash_key = 'minute_total_count:last_squash'
+    day = models.DateField(help_text=_("The day this count is for"))
+
+    squash_over = ('day', 'item_type', 'scope')
+    last_squash_key = 'daily_minute_total_count:last_squash'
 
     @classmethod
-    def record_item(cls, minutes, item_type, *scope_args):
-        cls.objects.create(item_type=item_type, scope=cls.encode_scope(*scope_args), count=1, minutes=minutes)
+    def record_item(cls, day, minutes, item_type, *scope_args):
+        cls.objects.create(day=day, item_type=item_type, scope=cls.encode_scope(*scope_args), count=1, minutes=minutes)
 
     @classmethod
     def get_by_org(cls, orgs, item_type, since=None, until=None):
@@ -365,4 +367,4 @@ class MinuteTotalCount(BaseMinuteTotal):
             counts = counts.filter(day__gte=since)
         if until:
             counts = counts.filter(day__lt=until)
-        return MinuteTotalCount.CountSet(counts, scopes)
+        return DailyMinuteTotalCount.CountSet(counts, scopes)

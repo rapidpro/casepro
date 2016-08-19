@@ -7,7 +7,7 @@ from math import ceil
 from casepro.cases.models import CaseAction
 from casepro.msgs.models import Message, Label, Outgoing
 
-from .models import datetime_to_date, DailyCount, MinuteTotalCount
+from .models import datetime_to_date, DailyCount, DailyMinuteTotalCount
 
 
 @receiver(post_save, sender=Message)
@@ -46,7 +46,8 @@ def record_new_outgoing(sender, instance, created, **kwargs):
             if instance == case.outgoing_messages.earliest('created_on'):
                 td = instance.created_on - case.opened_on
                 minutes_since_open = ceil(td.total_seconds() / 60)
-                MinuteTotalCount.record_item(minutes_since_open, MinuteTotalCount.TYPE_TILL_REPLIED, org)
+                DailyMinuteTotalCount.record_item(day, minutes_since_open,
+                                                  DailyMinuteTotalCount.TYPE_TILL_REPLIED, org)
 
             if case.assignee == partner:
                 # count the first response by this partner
@@ -60,7 +61,8 @@ def record_new_outgoing(sender, instance, created, **kwargs):
 
                     td = instance.created_on - start_date
                     minutes_since_open = ceil(td.total_seconds() / 60)
-                    MinuteTotalCount.record_item(minutes_since_open, MinuteTotalCount.TYPE_TILL_REPLIED, partner)
+                    DailyMinuteTotalCount.record_item(day, minutes_since_open,
+                                                      DailyMinuteTotalCount.TYPE_TILL_REPLIED, partner)
 
 
 @receiver(m2m_changed, sender=Message.labels.through)
