@@ -1019,7 +1019,7 @@ class CaseExportCRUDLTest(BaseCasesTest):
 
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
     def test_create_with_no_initial_message(self):
-        '''When a case is exported with initial_message=None, the field should be a blank string.'''
+        """When a case is exported with initial_message=None, the field should be a blank string."""
         ann = self.create_contact(self.unicef, "C-001", "Ann")
         case = self.create_case(self.unicef, ann, self.moh, None, [self.aids], summary="What is HIV?")
 
