@@ -252,21 +252,37 @@ class DailyCountExport(BaseExport):
                 row += 1
 
         elif self.type == self.TYPE_PARTNER:
-            sheet = book.add_sheet(six.text_type(_("Replies Sent")))
+            replies_sheet = book.add_sheet(six.text_type(_("Replies Sent")))
+            cases_opened_sheet = book.add_sheet(six.text_type(_("Cases Opened")))
+            cases_closed_sheet = book.add_sheet(six.text_type(_("Cases Closed")))
 
             partners = list(Partner.get_all(self.org).order_by('name'))
 
             # get each partner's day counts and organise by partner and day
-            totals_by_partner = {}
+            replies_totals_by_partner = {}
+            cases_opened_by_partner = {}
+            cases_closed_by_partner = {}
             for partner in partners:
-                totals = DailyCount.get_by_partner([partner], DailyCount.TYPE_REPLIES,
-                                                   self.since, self.until).day_totals()
-                totals_by_partner[partner] = {t[0]: t[1] for t in totals}
+                replies_totals = DailyCount.get_by_partner([partner], DailyCount.TYPE_REPLIES,
+                                                           self.since, self.until).day_totals()
+                cases_opened_totals = DailyCount.get_by_partner([partner], DailyCount.TYPE_CASE_OPENED,
+                                                                self.since, self.until).day_totals()
+                cases_closed_totals = DailyCount.get_by_partner([partner], DailyCount.TYPE_CASE_CLOSED,
+                                                                self.since, self.until).day_totals()
+                replies_totals_by_partner[partner] = {t[0]: t[1] for t in replies_totals}
+                cases_opened_by_partner[partner] = {t[0]: t[1] for t in cases_opened_totals}
+                cases_closed_by_partner[partner] = {t[0]: t[1] for t in cases_closed_totals}
 
-            self.write_row(sheet, 0, ["Date"] + [p.name for p in partners])
+            self.write_row(replies_sheet, 0, ["Date"] + [p.name for p in partners])
+            self.write_row(cases_opened_sheet, 0, ["Date"] + [p.name for p in partners])
+            self.write_row(cases_closed_sheet, 0, ["Date"] + [p.name for p in partners])
 
             row = 1
             for day in date_range(self.since, self.until):
-                totals = [totals_by_partner.get(l, {}).get(day, 0) for l in partners]
-                self.write_row(sheet, row, [day] + totals)
+                replies_totals = [replies_totals_by_partner.get(l, {}).get(day, 0) for l in partners]
+                cases_opened_totals = [cases_opened_by_partner.get(l, {}).get(day, 0) for l in partners]
+                cases_closed_totals = [cases_closed_by_partner.get(l, {}).get(day, 0) for l in partners]
+                self.write_row(replies_sheet, row, [day] + replies_totals)
+                self.write_row(cases_opened_sheet, row, [day] + cases_opened_totals)
+                self.write_row(cases_closed_sheet, row, [day] + cases_closed_totals)
                 row += 1
