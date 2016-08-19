@@ -1048,6 +1048,27 @@ class CaseExportCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', read_url)
         self.assertEqual(response.status_code, 302)
 
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    def test_create_with_no_initial_message(self):
+        '''When a case is exported with initial_message=None, the field should be a blank string.'''
+        ann = self.create_contact(self.unicef, "C-001", "Ann")
+        case = self.create_case(self.unicef, ann, self.moh, None, [self.aids], summary="What is HIV?")
+
+        self.login(self.user1)
+        self.url_post('unicef', '%s?folder=open' % reverse('cases.caseexport_create'))
+
+        export = CaseExport.objects.get()
+        workbook = self.openWorkbook(export.filename)
+        sheet = workbook.sheets()[0]
+
+        self.assertExcelRow(sheet, 0, [
+            "Message On", "Opened On", "Closed On", "Assigned Partner", "Labels", "Summary",
+            "Messages Sent", "Messages Received", "Contact", "Nickname", "Age"
+        ])
+        self.assertExcelRow(sheet, 1, [
+            "", case.opened_on, "", self.moh.name, self.aids.name, "What is HIV?", 0, 0, ann.uuid, "", ""
+        ], pytz.UTC)
+
 
 class SystemUserTest(BaseCasesTest):
     def setUp(self):
