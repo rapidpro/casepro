@@ -55,18 +55,6 @@ def record_incoming_labelling(sender, instance, action, reverse, model, pk_set, 
             DailyCount.record_removal(day, DailyCount.TYPE_INCOMING, label)
 
 
-@receiver(post_save, sender=Case)
-def record_new_case(sender, instance, created, **kwargs):
-    """
-    This is where we keep track of DailyCounts for partners
-    """
-    day = datetime_to_date(instance.opened_on, instance.org)
-    if instance.closed_on:
-        DailyCount.record_item(day, DailyCount.TYPE_CASE_CLOSED, instance.assignee)
-    else:
-        DailyCount.record_item(day, DailyCount.TYPE_CASE_OPENED, instance.assignee)
-
-
 @receiver(post_save, sender=CaseAction)
 def record_new_case_action(sender, instance, created, **kwargs):
     """
@@ -74,9 +62,13 @@ def record_new_case_action(sender, instance, created, **kwargs):
     """
     org = instance.case.org
     user = instance.created_by
+    partner = instance.assignee
 
     day = datetime_to_date(instance.created_on, instance.case.org)
     if instance.action == CaseAction.OPEN:
         DailyCount.record_item(day, DailyCount.TYPE_CASE_OPENED, org, user)
+        DailyCount.record_item(day, DailyCount.TYPE_CASE_OPENED, partner)
+
     elif instance.action == CaseAction.CLOSE:
         DailyCount.record_item(day, DailyCount.TYPE_CASE_CLOSED, org, user)
+        DailyCount.record_item(day, DailyCount.TYPE_CASE_CLOSED, partner)
