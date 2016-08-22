@@ -74,6 +74,8 @@
               - trans "Replies last month"
             %th
               - trans "Total replies"
+            %th
+              - trans "Average time to reply"
           %tbody
             %tr{ ng-repeat:"partner in partners" }
               %td
@@ -85,6 +87,8 @@
                 [[ partner.replies.last_month ]]
               %td
                 [[ partner.replies.total ]]
+              %td
+                [[ partner.replies.average ]]
         .none{ ng-if:"!partners" }
           - trans "None"
 

@@ -133,16 +133,67 @@ class BaseMinuteTotal(BaseCount):
 
     squash_sql = """
         WITH removed as (
-            DELETE FROM %(table_name)s WHERE %(delete_cond)s RETURNING "count", "total"
+            DELETE FROM %(table_name)s WHERE %(delete_cond)s RETURNING "count", "minutes"
         )
-        INSERT INTO %(table_name)s(%(insert_cols)s, "count", "total")
+        INSERT INTO %(table_name)s(%(insert_cols)s, "count", "minutes")
         VALUES (
             %(insert_vals)s,
             GREATEST(0, (SELECT SUM("count") FROM removed)),
-            COALESCE((SELECT SUM("total") FROM removed), 0)
+            COALESCE((SELECT SUM("minutes") FROM removed), 0)
         );"""
 
-    total = models.IntegerField()
+    minutes = models.IntegerField()
+
+    class CountSet(BaseCount.CountSet):
+        """
+        A queryset of counts which can be aggregated in different ways
+        """
+        def average(self):
+            """
+            Calculates the overall total over a set of counts
+            """
+            totals = self.counts.aggregate(total=Sum('count'), minutes=Sum('minutes'))
+            if totals['minutes'] is None or totals['total'] is None:
+                return 0
+
+            average = float(totals['minutes']) / totals['total']
+            return average
+
+        def minutes(self):
+            """
+            Calculates the overall total of minutes over a set of counts
+            """
+            total = self.counts.aggregate(total_minutes=Sum('minutes'))
+            return total['total_minutes'] if total['total_minutes'] is not None else 0
+
+        def scope_averages(self):
+            """
+            Calculates per-scope averages over a set of counts
+            """
+            totals = list(self.counts.values_list('scope').annotate(cases=Sum('count'), minutes=Sum('minutes')))
+            total_by_encoded_scope = {t[0]: (t[1], t[2]) for t in totals}
+
+            average_by_scope = {}
+            for encoded_scope, scope in six.iteritems(self.scopes):
+                cases, minutes = total_by_encoded_scope.get(encoded_scope, (1, 0))
+                average_by_scope[scope] = float(minutes) / cases
+
+            return average_by_scope
+
+        def day_totals(self):
+            """
+            Calculates per-day totals over a set of counts
+            """
+            return list(self.counts.values_list('day')
+                        .annotate(cases=Sum('count'), minutes=Sum('minutes')).order_by('day'))
+
+        def month_totals(self):
+            """
+            Calculates per-month totals over a set of counts
+            """
+            counts = self.counts.extra(select={'month': 'EXTRACT(month FROM "day")'})
+            return list(counts.values_list('month')
+                        .annotate(cases=Sum('count'), minutes=Sum('minutes')).order_by('month'))
 
     class Meta:
         abstract = True
@@ -277,20 +328,66 @@ class DailyCountExport(BaseExport):
 
         elif self.type == self.TYPE_PARTNER:
             sheet = book.add_sheet(six.text_type(_("Replies Sent")))
+            ave_sheet = book.add_sheet(six.text_type(_("Average Reply Time")))
 
             partners = list(Partner.get_all(self.org).order_by('name'))
 
             # get each partner's day counts and organise by partner and day
             totals_by_partner = {}
+            averages_by_partner = {}
             for partner in partners:
                 totals = DailyCount.get_by_partner([partner], DailyCount.TYPE_REPLIES,
                                                    self.since, self.until).day_totals()
                 totals_by_partner[partner] = {t[0]: t[1] for t in totals}
+                minute_totals = DailyMinuteTotalCount.get_by_partner([partner], DailyMinuteTotalCount.TYPE_TILL_REPLIED,
+                                                                     self.since, self.until).day_totals()
+                averages_by_partner[partner] = {t[0]: (float(t[2]) / t[1]) for t in minute_totals}
 
             self.write_row(sheet, 0, ["Date"] + [p.name for p in partners])
+            self.write_row(ave_sheet, 0, ["Date"] + [p.name for p in partners])
 
             row = 1
             for day in date_range(self.since, self.until):
                 totals = [totals_by_partner.get(l, {}).get(day, 0) for l in partners]
                 self.write_row(sheet, row, [day] + totals)
+                averages = [averages_by_partner.get(l, {}).get(day, 0) for l in partners]
+                self.write_row(ave_sheet, row, [day] + averages)
                 row += 1
+
+
+class DailyMinuteTotalCount(BaseMinuteTotal):
+    """
+    Tracks total minutes and count of different items in different scopes (e.g. org, user)
+    """
+
+    day = models.DateField(help_text=_("The day this count is for"))
+
+    squash_over = ('day', 'item_type', 'scope')
+    last_squash_key = 'daily_minute_total_count:last_squash'
+
+    @classmethod
+    def record_item(cls, day, minutes, item_type, *scope_args):
+        cls.objects.create(day=day, item_type=item_type, scope=cls.encode_scope(*scope_args), count=1, minutes=minutes)
+
+    @classmethod
+    def get_by_org(cls, orgs, item_type, since=None, until=None):
+        return cls._get_count_set(item_type, {cls.encode_scope(o): o for o in orgs}, since, until)
+
+    @classmethod
+    def get_by_partner(cls, partners, item_type, since=None, until=None):
+        return cls._get_count_set(item_type, {cls.encode_scope(p): p for p in partners}, since, until)
+
+    @classmethod
+    def get_by_user(cls, org, users, item_type, since=None, until=None):
+        return cls._get_count_set(item_type, {cls.encode_scope(org, u): u for u in users}, since, until)
+
+    @classmethod
+    def _get_count_set(cls, item_type, scopes, since, until):
+        counts = cls.objects.filter(item_type=item_type)
+        if scopes:
+            counts = counts.filter(scope__in=scopes.keys())
+        if since:
+            counts = counts.filter(day__gte=since)
+        if until:
+            counts = counts.filter(day__lt=until)
+        return DailyMinuteTotalCount.CountSet(counts, scopes)
