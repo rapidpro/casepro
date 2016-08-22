@@ -298,6 +298,9 @@ class RapidProBackend(BaseBackend):
                 msg.backend_broadcast_id = broadcast.id
                 msg.save(update_fields=('backend_broadcast_id',))
 
+    def push_contact(self, org, contact):
+        return
+
     def add_to_group(self, org, contact, group):
         client = self._get_client(org)
         client.bulk_add_contacts([contact.uuid], group=group.uuid)
