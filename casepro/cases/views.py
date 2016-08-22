@@ -9,7 +9,6 @@ from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
 from el_pagination.paginators import LazyPaginator
-from math import ceil
 from smartmin.mixins import NonAtomicMixin
 from smartmin.views import SmartCRUDL, SmartListView, SmartCreateView, SmartReadView
 from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
@@ -20,7 +19,7 @@ from casepro.msgs.models import Label, Message, MessageFolder, OutgoingFolder
 from casepro.pods import registry as pod_registry
 from casepro.statistics.models import DailyCount, DailyMinuteTotalCount
 from casepro.utils import json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder, str_to_bool
-from casepro.utils import month_range
+from casepro.utils import month_range, humanise_minutes
 from casepro.utils.export import BaseDownloadView
 
 from . import MAX_MESSAGE_CHARS
@@ -391,21 +390,6 @@ class PartnerCRUDL(SmartCRUDL):
     class List(OrgPermsMixin, SmartListView):
         paginate_by = None
 
-        @staticmethod
-        def humanise_minutes(minutes):
-            def get_hours_and_minutes(minutes):
-                if minutes < 60:
-                    return "%.0fm" % ceil(minutes)
-                else:
-                    hrs, mins = divmod(minutes, 60)
-                    return "%.fh %.0fm" % (hrs, ceil(mins))
-
-            if minutes > 1440:
-                days, mins = divmod(minutes, 1440)
-                return "%.fd %s" % (days, get_hours_and_minutes(mins))
-            else:
-                return get_hours_and_minutes(minutes)
-
         def get_queryset(self, **kwargs):
             return Partner.get_all(self.request.org).order_by('name')
 
@@ -434,7 +418,7 @@ class PartnerCRUDL(SmartCRUDL):
                         'this_month': this_month.get(partner, 0),
                         'last_month': last_month.get(partner, 0),
                         'total': total.get(partner, 0),
-                        'average': self.humanise_minutes(average.get(partner, 0))
+                        'average': humanise_minutes(average.get(partner, 0))
                     }
                 return obj
 

@@ -185,3 +185,16 @@ def get_language_name(iso_code):
         LANGUAGES_BY_CODE[iso_code] = lang
 
     return LANGUAGES_BY_CODE[iso_code]
+
+
+def humanise_minutes(minutes):
+    days, mins = divmod(minutes, 1440)
+    hrs, mins = divmod(mins, 60)
+    result = []
+    if days:
+        result.append("%.fd" % days)
+    if hrs:
+        result.append("%.fh" % hrs)
+    if mins:
+        result.append("%.0fm" % mins)
+    return " ".join(result)
