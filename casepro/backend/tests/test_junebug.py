@@ -140,10 +140,13 @@ class JunebugBackendTest(BaseCasesTest):
         [contact] = Contact.objects.all()
         self.assertEqual(contact.uuid, "test_id")
         self.assertEqual(contact.name, "test")
+        self.assertEqual(contact.urns, ["msisdn:+1234"])
 
     @responses.activate
     def test_pull_contacts_recently_updated(self):
-        Contact.get_or_create(self.unicef, "test_id", "testing")
+        contact = Contact.get_or_create(self.unicef, "test_id", "testing")
+        contact.urns = ["msisdn:+5678"]
+        contact.save()
 
         self.add_identity_store_callback(
             "created_to=2016-03-14T10%3A21%3A00&created_from=2016-03-14T10%3A25%3A00",
@@ -165,6 +168,7 @@ class JunebugBackendTest(BaseCasesTest):
         [contact] = Contact.objects.all()
         self.assertEqual(contact.uuid, "test_id")
         self.assertEqual(contact.name, "test")
+        self.assertEqual(contact.urns, ["msisdn:+1234"])
 
     @responses.activate
     def test_pull_contacts_forgotten(self):
@@ -188,7 +192,7 @@ class JunebugBackendTest(BaseCasesTest):
 
     @responses.activate
     def test_pull_contacts_no_changes(self):
-        Contact.objects.create(org=self.unicef, uuid="test_id", name="test", language="eng")
+        Contact.objects.create(org=self.unicef, uuid="test_id", name="test", language="eng", urns=["msisdn:+1234"])
 
         self.add_identity_store_callback(
             "created_to=2016-03-14T10%3A21%3A00&created_from=2016-03-14T10%3A25%3A00",
