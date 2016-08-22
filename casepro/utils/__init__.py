@@ -197,4 +197,7 @@ def humanise_minutes(minutes):
         result.append("%.fh" % hrs)
     if mins:
         result.append("%.0fm" % mins)
+    else:
+        if len(result) == 0:
+            result.append("0m")
     return " ".join(result)

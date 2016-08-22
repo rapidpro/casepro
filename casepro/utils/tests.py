@@ -139,6 +139,7 @@ class UtilsTest(BaseCasesTest):
         self.assertIsNone(get_language_name('xxxxx'))
 
     def test_humanise_minutes(self):
+        self.assertEqual(humanise_minutes(0), "0m")
         self.assertEqual(humanise_minutes(5), "5m")
         self.assertEqual(humanise_minutes(59), "59m")
         self.assertEqual(humanise_minutes(60), "1h")
