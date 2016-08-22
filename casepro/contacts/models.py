@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from dash.orgs.models import Org
 from django.conf import settings
-from django.contrib.postgres.fields import HStoreField
+from django.contrib.postgres.fields import HStoreField, ArrayField
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -160,6 +160,9 @@ class Contact(models.Model):
     suspended_groups = models.ManyToManyField(Group, help_text=_("Groups this contact has been suspended from"))
 
     created_on = models.DateTimeField(auto_now_add=True, help_text=_("When this contact was created"))
+
+    urns = ArrayField(models.CharField(max_length=128), default=list,
+                      help_text=_("List of URNs of the format 'scheme:urn'"))
 
     def __init__(self, *args, **kwargs):
         if self.SAVE_GROUPS_ATTR in kwargs:
