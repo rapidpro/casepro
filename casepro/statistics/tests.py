@@ -370,3 +370,36 @@ class MinuteTotalCountsTest(BaseStatsTest):
         self.assertEqual(DailyMinuteTotalCount.objects.count(), 8)
         squash_counts()
         self.assertEqual(DailyMinuteTotalCount.objects.count(), 3)
+
+    def test_case_closed_counts(self):
+        msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
+        msg2 = self.create_message(self.unicef, 234, self.ned, "Hello 2", [self.aids, self.pregnancy])
+        msg3 = self.create_message(self.unicef, 345, self.ann, "Hello 3", [self.pregnancy])
+        msg4 = self.create_message(self.nyaruka, 456, self.ned, "Hello 4", [self.code])
+
+        case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [self.aids])
+        case2 = self.create_case(self.unicef, self.ned, self.moh, msg2, [self.aids, self.pregnancy])
+        case3 = self.create_case(self.unicef, self.ann, self.who, msg3, [self.pregnancy])
+        case4 = self.create_case(self.unicef, self.ned, self.who, msg4, [self.code])
+
+        case1.close(self.user1)
+        case2.reassign(self.user1, self.who)
+        case2.close(self.user3)
+        case3.close(self.user3)
+        case4.close(self.user3)
+
+        self.assertEqual(DailyMinuteTotalCount.get_by_org([self.unicef], 'C').total(), 4)
+        self.assertEqual(DailyMinuteTotalCount.get_by_org([self.unicef], 'C').minutes(), 4)
+        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.moh], 'C').total(), 1)
+        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.moh], 'C').minutes(), 1)
+        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.moh], 'C').average(), 1)
+        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.who], 'C').total(), 3)
+        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.who], 'C').minutes(), 3)
+        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.who], 'C').average(), 1)
+
+        # check empty partner metrics
+        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.klab], 'C').average(), 0)
+
+        self.assertEqual(DailyMinuteTotalCount.objects.count(), 8)
+        squash_counts()
+        self.assertEqual(DailyMinuteTotalCount.objects.count(), 3)
