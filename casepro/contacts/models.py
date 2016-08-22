@@ -137,7 +137,7 @@ class Contact(models.Model):
 
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="contacts")
 
-    uuid = models.CharField(max_length=36, unique=True)
+    uuid = models.CharField(max_length=36, unique=True, null=True)
 
     name = models.CharField(verbose_name=_("Full name"), max_length=128, null=True, blank=True,
                             help_text=_("The name of this contact"))
