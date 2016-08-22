@@ -1129,7 +1129,6 @@ class PartnerCRUDLTest(BaseCasesTest):
         ]})
 
         response = self.url_get('unicef', url + '?with_activity=1', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-        self.maxDiff = None
         self.assertEqual(response.json, {'results': [
             {
                 'id': self.moh.pk, 'name': "MOH", 'restricted': True,

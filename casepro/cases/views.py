@@ -393,11 +393,18 @@ class PartnerCRUDL(SmartCRUDL):
 
         @staticmethod
         def humanise_minutes(minutes):
-            if minutes < 60:
-                return "%.0fm" % ceil(minutes)
+            def get_hours_and_minutes(minutes):
+                if minutes < 60:
+                    return "%.0fm" % ceil(minutes)
+                else:
+                    hrs, mins = divmod(minutes, 60)
+                    return "%.fh %.0fm" % (hrs, ceil(mins))
+
+            if minutes > 1440:
+                days, mins = divmod(minutes, 1440)
+                return "%.fd %s" % (days, get_hours_and_minutes(mins))
             else:
-                hrs, mins = divmod(minutes, 60)
-                return "%.fh %.0fm" % (hrs, ceil(mins))
+                return get_hours_and_minutes(minutes)
 
         def get_queryset(self, **kwargs):
             return Partner.get_all(self.request.org).order_by('name')
