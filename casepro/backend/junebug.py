@@ -147,6 +147,10 @@ class IdentityStoreContactSyncer(BaseSyncer):
         if {g.uuid for g in local.groups.all()} != {g.uuid for g in remote.groups}:
             return True
 
+        urn_diff = set(local.urns).difference(remote.urns)
+        if urn_diff != set([]):
+            return True
+
         return not is_dict_equal(local.get_fields(), remote.fields, ignore_none_values=True)
 
     def delete_local(self, local):
