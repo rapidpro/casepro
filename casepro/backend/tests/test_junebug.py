@@ -1331,6 +1331,7 @@ class IdentityStoreContactSyncerTest(BaseCasesTest):
             'is_stub': False,
             'fields': {},
             '__data__groups': {},
+            'urns': ["msisdn:+1234"]
         })
 
     def test_update_required_on_stub(self):
@@ -1349,6 +1350,10 @@ class IdentityStoreContactSyncerTest(BaseCasesTest):
 
     def test_update_required_language_different(self):
         local = Contact.objects.create(org=self.unicef, uuid="test_id", name="test", language="ita")
+        self.assertTrue(self.syncer.update_required(local, self.mk_identity_store_contact(), {}))
+
+    def test_update_required_urns_different(self):
+        local = Contact.objects.create(org=self.unicef, uuid="test_id", name="test", urns=[])
         self.assertTrue(self.syncer.update_required(local, self.mk_identity_store_contact(), {}))
 
     def test_update_required_groups_different(self):
