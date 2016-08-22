@@ -109,9 +109,15 @@ class IdentityStoreContact(object):
         if remote_language is not None:
             self.language, _, _ = remote_language.partition('_')
         self.name = json_data.get('details').get('name', None)
-        self.addresses = json_data.get('details').get('addresses')
         self.fields = {}
         self.groups = {}
+        addresses = json_data.get('details').get('addresses')
+        self.urns = []
+        for scheme, address in addresses.items():
+            for urn, details in address.items():
+                if 'optedout' in details and details['optedout'] is True:
+                    continue
+                self.urns.append(scheme+":"+urn)
 
 
 class IdentityStoreContactSyncer(BaseSyncer):
@@ -131,6 +137,7 @@ class IdentityStoreContactSyncer(BaseSyncer):
             'is_stub': False,
             'fields': {},
             Contact.SAVE_GROUPS_ATTR: {},
+            'urns': remote.urns,
         }
 
     def update_required(self, local, remote, remote_as_kwargs):
