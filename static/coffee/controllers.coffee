@@ -320,6 +320,17 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
       $scope.updateItems()
     )
 
+  $scope.onReplyToMessage = (message) ->
+    $uibModal.open({templateUrl: '/partials/modal_reply.html', controller: 'ReplyModalController', resolve: {maxLength: (() -> OUTGOING_TEXT_MAX_LEN)}})
+    .result.then((text) ->
+      MessageService.bulkReply([message], text).then(() ->
+        MessageService.bulkArchive([message]).then(() ->
+          UtilsService.displayAlert('success', "Reply sent and message archived")
+          $scope.updateItems()
+        )
+      )
+    )
+
   $scope.onForwardMessage = (message) ->
     initialText = '"' + message.text + '"'
 
@@ -511,7 +522,7 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
 controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'ContactService', 'MessageService', 'PartnerService', 'UtilsService', ($scope, $window, $timeout, CaseService, ContactService, MessageService, PartnerService, UtilsService) ->
   $scope.allLabels = $window.contextData.all_labels
   $scope.fields = $window.contextData.fields
-  
+
   $scope.caseObj = null
   $scope.contact = null
   $scope.newMessage = ''
@@ -663,7 +674,7 @@ controllers.controller('ContactController', ['$scope', '$window', 'ContactServic
 
   $scope.contact = $window.contextData.contact
   $scope.fields = $window.contextData.fields
-  
+
   $scope.init = () ->
     ContactService.fetchCases($scope.contact).then((cases) ->
       $scope.cases = cases
@@ -679,7 +690,7 @@ controllers.controller('ContactController', ['$scope', '$window', 'ContactServic
 #============================================================================
 controllers.controller('LabelController', ['$scope', '$window', '$controller', 'UtilsService', 'LabelService', 'StatisticsService', ($scope, $window, $controller, UtilsService, LabelService, StatisticsService) ->
   $scope.tabSlugs = ['summary']
-  
+
   $controller('BaseTabsController', {$scope: $scope})
 
   $scope.label = $window.contextData.label

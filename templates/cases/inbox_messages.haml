@@ -159,6 +159,8 @@
           .btn-group.pull-away
             %button.btn.btn-default{ type:"button", ng-click:"onCaseFromMessage(item)" }
               - trans "Open Case"
+            %button.btn.btn-default{ type:"button", ng-click:"onReplyToMessage(item)" }
+              - trans "Reply"
             %button.btn.btn-default{ type:"button", ng-click:"onForwardMessage(item)" }
               %i.glyphicon.glyphicon-share-alt
               - trans "Forward"
