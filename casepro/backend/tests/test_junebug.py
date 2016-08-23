@@ -22,6 +22,16 @@ class JunebugBackendTest(BaseCasesTest):
         responses.add_callback(
             responses.GET, url, callback=callback, match_querystring=True, content_type="application/json")
 
+    def add_identity_store_search_callback(self, query, callback):
+        url = 'http://localhost:8081/api/v1/identities/search/?' + query
+        responses.add_callback(
+            responses.GET, url, callback=callback, match_querystring=True, content_type="application/json")
+
+    def add_identity_store_create_callback(self, callback):
+        responses.add_callback(
+            responses.POST, 'http://localhost:8081/api/v1/identities/', callback=callback,
+            content_type="application/json")
+
     def identity_store_no_matches_callback(self, request):
         headers = {'Content-Type': "application/json"}
         resp = {
@@ -59,6 +69,28 @@ class JunebugBackendTest(BaseCasesTest):
                     'updated_by': None
                 }
             ]
+        }
+        return (201, headers, json.dumps(resp))
+
+    def identity_store_created_new_identity_callback(self, request):
+        headers = {'Content-Type': "application/json"}
+        resp = {
+            'id': "test-uuid",
+            'version': 1,
+            'details': {
+                'name': "test",
+                'addresses': {
+                    'tel': {
+                        '+1234': {}
+                    },
+                },
+            },
+            'communicate_through': None,
+            'operator': None,
+            'created_at': "2016-03-14T10:21:00.258406Z",
+            'created_by': 1,
+            'updated_at': None,
+            'updated_by': None
         }
         return (201, headers, json.dumps(resp))
 
@@ -275,6 +307,42 @@ class JunebugBackendTest(BaseCasesTest):
         self.backend.push_label(self.unicef, "new label")
         self.tea.refresh_from_db()
         self.assertEqual(self.tea.__dict__, old_tea)
+
+    @responses.activate
+    def test_push_contact_new_contact(self):
+        """
+        Pushing a new contact should create the contact on the Identity Store and update the UUID on the contact.
+        """
+        contact = Contact.objects.create(org=self.unicef, uuid=None, is_stub=True, urns=["tel:+1234"])
+
+        self.add_identity_store_search_callback(
+            "details__addresses__tel=%2B1234",
+            self.identity_store_no_matches_callback
+        )
+        self.add_identity_store_create_callback(self.identity_store_created_new_identity_callback)
+
+        self.assertEqual(contact.uuid, None)
+        self.backend.push_contact(self.unicef, contact)
+        contact.refresh_from_db()
+        self.assertEqual(contact.uuid, 'test-uuid')
+
+    @responses.activate
+    def test_push_contact_existing_contact(self):
+        """
+        If we push a contact, and an existing contact on the Identity Store has the same details, we should set the
+        UUID on the contact to be the same as the matching identity.
+        """
+        contact = Contact.objects.create(org=self.unicef, uuid=None, is_stub=True, name="test", urns=["msisdn:+1234"])
+
+        self.add_identity_store_search_callback(
+            "details__addresses__msisdn=%2B1234",
+            self.identity_store_created_identity_callback
+        )
+
+        self.assertEqual(contact.uuid, None)
+        self.backend.push_contact(self.unicef, contact)
+        contact.refresh_from_db()
+        self.assertEqual(contact.uuid, "test_id")
 
     @responses.activate
     def test_outgoing_urn(self):

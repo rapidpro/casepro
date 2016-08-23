@@ -63,10 +63,13 @@ class IdentityStore(object):
         return (
             a['address'] for a in addresses if a.get('address') is not None)
 
-    def get_identities_for_address(self, address):
+    def get_identities_for_address(self, address, address_type=None):
+        if address_type is None:
+            address_type = self.address_type
+
         return self.get_paginated_response(
             "%s/api/v1/identities/search/" % (self.base_url),
-            params={'details__addresses__%s' % self.address_type: address})
+            params={'details__addresses__%s' % address_type: address})
 
     def create_identity(self, addresses, name=None, language=None):
         """Creates an identity on the identity store, given the details of the identity."""
@@ -285,14 +288,46 @@ class JunebugBackend(BaseBackend):
         for message in outgoing:
             self.message_sender.send_message(message)
 
+    @staticmethod
+    def _identity_equal(identity, contact):
+        details = identity.get('details', {})
+        for addr in contact.urns:
+            addr_type, address = addr.split(':', 1)
+            if details.get('addresses', {}).get(addr_type, {}).get(address) is None:
+                return False
+        if contact.name is not None:
+            if details.get('name') != contact.name:
+                return False
+        if contact.language is not None:
+            if details.get('language') != contact.language:
+                return False
+        return True
+
     def push_contact(self, org, contact):
         """
-        Pushes a new or updated contact
+        Pushes a new contact. Creates a new contact if one doesn't exist, or assigns UUID of contact if one exists with
+        the same details.
 
         :param org: the org
-        :param contact: The contact to update/create
+        :param contact: The contact to create
         """
-        return
+        if contact.uuid is not None:
+            return
+
+        identity_store = IdentityStore(
+            settings.IDENTITY_API_ROOT, settings.IDENTITY_AUTH_TOKEN, settings.IDENTITY_ADDRESS_TYPE)
+        identities = []
+        for urn in contact.urns:
+            addr_type, addr = urn.split(':', 1)
+            identities.extend(identity_store.get_identities_for_address(addr, addr_type))
+        identities = [identity for identity in identities if self._identity_equal(identity, contact)]
+
+        if identities:
+            identity = identities[0]
+        else:
+            identity = identity_store.create_identity(contact.urns, name=contact.name, language=contact.language)
+        contact.uuid = identity.get('id')
+        contact.save(update_fields=('uuid',))
 
     def add_to_group(self, org, contact, group):
         """
