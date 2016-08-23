@@ -125,6 +125,8 @@ class IdentityStoreContact(object):
                     break
                 scheme_addresses.append(urn)
             for value in scheme_addresses:
+                if scheme == "msisdn":
+                    scheme = "tel"
                 self.urns.append(scheme+":"+value)
 
 
