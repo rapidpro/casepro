@@ -191,6 +191,7 @@ class Contact(models.Model):
         contact = cls.objects.filter(urns__contains=[path+":"+urn]).first()
         if not contact:
             contact = cls.objects.create(org=org, name=name, urns=[path+":"+urn], is_stub=True)
+            get_backend().push_contact(org, contact)
         return contact
 
     @classmethod
