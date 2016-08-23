@@ -158,7 +158,7 @@ class IdentityStoreContactSyncer(BaseSyncer):
         if {g.uuid for g in local.groups.all()} != {g.uuid for g in remote.groups}:
             return True
 
-        urn_diff = set(local.urns).difference(remote.urns)
+        urn_diff = set(local.urns).symmetric_difference(set(remote.urns))
         if urn_diff != set([]):
             return True
 
