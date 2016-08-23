@@ -5,34 +5,34 @@
 - block login
 
 - block content
-  .row.login-form
-    .col-md-6.col-md-offset-3
-      .page-header
-        %h2
-          - trans "Sign in"
+  .login-form.center-block
+    .page-header
+      %h2
+        - trans "Login"
 
-      %form.form-stacked{method:"post"}
-        - csrf_token
+    %form.form-stacked{method:"post"}
+      - csrf_token
 
-        - for field, errors in form.errors.items
-          - if field == '__all__'
-            .alert.alert-danger.form-errors
-              %h3
-                Error
-              {{ errors }}
+      - for field, errors in form.errors.items
+        - if field == '__all__'
+          .alert.alert-danger.form-errors
+            %h3
+              Error
+            {{ errors }}
 
-        .form-group
-          %label.control-label{ for:"username" }
-            - trans "Email"
-          .input
-            %input.form-control{ maxlength:"254", name:"username", type:"text" }
+      .form-group
+        %label.control-label{ for:"username" }
+          - trans "Email"
+        .input
+          %input.form-control{ maxlength:"254", name:"username", type:"text" }
 
-        .form-group
-          %label.control-label{ for:"password" }
-            - trans "Password"
-          .input
-            %input.form-control{ name:"password", type:"password" }
+      .form-group
+        %label.control-label{ for:"password" }
+          - trans "Password"
+        .input
+          %input.form-control{ name:"password", type:"password" }
 
+      .{ style:"padding-top: 10px" }
         %button.btn.btn-primary{ type:"submit" }
           - trans "Login"
 
@@ -40,3 +40,17 @@
           %span.pull-away{ style:"padding-top:7px" }
             %a{ href:"{% url 'users.user_forget' %}"}
               - trans "Forgot Password?"
+
+- block extra-style
+  {{ block.super }}
+  :css
+    .login-form {
+      width: 300px;
+      padding: 50px 0;
+    }
+    .login-form h2 {
+      margin-top: 0
+    }
+    .login-form input.form-control {
+      width: 100%;
+    }

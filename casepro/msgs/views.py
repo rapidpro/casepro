@@ -126,13 +126,7 @@ class LabelCRUDL(SmartCRUDL):
             context['context_data_json'] = json_encode({
                 'label': label_json
             })
-            context['summary'] = self.get_summary(self.object)
             return context
-
-        def get_summary(self, label):
-            return {
-                'total_messages': DailyCount.get_by_label([label], DailyCount.TYPE_INCOMING).total()
-            }
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
         cancel_url = '@msgs.label_list'

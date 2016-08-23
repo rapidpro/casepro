@@ -1,5 +1,5 @@
 - extends "smartmin/read.html"
-- load smartmin i18n thumbnail humanize
+- load smartmin i18n thumbnail
 
 - block pre-content
 
@@ -44,7 +44,9 @@
           .col-md-4
             %ul
               %li
-                Total messages: <strong>{{ summary.total_messages | intcomma }}</strong>
+                Inbox messages: <strong>[[ label.counts.inbox | number ]]</strong>
+              %li
+                Archived messages: <strong>[[ label.counts.archived | number ]]</strong>
           .col-md-8
             #chart-incoming-by-day
       </uib-tab>

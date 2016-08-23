@@ -214,6 +214,33 @@
         $('.content').prepend('<div class="alert alert-' + type + '"><a class="close" data-dismiss="alert">×</a>' + text + '</div>');
       }
 
+      /* Set HighCharts theme and localization */
+      Highcharts.setOptions({
+        chart: {
+          style: {
+            fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif"
+          }
+        },
+        title: {
+          style: {
+             color: '#333',
+             fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif"
+          }
+        },
+        plotOptions: {
+          pie: {
+            dataLabels: {
+              style: {
+                color: '#333',
+                fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif"
+              }
+            }
+          }
+        },
+        lang: {thousandsSep: ','},
+        credits: {enabled: false}
+      });
+
     {# media associated with any form we are displaying #}
     {% if form %}
     {{ form.media }}

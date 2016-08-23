@@ -37,7 +37,14 @@
               %li
                 Number of closed cases: <strong>{{ summary.cases_closed | intcomma }}</strong>
           .col-md-8
-            #chart-replies-by-month
+            #chart-replies-by-month.chart
+        %hr
+        .row
+          .col-md-6
+            #chart-incoming-by-day.chart
+          .col-md-6
+            #chart-most-common-labels.chart{ style:"height: 300px" }
+
       </uib-tab>
 
       <uib-tab index="1" select="onTabSelect(1)">
@@ -62,11 +69,11 @@
             %th
               - trans "Name"
             %th
-              - trans "Replies (this month)"
+              - trans "Replies this month"
             %th
-              - trans "Replies (last month)"
+              - trans "Replies last month"
             %th
-              - trans "Replies (total)"
+              - trans "Total replies"
           %tbody
             %tr{ ng-repeat:"partner in partners" }
               %td
@@ -105,18 +112,22 @@
             %th
               - trans "Name"
             %th
-              - trans "Messages (this month)"
+              - trans "Messages this month"
             %th
-              - trans "Messages (last month)"
+              - trans "Messages last month"
+            %th
+              - trans "Total messages"
           %tbody
             %tr{ ng-repeat:"label in labels" }
               %td
                 %a{ ng-href:"/label/read/[[ label.id ]]/" }><
                   [[ label.name ]]
               %td
-                [[ label.messages.this_month ]]
+                [[ label.activity.this_month ]]
               %td
-                [[ label.messages.last_month ]]
+                [[ label.activity.last_month ]]
+              %td
+                [[ label.counts.inbox + label.counts.archived ]]
         .none{ ng-if:"!labels" }
           - trans "None"
 
@@ -128,7 +139,7 @@
           - trans "Users"
         </uib-tab-heading>
         .search-toolbar.clearfix
-          - if perms.profiles.user_create or org_perms.profiles.user_create
+          - if perms.profiles.profile_user_create or org_perms.profiles.profile_user_create
             .pull-away
               <a class="btn btn-default" href="{% url 'profiles.user_create' %}">{% trans "New" %}</a>
 
@@ -140,11 +151,11 @@
             %th
               - trans "Name"
             %th
-              - trans "Replies (this month)"
+              - trans "Replies this month"
             %th
-              - trans "Replies (last month)"
+              - trans "Replies last month"
             %th
-              - trans "Replies (total)"
+              - trans "Total replies"
           %tbody
             %tr{ ng-repeat:"user in users" }
               %td
@@ -172,7 +183,7 @@
       background-color: #f7f7f7;
       margin-top: 7px;
     }
-    #chart-replies-by-month {
+    .chart {
       width: 100%;
       height: 250px;
     }

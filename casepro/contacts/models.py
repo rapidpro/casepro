@@ -6,9 +6,10 @@ from django.contrib.postgres.fields import HStoreField
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from redis_cache import get_redis_connection
+from django_redis import get_redis_connection
 
 from casepro.backend import get_backend
+from casepro.utils import get_language_name
 
 FIELD_LOCK_KEY = 'lock:field:%d:%s'
 GROUP_LOCK_KEY = 'lock:group:%d:%s'
@@ -117,6 +118,12 @@ class Field(models.Model):
     def __str__(self):
         return self.key
 
+    def as_json(self):
+        """
+        Prepares a contact for JSON serialization
+        """
+        return {'key': self.key, 'label': self.label, 'value_type': self.value_type}
+
     class Meta:
         unique_together = ('org', 'key')
 
@@ -145,6 +152,8 @@ class Contact(models.Model):
     is_active = models.BooleanField(default=True, help_text="Whether this contact is active")
 
     is_blocked = models.BooleanField(default=False, help_text="Whether this contact is blocked")
+
+    is_stopped = models.BooleanField(default=False, help_text="Whether this contact opted out of receiving messages")
 
     is_stub = models.BooleanField(default=False, help_text="Whether this contact is just a stub")
 
@@ -193,6 +202,12 @@ class Contact(models.Model):
             return {k: fields.get(k) for k in keys}
         else:
             return fields
+
+    def get_language(self):
+        if self.language:
+            return {'code': self.language, 'name': get_language_name(self.language)}
+        else:
+            return None
 
     def prepare_for_case(self):
         """
@@ -261,7 +276,11 @@ class Contact(models.Model):
         result = {'id': self.pk, 'name': self.get_display_name()}
 
         if full:
+            result['groups'] = [g.as_json(full=False) for g in self.groups.all()]
             result['fields'] = self.get_fields(visible=True)
+            result['language'] = self.get_language()
+            result['blocked'] = self.is_blocked
+            result['stopped'] = self.is_stopped
 
         return result
 
