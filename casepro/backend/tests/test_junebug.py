@@ -173,7 +173,7 @@ class JunebugBackendTest(BaseCasesTest):
         [contact] = Contact.objects.all()
         self.assertEqual(contact.uuid, "test_id")
         self.assertEqual(contact.name, "test")
-        self.assertSetEqual(contact.urns, ["tel:+1234"])
+        self.assertSetEqual(set(contact.urns), set(["tel:+1234"]))
 
     @responses.activate
     def test_pull_contacts_forgotten(self):
