@@ -891,6 +891,19 @@ class CaseCRUDLTest(BaseCasesTest):
         mock_fetch_contact_messages.assert_called_once_with(self.unicef, self.ann, d1, case.closed_on)
         mock_fetch_contact_messages.reset_mock()
 
+    def test_timeline_no_initial_message(self):
+        '''If a case has no initial message, the timeline should start from the datetime it was opened.'''
+        case = self.create_case(self.unicef, self.ann, self.moh, message=None, user_assignee=self.user1)
+        caseaction = CaseAction.create(case, self.user1, CaseAction.OPEN, assignee=self.moh, user_assignee=self.user1)
+
+        timeline_url = reverse('cases.case_timeline', args=[case.pk])
+        self.login(self.user1)
+        response = self.url_get('unicef', '%s?after=' % timeline_url)
+
+        [case_open] = response.json['results']
+        self.assertEqual(case_open['item']['action'], CaseAction.OPEN)
+        self.assertEqual(case_open['item']['id'], caseaction.pk)
+
     def test_search(self):
         url = reverse('cases.case_search')
 
@@ -1034,6 +1047,27 @@ class CaseExportCRUDLTest(BaseCasesTest):
 
         response = self.url_get('unicef', read_url)
         self.assertEqual(response.status_code, 302)
+
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    def test_create_with_no_initial_message(self):
+        """When a case is exported with initial_message=None, the field should be a blank string."""
+        ann = self.create_contact(self.unicef, "C-001", "Ann")
+        case = self.create_case(self.unicef, ann, self.moh, None, [self.aids], summary="What is HIV?")
+
+        self.login(self.user1)
+        self.url_post('unicef', '%s?folder=open' % reverse('cases.caseexport_create'))
+
+        export = CaseExport.objects.get()
+        workbook = self.openWorkbook(export.filename)
+        sheet = workbook.sheets()[0]
+
+        self.assertExcelRow(sheet, 0, [
+            "Message On", "Opened On", "Closed On", "Assigned Partner", "Labels", "Summary",
+            "Messages Sent", "Messages Received", "Contact", "Nickname", "Age"
+        ])
+        self.assertExcelRow(sheet, 1, [
+            "", case.opened_on, "", self.moh.name, self.aids.name, "What is HIV?", 0, 0, ann.uuid, "", ""
+        ], pytz.UTC)
 
 
 class SystemUserTest(BaseCasesTest):

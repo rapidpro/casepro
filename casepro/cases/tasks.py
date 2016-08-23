@@ -49,5 +49,5 @@ def reassign_case(case_id):
         return
 
     system_user = SystemUser.get_or_create()
-    note = _("This case's required response time as passed and therefor has been re-assigned")
+    note = _("This case's required response time has passed and therefor has been re-assigned")
     case.reassign(system_user, case.last_assignee, note=note, user_assignee=case.last_user_assignee)
