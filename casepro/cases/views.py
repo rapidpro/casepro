@@ -408,18 +408,27 @@ class PartnerCRUDL(SmartCRUDL):
                                                        *month_range(0)).scope_totals()
                 last_month = DailyCount.get_by_partner(partners, DailyCount.TYPE_REPLIES,
                                                        *month_range(-1)).scope_totals()
-                average = DailyMinuteTotalCount.get_by_partner(partners, DailyMinuteTotalCount.TYPE_TILL_REPLIED)
-                average = average.scope_averages()
+                average_replied = DailyMinuteTotalCount.get_by_partner(partners,
+                                                                       DailyMinuteTotalCount.TYPE_TILL_REPLIED)
+                average_replied = average_replied.scope_averages()
+                average_closed = DailyMinuteTotalCount.get_by_partner(partners,
+                                                                      DailyMinuteTotalCount.TYPE_TILL_CLOSED)
+                average_closed = average_closed.scope_averages()
 
             def as_json(partner):
                 obj = partner.as_json()
                 if with_activity:
-                    obj['replies'] = {
-                        'this_month': this_month.get(partner, 0),
-                        'last_month': last_month.get(partner, 0),
-                        'total': total.get(partner, 0),
-                        'average': humanise_minutes(average.get(partner, 0))
-                    }
+                    obj.update({
+                        'replies': {
+                            'this_month': this_month.get(partner, 0),
+                            'last_month': last_month.get(partner, 0),
+                            'total': total.get(partner, 0),
+                            'average': humanise_minutes(average_replied.get(partner, 0))
+                        },
+                        'cases': {
+                            'average_closed': humanise_minutes(average_closed.get(partner, 0))
+                        }
+                    })
                 return obj
 
             return JsonResponse({'results': [as_json(p) for p in partners]})

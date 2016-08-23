@@ -329,29 +329,39 @@ class DailyCountExport(BaseExport):
         elif self.type == self.TYPE_PARTNER:
             sheet = book.add_sheet(six.text_type(_("Replies Sent")))
             ave_sheet = book.add_sheet(six.text_type(_("Average Reply Time")))
+            ave_closed_sheet = book.add_sheet(six.text_type(_("Average Closed Time")))
 
             partners = list(Partner.get_all(self.org).order_by('name'))
 
             # get each partner's day counts and organise by partner and day
             totals_by_partner = {}
-            averages_by_partner = {}
+            replied_averages_by_partner = {}
+            closed_averages_by_partner = {}
             for partner in partners:
                 totals = DailyCount.get_by_partner([partner], DailyCount.TYPE_REPLIES,
                                                    self.since, self.until).day_totals()
                 totals_by_partner[partner] = {t[0]: t[1] for t in totals}
-                minute_totals = DailyMinuteTotalCount.get_by_partner([partner], DailyMinuteTotalCount.TYPE_TILL_REPLIED,
-                                                                     self.since, self.until).day_totals()
-                averages_by_partner[partner] = {t[0]: (float(t[2]) / t[1]) for t in minute_totals}
+                replied_minute_totals = DailyMinuteTotalCount.get_by_partner([partner],
+                                                                             DailyMinuteTotalCount.TYPE_TILL_REPLIED,
+                                                                             self.since, self.until).day_totals()
+                replied_averages_by_partner[partner] = {t[0]: (float(t[2]) / t[1]) for t in replied_minute_totals}
+                closed_minute_totals = DailyMinuteTotalCount.get_by_partner([partner],
+                                                                            DailyMinuteTotalCount.TYPE_TILL_CLOSED,
+                                                                            self.since, self.until).day_totals()
+                closed_averages_by_partner[partner] = {t[0]: (float(t[2]) / t[1]) for t in closed_minute_totals}
 
             self.write_row(sheet, 0, ["Date"] + [p.name for p in partners])
             self.write_row(ave_sheet, 0, ["Date"] + [p.name for p in partners])
+            self.write_row(ave_closed_sheet, 0, ["Date"] + [p.name for p in partners])
 
             row = 1
             for day in date_range(self.since, self.until):
                 totals = [totals_by_partner.get(l, {}).get(day, 0) for l in partners]
+                replied_averages = [replied_averages_by_partner.get(l, {}).get(day, 0) for l in partners]
+                closed_averages = [closed_averages_by_partner.get(l, {}).get(day, 0) for l in partners]
                 self.write_row(sheet, row, [day] + totals)
-                averages = [averages_by_partner.get(l, {}).get(day, 0) for l in partners]
-                self.write_row(ave_sheet, row, [day] + averages)
+                self.write_row(ave_sheet, row, [day] + replied_averages)
+                self.write_row(ave_closed_sheet, row, [day] + closed_averages)
                 row += 1
 
 
