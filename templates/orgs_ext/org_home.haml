@@ -153,7 +153,11 @@
         .search-toolbar.clearfix
           - if perms.profiles.profile_user_create or org_perms.profiles.profile_user_create
             .pull-away
-              <a class="btn btn-default" href="{% url 'profiles.user_create' %}">{% trans "New" %}</a>
+              .btn-group
+                %a.btn.btn-default{ href:"{% url 'profiles.user_create' %}" }
+                  - trans "New"
+                %button.btn.btn-default{ ng-click:"onExportUserStats()" }
+                  - trans "Export Users..."
 
           .{ style:"margin-top: 7px" }
             Total of <strong>[[ users.length ]]</strong> users

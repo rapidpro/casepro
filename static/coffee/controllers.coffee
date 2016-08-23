@@ -502,6 +502,13 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
         UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
       )
     )
+
+  $scope.onExportUserStats = () ->
+    UtilsService.dateRangeModal("Export", "Export user statistics between the following dates").then((data) ->
+      StatisticsService.dailyCountExport("U", data.after, data.before).then(() ->
+        UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
+      )
+    )
 ])
 
 
@@ -511,7 +518,7 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
 controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'ContactService', 'MessageService', 'PartnerService', 'UtilsService', ($scope, $window, $timeout, CaseService, ContactService, MessageService, PartnerService, UtilsService) ->
   $scope.allLabels = $window.contextData.all_labels
   $scope.fields = $window.contextData.fields
-  
+
   $scope.caseObj = null
   $scope.contact = null
   $scope.newMessage = ''
@@ -663,7 +670,7 @@ controllers.controller('ContactController', ['$scope', '$window', 'ContactServic
 
   $scope.contact = $window.contextData.contact
   $scope.fields = $window.contextData.fields
-  
+
   $scope.init = () ->
     ContactService.fetchCases($scope.contact).then((cases) ->
       $scope.cases = cases
@@ -679,7 +686,7 @@ controllers.controller('ContactController', ['$scope', '$window', 'ContactServic
 #============================================================================
 controllers.controller('LabelController', ['$scope', '$window', '$controller', 'UtilsService', 'LabelService', 'StatisticsService', ($scope, $window, $controller, UtilsService, LabelService, StatisticsService) ->
   $scope.tabSlugs = ['summary']
-  
+
   $controller('BaseTabsController', {$scope: $scope})
 
   $scope.label = $window.contextData.label
