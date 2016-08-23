@@ -660,6 +660,8 @@ class JunebugInboundViewTest(BaseCasesTest):
                 },
             },
             'default_addr_type': "msisdn",
+            'name': None,
+            'language': None,
         })
         headers = {'Content-Type': "application/json"}
         return (201, headers, json.dumps(self.create_identity_obj()))
@@ -1197,6 +1199,8 @@ class IdentityStoreTest(BaseCasesTest):
                 },
             },
             'default_addr_type': "msisdn",
+            'name': "Test identity",
+            'language': "eng",
         })
         headers = {'Content-Type': "application/json"}
         return (201, headers, json.dumps(self.create_identity_obj()))
@@ -1214,7 +1218,7 @@ class IdentityStoreTest(BaseCasesTest):
             responses.POST, url, callback=self.create_identity_callback, match_querystring=True,
             content_type="application/json")
 
-        identity = identity_store.create_identity("+1234")
+        identity = identity_store.create_identity(["msisdn:+1234"], name="Test identity", language="eng")
         self.assertEqual(identity['details'], {
             'addresses': {
                 'msisdn': {

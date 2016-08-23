@@ -68,17 +68,20 @@ class IdentityStore(object):
             "%s/api/v1/identities/search/" % (self.base_url),
             params={'details__addresses__%s' % self.address_type: address})
 
-    def create_identity(self, address):
+    def create_identity(self, addresses, name=None, language=None):
+        """Creates an identity on the identity store, given the details of the identity."""
+        address_dict = {}
+        for address in addresses:
+            type_, addr = address.split(':', 1)
+            address_dict[type_] = {addr: {}}
         identity = self.session.post(
             "%s/api/v1/identities/" % (self.base_url,),
             json={
                 'details': {
-                    'addresses': {
-                        self.address_type: {
-                            address: {},
-                        },
-                    },
-                    'default_addr_type': "msisdn",
+                    'addresses': address_dict,
+                    'default_addr_type': self.address_type,
+                    'name': name,
+                    'language': language,
                 },
             }
         )
@@ -459,7 +462,7 @@ def received_junebug_message(request):
     try:
         identity = identities.next()
     except StopIteration:
-        identity = identity_store.create_identity(data.get('from'))
+        identity = identity_store.create_identity(['%s:%s' % (settings.IDENTITY_ADDRESS_TYPE, data.get('from'))])
     contact = Contact.get_or_create(request.org, identity.get('id'))
 
     message_id = uuid_to_int(data.get('message_id'))
