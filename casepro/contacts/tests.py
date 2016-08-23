@@ -33,14 +33,14 @@ class ContactTest(BaseCasesTest):
             is_stub=False,
             fields={'age': "34"},
             __data__groups=[("G-001", "Customers")],
-            urns=["phone:0821234567"],
+            urns=["tel:0821234567"],
         )
 
         self.assertEqual(contact.uuid, "C-001")
         self.assertEqual(contact.name, "Bob McFlow")
         self.assertEqual(contact.language, "eng")
         self.assertEqual(contact.get_fields(), {"age": "34"})
-        self.assertEqual(contact.urns, ["phone:0821234567"])
+        self.assertEqual(contact.urns, ["tel:0821234567"])
 
         customers = Group.objects.get(org=self.unicef, uuid="G-001", name="Customers")
 
