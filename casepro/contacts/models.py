@@ -190,7 +190,7 @@ class Contact(models.Model):
         """
         contact = cls.objects.filter(urns__contains=[path+":"+urn]).first()
         if not contact:
-            return
+            contact = cls.objects.create(org=org, name=name, urns=[path+":"+urn], is_stub=True)
         return contact
 
     @classmethod
