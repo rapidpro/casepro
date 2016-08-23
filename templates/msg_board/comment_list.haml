@@ -3,19 +3,21 @@
 
 - block content
   .row
-    .col-md-4
-      Pinned Messages
     .col-md-8
         Post a message
         {% render_comment_form for request.org %}
-        - for obj in object_list
-          .row
-            .messages
-              .comment
-                {% get_value obj 'comment' %}
-              .user_name
-                {% get_value obj 'user_name' %},
-                {% get_value obj 'submit_date' %}
+
+        .comments{ ng-controller:"MessageBoardController", ng-init:"init()" }
+          .comment.clearfix{ ng-repeat:"comment in comments", ng-class:'{ "even": $even, "odd": !$even }'}
+            .event-time
+              <cp-date time="comment.submit_date" />
+            %span
+              %a{ ng-href:"/user/read/[[ comment.user_id ]]/" }
+                [[ comment.user_name ]]
+              :
+            [[ comment.comment ]]
+    .col-md-4
+      Pinned Messages
 
 
 - block extra-style
@@ -37,4 +39,27 @@
       font-size: 10px;
       text-align: right;
       font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+    .comment {
+      padding: 12px;
+      margin-bottom: 16px;
+      margin-left: 180px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+    }
+    .comment .event-time {
+      float: right;
+      font-size: 0.7em;
+      margin-left: 5px;
+      margin-bottom: 5px;
+    }
+    .comment.odd {
+      background-color: #DDFDDD;
+      border-color: #D4F3D4;
+    }
+    .comment.even {
+      background-color: #E6FDFB;
+      border-color: #D5EBED;
     }

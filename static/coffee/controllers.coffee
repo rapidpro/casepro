@@ -511,7 +511,7 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
 controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'ContactService', 'MessageService', 'PartnerService', 'UtilsService', ($scope, $window, $timeout, CaseService, ContactService, MessageService, PartnerService, UtilsService) ->
   $scope.allLabels = $window.contextData.all_labels
   $scope.fields = $window.contextData.fields
-  
+
   $scope.caseObj = null
   $scope.contact = null
   $scope.newMessage = ''
@@ -663,7 +663,7 @@ controllers.controller('ContactController', ['$scope', '$window', 'ContactServic
 
   $scope.contact = $window.contextData.contact
   $scope.fields = $window.contextData.fields
-  
+
   $scope.init = () ->
     ContactService.fetchCases($scope.contact).then((cases) ->
       $scope.cases = cases
@@ -930,4 +930,19 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApiService', 'PodUI
     busyText: busy_text ? name,
     isBusy: false
   }
+])
+
+#============================================================================
+# Message board controller
+#============================================================================
+controllers.controller('MessageBoardController', ['$scope', '$timeout', 'MessageBoardService', ($scope, $timeout, MessageBoardService) ->
+
+  $scope.comments = []
+  $scope.itemsMaxTime = null
+
+  $scope.init = () ->
+    MessageBoardService.fetchComments({id: $scope.orgId}, $scope.itemsMaxTime).then((data) ->
+      $scope.comments = $scope.comments.concat(data.results)
+      $scope.itemsMaxTime = data.maxTime
+    )
 ])

@@ -1,5 +1,5 @@
 from __future__ import unicode_literals
 
-from .views import CommentCRUDL
+from .views import MessageBoardCRUDL
 
-urlpatterns = CommentCRUDL().as_urlpatterns()
+urlpatterns = MessageBoardCRUDL().as_urlpatterns()

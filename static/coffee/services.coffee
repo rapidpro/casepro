@@ -643,3 +643,22 @@ services.factory('PodApiService', ['$q', '$window', '$http', ($q, $window, $http
       }
     })
 ])
+
+#=====================================================================
+# Message Board service
+#=====================================================================
+services.factory('MessageBoardService', ['$http', '$httpParamSerializer', '$window', ($http, $httpParamSerializer, $window) ->
+  new class MessageBoardService
+
+    #----------------------------------------------------------------------------
+    # Fetches comments
+    #----------------------------------------------------------------------------
+    fetchComments: () ->
+
+      return $http.get('/comment/comments/').then((response) ->
+        utils.parseDates(response.data.results, 'submit_date')
+
+        return {results: response.data.results}
+      )
+
+])
