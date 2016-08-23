@@ -127,7 +127,7 @@ class IdentityStoreContact(object):
             for value in scheme_addresses:
                 if scheme == "msisdn":
                     scheme = "tel"
-                self.urns.append(scheme+":"+value)
+                self.urns.append("%s:%s" % (scheme, value))
 
 
 class IdentityStoreContactSyncer(BaseSyncer):
