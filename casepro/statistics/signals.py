@@ -54,7 +54,7 @@ def record_new_outgoing(sender, instance, created, **kwargs):
                 if instance == case.outgoing_messages.filter(partner=partner).earliest('created_on'):
                     # only count the time since this case was (re)assigned to this partner
                     try:
-                        action = case.actions.filter(assignee=partner).latest('created_on')
+                        action = case.actions.filter(action=CaseAction.REASSIGN, assignee=partner).latest('created_on')
                         start_date = action.created_on
                     except CaseAction.DoesNotExist:
                         start_date = case.opened_on
@@ -101,7 +101,7 @@ def record_new_case_action(sender, instance, created, **kwargs):
             if user.partners.filter(id=partner.id).exists():
                 # count the time since this case was (re)assigned to this partner
                 try:
-                    action = case.actions.filter(assignee=partner).latest('created_on')
+                    action = case.actions.filter(action=CaseAction.REASSIGN, assignee=partner).latest('created_on')
                     start_date = action.created_on
                 except CaseAction.DoesNotExist:
                     start_date = case.opened_on
