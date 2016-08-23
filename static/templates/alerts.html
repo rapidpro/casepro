@@ -1,0 +1,9 @@
+<div ng-repeat="alert in alerts">
+  <div ng-if="!alert.templateUrl">
+    <cp-alert type="[[ alert.type ]]">[[ alert.message ]]</cp-alert>
+  </div>
+
+  <div ng-if="alert.templateUrl">
+    <div ng-include="alert.templateUrl"></div>
+  </div>
+</div>

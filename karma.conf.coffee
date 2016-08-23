@@ -22,6 +22,7 @@ module.exports = (config) ->
 
       # templates
       'static/templates/**/*.html',
+      'karma/templates/**/*.html',
 
       # the code we are testing
       'static/coffee/*.coffee',
@@ -47,6 +48,7 @@ module.exports = (config) ->
       '**/*.coffee': ['coffee'],
       'static/**/*.coffee': ['coverage']
       'static/templates/**/*.html': ['ng-html2js']
+      'karma/templates/**/*.html': ['ng-html2js']
     }
 
     # this makes sure that we get coffeescript line numbers instead
@@ -59,8 +61,8 @@ module.exports = (config) ->
         path.replace /\.js$/, '.coffee'
 
     ngHtml2JsPreprocessor:
-      stripPrefix: 'static'
-      prependPrefix: '/sitestatic'
+      stripPrefix: 'static/'
+      prependPrefix: '/sitestatic/'
       moduleName: 'templates'
 
     # test results reporter to use

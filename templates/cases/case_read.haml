@@ -66,6 +66,8 @@
 
     .row
       .col-md-8
+        <cp-alerts alerts="alerts"></cp-alerts>
+
         %form.sendform{ ng-if:"!caseObj.is_closed" }
           // TODO maxlength not working
           %textarea.form-control{ type:"text", autocomplete:"off", placeholder:"Enter message", ng-maxlength:"{{ maxMsgChars }}", ng-model:"$parent.newMessage", ng-disabled:"sending", ng-change:"onNewMessageChanged()", ng-trim:"false" }
@@ -78,7 +80,7 @@
         .timeline{ ng-controller:"CaseTimelineController", ng-init:"init()" }
           .timeline-event.clearfix{ ng-repeat:"event in timeline | reverse", ng-class:'{ "timeline-action": (event.type == "A"), "timeline-incoming": (event.type == "I"), "timeline-outgoing": (event.type == "O") }' }
             .event-time
-              [[ event.time | autodate ]]
+              <cp-date time="event.time" />
 
             .{ ng-if:'event.type == "A"' }
               %a{ ng-href:"/user/read/[[ event.item.created_by.id ]]/" }
@@ -181,7 +183,7 @@
             ng-controller:"{{ pod.pod_type.controller }}",
             ng-init:'init && init({{ pod.config.index }}, {{ case_id }}, {{ pod.config_json }})'
           }
-          <{{ pod.pod_type.directive }} />
+            <{{ pod.pod_type.directive }} />
 
 - block extra-script
   {{ block.super }}
