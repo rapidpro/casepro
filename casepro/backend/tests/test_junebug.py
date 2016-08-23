@@ -46,8 +46,13 @@ class JunebugBackendTest(BaseCasesTest):
                         'name': "test",
                         'addresses': {
                             'msisdn': {
-                                '+1234': {}
+                                '+5678': {},
+                                '+1234': {'default': True}
                             },
+                            'email': {
+                                'test1@example.com': {},
+                                'test2@example.com': {}
+                            }
                         },
                         'preferred_language': "eng_NG",
                     },
@@ -140,12 +145,12 @@ class JunebugBackendTest(BaseCasesTest):
         [contact] = Contact.objects.all()
         self.assertEqual(contact.uuid, "test_id")
         self.assertEqual(contact.name, "test")
-        self.assertEqual(contact.urns, ["msisdn:+1234"])
+        self.assertSetEqual(set(contact.urns), set(["tel:+1234", "email:test1@example.com", "email:test2@example.com"]))
 
     @responses.activate
     def test_pull_contacts_recently_updated(self):
         contact = Contact.get_or_create(self.unicef, "test_id", "testing")
-        contact.urns = ["msisdn:+5678"]
+        contact.urns = ["tel:+5678"]
         contact.save()
 
         self.add_identity_store_callback(
@@ -168,7 +173,7 @@ class JunebugBackendTest(BaseCasesTest):
         [contact] = Contact.objects.all()
         self.assertEqual(contact.uuid, "test_id")
         self.assertEqual(contact.name, "test")
-        self.assertEqual(contact.urns, ["msisdn:+1234"])
+        self.assertSetEqual(contact.urns, ["tel:+1234"])
 
     @responses.activate
     def test_pull_contacts_forgotten(self):
@@ -192,7 +197,7 @@ class JunebugBackendTest(BaseCasesTest):
 
     @responses.activate
     def test_pull_contacts_no_changes(self):
-        Contact.objects.create(org=self.unicef, uuid="test_id", name="test", language="eng", urns=["msisdn:+1234"])
+        Contact.objects.create(org=self.unicef, uuid="test_id", name="test", language="eng", urns=["tel:+1234"])
 
         self.add_identity_store_callback(
             "created_to=2016-03-14T10%3A21%3A00&created_from=2016-03-14T10%3A25%3A00",
@@ -1331,7 +1336,7 @@ class IdentityStoreContactSyncerTest(BaseCasesTest):
             'is_stub': False,
             'fields': {},
             '__data__groups': {},
-            'urns': ["msisdn:+1234"]
+            'urns': ["tel:+1234"]
         })
 
     def test_update_required_on_stub(self):
@@ -1341,7 +1346,7 @@ class IdentityStoreContactSyncerTest(BaseCasesTest):
         self.assertTrue(self.syncer.update_required(local, self.mk_identity_store_contact(), {}))
 
     def test_no_update_required(self):
-        local = Contact.objects.create(org=self.unicef, uuid="test_id", name="test", language="eng")
+        local = Contact.objects.create(org=self.unicef, uuid="test_id", name="test", language="eng", urns=["tel:+1234"])
         self.assertFalse(self.syncer.update_required(local, self.mk_identity_store_contact(), {}))
 
     def test_update_required_name_different(self):
