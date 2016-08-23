@@ -217,6 +217,7 @@ class DailyCountExport(BaseExport):
     """
     TYPE_LABEL = 'L'
     TYPE_PARTNER = 'P'
+    TYPE_USER = 'U'
 
     type = models.CharField(max_length=1)
 
@@ -249,6 +250,43 @@ class DailyCountExport(BaseExport):
             for day in date_range(self.since, self.until):
                 totals = [totals_by_label.get(l, {}).get(day, 0) for l in labels]
                 self.write_row(sheet, row, [day] + totals)
+                row += 1
+
+        elif self.type == self.TYPE_USER:
+            replies_sheet = book.add_sheet(six.text_type(_("Replies Sent")))
+            cases_opened_sheet = book.add_sheet(six.text_type(_("Cases Opened")))
+            cases_closed_sheet = book.add_sheet(six.text_type(_("Cases Closed")))
+
+            users = self.org.get_org_users()
+
+            self.write_row(replies_sheet, 0, ["Date"] + [u.get_full_name() for u in users])
+            self.write_row(cases_opened_sheet, 0, ["Date"] + [u.get_full_name() for u in users])
+            self.write_row(cases_closed_sheet, 0, ["Date"] + [u.get_full_name() for u in users])
+
+            replies_totals_by_user = {}
+            cases_opened_by_user = {}
+            cases_closed_by_user = {}
+
+            for user in users:
+                replies_totals = DailyCount.get_by_user(
+                    self.org, [user], DailyCount.TYPE_REPLIES, self.since, self.until).scope_totals()
+                cases_opened_totals = DailyCount.get_by_user(
+                    self.org, [user], DailyCount.TYPE_CASE_OPENED, self.since, self.until).scope_totals()
+                cases_closed_totals = DailyCount.get_by_user(
+                    self.org, [user], DailyCount.TYPE_CASE_CLOSED, self.since, self.until).scope_totals()
+
+                replies_totals_by_user[user] = {t[0]: t[1] for t in replies_totals}
+                cases_opened_by_user[user] = {t[0]: t[1] for t in cases_opened_totals}
+                cases_closed_by_user[user] = {t[0]: t[1] for t in cases_closed_totals}
+
+            row = 1
+            for day in date_range(self.since, self.until):
+                replies_totals = [replies_totals_by_user.get(u, {}).get(day, 0) for u in users]
+                cases_opened_totals = [cases_opened_by_user.get(u, {}).get(day, 0) for u in users]
+                cases_closed_totals = [cases_closed_by_user.get(u, {}).get(day, 0) for u in users]
+                self.write_row(replies_sheet, row, [day] + replies_totals)
+                self.write_row(cases_opened_sheet, row, [day] + cases_opened_totals)
+                self.write_row(cases_closed_sheet, row, [day] + cases_closed_totals)
                 row += 1
 
         elif self.type == self.TYPE_PARTNER:
