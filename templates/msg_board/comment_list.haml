@@ -1,0 +1,40 @@
+- extends "smartmin/read.html"
+- load smartmin i18n comments
+
+- block content
+  .row
+    .col-md-4
+      Pinned Messages
+    .col-md-8
+        Post a message
+        {% render_comment_form for request.org %}
+        - for obj in object_list
+          .row
+            .messages
+              .comment
+                {% get_value obj 'comment' %}
+              .user_name
+                {% get_value obj 'user_name' %},
+                {% get_value obj 'submit_date' %}
+
+
+- block extra-style
+  {{ block.super }}
+  :css
+    .messages {
+      margin: 4px;
+      background-color: #ccc;
+      border-radius: 5px;
+      text-color: #493750;
+      width: fit-content;
+      padding: 5px;
+    }
+    .comment {
+      font-size: 15px;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+    .user_name {
+      font-size: 10px;
+      text-align: right;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }

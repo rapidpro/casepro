@@ -1,0 +1,32 @@
+{% load comments i18n%}
+
+
+<form class="smartmin-form form-horizontal" action="{% url 'comments-post-comment' %}" method="post">
+    {% csrf_token %}
+    {% if form.errors %}
+      <h1>{% blocktrans count counter=form.errors|length %}Please correct the error below{% plural %}Please correct the
+        errors below{% endblocktrans %}</h1>
+    {% endif %}
+
+    {% if form.comment.errors %}{{ form.comment.errors }}{% endif %}
+    <p class="form-group">{{ form.comment }}</p>
+    <div class="form-group smartmin-form-buttons">
+      <div class="col-sm-8">
+        <input class="btn btn-primary" type="submit" name="submit" value="Post Message">
+      </div>
+    </div>
+    {{ form.object_pk }}
+
+    {{ form.content_type }}
+
+    {{ form.timestamp }}
+
+    {{ form.security_hash }}
+
+    <input type="hidden" name="next" value="{{request.path}}" />
+    <input type="hidden" name="email" value="{{request.user.email | default:'blank@email.com'}}" />
+
+    {% if node.id %}
+        <input type="hidden" name="parent" id="parent_id" value="{{ node.id }}" />
+    {% endif %}
+</form>
