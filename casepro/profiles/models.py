@@ -60,6 +60,7 @@ class Profile(models.Model):
     def create_org_user(cls, org, name, email, password, change_password=False, must_use_faq=False):
         """
         Creates an org-level user (for now these are always admins)
+        """
         user = cls.create_user(name, email, password, change_password=change_password, must_use_faq=must_use_faq)
         user.profile.update_role(org, ROLE_ADMIN)
         return user
