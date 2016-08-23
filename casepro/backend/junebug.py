@@ -164,7 +164,7 @@ class IdentityStoreContactSyncer(BaseSyncer):
             return True
 
         urn_diff = set(local.urns).symmetric_difference(set(remote.urns))
-        if urn_diff != set([]):
+        if urn_diff:
             return True
 
         return not is_dict_equal(local.get_fields(), remote.fields, ignore_none_values=True)
