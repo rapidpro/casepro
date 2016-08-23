@@ -161,8 +161,8 @@ class Contact(models.Model):
 
     created_on = models.DateTimeField(auto_now_add=True, help_text=_("When this contact was created"))
 
-    urns = ArrayField(models.CharField(max_length=128), default=list,
-                      help_text=_("List of URNs of the format 'scheme:urn'"))
+    urns = ArrayField(models.CharField(max_length=255), default=list,
+                      help_text=_("List of URNs of the format 'scheme:path'"))
 
     def __init__(self, *args, **kwargs):
         if self.SAVE_GROUPS_ATTR in kwargs:
