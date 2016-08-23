@@ -127,7 +127,7 @@ class ContactTest(BaseCasesTest):
         If no contact with a matching urn exists a new one should be created
         """
         self.assertEqual(Contact.objects.count(), 1)
-        Contact.get_or_create_from_urn(self.unicef, "tel", "0987654321")
+        Contact.get_or_create_from_urn(self.unicef, "tel:0987654321")
 
         contacts = Contact.objects.all()
         self.assertEqual(len(contacts), 2)
@@ -147,7 +147,7 @@ class ContactTest(BaseCasesTest):
         self.ann.save(update_fields=('urns',))
 
         self.assertEqual(Contact.objects.count(), 1)
-        contact = Contact.get_or_create_from_urn(self.unicef, "tel", "0987654321")
+        contact = Contact.get_or_create_from_urn(self.unicef, "tel:0987654321")
         self.assertEqual(Contact.objects.count(), 1)
 
         self.assertEqual(contact.urns, ["tel:0987654321"])
