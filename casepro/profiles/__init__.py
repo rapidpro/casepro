@@ -94,6 +94,9 @@ def _user_remove_from_org(user, org):
     org.editors.remove(user)
     org.viewers.remove(user)
 
+    # remove primary_contact fk relationship
+    user.partners_primary.remove(*user.partners_primary.filter(org=org))
+
     # remove user from any partners for this org
     user.partners.remove(*user.partners.filter(org=org))
 

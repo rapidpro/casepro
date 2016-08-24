@@ -301,6 +301,15 @@ class UserTest(BaseCasesTest):
         # add our admin as a partner user in a different org
         self.admin.update_role(self.nyaruka, ROLE_ANALYST, self.klab)
 
+        # set our admin as the primary contact for this partner
+        self.klab.primary_contact = self.admin
+        self.klab.save()
+        self.admin.refresh_from_db()
+
+        # assure the primary_contact relationship exists
+        self.assertEqual(self.klab.primary_contact, self.admin)
+        self.assertEqual(self.klab, self.admin.partners_primary.get(org=self.nyaruka))
+
         # have users watch a label too
         self.pregnancy.watchers.add(self.admin, self.user1)
 
@@ -323,6 +332,14 @@ class UserTest(BaseCasesTest):
         self.assertIsNone(self.user1.get_partner(self.unicef))
         self.assertNotIn(self.user1, case.watchers.all())
         self.assertNotIn(self.user1, self.pregnancy.watchers.all())
+
+        # remove our admin from the partner org
+        self.admin.remove_from_org(self.nyaruka)
+        self.klab.refresh_from_db()
+
+        # assure the primary_contact relationship has been removed
+        self.assertEqual(self.klab.primary_contact, None)
+        self.assertEqual(0, self.admin.partners_primary.filter(org=self.nyaruka).count())
 
     def test_unicode(self):
         self.assertEqual(unicode(self.superuser), "root")
