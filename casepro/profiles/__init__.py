@@ -66,11 +66,24 @@ def _user_update_role(user, org, role, partner=None):
     elif role not in PARTNER_ROLES and partner:
         raise ValueError("Cannot specify a partner for role %s" % role)
 
-    # remove user from any partners for this org
-    user.partners.remove(*user.partners.filter(org=org))
+    # store the user's previous partner
+    previous_partners = user.partners.filter(org=org)
+    if previous_partners.count() == 1:
+        previous_partner = previous_partners[0]
+    elif previous_partners.count() == 0:
+        previous_partner = None
+    else:
+        raise ValueError("User somehow belongs to two partners")
 
-    if partner:
-        user.partners.add(partner)
+    if partner != previous_partner:
+        # remove user from any partners for this org
+        user.partners.remove(*user.partners.filter(org=org))
+        # remove any primary_contact fk relationships
+        user.partners_primary.remove(*user.partners_primary.filter(org=org))
+
+        if partner is not None:
+            # set the new partner
+            user.partners.add(partner)
 
     if role == ROLE_ADMIN:
         org.administrators.add(user)
