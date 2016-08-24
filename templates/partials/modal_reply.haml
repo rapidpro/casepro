@@ -8,11 +8,6 @@
       - trans "Send the following reply to each contact and archive each message. This will remove the messages from your inbox."
     %form{ name:"form", novalidate:"" }
       .form-group{ ng-class:'{"has-error": form.text.$invalid && (form.text.$dirty || form.submitted)}' }
-        %textarea.form-control{ ng-model:"fields.text.val", ng-maxlength:"fields.text.maxLength", name:"text", required:"" }
-        .help-block{ ng-show:"form.text.$error.required && (form.text.$dirty || form.submitted)" }
-          - trans "Required"
-        .help-block{ ng-show:"form.text.$error.maxlength" }
-          - trans "Too long"
       .form-group
         .well.well-small.col-md-12
           %small
