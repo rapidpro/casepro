@@ -184,6 +184,17 @@ class Contact(models.Model):
             return contact
 
     @classmethod
+    def get_or_create_from_urn(cls, org, urn, name=None):
+        """
+        Gets an existing contact or creates a stub contact. Used when opening a case without an initial message
+        """
+        contact = cls.objects.filter(urns__contains=[urn]).first()
+        if not contact:
+            contact = cls.objects.create(org=org, name=name, urns=[urn], is_stub=True)
+            get_backend().push_contact(org, contact)
+        return contact
+
+    @classmethod
     def lock(cls, org, uuid):
         return get_redis_connection().lock(CONTACT_LOCK_KEY % (org.pk, uuid), timeout=60)
 
