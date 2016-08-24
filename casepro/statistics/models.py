@@ -257,27 +257,25 @@ class DailyCountExport(BaseExport):
             cases_opened_sheet = book.add_sheet(six.text_type(_("Cases Opened")))
             cases_closed_sheet = book.add_sheet(six.text_type(_("Cases Closed")))
 
-            users = self.org.get_org_users()
-
-            self.write_row(replies_sheet, 0, ["Date"] + [u.get_full_name() for u in users])
-            self.write_row(cases_opened_sheet, 0, ["Date"] + [u.get_full_name() for u in users])
-            self.write_row(cases_closed_sheet, 0, ["Date"] + [u.get_full_name() for u in users])
+            users = self.org.get_org_users().order_by('pk')
 
             replies_totals_by_user = {}
             cases_opened_by_user = {}
             cases_closed_by_user = {}
-
             for user in users:
                 replies_totals = DailyCount.get_by_user(
-                    self.org, [user], DailyCount.TYPE_REPLIES, self.since, self.until).scope_totals()
+                    self.org, [user], DailyCount.TYPE_REPLIES, self.since, self.until).day_totals()
                 cases_opened_totals = DailyCount.get_by_user(
-                    self.org, [user], DailyCount.TYPE_CASE_OPENED, self.since, self.until).scope_totals()
+                    self.org, [user], DailyCount.TYPE_CASE_OPENED, self.since, self.until).day_totals()
                 cases_closed_totals = DailyCount.get_by_user(
-                    self.org, [user], DailyCount.TYPE_CASE_CLOSED, self.since, self.until).scope_totals()
-
+                    self.org, [user], DailyCount.TYPE_CASE_CLOSED, self.since, self.until).day_totals()
                 replies_totals_by_user[user] = {t[0]: t[1] for t in replies_totals}
                 cases_opened_by_user[user] = {t[0]: t[1] for t in cases_opened_totals}
                 cases_closed_by_user[user] = {t[0]: t[1] for t in cases_closed_totals}
+
+            self.write_row(replies_sheet, 0, ["Date"] + [u.get_full_name() for u in users])
+            self.write_row(cases_opened_sheet, 0, ["Date"] + [u.get_full_name() for u in users])
+            self.write_row(cases_closed_sheet, 0, ["Date"] + [u.get_full_name() for u in users])
 
             row = 1
             for day in date_range(self.since, self.until):
