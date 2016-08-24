@@ -223,6 +223,11 @@ class FAQ(models.Model):
 
         return queryset.order_by('question')
 
+    @classmethod
+    def get_all_languages(cls, org):
+        queryset = cls.objects.filter(org=org)
+        return queryset.values('language').order_by('language').distinct()
+
     def as_json(self):
         if not self.parent:
             parent_json = None

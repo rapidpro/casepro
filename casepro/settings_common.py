@@ -321,7 +321,7 @@ PERMISSIONS = {
 
     'msgs.label': ('create', 'update', 'read', 'delete', 'list'),
 
-    'msgs.faq': ('create', 'read', 'update', 'delete', 'list', 'search', 'import'),
+    'msgs.faq': ('create', 'read', 'update', 'delete', 'list', 'search', 'import', 'languages'),
 
     'msgs.message': ('action', 'bulk_reply', 'forward', 'label', 'history', 'search', 'unlabelled'),
 
@@ -382,6 +382,7 @@ GROUP_PERMISSIONS = {
 
         'msgs.label_read',
         'msgs.faq_search',
+        'msgs.faq_languages',
         'msgs.message_action',
         'msgs.message_bulk_reply',
         'msgs.message_forward',

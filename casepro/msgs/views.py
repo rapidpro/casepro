@@ -19,7 +19,7 @@ from temba_client.utils import parse_iso8601
 
 from casepro.rules.mixins import RuleFormMixin
 from casepro.statistics.models import DailyCount
-from casepro.utils import parse_csv, str_to_bool, JSONEncoder, json_encode, month_range
+from casepro.utils import parse_csv, str_to_bool, JSONEncoder, json_encode, month_range, get_language_name
 from casepro.utils.export import BaseDownloadView
 
 
@@ -474,7 +474,7 @@ class FaqSearchMixin(object):
 
 class FaqCRUDL(SmartCRUDL):
     model = FAQ
-    actions = ('list', 'create', 'read', 'update', 'delete', 'search', 'import')
+    actions = ('list', 'create', 'read', 'update', 'delete', 'search', 'import', 'languages')
 
     class List(OrgPermsMixin, SmartListView):
         fields = ('question', 'answer', 'language', 'parent')
@@ -574,3 +574,32 @@ class FaqCRUDL(SmartCRUDL):
         def post_save(self, task):
             task.start(self.org)
             return task
+
+    class Languages(OrgPermsMixin, SmartTemplateView):
+        """
+        JSON endpoint for getting a list of currently all available languages
+        """
+        def get_context_data(self, **kwargs):
+            context = super(FaqCRUDL.Languages, self).get_context_data(**kwargs)
+
+            org = self.request.org
+            page = int(self.request.GET.get('page', 1))
+
+            langs = FAQ.get_all_languages(org)
+            paginator = LazyPaginator(langs, per_page=50)
+
+            lang_list = []
+            for lang in paginator.page(page):
+                lang_list.append({
+                    'code': lang['language'],
+                    'name': get_language_name(lang['language'])
+                })
+            context['language_list'] = lang_list
+            context['has_more'] = paginator.num_pages > page
+            return context
+
+        def render_to_response(self, context, **response_kwargs):
+            return JsonResponse({
+                'results': context['language_list'],
+                'has_more': context['has_more']
+            }, encoder=JSONEncoder)

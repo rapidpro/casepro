@@ -360,27 +360,27 @@ class FaqCRUDLTest(BaseCasesTest):
 
         # submit again with valid data (has parent, no labels)
         response = self.url_post('unicef', url, {
-            'question': "CGG Question",
-            'answer': "CGG Answer",
-            'language': 'cgg',
+            'question': "BNT Question",
+            'answer': "BNT Answer",
+            'language': 'bnt',
             'parent': self.preg_faq1_eng.pk
         })
         self.assertEqual(response.status_code, 302)
-        faq2 = FAQ.objects.get(question="CGG Question")
+        faq2 = FAQ.objects.get(question="BNT Question")
         self.assertEqual(faq2.parent, self.preg_faq1_eng)
         self.assertEqual(faq2.labels.all()[0], self.pregnancy)
 
         # submit again with valid data (has parent, wrong labels)
         response = self.url_post('unicef', url, {
-            'question': "CGG Is nausea during pregnancy normal?",
-            'answer': "CGG Yes, especially in the first 3 months",
-            'language': 'cgg',
+            'question': "BNT Is nausea during pregnancy normal?",
+            'answer': "BNT Yes, especially in the first 3 months",
+            'language': 'bnt',
             'parent': faq1.pk,
             'labels': [self.aids.pk]
         })
 
         self.assertEqual(response.status_code, 302)
-        faq3 = FAQ.objects.get(question="CGG Is nausea during pregnancy normal?")
+        faq3 = FAQ.objects.get(question="BNT Is nausea during pregnancy normal?")
         self.assertEqual(faq3.parent, faq1)
         self.assertEqual(faq3.labels.all()[0], self.pregnancy)
 
@@ -399,7 +399,7 @@ class FaqCRUDLTest(BaseCasesTest):
                 self.tea_faq1_eng,
                 self.preg_faq1_eng,
                 self.preg_faq2_eng,
-                self.preg_faq1_cgg,
+                self.preg_faq1_bnt,
                 self.preg_faq1_lug
             ]
         )
@@ -451,7 +451,7 @@ class FaqCRUDLTest(BaseCasesTest):
     def test_delete(self):
         preg_faq1_eng_pk = self.preg_faq1_eng.pk
         preg_faq1_lug_pk = self.preg_faq1_lug.pk
-        preg_faq1_cgg_pk = self.preg_faq1_cgg.pk
+        preg_faq1_bnt_pk = self.preg_faq1_bnt.pk
 
         url = reverse('msgs.faq_delete', args=[preg_faq1_eng_pk])
 
@@ -475,7 +475,7 @@ class FaqCRUDLTest(BaseCasesTest):
         with self.assertRaises(FAQ.DoesNotExist):
             FAQ.objects.get(pk=preg_faq1_lug_pk)
         with self.assertRaises(FAQ.DoesNotExist):
-            FAQ.objects.get(pk=preg_faq1_cgg_pk)
+            FAQ.objects.get(pk=preg_faq1_bnt_pk)
 
     def test_read(self):
         preg_faq1_pk = self.preg_faq1_eng.pk
@@ -567,6 +567,24 @@ class FaqCRUDLTest(BaseCasesTest):
             'text': "arv"
         })
         self.assertEqual(len(response.json['results']), 1)
+
+    def test_language(self):
+        url = reverse('msgs.faq_languages')
+
+        # try unauthenticated
+        response = self.url_get('unicef', url, {})
+        self.assertLoginRedirect(response, 'unicef', url)
+
+        # log in as a non-administrator
+        self.login(self.user1)
+        response = self.url_get('unicef', url, {})
+        # should have 4 results as one is label restricted
+        self.assertEqual(len(response.json['results']), 3)
+        self.assertEqual(response.json['results'], [
+            {'code': 'bnt', 'name': 'Bantu'},
+            {'code': 'eng', 'name': 'English'},
+            {'code': 'lug', 'name': 'Ganda'}
+        ])
 
 
 class FaqImportTest(BaseCasesTest):
