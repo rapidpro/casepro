@@ -46,24 +46,6 @@ def override_start(self, org):
 ImportTask.start = override_start
 
 
-class LabelFormMixin(object):
-    @staticmethod
-    def construct_tests(data):
-        keywords = parse_csv(data['keywords'])
-        groups = data['groups']
-        field_test = data['field_test']
-
-        tests = []
-        if keywords:
-            tests.append(ContainsTest(keywords, Quantifier.ANY))
-        if groups:
-            tests.append(GroupsTest(groups, Quantifier.ANY))
-        if field_test:
-            tests.append(field_test)
-
-        return tests
-
-
 class LabelCRUDL(SmartCRUDL):
     actions = ('create', 'update', 'read', 'delete', 'list', 'watch', 'unwatch')
     model = Label
