@@ -55,7 +55,7 @@ class JunebugBackendTest(BaseCasesTest):
                     'details': {
                         'name': "test",
                         'addresses': {
-                            'msisdn': {
+                            'tel': {
                                 '+5678': {},
                                 '+1234': {'default': True}
                             },
@@ -112,7 +112,7 @@ class JunebugBackendTest(BaseCasesTest):
                     'details': {
                         'name': "test",
                         'addresses': {
-                            'msisdn': {
+                            'tel': {
                                 '+1234': {}
                             },
                         },
@@ -1383,7 +1383,7 @@ class IdentityStoreContactSyncerTest(BaseCasesTest):
                     'preferred_language': "eng_NG",
                     'name': "test",
                     'addresses': {
-                        'msisdn': {
+                        'tel': {
                             '+1234': {}
                         }
                     }
