@@ -115,9 +115,23 @@ class IdentityStoreContact(object):
         if remote_language is not None:
             self.language, _, _ = remote_language.partition('_')
         self.name = json_data.get('details').get('name', None)
-        self.addresses = json_data.get('details').get('addresses')
         self.fields = {}
         self.groups = {}
+        addresses = json_data.get('details').get('addresses')
+        self.urns = []
+        for scheme, address in addresses.items():
+            scheme_addresses = []
+            for urn, details in address.items():
+                if 'optedout' in details and details['optedout'] is True:
+                    # Skip opted out URNs
+                    continue
+                if 'default' in details and details['default'] is True:
+                    # If a default is set for the scheme then only store the default
+                    scheme_addresses = [urn]
+                    break
+                scheme_addresses.append(urn)
+            for value in scheme_addresses:
+                self.urns.append("%s:%s" % (scheme, value))
 
 
 class IdentityStoreContactSyncer(BaseSyncer):
@@ -137,6 +151,7 @@ class IdentityStoreContactSyncer(BaseSyncer):
             'is_stub': False,
             'fields': {},
             Contact.SAVE_GROUPS_ATTR: {},
+            'urns': remote.urns,
         }
 
     def update_required(self, local, remote, remote_as_kwargs):
@@ -144,6 +159,10 @@ class IdentityStoreContactSyncer(BaseSyncer):
             return True
 
         if {g.uuid for g in local.groups.all()} != {g.uuid for g in remote.groups}:
+            return True
+
+        urn_diff = set(local.urns).symmetric_difference(set(remote.urns))
+        if urn_diff:
             return True
 
         return not is_dict_equal(local.get_fields(), remote.fields, ignore_none_values=True)
