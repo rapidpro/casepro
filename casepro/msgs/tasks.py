@@ -11,7 +11,7 @@ from django.conf import settings
 from dash.orgs.tasks import org_task
 from datetime import timedelta
 from smartmin.csv_imports.models import ImportTask
-from .models import FAQ, Language, Label
+from .models import FAQ, Label
 
 # python2 and python3 support
 try:
@@ -114,27 +114,6 @@ def create_faq(org, question, answer, language, parent, labels=(), **kwargs):
     return faq
 
 
-def get_or_create_lang(org, lang_code):
-    """
-    Gets or creates a Language object from a potentially poorly formatted language code
-    """
-    lang_code = lang_code.strip()
-    try:
-        # Get the Language
-        return Language.objects.get(code__iexact=lang_code)  # iexact removes case sensitivity
-    except:
-        # Format the lang_code before creating a new language
-        if len(lang_code) != 6:
-            raise ValueError("Language codes should be 6 characters long")
-
-        if lang_code[3] != '_':
-            raise ValueError("Language name and location should be seperated by an underscore")
-
-        lang_code = lang_code[0:4] + lang_code[4:6].upper()
-        # Create the language
-        return Language.objects.create(org=org, code=lang_code)
-
-
 def get_labels(task, labelstring):
     """
     Gets a list of label objects from a comma-seperated string of the label codes, eg. "TB, aids"
@@ -172,7 +151,7 @@ def faq_csv_import(org, task_id):  # pragma: no cover
             for line in records:
                 lines += 1
                 # Get or create parent Language object
-                parent_lang = get_or_create_lang(org, line['Parent Language'])
+                parent_lang = line['Parent Language']
 
                 # Get label objects
                 labels = get_labels(task, line['Labels'])
@@ -192,15 +171,11 @@ def faq_csv_import(org, task_id):  # pragma: no cover
                 for key in keys:
                     lang_code, name = key.split(' ')
                     lang_codes.add(lang_code)
-
                 # Loop through for each translation
                 for lang_code in lang_codes:
-                    # Create or create translation Language object
-                    trans_lang = get_or_create_lang(org, lang_code)
-
                     # Create translation FAQ
                     create_faq(org, line['%s Question' % lang_code], line['%s Answer' % lang_code],
-                               trans_lang, parent_faq, labels)
+                               lang_code, parent_faq, labels)
 
             task.save()
             task.log(log.getvalue())

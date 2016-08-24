@@ -6,9 +6,9 @@ from django.utils.translation import ugettext_lazy as _
 from casepro.contacts.models import Group
 from casepro.rules.forms import FieldTestField
 from casepro.rules.models import ContainsTest
-from casepro.utils import parse_csv, normalize, normalize_language_code
+from casepro.utils import parse_csv, normalize
 
-from .models import Label, FAQ, Language
+from .models import Label, FAQ
 
 
 class LabelForm(forms.ModelForm):
@@ -81,37 +81,11 @@ class LabelForm(forms.ModelForm):
         fields = ('name', 'description', 'is_synced', 'keywords', 'groups', 'field_test', 'ignore_single_words')
 
 
-class LanguageForm(forms.ModelForm):
-
-    code = forms.CharField(label=_("Code"), max_length=6,
-                           widget=forms.TextInput(attrs={'placeholder': 'eng_UK'}))
-    name = forms.CharField(label=_("Name"), max_length=100, required=False,
-                           widget=forms.TextInput(attrs={'placeholder': 'English'}))
-    location = forms.CharField(label=_("Location"), max_length=100, required=False,
-                               widget=forms.TextInput(attrs={'placeholder': 'United Kingdom'}))
-
-    def clean_code(self):
-        code = self.cleaned_data['code'].strip()
-        normalized_code = normalize(code)
-
-        if len(normalized_code) != 6:
-            raise forms.ValidationError(_("Language codes should be 6 characters long"))
-
-        if normalized_code[3] != normalize('_'):
-            raise forms.ValidationError(_("Language name and location should be seperated by an underscore"))
-
-        return normalize_language_code(normalized_code)
-
-    class Meta:
-        model = Language
-        fields = ('code', 'name', 'location')
-
-
 class FaqForm(forms.ModelForm):
 
     question = forms.CharField(label=_("Question"), max_length=140)
     answer = forms.CharField(label=_("Answer"), max_length=140)
-    language = forms.ModelChoiceField(queryset=Language.objects.filter())
+    language = forms.CharField(label=_("Language"), max_length=3)
     # limit the parent choices to FAQs that have a ForeignKey parent that is None
     parent = forms.ModelChoiceField(queryset=FAQ.objects.filter(parent=None), required=False)
     labels = forms.ModelMultipleChoiceField(queryset=Label.objects.filter(), required=False, help_text=_(

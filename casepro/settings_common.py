@@ -321,11 +321,7 @@ PERMISSIONS = {
 
     'msgs.label': ('create', 'update', 'read', 'delete', 'list'),
 
-    'msgs.language': ('create', 'read', 'update', 'delete', 'list', 'search'),
-
     'msgs.faq': ('create', 'read', 'update', 'delete', 'list', 'search', 'import'),
-
-    'msgs.language': ('create', 'read', 'update', 'delete', 'list'),
 
     'msgs.message': ('action', 'bulk_reply', 'forward', 'label', 'history', 'search', 'unlabelled'),
 
@@ -361,7 +357,6 @@ GROUP_PERMISSIONS = {
 
         'msgs.label.*',
         'msgs.faq.*',
-        'msgs.language.*',
         'msgs.message.*',
         'msgs.messageexport.*',
         'msgs.outgoing.*',
@@ -386,7 +381,6 @@ GROUP_PERMISSIONS = {
         'orgs.org_charts',
 
         'msgs.label_read',
-        'msgs.language_search',
         'msgs.faq_search',
         'msgs.message_action',
         'msgs.message_bulk_reply',
