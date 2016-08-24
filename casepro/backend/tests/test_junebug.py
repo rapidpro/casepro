@@ -341,10 +341,10 @@ class JunebugBackendTest(BaseCasesTest):
         If we push a contact, and an existing contact on the Identity Store has the same details, we should set the
         UUID on the contact to be the same as the matching identity.
         """
-        contact = Contact.objects.create(org=self.unicef, uuid=None, is_stub=True, name="test", urns=["msisdn:+1234"])
+        contact = Contact.objects.create(org=self.unicef, uuid=None, is_stub=True, name="test", urns=["tel:+1234"])
 
         self.add_identity_store_search_callback(
-            "details__addresses__msisdn=%2B1234",
+            "details__addresses__tel=%2B1234",
             self.identity_store_created_identity_callback
         )
 
