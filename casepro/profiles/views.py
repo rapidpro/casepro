@@ -218,14 +218,16 @@ class UserCRUDL(SmartCRUDL):
                 return super(UserCRUDL.Read, self).derive_title()
 
         def derive_fields(self):
-            fields = ['name', 'email']
+            profile_fields = ['name']
+            user_fields = ['email']
             if self.request.org:
-                fields += ['role']
-                if self.object.profile.partner:
-                    fields += ['partner']
-                fields += ['must_use_faq']
+                user_partner = self.request.user.get_partner(self.request.org)
+                if user_partner:
+                    profile_fields += ['role']  # partner users can't change a user's partner
+                else:
+                    profile_fields += ['role', 'partner']
 
-            return fields
+            return tuple(profile_fields + user_fields)
 
         def get_queryset(self):
             if self.request.org:
