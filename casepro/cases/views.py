@@ -268,7 +268,10 @@ class CaseCRUDL(SmartCRUDL):
                 merge_from_backend = False
             else:
                 # this is the initial request for the complete timeline
-                after = self.object.initial_message.created_on
+                if self.object.initial_message is not None:
+                    after = self.object.initial_message.created_on
+                else:
+                    after = self.object.opened_on
                 merge_from_backend = True
 
             if self.object.closed_on:

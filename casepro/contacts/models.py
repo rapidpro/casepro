@@ -137,7 +137,7 @@ class Contact(models.Model):
 
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="contacts")
 
-    uuid = models.CharField(max_length=36, unique=True)
+    uuid = models.CharField(max_length=36, unique=True, null=True)
 
     name = models.CharField(verbose_name=_("Full name"), max_length=128, null=True, blank=True,
                             help_text=_("The name of this contact"))
@@ -161,8 +161,8 @@ class Contact(models.Model):
 
     created_on = models.DateTimeField(auto_now_add=True, help_text=_("When this contact was created"))
 
-    urns = ArrayField(models.CharField(max_length=128), default=list,
-                      help_text=_("List of URNs of the format 'scheme:urn'"))
+    urns = ArrayField(models.CharField(max_length=255), default=list,
+                      help_text=_("List of URNs of the format 'scheme:path'"))
 
     def __init__(self, *args, **kwargs):
         if self.SAVE_GROUPS_ATTR in kwargs:
@@ -182,6 +182,17 @@ class Contact(models.Model):
                 contact = cls.objects.create(org=org, uuid=uuid, name=name, is_stub=True)
 
             return contact
+
+    @classmethod
+    def get_or_create_from_urn(cls, org, urn, name=None):
+        """
+        Gets an existing contact or creates a stub contact. Used when opening a case without an initial message
+        """
+        contact = cls.objects.filter(urns__contains=[urn]).first()
+        if not contact:
+            contact = cls.objects.create(org=org, name=name, urns=[urn], is_stub=True)
+            get_backend().push_contact(org, contact)
+        return contact
 
     @classmethod
     def lock(cls, org, uuid):

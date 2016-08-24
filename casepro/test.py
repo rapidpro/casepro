@@ -137,8 +137,9 @@ class BaseCasesTest(DashTest):
             case.opened_on = kwargs['opened_on']
             case.save(update_fields=('opened_on',))
 
-        message.case = case
-        message.save(update_fields=('case',))
+        if message:
+            message.case = case
+            message.save(update_fields=('case',))
 
         return case
 

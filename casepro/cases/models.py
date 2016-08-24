@@ -157,7 +157,7 @@ class Case(models.Model):
 
     contact = models.ForeignKey(Contact, related_name='cases')
 
-    initial_message = models.OneToOneField(Message, related_name='initial_case')
+    initial_message = models.OneToOneField(Message, null=True, related_name='initial_case')
 
     summary = models.CharField(verbose_name=_("Summary"), max_length=255)
 
@@ -249,7 +249,7 @@ class Case(models.Model):
         if before:
             queryset = queryset.filter(opened_on__lte=before)
 
-        queryset = queryset.select_related('contact', 'assignee')
+        queryset = queryset.select_related('contact', 'assignee', 'user_assignee')
 
         queryset = queryset.prefetch_related(
             Prefetch('labels', Label.objects.filter(is_active=True))
@@ -604,14 +604,15 @@ class CaseExport(BaseSearchExport):
                 row = 1
 
             values = [
-                item.initial_message.created_on,
+                item.initial_message.created_on if item.initial_message else '',
                 item.opened_on,
                 item.closed_on,
                 item.assignee.name,
                 ', '.join([l.name for l in item.labels.all()]),
                 item.summary,
                 item.outgoing_count,
-                item.incoming_count - 1,  # subtract 1 for the initial messages
+                # subtract 1 for the initial messages
+                item.incoming_count - 1 if item.initial_message else item.incoming_count,
                 item.contact.uuid
             ]
 

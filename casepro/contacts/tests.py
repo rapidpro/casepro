@@ -33,14 +33,14 @@ class ContactTest(BaseCasesTest):
             is_stub=False,
             fields={'age': "34"},
             __data__groups=[("G-001", "Customers")],
-            urns=["phone:0821234567"],
+            urns=["tel:0821234567"],
         )
 
         self.assertEqual(contact.uuid, "C-001")
         self.assertEqual(contact.name, "Bob McFlow")
         self.assertEqual(contact.language, "eng")
         self.assertEqual(contact.get_fields(), {"age": "34"})
-        self.assertEqual(contact.urns, ["phone:0821234567"])
+        self.assertEqual(contact.urns, ["tel:0821234567"])
 
         customers = Group.objects.get(org=self.unicef, uuid="G-001", name="Customers")
 
@@ -120,6 +120,42 @@ class ContactTest(BaseCasesTest):
         # if site uses anon contacts then name is obscured
         with override_settings(SITE_ANON_CONTACTS=True):
             self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "7B7DD8"})
+
+    @patch('casepro.test.TestBackend.push_contact')
+    def test_get_or_create_from_urn_no_match(self, mock_push_contact):
+        """
+        If no contact with a matching urn exists a new one should be created
+        """
+        self.assertEqual(Contact.objects.count(), 1)
+        Contact.get_or_create_from_urn(self.unicef, "tel:0987654321")
+
+        contacts = Contact.objects.all()
+        self.assertEqual(len(contacts), 2)
+        self.assertEqual(contacts[1].urns, ["tel:0987654321"])
+        self.assertIsNone(contacts[1].name)
+        self.assertIsNone(contacts[1].uuid)
+
+        # Check that the backend was updated
+        self.assertTrue(mock_push_contact.called)
+
+    @patch('casepro.test.TestBackend.push_contact')
+    def test_get_or_create_from_urn_match(self, mock_push_contact):
+        """
+        Should return the contact with the matching urn
+        """
+        self.ann.urns = ["tel:0987654321"]
+        self.ann.save(update_fields=('urns',))
+
+        self.assertEqual(Contact.objects.count(), 1)
+        contact = Contact.get_or_create_from_urn(self.unicef, "tel:0987654321")
+        self.assertEqual(Contact.objects.count(), 1)
+
+        self.assertEqual(contact.urns, ["tel:0987654321"])
+        self.assertEqual(contact.name, self.ann.name)
+        self.assertEqual(contact.uuid, self.ann.uuid)
+
+        # We shouldn't update the backend because a contact wasn't created
+        self.assertFalse(mock_push_contact.called)
 
 
 class ContactCRUDLTest(BaseCasesTest):
