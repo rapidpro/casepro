@@ -10,14 +10,10 @@ from django.utils import timezone
 from django.conf import settings
 from dash.orgs.tasks import org_task
 from datetime import timedelta
+from io import StringIO
 from smartmin.csv_imports.models import ImportTask
 from .models import FAQ, Label
 
-# python2 and python3 support
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
 
 logger = get_task_logger(__name__)
 
