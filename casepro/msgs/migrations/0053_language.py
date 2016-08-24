@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('orgs', '0016_taskstate_is_disabled'),
-        ('msgs', '0047_outgoing_urn'),
+        ('msgs', '0052_triggers'),
     ]
 
     operations = [
