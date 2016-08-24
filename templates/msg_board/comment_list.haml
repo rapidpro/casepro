@@ -1,10 +1,13 @@
 - extends "smartmin/read.html"
 - load smartmin i18n comments
 
+- block pre-content
+  .page-header
+    %h2 Message Board
+
 - block content
   .row
     .col-md-8
-        Post a message
         {% render_comment_form for request.org %}
 
         .comments{ ng-controller:"MessageBoardController", ng-init:"init()" }
@@ -43,7 +46,6 @@
     .comment {
       padding: 12px;
       margin-bottom: 16px;
-      margin-left: 180px;
       border: 1px solid transparent;
       border-radius: 4px;
       -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
@@ -62,4 +64,33 @@
     .comment.even {
       background-color: #E6FDFB;
       border-color: #D5EBED;
+    }
+
+    .sendform {
+      text-align: center;
+      padding-bottom: 1em;
+    }
+    .sendform textarea {
+      width: 100%;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+    .sendform-controls {
+      background-color: #F3F3F3;
+      border-width: 0 0 1px 1px;
+      border-style: solid;
+      border-color: #CCC;
+      border-radius: 0 0 4px 4px;
+    }
+    .sendform-controls .chars-left {
+      padding: 6px 12px;
+      display: inline-block;
+      color: #888;
+    }
+    .sendform-controls button {
+      border-bottom: none;
+      border-top: none;
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+      border-bottom-left-radius: 0;
     }

@@ -1,20 +1,20 @@
 {% load comments i18n%}
 
-
-<form class="smartmin-form form-horizontal" action="{% url 'comments-post-comment' %}" method="post">
+<form class="sendform" action="{% url 'comments-post-comment' %}" method="post">
     {% csrf_token %}
     {% if form.errors %}
       <h1>{% blocktrans count counter=form.errors|length %}Please correct the error below{% plural %}Please correct the
         errors below{% endblocktrans %}</h1>
     {% endif %}
-
     {% if form.comment.errors %}{{ form.comment.errors }}{% endif %}
-    <p class="form-group">{{ form.comment }}</p>
-    <div class="form-group smartmin-form-buttons">
-      <div class="col-sm-8">
-        <input class="btn btn-primary" type="submit" name="submit" value="Post Message">
-      </div>
+    <textarea class="form-control" placeholder="Enter message" type="text" name="comment"></textarea>
+    <div class="sendform-controls clearfix">
+      <button class="btn btn-default pull-right" ng-disabled="sending || $parent.newMessage.length == 0 || msgCharsRemaining < 0" ng-click="sendMessage()" type="submit" name="submit" disabled="disabled">
+        Send
+      </button>
     </div>
+
+
     {{ form.object_pk }}
 
     {{ form.content_type }}
