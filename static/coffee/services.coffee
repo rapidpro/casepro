@@ -186,40 +186,16 @@ services.factory('FaqService', ['$rootScope', '$http', '$httpParamSerializer', (
     delete: (faq) ->
       return $http.post('/faq/delete/' + faq.id + '/')
 
-])
-
-
-#=====================================================================
-# Language service
-#=====================================================================
-services.factory('LanguageService', ['$rootScope', '$http', '$httpParamSerializer', ($rootScope, $http, $httpParamSerializer) ->
-  new class LanguageService
-
     #----------------------------------------------------------------------------
     # Fetch a list of available languages
     #----------------------------------------------------------------------------
     fetchLanguages: (search) ->
-      params = @_searchLanguageToParams(search)
-      return $http.get('/language/search/?' + $httpParamSerializer(params)).then((response) ->
+      return $http.get('/faq/languages/').then((response) ->
         return response.data.results
       )
 
-    #----------------------------------------------------------------------------
-    # Convert search object to URL params
-    #----------------------------------------------------------------------------
-    _searchLanguageToParams: (search) ->
-      return {
-        name: search.name
-        location: search.location,
-      }
+])
 
-    #----------------------------------------------------------------------------
-    # Delete the given language
-    #----------------------------------------------------------------------------
-    delete: (language) ->
-      return $http.post('/language/delete/' + language.id + '/')
-
-  ])
 
 #=====================================================================
 # Outgoing message service

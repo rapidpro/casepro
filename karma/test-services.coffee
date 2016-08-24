@@ -32,9 +32,6 @@ describe('services:', () ->
       ann: {id: 401, name: "Ann"},
       bob: {id: 402, name: "Bob"}
 
-      # languages
-      eng_ng: {id: 601, name: "English"},
-
       # faqs
       pregnant: {id: 701, name: "Pregnant"},
     }
@@ -73,9 +70,7 @@ describe('services:', () ->
       it('gets cases from search endpoint', () ->
         $httpBackend.expectGET('/case/search/?folder=open').respond('{"results":[{"id":501,"opened_on":"2016-05-17T08:49:13.698864"}],"has_more":true}')
         CaseService.fetchOld({folder: "open"}).then((data) ->
-          expect(data.results).toEqual([{
-            id: 501,
-            opened_on: utcdate(2016, 5, 17, 8, 49, 13, 698)}])
+          expect(data.results).toEqual([{id: 501, opened_on: utcdate(2016, 5, 17, 8, 49, 13, 698)}])
           expect(data.hasMore).toEqual(true)
         )
         $httpBackend.flush()
@@ -375,78 +370,6 @@ describe('services:', () ->
       it('posts to export endpoint', () ->
         $httpBackend.expectPOST('/messageexport/create/?archived=0&folder=inbox', null).respond('')
         MessageService.startExport({folder: "inbox"})
-        $httpBackend.flush()
-      )
-    )
-  )
-
-  #=======================================================================
-  # Tests for LanguageService
-  #=======================================================================
-  describe('LanguageService', () ->
-    LanguageService = null
-
-    beforeEach(inject((_LanguageService_) ->
-      LanguageService = _LanguageService_
-
-      test.language = {
-        id: 602,
-        code: "afr_ZA",
-        name: "Afrikaans",
-        location: "South Africa"
-      }
-    ))
-
-    describe('fetchLanguages', () ->
-      it('gets Languages from search endpoint', () ->
-        $httpBackend.expectGET('/language/search/?name=afr')
-        .respond('{
-          "results": [{
-            "id": 602,
-            "code": "afr_ZA",
-            "name": "Afrikaans",
-            "location": "South Africa"
-          }],
-          "has_more": false
-        }')
-        LanguageService.fetchLanguages({name: "afr"}).then((replies) ->
-          expect(replies).toEqual([{
-            id: 602,
-            code: "afr_ZA",
-            name: "Afrikaans",
-            location: "South Africa"
-          }])
-        )
-        $httpBackend.flush()
-      )
-
-      it('gets Languages from search endpoint with multiple filters', () ->
-        $httpBackend.expectGET('/language/search/?location=Africa&name=afr')
-        .respond('{
-          "results": [{
-            "id": 602,
-            "code": "afr_ZA",
-            "name": "Afrikaans",
-            "location": "South Africa"
-          }],
-          "has_more": false
-        }')
-        LanguageService.fetchLanguages({name: "afr", location: "Africa"}).then((replies) ->
-          expect(replies).toEqual([{
-            id: 602,
-            code: "afr_ZA",
-            name: "Afrikaans",
-            location: "South Africa"
-          }])
-        )
-        $httpBackend.flush()
-      )
-    )
-
-    describe('delete', () ->
-      it('posts to delete endpoint', () ->
-        $httpBackend.expectPOST('/language/delete/602/', null).respond("")
-        LanguageService.delete(test.language)
         $httpBackend.flush()
       )
     )
