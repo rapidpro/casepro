@@ -95,10 +95,10 @@ class BaseBackend(object):
     @abstractmethod
     def push_contact(self, org, contact):
         """
-        Pushes a new or updated contact
+        Pushes a new contact
 
         :param org: the org
-        :param contact: The contact to update/create
+        :param contact: The contact to create
         """
 
     @abstractmethod
