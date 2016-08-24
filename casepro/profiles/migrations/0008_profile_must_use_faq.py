@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('profiles', '0007_fix_deleted_users'),
+        ('profiles', '0007_remove_profile_partner'),
     ]
 
     operations = [
