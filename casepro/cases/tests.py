@@ -1338,6 +1338,18 @@ class TasksTest(BaseCasesTest):
         case1.refresh_from_db()
         self.assertEqual(case1.assignee, self.moh)
 
+        # ensure that cases last reassigned by the system are reassigned again by the system
+        action = case1.actions.filter(action=CaseAction.REASSIGN).latest('created_on')
+        d1 = datetime(2016, 8, 6, 10, 0, tzinfo=pytz.UTC)
+        case1.last_reassigned_on = d1
+        case1.save()
+        reassign_case(case1.pk)
+        case1.refresh_from_db()
+        self.assertEqual(d1, case1.last_reassigned_on)
+        self.assertEqual(case1.assignee, self.moh)
+        action2 = case1.actions.filter(action=CaseAction.REASSIGN).latest('created_on')
+        self.assertEqual(action, action2)
+
         # don't reassign a case if it hasn't passed the expected window
         case2.reassign(self.user3, self.moh)
         reassign_case(case2.pk)
