@@ -184,7 +184,7 @@ controllers.controller('BaseItemsController', ['$scope', 'UtilsService', ($scope
       $scope.oldItemsLoading = false
 
       if forSelectAll
-        for item in items
+        for item in $scope.items
           item.selected = true
         $scope.updateItems(false)
         if $scope.oldItemsMore and $scope.items.length < INFINITE_SCROLL_MAX_ITEMS
