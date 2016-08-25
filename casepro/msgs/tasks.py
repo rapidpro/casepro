@@ -12,6 +12,8 @@ from dash.orgs.tasks import org_task
 from datetime import timedelta
 from io import StringIO
 from smartmin.csv_imports.models import ImportTask
+
+from casepro.utils import parse_csv
 from .models import FAQ, Label
 
 
@@ -106,7 +108,7 @@ def get_labels(task, labelstring):
     Gets a list of label objects from a comma-seperated string of the label codes, eg. "TB, aids"
     """
     labels = set()
-    labelstrings = labelstring.split(', ')
+    labelstrings = parse_csv(labelstring)
     for labelstring in labelstrings:
         labelstring = labelstring.strip()
 
