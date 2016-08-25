@@ -103,7 +103,7 @@ def reply_export(export_id):
     ReplyExport.objects.get(pk=export_id).do_export()
 
 
-def get_labels(task, labelstring):
+def get_labels(task, org, labelstring):
     """
     Gets a list of label objects from a comma-seperated string of the label codes, eg. "TB, aids"
     """
@@ -113,7 +113,7 @@ def get_labels(task, labelstring):
         labelstring = labelstring.strip()
 
         try:
-            label = Label.objects.get(name__iexact=labelstring)  # iexact removes case sensitivity
+            label = Label.objects.get(org=org, name__iexact=labelstring)  # iexact removes case sensitivity
             labels.add(label)
         except Exception as e:
             task.log("Label %s does not exist" % labelstring)
@@ -143,7 +143,7 @@ def faq_csv_import(org, task_id):  # pragma: no cover
                 parent_lang = line['Parent Language']
 
                 # Get label objects
-                labels = get_labels(task, line['Labels'])
+                labels = get_labels(task, org, line['Labels'])
 
                 # Create parent FAQ
                 parent_faq = FAQ.create(org, line['Parent Question'], line['Parent Answer'],
