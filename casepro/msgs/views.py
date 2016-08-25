@@ -488,6 +488,10 @@ class FaqCRUDL(SmartCRUDL):
 
         def customize_form_field(self, name, field):
             field = super(FaqCRUDL.Create, self).customize_form_field(name, field)
+            if name == 'parent':
+                field.queryset = FAQ.get_all(self.request.org)
+            if name == 'labels':
+                field.queryset = Label.get_all(self.request.org)
             return field
 
         def get_form_kwargs(self):
@@ -529,6 +533,14 @@ class FaqCRUDL(SmartCRUDL):
 
     class Update(OrgPermsMixin, SmartUpdateView):
         form_class = FaqForm
+
+        def customize_form_field(self, name, field):
+            field = super(FaqCRUDL.Update, self).customize_form_field(name, field)
+            if name == 'parent':
+                field.queryset = FAQ.get_all(self.request.org)
+            if name == 'labels':
+                field.queryset = Label.get_all(self.request.org)
+            return field
 
         def derive_initial(self):
             initial = super(FaqCRUDL.Update, self).derive_initial()
