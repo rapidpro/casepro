@@ -101,15 +101,6 @@ def reply_export(export_id):
     ReplyExport.objects.get(pk=export_id).do_export()
 
 
-def create_faq(org, question, answer, language, parent, labels=(), **kwargs):
-    """
-    A helper for creating FAQs since labels (many-to-many) needs to be added after initial creation
-    """
-    faq = FAQ.objects.create(org=org, question=question, answer=answer, language=language, parent=parent, **kwargs)
-    faq.labels.add(*labels)
-    return faq
-
-
 def get_labels(task, labelstring):
     """
     Gets a list of label objects from a comma-seperated string of the label codes, eg. "TB, aids"
@@ -153,7 +144,7 @@ def faq_csv_import(org, task_id):  # pragma: no cover
                 labels = get_labels(task, line['Labels'])
 
                 # Create parent FAQ
-                parent_faq = create_faq(org, line['Parent Question'], line['Parent Answer'],
+                parent_faq = FAQ.create(org, line['Parent Question'], line['Parent Answer'],
                                         parent_lang, None, labels)
 
                 # Start creation of translation FAQs
@@ -170,7 +161,7 @@ def faq_csv_import(org, task_id):  # pragma: no cover
                 # Loop through for each translation
                 for lang_code in lang_codes:
                     # Create translation FAQ
-                    create_faq(org, line['%s Question' % lang_code], line['%s Answer' % lang_code],
+                    FAQ.create(org, line['%s Question' % lang_code], line['%s Answer' % lang_code],
                                lang_code, parent_faq, labels)
 
             task.save()

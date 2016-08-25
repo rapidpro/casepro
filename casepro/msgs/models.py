@@ -190,6 +190,15 @@ class FAQ(models.Model):
     labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this FAQ"), related_name='faqs')
 
     @classmethod
+    def create(cls, org, question, answer, language, parent, labels=(), **kwargs):
+        """
+        A helper for creating FAQs since labels (many-to-many) needs to be added after initial creation
+        """
+        faq = cls.objects.create(org=org, question=question, answer=answer, language=language, parent=parent, **kwargs)
+        faq.labels.add(*labels)
+        return faq
+
+    @classmethod
     def search(cls, org, user, search):
         """
         Search for FAQs
