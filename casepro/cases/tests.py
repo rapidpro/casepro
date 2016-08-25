@@ -1029,9 +1029,12 @@ class PartnerCRUDLTest(BaseCasesTest):
         # create label restricted partner
         response = self.url_post('unicef', url, {'name': "Helpers", 'description': "Helpers Description",
                                                  'logo': None, 'is_restricted': True, 'labels': [self.tea.pk]})
-        self.assertEqual(response.status_code, 302)
 
         helpers = Partner.objects.get(name="Helpers")
+
+        self.assertRedirects(response, 'http://unicef.localhost/partner/read/%d/' % helpers.pk,
+                             fetch_redirect_response=False)
+
         self.assertTrue(helpers.is_restricted)
         self.assertEqual(set(helpers.get_labels()), {self.tea})
         self.assertEqual(helpers.description, "Helpers Description")

@@ -4,6 +4,7 @@ from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from datetime import timedelta
 from django.conf import settings
 from django.core.cache import cache
+from django.core.urlresolvers import reverse
 from django.http import HttpResponse, JsonResponse
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
@@ -342,6 +343,9 @@ class PartnerCRUDL(SmartCRUDL):
 
             self.object = Partner.create(org, data['name'], data['description'], None, restricted,
                                          labels, data['logo'])
+
+        def get_success_url(self):
+            return reverse('cases.partner_read', args=[self.object.pk])
 
     class Update(OrgObjPermsMixin, PartnerFormMixin, SmartUpdateView):
         form_class = PartnerUpdateForm
