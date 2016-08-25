@@ -7,6 +7,7 @@ from casepro.contacts.models import Group
 from casepro.rules.forms import FieldTestField
 from casepro.rules.models import ContainsTest
 from casepro.utils import parse_csv, normalize
+from iso639 import is_valid639_2
 
 from .models import Label, FAQ
 
@@ -90,6 +91,12 @@ class FaqForm(forms.ModelForm):
     parent = forms.ModelChoiceField(queryset=FAQ.objects.filter(parent=None), required=False)
     labels = forms.ModelMultipleChoiceField(queryset=Label.objects.filter(), required=False, help_text=_(
         "If a Parent is selected, the labels will be copied from the Parent FAQ"))
+
+    def clean_language(self):
+        language = self.cleaned_data['language'].strip()
+        if not is_valid639_2(language):
+            raise forms.ValidationError(_("Language must be valid a ISO-639-2 code"))
+        return language
 
     def clean_labels(self):
         if 'labels' in self.cleaned_data and len(self.cleaned_data['labels']) != 0:
