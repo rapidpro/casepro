@@ -198,7 +198,7 @@ class FAQ(models.Model):
         label_id = search.get('label')
         text = search.get('text')
 
-        queryset = FAQ.objects.all()
+        queryset = cls.objects.filter(org=org)
 
         # Language filtering
         if language:
@@ -222,6 +222,15 @@ class FAQ(models.Model):
         queryset = queryset.prefetch_related('labels')
 
         return queryset.order_by('question')
+
+    @classmethod
+    def get_all(cls, org, label=None):
+        queryset = cls.objects.filter(org=org)
+
+        if label:
+            queryset = queryset.filter(labels=label)
+
+        return queryset.distinct()
 
     @classmethod
     def get_all_languages(cls, org):

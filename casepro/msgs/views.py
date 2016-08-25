@@ -480,8 +480,15 @@ class FaqCRUDL(SmartCRUDL):
         fields = ('question', 'answer', 'language', 'parent')
         default_order = ('-parent', 'question')
 
+        def derive_queryset(self, **kwargs):
+            return FAQ.get_all(self.request.org)
+
     class Create(OrgPermsMixin, SmartCreateView):
         form_class = FaqForm
+
+        def customize_form_field(self, name, field):
+            field = super(FaqCRUDL.Create, self).customize_form_field(name, field)
+            return field
 
         def get_form_kwargs(self):
             kwargs = super(FaqCRUDL.Create, self).get_form_kwargs()
@@ -504,8 +511,8 @@ class FaqCRUDL(SmartCRUDL):
     class Read(OrgPermsMixin, SmartReadView):
         fields = ['question', 'answer', 'language', 'parent']
 
-        def get_queryset(self):
-            return FAQ.objects.all()
+        def derive_queryset(self, **kwargs):
+            return FAQ.get_all(self.request.org)
 
         def get_context_data(self, **kwargs):
             context = super(FaqCRUDL.Read, self).get_context_data(**kwargs)

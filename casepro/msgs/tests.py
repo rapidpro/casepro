@@ -404,6 +404,12 @@ class FaqCRUDLTest(BaseCasesTest):
             ]
         )
 
+        # log in as a different org admin
+        self.login(self.norbert)
+        response = self.url_get('nyaruka', url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['object_list']), 0)
+
     def test_update(self):
         url = reverse('msgs.faq_update', args=[self.preg_faq1_eng.pk])
 
