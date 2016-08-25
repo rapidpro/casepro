@@ -483,6 +483,13 @@ class FaqCRUDL(SmartCRUDL):
         def derive_queryset(self, **kwargs):
             return FAQ.get_all(self.request.org)
 
+        def get_context_data(self, **kwargs):
+            context = super(FaqCRUDL.List, self).get_context_data(**kwargs)
+            # change the language code to full name for display only
+            for faq in context['object_list']:
+                faq.language = get_language_name(faq.language)
+            return context
+
     class Create(OrgPermsMixin, SmartCreateView):
         form_class = FaqForm
 
