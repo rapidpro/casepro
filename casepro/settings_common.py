@@ -249,6 +249,7 @@ INSTALLED_APPS = (
     'casepro.profiles',
     'casepro.contacts',
     'casepro.msgs',
+    'casepro.msg_board',
     'casepro.rules',
     'casepro.cases',
     'casepro.statistics',
@@ -339,6 +340,8 @@ PERMISSIONS = {
 
     'contacts.group': ('select', 'list'),
 
+    'msg_board.pinnedcomment': ('list', 'pin', 'unpin'),
+
     # can't create profiles.user.* permissions because we don't own User
     'profiles.profile': ('user_create', 'user_create_in', 'user_update', 'user_read', 'user_list'),
 }
@@ -370,6 +373,8 @@ GROUP_PERMISSIONS = {
         'rules.rule.*',
 
         'statistics.dailycountexport.*',
+
+        'msg_board.pinnedcomment.*',
     ),
     "Editors": (  # Partner users: Managers
         'orgs.org_inbox',
@@ -405,6 +410,8 @@ GROUP_PERMISSIONS = {
         'profiles.profile_user_update',
         'profiles.profile_user_read',
         'profiles.profile_user_list',
+
+        'msg_board.pinnedcomment.*',
     ),
     "Viewers": (  # Partner users: Data Analysts
         'orgs.org_inbox',
@@ -438,6 +445,8 @@ GROUP_PERMISSIONS = {
 
         'profiles.profile_user_read',
         'profiles.profile_user_list',
+
+        'msg_board.pinnedcomment.*',
     ),
 }
 
