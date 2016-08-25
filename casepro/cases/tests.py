@@ -1338,7 +1338,7 @@ class TasksTest(BaseCasesTest):
         case1.refresh_from_db()
         self.assertEqual(case1.assignee, self.moh)
 
-        # ensure that cases last reassigned by the system are reassigned again by the system
+        # ensure that cases last reassigned by the system are not reassigned again by the system
         action = case1.actions.filter(action=CaseAction.REASSIGN).latest('created_on')
         d1 = datetime(2016, 8, 6, 10, 0, tzinfo=pytz.UTC)
         case1.last_reassigned_on = d1
