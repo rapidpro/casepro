@@ -454,6 +454,16 @@ class FaqCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
 
+        # test update with different org admin
+        self.login(self.norbert)
+        response = self.url_post('unicef', url, {
+            'question': "Can I drink tea if I'm pregnant?",
+            'answer': "Try to keep to caffeine-free tea",
+            'language': 'eng',
+            'labels': [self.pregnancy.pk, self.tea.pk]
+        })
+        self.assertLoginRedirect(response, 'unicef', url)
+
     def test_delete(self):
         preg_faq1_eng_pk = self.preg_faq1_eng.pk
         preg_faq1_lug_pk = self.preg_faq1_lug.pk
