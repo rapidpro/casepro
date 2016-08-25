@@ -254,9 +254,9 @@ class FAQ(models.Model):
             else:
                 parent_json = self.parent.id
 
-            result['answer'] = self.answer,
-            result['language'] = self.language,
-            result['parent'] = parent_json,
+            result['answer'] = self.answer
+            result['language'] = self.language
+            result['parent'] = parent_json
             result['labels'] = [l.as_json() for l in self.labels.all()]
 
         return result
