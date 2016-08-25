@@ -420,10 +420,11 @@ class UserCRUDLTest(BaseCasesTest):
         # submit again with all required fields to create an un-attached user
         response = self.url_post(None, url, {'name': "McAdmin", 'email': "mcadmin@casely.com",
                                              'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, 'http://testserver/org/')
 
         user = User.objects.get(email='mcadmin@casely.com')
+        self.assertRedirects(response, 'http://testserver/user/read/%d/' % user.pk,
+                             fetch_redirect_response=False)
+
         self.assertEqual(user.get_full_name(), "McAdmin")
         self.assertEqual(user.username, "mcadmin@casely.com")
         self.assertIsNone(user.get_partner(self.unicef))
@@ -449,10 +450,11 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_post('unicef', url, {'name': "Adrian Admin", 'email': "adrian@casely.com",
                                                  'role': ROLE_ADMIN,
                                                  'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, 'http://unicef.localhost/org/home/#/users')
 
         user = User.objects.get(email='adrian@casely.com')
+        self.assertRedirects(response, 'http://unicef.localhost/user/read/%d/' % user.pk,
+                             fetch_redirect_response=False)
+
         self.assertEqual(user.get_full_name(), "Adrian Admin")
         self.assertEqual(user.username, "adrian@casely.com")
         self.assertIsNone(user.get_partner(self.unicef))
@@ -480,11 +482,12 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_post('unicef', url, {'name': "Mo Cases", 'email': "mo@casely.com",
                                                  'partner': self.moh.pk, 'role': ROLE_ANALYST,
                                                  'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, 'http://unicef.localhost/partner/read/%d/#/users' % self.moh.pk)
+
+        user = User.objects.get(email="mo@casely.com")
+        self.assertRedirects(response, 'http://unicef.localhost/user/read/%d/' % user.pk,
+                             fetch_redirect_response=False)
 
         # check new user and profile
-        user = User.objects.get(email="mo@casely.com")
         self.assertEqual(user.profile.full_name, "Mo Cases")
         self.assertEqual(user.email, "mo@casely.com")
         self.assertEqual(user.username, "mo@casely.com")
@@ -520,10 +523,11 @@ class UserCRUDLTest(BaseCasesTest):
         # submit again with all required fields
         response = self.url_post('unicef', url, {'name': "Mo Cases", 'email': "mo@casely.com", 'role': ROLE_ANALYST,
                                                  'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, 'http://unicef.localhost/partner/read/%d/#/users' % self.moh.pk)
 
-        user = User.objects.get(email='mo@casely.com')
+        user = User.objects.get(email="mo@casely.com")
+        self.assertRedirects(response, 'http://unicef.localhost/user/read/%d/' % user.pk,
+                             fetch_redirect_response=False)
+
         self.assertEqual(user.get_partner(self.unicef), self.moh)
 
         # log in as a partner manager
