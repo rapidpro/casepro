@@ -246,20 +246,20 @@ class FAQ(models.Model):
         queryset = cls.objects.filter(org=org)
         return queryset.values('language').order_by('language').distinct()
 
-    def as_json(self):
-        if not self.parent:
-            parent_json = None
-        else:
-            parent_json = self.parent.id
+    def as_json(self, full=True):
+        result = {'id': self.pk, 'question': self.question}
+        if full:
+            if not self.parent:
+                parent_json = None
+            else:
+                parent_json = self.parent.id
 
-        return {
-            'id': self.pk,
-            'question': self.question,
-            'answer': self.answer,
-            'language': self.language,
-            'parent': parent_json,
-            'labels': [l.as_json() for l in self.labels.all()]
-        }
+            result['answer'] = self.answer,
+            result['language'] = self.language,
+            result['parent'] = parent_json,
+            result['labels'] = [l.as_json() for l in self.labels.all()]
+
+        return result
 
     def __str__(self):
         return self.question
