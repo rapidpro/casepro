@@ -1,5 +1,12 @@
 from __future__ import unicode_literals
 
-from .views import MessageBoardCRUDL
+from django.conf.urls import url
 
-urlpatterns = MessageBoardCRUDL().as_urlpatterns()
+from .views import MessageBoardView, CommentsView, PinnedCommentsCRUDL
+
+urlpatterns = PinnedCommentsCRUDL().as_urlpatterns()
+
+urlpatterns += [
+    url(r'^messageboard/$', MessageBoardView.as_view(), name='msg_board.comment_list'),
+    url(r'^messageboard/comments/$', CommentsView.as_view(), name='msg_board.comments'),
+]
