@@ -5,7 +5,7 @@
     - trans "Reply"
   .modal-body
     %p
-      - trans "Send the following reply to each contact and archive each message. This will remove the messages from your inbox."
+      - trans "Send the following reply to the selected message(s). This will remove the message(s) from your inbox to Archived."
 
     %form{ name:"form", novalidate:"" }
       .form-group{ ng-class:'{"has-error": form.text.$invalid && (form.text.$dirty || form.submitted)}' }
