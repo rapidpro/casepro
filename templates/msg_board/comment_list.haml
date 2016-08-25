@@ -6,12 +6,14 @@
     %h2 Message Board
 
 - block content
-  .row
+  .row{ ng-controller:"MessageBoardController", ng-init:"init()" }
     .col-md-8
         {% render_comment_form for request.org %}
 
-        .comments{ ng-controller:"MessageBoardController", ng-init:"init()" }
+        .comments
           .comment.clearfix{ ng-repeat:"comment in comments", ng-class:'{ "even": $even, "odd": !$even }'}
+            %button.btn-default.btn-xs{ type:"button", ng-click:"onPin(comment.comment_id)" }
+              %i.glyphicon.glyphicon-pushpin
             .event-time
               <cp-date time="comment.submit_date" />
             %span
@@ -19,9 +21,19 @@
                 [[ comment.user_name ]]
               :
             [[ comment.comment ]]
-    .col-md-4
-      Pinned Messages
 
+    .col-md-4
+      .comments
+          .comment.clearfix{ ng-repeat:"comment in pinned_comments", ng-class:'{ "even": $even, "odd": !$even }'}
+            %button.btn-danger.btn-xs{ type:"button", ng-click:"onUnpin(comment.comment_id)" }
+              %i.glyphicon.glyphicon-remove
+            .event-time
+              <cp-date time="comment.submit_date" />
+            %span
+              %a{ ng-href:"/user/read/[[ comment.user_id ]]/"}
+                [[ comment.user_name ]]
+              :
+            [[ comment.comment ]]
 
 - block extra-style
   {{ block.super }}
