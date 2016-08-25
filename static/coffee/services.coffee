@@ -655,10 +655,33 @@ services.factory('MessageBoardService', ['$http', '$httpParamSerializer', '$wind
     #----------------------------------------------------------------------------
     fetchComments: () ->
 
-      return $http.get('/comment/comments/').then((response) ->
+      return $http.get('/messageboard/comments/').then((response) ->
         utils.parseDates(response.data.results, 'submit_date')
 
         return {results: response.data.results}
       )
+
+    #----------------------------------------------------------------------------
+    # Fetches pinned comments
+    #----------------------------------------------------------------------------
+    fetchPinnedComments: () ->
+
+      return $http.get('/pinnedcomment/').then((response) ->
+        utils.parseDates(response.data.results, 'submit_date', 'pinned_date')
+
+        return {results: response.data.results}
+      )
+
+    #----------------------------------------------------------------------------
+    # Pins a comment
+    #----------------------------------------------------------------------------
+    pinComment: (comment_id) ->
+      return $http.post('/pinnedcomment/pin/' + comment_id + '/')
+
+    #----------------------------------------------------------------------------
+    # Unpins a pinned comments
+    #----------------------------------------------------------------------------
+    unpinComment: (comment_id) ->
+      return $http.post('/pinnedcomment/unpin/' + comment_id + '/')
 
 ])
