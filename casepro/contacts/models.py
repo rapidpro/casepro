@@ -190,7 +190,7 @@ class Contact(models.Model):
         """
         contact = cls.objects.filter(urns__contains=[urn]).first()
         if not contact:
-            contact = cls.objects.create(org=org, name=name, urns=[urn], is_stub=True)
+            contact = cls.objects.create(org=org, name=name, urns=[urn], is_stub=False)
             get_backend().push_contact(org, contact)
         return contact
 

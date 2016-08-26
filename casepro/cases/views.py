@@ -15,7 +15,7 @@ from smartmin.views import SmartCRUDL, SmartListView, SmartCreateView, SmartRead
 from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
 
-from casepro.contacts.models import Field, Group
+from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message, MessageFolder, OutgoingFolder
 from casepro.pods import registry as pod_registry
 from casepro.statistics.models import DailyCount
@@ -101,10 +101,16 @@ class CaseCRUDL(SmartCRUDL):
                 assignee = request.user.get_partner(self.request.org)
                 user_assignee = request.user
 
-            message_id = int(request.json['message'])
-            message = Message.objects.get(org=request.org, backend_id=message_id)
+            message_id = request.json.get('message')
+            if message_id:
+                message = Message.objects.get(org=request.org, backend_id=int(message_id))
+                contact = None
+            else:
+                message = None
+                contact = Contact.get_or_create_from_urn(org=request.org, urn=request.json['urn'])
 
-            case = Case.get_or_open(request.org, request.user, message, summary, assignee, user_assignee=user_assignee)
+            case = Case.get_or_open(
+                request.org, request.user, message, summary, assignee, user_assignee=user_assignee, contact=contact)
 
             # augment regular case JSON
             case_json = case.as_json()

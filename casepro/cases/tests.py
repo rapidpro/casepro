@@ -499,6 +499,7 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(case1.assignee, self.moh)
         self.assertEqual(case1.user_assignee, self.user1)
         self.assertEqual(set(case1.labels.all()), {self.aids})
+        self.assertEqual(case1.contact, msg1.contact)
 
         # try again as a non-administrator who can't create cases for other partner orgs
         rick = self.create_contact(self.unicef, 'C-002', "Richard")
@@ -528,6 +529,26 @@ class CaseCRUDLTest(BaseCasesTest):
             'message': msg.backend_id, 'summary': "Summary", 'assignee': self.moh.pk, 'user_assignee': self.user3.pk
             })
         self.assertEqual(response.status_code, 404)
+
+    def test_open_no_message_id(self):
+        """
+        If a case is opened, and no initial message is supplied, but instead a contact is supplied, the case should
+        open with a contact and no initial message instead of getting the contact from the initial message.
+        """
+        contact = self.create_contact(self.unicef, 'C-002', "TestContact")
+        contact.urns = ['tel:1234']
+        contact.save()
+
+        url = reverse('cases.case_open')
+        self.login(self.admin)
+        response = self.url_post_json('unicef', url, {
+            'message': None, 'summary': "Summary", 'assignee': self.moh.pk, 'user_assignee': self.user1.pk,
+            'urn': contact.urns[0]})
+        self.assertEqual(response.status_code, 200)
+
+        case = Case.objects.get(pk=response.json['id'])
+        self.assertEqual(case.initial_message, None)
+        self.assertEqual(case.contact, contact)
 
     def test_read(self):
         url = reverse('cases.case_read', args=[self.case.pk])
