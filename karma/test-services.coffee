@@ -52,7 +52,7 @@ describe('services:', () ->
         is_closed: false
       }
     ))
-
+    
     describe('addNote', () ->
       it('posts to note endpoint', () ->
         $httpBackend.expectPOST('/case/note/501/', {note: "Hello there"}).respond('')
@@ -152,7 +152,7 @@ describe('services:', () ->
         $httpBackend.flush()
       )
     )
-
+    
     describe('replyTo', () ->
       it('posts to reply endpoint', () ->
         $httpBackend.expectPOST('/case/reply/501/', {text: "Hello there"}).respond('')
@@ -527,7 +527,7 @@ describe('services:', () ->
         expect($window.location.replace).toHaveBeenCalledWith("http://example.com")
       )
     )
-    
+
     describe('navigateBack', () ->
       it('calls history.back', () ->
         spyOn($window.history, 'back')

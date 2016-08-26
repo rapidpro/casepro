@@ -404,7 +404,7 @@ services.factory('LabelService', ['$http', '$httpParamSerializer', ($http, $http
 #=====================================================================
 services.factory('PartnerService', ['$http', '$httpParamSerializer', ($http, $httpParamSerializer) ->
   new class PartnerService
-    
+
     #----------------------------------------------------------------------------
     # Fetches all partners, optionally with activity information
     #----------------------------------------------------------------------------
@@ -475,6 +475,13 @@ services.factory('StatisticsService', ['$http', '$httpParamSerializer', ($http, 
 #=====================================================================
 services.factory('UserService', ['$http', '$httpParamSerializer', ($http, $httpParamSerializer) ->
   new class UserService
+
+    #----------------------------------------------------------------------------
+    # Fetches all users, optionally with activity information
+    #----------------------------------------------------------------------------
+    fetchAll: (withActivity = false) ->
+      params = {with_activity: withActivity}
+      return $http.get('/user/?' + $httpParamSerializer(params)).then((response) -> response.data.results)
 
     #----------------------------------------------------------------------------
     # Fetches users in the given partner with optional activity statistics
