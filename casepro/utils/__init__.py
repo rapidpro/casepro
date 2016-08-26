@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import calendar
 import iso639
 import json
+import phonenumbers
 import pytz
 import re
 import unicodedata
@@ -78,6 +79,42 @@ def normalize(text):
     multiple whitespace characters with single spaces.
     """
     return unicodedata.normalize('NFKD', re.sub(r'\s+', ' ', text.lower()))
+
+
+def normalize_urn(urn):
+    """
+
+    """
+    scheme, path = urn.split(':', 1)
+    if scheme == 'tel':
+        path = normalise_tel_number(path)
+
+    return '%s:%s' % (scheme, path)
+
+
+def normalise_tel_number(number):
+    # remove other characters
+    number = re.sub('[^0-9\+]', '', number.lower())
+
+    # add on a plus if it looks like it could be a fully qualified number
+    if len(number) >= 11 and number[0] not in ['+', '0']:
+        number = '+' + number
+
+    normalized = None
+    try:
+        normalized = phonenumbers.parse(number, None)
+    except Exception:
+        pass
+
+    # now does it look plausible?
+    try:
+        if phonenumbers.is_possible_number(normalized):
+            return phonenumbers.format_number(normalized, phonenumbers.PhoneNumberFormat.E164), True
+    except Exception:
+        pass
+
+    # this must be a local number of some kind, just lowercase and save
+    return re.sub('[^0-9]', '', number.lower()), False
 
 
 def match_keywords(text, keywords):
