@@ -334,6 +334,45 @@ class CaseTest(BaseCasesTest):
         case_action = CaseAction.objects.get(case=case)
         self.assertEqual(case_action.user_assignee, self.user1)
 
+    def test_get_open_no_initial_message_new_case(self):
+        """
+        We should be able to create a case with no initial message, but by supplying a contact instead.
+        """
+        case = Case.get_or_open(
+            self.unicef, self.user2, None, 'Hello', self.moh, user_assignee=self.user1, contact=self.ann)
+
+        self.assertEqual(case.contact, self.ann)
+        self.assertEqual(case.assignee, self.moh)
+        self.assertEqual(case.user_assignee, self.user1)
+        self.assertEqual(case.initial_message, None)
+        self.assertEqual(case.is_new, True)
+        self.assertEqual(list(case.watchers.all()), [self.user2])
+
+        [case_action] = list(CaseAction.objects.filter(case=case))
+        self.assertEqual(case_action.action, CaseAction.OPEN)
+        self.assertEqual(case_action.assignee, self.moh)
+        self.assertEqual(case_action.user_assignee, self.user1)
+
+    def test_get_open_no_initial_message_existing_case(self):
+        """
+        When using get_or_open with no initial message, but by supplying a contact, but that contact already has an
+        open case, it should return that case instead of creating a new one.
+        """
+        case1 = Case.get_or_open(
+            self.unicef, self.user2, None, 'Hello', self.moh, user_assignee=self.user1, contact=self.ann)
+        case2 = Case.get_or_open(
+            self.unicef, self.user2, None, 'Hello', self.moh, user_assignee=self.user1, contact=self.ann)
+
+        self.assertEqual(case2.is_new, False)
+        self.assertEqual(case1, case2)
+
+        case1.close(self.user1)
+
+        case3 = Case.get_or_open(
+            self.unicef, self.user2, None, 'Hello', self.moh, user_assignee=self.user1, contact=self.ann)
+        self.assertEqual(case3.is_new, True)
+        self.assertNotEqual(case2, case3)
+
     def test_search(self):
         d1 = datetime(2014, 1, 9, 0, 0, tzinfo=pytz.UTC)
         d2 = datetime(2014, 1, 10, 0, 0, tzinfo=pytz.UTC)
