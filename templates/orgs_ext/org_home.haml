@@ -181,8 +181,9 @@
           %tbody
             %tr{ ng-repeat:"user in users" }
               %td
-                %a{ ng-href:"/user/read/[[ user.id ]]/" }><
+                %a{ ng-href:"/user/read/[[ user.id ]]/" }
                   [[ user.name ]]
+                  %span{ ng-if:"user.partner"} ([[user.partner.name]])
               %td
                 [[ user.replies.this_month ]]
               %td
