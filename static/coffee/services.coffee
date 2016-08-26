@@ -251,12 +251,14 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     #----------------------------------------------------------------------------
     # Opens a new case
     #----------------------------------------------------------------------------
-    open: (message, summary, assignee, user) ->
-      params = {message: message.id, summary: summary}
+    open: (message, summary, assignee, user, urn) ->
+      params = {summary: summary, urn: urn}
       if assignee
         params.assignee = assignee.id
       if user
         params.user_assignee = user.id
+      if message
+        params.message = message.id
 
       return $http.post('/case/open/', params).then((response) ->
         return response.data
@@ -580,6 +582,56 @@ services.factory('ModalService', ['$rootScope', '$uibModal', ($rootScope, $uibMo
           $scope.cancel = -> $uibModalInstance.dismiss()
       })
       .result
+
+    create_case: ({
+      context = {},
+      title = null,
+      templateUrl = '/sitestatic/templates/modals/create_case.html',
+      initial='',
+      initial_urn='',
+      maxLength=255,
+      schemes = {tel: "Phone", twitter: "Twitter", email: "Email"},
+    } = {}) ->
+      $uibModal.open({
+        templateUrl,
+        scope: angular.extend($rootScope.$new(true), {
+           title, context, initial, maxLength, schemes
+        }),
+        controller: ($scope, $uibModalInstance, PartnerService, UserService) ->
+          $scope.fields = {
+            urn: {scheme: null, path: initial_urn},
+            text: {val: initial, maxLength: maxLength},
+            partner: {val: 0, choices:[]},
+            user: {val: 0, choices: [{name: "Anyone"}]}
+          }
+
+
+          $scope.refreshUserList = () ->
+              UserService.fetchInPartner($scope.fields.partner.val, true).then((users) ->
+                  $scope.fields.user.choices = [{name: "Anyone"}].concat(users)
+              )
+
+          $scope.setScheme = (scheme) ->
+            $scope.fields.urn.scheme = scheme
+            $scope.urn_scheme_label = schemes[scheme]
+
+          $scope.ok = () ->
+            $scope.form.submitted = true
+            if $scope.form.$valid
+              urn = $scope.fields.urn.scheme + ':' + $scope.fields.urn.path
+              $uibModalInstance.close({text: $scope.fields.text.val, urn: urn, partner: $scope.fields.partner.val, user: $scope.fields.user.val})
+
+          $scope.cancel = () -> $uibModalInstance.dismiss(false)
+
+          $scope.setScheme('tel')
+
+          PartnerService.fetchAll().then((partners) ->
+              $scope.fields.partner.choices = partners
+              $scope.fields.partner.val = partners[0]
+              $scope.refreshUserList()
+          )
+      })
+      .result
 ])
 
 
@@ -649,3 +701,23 @@ services.factory('PodApiService', ['$q', '$window', '$http', ($q, $window, $http
       }
     })
 ])
+
+
+#=====================================================================
+# InboxUIService service
+#=====================================================================
+services.factory('InboxUIService', ['CaseService', 'ModalService', 'UtilsService', (CaseService, ModalService, UtilsService) ->
+  new class InboxUIService
+    createCaseWithoutMessage: () ->
+      ModalService.create_case({
+        title: "Create case"
+      }).then((result) ->
+        CaseService.open(null, result.text, result.partner, result.user, result.urn).then((caseObj) ->
+          caseUrl = 'case/read/' + caseObj.id + '/'
+          if !caseObj.is_new
+            caseUrl += '?alert=open_found_existing'
+          UtilsService.navigate(caseUrl)
+        )
+      )
+])
+

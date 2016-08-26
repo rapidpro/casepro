@@ -731,7 +731,7 @@ describe('services:', () ->
             prompt: 'Bar?'
           })
           .then(-> fulfilled = true)
-
+          
           $rootScope.$apply()
           expect(fulfilled).toBe(false)
 
@@ -816,6 +816,63 @@ describe('services:', () ->
           expect(rejected).toBe(true)
         )
       )
+    )
+
+    describe('create_case', () ->
+        it('should draw the modal', () ->
+          $httpBackend.expectGET('/partner/?with_activity=false')
+            .respond([])
+          ModalService.create_case({
+            title: 'Foo',
+          })
+
+          $rootScope.$apply()
+
+          expect(document.querySelector('.modal-title').textContent)
+            .toMatch('Foo')
+        )
+
+        it('should fulfill if the modal is accepted', () ->
+          fulfilled = false
+
+          $httpBackend.expectGET('/partner/?with_activity=false')
+            .respond([])
+          ModalService.create_case({
+            title: 'Foo',
+            initial: 'Bar',
+            initial_urn: '123',
+          })
+          .then(-> fulfilled = true)
+
+          $rootScope.$apply()
+          expect(fulfilled).toBe(false)
+
+          angular.element(document.querySelector('.btn-modal-accept'))
+            .triggerHandler('click')
+
+          $rootScope.$apply()
+          expect(fulfilled).toBe(true)
+        )
+
+        it('should reject if the modal is cancelled', () ->
+          rejected = false
+
+          ModalService.confirm({
+            title: 'Foo',
+            initial: 'Bar',
+            initial_urn: '123',
+          })
+          .catch(-> rejected = true)
+
+          $rootScope.$apply()
+          expect(rejected).toBe(false)
+
+          angular.element(document.querySelector('.btn-modal-cancel'))
+            .triggerHandler('click')
+
+          $rootScope.$apply()
+          expect(rejected).toBe(true)
+        )
     )
   )
 
@@ -925,4 +982,5 @@ describe('services:', () ->
       )
     )
   )
+
 )
