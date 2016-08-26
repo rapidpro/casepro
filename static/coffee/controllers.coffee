@@ -485,7 +485,7 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
         $scope.labels = labels
       )
     else if tab == 'users'
-      UserService.fetchNonPartner(true).then((users) ->
+      UserService.fetchAll(true).then((users) ->
         $scope.users = users
       )
 
