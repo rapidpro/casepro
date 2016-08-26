@@ -258,37 +258,62 @@ class Case(models.Model):
         return queryset.order_by('-opened_on')
 
     @classmethod
-    def get_or_open(cls, org, user, message, summary, assignee, user_assignee=None):
+    def get_or_open(cls, org, user, message, summary, assignee, user_assignee=None, contact=None):
+        """
+        Get an existing case, or open a new case if one doesn't exist. If message=None, then contact is required, and
+        any open case for that contact will be returned. If no open cases exist for the contact, a new case will be
+        created.
+        """
         from casepro.profiles.models import Notification
-
         r = get_redis_connection()
-        with r.lock(CASE_LOCK_KEY % (org.pk, message.contact.uuid)):
-            message.refresh_from_db()
 
-            # if message is already associated with a case, return that
-            if message.case:
-                message.case.is_new = False
-                return message.case
+        if message:
+            with r.lock(CASE_LOCK_KEY % (org.pk, message.contact.uuid)):
+                message.refresh_from_db()
 
-            # suspend from groups, expire flows and archive messages
-            message.contact.prepare_for_case()
+                # if message is already associated with a case, return that
+                if message.case:
+                    message.case.is_new = False
+                    return message.case
 
-            case = cls.objects.create(org=org, assignee=assignee, initial_message=message, contact=message.contact,
-                                      summary=summary, user_assignee=user_assignee)
-            case.is_new = True
-            case.labels.add(*list(message.labels.all()))  # copy labels from message to new case
-            case.watchers.add(user)
+                # suspend from groups, expire flows and archive messages
+                message.contact.prepare_for_case()
 
-            # attach message to this case
-            message.case = case
-            message.save(update_fields=('case',))
+                case = cls.objects.create(org=org, assignee=assignee, initial_message=message, contact=message.contact,
+                                          summary=summary, user_assignee=user_assignee)
+                case.is_new = True
+                case.labels.add(*list(message.labels.all()))  # copy labels from message to new case
+                case.watchers.add(user)
 
-            action = CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee, user_assignee=user_assignee)
+                # attach message to this case
+                message.case = case
+                message.save(update_fields=('case',))
 
-            for assignee_user in assignee.get_users():
-                if assignee_user != user:
-                    Notification.new_case_assignment(org, assignee_user, action)
+                action = CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee, user_assignee=user_assignee)
 
+                for assignee_user in assignee.get_users():
+                    if assignee_user != user:
+                        Notification.new_case_assignment(org, assignee_user, action)
+        else:
+            with r.lock(CASE_LOCK_KEY % (org.pk, contact.uuid)):
+                case = contact.cases.filter(closed_on=None).first()
+                if case:
+                    case.is_new = False
+                    return case
+
+                # suspend from groups, expire flows and archive messages
+                contact.prepare_for_case()
+
+                case = cls.objects.create(
+                    org=org, assignee=assignee, initial_message=None, contact=contact, summary=summary,
+                    user_assignee=user_assignee)
+                case.is_new = True
+                case.watchers.add(user)
+
+                action = CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee, user_assignee=user_assignee)
+                for assignee_user in assignee.get_users():
+                    if assignee_user != user:
+                        Notification.new_case_assignment(org, assignee_user, action)
         return case
 
     def get_timeline(self, after, before, merge_from_backend):
