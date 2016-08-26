@@ -561,6 +561,7 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_post_json('unicef', url, {'note': "Hey guys"})
         self.assertEqual(response.status_code, 302)
 
+    @override_settings(SITE_CASE_RESPONSE_REQUIRED_TIME=1440)
     def test_reassign(self):
         url = reverse('cases.case_reassign', args=[self.case.pk])
 
