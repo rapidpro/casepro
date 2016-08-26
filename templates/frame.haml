@@ -79,31 +79,16 @@
                           - trans "Tasks"
 
               - else
-                - if request.user.is_superuser or org_perms.orgs.org_home or org_perms.msgs.label_list or org_perms.msgs.faq_list or org_perms.msgs.language_list or org_perms.cases.group_list or org_perms.profiles.profile_user_list
+                - if request.user.is_superuser or org_perms.orgs.org_home or org_perms.msgs.label_list or org_perms.msgs.faq_list or org_perms.cases.group_list or org_perms.profiles.profile_user_list
                   %li.dropdown
                     %a.dropdown-toggle{href:"#", data-toggle:"dropdown"}
                       - trans "Administration"
                       %b.caret
                     %ul.dropdown-menu
-                      - if perms.orgs.org_home or org_perms.orgs.org_home
-                        %li
-                          %a{ href:"{% url 'orgs_ext.org_home' %}" }
-                            - trans "Organization"
-
-                      - if perms.msgs.label_list or org_perms.msgs.label_list
-                        %li
-                          %a{ href:"{% url 'msgs.label_list' %}" }
-                            - trans "Labels"
-
                       - if perms.msgs.faq_list or org_perms.msgs.faq_list
                         %li
                           %a{ href:"{% url 'msgs.faq_list' %}" }
                             - trans "FAQs"
-
-                      - if perms.msgs.language_list or org_perms.msgs.language_list
-                        %li
-                          %a{ href:"{% url 'msgs.language_list' %}" }
-                            - trans "Languages"
 
                       - if perms.contacts.group_list or org_perms.contacts.group_list
                         %li
@@ -213,6 +198,33 @@
       function displayAlert(type, text) {
         $('.content').prepend('<div class="alert alert-' + type + '"><a class="close" data-dismiss="alert">×</a>' + text + '</div>');
       }
+
+      /* Set HighCharts theme and localization */
+      Highcharts.setOptions({
+        chart: {
+          style: {
+            fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif"
+          }
+        },
+        title: {
+          style: {
+             color: '#333',
+             fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif"
+          }
+        },
+        plotOptions: {
+          pie: {
+            dataLabels: {
+              style: {
+                color: '#333',
+                fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif"
+              }
+            }
+          }
+        },
+        lang: {thousandsSep: ','},
+        credits: {enabled: false}
+      });
 
     {# media associated with any form we are displaying #}
     {% if form %}

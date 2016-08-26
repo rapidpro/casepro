@@ -57,7 +57,7 @@ modals.controller 'EditModalController', ['$scope', '$uibModalInstance', 'title'
 #=====================================================================
 # Reply to contacts modal
 #=====================================================================
-modals.controller('ReplyModalController', ['$scope', 'FaqService', 'LanguageService', '$uibModalInstance', '$controller', 'maxLength', ($scope , FaqService, LanguageService, $uibModalInstance, $controller, maxLength) ->
+modals.controller('ReplyModalController', ['$scope', 'FaqService', '$uibModalInstance', '$controller', 'maxLength', ($scope , FaqService, $uibModalInstance, $controller, maxLength) ->
 
   $scope.fields = {text: {val: '', maxLength: maxLength}}
 
@@ -74,8 +74,8 @@ modals.controller('ReplyModalController', ['$scope', 'FaqService', 'LanguageServ
     return search
 
   $scope.filterByLanguage = (language) ->
-    $scope.lang = language.code
-    $scope.search.language = language.id
+    $scope.lang = language.name
+    $scope.search.language = language.code
     FaqService.fetchFaqs($scope.search).then((results) ->
         $scope.replies = results
       )
@@ -92,7 +92,7 @@ modals.controller('ReplyModalController', ['$scope', 'FaqService', 'LanguageServ
       )
 
   $scope.fetchLanguages = () ->
-    LanguageService.fetchLanguages($scope.search).then((results) ->
+    FaqService.fetchLanguages($scope.search).then((results) ->
       $scope.languages = results
     )
 

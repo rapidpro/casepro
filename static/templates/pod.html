@@ -1,0 +1,43 @@
+<div class="panel panel-default">
+    <div class="pod-title panel-heading">[[ podConfig.title ]]</div>
+
+    <div class="panel-body" ng-if="status === 'loading'">
+        <i class="text-muted">Loading...</i>
+    </div>
+
+    <div class="panel-body" ng-if="status === 'loading_failed'">
+        <i class="text-muted">Could not load</i>
+    </div>
+
+    <div class="panel-body panel-body-pod" ng-if="status === 'idle'">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-12">
+                    <div
+                        class="pod-item row"
+                        ng-repeat="item in podData.items">
+                        <div class="col-md-6">
+                            <div class="pod-item-name">[[ item.name ]]</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="pod-item-value">[[ item.value ]]</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="list-group" ng-if="status === 'idle'">
+        <a
+            href=""
+            class="pod-action list-group-item"
+            ng-repeat="action in podData.actions track by action.type"
+            ng-class="{disabled: action.isBusy}"
+            ng-click="trigger(action)">
+            <span ng-if="!action.isBusy" class="text-primary">[[ action.name ]]</span>
+            <span ng-if="action.isBusy">[[ action.busyText ]]</span>
+        </a>
+    </div>
+</div>

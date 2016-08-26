@@ -15,7 +15,7 @@ from temba_client.v2.types import Contact as TembaContact, Message as TembaMessa
 from unittest import skip
 
 from casepro.contacts.models import Contact, Field, Group
-from casepro.msgs.models import Label, Message
+from casepro.msgs.models import Label, Message, Outgoing
 from casepro.test import BaseCasesTest
 
 from ..rapidpro import RapidProBackend, ContactSyncer, MessageSyncer
@@ -42,6 +42,7 @@ class ContactSyncerTest(BaseCasesTest):
             'name': "Bob McFlow",
             'language': "eng",
             'is_blocked': False,
+            'is_stopped': False,
             'is_stub': False,
             'fields': {'age': "34"},
             '__data__groups': [("G-001", "Customers")],
@@ -60,6 +61,7 @@ class ContactSyncerTest(BaseCasesTest):
             fields={},
             language=None,
             blocked=False,
+            stopped=False,
             modified_on=now()
         ), {}))
 
@@ -78,6 +80,7 @@ class ContactSyncerTest(BaseCasesTest):
             fields={'chat_name': "ann", 'age': None},
             language='eng',
             blocked=False,
+            stopped=False,
             modified_on=now()
         ), {}))
 
@@ -90,6 +93,7 @@ class ContactSyncerTest(BaseCasesTest):
             fields={'chat_name': "ann"},
             language='eng',
             blocked=False,
+            stopped=False,
             modified_on=now()
         ), {}))
 
@@ -102,6 +106,7 @@ class ContactSyncerTest(BaseCasesTest):
             fields={'chat_name': "ann"},
             language='eng',
             blocked=False,
+            stopped=False,
             modified_on=now()
         ), {}))
 
@@ -114,6 +119,7 @@ class ContactSyncerTest(BaseCasesTest):
             fields={'chat_name': "ann8111"},
             language='eng',
             blocked=False,
+            stopped=False,
             modified_on=now()
         ), {}))
 
@@ -126,6 +132,7 @@ class ContactSyncerTest(BaseCasesTest):
             fields={'chat_name': "ann", 'age': "35"},
             language='eng',
             blocked=False,
+            stopped=False,
             modified_on=now()
         ), {}))
 
@@ -825,22 +832,18 @@ class RapidProBackendTest(BaseCasesTest):
 
         messages = self.backend.fetch_contact_messages(self.unicef, self.ann, d1, d3)
 
-        self.assertEqual(messages, [
-            {
-                'id': 201,  # id is the broadcast id
-                'contact': {'id': self.ann.pk, 'name': "Ann"},
-                'urn': None,
-                'text': "Welcome",
-                'time': d3,
-                'direction': 'O',
-                'case': None,
-                'sender': None,
-            }
-        ])
+        self.assertEqual(len(messages), 1)
+        self.assertIsInstance(messages[0], Outgoing)
+        self.assertEqual(messages[0].backend_broadcast_id, 201)
+        self.assertEqual(messages[0].contact, self.ann)
+        self.assertEqual(messages[0].text, "Welcome")
+        self.assertEqual(messages[0].created_on, d3)
 
-        # check that JSON schemas match local outgoing model
-        outgoing = self.create_outgoing(self.unicef, self.admin, 201, 'B', "Hello", self.ann)
-        self.assertEqual(messages[0].keys(), outgoing.as_json().keys())
+    def test_get_url_patterns(self):
+        """
+        Getting the list of url patterns for the rapidpro backend should return an empty list.
+        """
+        self.assertEqual(self.backend.get_url_patterns(), [])
 
 
 @skip

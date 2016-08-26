@@ -3,14 +3,17 @@
 describe('services:', () ->
   $httpBackend = null
   $window = null
+  $rootScope = null
   test = null
 
   beforeEach(() ->
+    module('templates')
     module('cases')
 
-    inject((_$httpBackend_, _$window_) ->
+    inject((_$httpBackend_, _$window_, _$rootScope_) ->
       $httpBackend = _$httpBackend_
       $window = _$window_
+      $rootScope = _$rootScope_
     )
 
     test = {
@@ -28,9 +31,6 @@ describe('services:', () ->
       # contacts
       ann: {id: 401, name: "Ann"},
       bob: {id: 402, name: "Bob"}
-
-      # languages
-      eng_ng: {id: 601, name: "English"},
 
       # faqs
       pregnant: {id: 701, name: "Pregnant"},
@@ -70,9 +70,7 @@ describe('services:', () ->
       it('gets cases from search endpoint', () ->
         $httpBackend.expectGET('/case/search/?folder=open').respond('{"results":[{"id":501,"opened_on":"2016-05-17T08:49:13.698864"}],"has_more":true}')
         CaseService.fetchOld({folder: "open"}).then((data) ->
-          expect(data.results).toEqual([{
-            id: 501,
-            opened_on: utcdate(2016, 5, 17, 8, 49, 13, 698)}])
+          expect(data.results).toEqual([{id: 501, opened_on: utcdate(2016, 5, 17, 8, 49, 13, 698)}])
           expect(data.hasMore).toEqual(true)
         )
         $httpBackend.flush()
@@ -81,15 +79,12 @@ describe('services:', () ->
 
     describe('fetchTimeline', () ->
       it('gets cases from timeline endpoint', () ->
-        $httpBackend.expectGET('/case/timeline/501/?after=2016-05-28T09:00:00.000Z').respond('{"results":[{"id":501,"time":"2016-05-17T08:49:13.698864","type":"A"}]}')
+        $httpBackend.expectGET('/case/timeline/501/?after=2016-05-28T09:00:00.000Z').respond('{"results":[{"time":"2016-05-17T08:49:13.698864","type":"A","item":{}}]}')
         CaseService.fetchTimeline(test.case1, utcdate(2016, 5, 28, 9, 0, 0, 0)).then((data) ->
           expect(data.results).toEqual([{
-            id: 501,
             time: utcdate(2016, 5, 17, 8, 49, 13, 698),
             type: 'A',
-            is_action: true,
-            is_message_in: false,
-            is_message_out: false
+            item: {}
           }])
         )
         $httpBackend.flush()
@@ -225,6 +220,16 @@ describe('services:', () ->
         $httpBackend.expectGET('/contact/fetch/401/').respond('{"id":401, "name":"Ann", "fields":{}}')
         ContactService.fetch(401).then((contact) ->
           expect(contact).toEqual({id: 401, name: "Ann", fields:{}})
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('fetchCases', () ->
+      it('gets contacts cases from fetch endpoint', () ->
+        $httpBackend.expectGET('/contact/cases/401/').respond('{"results":[{"id": 501, "opened_on": "2016-05-17T08:49:13.698864"}]}')
+        ContactService.fetchCases(test.ann).then((cases) ->
+          expect(cases).toEqual([{id: 501, opened_on: utcdate(2016, 5, 17, 8, 49, 13, 698)}])
         )
         $httpBackend.flush()
       )
@@ -365,78 +370,6 @@ describe('services:', () ->
       it('posts to export endpoint', () ->
         $httpBackend.expectPOST('/messageexport/create/?archived=0&folder=inbox', null).respond('')
         MessageService.startExport({folder: "inbox"})
-        $httpBackend.flush()
-      )
-    )
-  )
-
-  #=======================================================================
-  # Tests for LanguageService
-  #=======================================================================
-  describe('LanguageService', () ->
-    LanguageService = null
-
-    beforeEach(inject((_LanguageService_) ->
-      LanguageService = _LanguageService_
-
-      test.language = {
-        id: 602,
-        code: "afr_ZA",
-        name: "Afrikaans",
-        location: "South Africa"
-      }
-    ))
-
-    describe('fetchLanguages', () ->
-      it('gets Languages from search endpoint', () ->
-        $httpBackend.expectGET('/language/search/?name=afr')
-        .respond('{
-          "results": [{
-            "id": 602,
-            "code": "afr_ZA",
-            "name": "Afrikaans",
-            "location": "South Africa"
-          }],
-          "has_more": false
-        }')
-        LanguageService.fetchLanguages({name: "afr"}).then((replies) ->
-          expect(replies).toEqual([{
-            id: 602,
-            code: "afr_ZA",
-            name: "Afrikaans",
-            location: "South Africa"
-          }])
-        )
-        $httpBackend.flush()
-      )
-
-      it('gets Languages from search endpoint with multiple filters', () ->
-        $httpBackend.expectGET('/language/search/?location=Africa&name=afr')
-        .respond('{
-          "results": [{
-            "id": 602,
-            "code": "afr_ZA",
-            "name": "Afrikaans",
-            "location": "South Africa"
-          }],
-          "has_more": false
-        }')
-        LanguageService.fetchLanguages({name: "afr", location: "Africa"}).then((replies) ->
-          expect(replies).toEqual([{
-            id: 602,
-            code: "afr_ZA",
-            name: "Afrikaans",
-            location: "South Africa"
-          }])
-        )
-        $httpBackend.flush()
-      )
-    )
-
-    describe('delete', () ->
-      it('posts to delete endpoint', () ->
-        $httpBackend.expectPOST('/language/delete/602/', null).respond("")
-        LanguageService.delete(test.language)
         $httpBackend.flush()
       )
     )
@@ -761,6 +694,307 @@ describe('services:', () ->
         expect(modalOptions.resolve.summaryInitial()).toEqual("this...")
         expect(modalOptions.resolve.summaryMaxLength()).toEqual(100)
         expect(modalOptions.resolve.partners()).toEqual([test.moh, test.who])
+      )
+    )
+  )
+
+  #=======================================================================
+  # Tests for PodApiService
+  #=======================================================================
+  describe('PodApiService', () ->
+    PodApiService = null
+
+    beforeEach(inject((_PodApiService_) ->
+      PodApiService = _PodApiService_
+    ))
+
+    describe('method', () ->
+      it('constructs a pod api method', () ->
+        $httpBackend.expectGET('/pods/foo/21/?bar=23')
+          .respond({foo: 'bar'})
+
+        method = PodApiService.method((id, bar) -> {
+          method: 'GET',
+          url: "/pods/foo/#{id}/",
+          params: {bar}
+        })
+
+        method(21, 23)
+          .then((res) -> expect(res).toEqual({foo: 'bar'}))
+
+        $httpBackend.flush()
+      )
+
+      it('rejects response errors as PodApiServiceErrors', () ->
+        $httpBackend.expectGET('/pods/foo/')
+          .respond(500)
+
+        method = PodApiService.method(-> {
+          method: 'GET',
+          url: "/pods/foo/"
+        })
+
+        method()
+          .catch((e) -> e)
+          .then((e) -> expect(e instanceof PodApiService.PodApiServiceError).toBe(true))
+
+        $httpBackend.flush()
+      )
+    )
+
+    describe('get', () ->
+      it('gets a pod', () ->
+        expect(PodApiService.get.fn(21, 23)).toEqual({
+          method: 'GET',
+          url: "/pods/read/21/",
+          params: {case_id: 23}
+        })
+      )
+    )
+
+    describe('trigger', () ->
+      it('triggers an action', () ->
+        expect(PodApiService.trigger.fn(21, 23, 'foo', {bar: 'baz'})).toEqual({
+          method: 'POST',
+          url: "/pods/action/21/",
+          data: {
+            case_id: 23
+            action: {
+              type: 'foo',
+              payload: {bar: 'baz'}
+            }
+          }
+        })
+      )
+    )
+  )
+
+  #=======================================================================
+  # Tests for ModalService
+  #=======================================================================
+  describe('ModalService', () ->
+    ModalService = null
+
+    beforeEach(inject((_ModalService_) ->
+      ModalService = _ModalService_
+    ))
+
+    describe('confirm', () ->
+      describe('if no template url is given', () ->
+        it('should draw the modal', () ->
+          ModalService.confirm({
+            title: 'Foo',
+            prompt: 'Bar?'
+          })
+
+          $rootScope.$apply()
+
+          expect(document.querySelector('.modal-title').textContent)
+            .toMatch('Foo')
+
+          expect(document.querySelector('.modal-body').textContent)
+            .toMatch('Bar?')
+        )
+
+        it('should fulfill if the modal is accepted', () ->
+          fulfilled = false
+
+          ModalService.confirm({
+            title: 'Foo',
+            prompt: 'Bar?'
+          })
+          .then(-> fulfilled = true)
+
+          $rootScope.$apply()
+          expect(fulfilled).toBe(false)
+
+          angular.element(document.querySelector('.btn-modal-accept'))
+            .triggerHandler('click')
+
+          $rootScope.$apply()
+          expect(fulfilled).toBe(true)
+        )
+
+        it('should reject if the modal is cancelled', () ->
+          rejected = false
+
+          ModalService.confirm({
+            title: 'Foo',
+            prompt: 'Bar?'
+          })
+          .catch(-> rejected = true)
+
+          $rootScope.$apply()
+          expect(rejected).toBe(false)
+
+          angular.element(document.querySelector('.btn-modal-cancel'))
+            .triggerHandler('click')
+
+          $rootScope.$apply()
+          expect(rejected).toBe(true)
+        )
+      )
+
+      describe('if a template url is given', () ->
+        it('should draw the modal', () ->
+          ModalService.confirm({
+            templateUrl: '/sitestatic/karma/templates/modals/dummy-confirm.html',
+            context: {title: 'Foo'}
+          })
+
+          $rootScope.$apply()
+
+          expect(document.querySelector('.modal-title').textContent)
+            .toMatch('Foo')
+
+          expect(document.querySelector('.modal-body').textContent)
+            .toMatch('Are you sure you want to do this?')
+        )
+
+        it('should fulfill if the modal is accepted', () ->
+          fulfilled = false
+
+          ModalService.confirm({
+            templateUrl: '/sitestatic/karma/templates/modals/dummy-confirm.html',
+            context: {title: 'Foo'}
+          })
+          .then(-> fulfilled = true)
+
+          $rootScope.$apply()
+          expect(fulfilled).toBe(false)
+
+          angular.element(document.querySelector('.btn-modal-accept'))
+            .triggerHandler('click')
+
+          $rootScope.$apply()
+          expect(fulfilled).toBe(true)
+        )
+
+        it('should reject if the modal is cancelled', () ->
+          rejected = false
+
+          ModalService.confirm({
+            templateUrl: '/sitestatic/karma/templates/modals/dummy-confirm.html',
+            context: {title: 'Foo'}
+          })
+          .catch(-> rejected = true)
+
+          $rootScope.$apply()
+          expect(rejected).toBe(false)
+
+          angular.element(document.querySelector('.btn-modal-cancel'))
+            .triggerHandler('click')
+
+          $rootScope.$apply()
+          expect(rejected).toBe(true)
+        )
+      )
+    )
+  )
+
+  #=======================================================================
+  # Tests for PodUIService
+  #=======================================================================
+  describe('PodUIService', () ->
+    $compile = null
+    PodUIService = null
+
+    beforeEach(inject((_$compile_, _PodUIService_) ->
+      $compile = _$compile_
+      PodUIService = _PodUIService_
+    ))
+
+    describe('confirmAction', () ->
+      it('should draw the modal', () ->
+        PodUIService.confirmAction('Foo')
+
+        $rootScope.$apply()
+
+        expect(document.querySelector('.modal-title').textContent)
+          .toMatch('Foo')
+      )
+
+      it('should fulfill if the modal is accepted', () ->
+        fulfilled = false
+
+        PodUIService.confirmAction('Foo')
+          .then(-> fulfilled = true)
+
+        $rootScope.$apply()
+        expect(fulfilled).toBe(false)
+
+        angular.element(document.querySelector('.btn-modal-accept'))
+          .triggerHandler('click')
+
+        $rootScope.$apply()
+        expect(fulfilled).toBe(true)
+      )
+
+      it('should reject if the modal is cancelled', () ->
+        rejected = false
+
+        PodUIService.confirmAction('Foo')
+          .catch(-> rejected = true)
+
+        $rootScope.$apply()
+        expect(rejected).toBe(false)
+
+        angular.element(document.querySelector('.btn-modal-cancel'))
+          .triggerHandler('click')
+
+        $rootScope.$apply()
+        expect(rejected).toBe(true)
+      )
+    )
+
+    describe('alertActionFailure', () ->
+      it('should draw the alert', () ->
+        $rootScope.alerts = [PodUIService.alertActionFailure('Foo')]
+
+        template = $compile('
+          <cp-alerts alerts="alerts">
+          </cp-alerts>
+        ')
+
+        el = template($rootScope)[0]
+        $rootScope.$digest()
+
+        alert = el.querySelector('.alert')
+        expect(alert.textContent).toMatch('Foo')
+      )
+    )
+
+    describe('alertActionApiFailure', () ->
+      it('should draw the alert', () ->
+        $rootScope.alerts = [PodUIService.alertActionApiFailure()]
+
+        template = $compile('
+          <cp-alerts alerts="alerts">
+          </cp-alerts>
+        ')
+
+        el = template($rootScope)[0]
+        $rootScope.$digest()
+
+        alert = el.querySelector('.alert')
+        expect(alert.textContent).toMatch('action')
+      )
+    )
+
+    describe('alertLoadApiFailure', () ->
+      it('should draw the alert', () ->
+        $rootScope.alerts = [PodUIService.alertLoadApiFailure()]
+
+        template = $compile('
+          <cp-alerts alerts="alerts">
+          </cp-alerts>
+        ')
+
+        el = template($rootScope)[0]
+        $rootScope.$digest()
+
+        alert = el.querySelector('.alert')
+        expect(alert.textContent).toMatch('load')
       )
     )
   )

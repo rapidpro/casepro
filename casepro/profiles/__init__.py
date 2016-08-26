@@ -33,10 +33,77 @@ def _user_get_partner(user, org):
     """
     Gets the partner org for this user in the given org
     """
-    if user.has_profile() and user.profile.partner and user.profile.partner.org == org:
-        return user.profile.partner
+    return user.partners.filter(org=org, is_active=True).first()
+
+
+def _user_get_role(user, org):
+    """
+    Gets the role as a character code for this user in the given org
+    """
+    from .models import ROLE_ADMIN, ROLE_MANAGER, ROLE_ANALYST
+
+    if user in org.administrators.all():
+        return ROLE_ADMIN
+    elif user in org.editors.all():
+        return ROLE_MANAGER
+    elif user in org.viewers.all():
+        return ROLE_ANALYST
     else:
         return None
+
+
+def _user_update_role(user, org, role, partner=None):
+    """
+    Updates this user's role in the given org
+    """
+    from .models import ROLE_ADMIN, ROLE_MANAGER, ROLE_ANALYST, PARTNER_ROLES
+
+    if partner and partner.org != org:  # pragma: no cover
+        raise ValueError("Can only update partner to partner in same org")
+
+    if role in PARTNER_ROLES and not partner:
+        raise ValueError("Role %s requires a partner org" % role)
+    elif role not in PARTNER_ROLES and partner:
+        raise ValueError("Cannot specify a partner for role %s" % role)
+
+    # remove user from any partners for this org
+    user.partners.remove(*user.partners.filter(org=org))
+
+    if partner:
+        user.partners.add(partner)
+
+    if role == ROLE_ADMIN:
+        org.administrators.add(user)
+        org.editors.remove(user)
+        org.viewers.remove(user)
+    elif role == ROLE_MANAGER:
+        org.administrators.remove(user)
+        org.editors.add(user)
+        org.viewers.remove(user)
+    elif role == ROLE_ANALYST:
+        org.administrators.remove(user)
+        org.editors.remove(user)
+        org.viewers.add(user)
+    else:  # pragma: no cover
+        raise ValueError("Invalid user role: %s" % role)
+
+
+def _user_remove_from_org(user, org):
+    # remove user from all org groups
+    org.administrators.remove(user)
+    org.editors.remove(user)
+    org.viewers.remove(user)
+
+    # remove user from any partners for this org
+    user.partners.remove(*user.partners.filter(org=org))
+
+    # remove as watcher of any case in this org
+    for case in user.watched_cases.filter(org=org):
+        case.unwatch(user)
+
+    # remove as watcher of any label in this org
+    for label in user.watched_labels.filter(org=org):
+        label.unwatch(user)
 
 
 def _user_can_administer(user, org):
@@ -86,26 +153,6 @@ def _user_can_edit(user, org, other):
     return other_partner and user.can_manage(other_partner)  # manager can edit users in same partner org
 
 
-def _user_remove_from_org(user, org):
-    # remove user from all org groups
-    org.administrators.remove(user)
-    org.editors.remove(user)
-    org.viewers.remove(user)
-
-    # remove from any partner for this org
-    if user.profile.partner and user.profile.partner.org == org:
-        user.profile.partner = None
-        user.profile.save(update_fields=('partner',))
-
-    # remove as watcher of any case in this org
-    for case in user.watched_cases.filter(org=org):
-        case.unwatch(user)
-
-    # remove as watcher of any label in this org
-    for label in user.watched_labels.filter(org=org):
-        label.unwatch(user)
-
-
 def _user_unicode(user):
     if user.has_profile():
         if user.profile.full_name:
@@ -119,8 +166,9 @@ def _user_unicode(user):
 def _user_as_json(user, full=True, org=None):
     if full:
         if org and user.has_profile():
-            role_json = user.profile.get_role(org)
-            partner_json = user.profile.partner.as_json(full=False) if user.profile.partner else None
+            partner = user.get_partner(org)
+            partner_json = partner.as_json(full=False) if partner else None
+            role_json = user.get_role(org)
         else:
             role_json = None
             partner_json = None
@@ -140,6 +188,8 @@ User.clean = _user_clean
 User.has_profile = _user_has_profile
 User.get_full_name = _user_get_full_name
 User.get_partner = _user_get_partner
+User.get_role = _user_get_role
+User.update_role = _user_update_role
 User.can_administer = _user_can_administer
 User.must_use_faq = _user_must_use_faq
 User.can_manage = _user_can_manage

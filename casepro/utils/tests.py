@@ -8,11 +8,15 @@ from django.core import mail
 from django.http import HttpRequest
 from django.test import override_settings
 from enum import Enum
+from hypothesis import given
+import hypothesis.strategies as st
+from uuid import UUID
 
 from casepro.test import BaseCasesTest
 
-from . import safe_max, normalize, match_keywords, truncate, str_to_bool, json_encode
+from . import safe_max, normalize, match_keywords, truncate, str_to_bool, json_encode, TimelineItem, uuid_to_int
 from . import date_to_milliseconds, datetime_to_microseconds, microseconds_to_datetime, month_range, date_range
+from . import get_language_name
 from .email import send_email
 from .middleware import JSONMiddleware
 
@@ -102,6 +106,37 @@ class UtilsTest(BaseCasesTest):
             date(2015, 2, 1)
         ])
         self.assertEqual(list(date_range(date(2015, 1, 29), date(2015, 1, 29))), [])
+
+    def test_timeline_item(self):
+        d1 = datetime(2015, 10, 1, 9, 0, 0, 0, pytz.UTC)
+        ann = self.create_contact(self.unicef, 'C-101', "Ann")
+        msg = self.create_message(self.unicef, 102, ann, "Hello", created_on=d1)
+        self.assertEqual(TimelineItem(msg).to_json(), {'time': d1, 'type': 'I', 'item': msg.as_json()})
+
+    def test_uuid_to_int_range(self):
+        """
+        Ensures that the integer returned will always be in the range [0, 2147483647].
+        """
+        self.assertEqual(uuid_to_int(UUID(int=(2147483647)).hex), 2147483647)
+        self.assertEqual(uuid_to_int(UUID(int=(2147483648)).hex), 0)
+
+    @given(st.uuids())
+    def test_uuid_to_int_property(self, uuid):
+        """
+        Property based testing to ensure that the output of the function is always within the limits.
+        """
+        self.assertTrue(uuid_to_int(uuid.hex) <= 2147483647)
+        self.assertTrue(uuid_to_int(uuid.hex) >= 0)
+
+    def test_get_language_name(self):
+        self.assertEqual(get_language_name('fre'), "French")
+        self.assertEqual(get_language_name('fre'), "French")  # from cache
+        self.assertEqual(get_language_name('cpe'), "Creoles and pidgins, English based")
+
+        # should strip off anything after an open paren or semicolon
+        self.assertEqual(get_language_name('arc'), "Official Aramaic")
+
+        self.assertIsNone(get_language_name('xxxxx'))
 
 
 class EmailTest(BaseCasesTest):

@@ -26,8 +26,8 @@ class UserUpdateMixin(OrgFormMixin):
         initial = super(UserUpdateMixin, self).derive_initial()
         initial['name'] = self.object.profile.full_name
         if self.request.org:
-            initial['role'] = self.object.profile.get_role(self.request.org)
-            initial['partner'] = self.object.profile.partner
+            initial['role'] = self.object.get_role(self.request.org)
+            initial['partner'] = self.object.get_partner(self.request.org)
         return initial
 
     def post_save(self, obj):
@@ -40,7 +40,7 @@ class UserUpdateMixin(OrgFormMixin):
         if 'role' in data:
             role = data['role']
             partner = data['partner'] if 'partner' in data else self.get_partner()
-            obj.profile.update_role(self.request.org, role, partner)
+            obj.update_role(self.request.org, role, partner)
 
         # set new password if provided
         password = data['new_password']
@@ -92,6 +92,16 @@ class UserCRUDL(SmartCRUDL):
             else:
                 self.object = Profile.create_user(name, email, password, change_password, must_use_faq)
 
+        def get_success_url(self):
+            if self.request.org:
+                partner = self.object.get_partner(self.request.org)
+                if partner:
+                    return reverse('cases.partner_read', args=[partner.pk]) + '#/users'
+                else:
+                    return reverse('orgs_ext.org_home') + '#/users'
+            else:
+                return reverse('orgs_ext.org_list')
+
     class CreateIn(PartnerPermsMixin, OrgFormMixin, SmartCreateView):
         """
         Form for creating partner-level users in a specific partner
@@ -121,7 +131,7 @@ class UserCRUDL(SmartCRUDL):
                                                       must_use_faq)
 
         def get_success_url(self):
-            return reverse('cases.partner_read', args=[self.kwargs['partner_id']])
+            return reverse('cases.partner_read', args=[self.kwargs['partner_id']]) + '#/users'
 
     class Update(PartnerPermsMixin, UserUpdateMixin, SmartUpdateView):
         """
@@ -208,14 +218,16 @@ class UserCRUDL(SmartCRUDL):
                 return super(UserCRUDL.Read, self).derive_title()
 
         def derive_fields(self):
-            fields = ['name', 'email']
+            profile_fields = ['name']
+            user_fields = ['email']
             if self.request.org:
-                fields += ['role']
-                if self.object.profile.partner:
-                    fields += ['partner']
-                fields += ['must_use_faq']
+                user_partner = self.request.user.get_partner(self.request.org)
+                if user_partner:
+                    profile_fields += ['role']  # partner users can't change a user's partner
+                else:
+                    profile_fields += ['role', 'partner']
 
-            return fields
+            return tuple(profile_fields + user_fields)
 
         def get_queryset(self):
             if self.request.org:
@@ -277,14 +289,14 @@ class UserCRUDL(SmartCRUDL):
             non_partner = str_to_bool(self.request.GET.get('non_partner', ''))
             with_activity = str_to_bool(self.request.GET.get('with_activity', ''))
 
-            users = request.org.get_users()
+            if non_partner:
+                users = org.administrators.all()
+            elif partner_id:
+                users = Partner.objects.get(org=org, pk=partner_id).get_users()
+            else:
+                users = org.get_users()
 
-            if partner_id:
-                users = users.filter(profile__partner__pk=partner_id)
-            elif non_partner:
-                users = users.filter(profile__partner=None)
-
-            users = list(users.select_related('profile__partner').order_by('profile__full_name'))
+            users = list(users.order_by('profile__full_name'))
 
             # get reply statistics
             if with_activity:

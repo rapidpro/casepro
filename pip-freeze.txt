@@ -8,8 +8,9 @@ billiard==3.3.0.22
 boto==2.38.0
 celery==3.1.19
 colorama==0.3.7
+confmodel==0.2.0
 coverage==4.0.3
--e git+https://github.com/rapidpro/dash.git@f85f7e7262a62dfc385951ad3e0199434c7db9f0#egg=dash-master
+-e git+https://github.com/rapidpro/dash.git@27b978de6d2359ffbc1597650e81e5299235ec39#egg=dash-master
 dj-database-url==0.3.0
 django-appconf==1.0.1
 django-celery==3.1.17
@@ -20,7 +21,7 @@ django-digest==1.13
 django-el-pagination==2.1.1
 django-guardian==1.3.2
 django-nose==1.4.3
-django-redis==3.8.4
+django-redis==4.4.3
 django-reversion==1.8.7
 django-rosetta==0.7.6
 django-storages==1.1.8
@@ -29,6 +30,8 @@ enum34==1.0.4
 flake8==2.5.4
 gunicorn==19.3.0
 hamlpy==0.82.2
+iso639==0.1.4
+hypothesis==3.4.0
 kombu==3.0.33
 microsofttranslator==0.5
 mock==1.0.1
@@ -40,11 +43,12 @@ psycopg2==2.6.1
 pycountry==1.12
 python-dateutil==2.4.2
 pytz==2015.7
--e git+https://github.com/rapidpro/rapidpro-python.git@6ab6de508e9815d4cef4388971da3b7e6464de21#egg=rapidpro_python-master
+rapidpro-python==2.0.1
 raven==5.3.1
 redis==2.10.3
 regex==2015.10.01
 requests==2.7.0
+responses==0.5.1
 six==1.10.0
 -e git+https://github.com/nyaruka/smartmin.git@588f3df96d076f2dffe78f844cb25b5baf1729e0#egg=smartmin-dev
 sorl-thumbnail==12.3

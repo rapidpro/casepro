@@ -147,7 +147,6 @@ class ProfileTest(BaseCasesTest):
         # create un-attached user
         user1 = Profile.create_user("Tom McTicket", "tom@unicef.org", "Qwerty123")
         self.assertEqual(user1.profile.full_name, "Tom McTicket")
-        self.assertIsNone(user1.profile.partner)
         self.assertFalse(user1.profile.change_password)
         self.assertEqual(user1.first_name, "")
         self.assertEqual(user1.last_name, "")
@@ -158,55 +157,21 @@ class ProfileTest(BaseCasesTest):
         # create org-level user
         user2 = Profile.create_org_user(self.unicef,  "Cary McCase", "cary@unicef.org", "Qwerty123")
         self.assertIn(user2, self.unicef.administrators.all())
-        self.assertIsNone(user2.profile.partner)
+        self.assertFalse(user2.partners.all())
 
         # create partner-level manager user
         user3 = Profile.create_partner_user(self.unicef, self.moh, ROLE_MANAGER, "Mo Cases", "mo@moh.com", "Qwerty123")
         self.assertIn(user3, self.unicef.editors.all())
-        self.assertEqual(user3.profile.partner, self.moh)
+        self.assertIn(user3, self.moh.users.all())
 
-        # create partner-level manager user
+        # create partner-level analyst user
         user4 = Profile.create_partner_user(self.unicef, self.moh, ROLE_ANALYST, "Jo Cases", "jo@moh.com", "Qwerty123")
         self.assertIn(user4, self.unicef.viewers.all())
-        self.assertEqual(user4.profile.partner, self.moh)
+        self.assertIn(user4, self.moh.users.all())
 
         # test creating user with long email
         user5 = Profile.create_user("Lou", "lou123456789012345678901234567890@moh.com", "Qwerty123")
         self.assertEqual(user5.email, "lou123456789012345678901234567890@moh.com")
-
-    def test_update_role(self):
-        self.user1.profile.update_role(self.unicef, ROLE_ANALYST, self.who)
-
-        self.assertEqual(self.user1.profile.partner, self.who)
-        self.assertTrue(self.user1 not in self.unicef.administrators.all())
-        self.assertTrue(self.user1 not in self.unicef.editors.all())
-        self.assertTrue(self.user1 in self.unicef.viewers.all())
-
-        self.user1.profile.update_role(self.unicef, ROLE_MANAGER, self.moh)
-
-        self.assertEqual(self.user1.profile.partner, self.moh)
-        self.assertTrue(self.user1 not in self.unicef.administrators.all())
-        self.assertTrue(self.user1 in self.unicef.editors.all())
-        self.assertTrue(self.user1 not in self.unicef.viewers.all())
-
-        self.user1.profile.update_role(self.unicef, ROLE_ADMIN, None)
-
-        self.assertIsNone(self.user1.profile.partner)
-        self.assertTrue(self.user1 in self.unicef.administrators.all())
-        self.assertTrue(self.user1 not in self.unicef.editors.all())
-        self.assertTrue(self.user1 not in self.unicef.viewers.all())
-
-        # error if partner provided for non-partner role
-        self.assertRaises(ValueError, self.user1.profile.update_role, self.unicef, ROLE_ADMIN, self.who)
-
-        # error if no partner provided for partner role
-        self.assertRaises(ValueError, self.user1.profile.update_role, self.unicef, ROLE_MANAGER, None)
-
-    def test_get_role(self):
-        self.assertEqual(self.admin.profile.get_role(self.unicef), ROLE_ADMIN)
-        self.assertEqual(self.user1.profile.get_role(self.unicef), ROLE_MANAGER)
-        self.assertEqual(self.user2.profile.get_role(self.unicef), ROLE_ANALYST)
-        self.assertEqual(self.user4.profile.get_role(self.unicef), None)
 
 
 class UserTest(BaseCasesTest):
@@ -219,6 +184,52 @@ class UserTest(BaseCasesTest):
         self.assertEqual(self.superuser.get_full_name(), "")
         self.assertEqual(self.admin.get_full_name(), "Kidus")
         self.assertEqual(self.user1.get_full_name(), "Evan")
+
+    def test_get_role(self):
+        self.assertEqual(self.admin.get_role(self.unicef), ROLE_ADMIN)
+        self.assertEqual(self.user1.get_role(self.unicef), ROLE_MANAGER)
+        self.assertEqual(self.user2.get_role(self.unicef), ROLE_ANALYST)
+        self.assertEqual(self.user4.get_role(self.unicef), None)
+        self.assertEqual(self.admin.get_role(self.nyaruka), None)
+
+    def test_update_role(self):
+        self.user1.update_role(self.unicef, ROLE_ANALYST, self.who)
+
+        self.assertEqual(set(self.user1.partners.all()), {self.who})
+        self.assertTrue(self.user1 not in self.unicef.administrators.all())
+        self.assertTrue(self.user1 not in self.unicef.editors.all())
+        self.assertTrue(self.user1 in self.unicef.viewers.all())
+
+        self.user1.update_role(self.unicef, ROLE_MANAGER, self.moh)
+
+        self.assertEqual(set(self.user1.partners.all()), {self.moh})
+        self.assertTrue(self.user1 not in self.unicef.administrators.all())
+        self.assertTrue(self.user1 in self.unicef.editors.all())
+        self.assertTrue(self.user1 not in self.unicef.viewers.all())
+
+        self.user1.update_role(self.unicef, ROLE_ADMIN, None)
+
+        self.assertEqual(set(self.user1.partners.all()), set())
+        self.assertIn(self.user1, self.unicef.administrators.all())
+        self.assertNotIn(self.user1, self.unicef.editors.all())
+        self.assertNotIn(self.user1, self.unicef.viewers.all())
+
+        # can add them as partner user in another org without changing admin status in this org
+        self.user1.update_role(self.nyaruka, ROLE_ANALYST, self.klab)
+
+        self.assertEqual(set(self.user1.partners.all()), {self.klab})
+        self.assertIn(self.user1, self.unicef.administrators.all())
+        self.assertNotIn(self.user1, self.unicef.editors.all())
+        self.assertNotIn(self.user1, self.unicef.viewers.all())
+        self.assertNotIn(self.user1, self.nyaruka.administrators.all())
+        self.assertNotIn(self.user1, self.nyaruka.editors.all())
+        self.assertIn(self.user1, self.nyaruka.viewers.all())
+
+        # error if partner provided for non-partner role
+        self.assertRaises(ValueError, self.user1.update_role, self.unicef, ROLE_ADMIN, self.who)
+
+        # error if no partner provided for partner role
+        self.assertRaises(ValueError, self.user1.update_role, self.unicef, ROLE_MANAGER, None)
 
     def test_can_administer(self):
         # superusers can administer any org
@@ -287,6 +298,9 @@ class UserTest(BaseCasesTest):
         case = self.create_case(self.unicef, ann, self.moh, msg, [self.aids], summary="Summary")
         case.watchers.add(self.admin, self.user1)
 
+        # add our admin as a partner user in a different org
+        self.admin.update_role(self.nyaruka, ROLE_ANALYST, self.klab)
+
         # have users watch a label too
         self.pregnancy.watchers.add(self.admin, self.user1)
 
@@ -296,6 +310,10 @@ class UserTest(BaseCasesTest):
         self.admin.refresh_from_db()
         self.assertIsNone(self.unicef.get_user_org_group(self.admin))
         self.assertNotIn(self.admin, case.watchers.all())
+
+        # their status in other org shouldn't be affected
+        self.assertIn(self.admin, self.nyaruka.viewers.all())
+        self.assertIn(self.admin, self.klab.users.all())
 
         # try with partner user
         self.user1.remove_from_org(self.unicef)
@@ -333,7 +351,7 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_post(None, url, {'name': "McAdmin", 'email': "mcadmin@casely.com",
                                              'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, 'http://testserver/user/')
+        self.assertEqual(response.url, 'http://testserver/org/')
 
         user = User.objects.get(email='mcadmin@casely.com')
         self.assertEqual(user.get_full_name(), "McAdmin")
@@ -362,7 +380,7 @@ class UserCRUDLTest(BaseCasesTest):
                                                  'role': ROLE_ADMIN,
                                                  'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, 'http://unicef.localhost/user/')
+        self.assertEqual(response.url, 'http://unicef.localhost/org/home/#/users')
 
         user = User.objects.get(email='adrian@casely.com')
         self.assertEqual(user.get_full_name(), "Adrian Admin")
@@ -393,15 +411,15 @@ class UserCRUDLTest(BaseCasesTest):
                                                  'partner': self.moh.pk, 'role': ROLE_ANALYST,
                                                  'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, 'http://unicef.localhost/user/')
+        self.assertEqual(response.url, 'http://unicef.localhost/partner/read/%d/#/users' % self.moh.pk)
 
         # check new user and profile
         user = User.objects.get(email="mo@casely.com")
         self.assertEqual(user.profile.full_name, "Mo Cases")
-        self.assertEqual(user.profile.partner, self.moh)
         self.assertEqual(user.email, "mo@casely.com")
         self.assertEqual(user.username, "mo@casely.com")
         self.assertTrue(user in self.unicef.viewers.all())
+        self.assertEqual(user.get_partner(self.unicef), self.moh)
 
         # try again with same email address
         response = self.url_post('unicef', url, {'name': "Mo Cases II", 'email': "mo@casely.com",
@@ -433,10 +451,10 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_post('unicef', url, {'name': "Mo Cases", 'email': "mo@casely.com", 'role': ROLE_ANALYST,
                                                  'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, 'http://unicef.localhost/partner/read/%d/' % self.moh.pk)
+        self.assertEqual(response.url, 'http://unicef.localhost/partner/read/%d/#/users' % self.moh.pk)
 
         user = User.objects.get(email='mo@casely.com')
-        self.assertEqual(user.profile.partner, self.moh)
+        self.assertEqual(user.get_partner(self.unicef), self.moh)
 
         # log in as a partner manager
         self.login(self.user1)
@@ -457,7 +475,7 @@ class UserCRUDLTest(BaseCasesTest):
         user = User.objects.get(email='manager@moh.com')
         self.assertEqual(user.get_full_name(), "McManage")
         self.assertEqual(user.username, "manager@moh.com")
-        self.assertEqual(user.profile.partner, self.moh)
+        self.assertEqual(user.get_partner(self.unicef), self.moh)
         self.assertFalse(user.can_administer(self.unicef))
         self.assertTrue(user.can_manage(self.moh))
 
@@ -468,7 +486,7 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 302)
 
         user = User.objects.get(email='bob@moh.com')
-        self.assertEqual(user.profile.partner, self.moh)  # WHO was ignored
+        self.assertEqual(user.get_partner(self.unicef), self.moh)  # WHO was ignored
 
         # partner managers can't access page for other partner orgs
         url = reverse('profiles.user_create_in', args=[self.who.pk])
@@ -501,10 +519,10 @@ class UserCRUDLTest(BaseCasesTest):
         self.user2.refresh_from_db()
         self.user2.profile.refresh_from_db()
         self.assertEqual(self.user2.profile.full_name, "Richard")
-        self.assertEqual(self.user2.profile.partner, self.moh)
         self.assertEqual(self.user2.email, "rick@unicef.org")
         self.assertEqual(self.user2.username, "rick@unicef.org")
         self.assertIn(self.user2, self.unicef.viewers.all())
+        self.assertEqual(self.user2.get_partner(self.unicef), self.moh)
 
         # log in as an org administrator
         self.login(self.admin)
@@ -531,11 +549,11 @@ class UserCRUDLTest(BaseCasesTest):
         self.user2.refresh_from_db()
         self.user2.profile.refresh_from_db()
         self.assertEqual(self.user2.profile.full_name, "Bill")
-        self.assertEqual(self.user2.profile.partner, self.who)
         self.assertEqual(self.user2.email, "bill@unicef.org")
         self.assertEqual(self.user2.username, "bill@unicef.org")
         self.assertNotIn(self.user2, self.unicef.viewers.all())
         self.assertIn(self.user2, self.unicef.editors.all())
+        self.assertEqual(self.user2.get_partner(self.unicef), self.who)
 
         # submit with too simple a password
         response = self.url_post('unicef', url, {'name': "Bill", 'email': "bill@unicef.org",
@@ -551,11 +569,11 @@ class UserCRUDLTest(BaseCasesTest):
         self.user2.refresh_from_db()
         self.user2.profile.refresh_from_db()
         self.assertEqual(self.user2.profile.full_name, "Bill")
-        self.assertEqual(self.user2.profile.partner, self.moh)
         self.assertEqual(self.user2.email, "bill@unicef.org")
         self.assertEqual(self.user2.username, "bill@unicef.org")
         self.assertNotIn(self.user2, self.unicef.editors.all())
         self.assertIn(self.user2, self.unicef.viewers.all())
+        self.assertEqual(self.user2.get_partner(self.unicef), self.moh)
 
         # try giving user someone else's email address
         response = self.url_post('unicef', url, {'name': "Bill", 'email': "evan@unicef.org",
@@ -579,11 +597,11 @@ class UserCRUDLTest(BaseCasesTest):
         self.user2.refresh_from_db()
         self.user2.profile.refresh_from_db()
         self.assertEqual(self.user2.profile.full_name, "Bob")
-        self.assertEqual(self.user2.profile.partner, self.moh)
         self.assertEqual(self.user2.email, "bob@unicef.org")
         self.assertEqual(self.user2.username, "bob@unicef.org")
         self.assertNotIn(self.user2, self.unicef.viewers.all())
         self.assertIn(self.user2, self.unicef.editors.all())
+        self.assertEqual(self.user2.get_partner(self.unicef), self.moh)
 
         # can't update user outside of their partner
         url = reverse('profiles.user_update', args=[self.user3.pk])

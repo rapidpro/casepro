@@ -11,8 +11,9 @@ def squash_counts():
     """
     Task to squash all daily counts
     """
-    from .models import DailyCount
+    from .models import TotalCount, DailyCount
 
+    TotalCount.squash()
     DailyCount.squash()
 
 

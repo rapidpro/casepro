@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from dash.orgs.models import Org
+from dash.utils import get_obj_cacheable
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import models
@@ -10,7 +11,7 @@ from django.utils.timesince import timesince
 from django.utils.timezone import now
 from django.db.models import Q
 from enum import Enum
-from redis_cache import get_redis_connection
+from django_redis import get_redis_connection
 
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact, Field
@@ -57,6 +58,9 @@ class Label(models.Model):
 
     is_active = models.BooleanField(default=True, help_text="Whether this label is active")
 
+    INBOX_COUNT_CACHE_ATTR = '_inbox_count'
+    ARCHIVED_COUNT_CACHE_ATTR = '_archived_count'
+
     @classmethod
     def create(cls, org, name, description, tests, is_synced):
         label = cls.objects.create(org=org, name=name, description=description, is_synced=is_synced)
@@ -93,6 +97,40 @@ class Label(models.Model):
     def get_tests(self):
         return self.rule.get_tests() if self.rule else []
 
+    def get_inbox_count(self, recalculate=False):
+        """
+        Number of inbox (non-archived) messages with this label
+        """
+        return get_obj_cacheable(self, self.INBOX_COUNT_CACHE_ATTR, lambda: self._get_inbox_count(), recalculate)
+
+    def _get_inbox_count(self, ):
+        from casepro.statistics.models import TotalCount
+        return TotalCount.get_by_label([self], TotalCount.TYPE_INBOX).scope_totals()[self]
+
+    def get_archived_count(self, recalculate=False):
+        """
+        Number of archived messages with this label
+        """
+        return get_obj_cacheable(self, self.ARCHIVED_COUNT_CACHE_ATTR, lambda: self._get_archived_count(), recalculate)
+
+    def _get_archived_count(self):
+        from casepro.statistics.models import TotalCount
+        return TotalCount.get_by_label([self], TotalCount.TYPE_ARCHIVED).scope_totals()[self]
+
+    @classmethod
+    def bulk_cache_initialize(cls, labels):
+        """
+        Pre-loads cached counts on a set of labels to avoid fetching counts individually for each label
+        """
+        from casepro.statistics.models import TotalCount
+
+        inbox_by_label = TotalCount.get_by_label(labels, TotalCount.TYPE_INBOX).scope_totals()
+        archived_by_label = TotalCount.get_by_label(labels, TotalCount.TYPE_ARCHIVED).scope_totals()
+
+        for label in labels:
+            setattr(label, cls.INBOX_COUNT_CACHE_ATTR, inbox_by_label[label])
+            setattr(label, cls.ARCHIVED_COUNT_CACHE_ATTR, archived_by_label[label])
+
     @classmethod
     def lock(cls, org, uuid):
         return get_redis_connection().lock(LABEL_LOCK_KEY % (org.pk, uuid), timeout=60)
@@ -125,56 +163,12 @@ class Label(models.Model):
         if full:
             result['description'] = self.description
             result['synced'] = self.is_synced
+            result['counts'] = {'inbox': self.get_inbox_count(), 'archived': self.get_archived_count()}
 
         return result
 
     def __str__(self):
         return self.name
-
-
-@python_2_unicode_compatible
-class Language(models.Model):
-    """
-    Languages used, defined by the ISO 639-3 language code combined with the location code, e.g. eng_UK
-    """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='languages')
-
-    code = models.CharField(max_length=6)  # e.g. eng_UK
-
-    name = models.CharField(max_length=100, null=True, blank=True)  # e.g. English
-
-    location = models.CharField(max_length=100, null=True, blank=True)  # e.g. United Kingdom
-
-    @classmethod
-    def search(cls, org, user, search):
-        """
-        Search for Languages
-        """
-        name = search.get('name')
-        location = search.get('location')
-
-        queryset = Language.objects.all()
-
-        # Name filtering
-        if name:
-            queryset = queryset.filter(name__icontains=name)
-
-        # Location filtering
-        if location:
-            queryset = queryset.filter(location__icontains=location)
-
-        return queryset.order_by('code')
-
-    def as_json(self):
-        return {
-            'id': self.pk,
-            'code': self.code,
-            'name': self.name,
-            'location': self.location
-        }
-
-    def __str__(self):
-        return "%s" % self.code
 
 
 @python_2_unicode_compatible
@@ -188,30 +182,36 @@ class FAQ(models.Model):
 
     answer = models.TextField()
 
-    language = models.ForeignKey(Language, verbose_name=('Language'), related_name='faqs', default=None)
-
-    parent = models.ForeignKey('self', null=True, blank=True, related_name='translations')
-
-    language = models.ForeignKey(Language, verbose_name=('Language'), related_name='faqs', default=None)
+    language = models.CharField(max_length=3, verbose_name=_("Language"), null=True, blank=True,
+                                help_text=_("Language for this FAQ"))
 
     parent = models.ForeignKey('self', null=True, blank=True, related_name='translations')
 
     labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this FAQ"), related_name='faqs')
 
     @classmethod
+    def create(cls, org, question, answer, language, parent, labels=(), **kwargs):
+        """
+        A helper for creating FAQs since labels (many-to-many) needs to be added after initial creation
+        """
+        faq = cls.objects.create(org=org, question=question, answer=answer, language=language, parent=parent, **kwargs)
+        faq.labels.add(*labels)
+        return faq
+
+    @classmethod
     def search(cls, org, user, search):
         """
         Search for FAQs
         """
-        language_id = search.get('language')
+        language = search.get('language')
         label_id = search.get('label')
         text = search.get('text')
 
-        queryset = FAQ.objects.all()
+        queryset = cls.objects.filter(org=org)
 
         # Language filtering
-        if language_id:
-            queryset = queryset.filter(language__pk=language_id)
+        if language:
+            queryset = queryset.filter(language=language)
 
         # Label filtering
         labels = Label.get_all(org, user)
@@ -228,24 +228,38 @@ class FAQ(models.Model):
         if text:
             queryset = queryset.filter(Q(question__icontains=text) | Q(answer__icontains=text))
 
-        queryset = queryset.prefetch_related('language', 'labels')
+        queryset = queryset.prefetch_related('labels')
 
         return queryset.order_by('question')
 
-    def as_json(self):
-        if not self.parent:
-            parent_json = None
-        else:
-            parent_json = self.parent.id
+    @classmethod
+    def get_all(cls, org, label=None):
+        queryset = cls.objects.filter(org=org)
 
-        return {
-            'id': self.pk,
-            'question': self.question,
-            'answer': self.answer,
-            'language': self.language.as_json(),
-            'parent': parent_json,
-            'labels': [l.as_json() for l in self.labels.all()]
-        }
+        if label:
+            queryset = queryset.filter(labels=label)
+
+        return queryset.distinct()
+
+    @classmethod
+    def get_all_languages(cls, org):
+        queryset = cls.objects.filter(org=org)
+        return queryset.values('language').order_by('language').distinct()
+
+    def as_json(self, full=True):
+        result = {'id': self.pk, 'question': self.question}
+        if full:
+            if not self.parent:
+                parent_json = None
+            else:
+                parent_json = self.parent.id
+
+            result['answer'] = self.answer
+            result['language'] = self.language
+            result['parent'] = parent_json
+            result['labels'] = [l.as_json() for l in self.labels.all()]
+
+        return result
 
     def __str__(self):
         return self.question
@@ -261,10 +275,10 @@ class Message(models.Model):
 
     TYPE_CHOICES = ((TYPE_INBOX, _("Inbox")), (TYPE_FLOW, _("Flow")))
 
-    DIRECTION = 'I'
-
     SAVE_CONTACT_ATTR = '__data__contact'
     SAVE_LABELS_ATTR = '__data__labels'
+
+    TIMELINE_TYPE = 'I'
 
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='incoming_messages')
 
@@ -328,11 +342,11 @@ class Message(models.Model):
 
         if all_label_access:
             if folder == MessageFolder.inbox:
+                queryset = queryset.filter(has_labels=True)
                 if label_id:
                     label = Label.get_all(org, user).filter(pk=label_id).first()
                     queryset = queryset.filter(labels=label)
-                else:
-                    queryset = queryset.filter(has_labels=True)
+
             elif folder == MessageFolder.unlabelled:
                 # only show inbox messages in unlabelled
                 queryset = queryset.filter(type=Message.TYPE_INBOX, has_labels=False)
@@ -505,7 +519,6 @@ class Message(models.Model):
             'labels': [l.as_json(full=False) for l in self.labels.all()],
             'flagged': self.is_flagged,
             'archived': self.is_archived,
-            'direction': self.DIRECTION,
             'flow': self.type == self.TYPE_FLOW,
             'case': self.case.as_json(full=False) if self.case else None
         }
@@ -572,7 +585,7 @@ class Outgoing(models.Model):
     ACTIVITY_CHOICES = ((BULK_REPLY, _("Bulk Reply")), (CASE_REPLY, "Case Reply"), (FORWARD, _("Forward")))
     REPLY_ACTIVITIES = (BULK_REPLY, CASE_REPLY)
 
-    DIRECTION = 'O'
+    TIMELINE_TYPE = 'O'
 
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='outgoing_messages')
 
@@ -700,6 +713,16 @@ class Outgoing(models.Model):
     def is_reply(self):
         return self.activity in self.REPLY_ACTIVITIES
 
+    def get_sender(self):
+        """
+        Convenience method for accessing created_by since it can be null on transient instances returned from
+        Backend.fetch_contact_messages
+        """
+        try:
+            return self.created_by
+        except User.DoesNotExist:
+            return None
+
     def as_json(self):
         """
         Prepares this outgoing message for JSON serialization
@@ -710,9 +733,8 @@ class Outgoing(models.Model):
             'urn': self.urn,
             'text': self.text,
             'time': self.created_on,
-            'direction': self.DIRECTION,
             'case': self.case.as_json(full=False) if self.case else None,
-            'sender': self.created_by.as_json(full=False)
+            'sender': self.get_sender().as_json(full=False) if self.get_sender() else None
         }
 
     def __str__(self):

@@ -7,13 +7,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('profiles', '0004_fix_deleted_users'),
+        ('profiles', '0006_notification'),
+        ('cases', '0041_populate_partner_users'),
     ]
 
     operations = [
-        migrations.AddField(
+        migrations.RemoveField(
             model_name='profile',
-            name='must_use_faq',
-            field=models.BooleanField(default=False, help_text='User is only allowed to reply with pre-approved responses'),
+            name='partner',
         ),
     ]

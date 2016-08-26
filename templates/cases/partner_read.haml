@@ -112,7 +112,7 @@
                 %tbody
                   %tr{ ng-repeat:"item in items" }
                     %td{ nowrap:"" }
-                      [[ item.time | autodate ]]
+                      <cp-date time="item.time" tooltip-position="top-left" />
                     %td
                       %a{ ng-href:"/user/read/[[ item.sender.id ]]/" }><
                         [[ item.sender.name ]]
@@ -134,7 +134,7 @@
                       %span.glyphicon.glyphicon-flag{ ng-if:"item.reply_to.flagged" }
                     %td{ nowrap:"" }
                       %a{ ng-href:"/contact/read/[[ item.contact.id ]]" }><
-                        <cp-contact contact="item.contact">
+                        <cp-contact contact="item.contact" fields="fields">
 
             .loading{ ng-if:"oldItemsLoading" }
             .none{ ng-hide:"oldItemsLoading || items.length > 0" }

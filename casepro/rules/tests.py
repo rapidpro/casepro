@@ -184,7 +184,7 @@ class RuleTest(BaseCasesTest):
         self.ann = self.create_contact(self.unicef, 'C-001', "Ann")
 
     def test_get_all(self):
-        rules = Rule.get_all(self.unicef)
+        rules = Rule.get_all(self.unicef).order_by('pk')
         self.assertEqual(len(rules), 3)
         self.assertEqual(rules[0].get_tests(), [ContainsTest(["aids", "hiv"], Quantifier.ANY)])
         self.assertEqual(rules[0].get_actions(), [LabelAction(self.aids)])

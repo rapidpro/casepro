@@ -137,10 +137,10 @@
           %a.flag{ ng-click:"onToggleMessageFlag(item)" }
             %i.glyphicon.glyphicon-flag
         .message-time
-          [[ item.time | autodate ]]
+          <cp-date time="item.time" />
         .message-contact
           %a{ ng-click:"activateContact(item.contact)" }><
-            <cp-contact contact="item.contact">
+            <cp-contact contact="item.contact" fields="fields">
         .message-text
           %span.label-container{ ng-if:"item.flow" }
             %span.label.label-info
