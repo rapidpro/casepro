@@ -527,7 +527,7 @@ describe('services:', () ->
         expect($window.location.replace).toHaveBeenCalledWith("http://example.com")
       )
     )
-
+    
     describe('navigateBack', () ->
       it('calls history.back', () ->
         spyOn($window.history, 'back')
