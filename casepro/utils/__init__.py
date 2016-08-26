@@ -87,7 +87,7 @@ def normalize_urn(urn):
     """
     scheme, path = urn.split(':', 1)
     if scheme == 'tel':
-        path = normalise_tel_number(path)
+        (path, _) = normalise_tel_number(path)
 
     return '%s:%s' % (scheme, path)
 
