@@ -16,13 +16,13 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='case',
-            name='last_assignee',
-            field=models.ForeignKey(related_name='previously_assigned_cases', to='cases.Partner', null=True),
+            name='auto_reassign_on',
+            field=models.DateTimeField(help_text='When this case should be reassigned', null=True),
         ),
         migrations.AddField(
             model_name='case',
-            name='last_reassigned_on',
-            field=models.DateTimeField(help_text='When this case was last reassigned', null=True),
+            name='last_assignee',
+            field=models.ForeignKey(related_name='previously_assigned_cases', to='cases.Partner', null=True),
         ),
         migrations.AddField(
             model_name='case',
