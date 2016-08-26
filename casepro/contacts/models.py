@@ -9,7 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 from django_redis import get_redis_connection
 
 from casepro.backend import get_backend
-from casepro.utils import get_language_name
+from casepro.utils import get_language_name, normalize_urn
 
 FIELD_LOCK_KEY = 'lock:field:%d:%s'
 GROUP_LOCK_KEY = 'lock:group:%d:%s'
@@ -188,6 +188,7 @@ class Contact(models.Model):
         """
         Gets an existing contact or creates a stub contact. Used when opening a case without an initial message
         """
+        urn = normalize_urn(urn)
         contact = cls.objects.filter(urns__contains=[urn]).first()
         if not contact:
             contact = cls.objects.create(org=org, name=name, urns=[urn], is_stub=True)
