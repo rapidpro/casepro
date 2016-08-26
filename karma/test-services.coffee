@@ -475,16 +475,6 @@ describe('services:', () ->
 
     describe('fetchNonPartner', () ->
       it('fetches from users endpoint', () ->
-        $httpBackend.expectGET('/user/?non_partner=true&with_activity=true').respond('{"results":[{"id": 101, "name": "Tom McTest", "replies": {}}]}')
-        UserService.fetchNonPartner(true).then((users) ->
-          expect(users).toEqual([{id: 101, name: "Tom McTest", replies: {}}])
-        )
-        $httpBackend.flush()
-      )
-    )
-
-    describe('fetchPartner', () ->
-      it('fetches from users endpoint', () ->
         $httpBackend.expectGET('/user/?non_partner=false&with_activity=true').respond('{"results":[{"id": 101, "name": "Tom McTest", "replies": {}}]}')
         UserService.fetchNonPartner(true).then((users) ->
           expect(users).toEqual([{id: 101, name: "Tom McTest", replies: {}}])
