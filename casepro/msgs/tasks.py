@@ -10,7 +10,6 @@ from django.utils import timezone
 from django.conf import settings
 from dash.orgs.tasks import org_task
 from datetime import timedelta
-from io import StringIO
 from smartmin.csv_imports.models import ImportTask
 
 from casepro.utils import parse_csv
@@ -124,7 +123,6 @@ def get_labels(task, org, labelstring):
 @task(track_started=True)
 def faq_csv_import(org, task_id):  # pragma: no cover
     task = ImportTask.objects.get(pk=task_id)
-    log = StringIO()
 
     task.task_id = faq_csv_import.request.id
     task.log("Started import at %s" % timezone.now())
@@ -167,7 +165,6 @@ def faq_csv_import(org, task_id):  # pragma: no cover
                                lang_code, parent_faq, labels)
 
             task.save()
-            task.log(log.getvalue())
             task.log("Import finished at %s" % timezone.now())
             task.log("%d FAQ(s) added." % lines)
 
@@ -176,7 +173,6 @@ def faq_csv_import(org, task_id):  # pragma: no cover
             traceback.print_exc(e)
 
         task.log("\nError: %s\n" % e)
-        task.log(log.getvalue())
 
         raise e
 
