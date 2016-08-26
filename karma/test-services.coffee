@@ -52,7 +52,7 @@ describe('services:', () ->
         is_closed: false
       }
     ))
-    
+
     describe('addNote', () ->
       it('posts to note endpoint', () ->
         $httpBackend.expectPOST('/case/note/501/', {note: "Hello there"}).respond('')
@@ -152,7 +152,7 @@ describe('services:', () ->
         $httpBackend.flush()
       )
     )
-    
+
     describe('replyTo', () ->
       it('posts to reply endpoint', () ->
         $httpBackend.expectPOST('/case/reply/501/', {text: "Hello there"}).respond('')
@@ -483,6 +483,16 @@ describe('services:', () ->
       )
     )
 
+    describe('fetchPartner', () ->
+      it('fetches from users endpoint', () ->
+        $httpBackend.expectGET('/user/?non_partner=false&with_activity=true').respond('{"results":[{"id": 101, "name": "Tom McTest", "replies": {}}]}')
+        UserService.fetchNonPartner(true).then((users) ->
+          expect(users).toEqual([{id: 101, name: "Tom McTest", replies: {}}])
+        )
+        $httpBackend.flush()
+      )
+    )
+
     describe('delete', () ->
       it('posts to delete endpoint', () ->
         $httpBackend.expectPOST('/user/delete/101/', null).respond('')
@@ -527,7 +537,7 @@ describe('services:', () ->
         expect($window.location.replace).toHaveBeenCalledWith("http://example.com")
       )
     )
-    
+
     describe('navigateBack', () ->
       it('calls history.back', () ->
         spyOn($window.history, 'back')
