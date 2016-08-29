@@ -104,7 +104,7 @@ def reply_export(export_id):
 
 def get_labels(task, org, labelstring):
     """
-    Gets a list of label objects from a comma-seperated string of the label codes, eg. "TB, aids"
+    Gets a list of label objects from a comma-separated string of the label codes, eg. "TB, aids"
     """
     labels = set()
     labelstrings = parse_csv(labelstring)
