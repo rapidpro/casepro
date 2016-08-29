@@ -595,7 +595,6 @@ services.factory('ModalService', ['$rootScope', '$uibModal', ($rootScope, $uibMo
       title = null,
       templateUrl = '/sitestatic/templates/modals/create_case.html',
       initial='',
-      initial_urn='',
       maxLength=255,
       schemes = {tel: "Phone", twitter: "Twitter", email: "Email"},
     } = {}) ->
@@ -606,10 +605,10 @@ services.factory('ModalService', ['$rootScope', '$uibModal', ($rootScope, $uibMo
         }),
         controller: ($scope, $uibModalInstance, PartnerService, UserService) ->
           $scope.fields = {
-            urn: {scheme: null, path: initial_urn},
+            urn: {scheme: null, path: ""},
             text: {val: initial, maxLength: maxLength},
             partner: {val: 0, choices:[]},
-            user: {val: 0, choices: [{name: "Anyone"}]}
+            user: {val: 0, choices: []}
           }
 
 
