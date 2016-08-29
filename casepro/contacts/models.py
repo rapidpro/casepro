@@ -186,7 +186,7 @@ class Contact(models.Model):
     @classmethod
     def get_or_create_from_urn(cls, org, urn, name=None):
         """
-        Gets an existing contact or creates a stub contact. Used when opening a case without an initial message
+        Gets an existing contact or creates a new contact. Used when opening a case without an initial message
         """
         contact = cls.objects.filter(urns__contains=[urn]).first()
         if not contact:

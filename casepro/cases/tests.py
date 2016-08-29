@@ -550,6 +550,22 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(case.initial_message, None)
         self.assertEqual(case.contact, contact)
 
+    def test_open_no_message_id_new_contact(self):
+        """
+        If a case is opened, and no initial message is supplied, but an URN is supplied instead, and the URN doesn't
+        match any existing users, then a new contact should be created, and the case assigned to that contact.
+        """
+        url = reverse('cases.case_open')
+        self.login(self.admin)
+        response = self.url_post_json('unicef', url, {
+            'message': None, 'summary': "Summary", 'assignee': self.moh.pk, 'user_assignee': self.user1.pk,
+            'urn': "+1234"})
+        self.assertEqual(response.status_code, 200)
+
+        case = Case.objects.get(pk=response.json['id'])
+        self.assertEqual(case.initial_message, None)
+        self.assertEqual(case.contact.urns, ["+1234"])
+
     def test_read(self):
         url = reverse('cases.case_read', args=[self.case.pk])
 
