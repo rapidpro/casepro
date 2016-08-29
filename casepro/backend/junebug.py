@@ -12,7 +12,7 @@ import pytz
 from . import BaseBackend
 from ..contacts.models import Contact
 from ..msgs.models import Message
-from ..utils import uuid_to_int, normalize_urn
+from ..utils import uuid_to_int
 
 from dash.utils import is_dict_equal
 from dash.utils.sync import BaseSyncer, sync_local_to_changes
@@ -121,18 +121,17 @@ class IdentityStoreContact(object):
         self.urns = []
         for scheme, address in addresses.items():
             scheme_addresses = []
-            for value, details in address.items():
+            for urn, details in address.items():
                 if 'optedout' in details and details['optedout'] is True:
                     # Skip opted out URNs
                     continue
                 if 'default' in details and details['default'] is True:
                     # If a default is set for the scheme then only store the default
-                    scheme_addresses = [value]
+                    scheme_addresses = [urn]
                     break
-                scheme_addresses.append(value)
+                scheme_addresses.append(urn)
             for value in scheme_addresses:
-                urn = normalize_urn("%s:%s" % (scheme, value.strip()))
-                self.urns.append(urn)
+                self.urns.append("%s:%s" % (scheme, value))
 
 
 class IdentityStoreContactSyncer(BaseSyncer):
