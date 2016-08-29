@@ -544,7 +544,7 @@ describe('controllers:', () ->
         expect(MessageService.bulkFlag).toHaveBeenCalledWith([test.msg2], true)
       )
 
-      it('onCaseWithoutMessage', () ->
+      it('onCaseWithoutMessage existing case', () ->
         createCaseModal = spyOnPromise($q, $scope, ModalService, 'create_case')
         openCase = spyOnPromise($q, $scope, CaseService, 'open')
         redirect = spyOnPromise($q, $scope, UtilsService, 'navigate')
@@ -557,6 +557,21 @@ describe('controllers:', () ->
 
         openCase.resolve({is_new: false, id: 7})
         expect(UtilsService.navigate).toHaveBeenCalledWith('case/read/7/?alert=open_found_existing')
+      )
+
+      it('onCaseWithoutMessage no existing case', () ->
+        createCaseModal = spyOnPromise($q, $scope, ModalService, 'create_case')
+        openCase = spyOnPromise($q, $scope, CaseService, 'open')
+        redirect = spyOnPromise($q, $scope, UtilsService, 'navigate')
+
+        $scope.onCaseWithoutMessage()
+        expect(ModalService.create_case).toHaveBeenCalledWith({title: 'Create case'})
+
+        createCaseModal.resolve({text: 'test summary', partner: 2, user: 3, urn: 'tel:123'})
+        expect(CaseService.open).toHaveBeenCalledWith(null, 'test summary', 2, 3, 'tel:123')
+
+        openCase.resolve({is_new: true, id: 7})
+        expect(UtilsService.navigate).toHaveBeenCalledWith('case/read/7/')
       )
     )
 
