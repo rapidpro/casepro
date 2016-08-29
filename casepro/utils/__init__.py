@@ -19,6 +19,12 @@ from uuid import UUID
 LANGUAGES_BY_CODE = {}  # cache of language lookups
 
 
+class InvalidURN(Exception):
+    """
+    A generic exception thrown when validating URNs and they don't conform to E164 format
+    """
+
+
 def parse_csv(csv, as_ints=False):
     """
     Parses a comma separated list of values as strings or integers
@@ -81,40 +87,27 @@ def normalize(text):
     return unicodedata.normalize('NFKD', re.sub(r'\s+', ' ', text.lower()))
 
 
-def normalize_urn(urn):
-    """
+def validate_urn_as_e164(number):
+    try:
+        parsed = phonenumbers.parse(number)
+    except phonenumbers.NumberParseException as e:
+        raise InvalidURN(e.message)
 
-    """
+    if number != phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164):
+        raise InvalidURN("Phone numbers must be in E164 format")
+
+    if not phonenumbers.is_possible_number(parsed) or not phonenumbers.is_valid_number(parsed):
+        raise InvalidURN("Phone numbers must be in E164 format")
+
+    return True
+
+
+def validate_urn(urn):
     scheme, path = urn.split(':', 1)
     if scheme == 'tel':
-        (path, _) = normalise_tel_number(path)
+        return validate_urn_as_e164(path)
 
-    return '%s:%s' % (scheme, path)
-
-
-def normalise_tel_number(number):
-    # remove other characters
-    number = re.sub('[^0-9\+]', '', number.lower())
-
-    # add on a plus if it looks like it could be a fully qualified number
-    if len(number) >= 11 and number[0] not in ['+', '0']:
-        number = '+' + number
-
-    normalized = None
-    try:
-        normalized = phonenumbers.parse(number, None)
-    except Exception:
-        pass
-
-    # now does it look plausible?
-    try:
-        if phonenumbers.is_possible_number(normalized):
-            return phonenumbers.format_number(normalized, phonenumbers.PhoneNumberFormat.E164), True
-    except Exception:
-        pass
-
-    # this must be a local number of some kind, just lowercase and save
-    return re.sub('[^0-9]', '', number.lower()), False
+    return True
 
 
 def match_keywords(text, keywords):
