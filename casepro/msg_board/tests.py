@@ -28,6 +28,29 @@ class CommentTest(BaseCasesTest):
         self.assertEqual(Comment.objects.all().count(), 1)
         self.assertEqual(Comment.objects.all().first().comment, 'Foo')
 
+    def test_view_comments(self):
+        data = CommentForm(self.user1, {}).generate_security_data()
+        data.update({
+            'name': 'the supplied name',
+            'comment': 'Foo',
+        })
+        self.url_post(
+            'unicef',
+            reverse('comments-post-comment'), data)
+        data = CommentForm(self.user1, {}).generate_security_data()
+        data.update({
+            'name': 'the supplied name',
+            'comment': 'Foo2',
+        })
+        self.url_post(
+            'unicef',
+            reverse('comments-post-comment'), data)
+        url = reverse('msg_board.comment_list')
+        self.login(self.admin)
+        response = self.url_get('unicef', url)
+
+        self.assertContains(response, 'Foo2')
+
     def test_pin_comment(self):
         self.assertEqual(PinnedComment.objects.all().count(), 0)
         data = CommentForm(target_object=self.unicef).generate_security_data()
