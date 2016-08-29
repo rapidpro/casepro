@@ -85,7 +85,7 @@ class CaseCRUDL(SmartCRUDL):
 
     class Open(OrgPermsMixin, SmartCreateView):
         """
-        JSON endpoint for opening a new case. Takes a message backend id.
+        JSON endpoint for opening a new case. Takes a message backend id, or a URN.
         """
         permission = 'cases.case_create'
 
