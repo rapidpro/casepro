@@ -1,6 +1,5 @@
 from casepro.test import BaseCasesTest
 from django.core.urlresolvers import reverse
-from django.test import Client
 from django_comments.models import Comment
 from django_comments.forms import CommentForm
 from casepro.msg_board.models import PinnedComment
@@ -9,10 +8,6 @@ from casepro.msg_board.models import PinnedComment
 class CommentTest(BaseCasesTest):
     def setUp(self):
         super(CommentTest, self).setUp()
-        self.client = Client()
-        self.ann = self.create_contact(self.unicef, 'C-001', "Ann",
-                                       fields={'age': "34"},
-                                       groups=[self.females, self.reporters, self.registered])
         self.login(self.user1)
 
     def test_post_comment(self):

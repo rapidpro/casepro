@@ -20,7 +20,7 @@ class MessageBoardView(OrgPermsMixin, SmartTemplateView):
 
 class CommentsView(OrgPermsMixin, SmartListView):
     """
-    JSON endpoint for fetching case actions and messages
+    JSON endpoint for listing comments
     """
     permission = 'orgs.org_home'
     title = 'Message Board'
