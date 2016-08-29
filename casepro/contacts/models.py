@@ -201,10 +201,12 @@ class Contact(models.Model):
     def get_display_name(self):
         """
         Gets the display name of this contact. If name is empty or site uses anonymous contacts, this is generated from
-        the backend UUID.
+        the backend UUID. If no UUID is set for the contact, an empty string is returned.
         """
         if not self.name or getattr(settings, 'SITE_ANON_CONTACTS', False):
-            return self.uuid[:6].upper()
+            if self.uuid:
+                return self.uuid[:6].upper()
+            return ""
         else:
             return self.name
 
