@@ -4,7 +4,7 @@
 
 modals = angular.module('cases.modals', []);
 
-URN_SCHEMES = {tel: "Phone", twitter: "Twitter", email: "Email"}
+URN_SCHEMES = {tel: "Phone", twitter: "Twitter", mailto: "Email"}
 
 
 #=====================================================================
