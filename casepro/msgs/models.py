@@ -239,7 +239,7 @@ class FAQ(models.Model):
         if label:
             queryset = queryset.filter(labels=label)
 
-        return queryset.distinct()
+        return queryset
 
     @classmethod
     def get_all_languages(cls, org):
