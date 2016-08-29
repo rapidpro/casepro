@@ -302,13 +302,13 @@ class CaseTest(BaseCasesTest):
         case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [self.aids])
         case2 = self.create_case(self.unicef, bob, self.who, msg2, [self.aids, self.pregnancy])
 
-        # test with no last_reassigned_on value set
+        # test with no auto_reassign_on value set
         self.assertEqual(set(Case.get_all_passed_response_time()), set())
 
         # test with specified date
-        case1.last_reassigned_on = datetime(2016, 8, 5, 10, 0, tzinfo=pytz.UTC)
+        case1.auto_reassign_on = datetime(2016, 8, 5, 10, 0, tzinfo=pytz.UTC)
         case1.save()
-        case2.last_reassigned_on = datetime(2016, 8, 6, 10, 0, tzinfo=pytz.UTC)
+        case2.auto_reassign_on = datetime(2016, 8, 6, 14, 0, tzinfo=pytz.UTC)
         case2.save()
         check_datetime = datetime(2016, 8, 6, 12, 0, tzinfo=pytz.UTC)
         self.assertEqual(set(Case.get_all_passed_response_time(check_datetime)), {case1})
@@ -413,6 +413,23 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(case.access_level(self.user1), AccessLevel.update)  # user from assigned partner can update
         self.assertEqual(case.access_level(self.user3), AccessLevel.read)  # user from other partner can read bc labels
         self.assertEqual(case.access_level(self.user4), AccessLevel.none)  # user from different org
+
+    def test_has_passed_response_time(self):
+        bob = self.create_contact(self.unicef, 'C-002', "Bob")
+
+        msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
+        msg2 = self.create_message(self.unicef, 234, bob, "Hello 2", [self.aids, self.pregnancy])
+
+        case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [self.aids])
+        case2 = self.create_case(self.unicef, bob, self.who, msg2, [self.aids, self.pregnancy])
+
+        # test with specified date
+        case1.auto_reassign_on = datetime(2016, 8, 5, 10, 0, tzinfo=pytz.UTC)
+        case1.save()
+        case2.auto_reassign_on = timezone.now() + timedelta(minutes=120)
+        case2.save()
+        self.assertTrue(case1.has_passed_response_time)
+        self.assertFalse(case2.has_passed_response_time)
 
 
 @modify_settings(INSTALLED_APPS={'append': 'casepro.pods.tests.utils.DummyPodPlugin'})
@@ -544,6 +561,7 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_post_json('unicef', url, {'note': "Hey guys"})
         self.assertEqual(response.status_code, 302)
 
+    @override_settings(SITE_CASE_RESPONSE_REQUIRED_TIME=1440)
     def test_reassign(self):
         url = reverse('cases.case_reassign', args=[self.case.pk])
 
@@ -562,7 +580,7 @@ class CaseCRUDLTest(BaseCasesTest):
         self.case.refresh_from_db()
         self.assertEqual(self.case.assignee, self.who)
         self.assertEqual(self.case.user_assignee, self.user3)
-        self.assertIsNotNone(self.case.last_reassigned_on)
+        self.assertIsNotNone(self.case.auto_reassign_on)
         self.assertEqual(self.case.last_assignee, self.moh)
         self.assertEqual(self.case.last_user_assignee, self.user1)
 
@@ -1070,6 +1088,9 @@ class SystemUserTest(BaseCasesTest):
         partner = Partner.create(self.unicef, "Internal", False, [])
         sysUser = SystemUser.get_or_create()
         self.case.reassign(sysUser, partner)
+        self.case.refresh_from_db()
+        # ensure system user reassigns don't set an auto reassign datetime
+        self.assertEqual(self.case.auto_reassign_on, None)
 
         actions = CaseAction.objects.all()
         self.assertEqual(len(actions), 1)
@@ -1332,7 +1353,7 @@ class TasksTest(BaseCasesTest):
 
         case1.reassign(self.user1, self.who)
         # manually adjust the reassigned date to an expired date
-        case1.last_reassigned_on = datetime(2016, 8, 5, 10, 0, tzinfo=pytz.UTC)
+        case1.auto_reassign_on = datetime(2016, 8, 5, 10, 0, tzinfo=pytz.UTC)
         case1.save()
         reassign_case(case1.pk)
         case1.refresh_from_db()
@@ -1341,11 +1362,11 @@ class TasksTest(BaseCasesTest):
         # ensure that cases last reassigned by the system are not reassigned again by the system
         action = case1.actions.filter(action=CaseAction.REASSIGN).latest('created_on')
         d1 = datetime(2016, 8, 6, 10, 0, tzinfo=pytz.UTC)
-        case1.last_reassigned_on = d1
+        case1.auto_reassign_on = d1
         case1.save()
         reassign_case(case1.pk)
         case1.refresh_from_db()
-        self.assertEqual(d1, case1.last_reassigned_on)
+        self.assertEqual(d1, case1.auto_reassign_on)
         self.assertEqual(case1.assignee, self.moh)
         action2 = case1.actions.filter(action=CaseAction.REASSIGN).latest('created_on')
         self.assertEqual(action, action2)

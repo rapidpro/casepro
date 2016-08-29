@@ -167,8 +167,7 @@ class Case(models.Model):
     closed_on = models.DateTimeField(null=True,
                                      help_text="When this case was closed")
 
-    last_reassigned_on = models.DateTimeField(null=True,
-                                              help_text="When this case was last reassigned")
+    auto_reassign_on = models.DateTimeField(null=True, help_text="When this case should be reassigned")
 
     last_assignee = models.ForeignKey(Partner, null=True, related_name='previously_assigned_cases')
 
@@ -195,16 +194,11 @@ class Case(models.Model):
 
     @classmethod
     def get_all_passed_response_time(cls, check_datetime=None):
-        response_required_in = getattr(settings, 'SITE_CASE_RESPONSE_REQUIRED_TIME', None)
-        if response_required_in is None:
-            # if the response timeout is not configured, return an empty queryset to maintain backwards compatibility
-            return cls.objects.none()
 
         if check_datetime is None:
             check_datetime = now()
 
-        expired_on = check_datetime - timedelta(minutes=response_required_in)
-        queryset = cls.objects.filter(closed_on=None, last_reassigned_on__lt=expired_on)
+        queryset = cls.objects.filter(closed_on=None, auto_reassign_on__lte=check_datetime)
         return queryset
 
     @classmethod
@@ -371,7 +365,14 @@ class Case(models.Model):
     def reassign(self, user, partner, note=None, user_assignee=None):
         from casepro.profiles.models import Notification
 
-        self.last_reassigned_on = now()
+        if isinstance(user, SystemUser) or hasattr(user, 'systemuser'):
+            # don't set an auto reassign datetime when reassigning as the system user
+            self.auto_reassign_on = None
+        else:
+            response_required_in = getattr(settings, 'SITE_CASE_RESPONSE_REQUIRED_TIME', None)
+            if response_required_in is not None:
+                self.auto_reassign_on = now() + timedelta(minutes=response_required_in)
+
         self.last_assignee = self.assignee
         self.last_user_assignee = self.user_assignee
         self.assignee = partner
@@ -467,12 +468,7 @@ class Case(models.Model):
 
     @property
     def has_passed_response_time(self):
-        response_required_in = getattr(settings, 'SITE_CASE_RESPONSE_REQUIRED_TIME', None)
-        if response_required_in is None:
-            return False
-
-        minutes_since_reassigned = (now() - self.last_reassigned_on).total_seconds() // 60
-        return minutes_since_reassigned > response_required_in
+        return now() >= self.auto_reassign_on
 
     def as_json(self, full=True):
         if full:
