@@ -398,11 +398,15 @@ class MinuteTotalCountsTest(BaseStatsTest):
         self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.who], 'C').average(), 1)
 
         # check that reopened cases stats are not counted
+        case1.reopen(self.user1)
+        case1.close(self.user1)
+        self.assertEqual(DailyMinuteTotalCount.get_by_org([self.unicef], 'C').total(), 4)
+        self.assertEqual(DailyMinuteTotalCount.get_by_org([self.unicef], 'C').minutes(), 4)
+        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.moh], 'C').total(), 1)
+        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.moh], 'C').minutes(), 1)
 
         # check empty partner metrics
         self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.klab], 'C').average(), 0)
-        case1.reopen(self.user1)
-        case1.close(self.user1)
 
         self.assertEqual(DailyMinuteTotalCount.objects.count(), 8)
         squash_counts()
