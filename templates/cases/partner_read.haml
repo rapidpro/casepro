@@ -28,8 +28,18 @@
         %h2
           {{ object.name }}
 
+      .header-details
+        - if object.primary_contact
+          Primary contact:&nbsp
+          %a{ ng-href:"/user/read/{{ object.primary_contact.id }}/" }><
+            {{ object.primary_contact.get_full_name }}
+        - else
+          %i
+            - trans "No primary contact"
+
       - if object.is_restricted
         .header-details
+          %br
           - if labels
             - for label in labels
               %span.label-container
@@ -112,7 +122,7 @@
                 %tbody
                   %tr{ ng-repeat:"item in items" }
                     %td{ nowrap:"" }
-                      [[ item.time | autodate ]]
+                      <cp-date time="item.time" tooltip-position="top-left" />
                     %td
                       %a{ ng-href:"/user/read/[[ item.sender.id ]]/" }><
                         [[ item.sender.name ]]
