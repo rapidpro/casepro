@@ -269,9 +269,10 @@ class Case(models.Model):
 
         from casepro.profiles.models import Notification
         r = get_redis_connection()
+        contact = message.contact if message else contact
 
-        if message:
-            with r.lock(CASE_LOCK_KEY % (org.pk, message.contact.uuid)):
+        with r.lock(CASE_LOCK_KEY % (org.pk, contact.uuid)):
+            if message:
                 message.refresh_from_db()
 
                 # if message is already associated with a case, return that
@@ -297,8 +298,7 @@ class Case(models.Model):
                 for assignee_user in assignee.get_users():
                     if assignee_user != user:
                         Notification.new_case_assignment(org, assignee_user, action)
-        else:
-            with r.lock(CASE_LOCK_KEY % (org.pk, contact.uuid)):
+            else:
                 case = contact.cases.filter(closed_on=None).first()
                 if case:
                     case.is_new = False
