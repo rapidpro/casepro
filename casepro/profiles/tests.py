@@ -193,6 +193,7 @@ class UserTest(BaseCasesTest):
         self.assertEqual(self.admin.get_role(self.nyaruka), None)
 
     def test_update_role(self):
+        # change role from manager to analyst, partner from moh to who
         self.user1.update_role(self.unicef, ROLE_ANALYST, self.who)
 
         self.assertEqual(set(self.user1.partners.all()), {self.who})
@@ -200,6 +201,7 @@ class UserTest(BaseCasesTest):
         self.assertTrue(self.user1 not in self.unicef.editors.all())
         self.assertTrue(self.user1 in self.unicef.viewers.all())
 
+        # change role from analyst to manager, partner from who to moh
         self.user1.update_role(self.unicef, ROLE_MANAGER, self.moh)
 
         self.assertEqual(set(self.user1.partners.all()), {self.moh})
@@ -207,6 +209,7 @@ class UserTest(BaseCasesTest):
         self.assertTrue(self.user1 in self.unicef.editors.all())
         self.assertTrue(self.user1 not in self.unicef.viewers.all())
 
+        # change role from manager to administrator, remove from partners
         self.user1.update_role(self.unicef, ROLE_ADMIN, None)
 
         self.assertEqual(set(self.user1.partners.all()), set())
@@ -230,6 +233,56 @@ class UserTest(BaseCasesTest):
 
         # error if no partner provided for partner role
         self.assertRaises(ValueError, self.user1.update_role, self.unicef, ROLE_MANAGER, None)
+
+        # set user2 as the primary_contact for moh
+        self.moh.primary_contact = self.user2
+        self.moh.save()
+        self.user2.refresh_from_db()
+
+        # assure the primary_contact relationship exists
+        self.assertEqual(self.moh.primary_contact, self.user2)
+        self.assertEqual(self.moh, self.user2.partners_primary.get(org=self.unicef))
+
+        # change user2 role from analyst to manager, keep partner the same
+        self.user2.update_role(self.unicef, ROLE_MANAGER, self.moh)
+
+        self.assertEqual(set(self.user2.partners.all()), {self.moh})
+        self.assertTrue(self.user2 not in self.unicef.administrators.all())
+        self.assertTrue(self.user2 in self.unicef.editors.all())
+        self.assertTrue(self.user2 not in self.unicef.viewers.all())
+        self.assertEqual(self.moh.primary_contact, self.user2)
+        self.assertEqual(self.moh, self.user2.partners_primary.get(org=self.unicef))
+
+        # change user2 partner
+        self.user2.update_role(self.unicef, ROLE_MANAGER, self.who)
+        self.moh.refresh_from_db()
+
+        self.assertEqual(set(self.user2.partners.all()), {self.who})
+        self.assertTrue(self.user2 not in self.unicef.administrators.all())
+        self.assertTrue(self.user2 in self.unicef.editors.all())
+        self.assertTrue(self.user2 not in self.unicef.viewers.all())
+        self.assertEqual(self.moh.primary_contact, None)
+        self.assertEqual(0, self.user2.partners_primary.filter(org=self.unicef).count())
+
+        # set user2 as the primary_contact for who
+        self.who.primary_contact = self.user2
+        self.who.save()
+        self.user2.refresh_from_db()
+
+        # assure the primary_contact relationship exists
+        self.assertEqual(self.who.primary_contact, self.user2)
+        self.assertEqual(self.who, self.user2.partners_primary.get(org=self.unicef))
+
+        # change user2 role from manager to admin
+        self.user2.update_role(self.unicef, ROLE_ADMIN, None)
+        self.who.refresh_from_db()
+
+        self.assertEqual(set(self.user2.partners.all()), set())
+        self.assertIn(self.user2, self.unicef.administrators.all())
+        self.assertNotIn(self.user2, self.unicef.editors.all())
+        self.assertNotIn(self.user2, self.unicef.viewers.all())
+        self.assertEqual(self.who.primary_contact, None)
+        self.assertEqual(0, self.user2.partners_primary.filter(org=self.unicef).count())
 
     def test_can_administer(self):
         # superusers can administer any org
@@ -301,6 +354,15 @@ class UserTest(BaseCasesTest):
         # add our admin as a partner user in a different org
         self.admin.update_role(self.nyaruka, ROLE_ANALYST, self.klab)
 
+        # set our admin as the primary contact for this partner
+        self.klab.primary_contact = self.admin
+        self.klab.save()
+        self.admin.refresh_from_db()
+
+        # assure the primary_contact relationship exists
+        self.assertEqual(self.klab.primary_contact, self.admin)
+        self.assertEqual(self.klab, self.admin.partners_primary.get(org=self.nyaruka))
+
         # have users watch a label too
         self.pregnancy.watchers.add(self.admin, self.user1)
 
@@ -323,6 +385,14 @@ class UserTest(BaseCasesTest):
         self.assertIsNone(self.user1.get_partner(self.unicef))
         self.assertNotIn(self.user1, case.watchers.all())
         self.assertNotIn(self.user1, self.pregnancy.watchers.all())
+
+        # remove our admin from the partner org
+        self.admin.remove_from_org(self.nyaruka)
+        self.klab.refresh_from_db()
+
+        # assure the primary_contact relationship has been removed
+        self.assertEqual(self.klab.primary_contact, None)
+        self.assertEqual(0, self.admin.partners_primary.filter(org=self.nyaruka).count())
 
     def test_unicode(self):
         self.assertEqual(unicode(self.superuser), "root")
@@ -350,10 +420,11 @@ class UserCRUDLTest(BaseCasesTest):
         # submit again with all required fields to create an un-attached user
         response = self.url_post(None, url, {'name': "McAdmin", 'email': "mcadmin@casely.com",
                                              'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, 'http://testserver/org/')
 
         user = User.objects.get(email='mcadmin@casely.com')
+        self.assertRedirects(response, 'http://testserver/user/read/%d/' % user.pk,
+                             fetch_redirect_response=False)
+
         self.assertEqual(user.get_full_name(), "McAdmin")
         self.assertEqual(user.username, "mcadmin@casely.com")
         self.assertIsNone(user.get_partner(self.unicef))
@@ -379,10 +450,11 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_post('unicef', url, {'name': "Adrian Admin", 'email': "adrian@casely.com",
                                                  'role': ROLE_ADMIN,
                                                  'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, 'http://unicef.localhost/org/home/#/users')
 
         user = User.objects.get(email='adrian@casely.com')
+        self.assertRedirects(response, 'http://unicef.localhost/user/read/%d/' % user.pk,
+                             fetch_redirect_response=False)
+
         self.assertEqual(user.get_full_name(), "Adrian Admin")
         self.assertEqual(user.username, "adrian@casely.com")
         self.assertIsNone(user.get_partner(self.unicef))
@@ -410,11 +482,12 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_post('unicef', url, {'name': "Mo Cases", 'email': "mo@casely.com",
                                                  'partner': self.moh.pk, 'role': ROLE_ANALYST,
                                                  'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, 'http://unicef.localhost/partner/read/%d/#/users' % self.moh.pk)
+
+        user = User.objects.get(email="mo@casely.com")
+        self.assertRedirects(response, 'http://unicef.localhost/user/read/%d/' % user.pk,
+                             fetch_redirect_response=False)
 
         # check new user and profile
-        user = User.objects.get(email="mo@casely.com")
         self.assertEqual(user.profile.full_name, "Mo Cases")
         self.assertEqual(user.email, "mo@casely.com")
         self.assertEqual(user.username, "mo@casely.com")
@@ -450,10 +523,11 @@ class UserCRUDLTest(BaseCasesTest):
         # submit again with all required fields
         response = self.url_post('unicef', url, {'name': "Mo Cases", 'email': "mo@casely.com", 'role': ROLE_ANALYST,
                                                  'password': "Qwerty12345", 'confirm_password': "Qwerty12345"})
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, 'http://unicef.localhost/partner/read/%d/#/users' % self.moh.pk)
 
-        user = User.objects.get(email='mo@casely.com')
+        user = User.objects.get(email="mo@casely.com")
+        self.assertRedirects(response, 'http://unicef.localhost/user/read/%d/' % user.pk,
+                             fetch_redirect_response=False)
+
         self.assertEqual(user.get_partner(self.unicef), self.moh)
 
         # log in as a partner manager

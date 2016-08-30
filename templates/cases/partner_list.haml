@@ -25,6 +25,9 @@
 
         .partner-name
           {{ partner.name }}
+        .partner-description
+          - if partner.description
+            {{ partner.description }}
         .
           - if partner.is_restricted
             - for label in partner.get_labels
