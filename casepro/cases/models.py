@@ -234,6 +234,9 @@ class Case(models.Model):
         any open case for that contact will be returned. If no open cases exist for the contact, a new case will be
         created.
         """
+        if not message and not contact:
+            raise ValueError("Opening a case requires a message or contact")
+
         from casepro.profiles.models import Notification
         r = get_redis_connection()
 
