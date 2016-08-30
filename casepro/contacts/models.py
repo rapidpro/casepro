@@ -186,11 +186,11 @@ class Contact(models.Model):
     @classmethod
     def get_or_create_from_urn(cls, org, urn, name=None):
         """
-        Gets an existing contact or creates a stub contact. Used when opening a case without an initial message
+        Gets an existing contact or creates a new contact. Used when opening a case without an initial message
         """
         contact = cls.objects.filter(urns__contains=[urn]).first()
         if not contact:
-            contact = cls.objects.create(org=org, name=name, urns=[urn], is_stub=True)
+            contact = cls.objects.create(org=org, name=name, urns=[urn], is_stub=False)
             get_backend().push_contact(org, contact)
         return contact
 
@@ -201,10 +201,12 @@ class Contact(models.Model):
     def get_display_name(self):
         """
         Gets the display name of this contact. If name is empty or site uses anonymous contacts, this is generated from
-        the backend UUID.
+        the backend UUID. If no UUID is set for the contact, an empty string is returned.
         """
         if not self.name or getattr(settings, 'SITE_ANON_CONTACTS', False):
-            return self.uuid[:6].upper()
+            if self.uuid:
+                return self.uuid[:6].upper()
+            return ""
         else:
             return self.name
 
