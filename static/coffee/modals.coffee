@@ -57,9 +57,10 @@ modals.controller 'EditModalController', ['$scope', '$uibModalInstance', 'title'
 #=====================================================================
 # Reply to contacts modal
 #=====================================================================
-modals.controller('ReplyModalController', ['$scope', 'FaqService', '$uibModalInstance', '$controller', 'maxLength', ($scope , FaqService, $uibModalInstance, $controller, maxLength) ->
+modals.controller('ReplyModalController', ['$scope', 'FaqService', '$uibModalInstance', '$controller', 'selection', 'maxLength', ($scope , FaqService, $uibModalInstance, $controller, selection, maxLength) ->
 
   $scope.fields = {text: {val: '', maxLength: maxLength}}
+  $scope.sendToMany = if selection then true else false
 
   $scope.init = () ->
     $scope.searchField = $scope.searchFieldDefaults()

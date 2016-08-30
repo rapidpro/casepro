@@ -116,9 +116,11 @@ class LabelCRUDLTest(BaseCasesTest):
             'ignore_single_words': "1"
         })
 
-        self.assertEqual(response.status_code, 302)
-
         label = Label.objects.get(name="Ebola")
+
+        self.assertRedirects(response, 'http://unicef.localhost/label/read/%d/' % label.pk,
+                             fetch_redirect_response=False)
+
         self.assertEqual(label.uuid, None)
         self.assertEqual(label.org, self.unicef)
         self.assertEqual(label.name, "Ebola")

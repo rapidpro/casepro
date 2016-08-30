@@ -4,8 +4,10 @@
   %h3.modal-title
     - trans "Reply"
   .modal-body{style:"height: 60%",ng-init:'init()'}
-    %p
-      - trans "Send the following reply to each contact and archive each message. This will remove the messages from your inbox."
+    %p{ ng-if:'sendToMany' }
+      - trans "Send the following reply to the selected message(s). This will remove the message(s) from your inbox to Archived."
+    %p{ ng-if:'!sendToMany' }
+      - trans "Send the following reply. This will archive this message removing it from your Inbox."
     %form{ name:"form", novalidate:"" }
       .form-group{ ng-class:'{"has-error": form.text.$invalid && (form.text.$dirty || form.submitted)}' }
       .form-group

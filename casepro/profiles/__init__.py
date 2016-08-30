@@ -66,7 +66,9 @@ def _user_update_role(user, org, role, partner=None):
     elif role not in PARTNER_ROLES and partner:
         raise ValueError("Cannot specify a partner for role %s" % role)
 
-    # remove user from any partners for this org
+    remove_from = [p for p in user.partners_primary.filter(org=org) if p != partner]
+    user.partners_primary.remove(*remove_from)
+
     user.partners.remove(*user.partners.filter(org=org))
 
     if partner:
@@ -93,6 +95,9 @@ def _user_remove_from_org(user, org):
     org.administrators.remove(user)
     org.editors.remove(user)
     org.viewers.remove(user)
+
+    # remove primary_contact fk relationship
+    user.partners_primary.remove(*user.partners_primary.filter(org=org))
 
     # remove user from any partners for this org
     user.partners.remove(*user.partners.filter(org=org))

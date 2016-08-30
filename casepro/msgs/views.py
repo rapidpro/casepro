@@ -4,8 +4,8 @@ import six
 
 from collections import defaultdict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
-from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.core.urlresolvers import reverse
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.utils.timesince import timesince
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timezone import now
@@ -74,6 +74,9 @@ class LabelCRUDL(SmartCRUDL):
             is_synced = data['is_synced']
 
             self.object = Label.create(org, name, description, tests, is_synced)
+
+        def get_success_url(self):
+            return reverse('msgs.label_read', args=[self.object.pk])
 
     class Update(RuleFormMixin, OrgObjPermsMixin, SmartUpdateView):
         form_class = LabelForm
