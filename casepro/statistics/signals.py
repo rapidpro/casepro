@@ -90,6 +90,10 @@ def record_new_case_action(sender, instance, created, **kwargs):
     day = datetime_to_date(instance.created_on, instance.case.org)
 
     if instance.action == CaseAction.CLOSE:
+        if case.actions.filter(action=CaseAction.REOPEN).exists():
+            # dont count any stats for reopened cases.
+            return
+
         # count the time to close on an org level
         td = instance.created_on - case.opened_on
         minutes_since_open = ceil(td.total_seconds() / 60)
