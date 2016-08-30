@@ -92,6 +92,14 @@ class FaqForm(forms.ModelForm):
     labels = forms.ModelMultipleChoiceField(queryset=Label.objects.filter(), required=False, help_text=_(
         "If a Parent is selected, the labels will be copied from the Parent FAQ"))
 
+    def __init__(self, *args, **kwargs):
+        org = kwargs.pop('org')
+
+        super(FaqForm, self).__init__(*args, **kwargs)
+
+        self.fields['parent'].queryset = FAQ.get_all(org)
+        self.fields['labels'].queryset = Label.get_all(org)
+
     def clean_language(self):
         language = self.cleaned_data['language'].strip()
         if not is_valid639_2(language):
