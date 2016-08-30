@@ -4,7 +4,7 @@ from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import PermissionDenied
 
-from smartmin.views import SmartListView, SmartTemplateView, SmartUpdateView
+from smartmin.views import SmartListView, SmartTemplateView
 from smartmin.views import SmartReadView, SmartCRUDL
 from django_comments.models import Comment
 from dash.orgs.models import Org
@@ -15,14 +15,14 @@ from casepro.msg_board.models import PinnedComment
 
 class MessageBoardView(OrgPermsMixin, SmartTemplateView):
     template_name = 'msg_board/comment_list.haml'
-    permission = 'orgs.org_home'
+    permission = 'orgs.org_inbox'
 
 
 class CommentsView(OrgPermsMixin, SmartListView):
     """
     JSON endpoint for listing comments
     """
-    permission = 'orgs.org_home'
+    permission = 'orgs.org_inbox'
     title = 'Message Board'
 
     def get_queryset(self):
@@ -37,19 +37,6 @@ class CommentsView(OrgPermsMixin, SmartListView):
             'submit_date': c.submit_date,
         } for c in self.get_queryset()]
         return JsonResponse({'results': comments}, encoder=JSONEncoder)
-
-
-class PinnedCommentsUnpinView(OrgObjPermsMixin, SmartUpdateView):
-    """
-    Endpoint for deleting a Pinned Comment
-    """
-    permission = 'orgs.org_home'
-
-    def post(self, request, *args, **kwargs):
-        comment = get_object_or_404(Comment, pk=kwargs.get('pk'))
-        pinned_comment = get_object_or_404(PinnedComment, comment=comment)
-        pinned_comment.delete()
-        return HttpResponse(status=200)
 
 
 class PinnedCommentsCRUDL(SmartCRUDL):
@@ -90,19 +77,15 @@ class PinnedCommentsCRUDL(SmartCRUDL):
                 object_pk=self.request.org.pk,
                 pk=self.kwargs.get('pk')).first()
 
+            if not comment:
+                raise PermissionDenied
+
             comment.org = self.request.org
             return comment
 
         def post(self, request, *args, **kwargs):
-            comment = Comment.objects.for_model(Org).filter(
-                object_pk=self.request.org.pk,
-                pk=self.kwargs.get('pk')).first()
-
-            if not comment:
-                raise PermissionDenied
-
             pinned_comment, created = PinnedComment.objects.get_or_create(
-                comment=comment,
+                comment=self.get_object(),
                 defaults={'owner': request.user, 'org': request.org})
             return HttpResponse(status=201 if created else 200)
 
@@ -118,17 +101,14 @@ class PinnedCommentsCRUDL(SmartCRUDL):
             comment = Comment.objects.for_model(Org).filter(
                 object_pk=self.request.org.pk,
                 pk=self.kwargs.get('pk')).first()
-            comment.org = self.request.org
-            return comment
-
-        def post(self, request, *args, **kwargs):
-            comment = Comment.objects.for_model(Org).filter(
-                object_pk=self.request.org.pk,
-                pk=self.kwargs.get('pk')).first()
 
             if not comment:
                 raise PermissionDenied
 
-            pinned_comment = get_object_or_404(PinnedComment, comment=comment)
+            comment.org = self.request.org
+            return comment
+
+        def post(self, request, *args, **kwargs):
+            pinned_comment = get_object_or_404(PinnedComment, comment=self.get_object())
             pinned_comment.delete()
             return HttpResponse(status=200)
