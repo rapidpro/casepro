@@ -2,7 +2,6 @@ from __future__ import absolute_import, unicode_literals
 
 from django.conf import settings
 from django.conf.urls import include, url
-
 from casepro.backend import get_backend
 from casepro.utils.views import PartialTemplate
 
@@ -10,6 +9,7 @@ from casepro.utils.views import PartialTemplate
 urlpatterns = [
     url(r'', include('casepro.cases.urls')),
     url(r'', include('casepro.contacts.urls')),
+    url(r'', include('casepro.msg_board.urls')),
     url(r'', include('casepro.msgs.urls')),
     url(r'', include('casepro.rules.urls')),
     url(r'', include('casepro.profiles.urls')),
@@ -18,6 +18,7 @@ urlpatterns = [
     url(r'^stats/', include('casepro.statistics.urls')),
     url(r'^users/', include('dash.users.urls')),
     url(r'^i18n/', include('django.conf.urls.i18n')),
+    url(r'^comments/', include('django_comments.urls')),
     url(r'^partials/(?P<template>[a-z0-9\-_]+)\.html$', PartialTemplate.as_view(), name='utils.partial_template')
 ]
 

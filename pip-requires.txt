@@ -16,6 +16,7 @@ django-reversion
 django-rosetta
 django-storages
 dj-database-url
+django-contrib-comments
 enum34
 flake8
 gunicorn

@@ -57,3 +57,6 @@ wsgiref==0.1.2
 xlrd==0.9.4
 xlutils==1.7.1
 xlwt==1.0.0
+casepropods.dummy
+casepropods.family_connect_registration
+django-contrib-comments==1.7.2

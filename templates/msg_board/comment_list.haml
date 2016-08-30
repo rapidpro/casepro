@@ -1,0 +1,108 @@
+- extends "smartmin/read.html"
+- load smartmin i18n comments
+
+- block pre-content
+  .page-header
+    %h2 Message Board
+
+- block content
+  .row{ ng-controller:"MessageBoardController", ng-init:"init()" }
+    .col-md-8
+        {% render_comment_form for request.org %}
+
+        .comments
+          .comment.clearfix{ ng-repeat:"comment in comments", ng-class:'{ "even": $even, "odd": !$even }'}
+            %button.btn-default.btn-xs{ type:"button", ng-click:"onPin(comment.comment_id)" }
+              %i.glyphicon.glyphicon-pushpin
+            .event-time
+              <cp-date time="comment.submit_date" />
+            %span
+              %a{ ng-href:"/user/read/[[ comment.user_id ]]/" }
+                [[ comment.user_name ]]
+              :
+            [[ comment.comment ]]
+
+    .col-md-4
+      .comments
+          .comment.clearfix{ ng-repeat:"comment in pinned_comments", ng-class:'{ "even": $even, "odd": !$even }'}
+            %button.btn-danger.btn-xs{ type:"button", ng-click:"onUnpin(comment.comment_id)" }
+              %i.glyphicon.glyphicon-remove
+            .event-time
+              <cp-date time="comment.submit_date" />
+            %span
+              %a{ ng-href:"/user/read/[[ comment.user_id ]]/"}
+                [[ comment.user_name ]]
+              :
+            [[ comment.comment ]]
+
+- block extra-style
+  {{ block.super }}
+  :css
+    .messages {
+      margin: 4px;
+      background-color: #ccc;
+      border-radius: 5px;
+      text-color: #493750;
+      width: fit-content;
+      padding: 5px;
+    }
+    .comment {
+      font-size: 15px;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+    .user_name {
+      font-size: 10px;
+      text-align: right;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+    .comment {
+      padding: 12px;
+      margin-bottom: 16px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+    }
+    .comment .event-time {
+      float: right;
+      font-size: 0.7em;
+      margin-left: 5px;
+      margin-bottom: 5px;
+    }
+    .comment.odd {
+      background-color: #DDFDDD;
+      border-color: #D4F3D4;
+    }
+    .comment.even {
+      background-color: #E6FDFB;
+      border-color: #D5EBED;
+    }
+
+    .sendform {
+      text-align: center;
+      padding-bottom: 1em;
+    }
+    .sendform textarea {
+      width: 100%;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+    .sendform-controls {
+      background-color: #F3F3F3;
+      border-width: 0 0 1px 1px;
+      border-style: solid;
+      border-color: #CCC;
+      border-radius: 0 0 4px 4px;
+    }
+    .sendform-controls .chars-left {
+      padding: 6px 12px;
+      display: inline-block;
+      color: #888;
+    }
+    .sendform-controls button {
+      border-bottom: none;
+      border-top: none;
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+      border-bottom-left-radius: 0;
+    }

@@ -1161,5 +1161,69 @@ describe('controllers:', () ->
         expect(PodUIService.confirmAction.calls.allArgs()).toEqual([['Grault']])
       )
     )
+
+    #=======================================================================
+    # Tests for MessageBoardController
+    #=======================================================================
+    describe('MessageBoardController', () ->
+      MessageBoardService = null
+      $scope = null
+
+      beforeEach(() ->
+        inject((_MessageBoardService_) ->
+          MessageBoardService = _MessageBoardService_
+        )
+
+        $scope = $rootScope.$new()
+        $controller('MessageBoardController', {$scope: $scope})
+
+        # extra test data
+        test.comment1 = {comment_id: 101, comment: "Hello 1", user_name: "Joe", user_id: 201, submit_date: utcdate(2016, 8, 1, 10, 0)}
+        test.comment2 = {comment_id: 102, comment: "Hello 2", user_name: "Sam", user_id: 202, submit_date: utcdate(2016, 8, 1, 11, 0)}
+      )
+
+      it('should initialize correctly', () ->
+
+        fetchComments = spyOnPromise($q, $scope, MessageBoardService, 'fetchComments')
+        fetchPinnedComments = spyOnPromise($q, $scope, MessageBoardService, 'fetchPinnedComments')
+
+        $scope.init()
+        fetchComments.resolve({results: [test.comment1, test.comment2]})
+        fetchPinnedComments.resolve({results: [test.comment2]})
+
+        expect($scope.comments).toEqual([test.comment1, test.comment2])
+        expect($scope.pinned_comments).toEqual([test.comment2])
+      )
+
+      it('should pin comments', () ->
+
+        pinComment = spyOnPromise($q, $scope, MessageBoardService, 'pinComment')
+        fetchComments = spyOnPromise($q, $scope, MessageBoardService, 'fetchComments')
+        fetchPinnedComments = spyOnPromise($q, $scope, MessageBoardService, 'fetchPinnedComments')
+
+        $scope.onPin(101)
+        pinComment.resolve()
+
+        fetchComments.resolve({results: [test.comment1, test.comment2]})
+        fetchPinnedComments.resolve({results: [test.comment1]})
+
+        expect(MessageBoardService.pinComment).toHaveBeenCalledWith(101)
+      )
+
+      it('should unpin comments', () ->
+
+        unpinComment = spyOnPromise($q, $scope, MessageBoardService, 'unpinComment')
+        fetchComments = spyOnPromise($q, $scope, MessageBoardService, 'fetchComments')
+        fetchPinnedComments = spyOnPromise($q, $scope, MessageBoardService, 'fetchPinnedComments')
+
+        $scope.onUnpin(101)
+        unpinComment.resolve()
+
+        fetchComments.resolve({results: [test.comment1, test.comment2]})
+        fetchPinnedComments.resolve({results: []})
+
+        expect(MessageBoardService.unpinComment).toHaveBeenCalledWith(101)
+      )
+    )
   )
 )
