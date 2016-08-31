@@ -41,9 +41,8 @@
           %span{ ng-if:"item.contact" }
             %a{ ng-click:"activateContact(item.contact)", style:"white-space: nowrap;" }><
               <cp-contact contact="item.contact" fields="fields">
-          %span{ ng-if:"item.urns.length" }
-            <ng-pluralize count="item.urns.length" when="{'one': '1 recipient', 'other': '{} recipients'}">
-            </ng-pluralize>
+          %span{ ng-if:"item.urn" }
+            <cp-urn urn="item.urn" />
 
         .message-text
           %span.label-container{ ng-if:"item.case" }
