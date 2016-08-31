@@ -562,20 +562,15 @@ class FaqCRUDL(SmartCRUDL):
 
             org = self.request.org
             user = self.request.user
-            page = int(self.request.GET.get('page', 1))
 
             search = self.derive_search()
             faqs = FAQ.search(org, user, search)
-            paginator = LazyPaginator(faqs, per_page=50)
-
-            context['object_list'] = paginator.page(page)
-            context['has_more'] = paginator.num_pages > page
+            context['object_list'] = faqs
             return context
 
         def render_to_response(self, context, **response_kwargs):
             return JsonResponse({
                 'results': [m.as_json() for m in context['object_list']],
-                'has_more': context['has_more']
             }, encoder=JSONEncoder)
 
     class Import(OrgPermsMixin, SmartCSVImportView):
