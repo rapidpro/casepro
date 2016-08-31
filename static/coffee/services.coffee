@@ -620,6 +620,9 @@ services.factory('ModalService', ['$rootScope', '$uibModal', ($rootScope, $uibMo
           $scope.setScheme = (scheme) ->
             $scope.fields.urn.scheme = scheme
             $scope.urn_scheme_label = schemes[scheme]
+            if $scope.form
+              # If the scheme is changed, we need to revalidate the path for the new scheme
+              $scope.form.path.$validate()
 
           $scope.ok = () ->
             $scope.form.submitted = true
