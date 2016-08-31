@@ -42,8 +42,7 @@
             %a{ ng-click:"activateContact(item.contact)", style:"white-space: nowrap;" }><
               <cp-contact contact="item.contact" fields="fields">
           %span{ ng-if:"item.urn" }
-            %strong><
-              <cp-urn urn="item.urn" />
+            <cp-urn urn="item.urn" />
 
         .message-text
           %span.label-container{ ng-if:"item.case" }
