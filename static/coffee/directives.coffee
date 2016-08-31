@@ -68,17 +68,16 @@ directives.directive('cpAlerts', -> {
 })
 
 
-#=====================================================================
+#----------------------------------------------------------------------------
 # Pod directive
-#=====================================================================
+#----------------------------------------------------------------------------
 directives.directive('cpPod', -> {
   templateUrl: -> '/sitestatic/templates/pod.html'
 })
 
-#=====================================================================
-# Tooltip directive
-# Shows 'displayText' with a tooltip at 'position' containing 'tooltipText'
-#=====================================================================
+#----------------------------------------------------------------------------
+# Date formatter
+#----------------------------------------------------------------------------
 directives.directive('cpDate', () ->
   return {
     restrict: 'E',
@@ -87,5 +86,26 @@ directives.directive('cpDate', () ->
     controller: ($scope) ->
         if $scope.tooltipPosition is undefined
             $scope.tooltipPosition = "top-right";
+  }
+)
+
+#----------------------------------------------------------------------------
+# URN as link renderer
+#----------------------------------------------------------------------------
+directives.directive('cpUrn', () ->
+  return {
+    restrict: 'E',
+    scope: {urn: '='},
+    template: '<a href="[[ link ]]">[[ path ]]</a>',
+    controller: ['$scope', ($scope) ->
+        parts = $scope.urn.split(':')
+        $scope.scheme = parts[0]
+        $scope.path = parts[1]
+
+        if $scope.scheme == 'twitter'
+          $scope.link = 'https://twitter.com/' + $scope.path
+        else
+          $scope.link = $scope.urn
+    ]
   }
 )
