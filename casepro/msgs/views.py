@@ -486,12 +486,11 @@ class FaqCRUDL(SmartCRUDL):
         def derive_queryset(self, **kwargs):
             return FAQ.get_all(self.request.org)
 
-        def get_context_data(self, **kwargs):
-            context = super(FaqCRUDL.List, self).get_context_data(**kwargs)
-            # change the language code to full name for display only
-            for faq in context['object_list']:
-                faq.language = get_language_name(faq.language)
-            return context
+        def lookup_field_value(self, context, obj, field):
+            value = super(FaqCRUDL.List, self).lookup_field_value(context, obj, field)
+            if field == 'language':
+                value = obj.get_language()['name']
+            return value
 
     class Create(OrgPermsMixin, SmartCreateView):
         form_class = FaqForm
@@ -602,23 +601,14 @@ class FaqCRUDL(SmartCRUDL):
             context = super(FaqCRUDL.Languages, self).get_context_data(**kwargs)
 
             org = self.request.org
-            page = int(self.request.GET.get('page', 1))
-
             langs = FAQ.get_all_languages(org)
-            paginator = LazyPaginator(langs, per_page=50)
-
             lang_list = []
-            for lang in paginator.page(page):
-                lang_list.append({
-                    'code': lang['language'],
-                    'name': get_language_name(lang['language'])
-                })
+            for lang in langs:
+                lang_list.append(FAQ.get_language_from_code(lang['language']))
             context['language_list'] = lang_list
-            context['has_more'] = paginator.num_pages > page
             return context
 
         def render_to_response(self, context, **response_kwargs):
             return JsonResponse({
                 'results': context['language_list'],
-                'has_more': context['has_more']
             }, encoder=JSONEncoder)

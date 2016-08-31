@@ -15,7 +15,7 @@ from django_redis import get_redis_connection
 
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact, Field
-from casepro.utils import json_encode
+from casepro.utils import json_encode, get_language_name
 from casepro.utils.export import BaseSearchExport
 
 LABEL_LOCK_KEY = 'lock:label:%d:%s'
@@ -241,10 +241,20 @@ class FAQ(models.Model):
 
         return queryset
 
+    @staticmethod
+    def get_language_from_code(code):
+        return {'code': code, 'name': get_language_name(code)}
+
     @classmethod
     def get_all_languages(cls, org):
         queryset = cls.objects.filter(org=org)
         return queryset.values('language').order_by('language').distinct()
+
+    def get_language(self):
+        if self.language:
+            return self.get_language_from_code(self.language)
+        else:
+            return None
 
     def as_json(self, full=True):
         result = {'id': self.pk, 'question': self.question}
@@ -255,7 +265,7 @@ class FAQ(models.Model):
                 parent_json = self.parent.id
 
             result['answer'] = self.answer
-            result['language'] = self.language
+            result['language'] = self.get_language()
             result['parent'] = parent_json
             result['labels'] = [l.as_json() for l in self.labels.all()]
 
