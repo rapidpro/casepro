@@ -24,7 +24,7 @@ from casepro.pods.tests.utils import DummyPodPlugin
 
 from .context_processors import sentry_dsn
 from .models import AccessLevel, Case, CaseAction, CaseExport, CaseFolder, Partner, SystemUser
-from .tasks import reassign_case
+from .tasks import reassign_case, get_all_cases_passed_response_time
 
 
 class CaseTest(BaseCasesTest):
@@ -1371,8 +1371,23 @@ class TasksTest(BaseCasesTest):
                                        fields={'age': "34"},
                                        groups=[self.females, self.reporters, self.registered])
 
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True,
+                       BROKER_BACKEND='memory', SITE_CASE_RESPONSE_REQUIRED_TIME=1440)
+    def test_get_all_cases_passed_response_time(self):
+        msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
+        case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [self.aids])
+
+        case1.reassign(self.user1, self.who)
+        # manually adjust the reassigned date to an expired date
+        case1.auto_reassign_on = datetime(2016, 8, 5, 10, 0, tzinfo=pytz.UTC)
+        case1.save()
+        get_all_cases_passed_response_time()
+        case1.refresh_from_db()
+        self.assertEqual(case1.assignee, self.moh)
+
     @override_settings(SITE_CASE_RESPONSE_REQUIRED_TIME=1440)
-    def test_reassign_case(self):
+    @patch('casepro.cases.tasks.logger')
+    def test_reassign_case(self, mock_logger):
         bob = self.create_contact(self.unicef, 'C-002', "Bob")
 
         msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
@@ -1406,3 +1421,7 @@ class TasksTest(BaseCasesTest):
         reassign_case(case2.pk)
         case2.refresh_from_db()
         self.assertEqual(case1.assignee, self.moh)
+
+        # test with invalid case id
+        reassign_case(99999)
+        mock_logger.warn.assert_called_with("Could not load case #99999 for re-assignment")
