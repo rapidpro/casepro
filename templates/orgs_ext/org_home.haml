@@ -159,8 +159,21 @@
                 %button.btn.btn-default{ ng-click:"onExportUserStats()" }
                   - trans "Export Users..."
 
-          .{ style:"margin-top: 7px" }
-            Total of <strong>[[ users.length ]]</strong> users
+          .selection-controls.pull-back
+            .btn-group{ uib-dropdown:"true" }
+              %button.btn.btn-default.dropdown-toggle{ type:"button", uib-dropdown-toggle:"true" }
+                - trans "Select"
+                %span.caret
+              %ul.dropdown-menu
+                %li
+                  %a{ ng-click:"onSelectAllUsers()" }
+                    - trans "All"
+                %li
+                  %a{ ng-click:"onSelectOrgOnlyUsers()" }
+                    - trans "Org Only"
+
+          .{ style:"margin-top: 7px;" }
+            &nbsp; Total of <strong>[[ users.length ]]</strong> users
 
         %table.table.table-striped
           %thead

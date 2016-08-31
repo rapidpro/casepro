@@ -489,6 +489,16 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
         $scope.users = users
       )
 
+  $scope.onSelectAllUsers = () ->
+    UserService.fetchAll(true).then((users) ->
+        $scope.users = users
+      )
+
+  $scope.onSelectOrgOnlyUsers = () ->
+    UserService.fetchNonPartner(true).then((users) ->
+        $scope.users = users
+      )
+
   $scope.onExportPartnerStats = () ->
     UtilsService.dateRangeModal("Export", "Export partner statistics between the following dates").then((data) ->
       StatisticsService.dailyCountExport('P', data.after, data.before).then(() ->
