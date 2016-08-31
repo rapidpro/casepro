@@ -536,7 +536,7 @@ class CaseCRUDLTest(BaseCasesTest):
         open with a contact and no initial message instead of getting the contact from the initial message.
         """
         contact = self.create_contact(self.unicef, 'C-002', "TestContact")
-        contact.urns = ['tel:1234']
+        contact.urns = ['tel:+27741234567']
         contact.save()
 
         url = reverse('cases.case_open')
@@ -559,12 +559,12 @@ class CaseCRUDLTest(BaseCasesTest):
         self.login(self.admin)
         response = self.url_post_json('unicef', url, {
             'message': None, 'summary': "Summary", 'assignee': self.moh.pk, 'user_assignee': self.user1.pk,
-            'urn': "+1234"})
+            'urn': "tel:+27741234567"})
         self.assertEqual(response.status_code, 200)
 
         case = Case.objects.get(pk=response.json['id'])
         self.assertEqual(case.initial_message, None)
-        self.assertEqual(case.contact.urns, ["+1234"])
+        self.assertEqual(case.contact.urns, ["tel:+27741234567"])
 
     def test_read(self):
         url = reverse('cases.case_read', args=[self.case.pk])
