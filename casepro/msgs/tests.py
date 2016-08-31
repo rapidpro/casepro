@@ -312,6 +312,18 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertFalse(pregnancy.is_active)
 
 
+class FaqTest(BaseCasesTest):
+    def test_get_all(self):
+        self.assertEqual(set(FAQ.get_all(self.unicef)), {self.preg_faq1_eng, self.preg_faq1_bnt, self.preg_faq1_lug,
+                                                         self.preg_faq2_eng, self.tea_faq1_eng})
+        self.assertEqual(set(FAQ.get_all(self.unicef, self.tea)), {self.tea_faq1_eng})
+
+    def test_get_language(self):
+        self.assertEqual(self.tea_faq1_eng.get_language(), {'code': 'eng', 'name': 'English'})
+        self.tea_faq1_eng.language = None
+        self.assertIsNone(self.tea_faq1_eng.get_language())
+
+
 class FaqCRUDLTest(BaseCasesTest):
     def test_create(self):
         url = reverse('msgs.faq_create')
@@ -340,10 +352,11 @@ class FaqCRUDLTest(BaseCasesTest):
         response = self.url_post('unicef', url, {
             'question': "Is nausea during pregnancy normal?",
             'answer': "Yes, especially in the first 3 months",
-            'language': 'eng',
+            'language': 'abc',
         })
         self.assertEqual(response.status_code, 200)
         self.assertFormError(response, 'form', 'labels', 'Labels are required if no Parent is selected')
+        self.assertFormError(response, 'form', 'language', 'Language must be valid a ISO-639-2 code')
 
         # submit again with valid data (no parent, has labels)
         response = self.url_post('unicef', url, {

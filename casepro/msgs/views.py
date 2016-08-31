@@ -32,7 +32,7 @@ RESPONSE_DELAY_WARN_SECONDS = 24 * 60 * 60  # show response delays > 1 day as wa
 
 
 # Override the ImportTask start method so we can use our self-defined task
-def override_start(self, org):
+def override_start(self, org):  # pragma: no cover
     from .tasks import faq_csv_import
     self.log("Queued import at %s" % now())
     self.save(update_fields=['import_log'])
