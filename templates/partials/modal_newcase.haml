@@ -18,8 +18,11 @@
           - trans "Too long"
       .form-group{ ng-if:"partners != null" }
         %label.control-label
-          - trans "Assign to partner/user"
+          - trans "Assign to Partner"
         %select.form-control{ ng-model:"fields.assignee.val", ng-options:"p.name for p in partners track by p.id", ng-change:"refreshUserList()" }
+      .form-group{ ng-if:"partners != null" }
+        %label.control-label
+          - trans "Specific User (Optional)"
         %select.form-control{ ng-model:"fields.user.val", ng-options:"u.name for u in users track by u.id" }
   .modal-footer
     %button.btn.btn-primary{ ng-click:"ok()" }
