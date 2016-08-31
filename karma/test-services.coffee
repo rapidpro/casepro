@@ -845,7 +845,7 @@ describe('services:', () ->
           $rootScope.$apply()
           expect(fulfilled).toBe(false)
 
-          angular.element(document.querySelector('input')).val('+1234').triggerHandler('change')
+          angular.element(document.querySelector('input')).val('+27741234567').triggerHandler('change')
           angular.element(document.querySelector('textarea')).val('summary').triggerHandler('change')
           angular.element(document.querySelector('.btn-modal-accept'))
             .triggerHandler('click')
@@ -896,6 +896,61 @@ describe('services:', () ->
           expect(fulfilled).toBe(false)
         )
 
+        it('should display an error if there is an invalid phone urn', () ->
+          fulfilled = false
+
+          $httpBackend.expectGET('/partner/?with_activity=false')
+            .respond([])
+          ModalService.create_case({
+            title: 'Foo',
+          })
+          .then(-> fulfilled = true)
+
+          $rootScope.$apply()
+          expect(fulfilled).toBe(false)
+
+          angular.element(document.querySelector('input')).val('0741234567').triggerHandler('change')
+          angular.element(document.querySelector('textarea')).val('summary').triggerHandler('change')
+          angular.element(document.querySelector('.btn-modal-accept'))
+            .triggerHandler('click')
+
+          $rootScope.$apply()
+
+          expect(document.querySelector('.has-error label').innerHTML).toContain('Recipient')
+          expect(document.querySelectorAll('.form-group .help-block')[1].innerHTML).toContain(
+            'Invalid phone number format. Should be in the format +27741234567')
+          expect(document.querySelectorAll('.form-group .help-block')[1].className).not.toContain('ng-hide')
+          expect(fulfilled).toBe(false)
+        )
+
+        it('should not display an error for an invalid phone urn if another urn type is selected', () ->
+          fulfilled = false
+
+          $httpBackend.expectGET('/partner/?with_activity=false')
+            .respond([])
+          ModalService.create_case({
+            title: 'Foo',
+          })
+          .then(-> fulfilled = true)
+
+          $rootScope.$apply()
+          expect(fulfilled).toBe(false)
+
+          # Select twitter URN type
+          angular.element(document.querySelectorAll('a')[1]).triggerHandler('click')
+          # With invalid phone number
+          angular.element(document.querySelector('input')).val('0741234567').triggerHandler('change')
+          angular.element(document.querySelector('textarea')).val('summary').triggerHandler('change')
+          angular.element(document.querySelector('.btn-modal-accept'))
+            .triggerHandler('click')
+
+          $rootScope.$apply()
+
+          expect(document.querySelectorAll('.form-group .help-block')[1].className).toContain('ng-hide')
+          expect(fulfilled).toBe(true)
+        )
+
+
         it('should display an error if there is no summary', () ->
           fulfilled = false
 
@@ -909,7 +964,7 @@ describe('services:', () ->
           $rootScope.$apply()
           expect(fulfilled).toBe(false)
 
-          angular.element(document.querySelector('input')).val('+1234').triggerHandler('change')
+          angular.element(document.querySelector('input')).val('+27741234567').triggerHandler('change')
           angular.element(document.querySelector('.btn-modal-accept'))
             .triggerHandler('click')
 
@@ -937,7 +992,7 @@ describe('services:', () ->
           $rootScope.$apply()
           expect(fulfilled).toBe(false)
 
-          angular.element(document.querySelector('input')).val('+1234').triggerHandler('change')
+          angular.element(document.querySelector('input')).val('+27741234567').triggerHandler('change')
           angular.element(document.querySelector('textarea')).val('too long').triggerHandler('change')
           angular.element(document.querySelector('.btn-modal-accept'))
             .triggerHandler('click')
