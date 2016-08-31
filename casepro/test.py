@@ -112,8 +112,7 @@ class BaseCasesTest(DashTest):
         return Rule.create(org, tests, actions)
 
     def create_faq(self, org, question, answer, language, parent, labels=(), **kwargs):
-        faq = FAQ.objects.create(org=org, question=question, answer=answer, language=language, parent=parent, **kwargs)
-        faq.labels.add(*labels)
+        faq = FAQ.create(org, question, answer, language, parent, labels)
         return faq
 
     def create_contact(self, org, uuid, name, groups=(), fields=None, is_stub=False):

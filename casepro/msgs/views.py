@@ -509,9 +509,7 @@ class FaqCRUDL(SmartCRUDL):
             parent = data['parent']
             labels = data['labels']
 
-            faq = FAQ.objects.create(org=org, question=question, answer=answer, language=language, parent=parent)
-            faq.labels.add(*labels)
-            faq.save()
+            faq = FAQ.create(org, question, answer, language, parent, labels)
             self.object = faq
 
     class Read(OrgPermsMixin, SmartReadView):
