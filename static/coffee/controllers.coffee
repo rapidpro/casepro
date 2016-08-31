@@ -496,7 +496,17 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
         $scope.labels = labels
       )
     else if tab == 'users'
-      UserService.fetchNonPartner(true).then((users) ->
+      UserService.fetchAll(true).then((users) ->
+        $scope.users = users
+      )
+
+  $scope.onSelectAllUsers = () ->
+    UserService.fetchAll(true).then((users) ->
+        $scope.users = users
+      )
+
+  $scope.onSelectOrgOnlyUsers = () ->
+    UserService.fetchNonPartner(true).then((users) ->
         $scope.users = users
       )
 
@@ -510,6 +520,13 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
   $scope.onExportLabelStats = () ->
     UtilsService.dateRangeModal("Export", "Export label statistics between the following dates").then((data) ->
       StatisticsService.dailyCountExport('L', data.after, data.before).then(() ->
+        UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
+      )
+    )
+
+  $scope.onExportUserStats = () ->
+    UtilsService.dateRangeModal("Export", "Export user statistics between the following dates").then((data) ->
+      StatisticsService.dailyCountExport("U", data.after, data.before).then(() ->
         UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
       )
     )

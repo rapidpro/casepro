@@ -12,6 +12,7 @@ from mock import patch
 
 from casepro.test import BaseCasesTest
 from casepro.utils import date_to_milliseconds
+from casepro.cases.models import Case
 
 from .models import DailyCount, DailyCountExport
 from .tasks import squash_counts
@@ -169,6 +170,55 @@ class DailyCountsTest(BaseStatsTest):
         self.assertEqual(DailyCount.get_by_label([self.aids], 'I').day_totals(), [(date(2015, 1, 1), 0)])
         self.assertEqual(DailyCount.get_by_label([self.tea], 'I').day_totals(), [(date(2015, 1, 1), 0)])
 
+    def test_case_counts_opened(self):
+        d1 = self.anytime_on_day(date(2015, 1, 1), pytz.timezone("Africa/Kampala"))
+        msg2 = self.create_message(
+            self.unicef, 234, self.ann, "Hello again", [self.aids],
+            created_on=d1)
+
+        with patch.object(timezone, 'now', return_value=d1):
+            case = Case.get_or_open(
+                self.unicef, self.user1, msg2, "Summary", self.moh)
+
+        self.assertEqual(
+            DailyCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_OPENED).day_totals(),
+            [(date(2015, 1, 1), 1)])
+        self.assertEqual(
+            DailyCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_CLOSED).day_totals(),
+            [])
+
+        self.assertEqual(
+            DailyCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_OPENED).day_totals(),
+            [(date(2015, 1, 1), 1)])
+        self.assertEqual(
+            DailyCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_CLOSED).day_totals(),
+            [])
+
+    def test_case_counts_closed(self):
+        d1 = self.anytime_on_day(date(2015, 1, 1), pytz.timezone("Africa/Kampala"))
+        msg2 = self.create_message(
+            self.unicef, 234, self.ann, "Hello again", [self.aids],
+            created_on=d1)
+
+        with patch.object(timezone, 'now', return_value=d1):
+            case = Case.get_or_open(
+                self.unicef, self.user1, msg2, "Summary", self.moh)
+            case.close(self.user1, note='closing case')
+
+        self.assertEqual(
+            DailyCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_OPENED).day_totals(),
+            [(date(2015, 1, 1), 1)])
+        self.assertEqual(
+            DailyCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_CLOSED).day_totals(),
+            [(date(2015, 1, 1), 1)])
+
+        self.assertEqual(
+            DailyCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_OPENED).day_totals(),
+            [(date(2015, 1, 1), 1)])
+        self.assertEqual(
+            DailyCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_CLOSED).day_totals(),
+            [(date(2015, 1, 1), 1)])
+
 
 class DailyCountExportTest(BaseStatsTest):
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
@@ -205,8 +255,22 @@ class DailyCountExportTest(BaseStatsTest):
     def test_partner_export(self):
         url = reverse('statistics.dailycountexport_create')
 
-        self.new_outgoing(self.user1, date(2016, 1, 1), 1)  # Jan 1st
-        self.new_outgoing(self.user3, date(2016, 1, 15), 1)  # Jan 15th
+        tz = pytz.timezone("Africa/Kampala")
+        d1 = date(2016, 1, 1)
+        d2 = date(2016, 1, 15)
+
+        # Jan 1st
+        with patch.object(timezone, 'now', return_value=self.anytime_on_day(d1, tz)):
+            [msg] = self.new_messages(d1, 1)
+            Case.get_or_open(self.unicef, self.user1, msg, 'summary', self.moh)
+
+        # Jan 15th
+        with patch.object(timezone, 'now', return_value=self.anytime_on_day(d2, tz)):
+            [msg] = self.new_messages(d2, 1)
+            Case.get_or_open(self.unicef, self.user1, msg, 'summary', self.moh)
+
+        self.new_outgoing(self.user1, d1, 1)  # Jan 1st
+        self.new_outgoing(self.user3, d2, 1)  # Jan 15th
 
         self.login(self.admin)
 
@@ -215,12 +279,63 @@ class DailyCountExportTest(BaseStatsTest):
 
         export = DailyCountExport.objects.get()
         workbook = self.openWorkbook(export.filename)
-        sheet = workbook.sheets()[0]
+        (replies_sheet, cases_opened_sheet, cases_closed_sheet) = workbook.sheets()
 
-        self.assertEqual(sheet.nrows, 32)
-        self.assertExcelRow(sheet, 0, ["Date", "MOH", "WHO"])
-        self.assertExcelRow(sheet, 1, [date(2016, 1, 1), 1, 0])
-        self.assertExcelRow(sheet, 15, [date(2016, 1, 15), 0, 1])
+        self.assertEqual(replies_sheet.nrows, 32)
+        self.assertExcelRow(replies_sheet, 0, ["Date", "MOH", "WHO"])
+        self.assertExcelRow(replies_sheet, 1, [d1, 1, 0], tz=tz)
+        self.assertExcelRow(replies_sheet, 15, [d2, 0, 1], tz=tz)
+
+        self.assertExcelRow(cases_opened_sheet, 0, ["Date", "MOH", "WHO"])
+        self.assertExcelRow(cases_opened_sheet, 1, [d1, 1, 0], tz=tz)
+        self.assertExcelRow(cases_opened_sheet, 15, [d2, 1, 0], tz=tz)
+
+        self.assertExcelRow(cases_closed_sheet, 0, ["Date", "MOH", "WHO"])
+        self.assertExcelRow(cases_closed_sheet, 1, [d1, 0, 0], tz=tz)
+        self.assertExcelRow(cases_closed_sheet, 15, [d2, 0, 0], tz=tz)
+
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    def test_user_export(self):
+        url = reverse('statistics.dailycountexport_create')
+
+        tz = pytz.timezone("Africa/Kampala")
+        d1 = date(2016, 1, 1)
+        d2 = date(2016, 1, 15)
+
+        # Jan 1st
+        with patch.object(timezone, 'now', return_value=self.anytime_on_day(d1, tz)):
+            [msg] = self.new_messages(d1, 1)
+            Case.get_or_open(self.unicef, self.user1, msg, 'summary', self.moh)
+
+        # Jan 15th
+        with patch.object(timezone, 'now', return_value=self.anytime_on_day(d2, tz)):
+            [msg] = self.new_messages(d2, 1)
+            Case.get_or_open(self.unicef, self.user1, msg, 'summary', self.moh)
+
+        self.new_outgoing(self.user1, d1, 1)  # Jan 1st
+        self.new_outgoing(self.user3, d2, 1)  # Jan 15th
+
+        self.login(self.admin)
+
+        response = self.url_post_json('unicef', url, {'type': 'U', 'after': "2016-01-01", 'before': "2016-01-31"})
+        self.assertEqual(response.status_code, 200)
+
+        export = DailyCountExport.objects.get()
+        workbook = self.openWorkbook(export.filename)
+        (replies_sheet, cases_opened_sheet, cases_closed_sheet) = workbook.sheets()
+
+        self.assertEqual(replies_sheet.nrows, 32)
+        self.assertExcelRow(replies_sheet, 0, ['Date', 'Kidus', 'Evan', 'Rick', 'Carol'])
+        self.assertExcelRow(replies_sheet, 1, [d1, 0, 1, 0, 0], tz=tz)
+        self.assertExcelRow(replies_sheet, 15, [d2, 0, 0, 0, 1], tz=tz)
+
+        self.assertExcelRow(cases_opened_sheet, 0, ['Date', 'Kidus', 'Evan', 'Rick', 'Carol'])
+        self.assertExcelRow(cases_opened_sheet, 1, [d1, 0, 1, 0, 0], tz=tz)
+        self.assertExcelRow(cases_opened_sheet, 15, [d2, 0, 1, 0, 0], tz=tz)
+
+        self.assertExcelRow(cases_closed_sheet, 0, ['Date', 'Kidus', 'Evan', 'Rick', 'Carol'])
+        self.assertExcelRow(cases_closed_sheet, 1, [d1, 0, 0, 0, 0], tz=tz)
+        self.assertExcelRow(cases_closed_sheet, 15, [d2, 0, 0, 0, 0], tz=tz)
 
 
 class ChartsTest(BaseStatsTest):
