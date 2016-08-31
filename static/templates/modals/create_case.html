@@ -20,10 +20,13 @@
                         <li> <a ng-click='setScheme("email")'>Email</a> </li>
                     </ul>
                 </div>
-                <input class="form-control" type="text" ng-model="fields.urn.path" name="path" required style="width: 300px">
+                <input class="form-control" type="text" ng-model="fields.urn.path" name="path" integer phoneurn required style="width: 300px">
             </div>
-            <div class="help-block" ng-show="form.path.$invalid && (form.path.$dirty || form.submitted)">
+            <div class="help-block" ng-show="form.path.$error.required && (form.path.$dirty || form.submitted)">
                 Required
+            </div>
+            <div class="help-block" ng-show="form.path.$error.phoneurn">
+                Invalid phone number format. Should be in the format +27741234567
             </div>
         </div>
         <div class="form-group" ng-class='{"has-error": form.text.$invalid}'>
