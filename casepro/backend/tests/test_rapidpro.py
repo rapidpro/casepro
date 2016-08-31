@@ -687,6 +687,7 @@ class RapidProBackendTest(BaseCasesTest):
         self.backend.push_outgoing(self.unicef, [out5, out6, out7], as_broadcast=True)
 
         mock_create_broadcast.assert_called_once_with(text="FYI", contacts=[], urns=["tel:+1234", "tel:+2345"])
+        mock_create_broadcast.reset_mock()
 
         out5.refresh_from_db()
         out6.refresh_from_db()
@@ -696,6 +697,11 @@ class RapidProBackendTest(BaseCasesTest):
         self.assertIsNone(out7.backend_broadcast_id)  # emails aren't sent by backend
 
         mock_send_raw_email.assert_called_once_with(['jim@unicef.org'], "New message", "FYI", None)
+
+        # if only sending email - no call to backend
+        self.backend.push_outgoing(self.unicef, [out7], as_broadcast=True)
+
+        self.assertNotCalled(mock_create_broadcast)
 
     @patch('dash.orgs.models.TembaClient1.add_contacts')
     def test_add_to_group(self, mock_add_contacts):

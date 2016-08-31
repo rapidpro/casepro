@@ -266,6 +266,9 @@ class RapidProBackend(BaseBackend):
             else:
                 for_backend.append(msg)
 
+        if not for_backend:
+            return
+
         if as_broadcast:
             contact_uuids = []
             urns = []
