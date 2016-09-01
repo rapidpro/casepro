@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('auth', '0006_require_contenttypes_0002'),
-        ('cases', '0043_caseaction_user_assignee'),
+        ('cases', '0044_caseaction_user_assignee'),
     ]
 
     operations = [

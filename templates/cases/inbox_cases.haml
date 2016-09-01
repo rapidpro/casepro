@@ -23,7 +23,7 @@
     .cases{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"!isInfiniteScrollEnabled()" }
       .stackitem.clearfix.hoverable{ ng-repeat:"item in items | filter: getItemFilter()", ng-click:"onClickCase(item)" }
         .case-time
-          [[ item.opened_on | autodate ]]
+          <cp-date time="item.opened_on" />
         .case-text
           %span.label-container{ ng-if:"!item.user_assignee" }
             %span.label.label-warning

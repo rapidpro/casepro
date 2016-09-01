@@ -4,7 +4,7 @@
 
 modals = angular.module('cases.modals', []);
 
-URN_SCHEMES = {tel: "Phone", twitter: "Twitter", email: "Email"}
+URN_SCHEMES = {tel: "Phone", twitter: "Twitter", mailto: "Email"}
 
 
 #=====================================================================
@@ -57,8 +57,9 @@ modals.controller 'EditModalController', ['$scope', '$uibModalInstance', 'title'
 #=====================================================================
 # Reply to contacts modal
 #=====================================================================
-modals.controller('ReplyModalController', ['$scope', '$uibModalInstance', 'maxLength', ($scope, $uibModalInstance, maxLength) ->
+modals.controller('ReplyModalController', ['$scope', '$uibModalInstance', 'selection', 'maxLength', ($scope, $uibModalInstance, selection, maxLength) ->
   $scope.fields = {text: {val: '', maxLength: maxLength}}
+  $scope.sendToMany = if selection then true else false
 
   $scope.ok = () ->
     $scope.form.submitted = true

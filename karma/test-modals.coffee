@@ -209,7 +209,7 @@ describe('modals:', () ->
   )
 
   it('ReplyModalController', () ->
-    $controller('ReplyModalController', {$scope: $scope, $uibModalInstance: modalInstance, maxLength: 10})
+    $controller('ReplyModalController', {$scope: $scope, $uibModalInstance: modalInstance, selection: null, maxLength: 10})
 
     expect($scope.fields.text).toEqual({val: "", maxLength: 10})
 

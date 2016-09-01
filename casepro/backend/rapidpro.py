@@ -8,6 +8,7 @@ from django.utils.timezone import now
 
 from casepro.contacts.models import Contact, Group, Field
 from casepro.msgs.models import Label, Message, Outgoing
+from casepro.utils.email import send_raw_email
 
 from . import BaseBackend
 
@@ -256,10 +257,22 @@ class RapidProBackend(BaseBackend):
     def push_outgoing(self, org, outgoing, as_broadcast=False):
         client = self._get_client(org, 1)
 
+        # RapidPro currently doesn't send emails so we use the CasePro email system to send those instead
+        for_backend = []
+        for msg in outgoing:
+            if msg.urn and msg.urn.startswith('mailto:'):
+                to_address = msg.urn.split(':', 1)[1]
+                send_raw_email([to_address], "New message", msg.text, None)
+            else:
+                for_backend.append(msg)
+
+        if not for_backend:
+            return
+
         if as_broadcast:
             contact_uuids = []
             urns = []
-            for msg in outgoing:
+            for msg in for_backend:
                 if msg.contact:
                     contact_uuids.append(msg.contact.uuid)
                 if msg.urn:
@@ -267,12 +280,12 @@ class RapidProBackend(BaseBackend):
             text = outgoing[0].text
             broadcast = client.create_broadcast(text=text, contacts=contact_uuids, urns=urns)
 
-            for msg in outgoing:
+            for msg in for_backend:
                 msg.backend_broadcast_id = broadcast.id
 
-            Outgoing.objects.filter(pk__in=[o.id for o in outgoing]).update(backend_broadcast_id=broadcast.id)
+            Outgoing.objects.filter(pk__in=[o.id for o in for_backend]).update(backend_broadcast_id=broadcast.id)
         else:
-            for msg in outgoing:
+            for msg in for_backend:
                 contact_uuids = [msg.contact.uuid] if msg.contact else []
                 urns = [msg.urn] if msg.urn else []
                 broadcast = client.create_broadcast(text=msg.text, contacts=contact_uuids, urns=urns)

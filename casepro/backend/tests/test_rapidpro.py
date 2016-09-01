@@ -635,8 +635,9 @@ class RapidProBackendTest(BaseCasesTest):
 
         mock_create_label.assert_called_once_with(name="Tea")
 
+    @patch('casepro.backend.rapidpro.send_raw_email')
     @patch('dash.orgs.models.TembaClient1.create_broadcast')
-    def test_push_outgoing(self, mock_create_broadcast):
+    def test_push_outgoing(self, mock_create_broadcast, mock_send_raw_email):
         # test with replies sent separately
         mock_create_broadcast.side_effect = [
             TembaBroadcast.create(id=201, text="That's great", urns=[], contacts=["C-001"]),
@@ -682,14 +683,25 @@ class RapidProBackendTest(BaseCasesTest):
 
         out5 = self.create_outgoing(self.unicef, self.user1, None, 'F', "FYI", None, urn="tel:+1234")
         out6 = self.create_outgoing(self.unicef, self.user1, None, 'F', "FYI", None, urn="tel:+2345")
-        self.backend.push_outgoing(self.unicef, [out5, out6], as_broadcast=True)
+        out7 = self.create_outgoing(self.unicef, self.user1, None, 'F', "FYI", None, urn="mailto:jim@unicef.org")
+        self.backend.push_outgoing(self.unicef, [out5, out6, out7], as_broadcast=True)
 
         mock_create_broadcast.assert_called_once_with(text="FYI", contacts=[], urns=["tel:+1234", "tel:+2345"])
+        mock_create_broadcast.reset_mock()
 
         out5.refresh_from_db()
         out6.refresh_from_db()
+        out7.refresh_from_db()
         self.assertEqual(out5.backend_broadcast_id, 204)
         self.assertEqual(out6.backend_broadcast_id, 204)
+        self.assertIsNone(out7.backend_broadcast_id)  # emails aren't sent by backend
+
+        mock_send_raw_email.assert_called_once_with(['jim@unicef.org'], "New message", "FYI", None)
+
+        # if only sending email - no call to backend
+        self.backend.push_outgoing(self.unicef, [out7], as_broadcast=True)
+
+        self.assertNotCalled(mock_create_broadcast)
 
     @patch('dash.orgs.models.TembaClient1.add_contacts')
     def test_add_to_group(self, mock_add_contacts):

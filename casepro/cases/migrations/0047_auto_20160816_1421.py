@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cases', '0045_case_last_assignee'),
+        ('cases', '0046_case_last_assignee'),
     ]
 
     operations = [
