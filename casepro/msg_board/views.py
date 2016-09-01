@@ -34,12 +34,12 @@ class CommentsCRUDL(SmartCRUDL):
 
     class Pinned(OrgPermsMixin, SmartListView):
         permission = 'msg_board.messageboardcomment_pinned'
-        default_order = ('-pinned_date',)
+        default_order = ('-pinned_on',)
 
         def get_queryset(self):
             return MessageBoardComment.objects.for_model(Org).filter(
                 object_pk=self.request.org.pk,
-                is_pinned=True).order_by('-pinned_date')
+                pinned_on__isnull=False).order_by('-pinned_on')
 
         def get(self, request, *args, **kwargs):
             return JsonResponse({'results': [c.as_json() for c in self.get_queryset()]})
@@ -49,7 +49,7 @@ class CommentsCRUDL(SmartCRUDL):
         Endpoint for creating a Pinned Comment
         """
         permission = 'msg_board.messageboardcomment_pin'
-        fields = ['comment', 'pinned_date']
+        fields = ['comment', 'pinned_on']
         http_method_names = ['post']
 
         def get_object(self):
@@ -63,9 +63,8 @@ class CommentsCRUDL(SmartCRUDL):
 
         def post(self, request, *args, **kwargs):
             comment = self.get_object()
-            if not comment.is_pinned:
-                comment.is_pinned = True
-                comment.pinned_date = timezone.now()
+            if not comment.pinned_on:
+                comment.pinned_on = timezone.now()
                 comment.save()
                 return HttpResponse(status=204)
             return HttpResponse(status=200)
@@ -75,7 +74,7 @@ class CommentsCRUDL(SmartCRUDL):
         Endpoint for deleting a Pinned Comment
         """
         permission = 'msg_board.messageboardcomment_unpin'
-        fields = ['comment', 'pinned_date']
+        fields = ['comment', 'pinned_on']
         http_method_names = ['post']
 
         def get_object(self):
@@ -89,8 +88,8 @@ class CommentsCRUDL(SmartCRUDL):
 
         def post(self, request, *args, **kwargs):
             comment = self.get_object()
-            if comment.is_pinned:
-                comment.is_pinned = False
+            if comment.pinned_on:
+                comment.pinned_on = None
                 comment.save()
                 return HttpResponse(status=204)
             return HttpResponse(status=200)

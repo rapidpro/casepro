@@ -667,7 +667,7 @@ services.factory('MessageBoardService', ['$http', '$httpParamSerializer', '$wind
     fetchPinnedComments: () ->
 
       return $http.get('/messageboardcomment/pinned/').then((response) ->
-        utils.parseDates(response.data.results, 'submit_date', 'pinned_date')
+        utils.parseDates(response.data.results, 'submit_date', 'pinned_on')
 
         return {results: response.data.results}
       )

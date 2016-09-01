@@ -15,8 +15,7 @@ class Migration(migrations.Migration):
             name='MessageBoardComment',
             fields=[
                 ('comment_ptr', models.OneToOneField(parent_link=True, auto_created=True, primary_key=True, serialize=False, to='django_comments.Comment')),
-                ('pinned_date', models.DateTimeField(null=True, blank=True)),
-                ('is_pinned', models.BooleanField(default=False)),
+                ('pinned_on', models.DateTimeField(null=True, blank=True)),
             ],
             options={
                 'ordering': ('submit_date',),

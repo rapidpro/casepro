@@ -3,8 +3,7 @@ from django_comments.models import Comment
 
 
 class MessageBoardComment(Comment):
-    pinned_date = models.DateTimeField(null=True, blank=True)
-    is_pinned = models.BooleanField(default=False)
+    pinned_on = models.DateTimeField(null=True, blank=True)
 
     def as_json(self):
         return {
@@ -12,6 +11,6 @@ class MessageBoardComment(Comment):
             'user_name': self.user_name,
             'user_id': self.user_id,
             'submit_date': self.submit_date,
-            'pinned_date': self.pinned_date,
+            'pinned_on': self.pinned_on,
             'comment_id': self.id,
         }
