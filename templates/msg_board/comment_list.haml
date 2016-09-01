@@ -18,8 +18,7 @@
               <cp-date time="comment.submit_date" />
             %span
               %a{ ng-href:"/user/read/[[ comment.user_id ]]/" }
-                [[ comment.user_name ]]
-              :
+                [[ comment.user_name ]]:
             [[ comment.comment ]]
 
     .col-md-4
@@ -31,8 +30,7 @@
               <cp-date time="comment.submit_date" />
             %span
               %a{ ng-href:"/user/read/[[ comment.user_id ]]/"}
-                [[ comment.user_name ]]
-              :
+                [[ comment.user_name ]]:
             [[ comment.comment ]]
 
 - block extra-style
