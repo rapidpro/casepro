@@ -1,11 +1,17 @@
-from dash.orgs.models import Org
-
 from django.db import models
-from django.utils.translation import ugettext_lazy as _
+from django_comments.models import Comment
 
 
-class PinnedComment(models.Model):
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='pinned_comments')
-    comment = models.ForeignKey('django_comments.Comment')
-    pinned_date = models.DateTimeField(auto_now=True)
-    owner = models.ForeignKey('auth.User')
+class MessageBoardComment(Comment):
+    pinned_date = models.DateTimeField(null=True, blank=True)
+    is_pinned = models.BooleanField(default=False)
+
+    def as_json(self):
+        return {
+            'comment': self.comment,
+            'user_name': self.user_name,
+            'user_id': self.user_id,
+            'submit_date': self.submit_date,
+            'pinned_date': self.pinned_date,
+            'comment_id': self.id,
+        }

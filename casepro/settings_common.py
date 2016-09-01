@@ -255,6 +255,8 @@ INSTALLED_APPS = (
     'casepro.statistics',
 )
 
+COMMENTS_APP = 'casepro.msg_board'
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -340,7 +342,7 @@ PERMISSIONS = {
 
     'contacts.group': ('select', 'list'),
 
-    'msg_board.pinnedcomment': ('list', 'pin', 'unpin'),
+    'msg_board.messageboardcomment': ('list', 'pinned', 'pin', 'unpin'),
 
     # can't create profiles.user.* permissions because we don't own User
     'profiles.profile': ('user_create', 'user_create_in', 'user_update', 'user_read', 'user_list'),
@@ -374,7 +376,7 @@ GROUP_PERMISSIONS = {
 
         'statistics.dailycountexport.*',
 
-        'msg_board.pinnedcomment.*',
+        'msg_board.messageboardcomment.*',
     ),
     "Editors": (  # Partner users: Managers
         'orgs.org_inbox',
@@ -411,7 +413,7 @@ GROUP_PERMISSIONS = {
         'profiles.profile_user_read',
         'profiles.profile_user_list',
 
-        'msg_board.pinnedcomment.*',
+        'msg_board.messageboardcomment.*',
     ),
     "Viewers": (  # Partner users: Data Analysts
         'orgs.org_inbox',
@@ -446,7 +448,7 @@ GROUP_PERMISSIONS = {
         'profiles.profile_user_read',
         'profiles.profile_user_list',
 
-        'msg_board.pinnedcomment.*',
+        'msg_board.messageboardcomment.*',
     ),
 }
 

@@ -12,14 +12,14 @@
 
         .comments
           .comment.clearfix{ ng-repeat:"comment in comments", ng-class:'{ "even": $even, "odd": !$even }'}
-            %button.btn-default.btn-xs{ type:"button", ng-click:"onPin(comment.comment_id)" }
+            %button.btn-default.btn-xs.pin{ type:"button", ng-click:"onPin(comment.comment_id)" }
               %i.glyphicon.glyphicon-pushpin
             .event-time
               <cp-date time="comment.submit_date" />
+            &nbsp;
             %span
               %a{ ng-href:"/user/read/[[ comment.user_id ]]/" }
-                [[ comment.user_name ]]
-              :
+                [[ comment.user_name ]]:
             [[ comment.comment ]]
 
     .col-md-4
@@ -31,8 +31,7 @@
               <cp-date time="comment.submit_date" />
             %span
               %a{ ng-href:"/user/read/[[ comment.user_id ]]/"}
-                [[ comment.user_name ]]
-              :
+                [[ comment.user_name ]]:
             [[ comment.comment ]]
 
 - block extra-style
@@ -62,20 +61,15 @@
       border-radius: 4px;
       -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
       box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+      background-color: #FDEECF;
+      border-color: #F0E1C4;
     }
+
     .comment .event-time {
       float: right;
       font-size: 0.7em;
       margin-left: 5px;
       margin-bottom: 5px;
-    }
-    .comment.odd {
-      background-color: #DDFDDD;
-      border-color: #D4F3D4;
-    }
-    .comment.even {
-      background-color: #E6FDFB;
-      border-color: #D5EBED;
     }
 
     .sendform {
@@ -105,4 +99,8 @@
       border-top-left-radius: 0;
       border-top-right-radius: 0;
       border-bottom-left-radius: 0;
+    }
+    button.pin {
+      float: right;
+      margin-left: 5px;
     }

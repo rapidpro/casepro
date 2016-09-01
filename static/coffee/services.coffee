@@ -404,7 +404,7 @@ services.factory('LabelService', ['$http', '$httpParamSerializer', ($http, $http
 #=====================================================================
 services.factory('PartnerService', ['$http', '$httpParamSerializer', ($http, $httpParamSerializer) ->
   new class PartnerService
-    
+
     #----------------------------------------------------------------------------
     # Fetches all partners, optionally with activity information
     #----------------------------------------------------------------------------
@@ -655,7 +655,7 @@ services.factory('MessageBoardService', ['$http', '$httpParamSerializer', '$wind
     #----------------------------------------------------------------------------
     fetchComments: () ->
 
-      return $http.get('/messageboard/comments/').then((response) ->
+      return $http.get('/messageboardcomment/').then((response) ->
         utils.parseDates(response.data.results, 'submit_date')
 
         return {results: response.data.results}
@@ -666,7 +666,7 @@ services.factory('MessageBoardService', ['$http', '$httpParamSerializer', '$wind
     #----------------------------------------------------------------------------
     fetchPinnedComments: () ->
 
-      return $http.get('/pinnedcomment/').then((response) ->
+      return $http.get('/messageboardcomment/pinned/').then((response) ->
         utils.parseDates(response.data.results, 'submit_date', 'pinned_date')
 
         return {results: response.data.results}
@@ -676,12 +676,12 @@ services.factory('MessageBoardService', ['$http', '$httpParamSerializer', '$wind
     # Pins a comment
     #----------------------------------------------------------------------------
     pinComment: (comment_id) ->
-      return $http.post('/pinnedcomment/pin/' + comment_id + '/')
+      return $http.post('/messageboardcomment/pin/' + comment_id + '/')
 
     #----------------------------------------------------------------------------
     # Unpins a pinned comments
     #----------------------------------------------------------------------------
     unpinComment: (comment_id) ->
-      return $http.post('/pinnedcomment/unpin/' + comment_id + '/')
+      return $http.post('/messageboardcomment/unpin/' + comment_id + '/')
 
 ])
