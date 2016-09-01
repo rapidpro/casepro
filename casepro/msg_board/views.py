@@ -6,7 +6,6 @@ from django.shortcuts import get_object_or_404
 
 from smartmin.views import SmartListView, SmartTemplateView
 from smartmin.views import SmartReadView, SmartCRUDL
-from dash.orgs.models import Org
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from casepro.msg_board.models import MessageBoardComment
 
@@ -23,23 +22,18 @@ class CommentsCRUDL(SmartCRUDL):
 
     class List(OrgPermsMixin, SmartListView):
         permission = 'msg_board.messageboardcomment_list'
-        default_order = ('-submit_date',)
 
         def get_queryset(self):
-            return MessageBoardComment.objects.for_model(Org).filter(
-                object_pk=self.request.org.pk).order_by('-submit_date')
+            return MessageBoardComment.get_all(self.request.org).order_by('-submit_date')
 
         def get(self, request, *args, **kwargs):
             return JsonResponse({'results': [c.as_json() for c in self.get_queryset()]})
 
     class Pinned(OrgPermsMixin, SmartListView):
         permission = 'msg_board.messageboardcomment_pinned'
-        default_order = ('-pinned_on',)
 
         def get_queryset(self):
-            return MessageBoardComment.objects.for_model(Org).filter(
-                object_pk=self.request.org.pk,
-                pinned_on__isnull=False).order_by('-pinned_on')
+            return MessageBoardComment.get_all(self.request.org, pinned=True).order_by('-pinned_on')
 
         def get(self, request, *args, **kwargs):
             return JsonResponse({'results': [c.as_json() for c in self.get_queryset()]})

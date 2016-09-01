@@ -42,7 +42,7 @@ class CommentTest(BaseCasesTest):
         self.assertEqual(results[1]['user_name'], 'first name')
 
     def test_pin_comment(self):
-        self.assertEqual(MessageBoardComment.objects.filter(pinned_on__isnull=False).count(), 0)
+        self.assertEqual(MessageBoardComment.get_all(self.unicef, pinned=True).count(), 0)
         data = CommentForm(target_object=self.unicef).generate_security_data()
         data.update({
             'name': 'the supplied name',
@@ -51,13 +51,13 @@ class CommentTest(BaseCasesTest):
         response = self.url_post(
             self.unicef,
             reverse('comments-post-comment'), data)
-        self.assertEqual(MessageBoardComment.objects.filter(pinned_on__isnull=False).count(), 0)
+        self.assertEqual(MessageBoardComment.get_all(self.unicef, pinned=True).count(), 0)
         response = self.url_post(
             self.unicef,
             reverse('msg_board.messageboardcomment_pin', kwargs={'pk': MessageBoardComment.objects.all().first().pk})
         )
         self.assertEqual(response.status_code, 204)
-        self.assertEqual(MessageBoardComment.objects.filter(pinned_on__isnull=False).count(), 1)
+        self.assertEqual(MessageBoardComment.get_all(self.unicef, pinned=True).count(), 1)
 
         response = self.url_get('unicef', reverse('msg_board.messageboardcomment_pinned'))
         self.assertEqual(len(response.json['results']), 1)
@@ -84,7 +84,7 @@ class CommentTest(BaseCasesTest):
             reverse('msg_board.messageboardcomment_pin', kwargs={'pk': MessageBoardComment.objects.all().first().pk})
         )
         self.assertEqual(response.status_code, 204)
-        self.assertEqual(MessageBoardComment.objects.filter(pinned_on__isnull=False).count(), 1)
+        self.assertEqual(MessageBoardComment.get_all(self.unicef, pinned=True).count(), 1)
 
         response = self.url_get('unicef', reverse('msg_board.messageboardcomment_pinned'))
         self.assertEqual(len(response.json['results']), 1)
@@ -94,7 +94,7 @@ class CommentTest(BaseCasesTest):
             reverse('msg_board.messageboardcomment_unpin', kwargs={'pk': MessageBoardComment.objects.all().first().pk})
         )
         self.assertEqual(response.status_code, 204)
-        self.assertEqual(MessageBoardComment.objects.filter(pinned_on__isnull=False).count(), 0)
+        self.assertEqual(MessageBoardComment.get_all(self.unicef, pinned=True).count(), 0)
 
         response = self.url_get('unicef', reverse('msg_board.messageboardcomment_pinned'))
         self.assertEqual(len(response.json['results']), 0)
