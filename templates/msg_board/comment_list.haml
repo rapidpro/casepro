@@ -26,7 +26,7 @@
     .col-md-4
       .comments
           .comment.clearfix{ ng-repeat:"comment in pinned_comments", ng-class:'{ "even": $even, "odd": !$even }'}
-            %button.btn-xs.unpin{ type:"button", ng-click:"onUnpin(comment.comment_id)" }
+            %button.btn-default.btn-xs.unpin{ type:"button", ng-click:"onUnpin(comment.comment_id)" }
               %i.glyphicon.glyphicon-remove
             .event-time
               <cp-date time="comment.submit_date" />
@@ -103,10 +103,12 @@
       border-bottom-left-radius: 0;
     }
     button.pin, button.unpin{
+      color: #999;
       float: right;
       margin-left: 5px;
       background: transparent;
       border-color: transparent;
+      margin-top: -4px;
     }
     button.pin:hover, button.unpin:hover {
       background: transparent;
