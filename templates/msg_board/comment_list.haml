@@ -12,10 +12,11 @@
 
         .comments
           .comment.clearfix{ ng-repeat:"comment in comments", ng-class:'{ "even": $even, "odd": !$even }'}
-            %button.btn-default.btn-xs{ type:"button", ng-click:"onPin(comment.comment_id)" }
+            %button.btn-default.btn-xs.pin{ type:"button", ng-click:"onPin(comment.comment_id)" }
               %i.glyphicon.glyphicon-pushpin
             .event-time
               <cp-date time="comment.submit_date" />
+            &nbsp;
             %span
               %a{ ng-href:"/user/read/[[ comment.user_id ]]/" }
                 [[ comment.user_name ]]:
@@ -98,4 +99,8 @@
       border-top-left-radius: 0;
       border-top-right-radius: 0;
       border-bottom-left-radius: 0;
+    }
+    button.pin {
+      float: right;
+      margin-left: 5px;
     }
