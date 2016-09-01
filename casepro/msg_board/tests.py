@@ -62,6 +62,12 @@ class CommentTest(BaseCasesTest):
         response = self.url_get('unicef', reverse('msg_board.messageboardcomment_pinned'))
         self.assertEqual(len(response.json['results']), 1)
 
+        response = self.url_post(
+            self.unicef,
+            reverse('msg_board.messageboardcomment_pin', kwargs={'pk': MessageBoardComment.objects.all().first().pk})
+        )
+        self.assertEqual(response.status_code, 200)
+
     def test_unpin_comment(self):
         self.assertEqual(MessageBoardComment.objects.all().count(), 0)
         data = CommentForm(target_object=self.unicef).generate_security_data()
