@@ -125,7 +125,7 @@ class CommentTest(BaseCasesTest):
             self.unicef,
             reverse('msg_board.messageboardcomment_pin', kwargs={'pk': MessageBoardComment.objects.all().first().pk})
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 404)
 
     def test_unpin_invalid_comment(self):
         self.login(self.admin)
@@ -153,4 +153,4 @@ class CommentTest(BaseCasesTest):
             self.unicef,
             reverse('msg_board.messageboardcomment_unpin', kwargs={'pk': 9999})
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 404)

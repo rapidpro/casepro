@@ -1,8 +1,8 @@
 from __future__ import unicode_literals
 
 from django.http import JsonResponse, HttpResponse
-from django.core.exceptions import PermissionDenied
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
 
 from smartmin.views import SmartListView, SmartTemplateView
 from smartmin.views import SmartReadView, SmartCRUDL
@@ -53,12 +53,10 @@ class CommentsCRUDL(SmartCRUDL):
         http_method_names = ['post']
 
         def get_object(self):
-            comment = MessageBoardComment.objects.for_model(Org).filter(
+            comment = get_object_or_404(
+                MessageBoardComment,
                 object_pk=self.request.org.pk,
-                pk=self.kwargs.get('pk')).first()
-
-            if not comment:
-                raise PermissionDenied
+                pk=self.kwargs.get('pk'))
 
             comment.org = self.request.org
             return comment
@@ -81,12 +79,10 @@ class CommentsCRUDL(SmartCRUDL):
         http_method_names = ['post']
 
         def get_object(self):
-            comment = MessageBoardComment.objects.for_model(Org).filter(
+            comment = get_object_or_404(
+                MessageBoardComment,
                 object_pk=self.request.org.pk,
-                pk=self.kwargs.get('pk')).first()
-
-            if not comment:
-                raise PermissionDenied
+                pk=self.kwargs.get('pk'))
 
             comment.org = self.request.org
             return comment
