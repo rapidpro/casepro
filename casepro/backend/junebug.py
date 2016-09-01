@@ -63,22 +63,28 @@ class IdentityStore(object):
         return (
             a['address'] for a in addresses if a.get('address') is not None)
 
-    def get_identities_for_address(self, address):
+    def get_identities_for_address(self, address, address_type=None):
+        if address_type is None:
+            address_type = self.address_type
+
         return self.get_paginated_response(
             "%s/api/v1/identities/search/" % (self.base_url),
-            params={'details__addresses__%s' % self.address_type: address})
+            params={'details__addresses__%s' % address_type: address})
 
-    def create_identity(self, address):
+    def create_identity(self, addresses, name=None, language=None):
+        """Creates an identity on the identity store, given the details of the identity."""
+        address_dict = {}
+        for address in addresses:
+            type_, addr = address.split(':', 1)
+            address_dict[type_] = {addr: {}}
         identity = self.session.post(
             "%s/api/v1/identities/" % (self.base_url,),
             json={
                 'details': {
-                    'addresses': {
-                        self.address_type: {
-                            address: {},
-                        },
-                    },
-                    'default_addr_type': "msisdn",
+                    'addresses': address_dict,
+                    'default_addr_type': self.address_type,
+                    'name': name,
+                    'language': language,
                 },
             }
         )
@@ -109,9 +115,23 @@ class IdentityStoreContact(object):
         if remote_language is not None:
             self.language, _, _ = remote_language.partition('_')
         self.name = json_data.get('details').get('name', None)
-        self.addresses = json_data.get('details').get('addresses')
         self.fields = {}
         self.groups = {}
+        addresses = json_data.get('details').get('addresses')
+        self.urns = []
+        for scheme, address in addresses.items():
+            scheme_addresses = []
+            for urn, details in address.items():
+                if 'optedout' in details and details['optedout'] is True:
+                    # Skip opted out URNs
+                    continue
+                if 'default' in details and details['default'] is True:
+                    # If a default is set for the scheme then only store the default
+                    scheme_addresses = [urn]
+                    break
+                scheme_addresses.append(urn)
+            for value in scheme_addresses:
+                self.urns.append("%s:%s" % (scheme, value))
 
 
 class IdentityStoreContactSyncer(BaseSyncer):
@@ -131,6 +151,7 @@ class IdentityStoreContactSyncer(BaseSyncer):
             'is_stub': False,
             'fields': {},
             Contact.SAVE_GROUPS_ATTR: {},
+            'urns': remote.urns,
         }
 
     def update_required(self, local, remote, remote_as_kwargs):
@@ -138,6 +159,10 @@ class IdentityStoreContactSyncer(BaseSyncer):
             return True
 
         if {g.uuid for g in local.groups.all()} != {g.uuid for g in remote.groups}:
+            return True
+
+        urn_diff = set(local.urns).symmetric_difference(set(remote.urns))
+        if urn_diff:
             return True
 
         return not is_dict_equal(local.get_fields(), remote.fields, ignore_none_values=True)
@@ -281,6 +306,47 @@ class JunebugBackend(BaseBackend):
         """
         for message in outgoing:
             self.message_sender.send_message(message)
+
+    @staticmethod
+    def _identity_equal(identity, contact):
+        details = identity.get('details', {})
+        for addr in contact.urns:
+            addr_type, address = addr.split(':', 1)
+            if details.get('addresses', {}).get(addr_type, {}).get(address) is None:
+                return False
+        if contact.name is not None:
+            if details.get('name') != contact.name:
+                return False
+        if contact.language is not None:
+            if details.get('language') != contact.language:
+                return False
+        return True
+
+    def push_contact(self, org, contact):
+        """
+        Pushes a new contact. Creates a new contact if one doesn't exist, or assigns UUID of contact if one exists with
+        the same details.
+
+        :param org: the org
+        :param contact: The contact to create
+        """
+        if contact.uuid is not None:
+            return
+
+        identity_store = IdentityStore(
+            settings.IDENTITY_API_ROOT, settings.IDENTITY_AUTH_TOKEN, settings.IDENTITY_ADDRESS_TYPE)
+        identities = []
+        for urn in contact.urns:
+            addr_type, addr = urn.split(':', 1)
+            identities.extend(identity_store.get_identities_for_address(addr, addr_type))
+        identities = [identity for identity in identities if self._identity_equal(identity, contact)]
+
+        if identities:
+            identity = identities[0]
+        else:
+            identity = identity_store.create_identity(contact.urns, name=contact.name, language=contact.language)
+        contact.uuid = identity.get('id')
+        contact.save(update_fields=('uuid',))
 
     def add_to_group(self, org, contact, group):
         """
@@ -431,7 +497,7 @@ def received_junebug_message(request):
     try:
         identity = identities.next()
     except StopIteration:
-        identity = identity_store.create_identity(data.get('from'))
+        identity = identity_store.create_identity(['%s:%s' % (settings.IDENTITY_ADDRESS_TYPE, data.get('from'))])
     contact = Contact.get_or_create(request.org, identity.get('id'))
 
     message_id = uuid_to_int(data.get('message_id'))

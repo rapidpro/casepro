@@ -23,7 +23,8 @@ from casepro.pods import registry as pod_registry
 from casepro.pods.tests.utils import DummyPodPlugin
 
 from .context_processors import sentry_dsn
-from .models import AccessLevel, Case, CaseAction, CaseExport, CaseFolder, Partner
+from .models import AccessLevel, Case, CaseAction, CaseExport, CaseFolder, Partner, SystemUser
+from .tasks import reassign_case
 
 
 class CaseTest(BaseCasesTest):
@@ -291,6 +292,35 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(set(Case.get_closed(self.unicef)), {case2})
         self.assertEqual(set(Case.get_closed(self.unicef, user=self.user1, label=self.pregnancy)), {case2})
 
+    @override_settings(SITE_CASE_RESPONSE_REQUIRED_TIME=1440)
+    def test_get_all_passed_response_time(self):
+        bob = self.create_contact(self.unicef, 'C-002', "Bob")
+
+        msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
+        msg2 = self.create_message(self.unicef, 234, bob, "Hello 2", [self.aids, self.pregnancy])
+
+        case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [self.aids])
+        case2 = self.create_case(self.unicef, bob, self.who, msg2, [self.aids, self.pregnancy])
+
+        # test with no last_reassigned_on value set
+        self.assertEqual(set(Case.get_all_passed_response_time()), set())
+
+        # test with specified date
+        case1.last_reassigned_on = datetime(2016, 8, 5, 10, 0, tzinfo=pytz.UTC)
+        case1.save()
+        case2.last_reassigned_on = datetime(2016, 8, 6, 10, 0, tzinfo=pytz.UTC)
+        case2.save()
+        check_datetime = datetime(2016, 8, 6, 12, 0, tzinfo=pytz.UTC)
+        self.assertEqual(set(Case.get_all_passed_response_time(check_datetime)), {case1})
+
+        # test with computed date
+        self.assertEqual(set(Case.get_all_passed_response_time()), {case1, case2})
+
+        # test with closed case
+        case2.closed_on = timezone.now()
+        case2.save()
+        self.assertEqual(set(Case.get_all_passed_response_time()), {case1})
+
     def test_get_open_for_contact_on(self):
         d0 = datetime(2014, 1, 5, 0, 0, tzinfo=pytz.UTC)
         d1 = datetime(2014, 1, 10, 0, 0, tzinfo=pytz.UTC)
@@ -319,6 +349,57 @@ class CaseTest(BaseCasesTest):
         # check case open on 20th
         open_case = Case.get_open_for_contact_on(self.unicef, self.ann, datetime(2014, 1, 16, 0, 0, tzinfo=pytz.UTC))
         self.assertEqual(open_case, case2)
+
+    def test_get_open_with_user_assignee(self):
+        '''If a case is opened with the user_assignee field set, the created case should have the assigned user, and
+        the created case action should also have the assigned user.'''
+        msg = self.create_message(
+            self.unicef, 123, self.ann, "Hello", created_on=datetime(2014, 1, 5, 0, 0, tzinfo=pytz.UTC))
+        case = Case.get_or_open(self.unicef, self.user2, msg, 'Hello', self.moh, user_assignee=self.user1)
+
+        self.assertEqual(case.user_assignee, self.user1)
+
+        case_action = CaseAction.objects.get(case=case)
+        self.assertEqual(case_action.user_assignee, self.user1)
+
+    def test_get_open_no_initial_message_new_case(self):
+        """
+        We should be able to create a case with no initial message, but by supplying a contact instead.
+        """
+        case = Case.get_or_open(
+            self.unicef, self.user2, None, 'Hello', self.moh, user_assignee=self.user1, contact=self.ann)
+
+        self.assertEqual(case.contact, self.ann)
+        self.assertEqual(case.assignee, self.moh)
+        self.assertEqual(case.user_assignee, self.user1)
+        self.assertEqual(case.initial_message, None)
+        self.assertEqual(case.is_new, True)
+        self.assertEqual(list(case.watchers.all()), [self.user2])
+
+        [case_action] = list(CaseAction.objects.filter(case=case))
+        self.assertEqual(case_action.action, CaseAction.OPEN)
+        self.assertEqual(case_action.assignee, self.moh)
+        self.assertEqual(case_action.user_assignee, self.user1)
+
+    def test_get_open_no_initial_message_existing_case(self):
+        """
+        When using get_or_open with no initial message, but by supplying a contact, but that contact already has an
+        open case, it should return that case instead of creating a new one.
+        """
+        case1 = Case.get_or_open(
+            self.unicef, self.user2, None, 'Hello', self.moh, user_assignee=self.user1, contact=self.ann)
+        case2 = Case.get_or_open(
+            self.unicef, self.user2, None, 'Hello', self.moh, user_assignee=self.user1, contact=self.ann)
+
+        self.assertEqual(case2.is_new, False)
+        self.assertEqual(case1, case2)
+
+        case1.close(self.user1)
+
+        case3 = Case.get_or_open(
+            self.unicef, self.user2, None, 'Hello', self.moh, user_assignee=self.user1, contact=self.ann)
+        self.assertEqual(case3.is_new, True)
+        self.assertNotEqual(case2, case3)
 
     def test_search(self):
         d1 = datetime(2014, 1, 9, 0, 0, tzinfo=pytz.UTC)
@@ -384,8 +465,9 @@ class CaseCRUDLTest(BaseCasesTest):
         self.ann = self.create_contact(self.unicef, 'C-001', "Ann",
                                        fields={'age': "34"}, groups=[self.females, self.reporters])
 
-        msg = self.create_message(self.unicef, 101, self.ann, "Hello", [self.aids])
-        self.case = self.create_case(self.unicef, self.ann, self.moh, msg, [self.aids], summary="Summary")
+        self.msg = self.create_message(self.unicef, 101, self.ann, "Hello", [self.aids])
+        self.case = self.create_case(
+            self.unicef, self.ann, self.moh, self.msg, [self.aids], summary="Summary", user_assignee=self.user1)
 
     @patch('casepro.test.TestBackend.archive_contact_messages')
     @patch('casepro.test.TestBackend.stop_runs')
@@ -403,7 +485,8 @@ class CaseCRUDLTest(BaseCasesTest):
         # log in as an administrator
         self.login(self.admin)
 
-        response = self.url_post_json('unicef', url, {'message': 101, 'summary': "Summary", 'assignee': self.moh.pk})
+        response = self.url_post_json('unicef', url, {
+            'message': 101, 'summary': "Summary", 'assignee': self.moh.pk, 'user_assignee': self.user1.pk})
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(response.json['summary'], "Summary")
@@ -414,7 +497,9 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(case1.initial_message, msg1)
         self.assertEqual(case1.summary, "Summary")
         self.assertEqual(case1.assignee, self.moh)
+        self.assertEqual(case1.user_assignee, self.user1)
         self.assertEqual(set(case1.labels.all()), {self.aids})
+        self.assertEqual(case1.contact, msg1.contact)
 
         # try again as a non-administrator who can't create cases for other partner orgs
         rick = self.create_contact(self.unicef, 'C-002', "Richard")
@@ -431,6 +516,55 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(case2.summary, "Summary")
         self.assertEqual(case2.assignee, self.moh)
         self.assertEqual(set(case2.labels.all()), {self.aids})
+
+    def test_open_user_assignee_not_member_of_partner(self):
+        """
+        If the user specified in user_assignee is not a member of the partner specified by assignee, then a not found
+        error should be returned.
+        """
+        self.login(self.admin)
+        msg = self.create_message(self.unicef, 102, self.ann, "Hello", [self.aids])
+
+        response = self.url_post_json('unicef', reverse('cases.case_open'), {
+            'message': msg.backend_id, 'summary': "Summary", 'assignee': self.moh.pk, 'user_assignee': self.user3.pk
+            })
+        self.assertEqual(response.status_code, 404)
+
+    def test_open_no_message_id(self):
+        """
+        If a case is opened, and no initial message is supplied, but instead a contact is supplied, the case should
+        open with a contact and no initial message instead of getting the contact from the initial message.
+        """
+        contact = self.create_contact(self.unicef, 'C-002', "TestContact")
+        contact.urns = ['tel:+27741234567']
+        contact.save()
+
+        url = reverse('cases.case_open')
+        self.login(self.admin)
+        response = self.url_post_json('unicef', url, {
+            'message': None, 'summary': "Summary", 'assignee': self.moh.pk, 'user_assignee': self.user1.pk,
+            'urn': contact.urns[0]})
+        self.assertEqual(response.status_code, 200)
+
+        case = Case.objects.get(pk=response.json['id'])
+        self.assertEqual(case.initial_message, None)
+        self.assertEqual(case.contact, contact)
+
+    def test_open_no_message_id_new_contact(self):
+        """
+        If a case is opened, and no initial message is supplied, but an URN is supplied instead, and the URN doesn't
+        match any existing users, then a new contact should be created, and the case assigned to that contact.
+        """
+        url = reverse('cases.case_open')
+        self.login(self.admin)
+        response = self.url_post_json('unicef', url, {
+            'message': None, 'summary': "Summary", 'assignee': self.moh.pk, 'user_assignee': self.user1.pk,
+            'urn': "tel:+27741234567"})
+        self.assertEqual(response.status_code, 200)
+
+        case = Case.objects.get(pk=response.json['id'])
+        self.assertEqual(case.initial_message, None)
+        self.assertEqual(case.contact.urns, ["tel:+27741234567"])
 
     def test_read(self):
         url = reverse('cases.case_read', args=[self.case.pk])
@@ -492,20 +626,39 @@ class CaseCRUDLTest(BaseCasesTest):
         # log in as manager user in currently assigned partner
         self.login(self.user1)
 
-        response = self.url_post_json('unicef', url, {'assignee': self.who.pk})
+        response = self.url_post_json('unicef', url, {'assignee': self.who.pk, 'user_assignee': self.user3.pk})
         self.assertEqual(response.status_code, 204)
 
         action = CaseAction.objects.get()
         self.assertEqual(action.case, self.case)
         self.assertEqual(action.action, CaseAction.REASSIGN)
         self.assertEqual(action.created_by, self.user1)
+        self.assertEqual(action.user_assignee, self.user3)
 
         self.case.refresh_from_db()
         self.assertEqual(self.case.assignee, self.who)
+        self.assertEqual(self.case.user_assignee, self.user3)
+        self.assertIsNotNone(self.case.last_reassigned_on)
+        self.assertEqual(self.case.last_assignee, self.moh)
+        self.assertEqual(self.case.last_user_assignee, self.user1)
 
         # only user from assigned partner can re-assign
         response = self.url_post_json('unicef', url, {'assignee': self.moh.pk})
         self.assertEqual(response.status_code, 403)
+
+        # can only be assigned to user from assigned partner
+        response = self.url_post_json('unicef', url, {'assignee': self.who.pk, 'user_assignee': self.user2.pk})
+        self.assertEqual(response.status_code, 404)
+
+    def test_reassign_no_user(self):
+        """The user field should be optional, and reassignment should still work without it."""
+        url = reverse('cases.case_reassign', args=[self.case.pk])
+
+        # log in as manager user in currently assigned partner
+        self.login(self.user1)
+
+        response = self.url_post_json('unicef', url, {'assignee': self.who.pk, 'user_assignee': None})
+        self.assertEqual(response.status_code, 204)
 
     def test_close(self):
         url = reverse('cases.case_close', args=[self.case.pk])
@@ -644,7 +797,8 @@ class CaseCRUDLTest(BaseCasesTest):
             'summary': "Summary",
             'opened_on': format_iso8601(self.case.opened_on),
             'is_closed': False,
-            'watching': False
+            'watching': False,
+            'user_assignee': {'id': self.user1.pk, 'name': "Evan"},
         })
 
         # users with label access can also fetch
@@ -668,8 +822,8 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # create and open case
         msg1 = self.create_message(self.unicef, 101, self.ann, "What is AIDS?", [self.aids], created_on=d1)
-        case = self.create_case(self.unicef, self.ann, self.moh, msg1)
-        CaseAction.create(case, self.user1, CaseAction.OPEN, assignee=self.moh)
+        case = self.create_case(self.unicef, self.ann, self.moh, msg1, user_assignee=self.user1)
+        CaseAction.create(case, self.user1, CaseAction.OPEN, assignee=self.moh, user_assignee=self.user1)
 
         # backend has a message in the case time window that we don't have locally
         remote_message1 = Outgoing(backend_broadcast_id=102, contact=self.ann, text="Non casepro message...",
@@ -689,6 +843,8 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'][0]['type'], 'I')
         self.assertEqual(response.json['results'][0]['item']['text'], "What is AIDS?")
         self.assertEqual(response.json['results'][0]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
+        self.assertEqual(
+            response.json['results'][0]['item']['case']['user_assignee'], {'id': self.user1.pk, 'name': "Evan"})
         self.assertEqual(response.json['results'][1]['type'], 'O')
         self.assertEqual(response.json['results'][1]['item']['text'], "Non casepro message...")
         self.assertEqual(response.json['results'][1]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
@@ -811,6 +967,19 @@ class CaseCRUDLTest(BaseCasesTest):
         mock_fetch_contact_messages.assert_called_once_with(self.unicef, self.ann, d1, case.closed_on)
         mock_fetch_contact_messages.reset_mock()
 
+    def test_timeline_no_initial_message(self):
+        '''If a case has no initial message, the timeline should start from the datetime it was opened.'''
+        case = self.create_case(self.unicef, self.ann, self.moh, message=None, user_assignee=self.user1)
+        caseaction = CaseAction.create(case, self.user1, CaseAction.OPEN, assignee=self.moh, user_assignee=self.user1)
+
+        timeline_url = reverse('cases.case_timeline', args=[case.pk])
+        self.login(self.user1)
+        response = self.url_get('unicef', '%s?after=' % timeline_url)
+
+        [case_open] = response.json['results']
+        self.assertEqual(case_open['item']['action'], CaseAction.OPEN)
+        self.assertEqual(case_open['item']['id'], caseaction.pk)
+
     def test_search(self):
         url = reverse('cases.case_search')
 
@@ -830,6 +999,7 @@ class CaseCRUDLTest(BaseCasesTest):
             {
                 'id': case2.pk,
                 'assignee': {'id': self.who.pk, 'name': "WHO"},
+                'user_assignee': None,
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'labels': [],
                 'summary': "",
@@ -839,6 +1009,7 @@ class CaseCRUDLTest(BaseCasesTest):
             {
                 'id': self.case.pk,
                 'assignee': {'id': self.moh.pk, 'name': "MOH"},
+                'user_assignee': {'id': self.user1.pk, 'name': "Evan"},
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
                 'summary': "Summary",
@@ -855,6 +1026,7 @@ class CaseCRUDLTest(BaseCasesTest):
             {
                 'id': self.case.pk,
                 'assignee': {'id': self.moh.pk, 'name': "MOH"},
+                'user_assignee': {'id': self.user1.pk, 'name': "Evan"},
                 'contact': {'id': self.ann.pk, 'name': "Ann"},
                 'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
                 'summary': "Summary",
@@ -951,6 +1123,69 @@ class CaseExportCRUDLTest(BaseCasesTest):
 
         response = self.url_get('unicef', read_url)
         self.assertEqual(response.status_code, 302)
+
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    def test_create_with_no_initial_message(self):
+        """When a case is exported with initial_message=None, the field should be a blank string."""
+        ann = self.create_contact(self.unicef, "C-001", "Ann")
+        case = self.create_case(self.unicef, ann, self.moh, None, [self.aids], summary="What is HIV?")
+
+        self.login(self.user1)
+        self.url_post('unicef', '%s?folder=open' % reverse('cases.caseexport_create'))
+
+        export = CaseExport.objects.get()
+        workbook = self.openWorkbook(export.filename)
+        sheet = workbook.sheets()[0]
+
+        self.assertExcelRow(sheet, 0, [
+            "Message On", "Opened On", "Closed On", "Assigned Partner", "Labels", "Summary",
+            "Messages Sent", "Messages Received", "Contact", "Nickname", "Age"
+        ])
+        self.assertExcelRow(sheet, 1, [
+            "", case.opened_on, "", self.moh.name, self.aids.name, "What is HIV?", 0, 0, ann.uuid, "", ""
+        ], pytz.UTC)
+
+
+class SystemUserTest(BaseCasesTest):
+    def setUp(self):
+        super(SystemUserTest, self).setUp()
+
+        self.ann = self.create_contact(self.unicef, 'C-001', "Ann")
+        d0 = datetime(2014, 1, 2, 12, 0, tzinfo=pytz.UTC)
+        msg1 = self.create_message(self.unicef, 101, self.ann, "Test Message", [self.aids], created_on=d0)
+        self.case = self.create_case(self.unicef, self.ann, self.moh, msg1)
+
+    def test_get_or_create_no_user(self):
+        # SystemUser.get_or_create() should return an existing instance or create a new one if none exists
+        self.assertEqual(SystemUser.objects.count(), 0)
+        user1 = SystemUser.get_or_create()
+        self.assertEqual(SystemUser.objects.count(), 1)
+        user2 = SystemUser.get_or_create()
+        self.assertEqual(SystemUser.objects.count(), 1)
+        self.assertEqual(user1, user2)
+
+    def test_add_note_as_system_user(self):
+        # SystemUsers should be able to access methods wrapped by the decorator
+        sysUser = SystemUser.get_or_create()
+        self.case.add_note(sysUser, "test note")
+
+        actions = CaseAction.objects.all()
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].created_by.pk, sysUser.pk)
+        self.assertEqual(actions[0].note, "test note")
+
+    def test_reassign_as_system_user(self):
+        # System reassigns case
+        self.assertEqual(self.case.assignee, self.moh)
+        partner = Partner.create(self.unicef, "Internal", "Internal", self.user1, False, [])
+        sysUser = SystemUser.get_or_create()
+        self.case.reassign(sysUser, partner)
+
+        actions = CaseAction.objects.all()
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].created_by.pk, sysUser.pk)
+        self.assertEqual(actions[0].assignee, partner)
+        self.assertEqual(actions[0].action, 'A')
 
 
 class InboxViewsTest(BaseCasesTest):
@@ -1215,3 +1450,36 @@ class InternalViewsTest(BaseCasesTest):
 
             response = self.url_get('unicef', url)
             self.assertEqual(response.status_code, 500)
+
+
+class TasksTest(BaseCasesTest):
+    def setUp(self):
+        super(TasksTest, self).setUp()
+
+        self.ann = self.create_contact(self.unicef, 'C-001', "Ann",
+                                       fields={'age': "34"},
+                                       groups=[self.females, self.reporters, self.registered])
+
+    @override_settings(SITE_CASE_RESPONSE_REQUIRED_TIME=1440)
+    def test_reassign_case(self):
+        bob = self.create_contact(self.unicef, 'C-002', "Bob")
+
+        msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
+        msg2 = self.create_message(self.unicef, 234, bob, "Hello 2", [self.aids, self.pregnancy])
+
+        case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [self.aids])
+        case2 = self.create_case(self.unicef, bob, self.who, msg2, [self.aids, self.pregnancy])
+
+        case1.reassign(self.user1, self.who)
+        # manually adjust the reassigned date to an expired date
+        case1.last_reassigned_on = datetime(2016, 8, 5, 10, 0, tzinfo=pytz.UTC)
+        case1.save()
+        reassign_case(case1.pk)
+        case1.refresh_from_db()
+        self.assertEqual(case1.assignee, self.moh)
+
+        # don't reassign a case if it hasn't passed the expected window
+        case2.reassign(self.user3, self.moh)
+        reassign_case(case2.pk)
+        case2.refresh_from_db()
+        self.assertEqual(case1.assignee, self.moh)

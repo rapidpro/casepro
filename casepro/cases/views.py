@@ -6,6 +6,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
@@ -15,7 +16,7 @@ from smartmin.views import SmartCRUDL, SmartListView, SmartCreateView, SmartRead
 from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
 
-from casepro.contacts.models import Field, Group
+from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message, MessageFolder, OutgoingFolder
 from casepro.pods import registry as pod_registry
 from casepro.statistics.models import DailyCount
@@ -84,7 +85,7 @@ class CaseCRUDL(SmartCRUDL):
 
     class Open(OrgPermsMixin, SmartCreateView):
         """
-        JSON endpoint for opening a new case. Takes a message backend id.
+        JSON endpoint for opening a new case. Takes a message backend id, or a URN.
         """
         permission = 'cases.case_create'
 
@@ -92,15 +93,25 @@ class CaseCRUDL(SmartCRUDL):
             summary = request.json['summary']
 
             assignee_id = request.json.get('assignee', None)
+            user_assignee = request.json.get('user_assignee', None)
             if assignee_id:
                 assignee = Partner.get_all(request.org).get(pk=assignee_id)
+                if user_assignee:
+                    user_assignee = get_object_or_404(assignee.get_users(), pk=user_assignee)
             else:
                 assignee = request.user.get_partner(self.request.org)
+                user_assignee = request.user
 
-            message_id = int(request.json['message'])
-            message = Message.objects.get(org=request.org, backend_id=message_id)
+            message_id = request.json.get('message')
+            if message_id:
+                message = Message.objects.get(org=request.org, backend_id=int(message_id))
+                contact = None
+            else:
+                message = None
+                contact = Contact.get_or_create_from_urn(org=request.org, urn=request.json['urn'])
 
-            case = Case.get_or_open(request.org, request.user, message, summary, assignee)
+            case = Case.get_or_open(
+                request.org, request.user, message, summary, assignee, user_assignee=user_assignee, contact=contact)
 
             # augment regular case JSON
             case_json = case.as_json()
@@ -130,8 +141,11 @@ class CaseCRUDL(SmartCRUDL):
 
         def post(self, request, *args, **kwargs):
             assignee = Partner.get_all(request.org).get(pk=request.json['assignee'])
+            user = request.json.get('user_assignee')
+            if user is not None:
+                user = get_object_or_404(assignee.get_users(), pk=user)
             case = self.get_object()
-            case.reassign(request.user, assignee)
+            case.reassign(request.user, assignee, user_assignee=user)
             return HttpResponse(status=204)
 
     class Close(OrgObjPermsMixin, SmartUpdateView):
@@ -261,7 +275,10 @@ class CaseCRUDL(SmartCRUDL):
                 merge_from_backend = False
             else:
                 # this is the initial request for the complete timeline
-                after = self.object.initial_message.created_on
+                if self.object.initial_message is not None:
+                    after = self.object.initial_message.created_on
+                else:
+                    after = self.object.opened_on
                 merge_from_backend = True
 
             if self.object.closed_on:

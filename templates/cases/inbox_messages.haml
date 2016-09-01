@@ -24,6 +24,8 @@
         %form.clearfix
           .btn-group.pull-away
             // TODO figure out why form is double-submitted when this is moved to ng-submit on the form. jQuery conflict?
+            %button.btn.btn-default{ type:"button", ng-click:"onCaseWithoutMessage()", ng-if:'folder == "inbox"'}
+              - trans "Create Case"
             %button.btn.btn-default{ type:"button", ng-click:"onSearch()" }
               %i.glyphicon.glyphicon-search
               - trans "Search"
@@ -147,7 +149,9 @@
               - trans "Flow"
             &nbsp;
           %span.label-container{ ng-if:"item.case" }
-            %span.label.label-warning
+            %span.label.label-warning{ ng-if:"item.case.user_assignee" }
+              [[ item.case.assignee.name ]] ([[item.case.user_assignee.name]])
+            %span.label.label-warning{ ng-if:"!item.case.user_assignee" }
               [[ item.case.assignee.name ]]
             &nbsp;
           %span.label-container{ ng-repeat:"label in filterDisplayLabels(item.labels)" }

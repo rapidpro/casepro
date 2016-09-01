@@ -57,6 +57,7 @@ SITE_ORGS_STORAGE_ROOT = 'orgs'
 SITE_EXTERNAL_CONTACT_URL = 'http://localhost:8001/contact/read/%s/'
 SITE_BACKEND = 'casepro.backend.NoopBackend'
 SITE_ANON_CONTACTS = False
+SITE_CASE_RESPONSE_REQUIRED_TIME = None  # specified in minutes, None to disable
 
 # junebug configuration
 JUNEBUG_API_ROOT = 'http://localhost:8080/'
@@ -492,6 +493,10 @@ CELERYBEAT_SCHEDULE = {
     'send-notifications': {
         'task': 'casepro.profiles.tasks.send_notifications',
         'schedule': timedelta(minutes=1),
+    },
+    'reassign-case-passed-response-time': {
+        'task': 'casepro.cases.tasks.get_all_cases_passed_response_time',
+        'schedule': timedelta(minutes=60),
     },
 }
 
