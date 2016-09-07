@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404
 from smartmin.views import SmartListView, SmartTemplateView
 from smartmin.views import SmartReadView, SmartCRUDL
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
+
 from casepro.msg_board.models import MessageBoardComment
 
 
@@ -46,14 +47,8 @@ class CommentsCRUDL(SmartCRUDL):
         fields = ['comment', 'pinned_on']
         http_method_names = ['post']
 
-        def get_object(self):
-            comment = get_object_or_404(
-                MessageBoardComment,
-                object_pk=self.request.org.pk,
-                pk=self.kwargs.get('pk'))
-
-            comment.org = self.request.org
-            return comment
+        def get_object(self, queryset=None):
+            return get_object_or_404(MessageBoardComment, object_pk=self.request.org.pk, pk=self.kwargs.get('pk'))
 
         def post(self, request, *args, **kwargs):
             comment = self.get_object()
@@ -71,14 +66,8 @@ class CommentsCRUDL(SmartCRUDL):
         fields = ['comment', 'pinned_on']
         http_method_names = ['post']
 
-        def get_object(self):
-            comment = get_object_or_404(
-                MessageBoardComment,
-                object_pk=self.request.org.pk,
-                pk=self.kwargs.get('pk'))
-
-            comment.org = self.request.org
-            return comment
+        def get_object(self, queryset=None):
+            return get_object_or_404(MessageBoardComment, object_pk=self.request.org.pk, pk=self.kwargs.get('pk'))
 
         def post(self, request, *args, **kwargs):
             comment = self.get_object()

@@ -6,35 +6,32 @@
     %h2 Message Board
 
 - block content
-  .row{ ng-controller:"MessageBoardController", ng-init:"init()" }
+  .ng-cloak.row{ ng-controller:"MessageBoardController", ng-init:"init()", ng-cloak:"" }
     .col-md-8
-        {% render_comment_form for request.org %}
+      {% render_comment_form for request.org %}
 
-        .comments
-          .comment.clearfix{ ng-repeat:"comment in comments", ng-class:'{ "even": $even, "odd": !$even }'}
-            %button.btn-default.btn-xs.pin{ type:"button", ng-click:"onPin(comment.comment_id)" }
-              %i.glyphicon.glyphicon-pushpin
-            .event-time
-              <cp-date time="comment.submit_date" />
-            &nbsp;
-            %span
-              %a<{ ng-href:"/user/read/[[ comment.user_id ]]/" }
-                [[ comment.user_name ]]
-              %span>:
-            [[ comment.comment ]]
+      .comments
+        .comment.clearfix{ ng-repeat:"comment in comments"}
+          %button.btn-default.btn-xs.pin{ type:"button", ng-click:"onPin(comment)" }
+            %i.glyphicon.glyphicon-pushpin
+          .event-time
+            <cp-date time="comment.submitted_on" />
+          %a{ ng-href:"/user/read/[[ comment.user.id ]]/" }><
+            [[ comment.user.name ]]
+          :
+          [[ comment.comment ]]
 
     .col-md-4
       .comments
-          .comment.clearfix{ ng-repeat:"comment in pinned_comments", ng-class:'{ "even": $even, "odd": !$even }'}
-            %button.btn-default.btn-xs.unpin{ type:"button", ng-click:"onUnpin(comment.comment_id)" }
-              %i.glyphicon.glyphicon-remove
-            .event-time
-              <cp-date time="comment.submit_date" />
-            %span
-              %a<{ ng-href:"/user/read/[[ comment.user_id ]]/"}
-                [[ comment.user_name ]]
-              %span>:
-            [[ comment.comment ]]
+        .comment.clearfix{ ng-repeat:"comment in pinnedComments"}
+          %button.btn-default.btn-xs.unpin{ type:"button", ng-click:"onUnpin(comment)" }
+            %i.glyphicon.glyphicon-remove
+          .event-time
+            <cp-date time="comment.submitted_on" />
+          %a{ ng-href:"/user/read/[[ comment.user.id ]]/" }><
+            [[ comment.user.name ]]
+          :
+          [[ comment.comment ]]
 
 - block extra-style
   {{ block.super }}

@@ -656,7 +656,7 @@ services.factory('MessageBoardService', ['$http', '$httpParamSerializer', '$wind
     fetchComments: () ->
 
       return $http.get('/messageboardcomment/').then((response) ->
-        utils.parseDates(response.data.results, 'submit_date')
+        utils.parseDates(response.data.results, 'submitted_on', 'pinned_on')
 
         return {results: response.data.results}
       )
@@ -667,7 +667,7 @@ services.factory('MessageBoardService', ['$http', '$httpParamSerializer', '$wind
     fetchPinnedComments: () ->
 
       return $http.get('/messageboardcomment/pinned/').then((response) ->
-        utils.parseDates(response.data.results, 'submit_date', 'pinned_on')
+        utils.parseDates(response.data.results, 'submitted_on', 'pinned_on')
 
         return {results: response.data.results}
       )
@@ -675,13 +675,13 @@ services.factory('MessageBoardService', ['$http', '$httpParamSerializer', '$wind
     #----------------------------------------------------------------------------
     # Pins a comment
     #----------------------------------------------------------------------------
-    pinComment: (comment_id) ->
-      return $http.post('/messageboardcomment/pin/' + comment_id + '/')
+    pinComment: (comment) ->
+      return $http.post('/messageboardcomment/pin/' + comment.id + '/')
 
     #----------------------------------------------------------------------------
     # Unpins a pinned comments
     #----------------------------------------------------------------------------
-    unpinComment: (comment_id) ->
-      return $http.post('/messageboardcomment/unpin/' + comment_id + '/')
+    unpinComment: (comment) ->
+      return $http.post('/messageboardcomment/unpin/' + comment.id + '/')
 
 ])
