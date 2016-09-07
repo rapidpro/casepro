@@ -949,24 +949,24 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApiService', 'PodUI
 controllers.controller('MessageBoardController', ['$scope', '$timeout', 'MessageBoardService', 'UtilsService', ($scope, $timeout, MessageBoardService, UtilsService) ->
 
   $scope.comments = []
-  $scope.pinned_comments = []
+  $scope.pinnedComments = []
 
   $scope.init = () ->
-    MessageBoardService.fetchComments({id: $scope.orgId}).then((data) ->
+    MessageBoardService.fetchComments().then((data) ->
       $scope.comments = data.results
     )
 
-    MessageBoardService.fetchPinnedComments({id: $scope.orgId}).then((data) ->
-      $scope.pinned_comments = data.results
+    MessageBoardService.fetchPinnedComments().then((data) ->
+      $scope.pinnedComments = data.results
     )
 
-  $scope.onPin = (comment_id) ->
-    MessageBoardService.pinComment(comment_id).then(() ->
+  $scope.onPin = (comment) ->
+    MessageBoardService.pinComment(comment).then(() ->
       $scope.init()
     )
 
-  $scope.onUnpin = (comment_id) ->
-    MessageBoardService.unpinComment(comment_id).then(() ->
+  $scope.onUnpin = (comment) ->
+    MessageBoardService.unpinComment(comment).then(() ->
       $scope.init()
     )
 ])
