@@ -1,12 +1,16 @@
-from casepro.test import BaseCasesTest
+from __future__ import unicode_literals
+
 from django.core.urlresolvers import reverse
 from django_comments.forms import CommentForm
+from temba_client.utils import format_iso8601
+
 from casepro.msg_board.models import MessageBoardComment
+from casepro.test import BaseCasesTest
 
 
-class CommentTest(BaseCasesTest):
+class CommentCRUDLTest(BaseCasesTest):
     def setUp(self):
-        super(CommentTest, self).setUp()
+        super(CommentCRUDLTest, self).setUp()
         self.login(self.user1)
 
     def test_post_comment(self):
@@ -22,26 +26,37 @@ class CommentTest(BaseCasesTest):
         self.assertEqual(MessageBoardComment.objects.all().count(), 1)
         self.assertEqual(MessageBoardComment.objects.all().first().comment, 'Foo')
 
-    def test_comment_list_view(self):
+    def test_list(self):
         data = CommentForm(self.unicef).generate_security_data()
-        data.update({'name': 'first name', 'comment': 'Foo'})
+        data.update({'comment': 'Foo'})
         self.url_post('unicef', reverse('comments-post-comment'), data)
 
         data = CommentForm(self.unicef).generate_security_data()
-        data.update({'name': 'second name', 'comment': 'Bar'})
+        data.update({'comment': 'Bar'})
         self.url_post('unicef', reverse('comments-post-comment'), data)
 
         response = self.url_get('unicef', reverse('msg_board.messageboardcomment_list'))
-        results = response.json['results']
 
-        self.assertEqual(len(results), 2)
-        self.assertEqual(results[0]['comment'], 'Bar')
-        self.assertEqual(results[0]['user_name'], 'second name')
+        comment1, comment2 = list(MessageBoardComment.objects.order_by('pk'))
 
-        self.assertEqual(results[1]['comment'], 'Foo')
-        self.assertEqual(results[1]['user_name'], 'first name')
+        self.assertEqual(response.json, {'results': [
+            {
+                'id': comment2.pk,
+                'comment': "Bar",
+                'user': {'id': self.user1.pk, 'name': "Evan"},
+                'submitted_on': format_iso8601(comment2.submit_date),
+                'pinned_on': None
+            },
+            {
+                'id': comment1.pk,
+                'comment': "Foo",
+                'user': {'id': self.user1.pk, 'name': "Evan"},
+                'submitted_on': format_iso8601(comment1.submit_date),
+                'pinned_on': None
+            }
+        ]})
 
-    def test_pin_comment(self):
+    def test_pin(self):
         self.assertEqual(MessageBoardComment.get_all(self.unicef, pinned=True).count(), 0)
         data = CommentForm(target_object=self.unicef).generate_security_data()
         data.update({
@@ -62,13 +77,7 @@ class CommentTest(BaseCasesTest):
         response = self.url_get('unicef', reverse('msg_board.messageboardcomment_pinned'))
         self.assertEqual(len(response.json['results']), 1)
 
-        response = self.url_post(
-            self.unicef,
-            reverse('msg_board.messageboardcomment_pin', kwargs={'pk': MessageBoardComment.objects.all().first().pk})
-        )
-        self.assertEqual(response.status_code, 200)
-
-    def test_unpin_comment(self):
+    def test_unpin(self):
         self.assertEqual(MessageBoardComment.objects.all().count(), 0)
         data = CommentForm(target_object=self.unicef).generate_security_data()
         data.update({
@@ -98,13 +107,6 @@ class CommentTest(BaseCasesTest):
 
         response = self.url_get('unicef', reverse('msg_board.messageboardcomment_pinned'))
         self.assertEqual(len(response.json['results']), 0)
-
-        # Trying to unpin an unpinned comment does nothing
-        response = self.url_post(
-            self.unicef,
-            reverse('msg_board.messageboardcomment_unpin', kwargs={'pk': MessageBoardComment.objects.all().first().pk})
-        )
-        self.assertEqual(response.status_code, 200)
 
     def test_pin_of_comment_in_another_org(self):
         self.login(self.admin)

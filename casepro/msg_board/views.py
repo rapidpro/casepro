@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.http import JsonResponse, HttpResponse
-from django.utils import timezone
 from django.shortcuts import get_object_or_404
 
 from smartmin.views import SmartListView, SmartTemplateView
@@ -9,6 +8,7 @@ from smartmin.views import SmartReadView, SmartCRUDL
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 
 from casepro.msg_board.models import MessageBoardComment
+from casepro.utils import JSONEncoder
 
 
 class MessageBoardView(OrgPermsMixin, SmartTemplateView):
@@ -16,7 +16,7 @@ class MessageBoardView(OrgPermsMixin, SmartTemplateView):
     permission = 'orgs.org_inbox'
 
 
-class CommentsCRUDL(SmartCRUDL):
+class CommentCRUDL(SmartCRUDL):
     title = 'Comments'
     actions = ('list', 'pinned', 'pin', 'unpin')
     model = MessageBoardComment
@@ -28,7 +28,7 @@ class CommentsCRUDL(SmartCRUDL):
             return MessageBoardComment.get_all(self.request.org).order_by('-submit_date')
 
         def get(self, request, *args, **kwargs):
-            return JsonResponse({'results': [c.as_json() for c in self.get_queryset()]})
+            return JsonResponse({'results': [c.as_json() for c in self.get_queryset()]}, encoder=JSONEncoder)
 
     class Pinned(OrgPermsMixin, SmartListView):
         permission = 'msg_board.messageboardcomment_pinned'
@@ -37,7 +37,7 @@ class CommentsCRUDL(SmartCRUDL):
             return MessageBoardComment.get_all(self.request.org, pinned=True).order_by('-pinned_on')
 
         def get(self, request, *args, **kwargs):
-            return JsonResponse({'results': [c.as_json() for c in self.get_queryset()]})
+            return JsonResponse({'results': [c.as_json() for c in self.get_queryset()]}, encoder=JSONEncoder)
 
     class Pin(OrgObjPermsMixin, SmartReadView):
         """
@@ -48,15 +48,12 @@ class CommentsCRUDL(SmartCRUDL):
         http_method_names = ['post']
 
         def get_object(self, queryset=None):
-            return get_object_or_404(MessageBoardComment, object_pk=self.request.org.pk, pk=self.kwargs.get('pk'))
+            return get_object_or_404(MessageBoardComment.get_all(self.request.org), pk=self.kwargs.get('pk'))
 
         def post(self, request, *args, **kwargs):
             comment = self.get_object()
-            if not comment.pinned_on:
-                comment.pinned_on = timezone.now()
-                comment.save()
-                return HttpResponse(status=204)
-            return HttpResponse(status=200)
+            comment.pin()
+            return HttpResponse(status=204)
 
     class Unpin(OrgObjPermsMixin, SmartReadView):
         """
@@ -67,12 +64,9 @@ class CommentsCRUDL(SmartCRUDL):
         http_method_names = ['post']
 
         def get_object(self, queryset=None):
-            return get_object_or_404(MessageBoardComment, object_pk=self.request.org.pk, pk=self.kwargs.get('pk'))
+            return get_object_or_404(MessageBoardComment.get_all(self.request.org), pk=self.kwargs.get('pk'))
 
         def post(self, request, *args, **kwargs):
             comment = self.get_object()
-            if comment.pinned_on:
-                comment.pinned_on = None
-                comment.save()
-                return HttpResponse(status=204)
-            return HttpResponse(status=200)
+            comment.unpin()
+            return HttpResponse(status=204)
