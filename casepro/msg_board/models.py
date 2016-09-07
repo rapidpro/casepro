@@ -1,8 +1,8 @@
 from django.db import models
-from django_comments.models import Comment
+from django_comments.models import CommentAbstractModel
 
 
-class MessageBoardComment(Comment):
+class MessageBoardComment(CommentAbstractModel):
     pinned_on = models.DateTimeField(null=True, blank=True)
 
     @classmethod
