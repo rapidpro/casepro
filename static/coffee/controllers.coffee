@@ -942,3 +942,31 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApiService', 'PodUI
     isBusy: false
   }
 ])
+
+#============================================================================
+# Message board controller
+#============================================================================
+controllers.controller('MessageBoardController', ['$scope', '$timeout', 'MessageBoardService', 'UtilsService', ($scope, $timeout, MessageBoardService, UtilsService) ->
+
+  $scope.comments = []
+  $scope.pinned_comments = []
+
+  $scope.init = () ->
+    MessageBoardService.fetchComments({id: $scope.orgId}).then((data) ->
+      $scope.comments = data.results
+    )
+
+    MessageBoardService.fetchPinnedComments({id: $scope.orgId}).then((data) ->
+      $scope.pinned_comments = data.results
+    )
+
+  $scope.onPin = (comment_id) ->
+    MessageBoardService.pinComment(comment_id).then(() ->
+      $scope.init()
+    )
+
+  $scope.onUnpin = (comment_id) ->
+    MessageBoardService.unpinComment(comment_id).then(() ->
+      $scope.init()
+    )
+])
