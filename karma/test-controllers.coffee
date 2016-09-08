@@ -663,6 +663,36 @@ describe('controllers:', () ->
   )
 
   #=======================================================================
+  # Tests for LabelController
+  #=======================================================================
+  describe('LabelController', () ->
+    LabelService = null
+    $scope = null
+
+    beforeEach(inject((_LabelService_) ->
+      LabelService = _LabelService_
+
+      $scope = $rootScope.$new()
+      $window.contextData = {label: test.tea}
+      $controller('LabelController', {$scope: $scope})
+    ))
+
+    it('onDeleteLabel', () ->
+      confirmModal = spyOnPromise($q, $scope, UtilsService, 'confirmModal')
+      deleteLabel = spyOnPromise($q, $scope, LabelService, 'delete')
+      spyOn(UtilsService, 'navigate')
+
+      $scope.onDeleteLabel()
+
+      confirmModal.resolve()
+      deleteLabel.resolve()
+
+      expect(LabelService.delete).toHaveBeenCalledWith(test.tea)
+      expect(UtilsService.navigate).toHaveBeenCalledWith('/org/home/#/labels')
+    )
+  )
+
+  #=======================================================================
   # Tests for PartnerController
   #=======================================================================
   describe('PartnerController', () ->
@@ -725,7 +755,7 @@ describe('controllers:', () ->
       deletePartner.resolve()
 
       expect(PartnerService.delete).toHaveBeenCalledWith(test.moh)
-      expect(UtilsService.navigate).toHaveBeenCalledWith('/partner/')
+      expect(UtilsService.navigate).toHaveBeenCalledWith('/org/home/#/partners')
     )
   )
 
