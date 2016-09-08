@@ -720,7 +720,7 @@ controllers.controller('LabelController', ['$scope', '$window', '$controller', '
   $scope.onDeleteLabel = () ->
     UtilsService.confirmModal("Delete this label?", 'danger').then(() ->
       LabelService.delete($scope.label).then(() ->
-        UtilsService.navigate('/label/')
+        UtilsService.navigate('/org/home/#/labels')
       )
     )
 ])
@@ -758,7 +758,7 @@ controllers.controller('PartnerController', ['$scope', '$window', '$controller',
   $scope.onDeletePartner = () ->
     UtilsService.confirmModal("Remove this partner organization?", 'danger').then(() ->
       PartnerService.delete($scope.partner).then(() ->
-        UtilsService.navigate('/partner/')
+        UtilsService.navigate('/org/home/#/partners')
       )
     )
 ])
