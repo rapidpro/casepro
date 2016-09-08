@@ -16,7 +16,7 @@
             .btn-group
               %a.btn.btn-default{ href:"{% url 'cases.partner_update' object.pk %}", tooltip:"Edit Partner" }
                 %span.glyphicon.glyphicon-pencil
-              - if org_perms.cases.partner_delete
+              - if perms.msgs.partner_delete or org_perms.cases.partner_delete
                 %a.btn.btn-default{ ng-click:"onDeletePartner()", tooltip:"Delete" }
                   %span.glyphicon.glyphicon-trash
 
