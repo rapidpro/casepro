@@ -84,8 +84,8 @@ class LabelForm(forms.ModelForm):
 
 class FaqForm(forms.ModelForm):
 
-    question = forms.CharField(label=_("Question"), max_length=140)
-    answer = forms.CharField(label=_("Answer"), max_length=140)
+    question = forms.CharField(label=_("Question"), max_length=255)
+    answer = forms.CharField(label=_("Answer"), max_length=480, widget=forms.Textarea)
     language = forms.CharField(label=_("Language"), max_length=3)
     # limit the parent choices to FAQs that have a ForeignKey parent that is None
     parent = forms.ModelChoiceField(queryset=FAQ.objects.filter(parent=None), required=False)
