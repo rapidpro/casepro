@@ -408,7 +408,7 @@ controllers.controller('OutgoingController', ['$scope', '$controller', 'Outgoing
 #============================================================================
 # Cases listing controller
 #============================================================================
-controllers.controller('CasesController', ['$scope', '$timeout', '$controller', 'CaseService', 'UtilsService', ($scope, $timeout, $controller, CaseService, UtilsService) ->
+controllers.controller('CasesController', ['$scope', '$timeout', '$controller', 'CaseService', 'PartnerService', 'UtilsService', ($scope, $timeout, $controller, CaseService, PartnerService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
   $scope.init = () ->
@@ -417,6 +417,10 @@ controllers.controller('CasesController', ['$scope', '$timeout', '$controller', 
 
     $scope.$on('activeLabelChange', () ->
       $scope.onResetSearch()
+    )
+
+    PartnerService.fetchAll().then((partners) ->
+      $scope.partners = partners
     )
 
   $scope.getItemFilter = () ->
