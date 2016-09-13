@@ -237,10 +237,14 @@ describe('controllers:', () ->
     describe('CasesController', () ->
 
       beforeEach(() ->
+        fetchPartners = spyOnPromise($q, $scope, PartnerService, 'fetchAll')
+
         $controller('CasesController', {$scope: $scope})
 
         $inboxScope.init('open', serverTime)
         $scope.init()
+
+        fetchPartners.resolve([test.moh, test.who])
 
         # extra test data
         test.case1 = {id: 601, summary: "Hi", opened_on: utcdate(2016, 5, 28, 10, 0)}
