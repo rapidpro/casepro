@@ -603,8 +603,6 @@ describe('controllers:', () ->
     )
 
     it('getGroups', () ->
-      console.log($scope.contact)
-
       expect($scope.getGroups()).toEqual("Females, U-Reporters")
     )
   )
