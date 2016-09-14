@@ -195,9 +195,7 @@
 - block extra-style
   {{ block.super }}
   
-  {% compress css %}
-    %link{ type:"text/less", rel:"stylesheet", href:"{{ STATIC_URL }}less/pods.less" }
-  {% endcompress %}
+  %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/pods.css" }
 
   - for pod_type in pod_types
     - for style in pod_type.styles
