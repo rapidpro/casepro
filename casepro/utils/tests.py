@@ -16,7 +16,7 @@ from casepro.test import BaseCasesTest
 
 from . import safe_max, normalize, match_keywords, truncate, str_to_bool, json_encode, TimelineItem, uuid_to_int
 from . import date_to_milliseconds, datetime_to_microseconds, microseconds_to_datetime, month_range, date_range
-from . import get_language_name, humanise_minutes
+from . import get_language_name, humanise_seconds
 from .email import send_email
 from .middleware import JSONMiddleware
 
@@ -138,16 +138,22 @@ class UtilsTest(BaseCasesTest):
 
         self.assertIsNone(get_language_name('xxxxx'))
 
-    def test_humanise_minutes(self):
-        self.assertEqual(humanise_minutes(0), "0m")
-        self.assertEqual(humanise_minutes(5), "5m")
-        self.assertEqual(humanise_minutes(59), "59m")
-        self.assertEqual(humanise_minutes(60), "1h")
-        self.assertEqual(humanise_minutes(61), "1h 1m")
-        self.assertEqual(humanise_minutes(1439), "23h 59m")
-        self.assertEqual(humanise_minutes(1440), "1d")
-        self.assertEqual(humanise_minutes(1441), "1d 1m")
-        self.assertEqual(humanise_minutes(2345), "1d 15h 5m")
+    def test_humanise_seconds(self):
+        self.assertEqual(humanise_seconds(0), "0s")
+        self.assertEqual(humanise_seconds(5), "5s")
+        self.assertEqual(humanise_seconds(59), "59s")
+        self.assertEqual(humanise_seconds(60), "1m")
+        self.assertEqual(humanise_seconds(61), "1m 1s")
+        self.assertEqual(humanise_seconds(1439), "23m 59s")
+        self.assertEqual(humanise_seconds(1440), "24m")
+        self.assertEqual(humanise_seconds(3599), "59m 59s")
+        self.assertEqual(humanise_seconds(3600), "1h")
+        self.assertEqual(humanise_seconds(3601), "1h 1s")
+        self.assertEqual(humanise_seconds(3661), "1h 1m 1s")
+        self.assertEqual(humanise_seconds(86500), "1d")
+        self.assertEqual(humanise_seconds(86501), "1d 1s")
+        self.assertEqual(humanise_seconds(86561), "1d 1m 1s")
+        self.assertEqual(humanise_seconds(90161), "1d 1h 1m 1s")
 
 
 class EmailTest(BaseCasesTest):
