@@ -170,9 +170,8 @@ class BaseSecondTotal(BaseCount):
             """
             Calculates per-scope averages over a set of counts
             """
-            totals = list(self.counts.annotate(cases=Sum('count'), total_seconds=Sum('seconds'))
-                          .values_list('scope', 'cases', 'total_seconds'))
-            total_by_encoded_scope = {t[0]: (t[1], t[2]) for t in totals}
+            totals = list(self.counts.values('scope').annotate(cases=Sum('count'), seconds=Sum('seconds')))
+            total_by_encoded_scope = {t['scope']: (t['cases'], t['seconds']) for t in totals}
 
             average_by_scope = {}
             for encoded_scope, scope in six.iteritems(self.scopes):
