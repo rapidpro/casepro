@@ -184,7 +184,7 @@ controllers.controller('BaseItemsController', ['$scope', 'UtilsService', ($scope
       $scope.oldItemsLoading = false
 
       if forSelectAll
-        for item in items
+        for item in $scope.items
           item.selected = true
         $scope.updateItems(false)
         if $scope.oldItemsMore and $scope.items.length < INFINITE_SCROLL_MAX_ITEMS
@@ -287,7 +287,7 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
     )
 
   $scope.onReplyToSelection = () ->
-    $uibModal.open({templateUrl: '/partials/modal_reply.html', controller: 'ReplyModalController', resolve: {maxLength: (() -> OUTGOING_TEXT_MAX_LEN)}})
+    $uibModal.open({templateUrl: '/partials/modal_reply.html', controller: 'ReplyModalController', resolve: {selection: (() -> $scope.selection), maxLength: (() -> OUTGOING_TEXT_MAX_LEN)}})
     .result.then((text) ->
       MessageService.bulkReply($scope.selection, text).then(() ->
         MessageService.bulkArchive($scope.selection).then(() ->
@@ -318,6 +318,17 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
   $scope.onToggleMessageFlag = (message) ->
     MessageService.bulkFlag([message], !message.flagged).then(() ->
       $scope.updateItems()
+    )
+
+  $scope.onReplyToMessage = (message) ->
+    $uibModal.open({templateUrl: '/partials/modal_reply.html', controller: 'ReplyModalController', resolve: {selection: (() -> null), maxLength: (() -> OUTGOING_TEXT_MAX_LEN)}})
+    .result.then((text) ->
+      MessageService.bulkReply([message], text).then(() ->
+        MessageService.bulkArchive([message]).then(() ->
+          UtilsService.displayAlert('success', "Reply sent and message archived")
+          $scope.updateItems()
+        )
+      )
     )
 
   $scope.onForwardMessage = (message) ->
@@ -397,7 +408,7 @@ controllers.controller('OutgoingController', ['$scope', '$controller', 'Outgoing
 #============================================================================
 # Cases listing controller
 #============================================================================
-controllers.controller('CasesController', ['$scope', '$timeout', '$controller', 'CaseService', 'UtilsService', ($scope, $timeout, $controller, CaseService, UtilsService) ->
+controllers.controller('CasesController', ['$scope', '$timeout', '$controller', 'CaseService', 'PartnerService', 'UtilsService', ($scope, $timeout, $controller, CaseService, PartnerService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
   $scope.init = () ->
@@ -406,6 +417,10 @@ controllers.controller('CasesController', ['$scope', '$timeout', '$controller', 
 
     $scope.$on('activeLabelChange', () ->
       $scope.onResetSearch()
+    )
+
+    PartnerService.fetchAll().then((partners) ->
+      $scope.partners = partners
     )
 
   $scope.getItemFilter = () ->
@@ -511,7 +526,7 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
 controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'ContactService', 'MessageService', 'PartnerService', 'UtilsService', ($scope, $window, $timeout, CaseService, ContactService, MessageService, PartnerService, UtilsService) ->
   $scope.allLabels = $window.contextData.all_labels
   $scope.fields = $window.contextData.fields
-  
+
   $scope.caseObj = null
   $scope.contact = null
   $scope.newMessage = ''
@@ -663,7 +678,7 @@ controllers.controller('ContactController', ['$scope', '$window', 'ContactServic
 
   $scope.contact = $window.contextData.contact
   $scope.fields = $window.contextData.fields
-  
+
   $scope.init = () ->
     ContactService.fetchCases($scope.contact).then((cases) ->
       $scope.cases = cases
@@ -679,7 +694,7 @@ controllers.controller('ContactController', ['$scope', '$window', 'ContactServic
 #============================================================================
 controllers.controller('LabelController', ['$scope', '$window', '$controller', 'UtilsService', 'LabelService', 'StatisticsService', ($scope, $window, $controller, UtilsService, LabelService, StatisticsService) ->
   $scope.tabSlugs = ['summary']
-  
+
   $controller('BaseTabsController', {$scope: $scope})
 
   $scope.label = $window.contextData.label
@@ -709,7 +724,7 @@ controllers.controller('LabelController', ['$scope', '$window', '$controller', '
   $scope.onDeleteLabel = () ->
     UtilsService.confirmModal("Delete this label?", 'danger').then(() ->
       LabelService.delete($scope.label).then(() ->
-        UtilsService.navigate('/label/')
+        UtilsService.navigate('/org/home/#/labels')
       )
     )
 ])
@@ -747,7 +762,7 @@ controllers.controller('PartnerController', ['$scope', '$window', '$controller',
   $scope.onDeletePartner = () ->
     UtilsService.confirmModal("Remove this partner organization?", 'danger').then(() ->
       PartnerService.delete($scope.partner).then(() ->
-        UtilsService.navigate('/partner/')
+        UtilsService.navigate('/org/home/#/partners')
       )
     )
 ])
@@ -930,4 +945,32 @@ controllers.controller('PodController', ['$q', '$scope', 'PodApiService', 'PodUI
     busyText: busy_text ? name,
     isBusy: false
   }
+])
+
+#============================================================================
+# Message board controller
+#============================================================================
+controllers.controller('MessageBoardController', ['$scope', '$timeout', 'MessageBoardService', 'UtilsService', ($scope, $timeout, MessageBoardService, UtilsService) ->
+
+  $scope.comments = []
+  $scope.pinnedComments = []
+
+  $scope.init = () ->
+    MessageBoardService.fetchComments().then((data) ->
+      $scope.comments = data.results
+    )
+
+    MessageBoardService.fetchPinnedComments().then((data) ->
+      $scope.pinnedComments = data.results
+    )
+
+  $scope.onPin = (comment) ->
+    MessageBoardService.pinComment(comment).then(() ->
+      $scope.init()
+    )
+
+  $scope.onUnpin = (comment) ->
+    MessageBoardService.unpinComment(comment).then(() ->
+      $scope.init()
+    )
 ])

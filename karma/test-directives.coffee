@@ -5,16 +5,18 @@ describe('directives:', () ->
   $rootScope = null
   $templateCache = null
   $q = null
+  $filter = null
 
   beforeEach(() ->
     module('templates')
     module('cases')
 
-    inject((_$compile_, _$rootScope_, _$templateCache_, _$q_) ->
+    inject((_$compile_, _$rootScope_, _$templateCache_, _$q_, _$filter_) ->
       $compile = _$compile_
       $rootScope = _$rootScope_
       $templateCache = _$templateCache_
       $q = _$q_
+      $filter = _$filter_
     )
   )
 
@@ -57,6 +59,50 @@ describe('directives:', () ->
       element.isolateScope().closePopover()
 
       expect(element.isolateScope().popoverIsOpen).toEqual(false)
+    )
+  )
+
+  #=======================================================================
+  # Tests for date tooltip
+  #=======================================================================
+  describe('cpDate', () ->
+
+    it('adds tooltip at the specified position on the date', () ->
+      $scope = $rootScope.$new()
+      $scope.time = new Date "December 25, 2016 23:15:00"
+
+      template = $compile('<cp-date time="time" tooltip-position="top-left" />')
+      element = template($scope)[0]
+      $rootScope.$digest()
+
+      autodate = $filter('autodate')
+      expect(element.textContent).toMatch(autodate($scope.time))
+
+      div = element.querySelector('div')
+      expect(div.hasAttribute("uib-tooltip")).toBe(true)
+      fulldate = $filter('fulldate')
+      expect(div.getAttribute("uib-tooltip")).toEqual(fulldate($scope.time))
+      expect(div.hasAttribute("tooltip-placement")).toBe(true)
+      expect(div.getAttribute("tooltip-placement")).toEqual("top-left")
+    )
+
+    it('adds tooltip at default position on the date', () ->
+      $scope = $rootScope.$new()
+      $scope.time = new Date "December 25, 2016 23:15:00"
+
+      template = $compile('<cp-date time="time" />')
+      element = template($scope)[0]
+      $rootScope.$digest()
+
+      autodate = $filter('autodate')
+      expect(element.textContent).toMatch(autodate($scope.time))
+
+      div = element.querySelector('div')
+      expect(div.hasAttribute("uib-tooltip")).toBe(true)
+      fulldate = $filter('fulldate')
+      expect(div.getAttribute("uib-tooltip")).toEqual(fulldate($scope.time))
+      expect(div.hasAttribute("tooltip-placement")).toBe(true)
+      expect(div.getAttribute("tooltip-placement")).toEqual("top-right")
     )
   )
 
@@ -255,6 +301,41 @@ describe('directives:', () ->
       $rootScope.$digest()
 
       expect(el.textContent).toMatch('Could not load')
+    )
+  )
+
+  #=======================================================================
+  # Tests for URN
+  #=======================================================================
+  describe('cpUrn', () ->
+    it('formats a URN as a link', () ->
+      $scope = $rootScope.$new()
+      $scope.urn = 'tel:+11234567890'
+
+      el = $compile('<cp-urn urn="urn" />')($scope)[0]
+      $rootScope.$digest()
+
+      link = el.querySelector('a')
+      expect(link.href).toEqual('tel:+11234567890')
+      expect(link.textContent).toEqual('+11234567890')
+
+      $scope.urn = 'twitter:bobby'
+
+      el = $compile('<cp-urn urn="urn" />')($scope)[0]
+      $rootScope.$digest()
+
+      link = el.querySelector('a')
+      expect(link.href).toEqual('https://twitter.com/bobby')
+      expect(link.textContent).toEqual('bobby')
+
+      $scope.urn = 'mailto:jim@unicef.org'
+
+      el = $compile('<cp-urn urn="urn" />')($scope)[0]
+      $rootScope.$digest()
+
+      link = el.querySelector('a')
+      expect(link.href).toEqual('mailto:jim@unicef.org')
+      expect(link.textContent).toEqual('jim@unicef.org')
     )
   )
 

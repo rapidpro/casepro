@@ -237,10 +237,14 @@ describe('controllers:', () ->
     describe('CasesController', () ->
 
       beforeEach(() ->
+        fetchPartners = spyOnPromise($q, $scope, PartnerService, 'fetchAll')
+
         $controller('CasesController', {$scope: $scope})
 
         $inboxScope.init('open', serverTime)
         $scope.init()
+
+        fetchPartners.resolve([test.moh, test.who])
 
         # extra test data
         test.case1 = {id: 601, summary: "Hi", opened_on: utcdate(2016, 5, 28, 10, 0)}
@@ -599,8 +603,6 @@ describe('controllers:', () ->
     )
 
     it('getGroups', () ->
-      console.log($scope.contact)
-
       expect($scope.getGroups()).toEqual("Females, U-Reporters")
     )
   )
@@ -659,6 +661,36 @@ describe('controllers:', () ->
       fetchUsers.resolve(users)
 
       expect($scope.users).toEqual(users)
+    )
+  )
+
+  #=======================================================================
+  # Tests for LabelController
+  #=======================================================================
+  describe('LabelController', () ->
+    LabelService = null
+    $scope = null
+
+    beforeEach(inject((_LabelService_) ->
+      LabelService = _LabelService_
+
+      $scope = $rootScope.$new()
+      $window.contextData = {label: test.tea}
+      $controller('LabelController', {$scope: $scope})
+    ))
+
+    it('onDeleteLabel', () ->
+      confirmModal = spyOnPromise($q, $scope, UtilsService, 'confirmModal')
+      deleteLabel = spyOnPromise($q, $scope, LabelService, 'delete')
+      spyOn(UtilsService, 'navigate')
+
+      $scope.onDeleteLabel()
+
+      confirmModal.resolve()
+      deleteLabel.resolve()
+
+      expect(LabelService.delete).toHaveBeenCalledWith(test.tea)
+      expect(UtilsService.navigate).toHaveBeenCalledWith('/org/home/#/labels')
     )
   )
 
@@ -725,7 +757,7 @@ describe('controllers:', () ->
       deletePartner.resolve()
 
       expect(PartnerService.delete).toHaveBeenCalledWith(test.moh)
-      expect(UtilsService.navigate).toHaveBeenCalledWith('/partner/')
+      expect(UtilsService.navigate).toHaveBeenCalledWith('/org/home/#/partners')
     )
   )
 
@@ -1159,6 +1191,70 @@ describe('controllers:', () ->
 
         $scope.$apply()
         expect(PodUIService.confirmAction.calls.allArgs()).toEqual([['Grault']])
+      )
+    )
+
+    #=======================================================================
+    # Tests for MessageBoardController
+    #=======================================================================
+    describe('MessageBoardController', () ->
+      MessageBoardService = null
+      $scope = null
+
+      beforeEach(() ->
+        inject((_MessageBoardService_) ->
+          MessageBoardService = _MessageBoardService_
+        )
+
+        $scope = $rootScope.$new()
+        $controller('MessageBoardController', {$scope: $scope})
+
+        # extra test data
+        test.comment1 = {id: 101, comment: "Hello 1", user: {id: 201, name: "Joe"}, submitted_on: utcdate(2016, 8, 1, 10, 0), pinned_on: null}
+        test.comment2 = {id: 102, comment: "Hello 2", user: {id: 202, name: "Sam"}, submitted_on: utcdate(2016, 8, 1, 11, 0), pinned_on: null}
+      )
+
+      it('should initialize correctly', () ->
+
+        fetchComments = spyOnPromise($q, $scope, MessageBoardService, 'fetchComments')
+        fetchPinnedComments = spyOnPromise($q, $scope, MessageBoardService, 'fetchPinnedComments')
+
+        $scope.init()
+        fetchComments.resolve({results: [test.comment1, test.comment2]})
+        fetchPinnedComments.resolve({results: [test.comment2]})
+
+        expect($scope.comments).toEqual([test.comment1, test.comment2])
+        expect($scope.pinnedComments).toEqual([test.comment2])
+      )
+
+      it('should pin comments', () ->
+
+        pinComment = spyOnPromise($q, $scope, MessageBoardService, 'pinComment')
+        fetchComments = spyOnPromise($q, $scope, MessageBoardService, 'fetchComments')
+        fetchPinnedComments = spyOnPromise($q, $scope, MessageBoardService, 'fetchPinnedComments')
+
+        $scope.onPin(test.comment1)
+        pinComment.resolve()
+
+        fetchComments.resolve({results: [test.comment1, test.comment2]})
+        fetchPinnedComments.resolve({results: [test.comment1]})
+
+        expect(MessageBoardService.pinComment).toHaveBeenCalledWith(test.comment1)
+      )
+
+      it('should unpin comments', () ->
+
+        unpinComment = spyOnPromise($q, $scope, MessageBoardService, 'unpinComment')
+        fetchComments = spyOnPromise($q, $scope, MessageBoardService, 'fetchComments')
+        fetchPinnedComments = spyOnPromise($q, $scope, MessageBoardService, 'fetchPinnedComments')
+
+        $scope.onUnpin(test.comment1)
+        unpinComment.resolve()
+
+        fetchComments.resolve({results: [test.comment1, test.comment2]})
+        fetchPinnedComments.resolve({results: []})
+
+        expect(MessageBoardService.unpinComment).toHaveBeenCalledWith(test.comment1)
       )
     )
   )

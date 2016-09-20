@@ -27,12 +27,21 @@ describe('filters:', () ->
   describe('autodate', () ->
     it('formats a date', () ->
       jasmine.clock().mockDate(new Date(2015, 1, 1));  # Feb 1 2015
-      
+
       autodate = $filter('autodate')
       expect(autodate(new Date(2015, 1, 1, 10, 0))).toEqual("10:00")  # same day
       expect(autodate(new Date(2015, 2, 1, 11, 0))).toEqual("Mar 1")  # same year
       expect(autodate(new Date(2014, 1, 1, 10, 0))).toEqual("Feb 1, 2014")  # year before
       expect(autodate(new Date(2016, 1, 1, 10, 0))).toEqual("Feb 1, 2016")  # year after
+    )
+  )
+
+  describe('fulldate', () ->
+    it('formats a date to include full date and time', () ->
+      jasmine.clock().mockDate(new Date(2015, 1, 1));  # Feb 1 2015
+
+      autodate = $filter('fulldate')
+      expect(autodate(new Date(2015, 1, 1, 10, 0))).toEqual("Feb 1, 2015 10:00")
     )
   )
 
