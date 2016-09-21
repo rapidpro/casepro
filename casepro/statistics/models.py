@@ -124,25 +124,25 @@ class BaseCount(models.Model):
         abstract = True
 
 
-class BaseMinuteTotal(BaseCount):
+class BaseSecondTotal(BaseCount):
     """
-    Tracks total minutes and counts of different items (e.g. time since assigned ) in different scopes (e.g. org, user)
+    Tracks total seconds and counts of different items (e.g. time since assigned ) in different scopes (e.g. org, user)
     """
     TYPE_TILL_REPLIED = 'A'
     TYPE_TILL_CLOSED = 'C'
 
     squash_sql = """
         WITH removed as (
-            DELETE FROM %(table_name)s WHERE %(delete_cond)s RETURNING "count", "minutes"
+            DELETE FROM %(table_name)s WHERE %(delete_cond)s RETURNING "count", "seconds"
         )
-        INSERT INTO %(table_name)s(%(insert_cols)s, "count", "minutes")
+        INSERT INTO %(table_name)s(%(insert_cols)s, "count", "seconds")
         VALUES (
             %(insert_vals)s,
             GREATEST(0, (SELECT SUM("count") FROM removed)),
-            COALESCE((SELECT SUM("minutes") FROM removed), 0)
+            COALESCE((SELECT SUM("seconds") FROM removed), 0)
         );"""
 
-    minutes = models.IntegerField()
+    seconds = models.IntegerField()
 
     class CountSet(BaseCount.CountSet):
         """
@@ -152,31 +152,31 @@ class BaseMinuteTotal(BaseCount):
             """
             Calculates the overall total over a set of counts
             """
-            totals = self.counts.aggregate(total=Sum('count'), minutes=Sum('minutes'))
-            if totals['minutes'] is None or totals['total'] is None:
+            totals = self.counts.aggregate(total=Sum('count'), seconds=Sum('seconds'))
+            if totals['seconds'] is None or totals['total'] is None:
                 return 0
 
-            average = float(totals['minutes']) / totals['total']
+            average = float(totals['seconds']) / totals['total']
             return average
 
-        def minutes(self):
+        def seconds(self):
             """
-            Calculates the overall total of minutes over a set of counts
+            Calculates the overall total of seconds over a set of counts
             """
-            total = self.counts.aggregate(total_minutes=Sum('minutes'))
-            return total['total_minutes'] if total['total_minutes'] is not None else 0
+            total = self.counts.aggregate(total_seconds=Sum('seconds'))
+            return total['total_seconds'] if total['total_seconds'] is not None else 0
 
         def scope_averages(self):
             """
             Calculates per-scope averages over a set of counts
             """
-            totals = list(self.counts.values_list('scope').annotate(cases=Sum('count'), minutes=Sum('minutes')))
-            total_by_encoded_scope = {t[0]: (t[1], t[2]) for t in totals}
+            totals = list(self.counts.values('scope').annotate(cases=Sum('count'), seconds=Sum('seconds')))
+            total_by_encoded_scope = {t['scope']: (t['cases'], t['seconds']) for t in totals}
 
             average_by_scope = {}
             for encoded_scope, scope in six.iteritems(self.scopes):
-                cases, minutes = total_by_encoded_scope.get(encoded_scope, (1, 0))
-                average_by_scope[scope] = float(minutes) / cases
+                cases, seconds = total_by_encoded_scope.get(encoded_scope, (1, 0))
+                average_by_scope[scope] = float(seconds) / cases
 
             return average_by_scope
 
@@ -185,7 +185,7 @@ class BaseMinuteTotal(BaseCount):
             Calculates per-day totals over a set of counts
             """
             return list(self.counts.values_list('day')
-                        .annotate(cases=Sum('count'), minutes=Sum('minutes')).order_by('day'))
+                        .annotate(cases=Sum('count'), seconds=Sum('seconds')).order_by('day'))
 
         def month_totals(self):
             """
@@ -193,7 +193,7 @@ class BaseMinuteTotal(BaseCount):
             """
             counts = self.counts.extra(select={'month': 'EXTRACT(month FROM "day")'})
             return list(counts.values_list('month')
-                        .annotate(cases=Sum('count'), minutes=Sum('minutes')).order_by('month'))
+                        .annotate(cases=Sum('count'), seconds=Sum('seconds')).order_by('month'))
 
     class Meta:
         abstract = True
@@ -341,14 +341,14 @@ class DailyCountExport(BaseExport):
                 totals = DailyCount.get_by_partner([partner], DailyCount.TYPE_REPLIES,
                                                    self.since, self.until).day_totals()
                 totals_by_partner[partner] = {t[0]: t[1] for t in totals}
-                replied_minute_totals = DailyMinuteTotalCount.get_by_partner([partner],
-                                                                             DailyMinuteTotalCount.TYPE_TILL_REPLIED,
+                replied_second_totals = DailySecondTotalCount.get_by_partner([partner],
+                                                                             DailySecondTotalCount.TYPE_TILL_REPLIED,
                                                                              self.since, self.until).day_totals()
-                replied_averages_by_partner[partner] = {t[0]: (float(t[2]) / t[1]) for t in replied_minute_totals}
-                closed_minute_totals = DailyMinuteTotalCount.get_by_partner([partner],
-                                                                            DailyMinuteTotalCount.TYPE_TILL_CLOSED,
+                replied_averages_by_partner[partner] = {t[0]: (float(t[2]) / t[1]) for t in replied_second_totals}
+                closed_second_totals = DailySecondTotalCount.get_by_partner([partner],
+                                                                            DailySecondTotalCount.TYPE_TILL_CLOSED,
                                                                             self.since, self.until).day_totals()
-                closed_averages_by_partner[partner] = {t[0]: (float(t[2]) / t[1]) for t in closed_minute_totals}
+                closed_averages_by_partner[partner] = {t[0]: (float(t[2]) / t[1]) for t in closed_second_totals}
 
             self.write_row(sheet, 0, ["Date"] + [p.name for p in partners])
             self.write_row(ave_sheet, 0, ["Date"] + [p.name for p in partners])
@@ -365,19 +365,19 @@ class DailyCountExport(BaseExport):
                 row += 1
 
 
-class DailyMinuteTotalCount(BaseMinuteTotal):
+class DailySecondTotalCount(BaseSecondTotal):
     """
-    Tracks total minutes and count of different items in different scopes (e.g. org, user)
+    Tracks total seconds and count of different items in different scopes (e.g. org, user)
     """
 
     day = models.DateField(help_text=_("The day this count is for"))
 
     squash_over = ('day', 'item_type', 'scope')
-    last_squash_key = 'daily_minute_total_count:last_squash'
+    last_squash_key = 'daily_second_total_count:last_squash'
 
     @classmethod
-    def record_item(cls, day, minutes, item_type, *scope_args):
-        cls.objects.create(day=day, item_type=item_type, scope=cls.encode_scope(*scope_args), count=1, minutes=minutes)
+    def record_item(cls, day, seconds, item_type, *scope_args):
+        cls.objects.create(day=day, item_type=item_type, scope=cls.encode_scope(*scope_args), count=1, seconds=seconds)
 
     @classmethod
     def get_by_org(cls, orgs, item_type, since=None, until=None):
@@ -400,4 +400,4 @@ class DailyMinuteTotalCount(BaseMinuteTotal):
             counts = counts.filter(day__gte=since)
         if until:
             counts = counts.filter(day__lt=until)
-        return DailyMinuteTotalCount.CountSet(counts, scopes)
+        return DailySecondTotalCount.CountSet(counts, scopes)

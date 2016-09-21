@@ -14,7 +14,7 @@ from casepro.msgs.models import Outgoing
 from casepro.test import BaseCasesTest
 from casepro.utils import date_to_milliseconds
 
-from .models import DailyCount, DailyCountExport, DailyMinuteTotalCount
+from .models import DailyCount, DailyCountExport, DailySecondTotalCount
 from .tasks import squash_counts
 
 
@@ -337,7 +337,7 @@ class ChartsTest(BaseStatsTest):
             self.assertEqual(series[9], {'y': 3, 'name': "Other"})
 
 
-class MinuteTotalCountsTest(BaseStatsTest):
+class SecondTotalCountsTest(BaseStatsTest):
 
     def test_first_reply_counts(self):
         msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
@@ -357,30 +357,30 @@ class MinuteTotalCountsTest(BaseStatsTest):
         self.create_outgoing(self.unicef, self.user3, 201, Outgoing.CASE_REPLY, "Good question", self.ann, case=case3)
         self.create_outgoing(self.unicef, self.user3, 201, Outgoing.CASE_REPLY, "Good question", self.ned, case=case4)
 
-        self.assertEqual(DailyMinuteTotalCount.get_by_org([self.unicef], 'A').total(), 4)
-        self.assertEqual(DailyMinuteTotalCount.get_by_org([self.unicef], 'A').minutes(), 4)
-        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.moh], 'A').total(), 2)
-        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.moh], 'A').minutes(), 2)
-        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.moh], 'A').average(), 1)
-        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.who], 'A').total(), 2)
-        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.who], 'A').minutes(), 2)
-        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.who], 'A').average(), 1)
+        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').total(), 4)
+        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').seconds(), 4)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').total(), 2)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').seconds(), 2)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').average(), 1)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'A').total(), 2)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'A').seconds(), 2)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'A').average(), 1)
 
         # check a reassigned case response
         case5.reassign(self.user3, self.moh)
         self.create_outgoing(self.unicef, self.user1, 201, Outgoing.CASE_REPLY, "Good question", self.ann, case=case5)
-        self.assertEqual(DailyMinuteTotalCount.get_by_org([self.unicef], 'A').total(), 5)
-        self.assertEqual(DailyMinuteTotalCount.get_by_org([self.unicef], 'A').minutes(), 5)
-        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.moh], 'A').total(), 3)
-        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.moh], 'A').minutes(), 3)
-        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.moh], 'A').average(), 1)
+        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').total(), 5)
+        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').seconds(), 5)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').total(), 3)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').seconds(), 3)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').average(), 1)
 
         # check empty partner metrics
-        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.klab], 'A').average(), 0)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.klab], 'A').average(), 0)
 
-        self.assertEqual(DailyMinuteTotalCount.objects.count(), 10)
+        self.assertEqual(DailySecondTotalCount.objects.count(), 10)
         squash_counts()
-        self.assertEqual(DailyMinuteTotalCount.objects.count(), 3)
+        self.assertEqual(DailySecondTotalCount.objects.count(), 3)
 
     def test_case_closed_counts(self):
         msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
@@ -399,35 +399,35 @@ class MinuteTotalCountsTest(BaseStatsTest):
         case3.close(self.user3)
         case4.close(self.user3)
 
-        self.assertEqual(DailyMinuteTotalCount.get_by_org([self.unicef], 'C').total(), 4)
-        self.assertEqual(DailyMinuteTotalCount.get_by_org([self.unicef], 'C').minutes(), 4)
-        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.moh], 'C').total(), 1)
-        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.moh], 'C').minutes(), 1)
-        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.moh], 'C').average(), 1)
-        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.who], 'C').total(), 3)
-        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.who], 'C').minutes(), 3)
-        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.who], 'C').average(), 1)
+        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'C').total(), 4)
+        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'C').seconds(), 4)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'C').total(), 1)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'C').seconds(), 1)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'C').average(), 1)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'C').total(), 3)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'C').seconds(), 3)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'C').average(), 1)
 
         # check that reopened cases stats are not counted
         case1.reopen(self.user1)
         case1.close(self.user1)
-        self.assertEqual(DailyMinuteTotalCount.get_by_org([self.unicef], 'C').total(), 4)
-        self.assertEqual(DailyMinuteTotalCount.get_by_org([self.unicef], 'C').minutes(), 4)
-        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.moh], 'C').total(), 1)
-        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.moh], 'C').minutes(), 1)
+        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'C').total(), 4)
+        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'C').seconds(), 4)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'C').total(), 1)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'C').seconds(), 1)
 
         # check month totals
         today = datetime.today()
         current_month = today.month
-        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.moh], 'C').month_totals(),
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'C').month_totals(),
                          [(float(current_month), 1, 1)])
 
         # check user totals are empty as we are recording those
-        self.assertEqual(DailyMinuteTotalCount.get_by_user(self.unicef, [self.user1], 'C').total(), 0)
+        self.assertEqual(DailySecondTotalCount.get_by_user(self.unicef, [self.user1], 'C').total(), 0)
 
         # check empty partner metrics
-        self.assertEqual(DailyMinuteTotalCount.get_by_partner([self.klab], 'C').average(), 0)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.klab], 'C').average(), 0)
 
-        self.assertEqual(DailyMinuteTotalCount.objects.count(), 8)
+        self.assertEqual(DailySecondTotalCount.objects.count(), 8)
         squash_counts()
-        self.assertEqual(DailyMinuteTotalCount.objects.count(), 3)
+        self.assertEqual(DailySecondTotalCount.objects.count(), 3)
