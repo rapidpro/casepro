@@ -4,6 +4,7 @@ from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from datetime import timedelta
 from django.conf import settings
 from django.core.cache import cache
+from django.core.urlresolvers import reverse
 from django.http import HttpResponse, JsonResponse
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
@@ -23,7 +24,7 @@ from casepro.utils import month_range
 from casepro.utils.export import BaseDownloadView
 
 from . import MAX_MESSAGE_CHARS
-from .forms import PartnerForm
+from .forms import PartnerCreateForm, PartnerUpdateForm
 from .models import AccessLevel, Case, CaseFolder, CaseExport, Partner
 from .tasks import case_export
 
@@ -332,7 +333,7 @@ class PartnerCRUDL(SmartCRUDL):
     model = Partner
 
     class Create(OrgPermsMixin, PartnerFormMixin, SmartCreateView):
-        form_class = PartnerForm
+        form_class = PartnerCreateForm
 
         def save(self, obj):
             data = self.form.cleaned_data
@@ -340,10 +341,14 @@ class PartnerCRUDL(SmartCRUDL):
             restricted = data['is_restricted']
             labels = data['labels'] if restricted else []
 
-            self.object = Partner.create(org, data['name'], restricted, labels, data['logo'])
+            self.object = Partner.create(org, data['name'], data['description'], None, restricted,
+                                         labels, data['logo'])
+
+        def get_success_url(self):
+            return reverse('cases.partner_read', args=[self.object.pk])
 
     class Update(OrgObjPermsMixin, PartnerFormMixin, SmartUpdateView):
-        form_class = PartnerForm
+        form_class = PartnerUpdateForm
         success_url = 'id@cases.partner_read'
 
         def has_permission(self, request, *args, **kwargs):

@@ -650,3 +650,45 @@ services.factory('PodApiService', ['$q', '$window', '$http', ($q, $window, $http
       }
     })
 ])
+
+#=====================================================================
+# Message Board service
+#=====================================================================
+services.factory('MessageBoardService', ['$http', '$httpParamSerializer', '$window', ($http, $httpParamSerializer, $window) ->
+  new class MessageBoardService
+
+    #----------------------------------------------------------------------------
+    # Fetches comments
+    #----------------------------------------------------------------------------
+    fetchComments: () ->
+
+      return $http.get('/messageboardcomment/').then((response) ->
+        utils.parseDates(response.data.results, 'submitted_on', 'pinned_on')
+
+        return {results: response.data.results}
+      )
+
+    #----------------------------------------------------------------------------
+    # Fetches pinned comments
+    #----------------------------------------------------------------------------
+    fetchPinnedComments: () ->
+
+      return $http.get('/messageboardcomment/pinned/').then((response) ->
+        utils.parseDates(response.data.results, 'submitted_on', 'pinned_on')
+
+        return {results: response.data.results}
+      )
+
+    #----------------------------------------------------------------------------
+    # Pins a comment
+    #----------------------------------------------------------------------------
+    pinComment: (comment) ->
+      return $http.post('/messageboardcomment/pin/' + comment.id + '/')
+
+    #----------------------------------------------------------------------------
+    # Unpins a pinned comments
+    #----------------------------------------------------------------------------
+    unpinComment: (comment) ->
+      return $http.post('/messageboardcomment/unpin/' + comment.id + '/')
+
+])

@@ -2,13 +2,14 @@ from __future__ import unicode_literals
 
 from django import forms
 from django.utils.translation import ugettext_lazy as _
-
 from casepro.msgs.models import Label
 
 from .models import Partner
 
 
-class PartnerForm(forms.ModelForm):
+class BasePartnerForm(forms.ModelForm):
+    description = forms.CharField(label=_("Description"), max_length=255, required=False, widget=forms.Textarea)
+
     labels = forms.ModelMultipleChoiceField(label=_("Can Access"),
                                             queryset=Label.objects.none(),
                                             widget=forms.CheckboxSelectMultiple(),
@@ -16,10 +17,27 @@ class PartnerForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         org = kwargs.pop('org')
-        super(PartnerForm, self).__init__(*args, **kwargs)
+
+        super(BasePartnerForm, self).__init__(*args, **kwargs)
 
         self.fields['labels'].queryset = Label.get_all(org).order_by('name')
 
+
+class PartnerUpdateForm(BasePartnerForm):
+    def __init__(self, *args, **kwargs):
+        super(PartnerUpdateForm, self).__init__(*args, **kwargs)
+
+        self.fields['primary_contact'].queryset = kwargs['instance'].get_users()
+
     class Meta:
         model = Partner
-        fields = ('name', 'logo', 'is_restricted', 'labels')
+        fields = ('name', 'description', 'primary_contact', 'logo', 'is_restricted', 'labels')
+
+
+class PartnerCreateForm(BasePartnerForm):
+    def __init__(self, *args, **kwargs):
+        super(PartnerCreateForm, self).__init__(*args, **kwargs)
+
+    class Meta:
+        model = Partner
+        fields = ('name', 'description', 'logo', 'is_restricted', 'labels')

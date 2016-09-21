@@ -46,6 +46,11 @@ class Partner(models.Model):
     name = models.CharField(verbose_name=_("Name"), max_length=128,
                             help_text=_("Name of this partner organization"))
 
+    description = models.CharField(verbose_name=_("Description"), null=True, blank=True, max_length=255)
+
+    primary_contact = models.ForeignKey(User, verbose_name=_("Primary Contact"), related_name='partners_primary',
+                                        null=True, blank=True)
+
     is_restricted = models.BooleanField(default=True, verbose_name=_("Restricted Access"),
                                         help_text=_("Whether this partner's access is restricted by labels"))
 
@@ -60,11 +65,12 @@ class Partner(models.Model):
     is_active = models.BooleanField(default=True, help_text="Whether this partner is active")
 
     @classmethod
-    def create(cls, org, name, restricted, labels, logo=None):
+    def create(cls, org, name, description, primary_contact, restricted, labels, logo=None):
         if labels and not restricted:
             raise ValueError("Can't specify labels for a partner which is not restricted")
 
-        partner = cls.objects.create(org=org, name=name, logo=logo, is_restricted=restricted)
+        partner = cls.objects.create(org=org, name=name, description=description, primary_contact=primary_contact,
+                                     logo=logo, is_restricted=restricted)
 
         if restricted:
             partner.labels.add(*labels)
