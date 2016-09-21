@@ -70,5 +70,8 @@ def record_new_case_action(sender, instance, created, **kwargs):
         DailyCount.record_item(day, DailyCount.TYPE_CASE_OPENED, partner)
 
     elif instance.action == CaseAction.CLOSE:
-        DailyCount.record_item(day, DailyCount.TYPE_CASE_CLOSED, org, user)
-        DailyCount.record_item(day, DailyCount.TYPE_CASE_CLOSED, partner)
+        previous_close_action = instance.case.actions.filter(action=CaseAction.CLOSE).first()
+        # don't count reopened cases
+        if previous_close_action is None or previous_close_action == instance:
+            DailyCount.record_item(day, DailyCount.TYPE_CASE_CLOSED, org, user)
+            DailyCount.record_item(day, DailyCount.TYPE_CASE_CLOSED, partner)
