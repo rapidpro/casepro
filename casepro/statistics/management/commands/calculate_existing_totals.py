@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 from math import ceil
 
 from django.core.management.base import BaseCommand
-from django.db import transaction
 from casepro.cases.models import Case, CaseAction, Outgoing
 from casepro.statistics.models import datetime_to_date, DailySecondTotalCount
 
