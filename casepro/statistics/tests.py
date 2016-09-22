@@ -442,6 +442,11 @@ class CalculateTotalsCommandTest(BaseStatsTest):
         post_save.disconnect(record_new_case_action, sender=CaseAction)
         post_save.disconnect(record_new_outgoing, sender=Outgoing)
 
+    def tearDown(self):
+        super(CalculateTotalsCommandTest, self).tearDown()
+        post_save.connect(record_new_case_action, sender=CaseAction)
+        post_save.connect(record_new_outgoing, sender=Outgoing)
+
     def close_case(self, case, user, note, dt):
         case.close(user, note)
         case_action = case.actions.filter(action=CaseAction.CLOSE).first()
