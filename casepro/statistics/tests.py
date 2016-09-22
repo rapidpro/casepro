@@ -451,9 +451,9 @@ class CalculateTotalsCommandTest(BaseStatsTest):
         case_action.save()
 
     def test_calculate_totals_for_cases(self):
-        o1 = datetime(2016, 8, 01, 12, 0, tzinfo=pytz.UTC)
-        c1 = datetime(2016, 8, 01, 12, 01, tzinfo=pytz.UTC)
-        c2 = datetime(2016, 8, 01, 12, 02, tzinfo=pytz.UTC)
+        o1 = datetime(2016, 8, 1, 12, 0, tzinfo=pytz.UTC)
+        c1 = datetime(2016, 8, 1, 12, 1, tzinfo=pytz.UTC)
+        c2 = datetime(2016, 8, 1, 12, 2, tzinfo=pytz.UTC)
 
         msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids], created_on=o1)
         msg2 = self.create_message(self.unicef, 234, self.ned, "Hello 2", [self.aids, self.pregnancy], created_on=o1)
