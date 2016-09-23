@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-from math import ceil
-
 from django.core.management.base import BaseCommand
 from casepro.cases.models import Case, CaseAction
 from casepro.statistics.models import datetime_to_date, DailyCount
