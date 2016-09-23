@@ -10,8 +10,9 @@ from django.db import models, connection
 from django.db.models import Sum
 from django.utils.functional import SimpleLazyObject
 from django.utils.translation import ugettext_lazy as _
+from math import ceil
 
-from casepro.cases.models import Partner
+from casepro.cases.models import Partner, CaseAction
 from casepro.msgs.models import Label
 from casepro.utils import date_range
 from casepro.utils.export import BaseExport
@@ -401,3 +402,31 @@ class DailySecondTotalCount(BaseSecondTotal):
         if until:
             counts = counts.filter(day__lt=until)
         return DailySecondTotalCount.CountSet(counts, scopes)
+
+
+def record_case_closed_time(close_action):
+    org = close_action.case.org
+    user = close_action.created_by
+    partner = close_action.case.assignee
+    case = close_action.case
+
+    day = datetime_to_date(close_action.created_on, close_action.case.org)
+    # count the time to close on an org level
+    td = close_action.created_on - case.opened_on
+    seconds_since_open = ceil(td.total_seconds())
+    DailySecondTotalCount.record_item(day, seconds_since_open,
+                                      DailySecondTotalCount.TYPE_TILL_CLOSED, org)
+
+    # count the time since case was last assigned to this partner till it was closed
+    if user.partners.filter(id=partner.id).exists():
+        # count the time since this case was (re)assigned to this partner
+        try:
+            action = case.actions.filter(action=CaseAction.REASSIGN, assignee=partner).latest('created_on')
+            start_date = action.created_on
+        except CaseAction.DoesNotExist:
+            start_date = case.opened_on
+
+        td = close_action.created_on - start_date
+        seconds_since_open = ceil(td.total_seconds())
+        DailySecondTotalCount.record_item(day, seconds_since_open,
+                                          DailySecondTotalCount.TYPE_TILL_CLOSED, partner)

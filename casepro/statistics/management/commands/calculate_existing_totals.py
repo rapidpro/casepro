@@ -4,7 +4,7 @@ from math import ceil
 
 from django.core.management.base import BaseCommand
 from casepro.cases.models import Case, CaseAction, Outgoing
-from casepro.statistics.models import datetime_to_date, DailySecondTotalCount
+from casepro.statistics.models import datetime_to_date, DailySecondTotalCount, record_case_closed_time
 
 
 def calculate_totals_for_cases(case_id, progress_callback=None):
@@ -21,26 +21,7 @@ def calculate_totals_for_cases(case_id, progress_callback=None):
         if case.is_closed:
             # we only consider the first time a case was closed, not any subsequent reopenings
             close_action = case.actions.filter(action=CaseAction.CLOSE).earliest('created_on')
-            # calculate time to close at org level
-            day = datetime_to_date(close_action.created_on, case.org)
-            td = close_action.created_on - case.opened_on
-            seconds_since_open = ceil(td.total_seconds())
-            DailySecondTotalCount.record_item(day, seconds_since_open,
-                                              DailySecondTotalCount.TYPE_TILL_CLOSED, case.org)
-
-            # check if the user who closed the case was from the assigned partner
-            if close_action.created_by.partners.filter(id=partner.id).exists():
-                # count the time since this case was (re)assigned to this partner
-                try:
-                    action = case.actions.filter(action=CaseAction.REASSIGN, assignee=partner).latest('created_on')
-                    start_date = action.created_on
-                except CaseAction.DoesNotExist:
-                    start_date = case.opened_on
-
-                td = close_action.created_on - start_date
-                seconds_since_open = ceil(td.total_seconds())
-                DailySecondTotalCount.record_item(day, seconds_since_open,
-                                                  DailySecondTotalCount.TYPE_TILL_CLOSED, partner)
+            record_case_closed_time(close_action)
 
         # check if responded to
         if case.outgoing_messages.exists():
