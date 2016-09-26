@@ -6,16 +6,19 @@ import random
 from dash.orgs.models import Org
 from datetime import date, datetime, time
 from django.core.urlresolvers import reverse
+from django.db.models.signals import post_save
 from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch
 
 from casepro.test import BaseCasesTest
 from casepro.utils import date_to_milliseconds
-from casepro.cases.models import Case
+from casepro.cases.models import Case, CaseAction
 
 from .models import DailyCount, DailyCountExport
 from .tasks import squash_counts
+from .management.commands.calculate_case_open_close_totals import calculate_totals_for_cases
+from .signals import record_new_case_action
 
 
 class BaseStatsTest(BaseCasesTest):
@@ -466,3 +469,67 @@ class ChartsTest(BaseStatsTest):
             self.assertEqual(series[2], {'y': 1, 'name': "Label #0"})  # labels with same count in alphabetical order
             self.assertEqual(series[8], {'y': 1, 'name': "Label #6"})
             self.assertEqual(series[9], {'y': 3, 'name': "Other"})
+
+
+class CalculateOpenCloseTotalsCommandTest(BaseStatsTest):
+    def setUp(self):
+        super(CalculateOpenCloseTotalsCommandTest, self).setUp()
+        post_save.disconnect(record_new_case_action, sender=CaseAction)
+
+    def tearDown(self):
+        super(CalculateOpenCloseTotalsCommandTest, self).tearDown()
+        post_save.connect(record_new_case_action, sender=CaseAction)
+
+    def close_case(self, case, user, note, dt):
+        case.close(user, note)
+        case_action = case.actions.filter(action=CaseAction.CLOSE).first()
+        case.closed_on = dt
+        case_action.created_on = dt
+        case.save()
+        case_action.save()
+
+    def test_calculate_totals_for_cases(self):
+        o1 = datetime(2016, 8, 1, 12, 0, tzinfo=pytz.UTC)
+        c1 = datetime(2016, 8, 1, 12, 1, tzinfo=pytz.UTC)
+        c2 = datetime(2016, 8, 1, 12, 2, tzinfo=pytz.UTC)
+
+        msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids], created_on=o1)
+        msg2 = self.create_message(self.unicef, 234, self.ned, "Hello 2", [self.aids, self.pregnancy], created_on=o1)
+        msg3 = self.create_message(self.unicef, 345, self.ann, "Hello 3", [self.pregnancy], created_on=o1)
+        msg4 = self.create_message(self.nyaruka, 456, self.ned, "Hello 4", [self.code], created_on=o1)
+        msg5 = self.create_message(self.unicef, 789, self.ann, "Hello 5", [self.code], created_on=o1)
+
+        with patch.object(timezone, 'now', return_value=o1):
+            case1 = Case.get_or_open(self.unicef, self.user1, msg1, "Summary", self.moh)
+            case2 = Case.get_or_open(self.unicef, self.user1, msg2, "Summary", self.moh)
+            case3 = Case.get_or_open(self.unicef, self.user3, msg3, "Summary", self.who)
+            Case.get_or_open(self.unicef, self.user1, msg4, "Summary", self.who)
+            Case.get_or_open(self.unicef, self.user3, msg5, "Summary", self.moh)
+
+            self.close_case(case1, self.user1, 'closed', c1)
+            self.close_case(case2, self.user1, 'closed', c2)
+            self.close_case(case3, self.user3, 'closed', c1)
+
+        calculate_totals_for_cases(case_id=None)
+
+        # check partner
+        self.assertEqual(
+            DailyCount.get_by_partner([self.moh], DailyCount.TYPE_CASE_OPENED).day_totals(),
+            [(date(2016, 8, 1), 3)])
+        self.assertEqual(
+            DailyCount.get_by_partner([self.moh], DailyCount.TYPE_CASE_CLOSED).day_totals(),
+            [(date(2016, 8, 1), 2)])
+        self.assertEqual(
+            DailyCount.get_by_partner([self.who], DailyCount.TYPE_CASE_OPENED).day_totals(),
+            [(date(2016, 8, 1), 2)])
+        self.assertEqual(
+            DailyCount.get_by_partner([self.who], DailyCount.TYPE_CASE_CLOSED).day_totals(),
+            [(date(2016, 8, 1), 1)])
+
+        # check user
+        self.assertEqual(
+            DailyCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_OPENED).day_totals(),
+            [(date(2016, 8, 1), 3)])
+        self.assertEqual(
+            DailyCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_CLOSED).day_totals(),
+            [(date(2016, 8, 1), 2)])
