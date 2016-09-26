@@ -7,7 +7,7 @@ from math import ceil
 from casepro.cases.models import CaseAction
 from casepro.msgs.models import Message, Label, Outgoing
 
-from .models import datetime_to_date, DailyCount, DailySecondTotalCount
+from .models import datetime_to_date, DailyCount, DailySecondTotalCount, record_case_closed_time
 
 
 @receiver(post_save, sender=Message)
@@ -82,35 +82,8 @@ def record_incoming_labelling(sender, instance, action, reverse, model, pk_set, 
 
 @receiver(post_save, sender=CaseAction)
 def record_new_case_action(sender, instance, created, **kwargs):
-    org = instance.case.org
-    user = instance.created_by
-    partner = instance.case.assignee
-    case = instance.case
-
-    day = datetime_to_date(instance.created_on, instance.case.org)
-
     if instance.action == CaseAction.CLOSE:
-        if case.actions.filter(action=CaseAction.REOPEN).exists():
+        if instance.case.actions.filter(action=CaseAction.REOPEN).exists():
             # dont count any stats for reopened cases.
             return
-
-        # count the time to close on an org level
-        td = instance.created_on - case.opened_on
-        seconds_since_open = ceil(td.total_seconds())
-        DailySecondTotalCount.record_item(day, seconds_since_open,
-                                          DailySecondTotalCount.TYPE_TILL_CLOSED, org)
-
-        if case.assignee == partner:
-            # count the time since case was last assigned to this partner till it was closed
-            if user.partners.filter(id=partner.id).exists():
-                # count the time since this case was (re)assigned to this partner
-                try:
-                    action = case.actions.filter(action=CaseAction.REASSIGN, assignee=partner).latest('created_on')
-                    start_date = action.created_on
-                except CaseAction.DoesNotExist:
-                    start_date = case.opened_on
-
-                td = instance.created_on - start_date
-                seconds_since_open = ceil(td.total_seconds())
-                DailySecondTotalCount.record_item(day, seconds_since_open,
-                                                  DailySecondTotalCount.TYPE_TILL_CLOSED, partner)
+        record_case_closed_time(instance)
