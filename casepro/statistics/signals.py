@@ -67,6 +67,7 @@ def record_new_case_action(sender, instance, created, **kwargs):
 
     day = datetime_to_date(instance.created_on, instance.case.org)
     if instance.action == CaseAction.OPEN:
+        DailyCount.record_item(day, DailyCount.TYPE_CASE_OPENED, org)
         DailyCount.record_item(day, DailyCount.TYPE_CASE_OPENED, org, user)
         DailyCount.record_item(day, DailyCount.TYPE_CASE_OPENED, partner)
 
@@ -75,5 +76,6 @@ def record_new_case_action(sender, instance, created, **kwargs):
             # dont count any stats for reopened cases.
             return
 
+        DailyCount.record_item(day, DailyCount.TYPE_CASE_CLOSED, org)
         DailyCount.record_item(day, DailyCount.TYPE_CASE_CLOSED, org, user)
         DailyCount.record_item(day, DailyCount.TYPE_CASE_CLOSED, partner)

@@ -186,8 +186,16 @@ class DailyCountsTest(BaseStatsTest):
         self.assertEqual(
             DailyCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_OPENED).day_totals(),
             [(date(2015, 1, 1), 1)])
+
+        self.assertEqual(
+            DailyCount.get_by_org([self.unicef], DailyCount.TYPE_CASE_OPENED).day_totals(),
+            [(date(2015, 1, 1), 1)])
+
         self.assertEqual(
             DailyCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_CLOSED).day_totals(),
+            [])
+        self.assertEqual(
+            DailyCount.get_by_org([self.unicef], DailyCount.TYPE_CASE_CLOSED).day_totals(),
             [])
 
         self.assertEqual(
@@ -213,6 +221,13 @@ class DailyCountsTest(BaseStatsTest):
                 [(date(2015, 1, 1), 1)])
             self.assertEqual(
                 DailyCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_CLOSED).day_totals(),
+                [(date(2015, 1, 1), 1)])
+
+            self.assertEqual(
+                DailyCount.get_by_org([self.unicef], DailyCount.TYPE_CASE_OPENED).day_totals(),
+                [(date(2015, 1, 1), 1)])
+            self.assertEqual(
+                DailyCount.get_by_org([self.unicef], DailyCount.TYPE_CASE_CLOSED).day_totals(),
                 [(date(2015, 1, 1), 1)])
 
             self.assertEqual(
