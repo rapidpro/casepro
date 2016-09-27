@@ -462,6 +462,7 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
 
   $scope.partners = []
   $scope.users = []
+  $scope.userFilters = {all: false}
 
   $scope.onTabInit = (tab) ->
     if tab == 'summary'
@@ -500,17 +501,17 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
         $scope.labels = labels
       )
     else if tab == 'users'
+      UserService.fetchNonPartner(true).then((users) ->
+        $scope.users = users
+      )
+
+  $scope.onChangeUsersFilter = () ->
+    if $scope.userFilters.all
       UserService.fetchAll(true).then((users) ->
         $scope.users = users
       )
-
-  $scope.onSelectAllUsers = () ->
-    UserService.fetchAll(true).then((users) ->
-        $scope.users = users
-      )
-
-  $scope.onSelectOrgOnlyUsers = () ->
-    UserService.fetchNonPartner(true).then((users) ->
+    else
+      UserService.fetchNonPartner(true).then((users) ->
         $scope.users = users
       )
 
