@@ -257,7 +257,7 @@ class DailyCountExport(BaseExport):
             cases_opened_sheet = book.add_sheet(six.text_type(_("Cases Opened")))
             cases_closed_sheet = book.add_sheet(six.text_type(_("Cases Closed")))
 
-            users = self.org.get_org_users().order_by('pk')
+            users = self.org.get_org_users().order_by('profile__full_name')
 
             replies_totals_by_user = {}
             cases_opened_by_user = {}
