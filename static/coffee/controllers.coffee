@@ -462,6 +462,7 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
 
   $scope.partners = []
   $scope.users = []
+  $scope.userFilters = {all: false}
 
   $scope.onTabInit = (tab) ->
     if tab == 'summary'
@@ -504,6 +505,16 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
         $scope.users = users
       )
 
+  $scope.onChangeUsersFilter = () ->
+    if $scope.userFilters.all
+      UserService.fetchAll(true).then((users) ->
+        $scope.users = users
+      )
+    else
+      UserService.fetchNonPartner(true).then((users) ->
+        $scope.users = users
+      )
+
   $scope.onExportPartnerStats = () ->
     UtilsService.dateRangeModal("Export", "Export partner statistics between the following dates").then((data) ->
       StatisticsService.dailyCountExport('P', data.after, data.before).then(() ->
@@ -514,6 +525,13 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
   $scope.onExportLabelStats = () ->
     UtilsService.dateRangeModal("Export", "Export label statistics between the following dates").then((data) ->
       StatisticsService.dailyCountExport('L', data.after, data.before).then(() ->
+        UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
+      )
+    )
+
+  $scope.onExportUserStats = () ->
+    UtilsService.dateRangeModal("Export", "Export user statistics between the following dates").then((data) ->
+      StatisticsService.dailyCountExport("U", data.after, data.before).then(() ->
         UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
       )
     )

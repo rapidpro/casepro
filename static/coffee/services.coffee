@@ -477,6 +477,13 @@ services.factory('UserService', ['$http', '$httpParamSerializer', ($http, $httpP
   new class UserService
 
     #----------------------------------------------------------------------------
+    # Fetches all users, optionally with activity information
+    #----------------------------------------------------------------------------
+    fetchAll: (withActivity = false) ->
+      params = {with_activity: withActivity}
+      return $http.get('/user/?' + $httpParamSerializer(params)).then((response) -> response.data.results)
+
+    #----------------------------------------------------------------------------
     # Fetches users in the given partner with optional activity statistics
     #----------------------------------------------------------------------------
     fetchInPartner: (partner, withActivity = false) ->
