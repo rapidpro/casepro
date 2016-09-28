@@ -10,8 +10,10 @@ def calculate_totals_for_cases(apps, schema_editor):
     CaseAction = apps.get_model('cases', 'CaseAction')
     DailyCount = apps.get_model('statistics', 'DailyCount')
 
-    qs = Case.objects.all().order_by('id')
-    for case in qs:
+    cases = list(Case.objects.all().order_by('id'))
+    num_updated = 0
+
+    for case in cases:
         open_action = case.actions.filter(action='O').first()
         org = open_action.case.org
         user = open_action.created_by
@@ -32,6 +34,11 @@ def calculate_totals_for_cases(apps, schema_editor):
                                       count=1)
             DailyCount.objects.create(day=day, item_type='D',
                                       scope='partner:%d' % close_action.case.assignee.pk, count=1)
+
+            num_updated += 1
+            if num_updated % 100 == 0:
+                print("Created daily counts for %d of %d cases" % (num_updated, len(cases)))
+
         except CaseAction.DoesNotExist:
             # no close action means to close totals to count for this case
             pass
