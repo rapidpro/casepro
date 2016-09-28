@@ -633,7 +633,7 @@ describe('controllers:', () ->
       labelsPieChart = spyOnPromise($q, $scope, StatisticsService, 'labelsPieChart')
       fetchPartners = spyOnPromise($q, $scope, PartnerService, 'fetchAll')
       fetchLabels = spyOnPromise($q, $scope, LabelService, 'fetchAll')
-      fetchUsers = spyOnPromise($q, $scope, UserService, 'fetchAll')
+      fetchUsers = spyOnPromise($q, $scope, UserService, 'fetchNonPartner')
 
       $scope.onTabSelect(0)
 
