@@ -5,29 +5,33 @@ from django.db import migrations, models
 
 
 def calculate_totals_for_cases(apps, schema_editor):
-    from casepro.cases.models import Case, CaseAction
-    from casepro.statistics.models import DailyCount, datetime_to_date
+    from casepro.statistics.models import datetime_to_date
+    Case = apps.get_model('cases', 'Case')
+    CaseAction = apps.get_model('cases', 'CaseAction')
+    DailyCount = apps.get_model('statistics', 'DailyCount')
 
     qs = Case.objects.all().order_by('id')
     for case in qs:
-        open_action = case.actions.filter(action=CaseAction.OPEN).first()
+        open_action = case.actions.filter(action='O').first()
         org = open_action.case.org
         user = open_action.created_by
         partner = open_action.case.assignee
         case = open_action.case
 
         day = datetime_to_date(open_action.created_on, org)
-        DailyCount.record_item(day, DailyCount.TYPE_CASE_OPENED, org)
-        DailyCount.record_item(day, DailyCount.TYPE_CASE_OPENED, org, user)
-        DailyCount.record_item(day, DailyCount.TYPE_CASE_OPENED, partner)
+        DailyCount.objects.create(day=day, item_type='C', scope='org:%d' % org.pk, count=1)
+        DailyCount.objects.create(day=day, item_type='C', scope='org:%d:user:%d' % (org.pk, user.pk), count=1)
+        DailyCount.objects.create(day=day, item_type='C', scope='partner:%d' % partner.pk, count=1)
 
         try:
             # only check the first close action, don't count reopens
-            close_action = case.actions.filter(action=CaseAction.CLOSE).earliest('created_on')
-            DailyCount.record_item(day, DailyCount.TYPE_CASE_CLOSED, close_action.case.org)
-            DailyCount.record_item(day, DailyCount.TYPE_CASE_CLOSED,
-                                   close_action.case.org, close_action.created_by)
-            DailyCount.record_item(day, DailyCount.TYPE_CASE_CLOSED, close_action.case.assignee)
+            close_action = case.actions.filter(action='C').earliest('created_on')
+            DailyCount.objects.create(day=day, item_type='D', scope='org:%d' % close_action.case.org.pk, count=1)
+            DailyCount.objects.create(day=day, item_type='D',
+                                      scope='org:%d:user:%d' % (close_action.case.org.pk, close_action.created_by.pk),
+                                      count=1)
+            DailyCount.objects.create(day=day, item_type='D',
+                                      scope='partner:%d' % close_action.case.assignee.pk, count=1)
         except CaseAction.DoesNotExist:
             # no close action means to close totals to count for this case
             pass
@@ -36,8 +40,8 @@ def calculate_totals_for_cases(apps, schema_editor):
 def remove_totals_for_cases(apps, schema_editor):
     from casepro.statistics.models import DailyCount
     db_alias = schema_editor.connection.alias
-    DailyCount.objects.using(db_alias).filter(item_type=DailyCount.TYPE_CASE_CLOSED).delete()
-    DailyCount.objects.using(db_alias).filter(item_type=DailyCount.TYPE_CASE_OPENED).delete()
+    DailyCount.objects.using(db_alias).filter(item_type='D').delete()
+    DailyCount.objects.using(db_alias).filter(item_type='C').delete()
 
 
 class Migration(migrations.Migration):
