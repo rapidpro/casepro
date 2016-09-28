@@ -20,7 +20,7 @@ from casepro.msgs.models import Label, Message, MessageFolder, OutgoingFolder
 from casepro.pods import registry as pod_registry
 from casepro.statistics.models import DailyCount, DailySecondTotalCount
 from casepro.utils import json_encode, datetime_to_microseconds, microseconds_to_datetime, JSONEncoder, str_to_bool
-from casepro.utils import month_range, humanise_seconds
+from casepro.utils import month_range, humanize_seconds
 from casepro.utils.export import BaseDownloadView
 
 from . import MAX_MESSAGE_CHARS
@@ -428,10 +428,10 @@ class PartnerCRUDL(SmartCRUDL):
                             'this_month': this_month.get(partner, 0),
                             'last_month': last_month.get(partner, 0),
                             'total': total.get(partner, 0),
-                            'average_replied': humanise_seconds(average_replied.get(partner, 0))
+                            'average_replied': humanize_seconds(average_replied.get(partner, 0))
                         },
                         'cases': {
-                            'average_closed': humanise_seconds(average_closed.get(partner, 0))
+                            'average_closed': humanize_seconds(average_closed.get(partner, 0))
                         }
                     })
                 return obj
