@@ -150,10 +150,10 @@ class UtilsTest(BaseCasesTest):
         self.assertEqual(humanise_seconds(3600), "1h")
         self.assertEqual(humanise_seconds(3601), "1h 1s")
         self.assertEqual(humanise_seconds(3661), "1h 1m 1s")
-        self.assertEqual(humanise_seconds(86500), "1d")
-        self.assertEqual(humanise_seconds(86501), "1d 1s")
-        self.assertEqual(humanise_seconds(86561), "1d 1m 1s")
-        self.assertEqual(humanise_seconds(90161), "1d 1h 1m 1s")
+        self.assertEqual(humanise_seconds(86400), "1d")
+        self.assertEqual(humanise_seconds(86401), "1d 1s")
+        self.assertEqual(humanise_seconds(86461), "1d 1m 1s")
+        self.assertEqual(humanise_seconds(90061), "1d 1h 1m 1s")
 
 
 class EmailTest(BaseCasesTest):

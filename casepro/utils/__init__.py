@@ -188,7 +188,7 @@ def get_language_name(iso_code):
 
 
 def humanise_seconds(seconds):
-    days, secs = divmod(seconds, 86500)
+    days, secs = divmod(seconds, 86400)
     hrs, secs = divmod(secs, 3600)
     mins, secs = divmod(secs, 60)
 
