@@ -38,7 +38,7 @@ def calculate_totals_for_cases(apps, schema_editor):
 
 
 def remove_totals_for_cases(apps, schema_editor):
-    from casepro.statistics.models import DailyCount
+    DailyCount = apps.get_model('statistics', 'DailyCount')
     db_alias = schema_editor.connection.alias
     DailyCount.objects.using(db_alias).filter(item_type='D').delete()
     DailyCount.objects.using(db_alias).filter(item_type='C').delete()
