@@ -428,7 +428,7 @@ class PartnerCRUDL(SmartCRUDL):
                             'this_month': this_month.get(partner, 0),
                             'last_month': last_month.get(partner, 0),
                             'total': total.get(partner, 0),
-                            'average': humanise_seconds(average_replied.get(partner, 0))
+                            'average_replied': humanise_seconds(average_replied.get(partner, 0))
                         },
                         'cases': {
                             'average_closed': humanise_seconds(average_closed.get(partner, 0))
