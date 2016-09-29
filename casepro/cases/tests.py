@@ -1162,13 +1162,13 @@ class PartnerCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json, {'results': [
             {
                 'id': self.moh.pk, 'name': "MOH", 'restricted': True,
-                'replies': {'average_replied': '0s', 'last_month': 0, 'this_month': 0, 'total': 0},
-                'cases': {'average_closed': '0s'},
+                'replies': {'average_replied': '0\xa0minutes', 'last_month': 0, 'this_month': 0, 'total': 0},
+                'cases': {'average_closed': '0\xa0minutes'},
             },
             {
                 'id': self.who.pk, 'name': "WHO", 'restricted': True,
-                'replies': {'average_replied': '0s', 'last_month': 0, 'this_month': 0, 'total': 0},
-                'cases': {'average_closed': '0s'},
+                'replies': {'average_replied': u'0\xa0minutes', 'last_month': 0, 'this_month': 0, 'total': 0},
+                'cases': {'average_closed': u'0\xa0minutes'},
             }
         ]})
 

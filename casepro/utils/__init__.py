@@ -9,6 +9,7 @@ import unicodedata
 
 from dateutil.relativedelta import relativedelta
 from datetime import datetime, time, timedelta
+from django.utils.timesince import timeuntil
 from django.utils import timezone
 from enum import Enum
 from temba_client.utils import format_iso8601
@@ -188,20 +189,5 @@ def get_language_name(iso_code):
 
 
 def humanize_seconds(seconds):
-    days, secs = divmod(seconds, 86400)
-    hrs, secs = divmod(secs, 3600)
-    mins, secs = divmod(secs, 60)
-
-    result = []
-    if days:
-        result.append("%.fd" % days)
-    if hrs:
-        result.append("%.fh" % hrs)
-    if mins:
-        result.append("%.0fm" % mins)
-    if secs:
-        result.append("%.0fs" % secs)
-    else:
-        if len(result) == 0:
-            result.append("0s")
-    return " ".join(result)
+    now = timezone.now()
+    return timeuntil(now + timedelta(seconds=seconds), now)
