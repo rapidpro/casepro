@@ -264,10 +264,9 @@ describe('controllers:', () ->
         expect($scope.isInfiniteScrollEnabled()).toEqual(true)
       )
 
-      it('loadOldItems should report to raven on failure', () ->
+      it('loadOldItems should display alert on failure', () ->
         spyOn(CaseService, 'fetchOld').and.callThrough()
         spyOn(UtilsService, 'displayAlert')
-        spyOn(Raven, 'captureMessage')
 
         $httpBackend.expectGET(/\/case\/search\/\?.*/).respond(() -> [500, 'Server error', {}, 'Internal error'])
 
@@ -275,7 +274,6 @@ describe('controllers:', () ->
 
         $httpBackend.flush()
         expect(UtilsService.displayAlert).toHaveBeenCalled()
-        expect(Raven.captureMessage).toHaveBeenCalled()
       )
 
       it('getItemFilter', () ->
