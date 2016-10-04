@@ -44,7 +44,7 @@ pycountry==1.12
 python-dateutil==2.4.2
 pytz==2015.7
 -e git+https://github.com/rapidpro/rapidpro-python.git@a307ae3b061bb0915fa06a65a1706c0cf17ff3a7#egg=rapidpro-python
-raven==5.3.1
+raven==5.27.1
 redis==2.10.3
 regex==2015.10.01
 requests==2.7.0

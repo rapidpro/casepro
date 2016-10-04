@@ -191,11 +191,6 @@ controllers.controller('BaseItemsController', ['$scope', 'UtilsService', ($scope
           $scope.loadOldItems(true)
     ).catch((error) ->
       UtilsService.displayAlert('error', "Problem communicating with the server")
-
-      Raven.captureMessage(error.statusText + " (" + error.status + ")", {
-        user: if $scope.user then {id: $scope.user.id} else null,
-        extra: {xhr_url: error.config.url}
-      })
     )
 
   $scope.isInfiniteScrollEnabled = () ->
@@ -604,14 +599,11 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
   $scope.sendMessage = ->
     $scope.sending = true
 
-    try
-      CaseService.replyTo($scope.caseObj, $scope.newMessage).then(() ->
-        $scope.newMessage = ''
-        $scope.sending = false
-        $scope.$broadcast('timelineChanged')
-      )
-    catch e
-      $window.Raven.captureException(e)
+    CaseService.replyTo($scope.caseObj, $scope.newMessage).then(() ->
+      $scope.newMessage = ''
+      $scope.sending = false
+      $scope.$broadcast('timelineChanged')
+    )
 
   $scope.onNewMessageChanged = ->
     $scope.msgCharsRemaining = $scope.maxMsgChars - $scope.newMessage.length
