@@ -6,7 +6,7 @@
   %script{ type:"text/javascript" }
     var contextData = {{ context_data_json|safe }};
 
-  .ng-cloak{ ng-controller:"FaqController", ng-cloak:"" }
+  .ng-cloak{ ng-controller:"FaqController", ng-cloak:"", ng-init:"init()" }
     .page-header.clearfix
       .page-header-buttons
         - if edit_button_url
@@ -19,12 +19,81 @@
 
       %h2
         FAQ Details
+    %table.table.table-striped
+      %tbody
+          %tr
+            %td.read-label
+              - trans "Question"
+            %td.read-value
+              %span
+              [[ faq.question ]]
+          %tr
+            %td.read-label
+              - trans "Answer"
+            %td.read-value
+              %span
+                [[ faq.answer ]]
+          %tr
+            %td.read-label
+              - trans "Language"
+            %td.read-value
+              %spans 
+              [[ faq.language.name ]]
+          %tr
+            %td.read-label
+              - trans "Labels"
+            %td.read-value
+              %span{ ng-repeat:'label in faq.labels' }
+                %span.label.label-success
+                  [[ label.name ]]
+                &nbsp;
+        
+            
+    .page-header.clearfix
+      .page-header-buttons
+        - if edit_button_url
+          .btn-group
+            %a.btn.btn-default{ ng-click:"onNewTranslation(faq)", type:"button"  }
+              %span.glyphicon.glyphicon-plus
+              - trans "Add Translation"
+
+      %h2
+        Translations
+    
+    %table.table.table-striped
+      %thead
+        %tr
+          %th
+            - trans "Language"
+          %th
+            - trans "Question"
+          %th.col-xs-4
+            - trans "Answer"
+          %th
+            - trans "Edit"
+          %th
+            - trans "Delete"
+
+      %tbody
+          %tr.translation{ ng-repeat:"translation in translations | filter:filterTranslations(faq.id)" }
+            %td
+              [[ translation.language.name ]]
+            %td
+              [[ translation.question ]]
+            %td
+              [[ translation.answer ]]
+            %td
+              %a.btn.btn-default{ ng-click:"onEditTranslation(translation, faq)", tooltip:"Edit FAQ" }
+                %i.glyphicon.glyphicon-pencil
+            %td
+              %a.btn.btn-default{ ng-click:"onDeleteFaqTranslation(translation)", tooltip:"Delete FAQ" }
+                %i.glyphicon.glyphicon-trash
+                
+    .emptymessage{ ng-show:"!translations.length" }
+      - trans "No translations availible"
+
+
 
 - block read-buttons
-
+- block pjax
 - block extra-fields
-  %table{:class => "table table-striped"}
-    %tbody
-      %tr{:class => "read-fieldies"}
-        %td{:class => "read-label"} Labels
-        %td{:class => "read-value"}= labels

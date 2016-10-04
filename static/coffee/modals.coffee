@@ -216,3 +216,29 @@ modals.controller('DateRangeModalController', ['$scope', '$uibModalInstance', 't
 
   $scope.cancel = () -> $uibModalInstance.dismiss(false)
 ])
+
+#=====================================================================
+# Translation modal
+#=====================================================================
+modals.controller('TranslationModalController', ['$scope', 'FaqService', '$uibModalInstance', 'title', 'translation', 'faq', ($scope, FaqService, $uibModalInstance, title, translation, faq) ->
+  $scope.title = title
+  $scope.faq = faq
+
+  $scope.fields = {
+    question: {val: if translation then translation.question else null}
+    answer: {val: if translation then translation.answer else null}
+    parent: {val:faq.id}
+    language: {val:faq.language}
+    labels: {val:faq.labels}
+    id: {val: if translation then translation.id else null}
+  }
+
+  $scope.ok = () ->
+    $scope.form.submitted = true
+    
+    if $scope.form.$valid
+      data = {question: $scope.fields.question.val, answer: $scope.fields.answer.val, parent: $scope.fields.parent.val, language: $scope.fields.language.val, id: $scope.fields.id.val }
+      $uibModalInstance.close(data)
+          
+  $scope.cancel = () -> $uibModalInstance.dismiss(false)
+])

@@ -1,0 +1,48 @@
+-load i18n
+
+.modal-header
+  %h3.modal-title
+    [[ title ]]
+  .modal-body
+    .panel.panel-default
+      .panel-heading
+        %h3.panel-title
+          - trans "Original FAQ"
+      .panel-body
+        %b
+          [[ faq.question ]]
+        %p
+          [[ faq.answer ]]
+          
+    %form{ name:"form", novalidate:"" }
+      .form-group
+      .form-group.form-horizontal
+        .form-group{ ng-class:'{"has-error": form.question.$invalid && (form.question.$dirty || form.submitted)}' }
+          %label.col-sm-2.control-label
+            - trans "Question"
+          .col-sm-10
+            %textarea.form-control{ type:"text", ng-model:"fields.question.val", name:"question", required:"" }
+            .help-block{ ng-show:"form.question.$error.required && (form.question.$dirty || form.submitted)" }
+              - trans "Required"
+        .form-group{ ng-class:'{"has-error": form.answer.$invalid && (form.answer.$dirty || form.submitted)}' }
+          %label.col-sm-2.control-label
+            - trans "Answer"
+          .col-sm-10
+            %textarea.form-control{ type:"text", ng-model:"fields.answer.val", name:"answer", required:"" }
+            .help-block{ ng-show:"form.answer.$error.required && (form.answer.$dirty || form.submitted)" }
+              - trans "Required"
+        .form-group{ ng-class:'{"has-error": form.language.$invalid && (form.language.$dirty || form.submitted)}' }
+          %label.col-sm-2.control-label
+            - trans "Language"
+          .col-sm-10
+            %input.form-control{ type:"text", ng-model:"fields.language.val", name:"language", required:"" }
+            .help-block{ ng-show:"form.language.$error.required && (form.language.$dirty || form.submitted)" }
+              - trans "Required"
+      
+  .modal-footer
+    %button.btn.btn-primary{ ng-click:"ok()" }
+      - trans "Submit"
+    %button.btn.btn-default{ ng-click:"cancel()" }
+      - trans "Cancel"
+      
+

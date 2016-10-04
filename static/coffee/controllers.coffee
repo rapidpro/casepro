@@ -838,18 +838,83 @@ controllers.controller('UserController', ['$scope', '$controller', '$window', 'S
 #============================================================================
 # Faq view controller
 #============================================================================
-controllers.controller('FaqController', ['$scope', '$window', 'UtilsService', 'FaqService', ($scope, $window, UtilsService, FaqService) ->
+controllers.controller('FaqController', ['$scope', '$timeout', '$window', 'UtilsService', 'FaqService', ($scope, $timeout, $window, UtilsService, FaqService) ->
 
   $scope.faq = $window.contextData.faq
 
+  $scope.init = () ->
+    $scope.fetchAllFaqs()
+    
+  $scope.fetchAllFaqs = (faq) ->
+      FaqService.fetchAllFaqs().then((results) ->
+        $scope.translations = results
+      )
+    
+  $scope.filterTranslations = (parent) ->
+    (translation) ->
+      translation.parent == parent
+      
   $scope.onDeleteFaq = () ->
     UtilsService.confirmModal("Warning! If this FAQ has any linked translation FAQs, they will be also be deleted. Delete this FAQ?", 'danger').then(() ->
       FaqService.delete($scope.faq).then(() ->
         UtilsService.navigate('/faq/')
       )
     )
+  
+  $scope.onDeleteFaqTranslation = (translation) ->
+      UtilsService.confirmModal("Delete this Translation??", 'danger').then(() ->
+        FaqService.deleteTranslation(translation).then(() ->
+          $scope.translations.splice($scope.translations.indexOf(translation), 1)
+        )
+      )
+
+  $scope.onNewTranslation = (faq) ->
+    UtilsService.translationModal("Create FAQ Translation", null, faq).then((result) ->
+      FaqService.createTranslation(result).then(() ->
+      $window.location.reload()
+      )
+    )
+  
+  $scope.onEditTranslation = (translation, faq) ->
+    UtilsService.translationModal("Edit FAQ Translation", translation, faq).then((result) ->
+      console.log(result)
+      FaqService.updateTranslation(result).then(() ->
+      $window.location.reload()
+      )
+    )
+    
 ])
 
+#============================================================================
+# Faq list controller
+#============================================================================
+controllers.controller('FaqListController', ['$scope', 'FaqService', '$filter', ($scope, FaqService, $filter) ->
+
+  $scope.init = () ->
+    $scope.fetchAllFaqs()
+    
+  $scope.fetchAllFaqs = (faq) ->
+    FaqService.fetchAllFaqs().then((results) ->
+      $scope.faqs = results
+
+      parents = []
+      for faq in $scope.faqs
+        if faq.parent
+          if not parents[faq.parent]
+            parents[faq.parent] = 0
+          
+          parents[faq.parent] += 1
+          
+          for faq in $scope.faqs
+            faq.count = 0
+            if parents[faq.id]
+              faq.count = parents[faq.id]
+      )
+  
+  $scope.filterParents = (faq) ->
+    faq.parent == null
+    
+])
 
 #============================================================================
 # Date range controller

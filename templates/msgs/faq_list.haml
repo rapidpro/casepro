@@ -2,16 +2,48 @@
 - load smartmin i18n
 
 - block pre-content
-  .page-header
-    %h2
-      - trans "FAQs"
 
 - block table-controls
-  .clearfix
-    .pull-away.buttons
-    %a.btn.btn-default.pull-right{ href:"{% url 'msgs.faq_create' %}" }
-      %span.glyphicon.glyphicon-plus
-      - trans "Add"
-    %a.btn.btn-default.pull-right{ href:"{% url 'msgs.faq_import' %}" }
-      %span.glyphicon.glyphicon-plus
-      - trans "Batch Upload"
+
+  .ng-cloak{ ng-controller:"FaqListController", ng-cloak:"", ng-init:"init()" }
+    .clearfix
+      .page-header-buttons
+        .btn-group
+          %a.btn.btn-default{ href:"{% url 'msgs.faq_import' %}" }
+            %span.glyphicon.glyphicon-duplicate
+            - trans "Batch Upload"
+          %a.btn.btn-default{ href:"{% url 'msgs.faq_create' %}" }
+            %span.glyphicon.glyphicon-plus
+            - trans "Add"
+      .page-header
+        %h2
+          - trans "FAQs"
+      
+      %table.table.table-striped.list-table.table-bordered
+        %thead
+          %tr
+            %th
+              - trans "Question"
+            %th
+              - trans "Answer"
+            %th
+              - trans "Language"
+            %th
+              - trans "Translations"
+
+        %tbody
+          
+            %tr{ ng-repeat:"faq in faqs | filter:filterParents" }
+              %td
+                %a{ ng-href:"/faq/read/[[ faq.id ]]/" }
+                  [[ faq.question ]]
+              %td.col-xs-6
+                [[ faq.answer ]]
+              %td
+                [[ faq.language.name ]]
+              %td.text-center
+                %span.badge
+                  [[ faq.count ]]
+            
+- block pjax
+
