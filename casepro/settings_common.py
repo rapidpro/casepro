@@ -219,9 +219,6 @@ INSTALLED_APPS = (
     # mo-betta permission management
     'guardian',
 
-    # versioning of our data
-    'reversion',
-
     # the django admin
     # 'django.contrib.admin',
 
