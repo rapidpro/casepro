@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 import six
 
-from dash.utils import is_dict_equal
+from dash.utils import is_dict_equal, chunks
 from dash.utils.sync import BaseSyncer, sync_local_to_set, sync_local_to_changes
 from django.utils.timezone import now
 
@@ -197,12 +197,15 @@ class RapidProBackend(BaseBackend):
     """
     RapidPro instance as a backend
     """
+    # TODO reset to 100 when limit is fixed on RapidPro side
+    BATCH_SIZE = 99
+
     @staticmethod
-    def _get_client(org, api_version):
-        return org.get_temba_client(api_version=api_version)
+    def _get_client(org):
+        return org.get_temba_client(api_version=2)
 
     def pull_contacts(self, org, modified_after, modified_before, progress_callback=None):
-        client = self._get_client(org, 2)
+        client = self._get_client(org)
 
         # all contacts created or modified in RapidPro in the time window
         active_query = client.get_contacts(after=modified_after, before=modified_before)
@@ -215,25 +218,25 @@ class RapidProBackend(BaseBackend):
         return sync_local_to_changes(org, ContactSyncer(), fetches, deleted_fetches, progress_callback)
 
     def pull_fields(self, org):
-        client = self._get_client(org, 2)
+        client = self._get_client(org)
         incoming_objects = client.get_fields().all(retry_on_rate_exceed=True)
 
         return sync_local_to_set(org, FieldSyncer(), incoming_objects)
 
     def pull_groups(self, org):
-        client = self._get_client(org, 2)
+        client = self._get_client(org)
         incoming_objects = client.get_groups().all(retry_on_rate_exceed=True)
 
         return sync_local_to_set(org, GroupSyncer(), incoming_objects)
 
     def pull_labels(self, org):
-        client = self._get_client(org, 2)
+        client = self._get_client(org)
         incoming_objects = client.get_labels().all(retry_on_rate_exceed=True)
 
         return sync_local_to_set(org, LabelSyncer(), incoming_objects)
 
     def pull_messages(self, org, modified_after, modified_before, as_handled=False, progress_callback=None):
-        client = self._get_client(org, 2)
+        client = self._get_client(org)
 
         # all incoming messages created or modified in RapidPro in the time window
         query = client.get_messages(folder='incoming', after=modified_after, before=modified_before)
@@ -242,12 +245,11 @@ class RapidProBackend(BaseBackend):
         return sync_local_to_changes(org, MessageSyncer(as_handled), fetches, [], progress_callback)
 
     def push_label(self, org, label):
-        client = self._get_client(org, 1)
-        temba_labels = client.get_labels(name=label.name)  # gets all partial name matches
-        temba_labels = [l for l in temba_labels if l.name.lower() == label.name.lower()]
+        client = self._get_client(org)
+        temba_label = client.get_labels(name=label.name).first()
 
-        if temba_labels:
-            remote = temba_labels[0]
+        if temba_label:
+            remote = temba_label
         else:
             remote = client.create_label(name=label.name)
 
@@ -255,7 +257,7 @@ class RapidProBackend(BaseBackend):
         label.save(update_fields=('uuid',))
 
     def push_outgoing(self, org, outgoing, as_broadcast=False):
-        client = self._get_client(org, 1)
+        client = self._get_client(org)
 
         # RapidPro currently doesn't send emails so we use the CasePro email system to send those instead
         for_backend = []
@@ -294,57 +296,57 @@ class RapidProBackend(BaseBackend):
                 msg.save(update_fields=('backend_broadcast_id',))
 
     def add_to_group(self, org, contact, group):
-        client = self._get_client(org, 1)
-        client.add_contacts([contact.uuid], group_uuid=group.uuid)
+        client = self._get_client(org)
+        client.bulk_add_contacts([contact.uuid], group=group.uuid)
 
     def remove_from_group(self, org, contact, group):
-        client = self._get_client(org, 1)
-        client.remove_contacts([contact.uuid], group_uuid=group.uuid)
+        client = self._get_client(org)
+        client.bulk_remove_contacts([contact.uuid], group=group.uuid)
 
     def stop_runs(self, org, contact):
-        client = self._get_client(org, 1)
-        client.expire_contacts(contacts=[contact.uuid])
+        client = self._get_client(org)
+        client.bulk_interrupt_contacts(contacts=[contact.uuid])
 
     def label_messages(self, org, messages, label):
-        if messages:
-            client = self._get_client(org, 1)
-            client.label_messages(messages=[m.backend_id for m in messages], label_uuid=label.uuid)
+        client = self._get_client(org)
+        for batch in chunks(messages, self.BATCH_SIZE):
+            client.bulk_label_messages(messages=[m.backend_id for m in batch], label=label.uuid)
 
     def unlabel_messages(self, org, messages, label):
-        if messages:
-            client = self._get_client(org, 1)
-            client.unlabel_messages(messages=[m.backend_id for m in messages], label_uuid=label.uuid)
+        client = self._get_client(org)
+        for batch in chunks(messages, self.BATCH_SIZE):
+            client.bulk_unlabel_messages(messages=[m.backend_id for m in batch], label=label.uuid)
 
     def archive_messages(self, org, messages):
-        if messages:
-            client = self._get_client(org, 1)
-            client.archive_messages(messages=[m.backend_id for m in messages])
+        client = self._get_client(org)
+        for batch in chunks(messages, self.BATCH_SIZE):
+            client.bulk_archive_messages(messages=[m.backend_id for m in batch])
 
     def archive_contact_messages(self, org, contact):
-        client = self._get_client(org, 1)
-        client.archive_contacts(contacts=[contact.uuid])
+        client = self._get_client(org)
+        client.bulk_archive_contacts(contacts=[contact.uuid])
 
     def restore_messages(self, org, messages):
-        if messages:
-            client = self._get_client(org, 1)
-            client.unarchive_messages(messages=[m.backend_id for m in messages])
+        client = self._get_client(org)
+        for batch in chunks(messages, self.BATCH_SIZE):
+            client.bulk_restore_messages(messages=[m.backend_id for m in batch])
 
     def flag_messages(self, org, messages):
-        if messages:
-            client = self._get_client(org, 1)
-            client.label_messages(messages=[m.backend_id for m in messages], label=SYSTEM_LABEL_FLAGGED)
+        client = self._get_client(org)
+        for batch in chunks(messages, self.BATCH_SIZE):
+            client.bulk_label_messages(messages=[m.backend_id for m in batch], label_name=SYSTEM_LABEL_FLAGGED)
 
     def unflag_messages(self, org, messages):
-        if messages:
-            client = self._get_client(org, 1)
-            client.unlabel_messages(messages=[m.backend_id for m in messages], label=SYSTEM_LABEL_FLAGGED)
+        client = self._get_client(org)
+        for batch in chunks(messages, self.BATCH_SIZE):
+            client.bulk_unlabel_messages(messages=[m.backend_id for m in batch], label_name=SYSTEM_LABEL_FLAGGED)
 
     def fetch_contact_messages(self, org, contact, created_after, created_before):
         """
         Used to grab messages sent to the contact from RapidPro that we won't have in CasePro
         """
         # fetch remote messages for contact
-        client = self._get_client(org, 2)
+        client = self._get_client(org)
         remote_messages = client.get_messages(contact=contact.uuid, after=created_after, before=created_before).all()
 
         def remote_as_outgoing(msg):
