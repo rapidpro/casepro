@@ -755,12 +755,16 @@ class RapidProBackendTest(BaseCasesTest):
 
         self.assertNotCalled(mock_archive_messages)
 
-        msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
-        msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")
+        # create more messages than can archived in one call to the RapidPro API
+        msgs = [self.create_message(self.unicef, m, self.bob, "Hello %d" % (m + 1)) for m in range(105)]
 
-        self.backend.archive_messages(self.unicef, [msg1, msg2])
+        self.backend.archive_messages(self.unicef, msgs)
 
-        mock_archive_messages.assert_called_once_with(messages=[123, 234])
+        # check messages were batched
+        mock_archive_messages.assert_has_calls([
+            call(messages=[m for m in range(0, 100)]),
+            call(messages=[m for m in range(100, 105)])
+        ])
 
     @patch('dash.orgs.models.TembaClient2.bulk_archive_contacts')
     def test_archive_contact_messages(self, mock_archive_contacts):
