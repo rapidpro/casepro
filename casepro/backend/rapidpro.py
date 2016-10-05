@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 import six
 
-from dash.utils import is_dict_equal
+from dash.utils import is_dict_equal, chunks
 from dash.utils.sync import BaseSyncer, sync_local_to_set, sync_local_to_changes
 from django.utils.timezone import now
 
@@ -197,6 +197,8 @@ class RapidProBackend(BaseBackend):
     """
     RapidPro instance as a backend
     """
+    BATCH_SIZE = 100
+
     @staticmethod
     def _get_client(org):
         return org.get_temba_client(api_version=2)
@@ -305,38 +307,38 @@ class RapidProBackend(BaseBackend):
         client.bulk_interrupt_contacts(contacts=[contact.uuid])
 
     def label_messages(self, org, messages, label):
-        if messages:
-            client = self._get_client(org)
-            client.bulk_label_messages(messages=[m.backend_id for m in messages], label=label.uuid)
+        client = self._get_client(org)
+        for batch in chunks(messages, self.BATCH_SIZE):
+            client.bulk_label_messages(messages=[m.backend_id for m in batch], label=label.uuid)
 
     def unlabel_messages(self, org, messages, label):
-        if messages:
-            client = self._get_client(org)
-            client.bulk_unlabel_messages(messages=[m.backend_id for m in messages], label=label.uuid)
+        client = self._get_client(org)
+        for batch in chunks(messages, self.BATCH_SIZE):
+            client.bulk_unlabel_messages(messages=[m.backend_id for m in batch], label=label.uuid)
 
     def archive_messages(self, org, messages):
-        if messages:
-            client = self._get_client(org)
-            client.bulk_archive_messages(messages=[m.backend_id for m in messages])
+        client = self._get_client(org)
+        for batch in chunks(messages, self.BATCH_SIZE):
+            client.bulk_archive_messages(messages=[m.backend_id for m in batch])
 
     def archive_contact_messages(self, org, contact):
         client = self._get_client(org)
         client.bulk_archive_contacts(contacts=[contact.uuid])
 
     def restore_messages(self, org, messages):
-        if messages:
-            client = self._get_client(org)
-            client.bulk_restore_messages(messages=[m.backend_id for m in messages])
+        client = self._get_client(org)
+        for batch in chunks(messages, self.BATCH_SIZE):
+            client.bulk_restore_messages(messages=[m.backend_id for m in batch])
 
     def flag_messages(self, org, messages):
-        if messages:
-            client = self._get_client(org)
-            client.bulk_label_messages(messages=[m.backend_id for m in messages], label_name=SYSTEM_LABEL_FLAGGED)
+        client = self._get_client(org)
+        for batch in chunks(messages, self.BATCH_SIZE):
+            client.bulk_label_messages(messages=[m.backend_id for m in batch], label_name=SYSTEM_LABEL_FLAGGED)
 
     def unflag_messages(self, org, messages):
-        if messages:
-            client = self._get_client(org)
-            client.bulk_unlabel_messages(messages=[m.backend_id for m in messages], label_name=SYSTEM_LABEL_FLAGGED)
+        client = self._get_client(org)
+        for batch in chunks(messages, self.BATCH_SIZE):
+            client.bulk_unlabel_messages(messages=[m.backend_id for m in batch], label_name=SYSTEM_LABEL_FLAGGED)
 
     def fetch_contact_messages(self, org, contact, created_after, created_before):
         """
