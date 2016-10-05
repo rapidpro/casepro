@@ -10,7 +10,7 @@ celery==3.1.19
 colorama==0.3.7
 confmodel==0.2.0
 coverage==4.0.3
--e git+https://github.com/rapidpro/dash.git@27b978de6d2359ffbc1597650e81e5299235ec39#egg=dash-master
+-e git+https://github.com/rapidpro/dash.git@a5d88d5817e337c486b3ac44e260e8053437b9a3#egg=dash-master
 dj-database-url==0.3.0
 django-appconf==1.0.1
 django-celery==3.1.17

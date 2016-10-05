@@ -770,7 +770,7 @@ class RapidProBackendTest(BaseCasesTest):
         mock_archive_messages.reset_mock()
         self.backend.archive_messages(self.unicef, set(msgs[:5]))
 
-        # very messages converted to a list with same values
+        # messages still batched even tho ordering is non-deterministic
         args, kwargs = mock_archive_messages.call_args
         self.assertIsInstance(kwargs['messages'], list)
         self.assertEqual(set(kwargs['messages']), {0, 1, 2, 3, 4})
