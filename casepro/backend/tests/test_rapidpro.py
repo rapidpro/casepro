@@ -766,6 +766,15 @@ class RapidProBackendTest(BaseCasesTest):
             call(messages=[m for m in range(100, 105)])
         ])
 
+        # check doesn't blow up if passed something other than a list like a set
+        mock_archive_messages.reset_mock()
+        self.backend.archive_messages(self.unicef, set(msgs[:5]))
+
+        # very messages converted to a list with same values
+        args, kwargs = mock_archive_messages.call_args
+        self.assertIsInstance(kwargs['messages'], list)
+        self.assertEqual(set(kwargs['messages']), {0, 1, 2, 3, 4})
+
     @patch('dash.orgs.models.TembaClient2.bulk_archive_contacts')
     def test_archive_contact_messages(self, mock_archive_contacts):
         self.backend.archive_contact_messages(self.unicef, self.bob)
