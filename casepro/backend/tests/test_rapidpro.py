@@ -762,8 +762,8 @@ class RapidProBackendTest(BaseCasesTest):
 
         # check messages were batched
         mock_archive_messages.assert_has_calls([
-            call(messages=[m for m in range(0, 100)]),
-            call(messages=[m for m in range(100, 105)])
+            call(messages=[m for m in range(0, 99)]),
+            call(messages=[m for m in range(99, 105)])
         ])
 
         # check doesn't blow up if passed something other than a list like a set
