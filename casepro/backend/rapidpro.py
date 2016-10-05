@@ -197,7 +197,8 @@ class RapidProBackend(BaseBackend):
     """
     RapidPro instance as a backend
     """
-    BATCH_SIZE = 100
+    # TODO reset to 100 when limit is fixed on RapidPro side
+    BATCH_SIZE = 99
 
     @staticmethod
     def _get_client(org):
