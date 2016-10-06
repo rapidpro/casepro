@@ -281,8 +281,8 @@ TEMPLATES = [
                 'casepro.profiles.context_processors.user',
             ],
             'loaders': [
-                'hamlpy.template.loaders.HamlPyFilesystemLoader',
-                'hamlpy.template.loaders.HamlPyAppDirectoriesLoader',
+                'dash.utils.haml.HamlFilesystemLoader',
+                'dash.utils.haml.HamlAppDirectoriesLoader',
                 'django.template.loaders.filesystem.Loader',
                 'django.template.loaders.app_directories.Loader'
             ],
