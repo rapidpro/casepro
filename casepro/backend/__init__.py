@@ -211,6 +211,28 @@ class NoopBackend(BaseBackend):
     """
     A stub backend which doesn't do anything
     """
-    pass
+    NO_CHANGES = (0, 0, 0, 0)
+
+    def pull_contacts(self, org, modified_after, modified_before, progress_callback=None):
+        return self.NO_CHANGES
+
+    def pull_fields(self, org):
+        return self.NO_CHANGES
+
+    def pull_groups(self, org):
+        return self.NO_CHANGES
+
+    def pull_labels(self, org):
+        return self.NO_CHANGES
+
+    def pull_messages(self, org, modified_after, modified_before, as_handled=False, progress_callback=None):
+        return self.NO_CHANGES
+
+    def fetch_contact_messages(self, org, contact, created_after, created_before):
+        return []
+
+    def get_url_patterns(self):
+        return []
+
 
 NoopBackend.__abstractmethods__ = set()
