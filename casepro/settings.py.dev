@@ -7,7 +7,6 @@ from settings_common import *  # noqa
 # MIDDLEWARE_CLASSES += ('debug_toolbar.middleware.DebugToolbarMiddleware',)
 
 DEBUG = True
-TEMPLATE_DEBUG = DEBUG
 
 HOSTNAME = 'localhost:8000'
 
