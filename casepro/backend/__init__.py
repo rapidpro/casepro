@@ -207,7 +207,7 @@ class BaseBackend(object):
         """
 
 
-class NoopBackend(BaseBackend):
+class NoopBackend(BaseBackend):  # pragma: no cover
     """
     A stub backend which doesn't do anything
     """
