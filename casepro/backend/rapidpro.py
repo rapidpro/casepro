@@ -272,20 +272,23 @@ class RapidProBackend(BaseBackend):
             return
 
         if as_broadcast:
-            contact_uuids = []
-            urns = []
-            for msg in for_backend:
-                if msg.contact:
-                    contact_uuids.append(msg.contact.uuid)
-                if msg.urn:
-                    urns.append(msg.urn)
-            text = outgoing[0].text
-            broadcast = client.create_broadcast(text=text, contacts=contact_uuids, urns=urns)
+            # we might not be able to send all as a single broadcast, so we batch
+            for batch in chunks(for_backend, self.BATCH_SIZE):
+                contact_uuids = []
+                urns = []
 
-            for msg in for_backend:
-                msg.backend_broadcast_id = broadcast.id
+                for msg in batch:
+                    if msg.contact:
+                        contact_uuids.append(msg.contact.uuid)
+                    if msg.urn:
+                        urns.append(msg.urn)
+                text = outgoing[0].text
+                broadcast = client.create_broadcast(text=text, contacts=contact_uuids, urns=urns)
 
-            Outgoing.objects.filter(pk__in=[o.id for o in for_backend]).update(backend_broadcast_id=broadcast.id)
+                for msg in batch:
+                    msg.backend_broadcast_id = broadcast.id
+
+                Outgoing.objects.filter(pk__in=[o.id for o in batch]).update(backend_broadcast_id=broadcast.id)
         else:
             for msg in for_backend:
                 contact_uuids = [msg.contact.uuid] if msg.contact else []
