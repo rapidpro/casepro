@@ -251,10 +251,12 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     #----------------------------------------------------------------------------
     # Opens a new case
     #----------------------------------------------------------------------------
-    open: (message, summary, assignee) ->
+    open: (message, summary, assignee, user) ->
       params = {message: message.id, summary: summary}
       if assignee
         params.assignee = assignee.id
+      if user
+        params.user_assignee = user.id
 
       return $http.post('/case/open/', params).then((response) ->
         return response.data
@@ -271,8 +273,12 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     #----------------------------------------------------------------------------
     # Re-assigns a case
     #----------------------------------------------------------------------------
-    reassign: (caseObj, assignee) ->
-      return $http.post('/case/reassign/' + caseObj.id + '/', {assignee: assignee.id}).then(() ->
+    reassign: (caseObj, assignee, user) ->
+      params = {assignee: assignee.id, user_assignee: user}
+      if user
+        params.user_assignee = user.id
+
+      return $http.post('/case/reassign/' + caseObj.id + '/', params).then(() ->
         caseObj.assignee = assignee
       )
 
@@ -535,8 +541,8 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
       resolve = {title: (() -> title), initial: (() -> initial), maxLength: (() -> maxLength)}
       return $uibModal.open({templateUrl: '/partials/modal_compose.html', controller: 'ComposeModalController', resolve: resolve}).result
 
-    assignModal: (title, prompt, partners) ->
-      resolve = {title: (() -> title), prompt: (() -> prompt), partners: (() -> partners)}
+    assignModal: (title, prompt, partners, users) ->
+      resolve = {title: (() -> title), prompt: (() -> prompt), partners: (() -> partners), users: (() -> users) }
       return $uibModal.open({templateUrl: '/partials/modal_assign.html', controller: 'AssignModalController', resolve: resolve}).result
 
     noteModal: (title, prompt, style, maxLength) ->
@@ -547,8 +553,8 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
       resolve = {title: (() -> title), prompt: (() -> prompt), labels: (() -> labels), initial: (() -> initial)}
       return $uibModal.open({templateUrl: '/partials/modal_label.html', controller: 'LabelModalController', resolve: resolve}).result
 
-    newCaseModal: (summaryInitial, summaryMaxLength, partners) ->
-      resolve = {summaryInitial: (() -> summaryInitial), summaryMaxLength: (() -> summaryMaxLength), partners: (() -> partners)}
+    newCaseModal: (summaryInitial, summaryMaxLength, partners, users) ->
+      resolve = {summaryInitial: (() -> summaryInitial), summaryMaxLength: (() -> summaryMaxLength), partners: (() -> partners), users: (() -> users)}
       return $uibModal.open({templateUrl: '/partials/modal_newcase.html', controller: 'NewCaseModalController', resolve: resolve}).result
 
     dateRangeModal: (title, prompt) ->

@@ -2,11 +2,14 @@ from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.models import Org
 from dash.utils import intersection
+from datetime import timedelta
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.db.models import Q, Count, Prefetch
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 from enum import Enum, IntEnum
 from itertools import chain
@@ -109,6 +112,15 @@ class Partner(models.Model):
         return self.name
 
 
+class SystemUser(User):
+
+    @classmethod
+    def get_or_create(cls):
+        if cls.objects.count() > 0:
+            return cls.objects.first()
+        return cls.objects.create(username="System", first_name="System")
+
+
 class case_action(object):
     """
     Helper decorator for case action methods that should check the user is allowed to update the case
@@ -119,6 +131,8 @@ class case_action(object):
 
     def __call__(self, func):
         def wrapped(case, user, *args, **kwargs):
+            if isinstance(user, SystemUser):
+                return func(case, user, *args, **kwargs)
             access = case.access_level(user)
             if (access == AccessLevel.update) or (not self.require_update and access == AccessLevel.read):
                 result = func(case, user, *args, **kwargs)
@@ -143,6 +157,10 @@ class Case(models.Model):
 
     assignee = models.ForeignKey(Partner, related_name='cases')
 
+    user_assignee = models.ForeignKey(
+        User, null=True, on_delete=models.SET_NULL, related_name='cases',
+        help_text="The (optional) user that this case is assigned to")
+
     contact = models.ForeignKey(Contact, related_name='cases')
 
     initial_message = models.OneToOneField(Message, related_name='initial_case')
@@ -154,6 +172,13 @@ class Case(models.Model):
 
     closed_on = models.DateTimeField(null=True,
                                      help_text="When this case was closed")
+
+    auto_reassign_on = models.DateTimeField(null=True, help_text="When this case should be reassigned")
+
+    last_assignee = models.ForeignKey(Partner, null=True, related_name='previously_assigned_cases')
+
+    last_user_assignee = models.ForeignKey(User, null=True,
+                                           on_delete=models.SET_NULL, related_name='previously_assigned_cases')
 
     watchers = models.ManyToManyField(User, related_name='watched_cases',
                                       help_text="Users to be notified of case activity")
@@ -172,6 +197,15 @@ class Case(models.Model):
             queryset = queryset.filter(labels=label)
 
         return queryset.distinct()
+
+    @classmethod
+    def get_all_passed_response_time(cls, check_datetime=None):
+
+        if check_datetime is None:
+            check_datetime = now()
+
+        queryset = cls.objects.filter(closed_on=None, auto_reassign_on__lte=check_datetime)
+        return queryset
 
     @classmethod
     def get_open(cls, org, user=None, label=None):
@@ -215,7 +249,7 @@ class Case(models.Model):
         if before:
             queryset = queryset.filter(opened_on__lte=before)
 
-        queryset = queryset.select_related('contact', 'assignee')
+        queryset = queryset.select_related('contact', 'assignee', 'user_assignee')
 
         queryset = queryset.prefetch_related(
             Prefetch('labels', Label.objects.filter(is_active=True))
@@ -224,7 +258,7 @@ class Case(models.Model):
         return queryset.order_by('-opened_on')
 
     @classmethod
-    def get_or_open(cls, org, user, message, summary, assignee):
+    def get_or_open(cls, org, user, message, summary, assignee, user_assignee=None):
         from casepro.profiles.models import Notification
 
         r = get_redis_connection()
@@ -240,7 +274,7 @@ class Case(models.Model):
             message.contact.prepare_for_case()
 
             case = cls.objects.create(org=org, assignee=assignee, initial_message=message, contact=message.contact,
-                                      summary=summary)
+                                      summary=summary, user_assignee=user_assignee)
             case.is_new = True
             case.labels.add(*list(message.labels.all()))  # copy labels from message to new case
             case.watchers.add(user)
@@ -249,7 +283,7 @@ class Case(models.Model):
             message.case = case
             message.save(update_fields=('case',))
 
-            action = CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee)
+            action = CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee, user_assignee=user_assignee)
 
             for assignee_user in assignee.get_users():
                 if assignee_user != user:
@@ -283,7 +317,7 @@ class Case(models.Model):
 
         # fetch and append actions
         actions = self.actions.filter(created_on__gte=after, created_on__lte=before)
-        actions = actions.select_related('assignee', 'created_by')
+        actions = actions.select_related('assignee', 'user_assignee', 'created_by')
         timeline += [TimelineItem(a) for a in actions]
 
         # sort timeline by reverse chronological order
@@ -334,13 +368,25 @@ class Case(models.Model):
         self.notify_watchers(action=action)
 
     @case_action()
-    def reassign(self, user, partner, note=None):
+    def reassign(self, user, partner, note=None, user_assignee=None):
         from casepro.profiles.models import Notification
 
-        self.assignee = partner
-        self.save(update_fields=('assignee',))
+        if isinstance(user, SystemUser) or hasattr(user, 'systemuser'):
+            # don't set an auto reassign datetime when reassigning as the system user
+            self.auto_reassign_on = None
+        else:
+            response_required_in = getattr(settings, 'SITE_CASE_RESPONSE_REQUIRED_TIME', None)
+            if response_required_in is not None:
+                self.auto_reassign_on = now() + timedelta(minutes=response_required_in)
 
-        action = CaseAction.create(self, user, CaseAction.REASSIGN, assignee=partner, note=note)
+        self.last_assignee = self.assignee
+        self.last_user_assignee = self.user_assignee
+        self.assignee = partner
+        self.user_assignee = user_assignee
+        self.save()
+
+        action = CaseAction.create(
+            self, user, CaseAction.REASSIGN, assignee=partner, note=note, user_assignee=user_assignee)
 
         self.notify_watchers(action=action)
 
@@ -426,11 +472,16 @@ class Case(models.Model):
     def is_closed(self):
         return self.closed_on is not None
 
+    @property
+    def has_passed_response_time(self):
+        return now() >= self.auto_reassign_on
+
     def as_json(self, full=True):
         if full:
             return {
                 'id': self.pk,
                 'assignee': self.assignee.as_json(full=False),
+                'user_assignee': self.user_assignee.as_json(full=False) if self.user_assignee else None,
                 'contact': self.contact.as_json(full=False),
                 'labels': [l.as_json(full=False) for l in self.labels.all()],
                 'summary': self.summary,
@@ -441,6 +492,7 @@ class Case(models.Model):
             return {
                 'id': self.pk,
                 'assignee': self.assignee.as_json(full=False),
+                'user_assignee': self.user_assignee.as_json(full=False) if self.user_assignee else None,
             }
 
     def __str__(self):
@@ -480,14 +532,19 @@ class CaseAction(models.Model):
 
     assignee = models.ForeignKey(Partner, null=True, related_name="case_actions")
 
+    user_assignee = models.ForeignKey(
+        User, null=True, on_delete=models.SET_NULL, related_name='case_assigned_actions',
+        help_text="The (optional) user that the case was assigned to.")
+
     label = models.ForeignKey(Label, null=True)
 
     note = models.CharField(null=True, max_length=1024)
 
     @classmethod
-    def create(cls, case, user, action, assignee=None, label=None, note=None):
-        return CaseAction.objects.create(case=case, action=action,
-                                         created_by=user, assignee=assignee, label=label, note=note)
+    def create(cls, case, user, action, assignee=None, label=None, note=None, user_assignee=None):
+        return CaseAction.objects.create(
+            case=case, action=action, created_by=user, assignee=assignee, label=label, note=note,
+            user_assignee=user_assignee)
 
     def as_json(self):
         return {
@@ -496,6 +553,7 @@ class CaseAction(models.Model):
             'created_by': self.created_by.as_json(full=False),
             'created_on': self.created_on,
             'assignee': self.assignee.as_json() if self.assignee else None,
+            'user_assignee': self.user_assignee.as_json() if self.user_assignee else None,
             'label': self.label.as_json() if self.label else None,
             'note': self.note
         }
