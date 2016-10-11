@@ -702,6 +702,28 @@ class RapidProBackendTest(BaseCasesTest):
 
         self.assertNotCalled(mock_create_broadcast)
 
+        # test when trying to send more than 100 messages
+        mock_create_broadcast.side_effect = [
+            TembaBroadcast.create(id=205, text="That's great"),
+            TembaBroadcast.create(id=206, text="That's great")
+        ]
+
+        big_send = []
+        for o in range(105):
+            big_send.append(self.create_outgoing(self.unicef, self.user1, None, 'B', "Hello", None, urn="tel:%d" % o))
+
+        self.backend.push_outgoing(self.unicef, big_send, as_broadcast=True)
+
+        # should be sent as two batches
+        batch1_urns = ["tel:%d" % o for o in range(0, 99)]
+        batch2_urns = ["tel:%d" % o for o in range(99, 105)]
+
+        mock_create_broadcast.assert_has_calls([
+            call(text="Hello", contacts=[], urns=batch1_urns),
+            call(text="Hello", contacts=[], urns=batch2_urns)
+        ])
+        mock_create_broadcast.reset_mock()
+
     @patch('dash.orgs.models.TembaClient2.bulk_add_contacts')
     def test_add_to_group(self, mock_add_contacts):
         self.backend.add_to_group(self.unicef, self.bob, self.reporters)
