@@ -189,10 +189,17 @@ class Contact(models.Model):
         Gets the display name of this contact. If name is empty or site uses anonymous contacts, this is generated from
         the backend UUID.
         """
-        if not self.name or getattr(settings, 'SITE_ANON_CONTACTS', False):
-            return self.uuid[:6].upper()
-        else:
+        contact_display_format = getattr(settings, 'SITE_CONTACT_DISPLAY', False)
+        if not contact_display_format:
+            # If the display format isn't specified follow the old steps
+            if not self.name or getattr(settings, 'SITE_ANON_CONTACTS', False):
+                return self.uuid[:6].upper()
             return self.name
+        if contact_display_format == "name" and self.name:
+            return self.name
+        if contact_display_format == "urn" and self.urns:
+            return self.urns[0]
+        return self.uuid[:6].upper()
 
     def get_fields(self, visible=None):
         fields = self.fields if self.fields else {}
