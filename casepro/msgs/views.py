@@ -489,7 +489,11 @@ class FaqCRUDL(SmartCRUDL):
         def lookup_field_value(self, context, obj, field):
             value = super(FaqCRUDL.List, self).lookup_field_value(context, obj, field)
             if field == 'language':
-                value = obj.get_language()['name']
+                lang = obj.get_language()
+                if lang is not None:
+                    value = lang['name']
+                else:
+                    value = ''
             return value
 
     class Create(OrgPermsMixin, SmartCreateView):
