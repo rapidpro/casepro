@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('cases', '0040_case_user_assignee'),
+        ('cases', '0043_case_user_assignee'),
     ]
 
     operations = [
