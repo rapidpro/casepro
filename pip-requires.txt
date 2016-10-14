@@ -1,5 +1,4 @@
 -e git+https://github.com/rapidpro/dash.git@master#egg=dash-master
--e git+https://github.com/nyaruka/smartmin.git@master#egg=smartmin-master
 boto
 celery[redis]
 colorama
@@ -31,5 +30,6 @@ python-dateutil
 rapidpro-python
 raven
 regex
+smartmin
 sorl-thumbnail
 xlutils
