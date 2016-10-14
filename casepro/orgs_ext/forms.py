@@ -15,7 +15,10 @@ class OrgForm(forms.ModelForm):
     Form for superusers to create and update orgs
     """
     language = forms.ChoiceField(required=False, choices=[('', '')] + list(settings.LANGUAGES))
+
     timezone = TimeZoneField()
+
+    administrators = forms.ModelMultipleChoiceField(queryset=User.objects.none(), required=False)
 
     def __init__(self, *args, **kwargs):
         super(OrgForm, self).__init__(*args, **kwargs)

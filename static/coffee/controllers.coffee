@@ -191,11 +191,6 @@ controllers.controller('BaseItemsController', ['$scope', 'UtilsService', ($scope
           $scope.loadOldItems(true)
     ).catch((error) ->
       UtilsService.displayAlert('error', "Problem communicating with the server")
-
-      Raven.captureMessage(error.statusText + " (" + error.status + ")", {
-        user: if $scope.user then {id: $scope.user.id} else null,
-        extra: {xhr_url: error.config.url}
-      })
     )
 
   $scope.isInfiniteScrollEnabled = () ->
@@ -465,6 +460,7 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
 
   $scope.partners = []
   $scope.users = []
+  $scope.userFilters = {all: false}
 
   $scope.onTabInit = (tab) ->
     if tab == 'summary'
@@ -507,6 +503,16 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
         $scope.users = users
       )
 
+  $scope.onChangeUsersFilter = () ->
+    if $scope.userFilters.all
+      UserService.fetchAll(true).then((users) ->
+        $scope.users = users
+      )
+    else
+      UserService.fetchNonPartner(true).then((users) ->
+        $scope.users = users
+      )
+
   $scope.onExportPartnerStats = () ->
     UtilsService.dateRangeModal("Export", "Export partner statistics between the following dates").then((data) ->
       StatisticsService.dailyCountExport('P', data.after, data.before).then(() ->
@@ -517,6 +523,13 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
   $scope.onExportLabelStats = () ->
     UtilsService.dateRangeModal("Export", "Export label statistics between the following dates").then((data) ->
       StatisticsService.dailyCountExport('L', data.after, data.before).then(() ->
+        UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
+      )
+    )
+
+  $scope.onExportUserStats = () ->
+    UtilsService.dateRangeModal("Export", "Export user statistics between the following dates").then((data) ->
+      StatisticsService.dailyCountExport("U", data.after, data.before).then(() ->
         UtilsService.displayAlert('success', "Export initiated and will be sent to your email address when complete")
       )
     )
@@ -590,14 +603,11 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
   $scope.sendMessage = ->
     $scope.sending = true
 
-    try
-      CaseService.replyTo($scope.caseObj, $scope.newMessage).then(() ->
-        $scope.newMessage = ''
-        $scope.sending = false
-        $scope.$broadcast('timelineChanged')
-      )
-    catch e
-      $window.Raven.captureException(e)
+    CaseService.replyTo($scope.caseObj, $scope.newMessage).then(() ->
+      $scope.newMessage = ''
+      $scope.sending = false
+      $scope.$broadcast('timelineChanged')
+    )
 
   $scope.onNewMessageChanged = ->
     $scope.msgCharsRemaining = $scope.maxMsgChars - $scope.newMessage.length

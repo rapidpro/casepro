@@ -604,13 +604,12 @@ class RapidProBackendTest(BaseCasesTest):
 
         self.assertEqual(set(msg1.labels.all()), {self.aids, important})
 
-    @patch('dash.orgs.models.TembaClient1.create_label')
-    @patch('dash.orgs.models.TembaClient1.get_labels')
+    @patch('dash.orgs.models.TembaClient2.create_label')
+    @patch('dash.orgs.models.TembaClient2.get_labels')
     def test_push_label(self, mock_get_labels, mock_create_label):
-        mock_get_labels.return_value = [
-            TembaLabel.create(uuid="L-011", name="Not Tea", count=213),
-            TembaLabel.create(uuid="L-012", name="tea", count=345)
-        ]
+        mock_get_labels.return_value = MockClientQuery([
+            TembaLabel.create(uuid="L-011", name="Tea", count=213)
+        ])
 
         # check when label with name exists
         self.tea.uuid = None
@@ -618,25 +617,25 @@ class RapidProBackendTest(BaseCasesTest):
         self.backend.push_label(self.unicef, self.tea)
 
         self.tea.refresh_from_db()
-        self.assertEqual(self.tea.uuid, "L-012")
+        self.assertEqual(self.tea.uuid, "L-011")
 
         self.assertNotCalled(mock_create_label)
 
         # check when label doesn't exist
-        mock_get_labels.return_value = []
-        mock_create_label.return_value = TembaLabel.create(uuid='L-013', name="Tea", count=0)
+        mock_get_labels.return_value = MockClientQuery([])
+        mock_create_label.return_value = TembaLabel.create(uuid='L-012', name="Tea", count=0)
 
         self.tea.uuid = None
         self.tea.save()
         self.backend.push_label(self.unicef, self.tea)
 
         self.tea.refresh_from_db()
-        self.assertEqual(self.tea.uuid, "L-013")
+        self.assertEqual(self.tea.uuid, "L-012")
 
         mock_create_label.assert_called_once_with(name="Tea")
 
     @patch('casepro.backend.rapidpro.send_raw_email')
-    @patch('dash.orgs.models.TembaClient1.create_broadcast')
+    @patch('dash.orgs.models.TembaClient2.create_broadcast')
     def test_push_outgoing(self, mock_create_broadcast, mock_send_raw_email):
         # test with replies sent separately
         mock_create_broadcast.side_effect = [
@@ -703,25 +702,47 @@ class RapidProBackendTest(BaseCasesTest):
 
         self.assertNotCalled(mock_create_broadcast)
 
-    @patch('dash.orgs.models.TembaClient1.add_contacts')
+        # test when trying to send more than 100 messages
+        mock_create_broadcast.side_effect = [
+            TembaBroadcast.create(id=205, text="That's great"),
+            TembaBroadcast.create(id=206, text="That's great")
+        ]
+
+        big_send = []
+        for o in range(105):
+            big_send.append(self.create_outgoing(self.unicef, self.user1, None, 'B', "Hello", None, urn="tel:%d" % o))
+
+        self.backend.push_outgoing(self.unicef, big_send, as_broadcast=True)
+
+        # should be sent as two batches
+        batch1_urns = ["tel:%d" % o for o in range(0, 99)]
+        batch2_urns = ["tel:%d" % o for o in range(99, 105)]
+
+        mock_create_broadcast.assert_has_calls([
+            call(text="Hello", contacts=[], urns=batch1_urns),
+            call(text="Hello", contacts=[], urns=batch2_urns)
+        ])
+        mock_create_broadcast.reset_mock()
+
+    @patch('dash.orgs.models.TembaClient2.bulk_add_contacts')
     def test_add_to_group(self, mock_add_contacts):
         self.backend.add_to_group(self.unicef, self.bob, self.reporters)
 
-        mock_add_contacts.assert_called_once_with(['C-002'], group_uuid='G-003')
+        mock_add_contacts.assert_called_once_with(['C-002'], group='G-003')
 
-    @patch('dash.orgs.models.TembaClient1.remove_contacts')
+    @patch('dash.orgs.models.TembaClient2.bulk_remove_contacts')
     def test_remove_from_group(self, mock_remove_contacts):
         self.backend.remove_from_group(self.unicef, self.bob, self.reporters)
 
-        mock_remove_contacts.assert_called_once_with(['C-002'], group_uuid='G-003')
+        mock_remove_contacts.assert_called_once_with(['C-002'], group='G-003')
 
-    @patch('dash.orgs.models.TembaClient1.expire_contacts')
+    @patch('dash.orgs.models.TembaClient2.bulk_interrupt_contacts')
     def test_stop_runs(self, mock_expire_contacts):
         self.backend.stop_runs(self.unicef, self.bob)
 
         mock_expire_contacts.assert_called_once_with(contacts=['C-002'])
 
-    @patch('dash.orgs.models.TembaClient1.label_messages')
+    @patch('dash.orgs.models.TembaClient2.bulk_label_messages')
     def test_label_messages(self, mock_label_messages):
         # empty message list shouldn't make API call
         self.backend.label_messages(self.unicef, [], self.aids)
@@ -733,9 +754,9 @@ class RapidProBackendTest(BaseCasesTest):
 
         self.backend.label_messages(self.unicef, [msg1, msg2], self.aids)
 
-        mock_label_messages.assert_called_once_with(messages=[123, 234], label_uuid='L-001')
+        mock_label_messages.assert_called_once_with(messages=[123, 234], label='L-001')
 
-    @patch('dash.orgs.models.TembaClient1.unlabel_messages')
+    @patch('dash.orgs.models.TembaClient2.bulk_unlabel_messages')
     def test_unlabel_messages(self, mock_unlabel_messages):
         # empty message list shouldn't make API call
         self.backend.unlabel_messages(self.unicef, [], self.aids)
@@ -747,43 +768,56 @@ class RapidProBackendTest(BaseCasesTest):
 
         self.backend.unlabel_messages(self.unicef, [msg1, msg2], self.aids)
 
-        mock_unlabel_messages.assert_called_once_with(messages=[123, 234], label_uuid='L-001')
+        mock_unlabel_messages.assert_called_once_with(messages=[123, 234], label='L-001')
 
-    @patch('dash.orgs.models.TembaClient1.archive_messages')
+    @patch('dash.orgs.models.TembaClient2.bulk_archive_messages')
     def test_archive_messages(self, mock_archive_messages):
         # empty message list shouldn't make API call
         self.backend.archive_messages(self.unicef, [])
 
         self.assertNotCalled(mock_archive_messages)
 
-        msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
-        msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")
+        # create more messages than can archived in one call to the RapidPro API
+        msgs = [self.create_message(self.unicef, m, self.bob, "Hello %d" % (m + 1)) for m in range(105)]
 
-        self.backend.archive_messages(self.unicef, [msg1, msg2])
+        self.backend.archive_messages(self.unicef, msgs)
 
-        mock_archive_messages.assert_called_once_with(messages=[123, 234])
+        # check messages were batched
+        mock_archive_messages.assert_has_calls([
+            call(messages=[m for m in range(0, 99)]),
+            call(messages=[m for m in range(99, 105)])
+        ])
 
-    @patch('dash.orgs.models.TembaClient1.archive_contacts')
+        # check doesn't blow up if passed something other than a list like a set
+        mock_archive_messages.reset_mock()
+        self.backend.archive_messages(self.unicef, set(msgs[:5]))
+
+        # messages still batched even tho ordering is non-deterministic
+        args, kwargs = mock_archive_messages.call_args
+        self.assertIsInstance(kwargs['messages'], list)
+        self.assertEqual(set(kwargs['messages']), {0, 1, 2, 3, 4})
+
+    @patch('dash.orgs.models.TembaClient2.bulk_archive_contacts')
     def test_archive_contact_messages(self, mock_archive_contacts):
         self.backend.archive_contact_messages(self.unicef, self.bob)
 
         mock_archive_contacts.assert_called_once_with(contacts=['C-002'])
 
-    @patch('dash.orgs.models.TembaClient1.unarchive_messages')
-    def test_restore_messages(self, mock_unarchive_messages):
+    @patch('dash.orgs.models.TembaClient2.bulk_restore_messages')
+    def test_restore_messages(self, mock_restore_messages):
         # empty message list shouldn't make API call
         self.backend.restore_messages(self.unicef, [])
 
-        self.assertNotCalled(mock_unarchive_messages)
+        self.assertNotCalled(mock_restore_messages)
 
         msg1 = self.create_message(self.unicef, 123, self.bob, "Hello")
         msg2 = self.create_message(self.unicef, 234, self.bob, "Goodbye")
 
         self.backend.restore_messages(self.unicef, [msg1, msg2])
 
-        mock_unarchive_messages.assert_called_once_with(messages=[123, 234])
+        mock_restore_messages.assert_called_once_with(messages=[123, 234])
 
-    @patch('dash.orgs.models.TembaClient1.label_messages')
+    @patch('dash.orgs.models.TembaClient2.bulk_label_messages')
     def test_flag_messages(self, mock_label_messages):
         # empty message list shouldn't make API call
         self.backend.flag_messages(self.unicef, [])
@@ -795,9 +829,9 @@ class RapidProBackendTest(BaseCasesTest):
 
         self.backend.flag_messages(self.unicef, [msg1, msg2])
 
-        mock_label_messages.assert_called_once_with(messages=[123, 234], label='Flagged')
+        mock_label_messages.assert_called_once_with(messages=[123, 234], label_name='Flagged')
 
-    @patch('dash.orgs.models.TembaClient1.unlabel_messages')
+    @patch('dash.orgs.models.TembaClient2.bulk_unlabel_messages')
     def test_unflag_messages(self, mock_unlabel_messages):
         # empty message list shouldn't make API call
         self.backend.unflag_messages(self.unicef, [])
@@ -809,7 +843,7 @@ class RapidProBackendTest(BaseCasesTest):
 
         self.backend.unflag_messages(self.unicef, [msg1, msg2])
 
-        mock_unlabel_messages.assert_called_once_with(messages=[123, 234], label='Flagged')
+        mock_unlabel_messages.assert_called_once_with(messages=[123, 234], label_name='Flagged')
 
     @patch('dash.orgs.models.TembaClient2.get_messages')
     def test_fetch_contact_messages(self, mock_get_messages):

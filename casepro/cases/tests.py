@@ -1155,16 +1155,16 @@ class PartnerCRUDLTest(BaseCasesTest):
 
         # post name change
         response = self.url_post('unicef', url, {'name': "MOH2"})
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, 'http://unicef.localhost/partner/read/%d/' % self.moh.pk)
+        self.assertRedirects(response, 'http://unicef.localhost/partner/read/%d/' % self.moh.pk,
+                             fetch_redirect_response=False)
 
         moh = Partner.objects.get(pk=self.moh.pk)
         self.assertEqual(moh.name, "MOH2")
 
         # post primary contact change
         response = self.url_post('unicef', url, {'name': "MOH", 'primary_contact': self.user1.pk})
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, 'http://unicef.localhost/partner/read/%d/' % self.moh.pk)
+        self.assertRedirects(response, 'http://unicef.localhost/partner/read/%d/' % self.moh.pk,
+                             fetch_redirect_response=False)
 
         moh = Partner.objects.get(pk=self.moh.pk)
         self.assertEqual(moh.primary_contact, self.user1)
@@ -1204,19 +1204,21 @@ class PartnerCRUDLTest(BaseCasesTest):
 
         response = self.url_get('unicef', url, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.json, {'results': [
-            {'id': self.moh.pk, 'name': "MOH",  'restricted': True},
-            {'id': self.who.pk, 'name': "WHO",  'restricted': True}
+            {'id': self.moh.pk, 'name': "MOH", 'restricted': True},
+            {'id': self.who.pk, 'name': "WHO", 'restricted': True}
         ]})
 
         response = self.url_get('unicef', url + '?with_activity=1', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.json, {'results': [
             {
                 'id': self.moh.pk, 'name': "MOH", 'restricted': True,
-                'replies': {'last_month': 0, 'this_month': 0, 'total': 0}
+                'replies': {'last_month': 0, 'this_month': 0, 'total': 0},
+                'cases': {'opened_this_month': 0, 'closed_this_month': 0, 'total': 0},
             },
             {
                 'id': self.who.pk, 'name': "WHO", 'restricted': True,
-                'replies': {'last_month': 0, 'this_month': 0, 'total': 0}
+                'replies': {'last_month': 0, 'this_month': 0, 'total': 0},
+                'cases': {'opened_this_month': 0, 'closed_this_month': 0, 'total': 0},
             }
         ]})
 
