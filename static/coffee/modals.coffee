@@ -85,6 +85,7 @@ modals.controller 'NewCaseModalController', ['$scope', '$uibModalInstance', 'sum
   }
 
   $scope.refreshUserList = () ->
+    console.log("refreshUserList")
     UserService.fetchInPartner($scope.fields.assignee.val, false).then((users) ->
       $scope.users = [ANYONE].concat(users)
       $scope.fields.user.val = ANYONE
