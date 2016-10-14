@@ -77,7 +77,7 @@ modals.controller 'NewCaseModalController', ['$scope', '$uibModalInstance', 'sum
   $scope.partners = partners
 
   userListFromUsers = (users) ->
-    return [{id: null, name: "Anyone"}].concat(users)
+    return [{id: null, name: "-- Anyone --"}].concat(users)
 
   $scope.users = userListFromUsers(users)
 
@@ -113,7 +113,7 @@ modals.controller 'AssignModalController', ['$scope', '$uibModalInstance', 'titl
   $scope.partners = partners
 
   userListFromUsers = (users) ->
-    return [{id: null, name: "Anyone"}].concat(users)
+    return [{id: null, name: "-- Anyone --"}].concat(users)
 
   $scope.users = userListFromUsers(users)
   $scope.fields = { assignee: partners[0], user: $scope.users[0] }
