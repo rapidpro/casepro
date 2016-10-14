@@ -6,6 +6,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View
@@ -92,15 +93,19 @@ class CaseCRUDL(SmartCRUDL):
             summary = request.json['summary']
 
             assignee_id = request.json.get('assignee', None)
+            user_assignee = request.json.get('user_assignee', None)
             if assignee_id:
                 assignee = Partner.get_all(request.org).get(pk=assignee_id)
+                if user_assignee:
+                    user_assignee = get_object_or_404(assignee.get_users(), pk=user_assignee)
             else:
                 assignee = request.user.get_partner(self.request.org)
+                user_assignee = request.user
 
             message_id = int(request.json['message'])
             message = Message.objects.get(org=request.org, backend_id=message_id)
 
-            case = Case.get_or_open(request.org, request.user, message, summary, assignee)
+            case = Case.get_or_open(request.org, request.user, message, summary, assignee, user_assignee=user_assignee)
 
             # augment regular case JSON
             case_json = case.as_json()
@@ -130,8 +135,11 @@ class CaseCRUDL(SmartCRUDL):
 
         def post(self, request, *args, **kwargs):
             assignee = Partner.get_all(request.org).get(pk=request.json['assignee'])
+            user = request.json.get('user_assignee')
+            if user is not None:
+                user = get_object_or_404(assignee.get_users(), pk=user)
             case = self.get_object()
-            case.reassign(request.user, assignee)
+            case.reassign(request.user, assignee, user_assignee=user)
             return HttpResponse(status=204)
 
     class Close(OrgObjPermsMixin, SmartUpdateView):

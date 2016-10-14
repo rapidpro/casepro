@@ -204,7 +204,7 @@ controllers.controller('BaseItemsController', ['$scope', 'UtilsService', ($scope
 #============================================================================
 # Incoming messages controller
 #============================================================================
-controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal', '$controller', 'CaseService', 'MessageService', 'PartnerService', 'UtilsService', ($scope, $timeout, $uibModal, $controller, CaseService, MessageService, PartnerService, UtilsService) ->
+controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal', '$controller', 'CaseService', 'MessageService', 'PartnerService', 'UserService', 'UtilsService', ($scope, $timeout, $uibModal, $controller, CaseService, MessageService, PartnerService, UserService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
   $scope.advancedSearch = false
@@ -362,12 +362,15 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
     }})
 
   newCaseFromMessage = (message, possibleAssignees) ->
-    UtilsService.newCaseModal(message.text, CASE_SUMMARY_MAX_LEN, possibleAssignees).then((data) ->
-      CaseService.open(message, data.summary, data.assignee).then((caseObj) ->
-          caseUrl = '/case/read/' + caseObj.id + '/'
-          if !caseObj.is_new
-            caseUrl += '?alert=open_found_existing'
-          UtilsService.navigate(caseUrl)
+    assignee = if possibleAssignees then possibleAssignees[0] else null
+    UserService.fetchInPartner(assignee, true).then((users) ->
+      UtilsService.newCaseModal(message.text, CASE_SUMMARY_MAX_LEN, possibleAssignees, users).then((data) ->
+        CaseService.open(message, data.summary, data.assignee, data.user).then((caseObj) ->
+            caseUrl = '/case/read/' + caseObj.id + '/'
+            if !caseObj.is_new
+              caseUrl += '?alert=open_found_existing'
+            UtilsService.navigate(caseUrl)
+        )
       )
     )
 ])
@@ -536,7 +539,8 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
 #============================================================================
 # Case view controller
 #============================================================================
-controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'ContactService', 'MessageService', 'PartnerService', 'UtilsService', ($scope, $window, $timeout, CaseService, ContactService, MessageService, PartnerService, UtilsService) ->
+controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'CaseService', 'ContactService', 'MessageService', 'PartnerService', 'UserService', 'UtilsService', ($scope, $window, $timeout, CaseService, ContactService, MessageService, PartnerService, UserService, UtilsService) ->
+
   $scope.allLabels = $window.contextData.all_labels
   $scope.fields = $window.contextData.fields
 
@@ -631,9 +635,12 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
 
   $scope.onReassign = () ->
     PartnerService.fetchAll().then((partners) ->
-      UtilsService.assignModal("Re-assign", null, partners).then((assignee) ->
-        CaseService.reassign($scope.caseObj, assignee).then(() ->
-          $scope.$broadcast('timelineChanged')
+      UserService.fetchInPartner(partners[0], true).then((users) ->
+        UtilsService.assignModal("Re-assign", null, partners, users).then((result) ->
+          {assignee, user} = result
+          CaseService.reassign($scope.caseObj, assignee, user).then(() ->
+            $scope.$broadcast('timelineChanged')
+          )
         )
       )
     )

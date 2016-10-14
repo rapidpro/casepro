@@ -46,7 +46,9 @@
 
         .message-text
           %span.label-container{ ng-if:"item.case" }
-            %span.label.label-warning
+            %span.label.label-warning{ ng-if:"item.case.user_assignee" }
+              [[ item.case.assignee.name ]] ([[item.case.user_assignee.name]])
+            %span.label.label-warning{ ng-if:"!item.case.user_assignee" }
               [[ item.case.assignee.name ]]
             &nbsp;
           [[ item.text ]]
