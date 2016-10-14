@@ -321,8 +321,10 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(open_case, case2)
 
     def test_get_open_with_user_assignee(self):
-        '''If a case is opened with the user_assignee field set, the created case should have the assigned user, and
-        the created case action should also have the assigned user.'''
+        """
+        If a case is opened with the user_assignee field set, the created case should have the assigned user, and
+        the created case action should also have the assigned user.
+        """
         msg = self.create_message(
             self.unicef, 123, self.ann, "Hello", created_on=datetime(2014, 1, 5, 0, 0, tzinfo=pytz.UTC))
         case = Case.get_or_open(self.unicef, self.user2, msg, 'Hello', self.moh, user_assignee=self.user1)
