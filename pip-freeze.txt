@@ -12,10 +12,10 @@ confmodel==0.2.0
 coverage==4.0.3
 -e git+https://github.com/rapidpro/dash.git@a5d88d5817e337c486b3ac44e260e8053437b9a3#egg=dash-master
 dj-database-url==0.3.0
-django-appconf==1.0.1
+django-appconf==1.0.2
 django-celery==3.1.17
 django-celery-email==1.1.4
-django-compressor==1.6
+django-compressor==2.1
 django-contrib-comments==1.7.2
 django-debug-toolbar==1.5
 django-digest==1.13
