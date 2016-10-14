@@ -8,7 +8,7 @@ import django.contrib.postgres.fields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('contacts', '0023_contact_urns'),
+        ('contacts', '0024_auto_20160822_1224'),
     ]
 
     operations = [
