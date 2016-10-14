@@ -13,7 +13,7 @@
     .form-group
       %label.control-label
         - trans "Specific User (Optional)"
-      %select.form-control{ ng-model:"fields.user", ng-options:"u.name for u in users track by u.id", ng-show:"users.length" }
+      %select.form-control{ ng-model:"fields.user", ng-options:"u.name for u in users track by u.id" }
   .modal-footer
     %button.btn.btn-primary{ ng-click:"ok()" }
       - trans "Re-assign"
