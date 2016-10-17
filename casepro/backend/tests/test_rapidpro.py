@@ -1,5 +1,5 @@
 # coding=utf-8
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 
 import pytz
 import time
@@ -926,7 +926,7 @@ class PerfTest(BaseCasesTest):
         start = time.time()
         self.assertEqual((num_fields, 0, 0, 0), self.backend.pull_fields(self.unicef))
 
-        print "Initial field sync: %f secs" % (time.time() - start)
+        print("Initial field sync: %f secs" % (time.time() - start))
 
         # setup get_groups
         groups = [TembaGroup.create(uuid="G0000000-0000-0000-0000-00000000%04d" % g, name="Group #%d" % g, count=0)
@@ -937,7 +937,7 @@ class PerfTest(BaseCasesTest):
         start = time.time()
         self.assertEqual((num_groups, 0, 0, 0), self.backend.pull_groups(self.unicef))
 
-        print "Initial group sync: %f secs" % (time.time() - start)
+        print("Initial group sync: %f secs" % (time.time() - start))
 
         # setup get_contacts to return multiple fetches of contacts
         active_fetches = []
@@ -965,7 +965,7 @@ class PerfTest(BaseCasesTest):
         start = time.time()
         num_created, num_updated, num_deleted, num_ignored = self.backend.pull_contacts(self.unicef, None, None)
 
-        print "Initial contact sync: %f secs" % (time.time() - start)
+        print("Initial contact sync: %f secs" % (time.time() - start))
 
         self.assertEqual((num_created, num_updated, num_deleted), (num_fetches * fetch_size, 0, 0))
 
@@ -980,7 +980,7 @@ class PerfTest(BaseCasesTest):
         num_created, num_updated, num_deleted, num_ignored = self.backend.pull_contacts(self.unicef, None, None)
         self.assertEqual((num_created, num_updated, num_deleted), (0, 0, 0))
 
-        print "Contact sync with no changes: %f secs" % (time.time() - start)
+        print("Contact sync with no changes: %f secs" % (time.time() - start))
 
         # simulate an update of 1 field value
         for batch in active_fetches:
@@ -992,7 +992,7 @@ class PerfTest(BaseCasesTest):
         num_created, num_updated, num_deleted, num_ignored = self.backend.pull_contacts(self.unicef, None, None)
         self.assertEqual((num_created, num_updated, num_deleted), (0, num_fetches * fetch_size, 0))
 
-        print "Contact sync with 1 field value changes: %f secs" % (time.time() - start)
+        print("Contact sync with 1 field value changes: %f secs" % (time.time() - start))
 
         # simulate an update of 10 field values
         for batch in active_fetches:
@@ -1005,4 +1005,4 @@ class PerfTest(BaseCasesTest):
         num_created, num_updated, num_deleted, num_ignored = self.backend.pull_contacts(self.unicef, None, None)
         self.assertEqual((num_created, num_updated, num_deleted), (0, num_fetches * fetch_size, 0))
 
-        print "Contact sync with 10 field value changes: %f secs" % (time.time() - start)
+        print("Contact sync with 10 field value changes: %f secs" % (time.time() - start))

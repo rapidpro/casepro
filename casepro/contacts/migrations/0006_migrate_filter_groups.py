@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 
 from django.db import migrations, models
 
@@ -26,7 +26,7 @@ def migrate_filter_groups(apps, schema_editor):
             num_created += 1
 
     if old_groups:
-        print "Migrated %d old filter groups (%d new groups created, %d updated)" % (len(old_groups), num_created, num_updated)
+        print("Migrated %d old filter groups (%d new groups created, %d updated)" % (len(old_groups), num_created, num_updated))
 
 
 class Migration(migrations.Migration):

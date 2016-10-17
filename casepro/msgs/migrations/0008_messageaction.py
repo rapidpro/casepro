@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 
 from django.db import migrations, models
 import django.contrib.postgres.fields
@@ -21,7 +21,7 @@ def migrate_messageactions(apps, schema_editor):
                                      label=old_action.label)
 
     if old_actions:
-        print "Migrated %d message actions to new model in msgs app" % len(old_actions)
+        print("Migrated %d message actions to new model in msgs app" % len(old_actions))
 
 
 
