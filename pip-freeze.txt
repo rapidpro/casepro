@@ -10,7 +10,7 @@ celery==3.1.24
 colorama==0.3.7
 -e git+https://github.com/nyaruka/confmodel.git@python3#egg=confmodel
 coverage==4.0.3
--e git+https://github.com/rapidpro/dash.git@0c2c459cd30b91dfb0444f86efef3d2d3c884bcb#egg=dash-master
+-e git+https://github.com/rapidpro/dash.git@bb508312d05e9f74bdb3172af1eafed8e517df85#egg=dash-master
 dj-database-url==0.3.0
 django-appconf==1.0.2
 django-celery==3.1.17
