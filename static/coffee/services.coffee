@@ -590,7 +590,7 @@ services.factory('ModalService', ['$rootScope', '$uibModal', ($rootScope, $uibMo
       })
       .result
 
-    create_case: ({
+    createCase: ({
       context = {},
       title = null,
       templateUrl = '/sitestatic/templates/modals/create_case.html',
@@ -759,7 +759,7 @@ services.factory('MessageBoardService', ['$http', '$httpParamSerializer', '$wind
 services.factory('InboxUIService', ['CaseService', 'ModalService', 'UtilsService', (CaseService, ModalService, UtilsService) ->
   new class InboxUIService
     createCaseWithoutMessage: () ->
-      ModalService.create_case({
+      ModalService.createCase({
         title: "Create case"
       }).then((result) ->
         CaseService.open(null, result.text, result.partner, result.user, result.urn).then((caseObj) ->

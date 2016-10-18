@@ -818,11 +818,11 @@ describe('services:', () ->
       )
     )
 
-    describe('create_case', () ->
+    describe('createCase', () ->
         it('should draw the modal', () ->
           $httpBackend.expectGET('/partner/?with_activity=false')
             .respond([])
-          ModalService.create_case({
+          ModalService.createCase({
             title: 'Foo',
           })
 
@@ -837,7 +837,7 @@ describe('services:', () ->
 
           $httpBackend.expectGET('/partner/?with_activity=false')
             .respond([])
-          ModalService.create_case({
+          ModalService.createCase({
             title: 'Foo',
           })
           .then(-> fulfilled = true)
@@ -877,7 +877,7 @@ describe('services:', () ->
 
           $httpBackend.expectGET('/partner/?with_activity=false')
             .respond([])
-          ModalService.create_case({
+          ModalService.createCase({
             title: 'Foo',
           })
           .then(-> fulfilled = true)
@@ -901,7 +901,7 @@ describe('services:', () ->
 
           $httpBackend.expectGET('/partner/?with_activity=false')
             .respond([])
-          ModalService.create_case({
+          ModalService.createCase({
             title: 'Foo',
           })
           .then(-> fulfilled = true)
@@ -928,7 +928,7 @@ describe('services:', () ->
 
           $httpBackend.expectGET('/partner/?with_activity=false')
             .respond([])
-          ModalService.create_case({
+          ModalService.createCase({
             title: 'Foo',
           })
           .then(-> fulfilled = true)
@@ -956,7 +956,7 @@ describe('services:', () ->
 
           $httpBackend.expectGET('/partner/?with_activity=false')
             .respond([])
-          ModalService.create_case({
+          ModalService.createCase({
             title: 'Foo',
           })
           .then(-> fulfilled = true)
@@ -983,7 +983,7 @@ describe('services:', () ->
 
           $httpBackend.expectGET('/partner/?with_activity=false')
             .respond([])
-          ModalService.create_case({
+          ModalService.createCase({
             title: 'Foo',
             maxLength: 3,
           })

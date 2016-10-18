@@ -547,12 +547,12 @@ describe('controllers:', () ->
       )
 
       it('onCaseWithoutMessage existing case', () ->
-        createCaseModal = spyOnPromise($q, $scope, ModalService, 'create_case')
+        createCaseModal = spyOnPromise($q, $scope, ModalService, 'createCase')
         openCase = spyOnPromise($q, $scope, CaseService, 'open')
         redirect = spyOnPromise($q, $scope, UtilsService, 'navigate')
 
         $scope.onCaseWithoutMessage()
-        expect(ModalService.create_case).toHaveBeenCalledWith({title: 'Create case'})
+        expect(ModalService.createCase).toHaveBeenCalledWith({title: 'Create case'})
 
         createCaseModal.resolve({text: 'test summary', partner: 2, user: 3, urn: 'tel:123'})
         expect(CaseService.open).toHaveBeenCalledWith(null, 'test summary', 2, 3, 'tel:123')
@@ -562,12 +562,12 @@ describe('controllers:', () ->
       )
 
       it('onCaseWithoutMessage no existing case', () ->
-        createCaseModal = spyOnPromise($q, $scope, ModalService, 'create_case')
+        createCaseModal = spyOnPromise($q, $scope, ModalService, 'createCase')
         openCase = spyOnPromise($q, $scope, CaseService, 'open')
         redirect = spyOnPromise($q, $scope, UtilsService, 'navigate')
 
         $scope.onCaseWithoutMessage()
-        expect(ModalService.create_case).toHaveBeenCalledWith({title: 'Create case'})
+        expect(ModalService.createCase).toHaveBeenCalledWith({title: 'Create case'})
 
         createCaseModal.resolve({text: 'test summary', partner: 2, user: 3, urn: 'tel:123'})
         expect(CaseService.open).toHaveBeenCalledWith(null, 'test summary', 2, 3, 'tel:123')
