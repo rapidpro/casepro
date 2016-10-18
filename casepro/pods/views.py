@@ -1,10 +1,10 @@
 from __future__ import unicode_literals
 
-import json
 from django.http import JsonResponse
 
 from casepro.cases.models import Case, CaseAction, AccessLevel
 from casepro.pods import registry
+from casepro.utils import json_decode
 
 ACTION_NOTE_CONTENT = "%(username)s %(message)s"
 
@@ -49,9 +49,10 @@ def perform_pod_action(request, index):
         return JsonResponse({'reason': 'Pod does not exist'}, status=404)
 
     try:
-        data = json.loads(request.body)
+        data = json_decode(request.body)
     except ValueError as e:
-        return JsonResponse({'reason': 'JSON decode error', 'details': e.message}, status=400)
+        message = e.message if hasattr(e, 'message') else e.msg
+        return JsonResponse({'reason': 'JSON decode error', 'details': message}, status=400)
 
     case_id = data.get('case_id')
     if case_id is None:

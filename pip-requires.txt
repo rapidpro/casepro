@@ -2,6 +2,7 @@
 boto
 celery[redis]
 colorama
+-e git+git@github.com:nyaruka/confmodel.git@python3#egg=confmodel
 coverage
 django
 django-celery

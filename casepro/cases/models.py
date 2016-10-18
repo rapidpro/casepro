@@ -1,5 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
+import six
+
 from dash.orgs.models import Org
 from dash.utils import intersection
 from django.contrib.auth.models import User
@@ -548,7 +550,7 @@ class CaseExport(BaseSearchExport):
         )
 
         def add_sheet(num):
-            sheet = book.add_sheet(unicode(_("Cases %d" % num)))
+            sheet = book.add_sheet(six.text_type(_("Cases %d" % num)))
             self.write_row(sheet, 0, all_fields)
             return sheet
 

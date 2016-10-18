@@ -328,7 +328,7 @@ def _user_can_edit(user, org, other):
     return other_partner and user.can_manage(other_partner)  # manager can edit users in same partner org
 
 
-def _user_unicode(user):
+def _user_str(user):
     if user.has_profile():
         if user.profile.full_name:
             return '%s (%s)' % (user.profile.full_name, user.email)
@@ -369,5 +369,10 @@ User.can_administer = _user_can_administer
 User.can_manage = _user_can_manage
 User.can_edit = _user_can_edit
 User.remove_from_org = _user_remove_from_org
-User.__unicode__ = _user_unicode
 User.as_json = _user_as_json
+
+
+if six.PY2:
+    User.__unicode__ = _user_str
+else:
+    User.__str__ = _user_str
