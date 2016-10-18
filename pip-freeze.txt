@@ -13,7 +13,7 @@ coverage==4.0.3
 -e git+https://github.com/rapidpro/dash.git@bb508312d05e9f74bdb3172af1eafed8e517df85#egg=dash-master
 dj-database-url==0.3.0
 django-appconf==1.0.2
-django-celery==3.1.17
+-e git+https://github.com/celery/django-celery.git@master#egg=django-celery-master
 django-celery-email==1.1.4
 django-compressor==2.1
 django-contrib-comments==1.7.2
@@ -50,7 +50,7 @@ regex==2015.10.01
 requests==2.7.0
 responses==0.5.1
 six==1.10.0
-smartmin==1.9.1
+smartmin==1.9.2
 sorl-thumbnail==12.3
 sqlparse==0.1.15
 xlrd==1.0.0
