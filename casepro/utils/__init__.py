@@ -70,13 +70,6 @@ def json_decode(data):
     return json.loads(data)
 
 
-def get_exception_message(ex):
-    """
-    Extracts an error message from an exception
-    """
-    return getattr(ex, 'message', getattr(ex, 'msg', "Unknown"))
-
-
 def safe_max(*args, **kwargs):
     """
     Regular max won't compare dates with NoneType and raises exception for no args
