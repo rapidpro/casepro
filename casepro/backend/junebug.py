@@ -425,7 +425,7 @@ def received_junebug_message(request):
         data = json_decode(request.body)
     except ValueError as e:
         message = e.message if hasattr(e, 'message') else e.msg
-        return JsonResponse({'reason': "JSON decode error", 'details':message}, status=400)
+        return JsonResponse({'reason': "JSON decode error", 'details': message}, status=400)
 
     identity_store = IdentityStore(
         settings.IDENTITY_API_ROOT, settings.IDENTITY_AUTH_TOKEN, settings.IDENTITY_ADDRESS_TYPE)
