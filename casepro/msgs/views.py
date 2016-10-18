@@ -497,6 +497,9 @@ class FaqCRUDL(SmartCRUDL):
 
         def get_form_kwargs(self):
             kwargs = super(FaqCRUDL.Create, self).get_form_kwargs()
+            # Get the data for post requests that didn't come through a form
+            if self.request.method == 'POST' and not self.request.POST and hasattr(self.request, 'json'):
+                kwargs['data'] = self.request.json
             kwargs['org'] = self.request.org
             return kwargs
 
@@ -536,6 +539,9 @@ class FaqCRUDL(SmartCRUDL):
 
         def get_form_kwargs(self):
             kwargs = super(FaqCRUDL.Update, self).get_form_kwargs()
+            # Get the data for post requests that didn't come through a form
+            if self.request.method == 'POST' and not self.request.POST and hasattr(self.request, 'json'):
+                kwargs['data'] = self.request.json
             kwargs['org'] = self.request.org
             return kwargs
 
