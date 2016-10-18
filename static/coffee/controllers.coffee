@@ -204,7 +204,7 @@ controllers.controller('BaseItemsController', ['$scope', 'UtilsService', ($scope
 #============================================================================
 # Incoming messages controller
 #============================================================================
-controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal', '$controller', 'CaseService', 'InboxUIService', 'MessageService', 'PartnerService', 'UserService', 'UtilsService', ($scope, $timeout, $uibModal, $controller, CaseService, InboxUIService, MessageService, PartnerService, UserService, UtilsService) ->
+controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal', '$controller', 'CaseService', 'MessageService', 'PartnerService', 'UserService', 'UtilsService', 'ModalService', ($scope, $timeout, $uibModal, $controller, CaseService, MessageService, PartnerService, UserService, UtilsService, ModalService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
   $scope.advancedSearch = false
@@ -350,7 +350,16 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
       )
 
   $scope.onCaseWithoutMessage = () ->
-      InboxUIService.createCaseWithoutMessage()
+    ModalService.createCase({
+      title: "Create case"
+    }).then((result) ->
+      CaseService.open(null, result.text, result.partner, result.user, result.urn).then((caseObj) ->
+        caseUrl = 'case/read/' + caseObj.id + '/'
+        if !caseObj.is_new
+          caseUrl += '?alert=open_found_existing'
+        UtilsService.navigate(caseUrl)
+      )
+    )
 
   $scope.onLabelMessage = (message) ->
     UtilsService.labelModal("Labels", "Update the labels for this message. This determines which other partner organizations can view this message.", $scope.labels, message.labels).then((selectedLabels) ->
