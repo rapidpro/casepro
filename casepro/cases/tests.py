@@ -937,7 +937,9 @@ class CaseCRUDLTest(BaseCasesTest):
         mock_fetch_contact_messages.reset_mock()
 
     def test_timeline_no_initial_message(self):
-        '''If a case has no initial message, the timeline should start from the datetime it was opened.'''
+        """
+        If a case has no initial message, the timeline should start from the datetime it was opened.
+        """
         case = self.create_case(self.unicef, self.ann, self.moh, message=None, user_assignee=self.user1)
         caseaction = CaseAction.create(case, self.user1, CaseAction.OPEN, assignee=self.moh, user_assignee=self.user1)
 
