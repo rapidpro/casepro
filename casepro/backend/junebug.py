@@ -9,6 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 import functools
 import requests
 import pytz
+import six
 
 from . import BaseBackend
 from ..contacts.models import Contact
@@ -424,8 +425,7 @@ def received_junebug_message(request):
     try:
         data = json_decode(request.body)
     except ValueError as e:
-        message = e.message if hasattr(e, 'message') else e.msg
-        return JsonResponse({'reason': "JSON decode error", 'details': message}, status=400)
+        return JsonResponse({'reason': "JSON decode error", 'details': six.text_type(e)}, status=400)
 
     identity_store = IdentityStore(
         settings.IDENTITY_API_ROOT, settings.IDENTITY_AUTH_TOKEN, settings.IDENTITY_ADDRESS_TYPE)
@@ -458,8 +458,7 @@ def receive_identity_store_optout(request):
     try:
         data = json_decode(request.body)
     except ValueError as e:
-        message = e.message if hasattr(e, 'message') else e.msg
-        return JsonResponse({'reason': "JSON decode error", 'details': message}, status=400)
+        return JsonResponse({'reason': "JSON decode error", 'details': six.text_type(e)}, status=400)
 
     try:
         identity_id = data['identity']

@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import six
+
 from django.http import JsonResponse
 
 from casepro.cases.models import Case, CaseAction, AccessLevel
@@ -51,8 +53,7 @@ def perform_pod_action(request, index):
     try:
         data = json_decode(request.body)
     except ValueError as e:
-        message = e.message if hasattr(e, 'message') else e.msg
-        return JsonResponse({'reason': 'JSON decode error', 'details': message}, status=400)
+        return JsonResponse({'reason': 'JSON decode error', 'details': six.text_type(e)}, status=400)
 
     case_id = data.get('case_id')
     if case_id is None:
