@@ -64,7 +64,7 @@ class JunebugBackendTest(BaseCasesTest):
                                 'test2@example.com': {}
                             }
                         },
-                        'preferred_language': "eng_NG",
+                        'language': "eng_NG",
                     },
                     'communicate_through': None,
                     'operator': None,
@@ -117,7 +117,7 @@ class JunebugBackendTest(BaseCasesTest):
                                 '+5678': {'optedout': True}
                             },
                         },
-                        'preferred_language': "eng_NG",
+                        'language': "eng_NG",
                     },
                     'communicate_through': None,
                     'operator': None,
@@ -143,7 +143,7 @@ class JunebugBackendTest(BaseCasesTest):
                     'details': {
                         'name': "redacted",
                         'addresses': {},
-                        'preferred_language': "redacted",
+                        'language': "redacted",
                     },
                     'communicate_through': None,
                     'operator': None,
@@ -862,7 +862,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
                             '+1234': {}
                         },
                     },
-                    'preferred_language': "eng_NG",
+                    'language': "eng_NG",
                 },
                 'optout_type': optout_type,
             })
@@ -968,7 +968,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
                             '+1234': {}
                         },
                     },
-                    'preferred_language': "eng_NG",
+                    'language': "eng_NG",
                 },
             })
         )
@@ -1043,7 +1043,7 @@ class IdentityStoreTest(BaseCasesTest):
                                 '+1234': {}
                             },
                         },
-                        'preferred_language': "eng_NG",
+                        'language': "eng_NG",
                     },
                     'communicate_through': None,
                     'operator': None,
@@ -1390,7 +1390,7 @@ class IdentityStoreContactTest(BaseCasesTest):
                         '+1234': {}
                     },
                 },
-                'preferred_language': "eng_NG",
+                'language': "eng_NG",
             },
             'communicate_through': None,
             'operator': None,
@@ -1415,7 +1415,7 @@ class IdentityStoreContactSyncerTest(BaseCasesTest):
                 'id': "test_1",
                 'version': "1",
                 'details': {
-                    'preferred_language': "eng_NG",
+                    'language': "eng_NG",
                     'name': "test",
                     'addresses': {
                         'tel': {

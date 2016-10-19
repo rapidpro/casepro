@@ -111,7 +111,7 @@ class IdentityStoreContact(object):
 
         # Languages in the identity store have the country code at the end
         self.language = None
-        remote_language = json_data.get('details').get('preferred_language')
+        remote_language = json_data.get('details').get('language')
         if remote_language is not None:
             self.language, _, _ = remote_language.partition('_')
         self.name = json_data.get('details').get('name', None)
