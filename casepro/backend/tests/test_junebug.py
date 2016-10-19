@@ -1430,7 +1430,7 @@ class IdentityStoreContactSyncerTest(BaseCasesTest):
         self.assertTrue(self.syncer.update_required(local, self.mk_identity_store_contact(), {}))
 
     def test_update_required_urns_different(self):
-        local = Contact.objects.create(org=self.unicef, uuid="test_id", name="test", urns=[])
+        local = Contact.objects.create(org=self.unicef, uuid="test_id", name="test", language="eng", urns=[])
         self.assertTrue(self.syncer.update_required(local, self.mk_identity_store_contact(), {}))
 
     def test_update_required_groups_different(self):
