@@ -354,6 +354,40 @@ class JunebugBackendTest(BaseCasesTest):
         contact.refresh_from_db()
         self.assertEqual(contact.uuid, "test_id")
 
+    def test_push_contact_with_existing_uuid(self):
+        contact = Contact.objects.create(org=self.unicef, uuid="test_id", is_stub=True, name="test", urns=["tel:+1234"])
+        old_contact = contact.__dict__.copy()
+        self.backend.push_contact(self.unicef, contact)
+        contact.refresh_from_db
+        self.assertEqual(contact.__dict__, old_contact)
+
+    def test_identity_equal_matching_contact(self):
+        contact = Contact.objects.create(org=self.unicef, uuid=None, is_stub=True, name="test", urns=["tel:+1234"])
+        identity = {
+            'details': {
+                'addresses': {'tel': {'+1234': {}}},
+                'name': 'test'
+            }}
+        self.assertTrue(self.backend._identity_equal(identity, contact))
+
+    def test_identity_equal_urns_diff(self):
+        contact = Contact.objects.create(org=self.unicef, uuid=None, is_stub=True, name="test", urns=["tel:+1234"])
+        identity = {
+            'details': {
+                'addresses': {'tel': {'+5678': {}}},
+                'name': 'test'
+            }}
+        self.assertFalse(self.backend._identity_equal(identity, contact))
+
+    def test_identity_equal_name_diff(self):
+        contact = Contact.objects.create(org=self.unicef, uuid=None, is_stub=True, name='test', urns=["tel:+1234"])
+        identity = {
+            'details': {
+                'addresses': {'tel': {'+1234': {}}},
+                'name': 'exam'
+            }}
+        self.assertFalse(self.backend._identity_equal(identity, contact))
+
     @responses.activate
     def test_outgoing_urn(self):
         """
