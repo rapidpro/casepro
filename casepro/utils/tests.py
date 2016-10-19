@@ -16,7 +16,7 @@ from casepro.test import BaseCasesTest
 
 from . import safe_max, normalize, match_keywords, truncate, str_to_bool, json_encode, TimelineItem, uuid_to_int
 from . import date_to_milliseconds, datetime_to_microseconds, microseconds_to_datetime, month_range, date_range
-from . import get_language_name, validate_urn_as_e164, InvalidURN
+from . import get_language_name, validate_urn_as_e164, validate_urn, InvalidURN
 from .email import send_email
 from .middleware import JSONMiddleware
 
@@ -139,12 +139,16 @@ class UtilsTest(BaseCasesTest):
         self.assertIsNone(get_language_name('xxxxx'))
 
     def test_validate_urn_as_e164(self):
-        self.assertRaises(InvalidURN, validate_urn_as_e164, '0825550011')
-        self.assertRaises(InvalidURN, validate_urn_as_e164, '0027825550011')
-        self.assertRaises(InvalidURN, validate_urn_as_e164, '027825550011')
-        self.assertRaises(InvalidURN, validate_urn_as_e164, '0027005550011')
-        self.assertRaises(InvalidURN, validate_urn_as_e164, '0027825550011445566')
+        self.assertRaises(InvalidURN, validate_urn_as_e164, '0825550011')  # lacks country code
+        self.assertRaises(InvalidURN, validate_urn_as_e164, '(+27)825550011')  # incorrect format (E.123)
+        self.assertRaises(InvalidURN, validate_urn_as_e164, '+278255500abc')  # incorrect format
+        self.assertRaises(InvalidURN, validate_urn_as_e164, '+278255500115555555')  # too long
         self.assertTrue(validate_urn_as_e164('+27825552233'))
+
+    def test_validate_urn(self):
+        self.assertTrue(validate_urn('tel:+27825552233'))
+        self.assertRaises(InvalidURN, validate_urn, 'tel:0825550011')
+        self.assertTrue(validate_urn('unknown_scheme:address_for_unknown_scheme'))
 
 
 class EmailTest(BaseCasesTest):
