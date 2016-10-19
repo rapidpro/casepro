@@ -113,7 +113,8 @@ class JunebugBackendTest(BaseCasesTest):
                         'name': "test",
                         'addresses': {
                             'tel': {
-                                '+1234': {}
+                                '+1234': {},
+                                '+5678': {'optedout': True}
                             },
                         },
                         'preferred_language': "eng_NG",
