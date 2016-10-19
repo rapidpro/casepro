@@ -309,16 +309,15 @@ class JunebugBackend(BaseBackend):
 
     @staticmethod
     def _identity_equal(identity, contact):
-        details = identity.get('details', {})
+        identity = IdentityStoreContact(identity)
         for addr in contact.urns:
-            addr_type, address = addr.split(':', 1)
-            if details.get('addresses', {}).get(addr_type, {}).get(address) is None:
+            if addr not in identity.urns:
                 return False
         if contact.name is not None:
-            if details.get('name') != contact.name:
+            if identity.name != contact.name:
                 return False
         if contact.language is not None:
-            if details.get('language') != contact.language:
+            if identity.language != contact.language:
                 return False
         return True
 

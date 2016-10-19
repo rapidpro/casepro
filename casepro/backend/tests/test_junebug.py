@@ -388,6 +388,17 @@ class JunebugBackendTest(BaseCasesTest):
             }}
         self.assertFalse(self.backend._identity_equal(identity, contact))
 
+    def test_identity_equal_lang_diff(self):
+        contact = Contact.objects.create(org=self.unicef, uuid=None, is_stub=True, name='test', language='eng',
+                                         urns=["tel:+1234"])
+        identity = {
+            'details': {
+                'addresses': {'tel': {'+1234': {}}},
+                'name': 'test',
+                'language': 'ibo_NG'
+            }}
+        self.assertFalse(self.backend._identity_equal(identity, contact))
+
     @responses.activate
     def test_outgoing_urn(self):
         """
