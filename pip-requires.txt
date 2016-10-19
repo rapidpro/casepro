@@ -5,7 +5,6 @@ colorama
 -e git+https://github.com/nyaruka/confmodel.git@python3#egg=confmodel
 coverage
 django
-django-celery
 django-celery-email
 django-compressor
 django-debug-toolbar
