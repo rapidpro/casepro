@@ -1,6 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-import djcelery
 import os
 import sys
 
@@ -165,7 +164,6 @@ INSTALLED_APPS = (
     'django.contrib.postgres',
     'django_comments',
 
-    'djcelery',
     'djcelery_email',
 
     # mo-betta permission management
@@ -459,8 +457,6 @@ INTERNAL_IPS = ('127.0.0.1',)
 # -----------------------------------------------------------------------------------
 # Django-celery
 # -----------------------------------------------------------------------------------
-djcelery.setup_loader()
-
 BROKER_URL = 'redis://localhost:6379/%d' % (10 if TESTING else 15)
 CELERY_RESULT_BACKEND = BROKER_URL
 
