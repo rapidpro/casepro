@@ -373,6 +373,13 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(case3.is_new, True)
         self.assertNotEqual(case2, case3)
 
+    def test_get_open_no_message_or_contact(self):
+        """
+        When using get_or_open with no initial message and no existing contact a ValueError should be raised.
+        """
+        self.assertRaises(ValueError, Case.get_or_open, self.unicef, self.user2, None, 'Hello', self.moh,
+                          user_assignee=self.user1, contact=None)
+
     def test_search(self):
         d1 = datetime(2014, 1, 9, 0, 0, tzinfo=pytz.UTC)
         d2 = datetime(2014, 1, 10, 0, 0, tzinfo=pytz.UTC)
