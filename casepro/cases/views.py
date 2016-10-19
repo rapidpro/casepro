@@ -495,6 +495,7 @@ class BaseInboxView(OrgPermsMixin, SmartTemplateView):
         context['folder_icon'] = self.folder_icon
         context['open_case_count'] = Case.get_open(org, user).count()
         context['closed_case_count'] = Case.get_closed(org, user).count()
+        context['allow_case_without_message'] = getattr(settings, 'SITE_ALLOW_CASE_WITHOUT_MESSAGE', False)
         return context
 
 
