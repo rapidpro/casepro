@@ -890,7 +890,7 @@ describe('services:', () ->
 
           $rootScope.$apply()
 
-          expect(document.querySelector('.has-error label').innerHTML).toContain('Recipient')
+          expect(document.querySelector('.has-error label').innerHTML).toContain('Contact')
           expect(document.querySelector('.form-group .help-block').innerHTML).toContain('Required')
           expect(document.querySelector('.form-group .help-block').className).not.toContain('ng-hide')
           expect(fulfilled).toBe(false)
@@ -916,7 +916,7 @@ describe('services:', () ->
 
           $rootScope.$apply()
 
-          expect(document.querySelector('.has-error label').innerHTML).toContain('Recipient')
+          expect(document.querySelector('.has-error label').innerHTML).toContain('Contact')
           expect(document.querySelectorAll('.form-group .help-block')[1].innerHTML).toContain(
             'Invalid phone number format. Should be in the format +27741234567')
           expect(document.querySelectorAll('.form-group .help-block')[1].className).not.toContain('ng-hide')

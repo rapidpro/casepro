@@ -351,7 +351,7 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
 
   $scope.onCaseWithoutMessage = () ->
     ModalService.createCase({
-      title: "Create case"
+      title: "Open case"
     }).then((result) ->
       CaseService.open(null, result.text, result.partner, result.user, result.urn).then((caseObj) ->
         caseUrl = 'case/read/' + caseObj.id + '/'

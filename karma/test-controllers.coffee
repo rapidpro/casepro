@@ -552,7 +552,7 @@ describe('controllers:', () ->
         redirect = spyOnPromise($q, $scope, UtilsService, 'navigate')
 
         $scope.onCaseWithoutMessage()
-        expect(ModalService.createCase).toHaveBeenCalledWith({title: 'Create case'})
+        expect(ModalService.createCase).toHaveBeenCalledWith({title: 'Open case'})
 
         createCaseModal.resolve({text: 'test summary', partner: 2, user: 3, urn: 'tel:123'})
         expect(CaseService.open).toHaveBeenCalledWith(null, 'test summary', 2, 3, 'tel:123')
@@ -567,7 +567,7 @@ describe('controllers:', () ->
         redirect = spyOnPromise($q, $scope, UtilsService, 'navigate')
 
         $scope.onCaseWithoutMessage()
-        expect(ModalService.createCase).toHaveBeenCalledWith({title: 'Create case'})
+        expect(ModalService.createCase).toHaveBeenCalledWith({title: 'Open case'})
 
         createCaseModal.resolve({text: 'test summary', partner: 2, user: 3, urn: 'tel:123'})
         expect(CaseService.open).toHaveBeenCalledWith(null, 'test summary', 2, 3, 'tel:123')
