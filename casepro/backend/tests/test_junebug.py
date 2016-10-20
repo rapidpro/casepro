@@ -55,7 +55,7 @@ class JunebugBackendTest(BaseCasesTest):
                     'details': {
                         'name': "test",
                         'addresses': {
-                            'tel': {
+                            'msisdn': {
                                 '+5678': {},
                                 '+1234': {'default': True}
                             },
@@ -85,7 +85,7 @@ class JunebugBackendTest(BaseCasesTest):
             'details': {
                 'name': "test",
                 'addresses': {
-                    'tel': {
+                    'msisdn': {
                         '+1234': {}
                     },
                 },
@@ -112,7 +112,7 @@ class JunebugBackendTest(BaseCasesTest):
                     'details': {
                         'name': "test",
                         'addresses': {
-                            'tel': {
+                            'msisdn': {
                                 '+1234': {},
                                 '+5678': {'optedout': True}
                             },
@@ -326,7 +326,7 @@ class JunebugBackendTest(BaseCasesTest):
         contact = Contact.objects.create(org=self.unicef, uuid=None, is_stub=True, urns=["tel:+1234"])
 
         self.add_identity_store_search_callback(
-            "details__addresses__tel=%2B1234",
+            "details__addresses__msisdn=%2B1234",
             self.identity_store_no_matches_callback
         )
         self.add_identity_store_create_callback(self.identity_store_created_new_identity_callback)
@@ -345,7 +345,7 @@ class JunebugBackendTest(BaseCasesTest):
         contact = Contact.objects.create(org=self.unicef, uuid=None, is_stub=True, name="test", urns=["tel:+1234"])
 
         self.add_identity_store_search_callback(
-            "details__addresses__tel=%2B1234",
+            "details__addresses__msisdn=%2B1234",
             self.identity_store_created_identity_callback
         )
 
@@ -365,7 +365,7 @@ class JunebugBackendTest(BaseCasesTest):
         contact = Contact.objects.create(org=self.unicef, uuid=None, is_stub=True, name="test", urns=["tel:+1234"])
         identity = {
             'details': {
-                'addresses': {'tel': {'+1234': {}}},
+                'addresses': {'msisdn': {'+1234': {}}},
                 'name': 'test'
             }}
         self.assertTrue(self.backend._identity_equal(identity, contact))
@@ -374,7 +374,7 @@ class JunebugBackendTest(BaseCasesTest):
         contact = Contact.objects.create(org=self.unicef, uuid=None, is_stub=True, name="test", urns=["tel:+1234"])
         identity = {
             'details': {
-                'addresses': {'tel': {'+5678': {}}},
+                'addresses': {'msisdn': {'+5678': {}}},
                 'name': 'test'
             }}
         self.assertFalse(self.backend._identity_equal(identity, contact))
@@ -383,7 +383,7 @@ class JunebugBackendTest(BaseCasesTest):
         contact = Contact.objects.create(org=self.unicef, uuid=None, is_stub=True, name='test', urns=["tel:+1234"])
         identity = {
             'details': {
-                'addresses': {'tel': {'+1234': {}}},
+                'addresses': {'msisdn': {'+1234': {}}},
                 'name': 'exam'
             }}
         self.assertFalse(self.backend._identity_equal(identity, contact))
@@ -393,7 +393,7 @@ class JunebugBackendTest(BaseCasesTest):
                                          urns=["tel:+1234"])
         identity = {
             'details': {
-                'addresses': {'tel': {'+1234': {}}},
+                'addresses': {'msisdn': {'+1234': {}}},
                 'name': 'test',
                 'language': 'ibo_NG'
             }}
@@ -1337,7 +1337,7 @@ class IdentityStoreTest(BaseCasesTest):
             responses.POST, url, callback=self.create_identity_callback, match_querystring=True,
             content_type="application/json")
 
-        identity = identity_store.create_identity(["msisdn:+1234"], name="Test identity", language="eng")
+        identity = identity_store.create_identity(["tel:+1234"], name="Test identity", language="eng")
         self.assertEqual(identity['details'], {
             'addresses': {
                 'msisdn': {
@@ -1429,7 +1429,7 @@ class IdentityStoreContactSyncerTest(BaseCasesTest):
                     'language': "eng_NG",
                     'name': "test",
                     'addresses': {
-                        'tel': {
+                        'msisdn': {
                             '+1234': {}
                         }
                     }

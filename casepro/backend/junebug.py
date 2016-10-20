@@ -76,6 +76,8 @@ class IdentityStore(object):
         address_dict = {}
         for address in addresses:
             type_, addr = address.split(':', 1)
+            if type_ == "tel":
+                type_ = "msisdn"
             address_dict[type_] = {addr: {}}
         identity = self.session.post(
             "%s/api/v1/identities/" % (self.base_url,),
@@ -132,6 +134,8 @@ class IdentityStoreContact(object):
                     break
                 scheme_addresses.append(urn)
             for value in scheme_addresses:
+                if scheme == "msisdn":
+                    scheme = "tel"
                 self.urns.append("%s:%s" % (scheme, value))
 
 
@@ -338,6 +342,8 @@ class JunebugBackend(BaseBackend):
         identities = []
         for urn in contact.urns:
             addr_type, addr = urn.split(':', 1)
+            if addr_type == "tel":
+                addr_type = "msisdn"
             identities.extend(identity_store.get_identities_for_address(addr, addr_type))
         identities = [identity for identity in identities if self._identity_equal(identity, contact)]
 
