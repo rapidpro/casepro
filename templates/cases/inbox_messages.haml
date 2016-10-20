@@ -22,9 +22,6 @@
       .search-form-simple{ ng-if:"!advancedSearch" }
         %form.clearfix
           .btn-group.pull-away
-            - if allow_case_without_message
-              %button.btn.btn-default{ type:"button", ng-click:"onCaseWithoutMessage()", ng-if:'folder == "inbox"'}
-                - trans "Open Case"
             // TODO figure out why form is double-submitted when this is moved to ng-submit on the form. jQuery conflict?
             %button.btn.btn-default{ type:"button", ng-click:"onSearch()" }
               %i.glyphicon.glyphicon-search
