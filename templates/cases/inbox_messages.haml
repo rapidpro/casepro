@@ -3,7 +3,6 @@
 
 - block home-items
   .{ ng-controller:"MessagesController", ng-init:"init()" }
-
     .contact-toolbar{ ng-if:"activeContact" }
       .row
         .col-md-12
@@ -147,7 +146,9 @@
               - trans "Flow"
             &nbsp;
           %span.label-container{ ng-if:"item.case" }
-            %span.label.label-warning
+            %span.label.label-warning{ ng-if:"item.case.user_assignee" }
+              [[ item.case.assignee.name ]] ([[item.case.user_assignee.name]])
+            %span.label.label-warning{ ng-if:"!item.case.user_assignee" }
               [[ item.case.assignee.name ]]
             &nbsp;
           %span.label-container{ ng-repeat:"label in filterDisplayLabels(item.labels)" }
@@ -215,6 +216,8 @@
     }
     .message-text {
       margin-left: 130px;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
     }
     .message-actions .flag {
       color: #ddd;

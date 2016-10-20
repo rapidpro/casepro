@@ -251,10 +251,14 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     #----------------------------------------------------------------------------
     # Opens a new case
     #----------------------------------------------------------------------------
-    open: (message, summary, assignee) ->
-      params = {message: message.id, summary: summary}
+    open: (message, summary, assignee, user, urn) ->
+      params = {summary: summary, urn: urn}
       if assignee
         params.assignee = assignee.id
+      if user
+        params.user_assignee = user.id
+      if message
+        params.message = message.id
 
       return $http.post('/case/open/', params).then((response) ->
         return response.data
@@ -271,8 +275,12 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     #----------------------------------------------------------------------------
     # Re-assigns a case
     #----------------------------------------------------------------------------
-    reassign: (caseObj, assignee) ->
-      return $http.post('/case/reassign/' + caseObj.id + '/', {assignee: assignee.id}).then(() ->
+    reassign: (caseObj, assignee, user) ->
+      params = {assignee: assignee.id, user_assignee: user}
+      if user
+        params.user_assignee = user.id
+
+      return $http.post('/case/reassign/' + caseObj.id + '/', params).then(() ->
         caseObj.assignee = assignee
       )
 
@@ -477,6 +485,13 @@ services.factory('UserService', ['$http', '$httpParamSerializer', ($http, $httpP
   new class UserService
 
     #----------------------------------------------------------------------------
+    # Fetches all users, optionally with activity information
+    #----------------------------------------------------------------------------
+    fetchAll: (withActivity = false) ->
+      params = {with_activity: withActivity}
+      return $http.get('/user/?' + $httpParamSerializer(params)).then((response) -> response.data.results)
+
+    #----------------------------------------------------------------------------
     # Fetches users in the given partner with optional activity statistics
     #----------------------------------------------------------------------------
     fetchInPartner: (partner, withActivity = false) ->
@@ -528,8 +543,8 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
       resolve = {title: (() -> title), initial: (() -> initial), maxLength: (() -> maxLength)}
       return $uibModal.open({templateUrl: '/partials/modal_compose.html', controller: 'ComposeModalController', resolve: resolve}).result
 
-    assignModal: (title, prompt, partners) ->
-      resolve = {title: (() -> title), prompt: (() -> prompt), partners: (() -> partners)}
+    assignModal: (title, prompt, partners, users) ->
+      resolve = {title: (() -> title), prompt: (() -> prompt), partners: (() -> partners), users: (() -> users) }
       return $uibModal.open({templateUrl: '/partials/modal_assign.html', controller: 'AssignModalController', resolve: resolve}).result
 
     noteModal: (title, prompt, style, maxLength) ->
@@ -540,8 +555,8 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
       resolve = {title: (() -> title), prompt: (() -> prompt), labels: (() -> labels), initial: (() -> initial)}
       return $uibModal.open({templateUrl: '/partials/modal_label.html', controller: 'LabelModalController', resolve: resolve}).result
 
-    newCaseModal: (summaryInitial, summaryMaxLength, partners) ->
-      resolve = {summaryInitial: (() -> summaryInitial), summaryMaxLength: (() -> summaryMaxLength), partners: (() -> partners)}
+    newCaseModal: (summaryInitial, summaryMaxLength, partners, users) ->
+      resolve = {summaryInitial: (() -> summaryInitial), summaryMaxLength: (() -> summaryMaxLength), partners: (() -> partners), users: (() -> users)}
       return $uibModal.open({templateUrl: '/partials/modal_newcase.html', controller: 'NewCaseModalController', resolve: resolve}).result
 
     dateRangeModal: (title, prompt) ->
@@ -572,6 +587,57 @@ services.factory('ModalService', ['$rootScope', '$uibModal', ($rootScope, $uibMo
         controller: ($scope, $uibModalInstance) ->
           $scope.ok = -> $uibModalInstance.close()
           $scope.cancel = -> $uibModalInstance.dismiss()
+      })
+      .result
+
+    createCase: ({
+      context = {},
+      title = null,
+      templateUrl = '/sitestatic/templates/modals/create_case.html',
+      initial='',
+      maxLength=255,
+      schemes = {tel: "Phone", twitter: "Twitter", email: "Email"},
+    } = {}) ->
+      $uibModal.open({
+        templateUrl,
+        scope: angular.extend($rootScope.$new(true), {
+           title, context, initial, maxLength, schemes
+        }),
+        controller: ($scope, $uibModalInstance, PartnerService, UserService) ->
+          $scope.fields = {
+            urn: {scheme: null, path: ""},
+            text: {val: initial, maxLength: maxLength},
+            partner: {val: 0, choices:[]},
+            user: {val: 0, choices: []}
+          }
+
+          $scope.refreshUserList = () ->
+              UserService.fetchInPartner($scope.fields.partner.val, true).then((users) ->
+                  $scope.fields.user.choices = [{name: "-- Anyone --"}].concat(users)
+              )
+
+          $scope.setScheme = (scheme) ->
+            $scope.fields.urn.scheme = scheme
+            $scope.urn_scheme_label = schemes[scheme]
+            if $scope.form
+              # If the scheme is changed, we need to revalidate the path for the new scheme
+              $scope.form.path.$validate()
+
+          $scope.ok = () ->
+            $scope.form.submitted = true
+            if $scope.form.$valid
+              urn = $scope.fields.urn.scheme + ':' + $scope.fields.urn.path
+              $uibModalInstance.close({text: $scope.fields.text.val, urn: urn, partner: $scope.fields.partner.val, user: $scope.fields.user.val})
+
+          $scope.cancel = () -> $uibModalInstance.dismiss(false)
+
+          $scope.setScheme('tel')
+
+          PartnerService.fetchAll().then((partners) ->
+              $scope.fields.partner.choices = partners
+              $scope.fields.partner.val = partners[0]
+              $scope.refreshUserList()
+          )
       })
       .result
 ])

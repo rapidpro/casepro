@@ -143,9 +143,13 @@ class Case(models.Model):
 
     assignee = models.ForeignKey(Partner, related_name='cases')
 
+    user_assignee = models.ForeignKey(
+        User, null=True, on_delete=models.SET_NULL, related_name='cases',
+        help_text="The (optional) user that this case is assigned to")
+
     contact = models.ForeignKey(Contact, related_name='cases')
 
-    initial_message = models.OneToOneField(Message, related_name='initial_case')
+    initial_message = models.OneToOneField(Message, null=True, related_name='initial_case')
 
     summary = models.CharField(verbose_name=_("Summary"), max_length=255)
 
@@ -215,7 +219,7 @@ class Case(models.Model):
         if before:
             queryset = queryset.filter(opened_on__lte=before)
 
-        queryset = queryset.select_related('contact', 'assignee')
+        queryset = queryset.select_related('contact', 'assignee', 'user_assignee')
 
         queryset = queryset.prefetch_related(
             Prefetch('labels', Label.objects.filter(is_active=True))
@@ -224,37 +228,51 @@ class Case(models.Model):
         return queryset.order_by('-opened_on')
 
     @classmethod
-    def get_or_open(cls, org, user, message, summary, assignee):
+    def get_or_open(cls, org, user, message, summary, assignee, user_assignee=None, contact=None):
+        """
+        Get an existing case, or open a new case if one doesn't exist. If message=None, then contact is required, and
+        any open case for that contact will be returned. If no open cases exist for the contact, a new case will be
+        created.
+        """
+        if not message and not contact:
+            raise ValueError("Opening a case requires a message or contact")
+
         from casepro.profiles.models import Notification
-
         r = get_redis_connection()
-        with r.lock(CASE_LOCK_KEY % (org.pk, message.contact.uuid)):
-            message.refresh_from_db()
+        contact = message.contact if message else contact
 
-            # if message is already associated with a case, return that
-            if message.case:
-                message.case.is_new = False
-                return message.case
+        with r.lock(CASE_LOCK_KEY % (org.pk, contact.uuid)):
+            if message:
+                message.refresh_from_db()
+                case = message.case
+            else:
+                message = None
+                case = contact.cases.filter(closed_on=None).first()
+            # if there is already an associated case, return that
+            if case:
+                case.is_new = False
+                return case
 
             # suspend from groups, expire flows and archive messages
-            message.contact.prepare_for_case()
+            contact.prepare_for_case()
 
-            case = cls.objects.create(org=org, assignee=assignee, initial_message=message, contact=message.contact,
-                                      summary=summary)
+            case = cls.objects.create(org=org, assignee=assignee, initial_message=message, contact=contact,
+                                      summary=summary, user_assignee=user_assignee)
+
+            if message:
+                case.labels.add(*list(message.labels.all()))  # copy labels from message to new case
+
+                # attach message to this case
+                message.case = case
+                message.save(update_fields=('case',))
+
             case.is_new = True
-            case.labels.add(*list(message.labels.all()))  # copy labels from message to new case
             case.watchers.add(user)
-
-            # attach message to this case
-            message.case = case
-            message.save(update_fields=('case',))
-
-            action = CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee)
+            action = CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee, user_assignee=user_assignee)
 
             for assignee_user in assignee.get_users():
                 if assignee_user != user:
                     Notification.new_case_assignment(org, assignee_user, action)
-
         return case
 
     def get_timeline(self, after, before, merge_from_backend):
@@ -283,7 +301,7 @@ class Case(models.Model):
 
         # fetch and append actions
         actions = self.actions.filter(created_on__gte=after, created_on__lte=before)
-        actions = actions.select_related('assignee', 'created_by')
+        actions = actions.select_related('assignee', 'user_assignee', 'created_by')
         timeline += [TimelineItem(a) for a in actions]
 
         # sort timeline by reverse chronological order
@@ -334,13 +352,15 @@ class Case(models.Model):
         self.notify_watchers(action=action)
 
     @case_action()
-    def reassign(self, user, partner, note=None):
+    def reassign(self, user, partner, note=None, user_assignee=None):
         from casepro.profiles.models import Notification
 
         self.assignee = partner
-        self.save(update_fields=('assignee',))
+        self.user_assignee = user_assignee
+        self.save(update_fields=('assignee', 'user_assignee'))
 
-        action = CaseAction.create(self, user, CaseAction.REASSIGN, assignee=partner, note=note)
+        action = CaseAction.create(
+            self, user, CaseAction.REASSIGN, assignee=partner, note=note, user_assignee=user_assignee)
 
         self.notify_watchers(action=action)
 
@@ -431,6 +451,7 @@ class Case(models.Model):
             return {
                 'id': self.pk,
                 'assignee': self.assignee.as_json(full=False),
+                'user_assignee': self.user_assignee.as_json(full=False) if self.user_assignee else None,
                 'contact': self.contact.as_json(full=False),
                 'labels': [l.as_json(full=False) for l in self.labels.all()],
                 'summary': self.summary,
@@ -441,6 +462,7 @@ class Case(models.Model):
             return {
                 'id': self.pk,
                 'assignee': self.assignee.as_json(full=False),
+                'user_assignee': self.user_assignee.as_json(full=False) if self.user_assignee else None,
             }
 
     def __str__(self):
@@ -480,14 +502,19 @@ class CaseAction(models.Model):
 
     assignee = models.ForeignKey(Partner, null=True, related_name="case_actions")
 
+    user_assignee = models.ForeignKey(
+        User, null=True, on_delete=models.SET_NULL, related_name='case_assigned_actions',
+        help_text="The (optional) user that the case was assigned to.")
+
     label = models.ForeignKey(Label, null=True)
 
     note = models.CharField(null=True, max_length=1024)
 
     @classmethod
-    def create(cls, case, user, action, assignee=None, label=None, note=None):
-        return CaseAction.objects.create(case=case, action=action,
-                                         created_by=user, assignee=assignee, label=label, note=note)
+    def create(cls, case, user, action, assignee=None, label=None, note=None, user_assignee=None):
+        return CaseAction.objects.create(
+            case=case, action=action, created_by=user, assignee=assignee, label=label, note=note,
+            user_assignee=user_assignee)
 
     def as_json(self):
         return {
@@ -496,6 +523,7 @@ class CaseAction(models.Model):
             'created_by': self.created_by.as_json(full=False),
             'created_on': self.created_on,
             'assignee': self.assignee.as_json() if self.assignee else None,
+            'user_assignee': self.user_assignee.as_json() if self.user_assignee else None,
             'label': self.label.as_json() if self.label else None,
             'note': self.note
         }
@@ -548,14 +576,15 @@ class CaseExport(BaseSearchExport):
                 row = 1
 
             values = [
-                item.initial_message.created_on,
+                item.initial_message.created_on if item.initial_message else '',
                 item.opened_on,
                 item.closed_on,
                 item.assignee.name,
                 ', '.join([l.name for l in item.labels.all()]),
                 item.summary,
                 item.outgoing_count,
-                item.incoming_count - 1,  # subtract 1 for the initial messages
+                # subtract 1 for the initial messages
+                item.incoming_count - 1 if item.initial_message else item.incoming_count,
                 item.contact.uuid
             ]
 

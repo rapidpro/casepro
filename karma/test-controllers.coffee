@@ -60,12 +60,16 @@ describe('controllers:', () ->
   describe('CaseController', () ->
     CaseService = null
     ContactService = null
+    PartnerService = null
+    UserService = null
     $scope = null
 
     beforeEach(() ->
-      inject((_CaseService_, _ContactService_) ->
+      inject((_CaseService_, _ContactService_, _PartnerService_, _UserService_) ->
         CaseService = _CaseService_
         ContactService = _ContactService_
+        PartnerService = _PartnerService_
+        UserService = _UserService_
       )
 
       $window.contextData = {all_labels: [test.tea, test.coffee], all_partners: [test.moh, test.who]}
@@ -143,6 +147,26 @@ describe('controllers:', () ->
       expect(CaseService.unwatch).toHaveBeenCalledWith(test.case1)
     )
 
+    it('onReassign', () ->
+      reassignModal = spyOnPromise($q, $scope, UtilsService, 'assignModal')
+      reassignCase = spyOnPromise($q, $scope, CaseService, 'reassign')
+      partnerFetch = spyOnPromise($q, $scope, PartnerService, 'fetchAll')
+
+      $scope.caseObj = test.case1
+      $scope.onReassign()
+
+      partnerFetch.resolve([test.moh, test.who])
+      reassignModal.resolve({assignee: test.moh, user: test.user1})
+      reassignCase.resolve()
+
+      # List of partners should be fetched
+      expect(PartnerService.fetchAll).toHaveBeenCalled()
+      # Modal should be sent list of partners and list of users for first partner
+      expect(UtilsService.assignModal).toHaveBeenCalledWith('Re-assign', null, [test.moh, test.who])
+      # Result of modal selection should be sent to reassign the case
+      expect(CaseService.reassign).toHaveBeenCalledWith(test.case1, test.moh, test.user1)
+    )
+
     it('should should add a alert on alert events', () ->
       $scope.alerts = []
       $scope.$emit('alert', {type: 'foo'})
@@ -210,17 +234,21 @@ describe('controllers:', () ->
     OutgoingService = null
     CaseService = null
     PartnerService = null
+    UserService = null
+    ModalService = null
 
     $inboxScope = null
     $scope = null
     serverTime = 1464775597109  # ~ Jun 1st 2016 10:06:37 UTC
 
     beforeEach(() ->
-      inject((_MessageService_, _OutgoingService_, _CaseService_, _PartnerService_) ->
+      inject((_MessageService_, _OutgoingService_, _CaseService_, _PartnerService_, _UserService_, _ModalService_) ->
         MessageService = _MessageService_
         OutgoingService = _OutgoingService_
         CaseService = _CaseService_
         PartnerService = _PartnerService_
+        UserService = _UserService_
+        ModalService = _ModalService_
       )
 
       $window.contextData = {user: test.user1, partners: [], labels: [test.tea, test.coffee], groups: []}
@@ -264,10 +292,9 @@ describe('controllers:', () ->
         expect($scope.isInfiniteScrollEnabled()).toEqual(true)
       )
 
-      it('loadOldItems should report to raven on failure', () ->
+      it('loadOldItems should display alert on failure', () ->
         spyOn(CaseService, 'fetchOld').and.callThrough()
         spyOn(UtilsService, 'displayAlert')
-        spyOn(Raven, 'captureMessage')
 
         $httpBackend.expectGET(/\/case\/search\/\?.*/).respond(() -> [500, 'Server error', {}, 'Internal error'])
 
@@ -275,7 +302,6 @@ describe('controllers:', () ->
 
         $httpBackend.flush()
         expect(UtilsService.displayAlert).toHaveBeenCalled()
-        expect(Raven.captureMessage).toHaveBeenCalled()
       )
 
       it('getItemFilter', () ->
@@ -445,10 +471,10 @@ describe('controllers:', () ->
           $scope.onCaseFromMessage(test.msg1)
 
           fetchPartners.resolve([test.moh, test.who])
-          newCaseModal.resolve({summary: "New case", assignee: test.moh})
+          newCaseModal.resolve({summary: "New case", assignee: test.moh, user: test.user1})
           openCase.resolve({id: 601, summary: "New case", isNew: false})
 
-          expect(CaseService.open).toHaveBeenCalledWith(test.msg1, "New case", test.moh)
+          expect(CaseService.open).toHaveBeenCalledWith(test.msg1, "New case", test.moh, test.user1)
           expect(UtilsService.navigate).toHaveBeenCalledWith('/case/read/601/?alert=open_found_existing')
         )
 
@@ -509,6 +535,36 @@ describe('controllers:', () ->
         bulkFlag.resolve()
 
         expect(MessageService.bulkFlag).toHaveBeenCalledWith([test.msg2], true)
+      )
+
+      it('onCaseWithoutMessage existing case', () ->
+        createCaseModal = spyOnPromise($q, $scope, ModalService, 'createCase')
+        openCase = spyOnPromise($q, $scope, CaseService, 'open')
+        redirect = spyOnPromise($q, $scope, UtilsService, 'navigate')
+
+        $scope.onCaseWithoutMessage()
+        expect(ModalService.createCase).toHaveBeenCalledWith({title: 'Open case'})
+
+        createCaseModal.resolve({text: 'test summary', partner: 2, user: 3, urn: 'tel:123'})
+        expect(CaseService.open).toHaveBeenCalledWith(null, 'test summary', 2, 3, 'tel:123')
+
+        openCase.resolve({is_new: false, id: 7})
+        expect(UtilsService.navigate).toHaveBeenCalledWith('case/read/7/?alert=open_found_existing')
+      )
+
+      it('onCaseWithoutMessage no existing case', () ->
+        createCaseModal = spyOnPromise($q, $scope, ModalService, 'createCase')
+        openCase = spyOnPromise($q, $scope, CaseService, 'open')
+        redirect = spyOnPromise($q, $scope, UtilsService, 'navigate')
+
+        $scope.onCaseWithoutMessage()
+        expect(ModalService.createCase).toHaveBeenCalledWith({title: 'Open case'})
+
+        createCaseModal.resolve({text: 'test summary', partner: 2, user: 3, urn: 'tel:123'})
+        expect(CaseService.open).toHaveBeenCalledWith(null, 'test summary', 2, 3, 'tel:123')
+
+        openCase.resolve({is_new: true, id: 7})
+        expect(UtilsService.navigate).toHaveBeenCalledWith('case/read/7/')
       )
     )
 

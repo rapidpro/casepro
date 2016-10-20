@@ -295,7 +295,7 @@ class Message(models.Model):
         if before:
             queryset = queryset.filter(created_on__lt=before)
 
-        queryset = queryset.prefetch_related('contact', 'labels', 'case__assignee')
+        queryset = queryset.prefetch_related('contact', 'labels', 'case__assignee', 'case__user_assignee')
 
         return queryset.order_by('-created_on')
 
