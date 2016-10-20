@@ -216,7 +216,9 @@ class Contact(models.Model):
             return self.name
         if contact_display_format == "urn" and self.urns:
             return self.urns[0]
-        return self.uuid[:6].upper()
+        if self.uuid:
+            return self.uuid[:6].upper()
+        return ""
 
     def get_fields(self, visible=None):
         fields = self.fields if self.fields else {}
