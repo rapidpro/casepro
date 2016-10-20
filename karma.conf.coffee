@@ -19,6 +19,7 @@ module.exports = (config) ->
       'static/js/raven.min.js',
       'static/js/select.min.js',
       'static/js/ui-bootstrap-tpls-1.3.3.min.js',
+      'static/js/libphonenumber.min.js',
 
       # templates
       'static/templates/**/*.html',

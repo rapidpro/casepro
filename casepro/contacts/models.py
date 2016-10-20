@@ -2,14 +2,14 @@ from __future__ import unicode_literals
 
 from dash.orgs.models import Org
 from django.conf import settings
-from django.contrib.postgres.fields import HStoreField
+from django.contrib.postgres.fields import HStoreField, ArrayField
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from django_redis import get_redis_connection
 
 from casepro.backend import get_backend
-from casepro.utils import get_language_name
+from casepro.utils import get_language_name, validate_urn
 
 FIELD_LOCK_KEY = 'lock:field:%d:%s'
 GROUP_LOCK_KEY = 'lock:group:%d:%s'
@@ -137,7 +137,7 @@ class Contact(models.Model):
 
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="contacts")
 
-    uuid = models.CharField(max_length=36, unique=True)
+    uuid = models.CharField(max_length=36, unique=True, null=True)
 
     name = models.CharField(verbose_name=_("Full name"), max_length=128, null=True, blank=True,
                             help_text=_("The name of this contact"))
@@ -161,6 +161,9 @@ class Contact(models.Model):
 
     created_on = models.DateTimeField(auto_now_add=True, help_text=_("When this contact was created"))
 
+    urns = ArrayField(models.CharField(max_length=255), default=list,
+                      help_text=_("List of URNs of the format 'scheme:path'"))
+
     def __init__(self, *args, **kwargs):
         if self.SAVE_GROUPS_ATTR in kwargs:
             setattr(self, self.SAVE_GROUPS_ATTR, kwargs.pop(self.SAVE_GROUPS_ATTR))
@@ -181,16 +184,30 @@ class Contact(models.Model):
             return contact
 
     @classmethod
+    def get_or_create_from_urn(cls, org, urn, name=None):
+        """
+        Gets an existing contact or creates a new contact. Used when opening a case without an initial message
+        """
+        validate_urn(urn)
+        contact = cls.objects.filter(urns__contains=[urn]).first()
+        if not contact:
+            contact = cls.objects.create(org=org, name=name, urns=[urn], is_stub=False)
+            get_backend().push_contact(org, contact)
+        return contact
+
+    @classmethod
     def lock(cls, org, uuid):
         return get_redis_connection().lock(CONTACT_LOCK_KEY % (org.pk, uuid), timeout=60)
 
     def get_display_name(self):
         """
         Gets the display name of this contact. If name is empty or site uses anonymous contacts, this is generated from
-        the backend UUID.
+        the backend UUID. If no UUID is set for the contact, an empty string is returned.
         """
         if not self.name or getattr(settings, 'SITE_ANON_CONTACTS', False):
-            return self.uuid[:6].upper()
+            if self.uuid:
+                return self.uuid[:6].upper()
+            return ""
         else:
             return self.name
 

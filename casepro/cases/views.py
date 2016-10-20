@@ -16,7 +16,7 @@ from smartmin.views import SmartCRUDL, SmartListView, SmartCreateView, SmartRead
 from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
 
-from casepro.contacts.models import Field, Group
+from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message, MessageFolder, OutgoingFolder
 from casepro.pods import registry as pod_registry
 from casepro.statistics.models import DailyCount
@@ -85,7 +85,7 @@ class CaseCRUDL(SmartCRUDL):
 
     class Open(OrgPermsMixin, SmartCreateView):
         """
-        JSON endpoint for opening a new case. Takes a message backend id.
+        JSON endpoint for opening a new case. Takes a message backend id, or a URN.
         """
         permission = 'cases.case_create'
 
@@ -102,10 +102,16 @@ class CaseCRUDL(SmartCRUDL):
                 assignee = request.user.get_partner(self.request.org)
                 user_assignee = request.user
 
-            message_id = int(request.json['message'])
-            message = Message.objects.get(org=request.org, backend_id=message_id)
+            message_id = request.json.get('message')
+            if message_id:
+                message = Message.objects.get(org=request.org, backend_id=int(message_id))
+                contact = None
+            else:
+                message = None
+                contact = Contact.get_or_create_from_urn(org=request.org, urn=request.json['urn'])
 
-            case = Case.get_or_open(request.org, request.user, message, summary, assignee, user_assignee=user_assignee)
+            case = Case.get_or_open(
+                request.org, request.user, message, summary, assignee, user_assignee=user_assignee, contact=contact)
 
             # augment regular case JSON
             case_json = case.as_json()
@@ -269,7 +275,10 @@ class CaseCRUDL(SmartCRUDL):
                 merge_from_backend = False
             else:
                 # this is the initial request for the complete timeline
-                after = self.object.initial_message.created_on
+                if self.object.initial_message is not None:
+                    after = self.object.initial_message.created_on
+                else:
+                    after = self.object.opened_on
                 merge_from_backend = True
 
             if self.object.closed_on:
@@ -486,6 +495,7 @@ class BaseInboxView(OrgPermsMixin, SmartTemplateView):
         context['folder_icon'] = self.folder_icon
         context['open_case_count'] = Case.get_open(org, user).count()
         context['closed_case_count'] = Case.get_closed(org, user).count()
+        context['allow_case_without_message'] = getattr(settings, 'SITE_ALLOW_CASE_WITHOUT_MESSAGE', False)
         return context
 
 

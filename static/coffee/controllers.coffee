@@ -21,7 +21,7 @@ SINGLETON_ALERTS = ['pod_load_api_failure']
 #============================================================================
 # Inbox controller (DOM parent of messages and cases)
 #============================================================================
-controllers.controller('InboxController', ['$scope', '$window', '$location', 'LabelService', 'UtilsService', ($scope, $window, $location, LabelService, UtilsService) ->
+controllers.controller('InboxController', ['$scope', '$window', '$location', 'LabelService', 'UtilsService', 'ModalService', 'CaseService', ($scope, $window, $location, LabelService, UtilsService, ModalService, CaseService) ->
 
   $scope.user = $window.contextData.user
   $scope.labels = $window.contextData.labels
@@ -68,6 +68,18 @@ controllers.controller('InboxController', ['$scope', '$window', '$location', 'La
   $scope.filterDisplayLabels = (labels) ->
     # filters out the active label from the given set of message labels
     if $scope.activeLabel then (l for l in labels when l.id != $scope.activeLabel.id) else labels
+
+  $scope.onCaseWithoutMessage = () ->
+    ModalService.createCase({
+      title: "Open case"
+    }).then((result) ->
+      CaseService.open(null, result.text, result.partner, result.user, result.urn).then((caseObj) ->
+        caseUrl = 'case/read/' + caseObj.id + '/'
+        if !caseObj.is_new
+          caseUrl += '?alert=open_found_existing'
+        UtilsService.navigate(caseUrl)
+      )
+    )
 ])
 
 
