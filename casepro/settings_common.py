@@ -68,6 +68,7 @@ IDENTITY_API_ROOT = 'http://localhost:8081/'
 IDENTITY_AUTH_TOKEN = 'replace-with-auth-token'
 IDENTITY_ADDRESS_TYPE = 'msisdn'
 IDENTITY_STORE_OPTOUT_URL = r'^junebug/optout$'
+IDENTITY_LANGUAGE_FIELD = 'language'
 
 # On Unix systems, a value of None will cause Django to use the same
 # timezone as the operating system.
