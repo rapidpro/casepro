@@ -611,7 +611,6 @@ services.factory('ModalService', ['$rootScope', '$uibModal', ($rootScope, $uibMo
             user: {val: 0, choices: []}
           }
 
-
           $scope.refreshUserList = () ->
               UserService.fetchInPartner($scope.fields.partner.val, true).then((users) ->
                   $scope.fields.user.choices = [{name: "-- Anyone --"}].concat(users)
