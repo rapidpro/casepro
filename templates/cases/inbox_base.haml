@@ -25,6 +25,10 @@
           %i.glyphicon.glyphicon-tag
           &nbsp;
           [[ activeLabel.name | deunderscore ]]
+      - if allow_case_without_message
+        .btn-group.page-header-buttons
+          %button.btn.btn-default{ type:"button", ng-click:"onCaseWithoutMessage()"}
+            - trans "Open Case"
 
       .page-header-buttons{ ng-if:"activeLabel" }
         - if perms.msgs.label_read or org_perms.msgs.label_read

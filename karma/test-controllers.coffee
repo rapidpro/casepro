@@ -235,18 +235,20 @@ describe('controllers:', () ->
     CaseService = null
     PartnerService = null
     UserService = null
+    ModalService = null
 
     $inboxScope = null
     $scope = null
     serverTime = 1464775597109  # ~ Jun 1st 2016 10:06:37 UTC
 
     beforeEach(() ->
-      inject((_MessageService_, _OutgoingService_, _CaseService_, _PartnerService_, _UserService_) ->
+      inject((_MessageService_, _OutgoingService_, _CaseService_, _PartnerService_, _UserService_, _ModalService_) ->
         MessageService = _MessageService_
         OutgoingService = _OutgoingService_
         CaseService = _CaseService_
         PartnerService = _PartnerService_
         UserService = _UserService_
+        ModalService = _ModalService_
       )
 
       $window.contextData = {user: test.user1, partners: [], labels: [test.tea, test.coffee], groups: []}
@@ -533,6 +535,36 @@ describe('controllers:', () ->
         bulkFlag.resolve()
 
         expect(MessageService.bulkFlag).toHaveBeenCalledWith([test.msg2], true)
+      )
+
+      it('onCaseWithoutMessage existing case', () ->
+        createCaseModal = spyOnPromise($q, $scope, ModalService, 'createCase')
+        openCase = spyOnPromise($q, $scope, CaseService, 'open')
+        redirect = spyOnPromise($q, $scope, UtilsService, 'navigate')
+
+        $scope.onCaseWithoutMessage()
+        expect(ModalService.createCase).toHaveBeenCalledWith({title: 'Open case'})
+
+        createCaseModal.resolve({text: 'test summary', partner: 2, user: 3, urn: 'tel:123'})
+        expect(CaseService.open).toHaveBeenCalledWith(null, 'test summary', 2, 3, 'tel:123')
+
+        openCase.resolve({is_new: false, id: 7})
+        expect(UtilsService.navigate).toHaveBeenCalledWith('case/read/7/?alert=open_found_existing')
+      )
+
+      it('onCaseWithoutMessage no existing case', () ->
+        createCaseModal = spyOnPromise($q, $scope, ModalService, 'createCase')
+        openCase = spyOnPromise($q, $scope, CaseService, 'open')
+        redirect = spyOnPromise($q, $scope, UtilsService, 'navigate')
+
+        $scope.onCaseWithoutMessage()
+        expect(ModalService.createCase).toHaveBeenCalledWith({title: 'Open case'})
+
+        createCaseModal.resolve({text: 'test summary', partner: 2, user: 3, urn: 'tel:123'})
+        expect(CaseService.open).toHaveBeenCalledWith(null, 'test summary', 2, 3, 'tel:123')
+
+        openCase.resolve({is_new: true, id: 7})
+        expect(UtilsService.navigate).toHaveBeenCalledWith('case/read/7/')
       )
     )
 

@@ -54,6 +54,7 @@ SITE_ORGS_STORAGE_ROOT = 'orgs'
 SITE_EXTERNAL_CONTACT_URL = 'http://localhost:8001/contact/read/%s/'
 SITE_BACKEND = 'casepro.backend.NoopBackend'
 SITE_ANON_CONTACTS = False
+SITE_ALLOW_CASE_WITHOUT_MESSAGE = True
 
 # junebug configuration
 JUNEBUG_API_ROOT = 'http://localhost:8080/'
@@ -66,6 +67,7 @@ IDENTITY_API_ROOT = 'http://localhost:8081/'
 IDENTITY_AUTH_TOKEN = 'replace-with-auth-token'
 IDENTITY_ADDRESS_TYPE = 'msisdn'
 IDENTITY_STORE_OPTOUT_URL = r'^junebug/optout$'
+IDENTITY_LANGUAGE_FIELD = 'language'
 
 # On Unix systems, a value of None will cause Django to use the same
 # timezone as the operating system.

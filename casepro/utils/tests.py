@@ -1,6 +1,7 @@
 # coding=utf-8
 from __future__ import unicode_literals
 
+import hypothesis.strategies as st
 import pytz
 
 from datetime import date, datetime
@@ -9,14 +10,14 @@ from django.http import HttpRequest
 from django.test import override_settings
 from enum import Enum
 from hypothesis import given
-import hypothesis.strategies as st
 from uuid import UUID
 
 from casepro.test import BaseCasesTest
 
 from . import safe_max, normalize, match_keywords, truncate, str_to_bool, json_encode, TimelineItem, uuid_to_int
 from . import date_to_milliseconds, datetime_to_microseconds, microseconds_to_datetime, month_range, date_range
-from . import get_language_name, json_decode
+
+from . import get_language_name, json_decode, validate_urn_as_e164, validate_urn, InvalidURN
 from .email import send_email
 from .middleware import JSONMiddleware
 
@@ -143,6 +144,18 @@ class UtilsTest(BaseCasesTest):
         self.assertEqual(get_language_name('arc'), "Official Aramaic")
 
         self.assertIsNone(get_language_name('xxxxx'))
+
+    def test_validate_urn_as_e164(self):
+        self.assertRaises(InvalidURN, validate_urn_as_e164, '0825550011')  # lacks country code
+        self.assertRaises(InvalidURN, validate_urn_as_e164, '(+27)825550011')  # incorrect format (E.123)
+        self.assertRaises(InvalidURN, validate_urn_as_e164, '+278255500abc')  # incorrect format
+        self.assertRaises(InvalidURN, validate_urn_as_e164, '+278255500115555555')  # too long
+        self.assertTrue(validate_urn_as_e164('+27825552233'))
+
+    def test_validate_urn(self):
+        self.assertTrue(validate_urn('tel:+27825552233'))
+        self.assertRaises(InvalidURN, validate_urn, 'tel:0825550011')
+        self.assertTrue(validate_urn('unknown_scheme:address_for_unknown_scheme'))
 
 
 class EmailTest(BaseCasesTest):

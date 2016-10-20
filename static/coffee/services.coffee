@@ -251,12 +251,14 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
     #----------------------------------------------------------------------------
     # Opens a new case
     #----------------------------------------------------------------------------
-    open: (message, summary, assignee, user) ->
-      params = {message: message.id, summary: summary}
+    open: (message, summary, assignee, user, urn) ->
+      params = {summary: summary, urn: urn}
       if assignee
         params.assignee = assignee.id
       if user
         params.user_assignee = user.id
+      if message
+        params.message = message.id
 
       return $http.post('/case/open/', params).then((response) ->
         return response.data
@@ -585,6 +587,57 @@ services.factory('ModalService', ['$rootScope', '$uibModal', ($rootScope, $uibMo
         controller: ($scope, $uibModalInstance) ->
           $scope.ok = -> $uibModalInstance.close()
           $scope.cancel = -> $uibModalInstance.dismiss()
+      })
+      .result
+
+    createCase: ({
+      context = {},
+      title = null,
+      templateUrl = '/sitestatic/templates/modals/create_case.html',
+      initial='',
+      maxLength=255,
+      schemes = {tel: "Phone", twitter: "Twitter", email: "Email"},
+    } = {}) ->
+      $uibModal.open({
+        templateUrl,
+        scope: angular.extend($rootScope.$new(true), {
+           title, context, initial, maxLength, schemes
+        }),
+        controller: ($scope, $uibModalInstance, PartnerService, UserService) ->
+          $scope.fields = {
+            urn: {scheme: null, path: ""},
+            text: {val: initial, maxLength: maxLength},
+            partner: {val: 0, choices:[]},
+            user: {val: 0, choices: []}
+          }
+
+          $scope.refreshUserList = () ->
+              UserService.fetchInPartner($scope.fields.partner.val, true).then((users) ->
+                  $scope.fields.user.choices = [{name: "-- Anyone --"}].concat(users)
+              )
+
+          $scope.setScheme = (scheme) ->
+            $scope.fields.urn.scheme = scheme
+            $scope.urn_scheme_label = schemes[scheme]
+            if $scope.form
+              # If the scheme is changed, we need to revalidate the path for the new scheme
+              $scope.form.path.$validate()
+
+          $scope.ok = () ->
+            $scope.form.submitted = true
+            if $scope.form.$valid
+              urn = $scope.fields.urn.scheme + ':' + $scope.fields.urn.path
+              $uibModalInstance.close({text: $scope.fields.text.val, urn: urn, partner: $scope.fields.partner.val, user: $scope.fields.user.val})
+
+          $scope.cancel = () -> $uibModalInstance.dismiss(false)
+
+          $scope.setScheme('tel')
+
+          PartnerService.fetchAll().then((partners) ->
+              $scope.fields.partner.choices = partners
+              $scope.fields.partner.val = partners[0]
+              $scope.refreshUserList()
+          )
       })
       .result
 ])

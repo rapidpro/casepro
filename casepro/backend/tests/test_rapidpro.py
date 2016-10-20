@@ -724,6 +724,15 @@ class RapidProBackendTest(BaseCasesTest):
         ])
         mock_create_broadcast.reset_mock()
 
+    def test_push_contact(self):
+        """
+        Pushing a new contact should be a noop.
+        """
+        old_bob = self.bob.__dict__.copy()
+        self.backend.push_contact(self.unicef, self.bob)
+        self.bob.refresh_from_db()
+        self.assertEqual(self.bob.__dict__, old_bob)
+
     @patch('dash.orgs.models.TembaClient2.bulk_add_contacts')
     def test_add_to_group(self, mock_add_contacts):
         self.backend.add_to_group(self.unicef, self.bob, self.reporters)

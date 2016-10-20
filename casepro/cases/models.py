@@ -151,7 +151,7 @@ class Case(models.Model):
 
     contact = models.ForeignKey(Contact, related_name='cases')
 
-    initial_message = models.OneToOneField(Message, related_name='initial_case')
+    initial_message = models.OneToOneField(Message, null=True, related_name='initial_case')
 
     summary = models.CharField(verbose_name=_("Summary"), max_length=255)
 
@@ -230,37 +230,51 @@ class Case(models.Model):
         return queryset.order_by('-opened_on')
 
     @classmethod
-    def get_or_open(cls, org, user, message, summary, assignee, user_assignee=None):
+    def get_or_open(cls, org, user, message, summary, assignee, user_assignee=None, contact=None):
+        """
+        Get an existing case, or open a new case if one doesn't exist. If message=None, then contact is required, and
+        any open case for that contact will be returned. If no open cases exist for the contact, a new case will be
+        created.
+        """
+        if not message and not contact:
+            raise ValueError("Opening a case requires a message or contact")
+
         from casepro.profiles.models import Notification
-
         r = get_redis_connection()
-        with r.lock(CASE_LOCK_KEY % (org.pk, message.contact.uuid)):
-            message.refresh_from_db()
+        contact = message.contact if message else contact
 
-            # if message is already associated with a case, return that
-            if message.case:
-                message.case.is_new = False
-                return message.case
+        with r.lock(CASE_LOCK_KEY % (org.pk, contact.uuid)):
+            if message:
+                message.refresh_from_db()
+                case = message.case
+            else:
+                message = None
+                case = contact.cases.filter(closed_on=None).first()
+            # if there is already an associated case, return that
+            if case:
+                case.is_new = False
+                return case
 
             # suspend from groups, expire flows and archive messages
-            message.contact.prepare_for_case()
+            contact.prepare_for_case()
 
-            case = cls.objects.create(org=org, assignee=assignee, initial_message=message, contact=message.contact,
+            case = cls.objects.create(org=org, assignee=assignee, initial_message=message, contact=contact,
                                       summary=summary, user_assignee=user_assignee)
+
+            if message:
+                case.labels.add(*list(message.labels.all()))  # copy labels from message to new case
+
+                # attach message to this case
+                message.case = case
+                message.save(update_fields=('case',))
+
             case.is_new = True
-            case.labels.add(*list(message.labels.all()))  # copy labels from message to new case
             case.watchers.add(user)
-
-            # attach message to this case
-            message.case = case
-            message.save(update_fields=('case',))
-
             action = CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee, user_assignee=user_assignee)
 
             for assignee_user in assignee.get_users():
                 if assignee_user != user:
                     Notification.new_case_assignment(org, assignee_user, action)
-
         return case
 
     def get_timeline(self, after, before, merge_from_backend):
@@ -564,14 +578,15 @@ class CaseExport(BaseSearchExport):
                 row = 1
 
             values = [
-                item.initial_message.created_on,
+                item.initial_message.created_on if item.initial_message else '',
                 item.opened_on,
                 item.closed_on,
                 item.assignee.name,
                 ', '.join([l.name for l in item.labels.all()]),
                 item.summary,
                 item.outgoing_count,
-                item.incoming_count - 1,  # subtract 1 for the initial messages
+                # subtract 1 for the initial messages
+                item.incoming_count - 1 if item.initial_message else item.incoming_count,
                 item.contact.uuid
             ]
 
