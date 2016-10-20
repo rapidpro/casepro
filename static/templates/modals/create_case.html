@@ -43,9 +43,14 @@
         </div>
         <div class="form-group">
             <label class="control-label">
-                Assign to user/partner
+                Assign to Partner
             </label>
             <select class="form-control" ng-model="fields.partner.val" ng-options="p.name for p in fields.partner.choices track by p.id" ng-change="refreshUserList()"> </select>
+        </div>
+        <div class="form-group">
+            <label class="control-label">
+                Specific User (Optional)
+            </label>
             <select class="form-control" ng-model="fields.user.val" ng-options="u.name for u in fields.user.choices track by u.id"></select>
         </div>
     </form>
