@@ -163,7 +163,10 @@
             .container-fluid
               .row
                 .contact-field-label.col-sm-6
-                  - trans "Name"
+                  - if contact_display_format == 'urn'
+                    - trans "URN"
+                  - else
+                    - trans "Name"
                 .contact-field-value.col-sm-6
                   [[ caseObj.contact.name ]]
               .row{ ng-if:"contact.language" }
