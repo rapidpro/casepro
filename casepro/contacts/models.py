@@ -302,10 +302,7 @@ class Contact(models.Model):
         """
         Prepares a contact for JSON serialization
         """
-        display_field = 'name'
-        if getattr(settings, 'SITE_CONTACT_DISPLAY', False) == "urn":
-            display_field = 'urn'
-        result = {'id': self.pk, display_field: self.get_display_name()}
+        result = {'id': self.pk, 'name': self.get_display_name()}
 
         if full:
             result['groups'] = [g.as_json(full=False) for g in self.groups.all()]
