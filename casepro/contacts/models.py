@@ -206,10 +206,7 @@ class Contact(models.Model):
         returned. If the display setting is recognised and set then that field is returned.
         """
         if getattr(settings, 'SITE_ANON_CONTACTS', False):
-            print self.uuid
             if self.uuid:
-                print "gets here"
-                print self.uuid[:6].upper()
                 return self.uuid[:6].upper()
             return ""
         contact_display_format = getattr(settings, 'SITE_CONTACT_DISPLAY', False)
