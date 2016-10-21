@@ -54,7 +54,7 @@ SITE_ORGS_STORAGE_ROOT = 'orgs'
 SITE_EXTERNAL_CONTACT_URL = 'http://localhost:8001/contact/read/%s/'
 SITE_BACKEND = 'casepro.backend.NoopBackend'
 SITE_ANON_CONTACTS = False
-SITE_CONTACT_DISPLAY = "urn"
+SITE_CONTACT_DISPLAY = "urn"  # Optional. 'name' or 'urn', anything else will be anonymised.
 SITE_ALLOW_CASE_WITHOUT_MESSAGE = True
 
 # junebug configuration
