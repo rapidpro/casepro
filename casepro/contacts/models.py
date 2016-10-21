@@ -201,18 +201,18 @@ class Contact(models.Model):
 
     def get_display_name(self):
         """
-        Gets the display name of this contact. Uses the site format to determine what to display. If the format isn't
-        specified the name is returned, unless the site uses anonymous contacts, then it is generated from the backend
-        UUID. If no UUID is set for the contact, an empty string is returned.
+        Gets the display name of this contact. If the site uses anonymous contacts or the display setting is not
+        recognised, this is generated from the backend UUID. If no UUID is set for the contact, an empty string is
+        returned. If the display setting is recognised and set then that field is returned.
         """
+        if getattr(settings, 'SITE_ANON_CONTACTS', False):
+            print self.uuid
+            if self.uuid:
+                print "gets here"
+                print self.uuid[:6].upper()
+                return self.uuid[:6].upper()
+            return ""
         contact_display_format = getattr(settings, 'SITE_CONTACT_DISPLAY', False)
-        if not contact_display_format:
-            # If the display format isn't specified follow the old steps
-            if not self.name or getattr(settings, 'SITE_ANON_CONTACTS', False):
-                if self.uuid:
-                    return self.uuid[:6].upper()
-                return ""
-            return self.name
         if contact_display_format == "name" and self.name:
             return self.name
         if contact_display_format == "urn" and self.urns:
