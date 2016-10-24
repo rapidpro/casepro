@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import six
+import iso639
 
 from collections import defaultdict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
@@ -605,9 +606,11 @@ class FaqCRUDL(SmartCRUDL):
             for lang in langs:
                 lang_list.append(FAQ.get_language_from_code(lang['language']))
             context['language_list'] = lang_list
+            context['iso_list'] = iso639._load_data()
             return context
 
         def render_to_response(self, context, **response_kwargs):
             return JsonResponse({
                 'results': context['language_list'],
+                'iso_list': context['iso_list'],
             }, encoder=JSONEncoder)

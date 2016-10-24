@@ -218,26 +218,60 @@ modals.controller('DateRangeModalController', ['$scope', '$uibModalInstance', 't
 ])
 
 #=====================================================================
-# Translation modal
+# FAQ modal
 #=====================================================================
-modals.controller('TranslationModalController', ['$scope', 'FaqService', '$uibModalInstance', 'title', 'translation', 'faq', ($scope, FaqService, $uibModalInstance, title, translation, faq) ->
+modals.controller('FaqModalController', ['$scope', '$http', 'FaqService', 'LabelService', '$uibModalInstance', 'title', 'translation', 'faq', 'isFaq', ($scope, $http, FaqService, LabelService, $uibModalInstance, title, translation, faq, isFaq) ->
   $scope.title = title
   $scope.faq = faq
+  $scope.isFaq = isFaq
 
-  $scope.fields = {
-    question: {val: if translation then translation.question else null}
-    answer: {val: if translation then translation.answer else null}
-    parent: {val:faq.id}
-    language: {val:faq.language}
-    labels: {val:faq.labels}
-    id: {val: if translation then translation.id else null}
-  }
-
+  $scope.init = () ->
+    $scope.modalType()
+    $scope.fetchIsos()
+    $scope.fetchLabels()
+  
+  $scope.modalType = () ->
+    if isFaq == false
+      $scope.fields = {
+        question: {val: if translation then translation.question else null}
+        answer: {val: if translation then translation.answer else null}
+        parent: {val: faq.id}
+        language: {val: if translation then translation.language.code else null}
+        labels: {val: (l.id for l in faq.labels)}
+        id: {val: if translation then translation.id else null}
+        }
+    else if isFaq == true
+      $scope.fields = {
+        question: {val: if faq then faq.question else null}
+        answer: {val: if faq then faq.answer else null}
+        parent: {val: if faq then faq.parent else null}
+        language: {val: if faq then faq.language.code else null}
+        labels: {val: if faq then (l.id for l in faq.labels) else $scope.labels}
+        id: {val: if faq then faq.id else null}
+      }
+    
+  $scope.fetchIsos = () ->
+    FaqService.fetchIsos().then((results) ->
+      $scope.iso_list = results
+    )
+  $scope.fetchLabels = () ->  
+    LabelService.fetchAll(true).then((labels) ->
+      $scope.labels = labels
+    )
+    
+  $scope.formatInput = ($model) ->
+    inputLabel = $scope.fields.language.val
+    angular.forEach $scope.iso_list, (language) ->
+      if $model == language.iso639_2_b
+        inputLabel = language.name
+      return
+    inputLabel
+  
   $scope.ok = () ->
     $scope.form.submitted = true
     
     if $scope.form.$valid
-      data = {question: $scope.fields.question.val, answer: $scope.fields.answer.val, parent: $scope.fields.parent.val, language: $scope.fields.language.val, id: $scope.fields.id.val }
+      data = {question: $scope.fields.question.val, answer: $scope.fields.answer.val, parent: $scope.fields.parent.val, language: $scope.fields.language.val, labels: $scope.fields.labels.val, id: $scope.fields.id.val }
       $uibModalInstance.close(data)
           
   $scope.cancel = () -> $uibModalInstance.dismiss(false)

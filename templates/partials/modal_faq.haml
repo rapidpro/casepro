@@ -3,8 +3,8 @@
 .modal-header
   %h3.modal-title
     [[ title ]]
-  .modal-body
-    .panel.panel-default
+  .modal-body{ ng-init:'init()' }
+    .panel.panel-default{ ng-hide:"isFaq" }
       .panel-heading
         %h3.panel-title
           - trans "Original FAQ"
@@ -24,21 +24,38 @@
             %textarea.form-control{ type:"text", ng-model:"fields.question.val", name:"question", required:"" }
             .help-block{ ng-show:"form.question.$error.required && (form.question.$dirty || form.submitted)" }
               - trans "Required"
+        
         .form-group{ ng-class:'{"has-error": form.answer.$invalid && (form.answer.$dirty || form.submitted)}' }
           %label.col-sm-2.control-label
             - trans "Answer"
           .col-sm-10
             %textarea.form-control{ type:"text", ng-model:"fields.answer.val", name:"answer", required:"" }
+        
+        .form-group{ ng-class:'{"has-error": form.labels.$invalid && (form.labels.$dirty || form.submitted)}', ng-show:"isFaq"} 
+          %label.col-sm-2.control-label
+              - trans "Label"
+          .col-sm-10
+            %select.form-control{ ng-model:"fields.labels.val", name:"labels",
+            ng-options:"label.id as label.name for label in labels", 
+            multiple:"multiple", required:"" }
+            
             .help-block{ ng-show:"form.answer.$error.required && (form.answer.$dirty || form.submitted)" }
               - trans "Required"
+              
         .form-group{ ng-class:'{"has-error": form.language.$invalid && (form.language.$dirty || form.submitted)}' }
           %label.col-sm-2.control-label
             - trans "Language"
           .col-sm-10
-            %input.form-control{ type:"text", ng-model:"fields.language.val", name:"language", required:"" }
+            .input-group
+              %input.form-control{ ng-model:"fields.language.val", type: "text", uib-typeahead: "language.iso639_2_b as language.name for language in iso_list | filter:$viewValue | limitTo:8", typeahead-input-formatter:"formatInput($model)", required:"" }
+              %span.input-group-btn
+               %button.btn.btn-default{ type:"button", ng-click:"fields.language.val = null"}
+                -trans "Clear"
+
             .help-block{ ng-show:"form.language.$error.required && (form.language.$dirty || form.submitted)" }
               - trans "Required"
-      
+            
+              
   .modal-footer
     %button.btn.btn-primary{ ng-click:"ok()" }
       - trans "Submit"

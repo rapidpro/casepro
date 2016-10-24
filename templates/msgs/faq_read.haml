@@ -11,7 +11,7 @@
       .page-header-buttons
         - if edit_button_url
           .btn-group
-            %a.btn.btn-default{ href:"{{ edit_button_url }}", tooltip:"Edit FAQ" }
+            %a.btn.btn-default{ ng-click:"onEditFaq(faq)", tooltip:"Edit FAQ" }
               %i.glyphicon.glyphicon-pencil
             - if can_delete
               %a.btn.btn-default{ ng-click:"onDeleteFaq()", tooltip:"Delete FAQ" }
@@ -83,14 +83,14 @@
             %td
               [[ translation.answer ]]
             %td
-              %a.btn.btn-default{ ng-click:"onEditTranslation(translation, faq)", tooltip:"Edit FAQ" }
+              %a.btn.btn-default{ ng-click:"onEditTranslation(translation, faq)", tooltip:"Edit Translation" }
                 %i.glyphicon.glyphicon-pencil
             %td
-              %a.btn.btn-default{ ng-click:"onDeleteFaqTranslation(translation)", tooltip:"Delete FAQ" }
+              %a.btn.btn-default{ ng-click:"onDeleteFaqTranslation(translation)", tooltip:"Delete Translation" }
                 %i.glyphicon.glyphicon-trash
-                
-    .emptymessage{ ng-show:"!translations.length" }
-      - trans "No translations availible"
+          %tr.emptymessage
+            %td
+              - trans "No translations available"  
 
 
 

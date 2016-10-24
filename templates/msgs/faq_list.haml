@@ -12,7 +12,7 @@
           %a.btn.btn-default{ href:"{% url 'msgs.faq_import' %}" }
             %span.glyphicon.glyphicon-duplicate
             - trans "Batch Upload"
-          %a.btn.btn-default{ href:"{% url 'msgs.faq_create' %}" }
+          %a.btn.btn-default{ ng-click:"onNewFaq(faq)", tooltip:"New FAQ" }
             %span.glyphicon.glyphicon-plus
             - trans "Add"
       .page-header

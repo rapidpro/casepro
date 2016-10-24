@@ -189,18 +189,18 @@ services.factory('FaqService', ['$rootScope', '$http', '$httpParamSerializer', (
       )
       
     #----------------------------------------------------------------------------
-    # Create a new translation
+    # Create a new FAQ
     #----------------------------------------------------------------------------
-    createTranslation: (data) ->
-      params = {question: data.question, answer: data.answer, parent: data.parent, language: data.language, labels: data.labels }
+    createFaq: (data) ->
+      params = {question: data.question, answer: data.answer, parent: data.parent, language: data.language, labels: data.labels, id: data.id }
       
       return $http.post('/faq/create/', params)
       
     #----------------------------------------------------------------------------
-    # Updates a Translation
+    # Updates a FAQ
     #----------------------------------------------------------------------------
-    updateTranslation: (data) ->
-      params = {question: data.question, answer: data.answer, parent: data.parent, language: data.language, labels: data.labels}
+    updateFaq: (data) ->
+      params = {question: data.question, answer: data.answer, parent: data.parent, language: data.language, labels: data.labels, id: data.id}
       
       return $http.post('/faq/update/' + data.id + '/', params)
       
@@ -223,7 +223,15 @@ services.factory('FaqService', ['$rootScope', '$http', '$httpParamSerializer', (
       return $http.get('/faq/languages/').then((response) ->
         return response.data.results
       )
-
+      
+    #----------------------------------------------------------------------------
+    # Fetch a list of languages with iso codes
+    #----------------------------------------------------------------------------
+    fetchIsos: () ->
+      return $http.get('/faq/languages/').then((response) ->
+        return response.data.iso_list
+      )
+    
 ])
 
 
@@ -613,10 +621,10 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
     dateRangeModal: (title, prompt) ->
       resolve = {title: (() -> title), prompt: (() -> prompt)}
       return $uibModal.open({templateUrl: '/partials/modal_daterange.html', controller: 'DateRangeModalController', resolve: resolve}).result
-
-    translationModal: (title, translation, faq) ->
-      resolve = {title: (() -> title), translation: (() -> translation), faq: (() -> faq)}
-      return $uibModal.open({templateUrl: '/partials/modal_translation.html', controller: 'TranslationModalController', resolve: resolve}).result
+      
+    FaqModal: (title, translation, faq, isFaq) ->
+      resolve = {title: (() -> title), translation: (() -> translation), faq: (() -> faq), isFaq: (() -> isFaq)}
+      return $uibModal.open({templateUrl: '/partials/modal_faq.html', controller: 'FaqModalController', resolve: resolve}).result
 ])
 
 
