@@ -71,7 +71,7 @@ controllers.controller('InboxController', ['$scope', '$window', '$location', 'La
 
   $scope.onCaseWithoutMessage = () ->
     ModalService.createCase({
-      title: "Open case"
+      title: "Open Case"
     }).then((result) ->
       CaseService.open(null, result.text, result.partner, result.user, result.urn).then((caseObj) ->
         caseUrl = 'case/read/' + caseObj.id + '/'

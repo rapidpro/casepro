@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 import calendar
 import iso639
 import json
-import phonenumbers
 import pytz
 import re
 import six
@@ -18,12 +17,6 @@ from uuid import UUID
 
 
 LANGUAGES_BY_CODE = {}  # cache of language lookups
-
-
-class InvalidURN(Exception):
-    """
-    A generic exception thrown when validating URNs and they don't conform to E164 format
-    """
 
 
 def parse_csv(csv, as_ints=False):
@@ -96,29 +89,6 @@ def normalize(text):
     multiple whitespace characters with single spaces.
     """
     return unicodedata.normalize('NFKD', re.sub(r'\s+', ' ', text.lower()))
-
-
-def validate_urn_as_e164(number):
-    try:
-        parsed = phonenumbers.parse(number)
-    except phonenumbers.NumberParseException as e:
-        raise InvalidURN(e.message)
-
-    if number != phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164):
-        raise InvalidURN("Phone numbers must be in E164 format")
-
-    if not phonenumbers.is_possible_number(parsed) or not phonenumbers.is_valid_number(parsed):
-        raise InvalidURN("Phone numbers must be in E164 format")
-
-    return True
-
-
-def validate_urn(urn):
-    scheme, path = urn.split(':', 1)
-    if scheme == 'tel':
-        return validate_urn_as_e164(path)
-
-    return True
 
 
 def match_keywords(text, keywords):
