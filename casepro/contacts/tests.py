@@ -8,8 +8,22 @@ from mock import patch
 
 from casepro.test import BaseCasesTest
 
-from .models import Contact, Group, Field
+from .models import Contact, Group, Field, URN, InvalidURN
 from .tasks import pull_contacts
+
+
+class URNTest(BaseCasesTest):
+    def test_validate_urn(self):
+        self.assertTrue(URN.validate('tel:+27825552233'))
+        self.assertRaises(InvalidURN, URN.validate, 'tel:0825550011')
+        self.assertTrue(URN.validate('unknown_scheme:address_for_unknown_scheme'))
+
+    def test_validate_phone(self):
+        self.assertRaises(InvalidURN, URN.validate_phone, '0825550011')  # lacks country code
+        self.assertRaises(InvalidURN, URN.validate_phone, '(+27)825550011')  # incorrect format (E.123)
+        self.assertRaises(InvalidURN, URN.validate_phone, '+278255500abc')  # incorrect format
+        self.assertRaises(InvalidURN, URN.validate_phone, '+278255500115555555')  # too long
+        self.assertTrue(URN.validate_phone('+27825552233'))
 
 
 class ContactTest(BaseCasesTest):
@@ -122,11 +136,13 @@ class ContactTest(BaseCasesTest):
             self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "7B7DD8"})
 
     @patch('casepro.test.TestBackend.push_contact')
-    def test_get_or_create_from_urn_no_match(self, mock_push_contact):
+    def test_get_or_create_from_urn(self, mock_push_contact):
         """
         If no contact with a matching urn exists a new one should be created
         """
         self.assertEqual(Contact.objects.count(), 1)
+
+        # try with a URN that doesn't match an existing contact
         Contact.get_or_create_from_urn(self.unicef, "tel:+27827654321")
 
         contacts = Contact.objects.all()
@@ -135,34 +151,28 @@ class ContactTest(BaseCasesTest):
         self.assertIsNone(contacts[1].name)
         self.assertIsNone(contacts[1].uuid)
 
-        # Check that the backend was updated
+        # check that the backend was updated
         self.assertTrue(mock_push_contact.called)
+        mock_push_contact.reset_mock()
 
-    @patch('casepro.test.TestBackend.push_contact')
-    def test_get_or_create_from_urn_match(self, mock_push_contact):
-        """
-        Should return the contact with the matching urn
-        """
         self.ann.urns = ["tel:+27827654321"]
         self.ann.save(update_fields=('urns',))
 
-        self.assertEqual(Contact.objects.count(), 1)
+        # try with a URN that does match an existing contact
         contact = Contact.get_or_create_from_urn(self.unicef, "tel:+27827654321")
-        self.assertEqual(Contact.objects.count(), 1)
+        self.assertEqual(contact, self.ann)
 
-        self.assertEqual(contact.urns, ["tel:+27827654321"])
-        self.assertEqual(contact.name, self.ann.name)
-        self.assertEqual(contact.uuid, self.ann.uuid)
-
-        # We shouldn't update the backend because a contact wasn't created
+        # we shouldn't update the backend because a contact wasn't created
         self.assertFalse(mock_push_contact.called)
 
-    @patch('casepro.test.TestBackend.push_contact')
-    def test_get_or_create_from_urn_invalid(self, mock_push_contact):
-        """
-        Should raise an exception for InvalidURN
-        """
-        from casepro.utils import InvalidURN
+        # URN will be normalized
+        contact = Contact.get_or_create_from_urn(self.unicef, "tel:+(278)-2765-4321")
+        self.assertEqual(contact, self.ann)
+
+        # we shouldn't update the backend because a contact wasn't created
+        self.assertFalse(mock_push_contact.called)
+
+        # we get an exception if URN isn't valid (e.g. local number)
         self.assertRaises(InvalidURN, Contact.get_or_create_from_urn, self.unicef, "tel:0827654321")
 
 
