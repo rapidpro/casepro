@@ -13,7 +13,46 @@ from .tasks import pull_contacts
 
 
 class URNTest(BaseCasesTest):
-    def test_validate_urn(self):
+    def test_from_parts(self):
+        self.assertEqual(URN.from_parts("tel", "12345"), "tel:12345")
+        self.assertEqual(URN.from_parts("tel", "+12345"), "tel:+12345")
+        self.assertEqual(URN.from_parts("tel", "(917) 992-5253"), "tel:(917) 992-5253")
+        self.assertEqual(URN.from_parts("mailto", "a_b+c@d.com"), "mailto:a_b+c@d.com")
+
+        self.assertRaises(ValueError, URN.from_parts, "", "12345")
+        self.assertRaises(ValueError, URN.from_parts, "tel", "")
+        self.assertRaises(ValueError, URN.from_parts, "xxx", "12345")
+
+    def test_to_parts(self):
+        self.assertEqual(URN.to_parts("tel:12345"), ("tel", "12345"))
+        self.assertEqual(URN.to_parts("tel:+12345"), ("tel", "+12345"))
+        self.assertEqual(URN.to_parts("twitter:abc_123"), ("twitter", "abc_123"))
+        self.assertEqual(URN.to_parts("mailto:a_b+c@d.com"), ("mailto", "a_b+c@d.com"))
+
+        self.assertRaises(ValueError, URN.to_parts, "tel")
+        self.assertRaises(ValueError, URN.to_parts, "tel:")  # missing scheme
+        self.assertRaises(ValueError, URN.to_parts, ":12345")  # missing path
+        self.assertRaises(ValueError, URN.to_parts, "x_y:123")  # invalid scheme
+        self.assertRaises(ValueError, URN.to_parts, "xyz:{abc}")  # invalid path
+
+    def test_normalize(self):
+        # valid tel numbers
+        self.assertEqual(URN.normalize("tel: +250788383383 "), "tel:+250788383383")
+        self.assertEqual(URN.normalize("tel:+1(917)992-5253"), "tel:+19179925253")
+
+        # un-normalizable tel numbers
+        self.assertEqual(URN.normalize("tel:12345"), "tel:12345")
+        self.assertEqual(URN.normalize("tel:0788383383"), "tel:0788383383")
+        self.assertEqual(URN.normalize("tel:MTN"), "tel:mtn")
+
+        # twitter handles remove @
+        self.assertEqual(URN.normalize("twitter: @jimmyJO"), "twitter:jimmyjo")
+
+        # email addresses
+        self.assertEqual(URN.normalize("mailto: nAme@domAIN.cOm "), "mailto:name@domain.com")
+
+
+    def test_validate(self):
         self.assertTrue(URN.validate('tel:+27825552233'))
         self.assertRaises(InvalidURN, URN.validate, 'tel:0825550011')
         self.assertTrue(URN.validate('unknown_scheme:address_for_unknown_scheme'))
