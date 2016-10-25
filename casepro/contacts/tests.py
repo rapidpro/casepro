@@ -179,34 +179,29 @@ class ContactTest(BaseCasesTest):
         """
         If no contact with a matching urn exists a new one should be created
         """
-        self.assertEqual(Contact.objects.count(), 1)
+        Contact.objects.all().delete()
 
         # try with a URN that doesn't match an existing contact
-        Contact.get_or_create_from_urn(self.unicef, "tel:+27827654321")
+        contact1 = Contact.get_or_create_from_urn(self.unicef, "tel:+27827654321")
 
-        contacts = Contact.objects.all()
-        self.assertEqual(len(contacts), 2)
-        self.assertEqual(contacts[1].urns, ["tel:+27827654321"])
-        self.assertIsNone(contacts[1].name)
-        self.assertIsNone(contacts[1].uuid)
+        self.assertEqual(contact1.urns, ["tel:+27827654321"])
+        self.assertIsNone(contact1.name)
+        self.assertIsNone(contact1.uuid)
 
         # check that the backend was updated
         self.assertTrue(mock_push_contact.called)
         mock_push_contact.reset_mock()
 
-        self.ann.urns = ["tel:+27827654321"]
-        self.ann.save(update_fields=('urns',))
-
         # try with a URN that does match an existing contact
-        contact = Contact.get_or_create_from_urn(self.unicef, "tel:+27827654321")
-        self.assertEqual(contact, self.ann)
+        contact2 = Contact.get_or_create_from_urn(self.unicef, "tel:+27827654321")
+        self.assertEqual(contact2, contact1)
 
         # we shouldn't update the backend because a contact wasn't created
         self.assertFalse(mock_push_contact.called)
 
         # URN will be normalized
-        contact = Contact.get_or_create_from_urn(self.unicef, "tel:+(278)-2765-4321")
-        self.assertEqual(contact, self.ann)
+        contact3 = Contact.get_or_create_from_urn(self.unicef, "tel:+(278)-2765-4321")
+        self.assertEqual(contact3, contact1)
 
         # we shouldn't update the backend because a contact wasn't created
         self.assertFalse(mock_push_contact.called)
