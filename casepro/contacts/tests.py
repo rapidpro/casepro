@@ -39,6 +39,7 @@ class URNTest(BaseCasesTest):
         # valid tel numbers
         self.assertEqual(URN.normalize("tel: +250788383383 "), "tel:+250788383383")
         self.assertEqual(URN.normalize("tel:+1(917)992-5253"), "tel:+19179925253")
+        self.assertEqual(URN.normalize("tel:250788383383"), "tel:+250788383383")
 
         # un-normalizable tel numbers
         self.assertEqual(URN.normalize("tel:12345"), "tel:12345")
