@@ -213,7 +213,7 @@ class Contact(models.Model):
         if contact_display_format == "name" and self.name:
             return self.name
         if contact_display_format == "urn" and self.urns:
-            _, path = self.urns[0].split(':', 1)
+            _scheme, path = self.urns[0].split(':', 1)
             return path
         # Default to uuid if the chosen format isn't set
         if self.uuid:
