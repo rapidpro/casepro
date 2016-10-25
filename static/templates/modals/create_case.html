@@ -29,15 +29,15 @@
                 Invalid phone number format. Should be in the format +27741234567
             </div>
         </div>
-        <div class="form-group" ng-class='{"has-error": form.text.$invalid}'>
+        <div class="form-group" ng-class='{"has-error": form.text.$invalid && form.submitted}'>
             <label class="control-label">
                 Summary
             </label>
             <textarea class="form-control" ng-model="fields.text.val" ng-maxlength="fields.text.maxLength" name="text" required></textarea>
-            <div class="help-block" ng-show="form.text.$error.required">
+            <div class="help-block" ng-show="form.text.$error.required && form.submitted">
                 Required
             </div>
-            <div class="help-block" ng-show="form.text.$error.maxlength">
+            <div class="help-block" ng-show="form.text.$error.maxlength && form.submitted">
                 Too long
             </div>
         </div>
