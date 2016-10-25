@@ -51,7 +51,6 @@ class URNTest(BaseCasesTest):
         # email addresses
         self.assertEqual(URN.normalize("mailto: nAme@domAIN.cOm "), "mailto:name@domain.com")
 
-
     def test_validate(self):
         self.assertTrue(URN.validate('tel:+27825552233'))
         self.assertRaises(InvalidURN, URN.validate, 'tel:0825550011')
