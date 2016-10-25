@@ -5,7 +5,7 @@ from django import forms
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
-from timezones.forms import TimeZoneField
+from timezone_field import TimeZoneFormField
 
 from casepro.contacts.models import Field, Group
 
@@ -16,7 +16,7 @@ class OrgForm(forms.ModelForm):
     """
     language = forms.ChoiceField(required=False, choices=[('', '')] + list(settings.LANGUAGES))
 
-    timezone = TimeZoneField()
+    timezone = TimeZoneFormField()
 
     administrators = forms.ModelMultipleChoiceField(queryset=User.objects.none(), required=False)
 
@@ -38,7 +38,7 @@ class OrgEditForm(forms.ModelForm):
     name = forms.CharField(label=_("Organization"),
                            help_text=_("The name of this organization"))
 
-    timezone = TimeZoneField(help_text=_("The timezone your organization is in"))
+    timezone = TimeZoneFormField(help_text=_("The timezone your organization is in"))
 
     banner_text = forms.CharField(label=_("Banner text"), widget=forms.Textarea,
                                   help_text=_("Banner text displayed to all users"), required=False)

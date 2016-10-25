@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 
 from django.db import migrations, models
 
@@ -18,11 +18,11 @@ def populate_initial_message(apps, schema_editor):
             case.initial_message = message
             case.save(update_fields=('initial_message',))
         else:
-            print "Missing message #%d for org #%d" % (case.message_id, case.org_id)
+            print("Missing message #%d for org #%d" % (case.message_id, case.org_id))
             num_missing += 1
 
     if cases:
-        print "Updated %d cases (%d missing messages)" % (len(cases), num_missing)
+        print("Updated %d cases (%d missing messages)" % (len(cases), num_missing))
 
 
 class Migration(migrations.Migration):

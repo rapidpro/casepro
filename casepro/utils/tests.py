@@ -1,6 +1,7 @@
 # coding=utf-8
 from __future__ import unicode_literals
 
+import hypothesis.strategies as st
 import pytz
 
 from datetime import date, datetime
@@ -9,14 +10,13 @@ from django.http import HttpRequest
 from django.test import override_settings
 from enum import Enum
 from hypothesis import given
-import hypothesis.strategies as st
 from uuid import UUID
 
 from casepro.test import BaseCasesTest
 
 from . import safe_max, normalize, match_keywords, truncate, str_to_bool, json_encode, TimelineItem, uuid_to_int
 from . import date_to_milliseconds, datetime_to_microseconds, microseconds_to_datetime, month_range, date_range
-from . import get_language_name
+from . import get_language_name, json_decode
 from .email import send_email
 from .middleware import JSONMiddleware
 
@@ -87,6 +87,12 @@ class UtilsTest(BaseCasesTest):
         ]
 
         self.assertEqual(json_encode(data), '["string", "2015-10-09T14:48:30.123456", "bar", {"bar": "X"}]')
+        self.assertEqual(json_encode({'foo': "bar\u1234"}), '{"foo": "bar\\u1234"}')
+
+    def json_decode(self):
+        self.assertEqual(json_decode('{"foo":"bar\\u1234"}'), {'foo': "bar\u1234"})
+        self.assertEqual(json_decode('{"foo":"bar\u1234"}'), {'foo': "bar\u1234"})
+        self.assertEqual(json_decode(b'{"foo":"bar\u1234"}'), {'foo': "bar\u1234"})
 
     def test_month_range(self):
         d1 = datetime(2015, 10, 9, 14, 48, 30, 123456, tzinfo=pytz.utc).astimezone(pytz.timezone("Africa/Kigali"))
