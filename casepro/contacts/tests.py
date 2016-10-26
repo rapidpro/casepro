@@ -141,6 +141,28 @@ class ContactTest(BaseCasesTest):
             self.ann.uuid = None
             self.assertEqual(self.ann.get_display_name(), "")
 
+    def test_get_display_urns(self):
+        # if the site doesn't display contacts as urns an empty list should be returned
+        self.assertEqual(self.ann.get_display_urns(), [])
+
+        # if the site uses anon contacts an empty list should be returned
+        with override_settings(SITE_ANON_CONTACTS=True):
+            self.assertEqual(self.ann.get_display_urns(), [])
+
+        # if the contact has no urns an empty list should be returned
+        with override_settings(SITE_CONTACT_DISPLAY="urn"):
+            self.assertEqual(self.ann.get_display_urns(), [])
+
+        # if the contact has urns they should be returned in a list with their display names
+        self.ann.urns = ['tel:+234567890', 'mailto:ann@test.com', 'twitter:@anntest']
+        self.ann.save()
+        with override_settings(SITE_CONTACT_DISPLAY="urn"):
+            self.assertEqual(self.ann.get_display_urns(), [
+                {'scheme': "Phone", 'path': "+234567890"},
+                {'scheme': "Email", 'path': "ann@test.com"},
+                {'scheme': "Twitter", 'path': "@anntest"}
+            ])
+
     def test_get_fields(self):
         self.assertEqual(self.ann.get_fields(), {'age': "32", 'state': "WA"})  # what is stored on the contact
         self.assertEqual(self.ann.get_fields(visible=True), {'nickname': None, 'age': "32"})  # visible fields
@@ -184,9 +206,27 @@ class ContactTest(BaseCasesTest):
             'stopped': False
         })
 
-        # if site uses anon contacts then name is obscured
+        # If the contact has urns and the contact display uses urns then they should be returned and the name should be
+        # the first urn
+        self.ann.urns = ['tel:+234567890', 'mailto:ann@test.com']
+        self.ann.save()
+        with override_settings(SITE_CONTACT_DISPLAY='urn'):
+            self.assertEqual(self.ann.as_json(full=True), {
+                'id': self.ann.pk,
+                'name': "+234567890",
+                'urns': [{'scheme': "Phone", 'path': "+234567890"}, {'scheme': "Email", 'path': "ann@test.com"}],
+                'language': None,
+                'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
+                'fields': {'nickname': None, 'age': "32"},
+                'blocked': False,
+                'stopped': False
+            })
+
+        # if site uses anon contacts then name and urns are obscured
         with override_settings(SITE_ANON_CONTACTS=True):
             self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "7B7DD8", 'urns': []})
+
+
 
     @patch('casepro.test.TestBackend.push_contact')
     def test_get_or_create_from_urn(self, mock_push_contact):
