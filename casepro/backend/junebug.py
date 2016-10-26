@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from datetime import datetime
 from django.conf import settings
 from django.conf.urls import url
@@ -5,14 +7,14 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 import functools
-import json
 import requests
 import pytz
+import six
 
 from . import BaseBackend
 from ..contacts.models import Contact
 from ..msgs.models import Message
-from ..utils import uuid_to_int
+from ..utils import uuid_to_int, json_decode
 
 from dash.utils import is_dict_equal
 from dash.utils.sync import BaseSyncer, sync_local_to_changes
@@ -493,15 +495,15 @@ def received_junebug_message(request):
         return JsonResponse({'reason': "Method not allowed."}, status=405)
 
     try:
-        data = json.loads(request.body)
+        data = json_decode(request.body)
     except ValueError as e:
-        return JsonResponse({'reason': "JSON decode error", 'details': e.message}, status=400)
+        return JsonResponse({'reason': "JSON decode error", 'details': six.text_type(e)}, status=400)
 
     identity_store = IdentityStore(
         settings.IDENTITY_API_ROOT, settings.IDENTITY_AUTH_TOKEN, settings.IDENTITY_ADDRESS_TYPE)
     identities = identity_store.get_identities_for_address(data.get('from'))
     try:
-        identity = identities.next()
+        identity = next(identities)
     except StopIteration:
         identity = identity_store.create_identity(['%s:%s' % (settings.IDENTITY_ADDRESS_TYPE, data.get('from'))])
     contact = Contact.get_or_create(request.org, identity.get('id'))
@@ -526,9 +528,9 @@ def receive_identity_store_optout(request):
         return JsonResponse({'reason': "Method not allowed."}, status=405)
 
     try:
-        data = json.loads(request.body)
+        data = json_decode(request.body)
     except ValueError as e:
-        return JsonResponse({'reason': "JSON decode error", 'details': e.message}, status=400)
+        return JsonResponse({'reason': "JSON decode error", 'details': six.text_type(e)}, status=400)
 
     try:
         identity_id = data['identity']

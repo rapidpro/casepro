@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 
 from django.db import migrations, models
 
@@ -35,7 +35,7 @@ def migrate_case_contacts(apps, schema_editor):
             contact.suspended_groups.add(group)
 
     if cases:
-        print "Migrated %d case contacts (%d created, %d groups created)" % (len(cases), num_contacts_created, num_groups_created)
+        print("Migrated %d case contacts (%d created, %d groups created)" % (len(cases), num_contacts_created, num_groups_created))
 
 
 class Migration(migrations.Migration):

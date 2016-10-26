@@ -2,6 +2,7 @@
 boto
 celery[redis]
 colorama
+-e git+https://github.com/nyaruka/confmodel.git@python3#egg=confmodel
 coverage
 django
 django-celery-email
@@ -10,7 +11,6 @@ django-debug-toolbar
 django-digest
 django-el-pagination
 django-redis
-django-reversion
 django-rosetta
 django-storages
 dj-database-url
@@ -18,7 +18,6 @@ django-contrib-comments
 enum34
 flake8
 gunicorn
-hamlpy
 iso639
 mock
 pillow

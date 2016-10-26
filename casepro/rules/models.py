@@ -9,6 +9,7 @@ from collections import defaultdict
 from dash.orgs.models import Org
 from dash.utils import get_obj_cacheable
 from django.db import models
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from enum import Enum
 
@@ -21,6 +22,7 @@ from casepro.utils import normalize, json_encode
 KEYWORD_REGEX = regex.compile(r'^\w[\w\- ]*\w$', flags=regex.UNICODE | regex.V0)
 
 
+@python_2_unicode_compatible
 class Quantifier(Enum):
     """
     Tests are typically composed of multiple conditions, e.g. contains ANY of X, Y or Z.
@@ -57,8 +59,8 @@ class Quantifier(Enum):
                     return False
             return True
 
-    def __unicode__(self):
-        return unicode(self.text)
+    def __str__(self):
+        return six.text_type(self.text)
 
 
 class DeserializationContext(object):

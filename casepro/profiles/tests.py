@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import pytz
+import six
 
 from datetime import datetime
 from django.contrib.auth.models import User
@@ -394,13 +395,13 @@ class UserTest(BaseCasesTest):
         self.assertEqual(self.klab.primary_contact, None)
         self.assertEqual(0, self.admin.partners_primary.filter(org=self.nyaruka).count())
 
-    def test_unicode(self):
-        self.assertEqual(unicode(self.superuser), "root")
+    def test_str(self):
+        self.assertEqual(six.text_type(self.superuser), "root")
 
-        self.assertEqual(unicode(self.user1), "Evan (evan@unicef.org)")
+        self.assertEqual(six.text_type(self.user1), "Evan (evan@unicef.org)")
         self.user1.profile.full_name = None
         self.user1.profile.save()
-        self.assertEqual(unicode(self.user1), "evan@unicef.org")
+        self.assertEqual(six.text_type(self.user1), "evan@unicef.org")
 
 
 class UserCRUDLTest(BaseCasesTest):

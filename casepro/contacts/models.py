@@ -1,5 +1,9 @@
 from __future__ import unicode_literals
 
+import phonenumbers
+import regex
+import six
+
 from dash.orgs.models import Org
 from django.conf import settings
 from django.contrib.postgres.fields import HStoreField, ArrayField
@@ -9,11 +13,135 @@ from django.utils.translation import ugettext_lazy as _
 from django_redis import get_redis_connection
 
 from casepro.backend import get_backend
-from casepro.utils import get_language_name, validate_urn
+from casepro.utils import get_language_name
 
 FIELD_LOCK_KEY = 'lock:field:%d:%s'
 GROUP_LOCK_KEY = 'lock:group:%d:%s'
 CONTACT_LOCK_KEY = 'lock:contact:%d:%s'
+
+
+class InvalidURN(Exception):
+    """
+    A generic exception thrown when validating URNs and they don't conform to E164 format
+    """
+
+
+class URN(object):
+    """
+    Support class for URN strings. We differ from the strict definition of a URN (https://tools.ietf.org/html/rfc2141)
+    in that:
+        * We only supports URNs with scheme and path parts (no netloc, query, params or fragment)
+        * Path component can be any non-blank unicode string
+        * No hex escaping in URN path
+    """
+    SCHEME_TEL = 'tel'
+    SCHEME_TWITTER = 'twitter'
+    SCHEME_EMAIL = 'mailto'
+
+    VALID_SCHEMES = (SCHEME_TEL, SCHEME_TWITTER, SCHEME_EMAIL)
+
+    def __init__(self):  # pragma: no cover
+        raise ValueError("Class shouldn't be instantiated")
+
+    @classmethod
+    def from_parts(cls, scheme, path):
+        """
+        Formats a URN scheme and path as single URN string, e.g. tel:+250783835665
+        """
+        if not scheme or scheme not in cls.VALID_SCHEMES:
+            raise ValueError("Invalid scheme component: '%s'" % scheme)
+
+        if not path:
+            raise ValueError("Invalid path component: '%s'" % path)
+
+        return '%s:%s' % (scheme, path)
+
+    @classmethod
+    def to_parts(cls, urn):
+        """
+        Parses a URN string (e.g. tel:+250783835665) into a tuple of scheme and path
+        """
+        try:
+            scheme, path = urn.split(':', 1)
+        except:
+            raise ValueError("URN strings must contain scheme and path components")
+
+        if not scheme or scheme not in cls.VALID_SCHEMES:
+            raise ValueError("URN contains an invalid scheme component: '%s'" % scheme)
+
+        if not path:
+            raise ValueError("URN contains an invalid path component: '%s'" % path)
+
+        return scheme, path
+
+    @classmethod
+    def normalize(cls, urn):
+        """
+        Normalizes the path of a URN string. Should be called anytime looking for a URN match.
+        """
+        scheme, path = cls.to_parts(urn)
+
+        norm_path = six.text_type(path).strip()
+
+        if scheme == cls.SCHEME_TEL:
+            norm_path = cls.normalize_phone(norm_path)
+        elif scheme == cls.SCHEME_TWITTER:
+            norm_path = norm_path.lower()
+            if norm_path[0:1] == '@':  # strip @ prefix if provided
+                norm_path = norm_path[1:]
+            norm_path = norm_path.lower()  # Twitter handles are case-insensitive, so we always store as lowercase
+        elif scheme == cls.SCHEME_EMAIL:
+            norm_path = norm_path.lower()
+
+        return cls.from_parts(scheme, norm_path)
+
+    @classmethod
+    def validate(cls, urn):
+        scheme, path = urn.split(':', 1)
+        if scheme == cls.SCHEME_TEL:
+            return cls.validate_phone(path)
+
+        return True
+
+    @classmethod
+    def normalize_phone(cls, number):
+        """
+        Normalizes the passed in phone number
+        """
+        # remove any invalid characters
+        number = regex.sub('[^0-9a-z\+]', '', number.lower(), regex.V0)
+
+        # add on a plus if it looks like it could be a fully qualified number
+        if len(number) >= 11 and number[0] not in ['+', '0']:
+            number = '+' + number
+
+        try:
+            normalized = phonenumbers.parse(number)
+
+            if phonenumbers.is_possible_number(normalized):
+                return phonenumbers.format_number(normalized, phonenumbers.PhoneNumberFormat.E164)
+        except Exception:
+            pass
+
+        return number
+
+    @classmethod
+    def validate_phone(cls, number):
+        """
+        Validates the given phone number which should be in E164 format.
+        """
+        try:
+            parsed = phonenumbers.parse(number)
+        except phonenumbers.NumberParseException as e:
+            raise InvalidURN(six.text_type(e))
+
+        if number != phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164):
+            raise InvalidURN("Phone numbers must be in E164 format")
+
+        if not phonenumbers.is_possible_number(parsed) or not phonenumbers.is_valid_number(parsed):
+            raise InvalidURN("Phone numbers must be in E164 format")
+
+        return True
 
 
 @python_2_unicode_compatible
@@ -188,10 +316,13 @@ class Contact(models.Model):
         """
         Gets an existing contact or creates a new contact. Used when opening a case without an initial message
         """
-        validate_urn(urn)
-        contact = cls.objects.filter(urns__contains=[urn]).first()
+        normalized_urn = URN.normalize(urn)
+
+        contact = cls.objects.filter(urns__contains=[normalized_urn]).first()
         if not contact:
-            contact = cls.objects.create(org=org, name=name, urns=[urn], is_stub=False)
+            URN.validate(normalized_urn)
+
+            contact = cls.objects.create(org=org, name=name, urns=[normalized_urn], is_stub=False)
             get_backend().push_contact(org, contact)
         return contact
 

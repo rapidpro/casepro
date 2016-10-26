@@ -1,11 +1,16 @@
-from casepro.contacts.models import Contact, Field, Group
-from casepro.msgs.models import Label, Message
-from casepro.test import BaseCasesTest
+from __future__ import unicode_literals
+
+import json
+import responses
+
 from django.conf import settings
 from django.http import HttpResponse
 from django.test import override_settings, RequestFactory
-import json
-import responses
+
+from casepro.contacts.models import Contact, Field, Group
+from casepro.msgs.models import Label, Message
+from casepro.test import BaseCasesTest
+from casepro.utils import json_decode
 
 from ..junebug import (
     IdentityStore, JunebugBackend, JunebugMessageSendingError, IdentityStoreContactSyncer, IdentityStoreContact,
@@ -408,7 +413,7 @@ class JunebugBackendTest(BaseCasesTest):
         msg = self.create_outgoing(self.unicef, self.user1, None, "B", "That's great", bob, urn="tel:+1234")
 
         def request_callback(request):
-            data = json.loads(request.body)
+            data = json_decode(request.body)
             self.assertEqual(data, {'to': "+1234", 'from': None, 'content': "That's great"})
             headers = {'Content-Type': "application/json"}
             resp = {
@@ -437,7 +442,7 @@ class JunebugBackendTest(BaseCasesTest):
         msg = self.create_outgoing(self.unicef, self.user1, None, "B", "That's great", bob)
 
         def junebug_callback(request):
-            data = json.loads(request.body)
+            data = json_decode(request.body)
             self.assertEqual(data, {'to': "+1234", 'from': None, 'content': "That's great"})
             headers = {'Content-Type': "application/json"}
             resp = {
@@ -502,7 +507,7 @@ class JunebugBackendTest(BaseCasesTest):
         msg = self.create_outgoing(self.unicef, self.user1, None, "B", "That's great", None, urn="tel:+1234")
 
         def request_callback(request):
-            data = json.loads(request.body)
+            data = json_decode(request.body)
             self.assertEqual(data, {'to': "+1234", 'from': "+4321", 'content': "That's great"})
             headers = {'Content-Type': "application/json"}
             resp = {
@@ -694,7 +699,7 @@ class JunebugInboundViewTest(BaseCasesTest):
         """
         request = self.factory.get(self.url)
         response = received_junebug_message(request)
-        self.assertEqual(json.loads(response.content), {'reason': "Method not allowed."})
+        self.assertEqual(json_decode(response.content), {'reason': "Method not allowed."})
         self.assertEqual(response.status_code, 405)
 
     def test_invalid_json_body(self):
@@ -703,13 +708,11 @@ class JunebugInboundViewTest(BaseCasesTest):
         """
         request = self.factory.post(self.url, content_type='application/json', data="{")
         response = received_junebug_message(request)
-        self.assertEqual(
-            json.loads(response.content), {
-                'reason': "JSON decode error",
-                'details': "Expecting object: line 1 column 1 (char 0)"
-            }
-        )
         self.assertEqual(response.status_code, 400)
+
+        content = json_decode(response.content)
+        self.assertEqual(content['reason'], "JSON decode error")
+        self.assertTrue(content['details'])
 
     def create_identity_obj(self, **kwargs):
         defaults = {
@@ -764,14 +767,14 @@ class JunebugInboundViewTest(BaseCasesTest):
         )
         request.org = self.unicef
         response = received_junebug_message(request)
-        resp_data = json.loads(response.content)
+        resp_data = json_decode(response.content)
 
         message = Message.objects.get(backend_id=resp_data['id'])
         self.assertEqual(message.text, "test message")
         self.assertEqual(message.contact.uuid, "50d62fcf-856a-489c-914a-56f6e9506ee3")
 
     def create_identity_callback(self, request):
-        data = json.loads(request.body)
+        data = json_decode(request.body)
         self.assertEqual(data.get('details'), {
             'addresses': {
                 'msisdn': {
@@ -843,7 +846,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
             request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
             response = receive_identity_store_optout(request)
-        self.assertEqual(json.loads(response.content), {'reason': "Method not allowed."})
+        self.assertEqual(json_decode(response.content), {'reason': "Method not allowed."})
         self.assertEqual(response.status_code, 405)
 
     def test_invalid_json_body(self):
@@ -854,13 +857,12 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
             request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
             response = receive_identity_store_optout(request)
-        self.assertEqual(
-            json.loads(response.content), {
-                'reason': "JSON decode error",
-                'details': "Expecting object: line 1 column 1 (char 0)"
-            }
-        )
+
         self.assertEqual(response.status_code, 400)
+
+        content = json_decode(response.content)
+        self.assertEqual(content['reason'], "JSON decode error")
+        self.assertTrue(content['details'])
 
     def get_optout_request(self, identity, optout_type):
         request = self.factory.post(
@@ -893,7 +895,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
             request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
             response = receive_identity_store_optout(request)
-        self.assertEqual(response.content, '{"success": true}')
+        self.assertEqual(json_decode(response.content), {"success": True})
 
         # refresh contact from db
         contact = Contact.get_or_create(self.unicef, "test_id", "testing")
@@ -911,7 +913,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
             request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
             response = receive_identity_store_optout(request)
-        self.assertEqual(response.content, '{"success": true}')
+        self.assertEqual(json_decode(response.content), {"success": True})
 
         # refresh contact from db
         contact = Contact.get_or_create(self.unicef, "test_id", "testing")
@@ -928,7 +930,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
             request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
             response = receive_identity_store_optout(request)
-        self.assertEqual(response.content, '{"success": true}')
+        self.assertEqual(json_decode(response.content), {"success": True})
 
         # refresh contact from db
         new_contact = Contact.get_or_create(self.unicef, "test_id", "testing")
@@ -947,7 +949,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
             request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
             response = receive_identity_store_optout(request)
         self.assertEqual(
-            json.loads(response.content),
+            json_decode(response.content),
             {'reason': 'Unrecognised value for "optout_type": unrecognised'})
         self.assertEqual(response.status_code, 400)
 
@@ -962,7 +964,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
             request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
             response = receive_identity_store_optout(request)
-        self.assertEqual(json.loads(response.content), {'reason': "No Contact for id: tester"})
+        self.assertEqual(json_decode(response.content), {'reason': "No Contact for id: tester"})
         self.assertEqual(response.status_code, 400)
 
     @responses.activate
@@ -987,7 +989,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
             request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
             response = receive_identity_store_optout(request)
         self.assertEqual(
-            json.loads(response.content),
+            json_decode(response.content),
             {'reason': 'Both "identity" and "optout_type" must be specified.'})
         self.assertEqual(response.status_code, 400)
 
@@ -1011,7 +1013,7 @@ class TokenAuthRequiredTest(BaseCasesTest):
         func = token_auth_required(self.dummy_auth_token)(self.dummy_view)
         response = func(request)
         self.assertEqual(response.status_code, 401)
-        self.assertEqual(json.loads(response.content),
+        self.assertEqual(json_decode(response.content),
                          {"reason": "Authentication required"})
         self.assertEqual(response['WWW-Authenticate'], "Token")
 
@@ -1022,7 +1024,7 @@ class TokenAuthRequiredTest(BaseCasesTest):
         func = token_auth_required(self.dummy_auth_token)(self.dummy_view)
         response = func(request)
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(json.loads(response.content), {"reason": "Forbidden"})
+        self.assertEqual(json_decode(response.content), {"reason": "Forbidden"})
 
     def test_correct_token(self):
         '''Tests that the decorator allows correct requests'''
@@ -1031,7 +1033,7 @@ class TokenAuthRequiredTest(BaseCasesTest):
         func = token_auth_required(self.dummy_auth_token)(self.dummy_view)
         response = func(request)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content, "OK")
+        self.assertEqual(response.content, b"OK")
 
 
 class IdentityStoreTest(BaseCasesTest):
@@ -1252,11 +1254,11 @@ class IdentityStoreTest(BaseCasesTest):
 
         res = identity_store.get_paginated_response(
             ("http://identitystore.org/api/v1/identities/identity-uuid/" "addresses/msisdn"), params={'default': True})
-        self.assertEqual(sorted(res), sorted([
+        self.assertEqual(sorted(res, key=lambda x: x['address']), [
             {'address': "+1111"},
             {'address': "+2222"},
             {'address': "+3333"},
-        ]))
+        ])
 
     def create_identity_obj(self, **kwargs):
         defaults = {
@@ -1310,7 +1312,7 @@ class IdentityStoreTest(BaseCasesTest):
         self.assertEqual(identity['details']['addresses']['msisdn'], {'+1234': {}})
 
     def create_identity_callback(self, request):
-        data = json.loads(request.body)
+        data = json_decode(request.body)
         self.assertEqual(data.get('details'), {
             'addresses': {
                 'msisdn': {
@@ -1348,14 +1350,12 @@ class IdentityStoreTest(BaseCasesTest):
         })
 
     def identity_404_callback(self, request):
-        return (404, {'Content-Type': "application/json"}, {
-            'detail': "Not found."
-        })
+        return (404, {'Content-Type': "application/json"}, json.dumps({'detail': "Not found."}))
 
     @responses.activate
     def test_get_identity_404(self):
         """
-        If the Identity does not exist, causing the Identity Store to return a 404, the get_indentity function should
+        If the Identity does not exist, causing the Identity Store to return a 404, the get_identity function should
         return None.
         """
         identity_store = IdentityStore("http://identitystore.org/", "auth-token", "msisdn")

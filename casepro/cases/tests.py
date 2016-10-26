@@ -11,6 +11,7 @@ from django.core.urlresolvers import reverse
 from django.test.utils import override_settings, modify_settings
 from django.utils import timezone
 from mock import patch
+from six.moves import reload_module
 from temba_client.utils import format_iso8601
 
 from casepro.contacts.models import Contact
@@ -439,7 +440,7 @@ class CaseCRUDLTest(BaseCasesTest):
     def setUp(self):
         super(CaseCRUDLTest, self).setUp()
 
-        reload(pod_registry)
+        reload_module(pod_registry)
 
         self.ann = self.create_contact(self.unicef, 'C-001', "Ann",
                                        fields={'age': "34"}, groups=[self.females, self.reporters])
@@ -1194,7 +1195,7 @@ class PartnerCRUDLTest(BaseCasesTest):
         self.login(self.admin)
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['form'].fields.keys(),
+        self.assertEqual(list(response.context['form'].fields.keys()),
                          ['name', 'description', 'logo', 'is_restricted', 'labels', 'loc'])
 
         # create label restricted partner
@@ -1267,7 +1268,7 @@ class PartnerCRUDLTest(BaseCasesTest):
         # get update page
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['form'].fields.keys(),
+        self.assertEqual(list(response.context['form'].fields.keys()),
                          ['name', 'description', 'primary_contact', 'logo', 'is_restricted', 'labels', 'loc'])
 
         # post update without name field

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 
 from django.db import migrations, models
 
@@ -12,7 +12,7 @@ def migrate_labels(apps, schema_editor):
     MessageAction = apps.get_model('msgs', 'MessageAction')
 
     for org in Org.objects.all():
-        print "Migrating labels for org %s #%d..." % (org.name, org.pk)
+        print("Migrating labels for org %s #%d..." % (org.name, org.pk))
 
         for old_label in OldLabel.objects.filter(org=org):
             new_label = NewLabel.objects.create(org=org,
@@ -30,7 +30,7 @@ def migrate_labels(apps, schema_editor):
             CaseAction.objects.filter(label=old_label).update(new_label=new_label)
             MessageAction.objects.filter(label=old_label).update(new_label=new_label)
 
-            print " > Migrated label '%s' #%d to new label #%d" % (old_label.name, old_label.pk, new_label.pk)
+            print(" > Migrated label '%s' #%d to new label #%d" % (old_label.name, old_label.pk, new_label.pk))
 
 
 class Migration(migrations.Migration):
