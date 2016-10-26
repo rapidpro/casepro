@@ -904,7 +904,7 @@ controllers.controller('FaqListController', ['$scope', '$window','UtilsService',
     FaqService.fetchAllFaqs().then((results) ->
       $scope.faqs = results
 
-      parents = []
+      parents = {}
       for faq in $scope.faqs
         if faq.parent
           if not parents[faq.parent]
@@ -919,7 +919,7 @@ controllers.controller('FaqListController', ['$scope', '$window','UtilsService',
       )
   
   $scope.onNewFaq = (faq) ->
-    UtilsService.FaqModal("Create FAQ Translation", null, null, true).then((result) ->
+    UtilsService.FaqModal("Create FAQ", null, null, true).then((result) ->
       FaqService.createFaq(result).then(() ->
         $window.location.reload()
       )

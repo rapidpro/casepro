@@ -3,7 +3,7 @@
 .modal-header
   %h3.modal-title
     [[ title ]]
-  .modal-body{ ng-init:'init()' }
+  .modal-body{ ng-init:"init()", ng-cloak:"" }
     .panel.panel-default{ ng-hide:"isFaq" }
       .panel-heading
         %h3.panel-title
@@ -30,6 +30,8 @@
             - trans "Answer"
           .col-sm-10
             %textarea.form-control{ type:"text", ng-model:"fields.answer.val", name:"answer", required:"" }
+            .help-block{ ng-show:"form.question.$error.required && (form.question.$dirty || form.submitted)" }
+              - trans "Required"
         
         .form-group{ ng-class:'{"has-error": form.labels.$invalid && (form.labels.$dirty || form.submitted)}', ng-show:"isFaq"} 
           %label.col-sm-2.control-label
@@ -38,22 +40,17 @@
             %select.form-control{ ng-model:"fields.labels.val", name:"labels",
             ng-options:"label.id as label.name for label in labels", 
             multiple:"multiple", required:"" }
-            
             .help-block{ ng-show:"form.answer.$error.required && (form.answer.$dirty || form.submitted)" }
               - trans "Required"
               
-        .form-group{ ng-class:'{"has-error": form.language.$invalid && (form.language.$dirty || form.submitted)}' }
+        .form-group.has-feedback.input-clear{ ng-class:'{"has-error": form.language.$invalid && (form.language.$dirty || form.submitted)}' }
           %label.col-sm-2.control-label
             - trans "Language"
           .col-sm-10
-            .input-group
-              %input.form-control{ ng-model:"fields.language.val", type: "text", uib-typeahead: "language.iso639_2_b as language.name for language in iso_list | filter:$viewValue | limitTo:8", typeahead-input-formatter:"formatInput($model)", required:"" }
-              %span.input-group-btn
-               %button.btn.btn-default{ type:"button", ng-click:"fields.language.val = null"}
-                -trans "Clear"
-
-            .help-block{ ng-show:"form.language.$error.required && (form.language.$dirty || form.submitted)" }
-              - trans "Required"
+              %input.form-control{ ng-model:"fields.language.val.code", type: "text", uib-typeahead: "language.iso639_2_b as language.name for language in iso_list | filter:$viewValue | limitTo:8", typeahead-editable:"false", typeahead-input-formatter:"formatInput($model)", name:"language", required:"", autocomplete:"off" }
+              %i.form-control-feedback.glyphicon.glyphicon-remove.form-control-feedback{ ng-show:"fields.language.val", ng-click:"clearInput()" }
+              .help-block{ ng-show:"form.language.$error.required && (form.language.$dirty || form.submitted)" }
+                - trans "Valid language required"
             
               
   .modal-footer

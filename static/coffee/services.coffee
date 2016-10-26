@@ -225,9 +225,9 @@ services.factory('FaqService', ['$rootScope', '$http', '$httpParamSerializer', (
       )
       
     #----------------------------------------------------------------------------
-    # Fetch a list of languages with iso codes
+    # Fetch a list of all languages
     #----------------------------------------------------------------------------
-    fetchIsos: () ->
+    fetchAllLanguages: () ->
       return $http.get('/faq/languages/').then((response) ->
         return response.data.iso_list
       )
