@@ -161,12 +161,14 @@
             - trans "Contact"
           .panel-body
             .container-fluid
-              .row
+              .row{ ng-repeat:"urn in caseObj.contact.urns" }
                 .contact-field-label.col-sm-6
-                  - if contact_display_format == 'urn'
-                    - trans "URN"
-                  - else
-                    - trans "Name"
+                  [[ urn.scheme ]]
+                .contact-field-value.col-sm-6
+                  [[ urn.path ]]
+              .row{ ng-hide:"caseObj.contact.urns.length > 0" }
+                .contact-field-label.col-sm-6
+                  - trans "Name"
                 .contact-field-value.col-sm-6
                   [[ caseObj.contact.name ]]
               .row{ ng-if:"contact.language" }

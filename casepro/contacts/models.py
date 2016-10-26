@@ -220,6 +220,16 @@ class Contact(models.Model):
             return self.uuid[:6].upper()
         return ""
 
+    def get_display_urns(self):
+        scheme_names = {"tel": "Phone", "mailto": "Email", "twitter": "Twitter"}
+        urns = []
+        if getattr(settings, 'SITE_ANON_CONTACTS', False) or getattr(settings, 'SITE_CONTACT_DISPLAY', False) != "urn":
+            return urns
+        for urn in self.urns:
+            scheme, path = urn.split(':', 1)
+            urns.append({'scheme': scheme_names[scheme], 'path': path})
+        return urns
+
     def get_fields(self, visible=None):
         fields = self.fields if self.fields else {}
 
@@ -299,7 +309,7 @@ class Contact(models.Model):
         """
         Prepares a contact for JSON serialization
         """
-        result = {'id': self.pk, 'name': self.get_display_name()}
+        result = {'id': self.pk, 'name': self.get_display_name(), 'urns': self.get_display_urns()}
 
         if full:
             result['groups'] = [g.as_json(full=False) for g in self.groups.all()]
