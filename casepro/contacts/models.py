@@ -39,6 +39,7 @@ class URN(object):
     SCHEME_EMAIL = 'mailto'
 
     VALID_SCHEMES = (SCHEME_TEL, SCHEME_TWITTER, SCHEME_EMAIL)
+    SCHEME_DISPLAY_NAMES = {SCHEME_TEL: "Phone", SCHEME_EMAIL: "Email", SCHEME_TWITTER: "Twitter"}
 
     def __init__(self):  # pragma: no cover
         raise ValueError("Class shouldn't be instantiated")
@@ -352,13 +353,12 @@ class Contact(models.Model):
         return ""
 
     def get_display_urns(self):
-        scheme_names = {"tel": "Phone", "mailto": "Email", "twitter": "Twitter"}
         urns = []
         if getattr(settings, 'SITE_ANON_CONTACTS', False) or getattr(settings, 'SITE_CONTACT_DISPLAY', False) != "urn":
             return urns
         for urn in self.urns:
             scheme, path = URN.to_parts(urn)
-            urns.append({'scheme': scheme_names[scheme], 'path': path})
+            urns.append({'scheme': URN.SCHEME_DISPLAY_NAMES[scheme], 'path': path})
         return urns
 
     def get_fields(self, visible=None):
