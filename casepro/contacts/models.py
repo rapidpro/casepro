@@ -440,9 +440,10 @@ class Contact(models.Model):
         """
         Prepares a contact for JSON serialization
         """
-        result = {'id': self.pk, 'name': self.get_display_name(), 'urns': self.get_display_urns()}
+        result = {'id': self.pk, 'name': self.get_display_name()}
 
         if full:
+            result['urns'] = self.get_display_urns()
             result['groups'] = [g.as_json(full=False) for g in self.groups.all()]
             result['fields'] = self.get_fields(visible=True)
             result['language'] = self.get_language()

@@ -178,7 +178,7 @@ class ContactTest(BaseCasesTest):
         self.assertEqual(self.ann.incoming_messages.filter(is_active=False, is_handled=True).count(), 2)
 
     def test_as_json(self):
-        self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "Ann", 'urns': []})
+        self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "Ann"})
 
         # full=True means include visible contact fields and laanguage etc
         self.assertEqual(self.ann.as_json(full=True), {
@@ -221,10 +221,6 @@ class ContactTest(BaseCasesTest):
                 'blocked': False,
                 'stopped': False
             })
-
-        # if site uses anon contacts then name and urns are obscured
-        with override_settings(SITE_ANON_CONTACTS=True):
-            self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "7B7DD8", 'urns': []})
 
     @patch('casepro.test.TestBackend.push_contact')
     def test_get_or_create_from_urn(self, mock_push_contact):
