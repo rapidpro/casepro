@@ -685,7 +685,7 @@ class MessageTest(BaseCasesTest):
 
         self.assertEqual(msg.as_json(), {
             'id': msg.backend_id,
-            'contact': {'id': self.ann.pk, 'name': "Ann"},
+            'contact': {'id': self.ann.pk, 'name': "Ann", 'urns': []},
             'text': "Hello",
             'time': msg.created_on,
             'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
@@ -744,7 +744,7 @@ class MessageCRUDLTest(BaseCasesTest):
         self.assertEqual(len(response.json['results']), 3)
         self.assertEqual(response.json['results'][0]['id'], 103)
         self.assertEqual(response.json['results'][1]['id'], 102)
-        self.assertEqual(response.json['results'][1]['contact'], {'id': self.bob.pk, 'name': "Bob"})
+        self.assertEqual(response.json['results'][1]['contact'], {'id': self.bob.pk, 'name': "Bob", 'urns': []})
         self.assertEqual(response.json['results'][1]['text'], "I ♡ RapidPro")
         self.assertEqual(response.json['results'][1]['labels'], [{'id': self.pregnancy.pk, 'name': "Pregnancy"}])
         self.assertEqual(response.json['results'][2]['id'], 101)
@@ -757,7 +757,7 @@ class MessageCRUDLTest(BaseCasesTest):
 
         self.assertEqual(len(response.json['results']), 2)
         self.assertEqual(response.json['results'][0]['id'], 105)
-        self.assertEqual(response.json['results'][0]['contact'], {'id': cat.pk, 'name': "Cat"})
+        self.assertEqual(response.json['results'][0]['contact'], {'id': cat.pk, 'name': "Cat", 'urns': []})
         self.assertEqual(response.json['results'][0]['text'], "AIDS??")
         self.assertEqual(response.json['results'][0]['labels'], [{'id': self.aids.pk, 'name': "AIDS"}])
         self.assertEqual(response.json['results'][0]['case'], {
@@ -1112,7 +1112,7 @@ class OutgoingTest(BaseCasesTest):
 
         self.assertEqual(outgoing.as_json(), {
             'id': outgoing.pk,
-            'contact': {'id': self.ann.pk, 'name': "Ann"},
+            'contact': {'id': self.ann.pk, 'name': "Ann", 'urns': []},
             'urn': None,
             'text': "That's great",
             'time': outgoing.created_on,
@@ -1147,7 +1147,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'], [
             {
                 'id': out2.pk,
-                'contact': {'id': self.ann.pk, 'name': "Ann"},
+                'contact': {'id': self.ann.pk, 'name': "Ann", 'urns': []},
                 'urn': None,
                 'text': "Hello 2",
                 'case': None,
@@ -1156,7 +1156,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
             },
             {
                 'id': out1.pk,
-                'contact': {'id': self.ann.pk, 'name': "Ann"},
+                'contact': {'id': self.ann.pk, 'name': "Ann", 'urns': []},
                 'urn': None,
                 'text': "Hello 1",
                 'case': None,
@@ -1172,7 +1172,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'], [
             {
                 'id': out2.pk,
-                'contact': {'id': self.ann.pk, 'name': "Ann"},
+                'contact': {'id': self.ann.pk, 'name': "Ann", 'urns': []},
                 'urn': None,
                 'text': "Hello 2",
                 'case': None,
@@ -1207,7 +1207,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'], [
             {
                 'id': out2.pk,
-                'contact': {'id': self.bob.pk, 'name': "Bob"},
+                'contact': {'id': self.bob.pk, 'name': "Bob", 'urns': []},
                 'urn': None,
                 'text': "Hello 2",
                 'case': None,
@@ -1222,7 +1222,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
             },
             {
                 'id': out1.pk,
-                'contact': {'id': self.ann.pk, 'name': "Ann"},
+                'contact': {'id': self.ann.pk, 'name': "Ann", 'urns': []},
                 'urn': None,
                 'text': "Hello 1",
                 'case': {'id': case.pk, 'assignee': {'id': self.moh.pk, 'name': "MOH"}, 'user_assignee': None},

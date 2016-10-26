@@ -768,7 +768,7 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json, {
             'id': self.case.pk,
-            'contact': {'id': self.ann.pk, 'name': "Ann"},
+            'contact': {'id': self.ann.pk, 'name': "Ann", 'urns': []},
             'assignee': {'id': self.moh.pk, 'name': "MOH"},
             'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
             'summary': "Summary",
@@ -819,12 +819,12 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(len(response.json['results']), 3)
         self.assertEqual(response.json['results'][0]['type'], 'I')
         self.assertEqual(response.json['results'][0]['item']['text'], "What is AIDS?")
-        self.assertEqual(response.json['results'][0]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
+        self.assertEqual(response.json['results'][0]['item']['contact'], {'id': self.ann.pk, 'name': "Ann", 'urns': []})
         self.assertEqual(
             response.json['results'][0]['item']['case']['user_assignee'], {'id': self.user1.pk, 'name': "Evan"})
         self.assertEqual(response.json['results'][1]['type'], 'O')
         self.assertEqual(response.json['results'][1]['item']['text'], "Non casepro message...")
-        self.assertEqual(response.json['results'][1]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
+        self.assertEqual(response.json['results'][1]['item']['contact'], {'id': self.ann.pk, 'name': "Ann", 'urns': []})
         self.assertEqual(response.json['results'][2]['type'], 'A')
         self.assertEqual(response.json['results'][2]['item']['action'], 'O')
 
@@ -924,10 +924,10 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(len(items), 7)
         self.assertEqual(items[0]['type'], 'I')
         self.assertEqual(items[0]['item']['text'], "What is AIDS?")
-        self.assertEqual(items[0]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
+        self.assertEqual(items[0]['item']['contact'], {'id': self.ann.pk, 'name': "Ann", 'urns': []})
         self.assertEqual(items[1]['type'], 'O')
         self.assertEqual(items[1]['item']['text'], "Non casepro message...")
-        self.assertEqual(items[1]['item']['contact'], {'id': self.ann.pk, 'name': "Ann"})
+        self.assertEqual(items[1]['item']['contact'], {'id': self.ann.pk, 'name': "Ann", 'urns': []})
         self.assertEqual(items[1]['item']['sender'], None)
         self.assertEqual(items[2]['type'], 'A')
         self.assertEqual(items[2]['item']['action'], 'O')
@@ -979,7 +979,7 @@ class CaseCRUDLTest(BaseCasesTest):
                 'id': case2.pk,
                 'assignee': {'id': self.who.pk, 'name': "WHO"},
                 'user_assignee': None,
-                'contact': {'id': self.ann.pk, 'name': "Ann"},
+                'contact': {'id': self.ann.pk, 'name': "Ann", 'urns': []},
                 'labels': [],
                 'summary': "",
                 'opened_on': format_iso8601(case2.opened_on),
@@ -989,7 +989,7 @@ class CaseCRUDLTest(BaseCasesTest):
                 'id': self.case.pk,
                 'assignee': {'id': self.moh.pk, 'name': "MOH"},
                 'user_assignee': {'id': self.user1.pk, 'name': "Evan"},
-                'contact': {'id': self.ann.pk, 'name': "Ann"},
+                'contact': {'id': self.ann.pk, 'name': "Ann", 'urns': []},
                 'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
                 'summary': "Summary",
                 'opened_on': format_iso8601(self.case.opened_on),
@@ -1006,7 +1006,7 @@ class CaseCRUDLTest(BaseCasesTest):
                 'id': self.case.pk,
                 'assignee': {'id': self.moh.pk, 'name': "MOH"},
                 'user_assignee': {'id': self.user1.pk, 'name': "Evan"},
-                'contact': {'id': self.ann.pk, 'name': "Ann"},
+                'contact': {'id': self.ann.pk, 'name': "Ann", "urns": []},
                 'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
                 'summary': "Summary",
                 'opened_on': format_iso8601(self.case.opened_on),

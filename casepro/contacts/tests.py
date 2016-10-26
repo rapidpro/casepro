@@ -156,12 +156,13 @@ class ContactTest(BaseCasesTest):
         self.assertEqual(self.ann.incoming_messages.filter(is_active=False, is_handled=True).count(), 2)
 
     def test_as_json(self):
-        self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "Ann"})
+        self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "Ann", 'urns': []})
 
         # full=True means include visible contact fields and laanguage etc
         self.assertEqual(self.ann.as_json(full=True), {
             'id': self.ann.pk,
             'name': "Ann",
+            'urns': [],
             'language': {'code': 'eng', 'name': "English"},
             'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
             'fields': {'nickname': None, 'age': "32"},
@@ -175,6 +176,7 @@ class ContactTest(BaseCasesTest):
         self.assertEqual(self.ann.as_json(full=True), {
             'id': self.ann.pk,
             'name': "Ann",
+            'urns': [],
             'language': None,
             'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
             'fields': {'nickname': None, 'age': "32"},
@@ -184,7 +186,7 @@ class ContactTest(BaseCasesTest):
 
         # if site uses anon contacts then name is obscured
         with override_settings(SITE_ANON_CONTACTS=True):
-            self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "7B7DD8"})
+            self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "7B7DD8", 'urns': []})
 
     @patch('casepro.test.TestBackend.push_contact')
     def test_get_or_create_from_urn(self, mock_push_contact):
@@ -273,6 +275,7 @@ class ContactCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json, {
             'id': self.ann.pk,
             'name': "Ann",
+            'urns': [],
             'language': {'code': 'eng', 'name': "English"},
             'fields': {'age': '32', 'nickname': None},
             'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
