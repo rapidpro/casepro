@@ -226,8 +226,6 @@ class ContactTest(BaseCasesTest):
         with override_settings(SITE_ANON_CONTACTS=True):
             self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "7B7DD8", 'urns': []})
 
-
-
     @patch('casepro.test.TestBackend.push_contact')
     def test_get_or_create_from_urn(self, mock_push_contact):
         """
