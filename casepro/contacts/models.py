@@ -344,7 +344,7 @@ class Contact(models.Model):
         if contact_display_format == "name" and self.name:
             return self.name
         if contact_display_format == "urn" and self.urns:
-            _scheme, path = self.urns[0].split(':', 1)
+            _scheme, path = URN.to_parts(self.urns[0])
             return path
         # Default to uuid if the chosen format isn't set
         if self.uuid:
@@ -357,7 +357,7 @@ class Contact(models.Model):
         if getattr(settings, 'SITE_ANON_CONTACTS', False) or getattr(settings, 'SITE_CONTACT_DISPLAY', False) != "urn":
             return urns
         for urn in self.urns:
-            scheme, path = urn.split(':', 1)
+            scheme, path = URN.to_parts(urn)
             urns.append({'scheme': scheme_names[scheme], 'path': path})
         return urns
 
