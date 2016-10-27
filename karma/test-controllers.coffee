@@ -45,7 +45,7 @@ describe('controllers:', () ->
       ureporters: {id: 703, name: "U-Reporters"},
 
       # contacts
-      ann: {id: 401, name: "Ann", fields: {'age': 35}, groups: [{id: 701, name: "Females"}, {id: 703, name: "U-Reporters"}]},
+      ann: {id: 401, name: "Ann", fields: {'age': 35}, groups: [{id: 701, name: "Females"}, {id: 703, name: "U-Reporters"}], urns: []},
       bob: {id: 402, name: "Bob", fields: {}, groups: []}
     }
   )

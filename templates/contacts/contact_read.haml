@@ -58,6 +58,11 @@
             - trans "Details"
           .panel-body
             .container-fluid
+              .row{ ng-repeat:"urn in contact.urns" }
+                .contact-field-label.col-sm-6
+                  [[ urn.scheme ]]
+                .contact-field-value.col-sm-6
+                  [[ urn.path ]]
               .row
                 .contact-field-label.col-sm-6
                   - trans "Language"
