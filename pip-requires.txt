@@ -1,8 +1,7 @@
--e git+https://github.com/rapidpro/dash.git@master#egg=dash-master
 boto
 celery[redis]
 colorama
--e git+https://github.com/nyaruka/confmodel.git@python3#egg=confmodel
+confmodel
 coverage
 django
 django-celery-email
@@ -25,6 +24,7 @@ pisa
 psycopg2
 pycountry
 python-dateutil
+rapidpro-dash
 rapidpro-python
 raven
 regex
