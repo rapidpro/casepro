@@ -215,9 +215,9 @@ describe('services:', () ->
 
     describe('fetch', () ->
       it('gets contact from fetch endpoint', () ->
-        $httpBackend.expectGET('/contact/fetch/401/').respond('{"id":401, "name":"Ann", "fields":{}}')
+        $httpBackend.expectGET('/contact/fetch/401/').respond('{"id":401, "name":"Ann", "fields":{}, "urns": []}')
         ContactService.fetch(401).then((contact) ->
-          expect(contact).toEqual({id: 401, name: "Ann", fields:{}})
+          expect(contact).toEqual({id: 401, name: "Ann", fields:{}, urns:[]})
         )
         $httpBackend.flush()
       )
