@@ -141,28 +141,6 @@ class ContactTest(BaseCasesTest):
             self.ann.uuid = None
             self.assertEqual(self.ann.get_display_name(), "")
 
-    def test_get_display_urns(self):
-        # if the site doesn't display contacts as urns an empty list should be returned
-        self.assertEqual(self.ann.get_display_urns(), [])
-
-        # if the site uses anon contacts an empty list should be returned
-        with override_settings(SITE_ANON_CONTACTS=True):
-            self.assertEqual(self.ann.get_display_urns(), [])
-
-        # if the contact has no urns an empty list should be returned
-        with override_settings(SITE_CONTACT_DISPLAY="urn"):
-            self.assertEqual(self.ann.get_display_urns(), [])
-
-        # if the contact has urns they should be returned in a list with their display names
-        self.ann.urns = ['tel:+234567890', 'mailto:ann@test.com', 'twitter:@anntest']
-        self.ann.save()
-        with override_settings(SITE_CONTACT_DISPLAY="urn"):
-            self.assertEqual(self.ann.get_display_urns(), [
-                {'scheme': "Phone", 'path': "+234567890"},
-                {'scheme': "Email", 'path': "ann@test.com"},
-                {'scheme': "Twitter", 'path': "@anntest"}
-            ])
-
     def test_get_fields(self):
         self.assertEqual(self.ann.get_fields(), {'age': "32", 'state': "WA"})  # what is stored on the contact
         self.assertEqual(self.ann.get_fields(visible=True), {'nickname': None, 'age': "32"})  # visible fields
@@ -214,7 +192,7 @@ class ContactTest(BaseCasesTest):
             self.assertEqual(self.ann.as_json(full=True), {
                 'id': self.ann.pk,
                 'name': "+234567890",
-                'urns': [{'scheme': "Phone", 'path': "+234567890"}, {'scheme': "Email", 'path': "ann@test.com"}],
+                'urns': ['tel:+234567890', 'mailto:ann@test.com'],
                 'language': None,
                 'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
                 'fields': {'nickname': None, 'age': "32"},
