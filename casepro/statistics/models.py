@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import pytz
 import six
 
 from dash.orgs.models import Org
