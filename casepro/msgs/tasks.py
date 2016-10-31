@@ -149,7 +149,7 @@ def faq_csv_import(org, task_id):  # pragma: no cover
 
                 # Start creation of translation FAQs
                 # get a list of the csv keys
-                keys = line.keys()
+                keys = list(line)
                 # remove non-translation keys
                 parent_keys = ['Parent Question', 'Parent Language', 'Parent Answer', 'Parent ID', 'Labels']
                 [keys.remove(parent_key) for parent_key in parent_keys]
