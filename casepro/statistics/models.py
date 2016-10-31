@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import pytz
 import six
 
 from dash.orgs.models import Org
@@ -21,7 +20,7 @@ def datetime_to_date(dt, org):
     """
     Convert a datetime to a date using the given org's timezone
     """
-    return dt.astimezone(pytz.timezone(org.timezone)).date()
+    return dt.astimezone(org.timezone).date()
 
 
 class BaseCount(models.Model):
