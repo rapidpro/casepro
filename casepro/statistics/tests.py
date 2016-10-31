@@ -8,7 +8,6 @@ from datetime import date, datetime, time
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
 from django.utils import timezone
-from django.db.models.signals import post_save
 from mock import patch
 
 from casepro.msgs.models import Outgoing
@@ -17,8 +16,6 @@ from casepro.utils import date_to_milliseconds
 
 from .models import DailyCount, DailyCountExport, DailySecondTotalCount
 from .tasks import squash_counts
-from .signals import record_new_case_action, record_new_outgoing
-from .management.commands.calculate_existing_totals import calculate_totals_for_cases, CaseAction
 
 
 class BaseStatsTest(BaseCasesTest):
@@ -434,76 +431,3 @@ class SecondTotalCountsTest(BaseStatsTest):
         self.assertEqual(DailySecondTotalCount.objects.count(), 8)
         squash_counts()
         self.assertEqual(DailySecondTotalCount.objects.count(), 3)
-
-
-class CalculateTotalsCommandTest(BaseStatsTest):
-    def setUp(self):
-        super(CalculateTotalsCommandTest, self).setUp()
-        post_save.disconnect(record_new_case_action, sender=CaseAction)
-        post_save.disconnect(record_new_outgoing, sender=Outgoing)
-
-    def tearDown(self):
-        super(CalculateTotalsCommandTest, self).tearDown()
-        post_save.connect(record_new_case_action, sender=CaseAction)
-        post_save.connect(record_new_outgoing, sender=Outgoing)
-
-    def close_case(self, case, user, note, dt):
-        case.close(user, note)
-        case_action = case.actions.filter(action=CaseAction.CLOSE).first()
-        case.closed_on = dt
-        case_action.created_on = dt
-        case.save()
-        case_action.save()
-
-    def test_calculate_totals_for_cases(self):
-        o1 = datetime(2016, 8, 1, 12, 0, tzinfo=pytz.UTC)
-        c1 = datetime(2016, 8, 1, 12, 1, tzinfo=pytz.UTC)
-        c2 = datetime(2016, 8, 1, 12, 2, tzinfo=pytz.UTC)
-
-        msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids], created_on=o1)
-        msg2 = self.create_message(self.unicef, 234, self.ned, "Hello 2", [self.aids, self.pregnancy], created_on=o1)
-        msg3 = self.create_message(self.unicef, 345, self.ann, "Hello 3", [self.pregnancy], created_on=o1)
-        msg4 = self.create_message(self.nyaruka, 456, self.ned, "Hello 4", [self.code], created_on=o1)
-        msg5 = self.create_message(self.unicef, 789, self.ann, "Hello 5", [self.code], created_on=o1)
-
-        case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [self.aids], opened_on=o1)
-        case2 = self.create_case(self.unicef, self.ned, self.moh, msg2, [self.aids, self.pregnancy], opened_on=o1)
-        case3 = self.create_case(self.unicef, self.ann, self.who, msg3, [self.pregnancy], opened_on=o1)
-        case4 = self.create_case(self.unicef, self.ned, self.who, msg4, [self.code], opened_on=o1)
-        case5 = self.create_case(self.unicef, self.ann, self.moh, msg5, [self.pregnancy], opened_on=o1)
-
-        self.close_case(case1, self.user1, 'closed', c1)
-        self.close_case(case2, self.user1, 'closed', c2)
-        self.close_case(case3, self.user3, 'closed', c1)
-
-        o_msg4 = self.create_outgoing(self.unicef, self.user3, 201, Outgoing.CASE_REPLY, "Good question",
-                                      self.ned, case=case4)
-        o_msg5 = self.create_outgoing(self.unicef, self.user1, 201, Outgoing.CASE_REPLY, "Good question",
-                                      self.ann, case=case5)
-        o_msg4.created_on = c1
-        o_msg4.save()
-        o_msg5.created_on = c2
-        o_msg5.save()
-
-        calculate_totals_for_cases(case_id=None)
-
-        # check case close stats
-        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'C').total(), 3)
-        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'C').seconds(), 240)
-        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'C').average(), 80)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'C').total(), 2)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'C').seconds(), 180)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'C').average(), 90)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'C').total(), 1)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'C').seconds(), 60)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'C').average(), 60)
-
-        # check reply time stats
-        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').total(), 2)
-        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').seconds(), 180)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').total(), 1)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').seconds(), 120)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').average(), 120)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'A').total(), 1)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'A').seconds(), 60)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'A').average(), 60)

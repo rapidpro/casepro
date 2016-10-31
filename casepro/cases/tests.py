@@ -1154,21 +1154,23 @@ class PartnerCRUDLTest(BaseCasesTest):
 
         response = self.url_get('unicef', url, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.json, {'results': [
-            {'id': self.moh.pk, 'name': "MOH",  'restricted': True},
-            {'id': self.who.pk, 'name': "WHO",  'restricted': True}
+            {'id': self.moh.pk, 'name': "MOH", 'restricted': True},
+            {'id': self.who.pk, 'name': "WHO", 'restricted': True}
         ]})
 
         response = self.url_get('unicef', url + '?with_activity=1', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.json, {'results': [
             {
                 'id': self.moh.pk, 'name': "MOH", 'restricted': True,
-                'replies': {'average': '0s', 'last_month': 0, 'this_month': 0, 'total': 0},
-                'cases': {'average_closed': '0s'},
+                'replies': {
+                    'average_replied_this_month': '0\xa0minutes', 'last_month': 0, 'this_month': 0, 'total': 0},
+                'cases': {'average_closed_this_month': '0\xa0minutes'},
             },
             {
                 'id': self.who.pk, 'name': "WHO", 'restricted': True,
-                'replies': {'average': '0s', 'last_month': 0, 'this_month': 0, 'total': 0},
-                'cases': {'average_closed': '0s'},
+                'replies': {
+                    'average_replied_this_month': u'0\xa0minutes', 'last_month': 0, 'this_month': 0, 'total': 0},
+                'cases': {'average_closed_this_month': u'0\xa0minutes'},
             }
         ]})
 
