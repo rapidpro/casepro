@@ -1,5 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
+import pytz
+
 from dash.orgs.models import TaskState
 from django.core.urlresolvers import reverse
 
@@ -58,7 +60,7 @@ class OrgExtCRUDLTest(BaseCasesTest):
         form = response.context['form']
 
         self.assertEqual(form.initial['name'], "UNICEF")
-        self.assertEqual(form.initial['timezone'], "Africa/Kampala")
+        self.assertEqual(form.initial['timezone'], pytz.timezone("Africa/Kampala"))
 
         self.assertEqual(form.fields['banner_text'].initial, "Howdy (U)Partner!")
         self.assertEqual(form.fields['contact_fields'].choices, [(self.age.pk, "Age (age)"),
@@ -82,7 +84,7 @@ class OrgExtCRUDLTest(BaseCasesTest):
         self.unicef._config = None
 
         self.assertEqual(self.unicef.name, "UNIZEFF")
-        self.assertEqual(self.unicef.timezone, "Africa/Kigali")
+        self.assertEqual(self.unicef.timezone, pytz.timezone("Africa/Kigali"))
         self.assertEqual(self.unicef.get_banner_text(), "Chill")
 
         self.assertEqual(set(Group.get_suspend_from(self.unicef)), {self.males})
