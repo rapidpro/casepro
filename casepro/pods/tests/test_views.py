@@ -2,9 +2,11 @@ from __future__ import unicode_literals
 
 from django.core.urlresolvers import reverse
 from django.test import modify_settings
+from six.moves import reload_module
 
 from casepro.cases.models import CaseAction
 from casepro.test import BaseCasesTest
+from casepro.utils import json_decode
 
 
 @modify_settings(INSTALLED_APPS={
@@ -23,7 +25,7 @@ class ViewPodDataView(BaseCasesTest):
 
         with self.settings(PODS=[{'label': 'base_pod'}]):
             from casepro.pods import registry
-            reload(registry)
+            reload_module(registry)
 
     def test_invalid_method(self):
         """
@@ -120,7 +122,7 @@ class PerformPodActionView(BaseCasesTest):
 
         with self.settings(PODS=[{'label': 'base_pod'}]):
             from casepro.pods import registry
-            reload(registry)
+            reload_module(registry)
 
     def test_invalid_method(self):
         """
@@ -154,10 +156,10 @@ class PerformPodActionView(BaseCasesTest):
         response = self.url_post(
             'unicef', reverse('perform_pod_action', args=('0',)), body="{")
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json, {
-            'reason': 'JSON decode error',
-            'details': 'No JSON object could be decoded'
-        })
+
+        content = json_decode(response.content)
+        self.assertEqual(content['reason'], "JSON decode error")
+        self.assertTrue(content['details'])
 
     def test_case_id_required(self):
         '''
@@ -188,12 +190,12 @@ class PerformPodActionView(BaseCasesTest):
         'append': 'casepro.pods.tests.utils.SuccessActionPlugin',
     })
     def test_case_action_note_created_on_successful_action(self):
-        '''
+        """
         If the action is successful, a case action note should be created.
-        '''
+        """
         with self.settings(PODS=[{'label': 'success_pod'}]):
             from casepro.pods import registry
-            reload(registry)
+            reload_module(registry)
 
         response = self.url_post_json(
             'unicef', reverse('perform_pod_action', args=('0',)), {
@@ -206,7 +208,7 @@ class PerformPodActionView(BaseCasesTest):
 
         self.assertEqual(response.status_code, 200)
 
-        message = "Type foo Params {u'foo': u'bar'}"
+        message = 'Type foo Params {"foo": "bar"}'
         self.assertEqual(response.json, {
             'success': True,
             'payload': {

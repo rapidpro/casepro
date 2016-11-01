@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 
 from django.db import migrations, models
 from django.conf import settings
@@ -22,7 +22,7 @@ def data_migration(apps, schema_editor):
                                    case=old.case)
 
     if outgoings:
-        print "Migrated %d outgoing messages to new model in msgs app" % len(outgoings)
+        print("Migrated %d outgoing messages to new model in msgs app" % len(outgoings))
 
 
 class Migration(migrations.Migration):

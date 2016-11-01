@@ -1,18 +1,15 @@
--e git+https://github.com/rapidpro/dash.git@master#egg=dash-master
--e git+https://github.com/nyaruka/smartmin.git@master#egg=smartmin-master
 boto
 celery[redis]
 colorama
+confmodel
 coverage
 django
-django-celery
 django-celery-email
 django-compressor
 django-debug-toolbar
 django-digest
 django-el-pagination
 django-redis
-django-reversion
 django-rosetta
 django-storages
 dj-database-url
@@ -20,7 +17,6 @@ django-contrib-comments
 enum34
 flake8
 gunicorn
-hamlpy
 iso639
 mock
 pillow
@@ -28,8 +24,10 @@ pisa
 psycopg2
 pycountry
 python-dateutil
+rapidpro-dash
 rapidpro-python
 raven
 regex
+smartmin
 sorl-thumbnail
 xlutils

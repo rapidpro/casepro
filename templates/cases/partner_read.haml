@@ -130,7 +130,7 @@
                       [[ item.text ]]
                     %td
                       <span ng-class="{'time-warning': item.response.warning}">[[ item.response.delay ]]</span>
-                    %td
+                    %td.message-text
                       %span.label-container{ ng-if:"item.case" }
                         %span.label.label-warning
                           [[ item.case.assignee.name ]]
@@ -228,4 +228,11 @@
     #chart-replies-by-month {
       width: 100%;
       height: 250px;
+    }
+
+    .message-text {
+      /* forces wrapping of messages with no spaces */
+      max-width: 400px;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
     }

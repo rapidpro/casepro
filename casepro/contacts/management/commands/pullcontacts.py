@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals
 from dash.orgs.models import Org
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
+from six.moves import input
 
 from casepro.backend import get_backend
 
@@ -24,7 +25,7 @@ class Command(BaseCommand):
 
 Type 'yes' to continue, or 'no' to cancel: """ % (org.name, org.pk)
 
-        if raw_input(prompt).lower() != 'yes':
+        if input(prompt).lower() != 'yes':
             self.stdout.write("Operation cancelled")
             return
 

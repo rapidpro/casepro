@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-import json
+from casepro.utils import json_decode
 
 
 class JSONMiddleware(object):
@@ -9,4 +9,4 @@ class JSONMiddleware(object):
     """
     def process_request(self, request):
         if 'application/json' in request.META.get('CONTENT_TYPE', ""):
-            request.json = json.loads(request.body)
+            request.json = json_decode(request.body)

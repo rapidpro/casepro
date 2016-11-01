@@ -53,6 +53,36 @@ directives.directive('cpFieldvalue', () ->
   }
 )
 
+#----------------------------------------------------------------------------
+# A phone URN value
+#----------------------------------------------------------------------------
+directives.directive('phoneurn', () ->
+  return {
+    require: 'ngModel',
+    link: (scope, elm, attrs, ctrl) ->
+      ctrl.$validators.phoneurn = (modelValue, viewValue) ->
+        if scope.fields.urn.scheme != "tel"
+          return true
+        if !viewValue
+          # We let required take care of empty inputs to give better error message
+          return true
+        phoneUtil = i18n.phonenumbers.PhoneNumberUtil.getInstance()
+
+        try
+          parsed = phoneUtil.parse(viewValue)
+        catch error
+          return false
+
+        if viewValue != phoneUtil.format(parsed, i18n.phonenumbers.PhoneNumberFormat.E164)
+            return false
+
+        if !phoneUtil.isPossibleNumber(parsed) || !phoneUtil.isValidNumber(parsed)
+            return false
+
+        return true
+  }
+)
+
 
 directives.directive('cpAlert', -> {
   restrict: 'E',

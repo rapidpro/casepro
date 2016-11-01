@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('statistics', '0007_populate_label_totals'),
+        ('statistics', '0008_existing_case_stats_count'),
     ]
 
     operations = [
