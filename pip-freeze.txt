@@ -50,7 +50,7 @@ requests==2.7.0
 responses==0.5.1
 six==1.10.0
 smartmin==1.9.2
-sorl-thumbnail==12.3
+sorl-thumbnail==12.4a1
 sqlparse==0.1.15
 xlrd==1.0.0
 xlutils==2.0.0
