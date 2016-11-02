@@ -126,20 +126,20 @@ class ContactTest(BaseCasesTest):
             self.assertEqual(self.ann.get_display_name(), "")
         self.ann.refresh_from_db()
 
-        # if the site doesn't use anon contacts and uses 'name' for the display
-        self.assertEqual(self.ann.get_display_name(), "Ann")
+        # if the site uses 'uuid' for the display
+        with override_settings(SITE_CONTACT_DISPLAY="uuid"):
+            self.assertEqual(self.ann.get_display_name(), "7B7DD8")
 
-        # if the site doesn't use anon contacts and uses 'urn' for the display
+        # if the site uses 'urns' for the display
         self.ann.urns = ['tel:+2345']
-        with override_settings(SITE_CONTACT_DISPLAY="urn"):
+        with override_settings(SITE_CONTACT_DISPLAY="urns"):
             self.assertEqual(self.ann.get_display_name(), "+2345")
         self.ann.refresh_from_db()
 
-        # if the site doesn't use anon contacts and the display field is empty
-        with override_settings(SITE_CONTACT_DISPLAY="urn"):
-            self.assertEqual(self.ann.get_display_name(), "7B7DD8")
-            self.ann.uuid = None
-            self.assertEqual(self.ann.get_display_name(), "")
+        # if the site uses 'name' or something unrecognised for the display
+        self.assertEqual(self.ann.get_display_name(), "Ann")
+        self.ann.name = None
+        self.assertEqual(self.ann.get_display_name(), "")
 
     def test_get_fields(self):
         self.assertEqual(self.ann.get_fields(), {'age': "32", 'state': "WA"})  # what is stored on the contact
