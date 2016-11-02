@@ -156,11 +156,12 @@ class ContactTest(BaseCasesTest):
         self.assertEqual(self.ann.incoming_messages.filter(is_active=False, is_handled=True).count(), 2)
 
     def test_as_json(self):
-        self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "Ann"})
+        self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'display': "Ann"})
 
         # full=True means include visible contact fields and laanguage etc
         self.assertEqual(self.ann.as_json(full=True), {
             'id': self.ann.pk,
+            'display': "Ann",
             'name': "Ann",
             'urns': [],
             'language': {'code': 'eng', 'name': "English"},
@@ -171,12 +172,14 @@ class ContactTest(BaseCasesTest):
         })
 
         self.ann.language = None
+        self.ann.urns = ["tel:+2345678", "mailto:ann@test.com"]
         self.ann.save()
 
         self.assertEqual(self.ann.as_json(full=True), {
             'id': self.ann.pk,
+            'display': "Ann",
             'name': "Ann",
-            'urns': [],
+            'urns': ["tel:+2345678", "mailto:ann@test.com"],
             'language': None,
             'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
             'fields': {'nickname': None, 'age': "32"},
@@ -184,15 +187,13 @@ class ContactTest(BaseCasesTest):
             'stopped': False
         })
 
-        # If the contact has urns and the contact display uses urns then they should be returned and the name should be
-        # the first urn
-        self.ann.urns = ['tel:+234567890', 'mailto:ann@test.com']
-        self.ann.save()
-        with override_settings(SITE_CONTACT_DISPLAY='urn'):
+        # If the urns and name fields are hidden they should not be returned
+        # SITE_CONTACT_DISPLAY overrules this for the 'display' attr
+        with override_settings(SITE_HIDE_CONTACT_FIELDS=["urns", "name"], SITE_CONTACT_DISPLAY="uuid"):
             self.assertEqual(self.ann.as_json(full=True), {
                 'id': self.ann.pk,
-                'name': "+234567890",
-                'urns': ['tel:+234567890', 'mailto:ann@test.com'],
+                'display': "7B7DD8",
+                'urns': [],
                 'language': None,
                 'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
                 'fields': {'nickname': None, 'age': "32"},
