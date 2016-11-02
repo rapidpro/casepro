@@ -332,23 +332,25 @@ class Contact(models.Model):
 
     def get_display_name(self):
         """
-        Gets the display name of this contact. If the site uses anonymous contacts or the display setting is not
-        recognised, this is generated from the backend UUID. If no UUID is set for the contact, an empty string is
-        returned. If the display setting is recognised and set then that field is returned.
+        Gets the display of this contact. If the site uses anonymous contacts this is generated from the backend UUID.
+        If the display setting is recognised and set then that field is returned, otherwise the name is returned.
+        If no name is set an empty string is returned.
         """
+        # Continue to support old behaviour
         if getattr(settings, 'SITE_ANON_CONTACTS', False):
             if self.uuid:
                 return self.uuid[:6].upper()
             return ""
+
         contact_display_format = getattr(settings, 'SITE_CONTACT_DISPLAY', False)
-        if contact_display_format == "name" and self.name:
-            return self.name
-        if contact_display_format == "urn" and self.urns:
+        if contact_display_format == "uuid" and self.uuid:
+            return self.uuid[:6].upper()
+        if contact_display_format == "urns" and self.urns:
             _scheme, path = URN.to_parts(self.urns[0])
             return path
-        # Default to uuid if the chosen format isn't set
-        if self.uuid:
-            return self.uuid[:6].upper()
+        # Default to name if the chosen format isn't set
+        if self.name:
+            return self.name
         return ""
 
     def get_fields(self, visible=None):
@@ -430,7 +432,7 @@ class Contact(models.Model):
         """
         Prepares a contact for JSON serialization
         """
-        result = {'id': self.pk, 'name': self.get_display_name()}
+        result = {'id': self.pk, 'display': self.get_display_name()}
 
         if full:
             hidden_fields = getattr(settings, 'SITE_HIDE_CONTACT_FIELDS', [])
