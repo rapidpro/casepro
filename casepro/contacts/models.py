@@ -433,11 +433,13 @@ class Contact(models.Model):
         result = {'id': self.pk, 'name': self.get_display_name()}
 
         if full:
+            hidden_fields = getattr(settings, 'SITE_HIDE_CONTACT_FIELDS', [])
             urns = []
-            if not getattr(settings, 'SITE_ANON_CONTACTS', False) and \
-                    getattr(settings, 'SITE_CONTACT_DISPLAY', False) == "urn":
+            if "urns" not in hidden_fields:
                 urns = self.urns
             result['urns'] = urns
+            if "name" not in hidden_fields:
+                result['name'] = self.name
             result['groups'] = [g.as_json(full=False) for g in self.groups.all()]
             result['fields'] = self.get_fields(visible=True)
             result['language'] = self.get_language()

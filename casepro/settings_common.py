@@ -54,6 +54,7 @@ SITE_ORGS_STORAGE_ROOT = 'orgs'
 SITE_EXTERNAL_CONTACT_URL = 'http://localhost:8001/contact/read/%s/'
 SITE_BACKEND = 'casepro.backend.NoopBackend'
 SITE_ANON_CONTACTS = False
+SITE_HIDE_CONTACT_FIELDS = ["name", "urns"]  # Listed fields should not be displayed
 SITE_CONTACT_DISPLAY = "name"  # Optional. Ignored if SITE_ANON_CONTACTS is True. Options: 'name' or 'urn'
 SITE_ALLOW_CASE_WITHOUT_MESSAGE = True
 
