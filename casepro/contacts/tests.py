@@ -287,6 +287,7 @@ class ContactCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json, {
             'id': self.ann.pk,
+            'display': "Ann",
             'name': "Ann",
             'urns': [],
             'language': {'code': 'eng', 'name': "English"},
