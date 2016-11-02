@@ -41,7 +41,7 @@ psycopg2==2.6.1
 pycountry==1.12
 python-dateutil==2.4.2
 pytz==2015.7
-rapidpro-dash==1.0.1
+rapidpro-dash==1.0.2
 rapidpro-python==2.1.1
 raven==5.27.1
 redis==2.10.3
@@ -50,7 +50,7 @@ requests==2.7.0
 responses==0.5.1
 six==1.10.0
 smartmin==1.9.2
-sorl-thumbnail==12.3
+sorl-thumbnail==12.4a1
 sqlparse==0.1.15
 xlrd==1.0.0
 xlutils==2.0.0
