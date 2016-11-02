@@ -843,12 +843,9 @@ controllers.controller('FaqController', ['$scope', '$window', 'UtilsService', 'F
   $scope.faq = $window.contextData.faq
 
   $scope.init = () ->
-    $scope.fetchAllFaqs()
-    
-  $scope.fetchAllFaqs = (faq) ->
-      FaqService.fetchAllFaqs().then((results) ->
+    FaqService.fetchAllFaqs().then((results) ->
         $scope.translations = results
-      )
+    )
     
   $scope.filterTranslations = (parent) ->
     (translation) ->
@@ -864,28 +861,28 @@ controllers.controller('FaqController', ['$scope', '$window', 'UtilsService', 'F
   $scope.onDeleteFaqTranslation = (translation) ->
       UtilsService.confirmModal("Delete this Translation??", 'danger').then(() ->
         FaqService.deleteTranslation(translation).then(() ->
-          $scope.translations.splice($scope.translations.indexOf(translation), 1)
+          UtilsService.navigate('')
         )
       )
 
   $scope.onNewTranslation = (faq) ->
-    UtilsService.FaqModal("Create FAQ Translation", null, faq, false).then((result) ->
+    UtilsService.faqModal("Create FAQ Translation", null, faq, false).then((result) ->
       FaqService.createFaq(result).then(() ->
-        $window.location.reload()
+        UtilsService.navigate('')
       )
     )
   
   $scope.onEditTranslation = (translation, faq) ->
-    UtilsService.FaqModal("Edit FAQ Translation", translation, faq, false).then((result) ->
+    UtilsService.faqModal("Edit FAQ Translation", translation, faq, false).then((result) ->
       FaqService.updateFaq(result).then(() ->
-        $window.location.reload()
+        UtilsService.navigate('')
       )
     )
     
   $scope.onEditFaq = (faq) ->
-    UtilsService.FaqModal("Edit FAQ", null, faq, true).then((result) ->
+    UtilsService.faqModal("Edit FAQ", null, faq, true).then((result) ->
       FaqService.updateFaq(result).then(() ->
-        $window.location.reload()
+        UtilsService.navigate('')
       )
     )
     
@@ -895,33 +892,30 @@ controllers.controller('FaqController', ['$scope', '$window', 'UtilsService', 'F
 #============================================================================
 # Faq list controller
 #============================================================================
-controllers.controller('FaqListController', ['$scope', '$window','UtilsService', 'FaqService', '$filter', ($scope, $window, UtilsService, FaqService, $filter) ->
+controllers.controller('FaqListController', ['$scope','UtilsService', 'FaqService', ($scope, UtilsService, FaqService) ->
 
   $scope.init = () ->
-    $scope.fetchAllFaqs()
-    
-  $scope.fetchAllFaqs = (faq) ->
     FaqService.fetchAllFaqs().then((results) ->
       $scope.faqs = results
 
-      parents = {}
+      $scope.parents = {}
       for faq in $scope.faqs
         if faq.parent
-          if not parents[faq.parent]
-            parents[faq.parent] = 0
+          if not $scope.parents[faq.parent]
+            $scope.parents[faq.parent] = 0
           
-          parents[faq.parent] += 1
+          $scope.parents[faq.parent] += 1
           
           for faq in $scope.faqs
             faq.count = 0
-            if parents[faq.id]
-              faq.count = parents[faq.id]
+            if $scope.parents[faq.id]
+              faq.count = $scope.parents[faq.id]
       )
   
-  $scope.onNewFaq = (faq) ->
-    UtilsService.FaqModal("Create FAQ", null, null, true).then((result) ->
+  $scope.onNewFaq = () ->
+    UtilsService.faqModal("Create FAQ", null, null, true).then((result) ->
       FaqService.createFaq(result).then(() ->
-        $window.location.reload()
+        UtilsService.navigate('')
       )
     )
   

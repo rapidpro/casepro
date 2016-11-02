@@ -47,6 +47,16 @@ describe('controllers:', () ->
       # contacts
       ann: {id: 401, name: "Ann", fields: {'age': 35}, groups: [{id: 701, name: "Females"}, {id: 703, name: "U-Reporters"}]},
       bob: {id: 402, name: "Bob", fields: {}, groups: []}
+      
+      # language
+      language1: {code: "eng", name: "English"},
+      language2: {code: "afr", name: "Afrikaans"},
+      
+      # FAQs
+      faq1: {id: 401, question: "Am I pregnant?", answer: "yes", language: {code: "eng", name: "English"}, labels: [{id: 201, name: "Tea"}, {id: 202, name: "Coffee"}], parent: null},
+      
+      # translation
+      translation1: {id: 601, question: "Is ek swanger", answer: "ja", language: {code: "afr", name: "Afrikaans"}, labels: {id: 201, name: "Tea"}, parent: 401},
     }
   )
 
@@ -602,6 +612,147 @@ describe('controllers:', () ->
       console.log($scope.contact)
 
       expect($scope.getGroups()).toEqual("Females, U-Reporters")
+    )
+  )
+
+  #=======================================================================
+  # Tests for FaqController
+  #=======================================================================
+  describe('FaqController', () ->
+    FaqService = null
+    UtilsService = null
+    $scope = null
+
+    beforeEach(inject((_FaqService_) ->
+      FaqService = _FaqService_
+
+      $scope = $rootScope.$new()
+      $window.contextData = {faq: test.faq1}
+      $controller('FaqController', {$scope: $scope})
+    ))
+
+    it('init should fetch all FAQs', () ->
+      fetchAllFaqs = spyOnPromise($q, $scope, FaqService, 'fetchAllFaqs')
+
+      $scope.init()
+
+      fetchAllFaqs.resolve(test.faq1)
+
+      expect(FaqService.fetchAllFaqs).toHaveBeenCalled()
+      expect($scope.translations).toEqual(test.faq1)
+    )
+
+    it('onDeleteFaq', () ->
+      confirmModal = spyOnPromise($q, $scope, UtilsService, 'confirmModal')
+      deleteFaq = spyOnPromise($q, $scope, FaqService, 'delete')
+      spyOn(UtilsService, 'navigate')
+
+      $scope.onDeleteFaq()
+
+      confirmModal.resolve()
+      deleteFaq.resolve()
+
+      expect(FaqService.delete).toHaveBeenCalledWith(test.faq1)
+      expect(UtilsService.navigate).toHaveBeenCalledWith('/faq/')
+    )
+
+    it('onDeleteFaqTranslation', () ->
+      confirmModal = spyOnPromise($q, $scope, UtilsService, 'confirmModal')
+      deleteTranslation = spyOnPromise($q, $scope, FaqService, 'deleteTranslation')
+      spyOn(UtilsService, 'navigate')
+    
+      $scope.onDeleteFaqTranslation(test.translation1)
+    
+      confirmModal.resolve()
+      deleteTranslation.resolve()
+    
+      expect(FaqService.deleteTranslation).toHaveBeenCalledWith(test.translation1)
+      expect(UtilsService.navigate).toHaveBeenCalledWith('')
+    )
+
+    it('onNewTranslation', () ->
+      faqModal = spyOnPromise($q, $scope, UtilsService, 'faqModal')
+      createFaq = spyOnPromise($q, $scope, FaqService, 'createFaq')
+      spyOn(UtilsService, 'navigate')
+    
+      $scope.onNewTranslation()
+    
+      faqModal.resolve(test.translation1)
+      createFaq.resolve()
+      
+      expect(FaqService.createFaq).toHaveBeenCalledWith(test.translation1)
+      expect(UtilsService.navigate).toHaveBeenCalledWith('')
+    )
+
+    it('onEditTranslation', () ->
+      faqModal = spyOnPromise($q, $scope, UtilsService, 'faqModal')
+      updateFaq = spyOnPromise($q, $scope, FaqService, 'updateFaq')
+      spyOn(UtilsService, 'navigate')
+    
+      $scope.onEditTranslation(test.translation1, test.faq1)
+
+      faqModal.resolve(test.translation1)
+      updateFaq.resolve()
+
+      expect(FaqService.updateFaq).toHaveBeenCalledWith(test.translation1)
+      expect(UtilsService.navigate).toHaveBeenCalledWith('')
+    )
+
+    it('onEditFaq', () ->
+      faqModal = spyOnPromise($q, $scope, UtilsService, 'faqModal')
+      updateFaq = spyOnPromise($q, $scope, FaqService, 'updateFaq')
+      spyOn(UtilsService, 'navigate')
+    
+      $scope.onEditFaq()
+      
+      faqModal.resolve(test.faq1)
+      updateFaq.resolve()
+    
+      expect(FaqService.updateFaq).toHaveBeenCalledWith(test.faq1)
+      expect(UtilsService.navigate).toHaveBeenCalledWith('')
+    )
+  )
+
+  #=======================================================================
+  # Tests for FaqListController
+  #=======================================================================
+  describe('FaqListController', () ->
+    FaqService = null
+    UtilsService = null
+    $scope = null
+  
+    beforeEach(inject((_FaqService_) ->
+      FaqService = _FaqService_
+  
+      $scope = $rootScope.$new()
+      $controller('FaqListController', {$scope: $scope})
+    ))
+  
+    it('init should fetch all FAQs', () ->
+      fetchAllFaqs = spyOnPromise($q, $scope, FaqService, 'fetchAllFaqs')
+  
+      $scope.init()
+  
+      fetchAllFaqs.resolve(test.faq1)
+  
+      expect(FaqService.fetchAllFaqs).toHaveBeenCalled()
+      expect($scope.faqs).toEqual(test.faq1)
+      expect($scope.parents).toEqual({})
+    )
+  
+    it('onNewFaq', () ->
+      faqModal = spyOnPromise($q, $scope, UtilsService, 'faqModal')
+      createFaq = spyOnPromise($q, $scope, FaqService, 'createFaq')
+      spyOn(UtilsService, 'navigate')
+    
+    
+      $scope.onNewFaq(test.faq1)
+    
+      faqModal.resolve(test.faq1)
+      createFaq.resolve()
+      
+      expect(FaqService.createFaq).toHaveBeenCalledWith(test.faq1)
+      expect(UtilsService.navigate).toHaveBeenCalledWith('')
     )
   )
 

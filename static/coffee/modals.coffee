@@ -220,7 +220,7 @@ modals.controller('DateRangeModalController', ['$scope', '$uibModalInstance', 't
 #=====================================================================
 # FAQ modal
 #=====================================================================
-modals.controller('FaqModalController', ['$scope', '$http', 'FaqService', 'LabelService', '$uibModalInstance', 'title', 'translation', 'faq', 'isFaq', ($scope, $http, FaqService, LabelService, $uibModalInstance, title, translation, faq, isFaq) ->
+modals.controller('FaqModalController', ['$scope', 'FaqService', 'LabelService', '$uibModalInstance', 'title', 'translation', 'faq', 'isFaq', ($scope, FaqService, LabelService, $uibModalInstance, title, translation, faq, isFaq) ->
   $scope.title = title
   $scope.faq = faq
   $scope.isFaq = isFaq
@@ -273,7 +273,7 @@ modals.controller('FaqModalController', ['$scope', '$http', 'FaqService', 'Label
     $scope.form.submitted = true
     
     if $scope.form.$valid
-      data = {question: $scope.fields.question.val, answer: $scope.fields.answer.val, parent: $scope.fields.parent.val, language: $scope.fields.language.val.code, labels: $scope.fields.labels.val, id: $scope.fields.id.val }
+      data = {question: $scope.fields.question.val, answer: $scope.fields.answer.val, parent: $scope.fields.parent.val, language: $scope.fields.language.val.code, labels: $scope.fields.labels.val, id: $scope.fields.id.val}
       $uibModalInstance.close(data)
           
   $scope.cancel = () -> $uibModalInstance.dismiss(false)

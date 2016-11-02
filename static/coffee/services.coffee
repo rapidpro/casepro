@@ -183,7 +183,7 @@ services.factory('FaqService', ['$rootScope', '$http', '$httpParamSerializer', (
     #----------------------------------------------------------------------------
     # Fetch FAQs to use in translations
     #----------------------------------------------------------------------------
-    fetchAllFaqs: (faq) ->
+    fetchAllFaqs: () ->
       return $http.get('/faq/search/?').then((response) ->
         return response.data.results
       )
@@ -622,7 +622,7 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
       resolve = {title: (() -> title), prompt: (() -> prompt)}
       return $uibModal.open({templateUrl: '/partials/modal_daterange.html', controller: 'DateRangeModalController', resolve: resolve}).result
       
-    FaqModal: (title, translation, faq, isFaq) ->
+    faqModal: (title, translation, faq, isFaq) ->
       resolve = {title: (() -> title), translation: (() -> translation), faq: (() -> faq), isFaq: (() -> isFaq)}
       return $uibModal.open({templateUrl: '/partials/modal_faq.html', controller: 'FaqModalController', resolve: resolve}).result
 ])

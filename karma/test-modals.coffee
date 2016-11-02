@@ -4,6 +4,8 @@ describe('modals:', () ->
   $controller = null
   $rootScope = null
   $q = null
+  FaqService = null
+  LabelService = null
   MessageService = null
 
   $scope = null
@@ -13,10 +15,12 @@ describe('modals:', () ->
   beforeEach(() ->
     module('cases')
 
-    inject((_$controller_, _$rootScope_, _$q_, _MessageService_) ->
+    inject((_$controller_, _$rootScope_, _$q_, _MessageService_, _FaqService_, _LabelService_) ->
       $controller = _$controller_
       $rootScope = _$rootScope_
       $q = _$q_
+      FaqService = _FaqService_
+      LabelService = _LabelService_
       MessageService = _MessageService_
     )
 
@@ -38,6 +42,16 @@ describe('modals:', () ->
       # partners
       moh: {id: 301, name: "MOH"},
       who: {id: 302, name: "WHO"},
+      
+      # language
+      language1: {code: "eng", name: "English"},
+      language2: {code: "afr", name: "Afrikaans"},
+      
+      # FAQs
+      faq1: {id: 401, question: "Am I pregnant?", answer: "yes", language: {code: "eng", name: "English"}, labels: [{id: 201, name: "Tea"}, {id: 202, name: "Coffee"}], parent: null},
+      
+      # translation
+      translation1: {id: 601, question: "Is ek swanger", answer: "ja", language: {code: "afr", name: "Afrikaans"}, labels: {id: 201, name: "Tea"}, parent: 401},
 
       msg1: {id: 501, text: "Hello"}
     }
@@ -102,6 +116,38 @@ describe('modals:', () ->
     $scope.ok()
 
     expect(modalInstance.close).toHaveBeenCalledWith("edited")
+
+    $scope.cancel()
+
+    expect(modalInstance.dismiss).toHaveBeenCalledWith(false)
+  )
+
+  it('FaqModalController', () ->
+    fetchAllLanguages = spyOnPromise($q, $scope, FaqService, 'fetchAllLanguages')
+    fetchLabels = spyOnPromise($q, $scope, LabelService, 'fetchAll')
+    
+    $controller('FaqModalController', {$scope: $scope, $uibModalInstance: modalInstance, title: "Title", translation: test.translation1, faq: test.faq1, isFaq: false})
+    
+    $scope.init()
+
+    expect($scope.fields.question).toEqual({val: "Is ek swanger"})
+    expect($scope.fields.answer).toEqual({val: "ja"})
+    expect($scope.fields.parent).toEqual({val: 401})
+    expect($scope.fields.language).toEqual({val: test.language2})
+    expect($scope.fields.labels).toEqual({val: [test.tea.id, test.coffee.id]})
+    expect($scope.fields.id).toEqual({val: 601})
+    
+
+    $scope.fields.question.val = "this is a question"
+    $scope.fields.answer.val = "this is an answer"
+    $scope.fields.parent.val = null
+    $scope.fields.language.val = test.language1
+    $scope.fields.labels.val = [test.tea.id, test.coffee.id]
+    $scope.fields.id.val = null
+    $scope.form = {$valid: true}
+    $scope.ok()
+
+    expect(modalInstance.close).toHaveBeenCalledWith({question: "this is a question", answer: "this is an answer", parent: null, language: test.language1.code, labels: [test.tea.id, test.coffee.id], id: null})
 
     $scope.cancel()
 
