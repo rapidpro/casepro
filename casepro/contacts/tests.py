@@ -194,6 +194,7 @@ class ContactTest(BaseCasesTest):
                 'id': self.ann.pk,
                 'display': "7B7DD8",
                 'urns': [],
+                'name': None,
                 'language': None,
                 'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
                 'fields': {'nickname': None, 'age': "32"},

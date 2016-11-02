@@ -436,12 +436,8 @@ class Contact(models.Model):
 
         if full:
             hidden_fields = getattr(settings, 'SITE_HIDE_CONTACT_FIELDS', [])
-            urns = []
-            if "urns" not in hidden_fields:
-                urns = self.urns
-            result['urns'] = urns
-            if "name" not in hidden_fields:
-                result['name'] = self.name
+            result['urns'] = self.urns if "urns" not in hidden_fields else []
+            result['name'] = self.name if "name" not in hidden_fields else None
             result['groups'] = [g.as_json(full=False) for g in self.groups.all()]
             result['fields'] = self.get_fields(visible=True)
             result['language'] = self.get_language()
