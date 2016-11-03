@@ -261,6 +261,10 @@ class Contact(models.Model):
     """
     A contact in RapidPro
     """
+    DISPLAY_NAME = 'name'
+    DISPLAY_URNS = 'urns'
+    DISPLAY_ANON = 'uuid'
+
     SAVE_GROUPS_ATTR = '__data__groups'
 
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="contacts")
@@ -336,14 +340,14 @@ class Contact(models.Model):
         If the display setting is recognised and set then that field is returned, otherwise the name is returned.
         If no name is set an empty string is returned.
         """
-        display_format = getattr(settings, 'SITE_CONTACT_DISPLAY', 'name')
+        display_format = getattr(settings, 'SITE_CONTACT_DISPLAY', self.DISPLAY_NAME)
 
-        if display_format == "uuid" and self.uuid:
+        if display_format == self.DISPLAY_ANON and self.uuid:
             return self.uuid[:6].upper()
-        elif display_format == "urns" and self.urns:
+        elif display_format == self.DISPLAY_URNS and self.urns:
             _scheme, path = URN.to_parts(self.urns[0])
             return path
-        elif display_format == "name" and self.name:
+        elif display_format == self.DISPLAY_NAME and self.name:
             return self.name
 
         return "---"
