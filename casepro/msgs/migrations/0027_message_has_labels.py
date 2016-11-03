@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 
 from django.db import migrations, models
 
@@ -8,10 +8,10 @@ def populate_has_labels(apps, schema_editor):
     Org = apps.get_model('orgs', 'Org')
 
     for org in Org.objects.order_by('pk'):
-        print "Updating labels for org #%d..." % org.pk
+        print("Updating labels for org #%d..." % org.pk)
 
         for label in org.labels.all():
-            print " > Updating messages for label %s..." % label.name
+            print(" > Updating messages for label %s..." % label.name)
             label.messages.update(has_labels=True)
 
 

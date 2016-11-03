@@ -1,13 +1,12 @@
 from __future__ import unicode_literals
 
 # import our default settings
-from settings_common import *  # noqa
+from casepro.settings_common import *  # noqa
 
 # INSTALLED_APPS = INSTALLED_APPS + ('debug_toolbar.apps.DebugToolbarConfig',)
 # MIDDLEWARE_CLASSES += ('debug_toolbar.middleware.DebugToolbarMiddleware',)
 
 DEBUG = True
-TEMPLATE_DEBUG = DEBUG
 
 HOSTNAME = 'localhost:8000'
 

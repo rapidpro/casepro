@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 
 import json
 
@@ -29,7 +29,7 @@ def create_suspend_groups(apps, schema_editor):
                 num_created += 1
 
     if num_created or num_updated:
-        print "Migrated org suspend groups (%d created, %d updated)" % (num_created, num_updated)
+        print("Migrated org suspend groups (%d created, %d updated)" % (num_created, num_updated))
 
 
 class Migration(migrations.Migration):

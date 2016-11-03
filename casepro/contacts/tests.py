@@ -8,8 +8,61 @@ from mock import patch
 
 from casepro.test import BaseCasesTest
 
-from .models import Contact, Group, Field
+from .models import Contact, Group, Field, URN, InvalidURN
 from .tasks import pull_contacts
+
+
+class URNTest(BaseCasesTest):
+    def test_from_parts(self):
+        self.assertEqual(URN.from_parts("tel", "12345"), "tel:12345")
+        self.assertEqual(URN.from_parts("tel", "+12345"), "tel:+12345")
+        self.assertEqual(URN.from_parts("tel", "(917) 992-5253"), "tel:(917) 992-5253")
+        self.assertEqual(URN.from_parts("mailto", "a_b+c@d.com"), "mailto:a_b+c@d.com")
+
+        self.assertRaises(ValueError, URN.from_parts, "", "12345")
+        self.assertRaises(ValueError, URN.from_parts, "tel", "")
+        self.assertRaises(ValueError, URN.from_parts, "xxx", "12345")
+
+    def test_to_parts(self):
+        self.assertEqual(URN.to_parts("tel:12345"), ("tel", "12345"))
+        self.assertEqual(URN.to_parts("tel:+12345"), ("tel", "+12345"))
+        self.assertEqual(URN.to_parts("twitter:abc_123"), ("twitter", "abc_123"))
+        self.assertEqual(URN.to_parts("mailto:a_b+c@d.com"), ("mailto", "a_b+c@d.com"))
+
+        self.assertRaises(ValueError, URN.to_parts, "tel")
+        self.assertRaises(ValueError, URN.to_parts, "tel:")  # missing scheme
+        self.assertRaises(ValueError, URN.to_parts, ":12345")  # missing path
+        self.assertRaises(ValueError, URN.to_parts, "x_y:123")  # invalid scheme
+        self.assertRaises(ValueError, URN.to_parts, "xyz:{abc}")  # invalid path
+
+    def test_normalize(self):
+        # valid tel numbers
+        self.assertEqual(URN.normalize("tel: +250788383383 "), "tel:+250788383383")
+        self.assertEqual(URN.normalize("tel:+1(917)992-5253"), "tel:+19179925253")
+        self.assertEqual(URN.normalize("tel:250788383383"), "tel:+250788383383")
+
+        # un-normalizable tel numbers
+        self.assertEqual(URN.normalize("tel:12345"), "tel:12345")
+        self.assertEqual(URN.normalize("tel:0788383383"), "tel:0788383383")
+        self.assertEqual(URN.normalize("tel:MTN"), "tel:mtn")
+
+        # twitter handles remove @
+        self.assertEqual(URN.normalize("twitter: @jimmyJO"), "twitter:jimmyjo")
+
+        # email addresses
+        self.assertEqual(URN.normalize("mailto: nAme@domAIN.cOm "), "mailto:name@domain.com")
+
+    def test_validate(self):
+        self.assertTrue(URN.validate('tel:+27825552233'))
+        self.assertRaises(InvalidURN, URN.validate, 'tel:0825550011')
+        self.assertTrue(URN.validate('unknown_scheme:address_for_unknown_scheme'))
+
+    def test_validate_phone(self):
+        self.assertRaises(InvalidURN, URN.validate_phone, '0825550011')  # lacks country code
+        self.assertRaises(InvalidURN, URN.validate_phone, '(+27)825550011')  # incorrect format (E.123)
+        self.assertRaises(InvalidURN, URN.validate_phone, '+278255500abc')  # incorrect format
+        self.assertRaises(InvalidURN, URN.validate_phone, '+278255500115555555')  # too long
+        self.assertTrue(URN.validate_phone('+27825552233'))
 
 
 class ContactTest(BaseCasesTest):
@@ -32,13 +85,15 @@ class ContactTest(BaseCasesTest):
             language="eng",
             is_stub=False,
             fields={'age': "34"},
-            __data__groups=[("G-001", "Customers")]
+            __data__groups=[("G-001", "Customers")],
+            urns=["tel:0821234567"],
         )
 
         self.assertEqual(contact.uuid, "C-001")
         self.assertEqual(contact.name, "Bob McFlow")
         self.assertEqual(contact.language, "eng")
         self.assertEqual(contact.get_fields(), {"age": "34"})
+        self.assertEqual(contact.urns, ["tel:0821234567"])
 
         customers = Group.objects.get(org=self.unicef, uuid="G-001", name="Customers")
 
@@ -63,16 +118,21 @@ class ContactTest(BaseCasesTest):
 
         self.assertEqual(set(contact.groups.all()), {spammers, boffins})
 
-    def test_get_display_name(self):
-        self.assertEqual(self.ann.get_display_name(), "Ann")
+    def test_get_display(self):
+        # if the site uses 'uuid' for the display
+        with override_settings(SITE_CONTACT_DISPLAY="uuid"):
+            self.assertEqual(self.ann.get_display(), "7B7DD8")
 
-        # if site uses anon contacts then obscure this
-        with override_settings(SITE_ANON_CONTACTS=True):
-            self.assertEqual(self.ann.get_display_name(), "7B7DD8")
+        # if the site uses 'urns' for the display
+        self.ann.urns = ['tel:+2345']
+        with override_settings(SITE_CONTACT_DISPLAY="urns"):
+            self.assertEqual(self.ann.get_display(), "+2345")
+        self.ann.refresh_from_db()
 
-        # likewise if name if empty
-        self.ann.name = ""
-        self.assertEqual(self.ann.get_display_name(), "7B7DD8")
+        # if the site uses 'name' or something unrecognised for the display
+        self.assertEqual(self.ann.get_display(), "Ann")
+        self.ann.name = None
+        self.assertEqual(self.ann.get_display(), "---")
 
     def test_get_fields(self):
         self.assertEqual(self.ann.get_fields(), {'age': "32", 'state': "WA"})  # what is stored on the contact
@@ -89,12 +149,14 @@ class ContactTest(BaseCasesTest):
         self.assertEqual(self.ann.incoming_messages.filter(is_active=False, is_handled=True).count(), 2)
 
     def test_as_json(self):
-        self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "Ann"})
+        self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'display': "Ann"})
 
         # full=True means include visible contact fields and laanguage etc
         self.assertEqual(self.ann.as_json(full=True), {
             'id': self.ann.pk,
+            'display': "Ann",
             'name': "Ann",
+            'urns': [],
             'language': {'code': 'eng', 'name': "English"},
             'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
             'fields': {'nickname': None, 'age': "32"},
@@ -103,11 +165,14 @@ class ContactTest(BaseCasesTest):
         })
 
         self.ann.language = None
+        self.ann.urns = ["tel:+2345678", "mailto:ann@test.com"]
         self.ann.save()
 
         self.assertEqual(self.ann.as_json(full=True), {
             'id': self.ann.pk,
+            'display': "Ann",
             'name': "Ann",
+            'urns': ["tel:+2345678", "mailto:ann@test.com"],
             'language': None,
             'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
             'fields': {'nickname': None, 'age': "32"},
@@ -115,9 +180,55 @@ class ContactTest(BaseCasesTest):
             'stopped': False
         })
 
-        # if site uses anon contacts then name is obscured
-        with override_settings(SITE_ANON_CONTACTS=True):
-            self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "7B7DD8"})
+        # If the urns and name fields are hidden they should not be returned
+        # SITE_CONTACT_DISPLAY overrules this for the 'display' attr
+        with override_settings(SITE_HIDE_CONTACT_FIELDS=["urns", "name"], SITE_CONTACT_DISPLAY="uuid"):
+            self.assertEqual(self.ann.as_json(full=True), {
+                'id': self.ann.pk,
+                'display': "7B7DD8",
+                'urns': [],
+                'name': None,
+                'language': None,
+                'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
+                'fields': {'nickname': None, 'age': "32"},
+                'blocked': False,
+                'stopped': False
+            })
+
+    @patch('casepro.test.TestBackend.push_contact')
+    def test_get_or_create_from_urn(self, mock_push_contact):
+        """
+        If no contact with a matching urn exists a new one should be created
+        """
+        Contact.objects.all().delete()
+
+        # try with a URN that doesn't match an existing contact
+        contact1 = Contact.get_or_create_from_urn(self.unicef, "tel:+27827654321")
+
+        self.assertEqual(contact1.urns, ["tel:+27827654321"])
+        self.assertIsNone(contact1.name)
+        self.assertIsNone(contact1.uuid)
+
+        # check that the backend was updated
+        self.assertTrue(mock_push_contact.called)
+        mock_push_contact.reset_mock()
+
+        # try with a URN that does match an existing contact
+        contact2 = Contact.get_or_create_from_urn(self.unicef, "tel:+27827654321")
+        self.assertEqual(contact2, contact1)
+
+        # we shouldn't update the backend because a contact wasn't created
+        self.assertFalse(mock_push_contact.called)
+
+        # URN will be normalized
+        contact3 = Contact.get_or_create_from_urn(self.unicef, "tel:+(278)-2765-4321")
+        self.assertEqual(contact3, contact1)
+
+        # we shouldn't update the backend because a contact wasn't created
+        self.assertFalse(mock_push_contact.called)
+
+        # we get an exception if URN isn't valid (e.g. local number)
+        self.assertRaises(InvalidURN, Contact.get_or_create_from_urn, self.unicef, "tel:0827654321")
 
 
 class ContactCRUDLTest(BaseCasesTest):
@@ -170,7 +281,9 @@ class ContactCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json, {
             'id': self.ann.pk,
+            'display': "Ann",
             'name': "Ann",
+            'urns': [],
             'language': {'code': 'eng', 'name': "English"},
             'fields': {'age': '32', 'nickname': None},
             'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],

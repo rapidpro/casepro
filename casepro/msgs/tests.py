@@ -1105,7 +1105,7 @@ class MessageTest(BaseCasesTest):
 
         self.assertEqual(msg.as_json(), {
             'id': msg.backend_id,
-            'contact': {'id': self.ann.pk, 'name': "Ann"},
+            'contact': {'id': self.ann.pk, 'display': "Ann"},
             'text': "Hello",
             'time': msg.created_on,
             'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
@@ -1140,7 +1140,7 @@ class MessageCRUDLTest(BaseCasesTest):
         # labelled and cased/archived
         self.create_message(self.unicef, 104, self.bob, "raids", [self.aids], is_handled=True, is_archived=True)
         msg5 = self.create_message(self.unicef, 105, cat, "AIDS??", [self.aids], is_handled=True, is_archived=True)
-        case = self.create_case(self.unicef, cat, self.moh, msg5)
+        case = self.create_case(self.unicef, cat, self.moh, msg5, user_assignee=self.user1)
 
         # unlabelled
         self.create_message(self.unicef, 106, don, "RapidCon 2016", is_handled=True)
@@ -1164,7 +1164,7 @@ class MessageCRUDLTest(BaseCasesTest):
         self.assertEqual(len(response.json['results']), 3)
         self.assertEqual(response.json['results'][0]['id'], 103)
         self.assertEqual(response.json['results'][1]['id'], 102)
-        self.assertEqual(response.json['results'][1]['contact'], {'id': self.bob.pk, 'name': "Bob"})
+        self.assertEqual(response.json['results'][1]['contact'], {'id': self.bob.pk, 'display': "Bob"})
         self.assertEqual(response.json['results'][1]['text'], "I ♡ RapidPro")
         self.assertEqual(response.json['results'][1]['labels'], [{'id': self.pregnancy.pk, 'name': "Pregnancy"}])
         self.assertEqual(response.json['results'][2]['id'], 101)
@@ -1177,11 +1177,12 @@ class MessageCRUDLTest(BaseCasesTest):
 
         self.assertEqual(len(response.json['results']), 2)
         self.assertEqual(response.json['results'][0]['id'], 105)
-        self.assertEqual(response.json['results'][0]['contact'], {'id': cat.pk, 'name': "Cat"})
+        self.assertEqual(response.json['results'][0]['contact'], {'id': cat.pk, 'display': "Cat"})
         self.assertEqual(response.json['results'][0]['text'], "AIDS??")
         self.assertEqual(response.json['results'][0]['labels'], [{'id': self.aids.pk, 'name': "AIDS"}])
-        self.assertEqual(response.json['results'][0]['case'], {'id': case.pk,
-                                                               'assignee': {'id': self.moh.pk, 'name': "MOH"}})
+        self.assertEqual(response.json['results'][0]['case'], {
+            'id': case.pk, 'assignee': {'id': self.moh.pk, 'name': "MOH"},
+            'user_assignee': {'id': self.user1.pk, 'name': "Evan"}})
         self.assertEqual(response.json['results'][1]['id'], 104)
 
     @patch('casepro.test.TestBackend.flag_messages')
@@ -1531,7 +1532,7 @@ class OutgoingTest(BaseCasesTest):
 
         self.assertEqual(outgoing.as_json(), {
             'id': outgoing.pk,
-            'contact': {'id': self.ann.pk, 'name': "Ann"},
+            'contact': {'id': self.ann.pk, 'display': "Ann"},
             'urn': None,
             'text': "That's great",
             'time': outgoing.created_on,
@@ -1566,7 +1567,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'], [
             {
                 'id': out2.pk,
-                'contact': {'id': self.ann.pk, 'name': "Ann"},
+                'contact': {'id': self.ann.pk, 'display': "Ann"},
                 'urn': None,
                 'text': "Hello 2",
                 'case': None,
@@ -1575,7 +1576,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
             },
             {
                 'id': out1.pk,
-                'contact': {'id': self.ann.pk, 'name': "Ann"},
+                'contact': {'id': self.ann.pk, 'display': "Ann"},
                 'urn': None,
                 'text': "Hello 1",
                 'case': None,
@@ -1591,7 +1592,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'], [
             {
                 'id': out2.pk,
-                'contact': {'id': self.ann.pk, 'name': "Ann"},
+                'contact': {'id': self.ann.pk, 'display': "Ann"},
                 'urn': None,
                 'text': "Hello 2",
                 'case': None,
@@ -1626,7 +1627,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['results'], [
             {
                 'id': out2.pk,
-                'contact': {'id': self.bob.pk, 'name': "Bob"},
+                'contact': {'id': self.bob.pk, 'display': "Bob"},
                 'urn': None,
                 'text': "Hello 2",
                 'case': None,
@@ -1641,10 +1642,10 @@ class OutgoingCRUDLTest(BaseCasesTest):
             },
             {
                 'id': out1.pk,
-                'contact': {'id': self.ann.pk, 'name': "Ann"},
+                'contact': {'id': self.ann.pk, 'display': "Ann"},
                 'urn': None,
                 'text': "Hello 1",
-                'case': {'id': case.pk, 'assignee': {'id': self.moh.pk, 'name': "MOH"}},
+                'case': {'id': case.pk, 'assignee': {'id': self.moh.pk, 'name': "MOH"}, 'user_assignee': None},
                 'sender': {'id': self.user1.pk, 'name': "Evan"},
                 'time': format_iso8601(out1.created_on),
                 'reply_to': {

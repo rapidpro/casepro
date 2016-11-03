@@ -7,6 +7,7 @@ describe('modals:', () ->
   FaqService = null
   LabelService = null
   MessageService = null
+  UserService = null
 
   $scope = null
   modalInstance = null
@@ -15,13 +16,14 @@ describe('modals:', () ->
   beforeEach(() ->
     module('cases')
 
-    inject((_$controller_, _$rootScope_, _$q_, _MessageService_, _FaqService_, _LabelService_) ->
+    inject((_$controller_, _$rootScope_, _$q_, _MessageService_, _FaqService_, _LabelService_, _UserService_) ->
       $controller = _$controller_
       $rootScope = _$rootScope_
       $q = _$q_
       FaqService = _FaqService_
       LabelService = _LabelService_
       MessageService = _MessageService_
+      UserService = _UserService_
     )
 
     $scope = $rootScope.$new()
@@ -61,16 +63,33 @@ describe('modals:', () ->
     $controller('AssignModalController', {$scope: $scope, $uibModalInstance: modalInstance, title: "Title", prompt: "OK?", partners: [test.moh, test.who]})
 
     expect($scope.fields.assignee).toEqual(test.moh)
+    expect($scope.fields.user).toEqual({id: null, name: "-- Anyone --"})
+    expect($scope.users).toEqual([{id: null, name: "-- Anyone --"}])
 
     $scope.fields.assignee = test.who
+    $scope.fields.user = test.user1
     $scope.form = {$valid: true}
     $scope.ok()
 
-    expect(modalInstance.close).toHaveBeenCalledWith(test.who)
+    expect(modalInstance.close).toHaveBeenCalledWith({assignee: test.who, user: test.user1})
 
     $scope.cancel()
 
     expect(modalInstance.dismiss).toHaveBeenCalledWith(false)
+  )
+
+  it('AssignModalController.refreshUserList', () ->
+    usersForPartner = spyOnPromise($q, $scope, UserService, 'fetchInPartner')
+
+    $controller('AssignModalController', {$scope: $scope, $uibModalInstance: modalInstance, title: "Title", prompt: "OK?", partners: [test.moh, test.who]})
+
+    expect($scope.users).toEqual([{id: null, name: "-- Anyone --"}])
+
+    $scope.refreshUserList()
+    usersForPartner.resolve([test.user1])
+
+    expect($scope.users).toEqual([{id: null, name: "-- Anyone --"}, test.user1])
+    expect(UserService.fetchInPartner).toHaveBeenCalledWith(test.moh, false)
   )
 
   it('ComposeModalController', () ->
@@ -189,17 +208,35 @@ describe('modals:', () ->
 
     expect($scope.fields.summary).toEqual({val: "Hello", maxLength: 10})
     expect($scope.fields.assignee).toEqual({val: test.moh})
+    expect($scope.fields.user).toEqual({val: {id: null, name: "-- Anyone --"}})
+    expect($scope.partners).toEqual([test.moh, test.who])
+    expect($scope.users).toEqual([{id: null, name: "-- Anyone --"}])
 
     $scope.fields.summary.val = "Interesting"
     $scope.fields.assignee.val = test.who
+    $scope.fields.user.val = test.user1
     $scope.form = {$valid: true}
     $scope.ok()
 
-    expect(modalInstance.close).toHaveBeenCalledWith({summary: "Interesting", assignee: test.who})
+    expect(modalInstance.close).toHaveBeenCalledWith({summary: "Interesting", assignee: test.who, user: test.user1})
 
     $scope.cancel()
 
     expect(modalInstance.dismiss).toHaveBeenCalledWith(false)
+  )
+
+  it('NewCaseModalController.refreshUserList', () ->
+    usersForPartner = spyOnPromise($q, $scope, UserService, 'fetchInPartner')
+
+    $controller('NewCaseModalController', {$scope: $scope, $uibModalInstance: modalInstance, summaryInitial: "Hello", summaryMaxLength: 10, partners: [test.moh, test.who]})
+
+    expect($scope.users).toEqual([{id: null, name: "-- Anyone --"}])
+
+    $scope.refreshUserList()
+    usersForPartner.resolve([test.user1])
+
+    expect($scope.users).toEqual([{id: null, name: "-- Anyone --"}, test.user1])
+    expect(UserService.fetchInPartner).toHaveBeenCalledWith(test.moh, false)
   )
 
   it('NoteModalController', () ->

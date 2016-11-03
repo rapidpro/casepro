@@ -4,6 +4,7 @@ from dash.orgs.models import Org
 from dateutil.relativedelta import relativedelta
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
+from six.moves import input
 
 from casepro.backend import get_backend
 
@@ -41,7 +42,7 @@ DO NOT RUN THIS COMMAND WHILST BACKGROUND SYNCING IS RUNNING
 
 Type 'yes' to continue, or 'no' to cancel: """ % (org.name, org.pk, since.strftime('%b %d, %Y %H:%M'))
 
-        if raw_input(prompt).lower() != 'yes':
+        if input(prompt).lower() != 'yes':
             self.stdout.write("Operation cancelled")
             return
 

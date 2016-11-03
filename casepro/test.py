@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import json
+import pytz
 
 from dash.test import DashTest
 from datetime import datetime, date, time
@@ -37,8 +38,8 @@ class BaseCasesTest(DashTest):
         settings.SITE_ORGS_STORAGE_ROOT = 'test_orgs'
 
         # some orgs
-        self.unicef = self.create_org("UNICEF", timezone="Africa/Kampala", subdomain="unicef")
-        self.nyaruka = self.create_org("Nyaruka", timezone="Africa/Kigali", subdomain="nyaruka")
+        self.unicef = self.create_org("UNICEF", timezone=pytz.timezone("Africa/Kampala"), subdomain="unicef")
+        self.nyaruka = self.create_org("Nyaruka", timezone=pytz.timezone("Africa/Kigali"), subdomain="nyaruka")
 
         # some admins for those orgs
         self.admin = self.create_admin(self.unicef, "Kidus", "kidus@unicef.org")
@@ -155,8 +156,9 @@ class BaseCasesTest(DashTest):
             case.opened_on = kwargs['opened_on']
             case.save(update_fields=('opened_on',))
 
-        message.case = case
-        message.save(update_fields=('case',))
+        if message:
+            message.case = case
+            message.save(update_fields=('case',))
 
         return case
 

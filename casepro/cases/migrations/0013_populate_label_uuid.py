@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 
 from django.db import migrations
 
@@ -25,7 +25,7 @@ def fetch_label_uuids(apps, schema_editor):
         label.save(update_fields=('uuid',))
 
     if labels:
-        print "Fetched missing UUIDs for %d labels" % len(labels)
+        print("Fetched missing UUIDs for %d labels" % len(labels))
 
 
 class Migration(migrations.Migration):

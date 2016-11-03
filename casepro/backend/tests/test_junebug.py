@@ -1,11 +1,16 @@
-from casepro.contacts.models import Contact, Field, Group
-from casepro.msgs.models import Label, Message
-from casepro.test import BaseCasesTest
+from __future__ import unicode_literals
+
+import json
+import responses
+
 from django.conf import settings
 from django.http import HttpResponse
 from django.test import override_settings, RequestFactory
-import json
-import responses
+
+from casepro.contacts.models import Contact, Field, Group
+from casepro.msgs.models import Label, Message
+from casepro.test import BaseCasesTest
+from casepro.utils import json_decode
 
 from ..junebug import (
     IdentityStore, JunebugBackend, JunebugMessageSendingError, IdentityStoreContactSyncer, IdentityStoreContact,
@@ -21,6 +26,16 @@ class JunebugBackendTest(BaseCasesTest):
         url = 'http://localhost:8081/api/v1/identities/?' + query
         responses.add_callback(
             responses.GET, url, callback=callback, match_querystring=True, content_type="application/json")
+
+    def add_identity_store_search_callback(self, query, callback):
+        url = 'http://localhost:8081/api/v1/identities/search/?' + query
+        responses.add_callback(
+            responses.GET, url, callback=callback, match_querystring=True, content_type="application/json")
+
+    def add_identity_store_create_callback(self, callback):
+        responses.add_callback(
+            responses.POST, 'http://localhost:8081/api/v1/identities/', callback=callback,
+            content_type="application/json")
 
     def identity_store_no_matches_callback(self, request):
         headers = {'Content-Type': "application/json"}
@@ -46,10 +61,15 @@ class JunebugBackendTest(BaseCasesTest):
                         'name': "test",
                         'addresses': {
                             'msisdn': {
-                                '+1234': {}
+                                '+5678': {},
+                                '+1234': {'default': True}
                             },
+                            'email': {
+                                'test1@example.com': {},
+                                'test2@example.com': {}
+                            }
                         },
-                        'preferred_language': "eng_NG",
+                        'language': "eng_NG",
                     },
                     'communicate_through': None,
                     'operator': None,
@@ -59,6 +79,28 @@ class JunebugBackendTest(BaseCasesTest):
                     'updated_by': None
                 }
             ]
+        }
+        return (201, headers, json.dumps(resp))
+
+    def identity_store_created_new_identity_callback(self, request):
+        headers = {'Content-Type': "application/json"}
+        resp = {
+            'id': "test-uuid",
+            'version': 1,
+            'details': {
+                'name': "test",
+                'addresses': {
+                    'msisdn': {
+                        '+1234': {}
+                    },
+                },
+            },
+            'communicate_through': None,
+            'operator': None,
+            'created_at': "2016-03-14T10:21:00.258406Z",
+            'created_by': 1,
+            'updated_at': None,
+            'updated_by': None
         }
         return (201, headers, json.dumps(resp))
 
@@ -76,10 +118,11 @@ class JunebugBackendTest(BaseCasesTest):
                         'name': "test",
                         'addresses': {
                             'msisdn': {
-                                '+1234': {}
+                                '+1234': {},
+                                '+5678': {'optedout': True}
                             },
                         },
-                        'preferred_language': "eng_NG",
+                        'language': "eng_NG",
                     },
                     'communicate_through': None,
                     'operator': None,
@@ -105,7 +148,7 @@ class JunebugBackendTest(BaseCasesTest):
                     'details': {
                         'name': "redacted",
                         'addresses': {},
-                        'preferred_language': "redacted",
+                        'language': "redacted",
                     },
                     'communicate_through': None,
                     'operator': None,
@@ -140,10 +183,13 @@ class JunebugBackendTest(BaseCasesTest):
         [contact] = Contact.objects.all()
         self.assertEqual(contact.uuid, "test_id")
         self.assertEqual(contact.name, "test")
+        self.assertSetEqual(set(contact.urns), set(["tel:+1234", "email:test1@example.com", "email:test2@example.com"]))
 
     @responses.activate
     def test_pull_contacts_recently_updated(self):
-        Contact.get_or_create(self.unicef, "test_id", "testing")
+        contact = Contact.get_or_create(self.unicef, "test_id", "testing")
+        contact.urns = ["tel:+5678"]
+        contact.save()
 
         self.add_identity_store_callback(
             "created_to=2016-03-14T10%3A21%3A00&created_from=2016-03-14T10%3A25%3A00",
@@ -165,6 +211,7 @@ class JunebugBackendTest(BaseCasesTest):
         [contact] = Contact.objects.all()
         self.assertEqual(contact.uuid, "test_id")
         self.assertEqual(contact.name, "test")
+        self.assertSetEqual(set(contact.urns), set(["tel:+1234"]))
 
     @responses.activate
     def test_pull_contacts_forgotten(self):
@@ -188,7 +235,7 @@ class JunebugBackendTest(BaseCasesTest):
 
     @responses.activate
     def test_pull_contacts_no_changes(self):
-        Contact.objects.create(org=self.unicef, uuid="test_id", name="test", language="eng")
+        Contact.objects.create(org=self.unicef, uuid="test_id", name="test", language="eng", urns=["tel:+1234"])
 
         self.add_identity_store_callback(
             "created_to=2016-03-14T10%3A21%3A00&created_from=2016-03-14T10%3A25%3A00",
@@ -277,6 +324,87 @@ class JunebugBackendTest(BaseCasesTest):
         self.assertEqual(self.tea.__dict__, old_tea)
 
     @responses.activate
+    def test_push_contact_new_contact(self):
+        """
+        Pushing a new contact should create the contact on the Identity Store and update the UUID on the contact.
+        """
+        contact = Contact.objects.create(org=self.unicef, uuid=None, is_stub=True, urns=["tel:+1234"])
+
+        self.add_identity_store_search_callback(
+            "details__addresses__msisdn=%2B1234",
+            self.identity_store_no_matches_callback
+        )
+        self.add_identity_store_create_callback(self.identity_store_created_new_identity_callback)
+
+        self.assertEqual(contact.uuid, None)
+        self.backend.push_contact(self.unicef, contact)
+        contact.refresh_from_db()
+        self.assertEqual(contact.uuid, 'test-uuid')
+
+    @responses.activate
+    def test_push_contact_existing_contact(self):
+        """
+        If we push a contact, and an existing contact on the Identity Store has the same details, we should set the
+        UUID on the contact to be the same as the matching identity.
+        """
+        contact = Contact.objects.create(org=self.unicef, uuid=None, is_stub=True, name="test", urns=["tel:+1234"])
+
+        self.add_identity_store_search_callback(
+            "details__addresses__msisdn=%2B1234",
+            self.identity_store_created_identity_callback
+        )
+
+        self.assertEqual(contact.uuid, None)
+        self.backend.push_contact(self.unicef, contact)
+        contact.refresh_from_db()
+        self.assertEqual(contact.uuid, "test_id")
+
+    def test_push_contact_with_existing_uuid(self):
+        contact = Contact.objects.create(org=self.unicef, uuid="test_id", is_stub=True, name="test", urns=["tel:+1234"])
+        old_contact = contact.__dict__.copy()
+        self.backend.push_contact(self.unicef, contact)
+        contact.refresh_from_db
+        self.assertEqual(contact.__dict__, old_contact)
+
+    def test_identity_equal_matching_contact(self):
+        contact = Contact.objects.create(org=self.unicef, uuid=None, is_stub=True, name="test", urns=["tel:+1234"])
+        identity = {
+            'details': {
+                'addresses': {'msisdn': {'+1234': {}}},
+                'name': 'test'
+            }}
+        self.assertTrue(self.backend._identity_equal(identity, contact))
+
+    def test_identity_equal_urns_diff(self):
+        contact = Contact.objects.create(org=self.unicef, uuid=None, is_stub=True, name="test", urns=["tel:+1234"])
+        identity = {
+            'details': {
+                'addresses': {'msisdn': {'+5678': {}}},
+                'name': 'test'
+            }}
+        self.assertFalse(self.backend._identity_equal(identity, contact))
+
+    def test_identity_equal_name_diff(self):
+        contact = Contact.objects.create(org=self.unicef, uuid=None, is_stub=True, name='test', urns=["tel:+1234"])
+        identity = {
+            'details': {
+                'addresses': {'msisdn': {'+1234': {}}},
+                'name': 'exam'
+            }}
+        self.assertFalse(self.backend._identity_equal(identity, contact))
+
+    def test_identity_equal_lang_diff(self):
+        contact = Contact.objects.create(org=self.unicef, uuid=None, is_stub=True, name='test', language='eng',
+                                         urns=["tel:+1234"])
+        identity = {
+            'details': {
+                'addresses': {'msisdn': {'+1234': {}}},
+                'name': 'test',
+                'language': 'ibo_NG'
+            }}
+        self.assertFalse(self.backend._identity_equal(identity, contact))
+
+    @responses.activate
     def test_outgoing_urn(self):
         """
         Sending outgoing messages with a specified urn should send via Junebug with that URN.
@@ -285,7 +413,7 @@ class JunebugBackendTest(BaseCasesTest):
         msg = self.create_outgoing(self.unicef, self.user1, None, "B", "That's great", bob, urn="tel:+1234")
 
         def request_callback(request):
-            data = json.loads(request.body)
+            data = json_decode(request.body)
             self.assertEqual(data, {'to': "+1234", 'from': None, 'content': "That's great"})
             headers = {'Content-Type': "application/json"}
             resp = {
@@ -314,7 +442,7 @@ class JunebugBackendTest(BaseCasesTest):
         msg = self.create_outgoing(self.unicef, self.user1, None, "B", "That's great", bob)
 
         def junebug_callback(request):
-            data = json.loads(request.body)
+            data = json_decode(request.body)
             self.assertEqual(data, {'to': "+1234", 'from': None, 'content': "That's great"})
             headers = {'Content-Type': "application/json"}
             resp = {
@@ -379,7 +507,7 @@ class JunebugBackendTest(BaseCasesTest):
         msg = self.create_outgoing(self.unicef, self.user1, None, "B", "That's great", None, urn="tel:+1234")
 
         def request_callback(request):
-            data = json.loads(request.body)
+            data = json_decode(request.body)
             self.assertEqual(data, {'to': "+1234", 'from': "+4321", 'content': "That's great"})
             headers = {'Content-Type': "application/json"}
             resp = {
@@ -571,7 +699,7 @@ class JunebugInboundViewTest(BaseCasesTest):
         """
         request = self.factory.get(self.url)
         response = received_junebug_message(request)
-        self.assertEqual(json.loads(response.content), {'reason': "Method not allowed."})
+        self.assertEqual(json_decode(response.content), {'reason': "Method not allowed."})
         self.assertEqual(response.status_code, 405)
 
     def test_invalid_json_body(self):
@@ -580,13 +708,11 @@ class JunebugInboundViewTest(BaseCasesTest):
         """
         request = self.factory.post(self.url, content_type='application/json', data="{")
         response = received_junebug_message(request)
-        self.assertEqual(
-            json.loads(response.content), {
-                'reason': "JSON decode error",
-                'details': "Expecting object: line 1 column 1 (char 0)"
-            }
-        )
         self.assertEqual(response.status_code, 400)
+
+        content = json_decode(response.content)
+        self.assertEqual(content['reason'], "JSON decode error")
+        self.assertTrue(content['details'])
 
     def create_identity_obj(self, **kwargs):
         defaults = {
@@ -641,14 +767,14 @@ class JunebugInboundViewTest(BaseCasesTest):
         )
         request.org = self.unicef
         response = received_junebug_message(request)
-        resp_data = json.loads(response.content)
+        resp_data = json_decode(response.content)
 
         message = Message.objects.get(backend_id=resp_data['id'])
         self.assertEqual(message.text, "test message")
         self.assertEqual(message.contact.uuid, "50d62fcf-856a-489c-914a-56f6e9506ee3")
 
     def create_identity_callback(self, request):
-        data = json.loads(request.body)
+        data = json_decode(request.body)
         self.assertEqual(data.get('details'), {
             'addresses': {
                 'msisdn': {
@@ -656,6 +782,8 @@ class JunebugInboundViewTest(BaseCasesTest):
                 },
             },
             'default_addr_type': "msisdn",
+            'name': None,
+            'language': None,
         })
         headers = {'Content-Type': "application/json"}
         return (201, headers, json.dumps(self.create_identity_obj()))
@@ -718,7 +846,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
             request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
             response = receive_identity_store_optout(request)
-        self.assertEqual(json.loads(response.content), {'reason': "Method not allowed."})
+        self.assertEqual(json_decode(response.content), {'reason': "Method not allowed."})
         self.assertEqual(response.status_code, 405)
 
     def test_invalid_json_body(self):
@@ -729,13 +857,12 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
             request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
             response = receive_identity_store_optout(request)
-        self.assertEqual(
-            json.loads(response.content), {
-                'reason': "JSON decode error",
-                'details': "Expecting object: line 1 column 1 (char 0)"
-            }
-        )
+
         self.assertEqual(response.status_code, 400)
+
+        content = json_decode(response.content)
+        self.assertEqual(content['reason'], "JSON decode error")
+        self.assertTrue(content['details'])
 
     def get_optout_request(self, identity, optout_type):
         request = self.factory.post(
@@ -748,7 +875,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
                             '+1234': {}
                         },
                     },
-                    'preferred_language': "eng_NG",
+                    'language': "eng_NG",
                 },
                 'optout_type': optout_type,
             })
@@ -768,7 +895,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
             request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
             response = receive_identity_store_optout(request)
-        self.assertEqual(response.content, '{"success": true}')
+        self.assertEqual(json_decode(response.content), {"success": True})
 
         # refresh contact from db
         contact = Contact.get_or_create(self.unicef, "test_id", "testing")
@@ -786,7 +913,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
             request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
             response = receive_identity_store_optout(request)
-        self.assertEqual(response.content, '{"success": true}')
+        self.assertEqual(json_decode(response.content), {"success": True})
 
         # refresh contact from db
         contact = Contact.get_or_create(self.unicef, "test_id", "testing")
@@ -803,7 +930,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
             request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
             response = receive_identity_store_optout(request)
-        self.assertEqual(response.content, '{"success": true}')
+        self.assertEqual(json_decode(response.content), {"success": True})
 
         # refresh contact from db
         new_contact = Contact.get_or_create(self.unicef, "test_id", "testing")
@@ -822,7 +949,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
             request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
             response = receive_identity_store_optout(request)
         self.assertEqual(
-            json.loads(response.content),
+            json_decode(response.content),
             {'reason': 'Unrecognised value for "optout_type": unrecognised'})
         self.assertEqual(response.status_code, 400)
 
@@ -837,7 +964,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         with self.settings(IDENTITY_AUTH_TOKEN="test_token"):
             request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
             response = receive_identity_store_optout(request)
-        self.assertEqual(json.loads(response.content), {'reason': "No Contact for id: tester"})
+        self.assertEqual(json_decode(response.content), {'reason': "No Contact for id: tester"})
         self.assertEqual(response.status_code, 400)
 
     @responses.activate
@@ -854,7 +981,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
                             '+1234': {}
                         },
                     },
-                    'preferred_language': "eng_NG",
+                    'language': "eng_NG",
                 },
             })
         )
@@ -862,7 +989,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
             request.META['HTTP_AUTHORIZATION'] = "Token " + settings.IDENTITY_AUTH_TOKEN
             response = receive_identity_store_optout(request)
         self.assertEqual(
-            json.loads(response.content),
+            json_decode(response.content),
             {'reason': 'Both "identity" and "optout_type" must be specified.'})
         self.assertEqual(response.status_code, 400)
 
@@ -886,7 +1013,7 @@ class TokenAuthRequiredTest(BaseCasesTest):
         func = token_auth_required(self.dummy_auth_token)(self.dummy_view)
         response = func(request)
         self.assertEqual(response.status_code, 401)
-        self.assertEqual(json.loads(response.content),
+        self.assertEqual(json_decode(response.content),
                          {"reason": "Authentication required"})
         self.assertEqual(response['WWW-Authenticate'], "Token")
 
@@ -897,7 +1024,7 @@ class TokenAuthRequiredTest(BaseCasesTest):
         func = token_auth_required(self.dummy_auth_token)(self.dummy_view)
         response = func(request)
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(json.loads(response.content), {"reason": "Forbidden"})
+        self.assertEqual(json_decode(response.content), {"reason": "Forbidden"})
 
     def test_correct_token(self):
         '''Tests that the decorator allows correct requests'''
@@ -906,7 +1033,7 @@ class TokenAuthRequiredTest(BaseCasesTest):
         func = token_auth_required(self.dummy_auth_token)(self.dummy_view)
         response = func(request)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content, "OK")
+        self.assertEqual(response.content, b"OK")
 
 
 class IdentityStoreTest(BaseCasesTest):
@@ -929,7 +1056,7 @@ class IdentityStoreTest(BaseCasesTest):
                                 '+1234': {}
                             },
                         },
-                        'preferred_language': "eng_NG",
+                        'language': "eng_NG",
                     },
                     'communicate_through': None,
                     'operator': None,
@@ -1127,11 +1254,11 @@ class IdentityStoreTest(BaseCasesTest):
 
         res = identity_store.get_paginated_response(
             ("http://identitystore.org/api/v1/identities/identity-uuid/" "addresses/msisdn"), params={'default': True})
-        self.assertEqual(sorted(res), sorted([
+        self.assertEqual(sorted(res, key=lambda x: x['address']), [
             {'address': "+1111"},
             {'address': "+2222"},
             {'address': "+3333"},
-        ]))
+        ])
 
     def create_identity_obj(self, **kwargs):
         defaults = {
@@ -1185,7 +1312,7 @@ class IdentityStoreTest(BaseCasesTest):
         self.assertEqual(identity['details']['addresses']['msisdn'], {'+1234': {}})
 
     def create_identity_callback(self, request):
-        data = json.loads(request.body)
+        data = json_decode(request.body)
         self.assertEqual(data.get('details'), {
             'addresses': {
                 'msisdn': {
@@ -1193,6 +1320,8 @@ class IdentityStoreTest(BaseCasesTest):
                 },
             },
             'default_addr_type': "msisdn",
+            'name': "Test identity",
+            'language': "eng",
         })
         headers = {'Content-Type': "application/json"}
         return (201, headers, json.dumps(self.create_identity_obj()))
@@ -1210,7 +1339,7 @@ class IdentityStoreTest(BaseCasesTest):
             responses.POST, url, callback=self.create_identity_callback, match_querystring=True,
             content_type="application/json")
 
-        identity = identity_store.create_identity("+1234")
+        identity = identity_store.create_identity(["tel:+1234"], name="Test identity", language="eng")
         self.assertEqual(identity['details'], {
             'addresses': {
                 'msisdn': {
@@ -1221,14 +1350,12 @@ class IdentityStoreTest(BaseCasesTest):
         })
 
     def identity_404_callback(self, request):
-        return (404, {'Content-Type': "application/json"}, {
-            'detail': "Not found."
-        })
+        return (404, {'Content-Type': "application/json"}, json.dumps({'detail': "Not found."}))
 
     @responses.activate
     def test_get_identity_404(self):
         """
-        If the Identity does not exist, causing the Identity Store to return a 404, the get_indentity function should
+        If the Identity does not exist, causing the Identity Store to return a 404, the get_identity function should
         return None.
         """
         identity_store = IdentityStore("http://identitystore.org/", "auth-token", "msisdn")
@@ -1274,7 +1401,7 @@ class IdentityStoreContactTest(BaseCasesTest):
                         '+1234': {}
                     },
                 },
-                'preferred_language': "eng_NG",
+                'language': "eng_NG",
             },
             'communicate_through': None,
             'operator': None,
@@ -1299,7 +1426,7 @@ class IdentityStoreContactSyncerTest(BaseCasesTest):
                 'id': "test_1",
                 'version': "1",
                 'details': {
-                    'preferred_language': "eng_NG",
+                    'language': "eng_NG",
                     'name': "test",
                     'addresses': {
                         'msisdn': {
@@ -1327,6 +1454,7 @@ class IdentityStoreContactSyncerTest(BaseCasesTest):
             'is_stub': False,
             'fields': {},
             '__data__groups': {},
+            'urns': ["tel:+1234"]
         })
 
     def test_update_required_on_stub(self):
@@ -1336,7 +1464,7 @@ class IdentityStoreContactSyncerTest(BaseCasesTest):
         self.assertTrue(self.syncer.update_required(local, self.mk_identity_store_contact(), {}))
 
     def test_no_update_required(self):
-        local = Contact.objects.create(org=self.unicef, uuid="test_id", name="test", language="eng")
+        local = Contact.objects.create(org=self.unicef, uuid="test_id", name="test", language="eng", urns=["tel:+1234"])
         self.assertFalse(self.syncer.update_required(local, self.mk_identity_store_contact(), {}))
 
     def test_update_required_name_different(self):
@@ -1345,6 +1473,10 @@ class IdentityStoreContactSyncerTest(BaseCasesTest):
 
     def test_update_required_language_different(self):
         local = Contact.objects.create(org=self.unicef, uuid="test_id", name="test", language="ita")
+        self.assertTrue(self.syncer.update_required(local, self.mk_identity_store_contact(), {}))
+
+    def test_update_required_urns_different(self):
+        local = Contact.objects.create(org=self.unicef, uuid="test_id", name="test", language="eng", urns=[])
         self.assertTrue(self.syncer.update_required(local, self.mk_identity_store_contact(), {}))
 
     def test_update_required_groups_different(self):

@@ -50,4 +50,12 @@ namespace('utils', (exports) ->
       acceptFn(v)
     else
       rejectFn(v)
+
+  exports.formatUrns = (urns) ->
+    scheme_names = {'tel': "Phone", 'mailto': "Email", 'twitter': "Twitter"}
+    formatted_urns = []
+    for urn in urns
+      urn_parts = urn.split(':')
+      formatted_urns.push({'scheme': scheme_names[urn_parts[0]], 'path': urn_parts[1]})
+    return formatted_urns
 )

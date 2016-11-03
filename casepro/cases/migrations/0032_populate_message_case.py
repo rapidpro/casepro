@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 
 from django.db import migrations
 
@@ -26,7 +26,7 @@ def populate_message_case(apps, schema_editor):
             num_updated += 1
 
     if cases:
-        print "Attached %d missing messages to %d cases" % (num_updated, len(cases))
+        print("Attached %d missing messages to %d cases" % (num_updated, len(cases)))
 
 
 class Migration(migrations.Migration):

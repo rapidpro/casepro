@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from django.apps import apps
 from django.test import TestCase, modify_settings
+from six.moves import reload_module
 
 from casepro.pods.registry import load_pod
 
@@ -61,7 +62,7 @@ class PodRegistryTests(TestCase):
                 {'label': 'base_pod'},
                 {'label': 'base_pod'}]):
             from casepro.pods import registry, Pod
-            reload(registry)
+            reload_module(registry)
 
         self.assertEqual(len(registry.pods), 2)
         for i in range(2):
@@ -76,6 +77,6 @@ class PodRegistryTests(TestCase):
         On import, the pod types specified in the settings file should be registered.
         """
         from casepro.pods import registry, PodPlugin
-        reload(registry)
+        reload_module(registry)
         [pod_type] = registry.pod_types
         self.assertTrue(isinstance(pod_type, PodPlugin))

@@ -115,6 +115,11 @@
                     %a{ href:"{% url 'cases.partner_list' %}" }
                       - trans "Partners"
 
+                - if perms.orgs.org_home or org_perms.orgs.org_home
+                  %li
+                    %a{ href:"{% url 'msg_board.comment_list' %}" }
+                      - trans "Message Board"
+
             %ul.nav.navbar-nav.navbar-right
               - block login
                 - if request.user and request.user.is_authenticated
@@ -170,6 +175,7 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/select.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/raven.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/highcharts.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/libphonenumber.min.js"></script>
 
     {% compress js %}
     %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/utils.coffee" }

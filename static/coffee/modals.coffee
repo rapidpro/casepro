@@ -4,7 +4,8 @@
 
 modals = angular.module('cases.modals', []);
 
-URN_SCHEMES = {tel: "Phone", twitter: "Twitter", email: "Email"}
+URN_SCHEMES = {tel: "Phone", twitter: "Twitter", mailto: "Email"}
+ANYONE = {id: null, name: "-- Anyone --"}
 
 
 #=====================================================================
@@ -114,32 +115,60 @@ modals.controller('ReplyModalController', ['$scope', 'FaqService', '$uibModalIns
 #=====================================================================
 # Open new case modal
 #=====================================================================
-modals.controller 'NewCaseModalController', ['$scope', '$uibModalInstance', 'summaryInitial', 'summaryMaxLength', 'partners', ($scope, $uibModalInstance, summaryInitial, summaryMaxLength, partners) ->
+modals.controller 'NewCaseModalController', ['$scope', '$uibModalInstance', 'summaryInitial', 'summaryMaxLength', 'partners', 'UserService', ($scope, $uibModalInstance, summaryInitial, summaryMaxLength, partners, UserService) ->
   $scope.partners = partners
+  $scope.users = [ANYONE]
+
   $scope.fields = {
     summary: {val: summaryInitial, maxLength: summaryMaxLength},
-    assignee: {val: if partners then partners[0] else null}
+    assignee: {val: if partners then partners[0] else null},
+    user: {val: ANYONE}
   }
+
+  $scope.refreshUserList = () ->
+    UserService.fetchInPartner($scope.fields.assignee.val, false).then((users) ->
+      $scope.users = [ANYONE].concat(users)
+      $scope.fields.user.val = ANYONE
+    )
 
   $scope.ok = () ->
     $scope.form.submitted = true
     if $scope.form.$valid
-      $uibModalInstance.close({summary: $scope.fields.summary.val, assignee: $scope.fields.assignee.val})
+      $uibModalInstance.close({
+        summary: $scope.fields.summary.val,
+        assignee: $scope.fields.assignee.val,
+        user: if $scope.fields.user.val.id then $scope.fields.user.val else null
+      })
   $scope.cancel = () -> $uibModalInstance.dismiss(false)
+
+  $scope.refreshUserList()
 ]
 
 
 #=====================================================================
 # Assign to partner modal
 #=====================================================================
-modals.controller 'AssignModalController', ['$scope', '$uibModalInstance', 'title', 'prompt', 'partners', ($scope, $uibModalInstance, title, prompt, partners) ->
+modals.controller 'AssignModalController', ['$scope', '$uibModalInstance', 'title', 'prompt', 'partners', 'UserService', ($scope, $uibModalInstance, title, prompt, partners, UserService) ->
   $scope.title = title
   $scope.prompt = prompt
   $scope.partners = partners
-  $scope.fields = { assignee: partners[0] }
+  $scope.users = [ANYONE]
 
-  $scope.ok = () -> $uibModalInstance.close($scope.fields.assignee)
+  $scope.fields = { assignee: partners[0], user: ANYONE }
+
+  $scope.refreshUserList = () ->
+    UserService.fetchInPartner($scope.fields.assignee, false).then((users) ->
+      $scope.users = [ANYONE].concat(users)
+      $scope.fields.user = ANYONE
+    )
+
+  $scope.ok = () -> $uibModalInstance.close({
+    assignee: $scope.fields.assignee,
+    user: if $scope.fields.user.id then $scope.fields.user else null
+  })
   $scope.cancel = () -> $uibModalInstance.dismiss(false)
+
+  $scope.refreshUserList()
 ]
 
 

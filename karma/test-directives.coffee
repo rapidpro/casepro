@@ -305,6 +305,41 @@ describe('directives:', () ->
   )
 
   #=======================================================================
+  # Tests for URN
+  #=======================================================================
+  describe('cpUrn', () ->
+    it('formats a URN as a link', () ->
+      $scope = $rootScope.$new()
+      $scope.urn = 'tel:+11234567890'
+
+      el = $compile('<cp-urn urn="urn" />')($scope)[0]
+      $rootScope.$digest()
+
+      link = el.querySelector('a')
+      expect(link.href).toEqual('tel:+11234567890')
+      expect(link.textContent).toEqual('+11234567890')
+
+      $scope.urn = 'twitter:bobby'
+
+      el = $compile('<cp-urn urn="urn" />')($scope)[0]
+      $rootScope.$digest()
+
+      link = el.querySelector('a')
+      expect(link.href).toEqual('https://twitter.com/bobby')
+      expect(link.textContent).toEqual('bobby')
+
+      $scope.urn = 'mailto:jim@unicef.org'
+
+      el = $compile('<cp-urn urn="urn" />')($scope)[0]
+      $rootScope.$digest()
+
+      link = el.querySelector('a')
+      expect(link.href).toEqual('mailto:jim@unicef.org')
+      expect(link.textContent).toEqual('jim@unicef.org')
+    )
+  )
+
+  #=======================================================================
   # Tests for cpAlert
   #=======================================================================
   describe('cpAlert', () ->
