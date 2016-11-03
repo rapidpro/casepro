@@ -590,9 +590,6 @@ class FaqCRUDL(SmartCRUDL):
         success_message = "File uploaded successfully. If your FAQs don't appear here soon, something went wrong."
         success_url = '@msgs.faq_list'
 
-        def derive_title(self):
-            return _("Import FAQs")
-
         def post_save(self, task):
             task.start(self.org)
             return task
