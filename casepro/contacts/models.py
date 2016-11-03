@@ -330,28 +330,23 @@ class Contact(models.Model):
     def lock(cls, org, uuid):
         return get_redis_connection().lock(CONTACT_LOCK_KEY % (org.pk, uuid), timeout=60)
 
-    def get_display_name(self):
+    def get_display(self):
         """
         Gets the display of this contact. If the site uses anonymous contacts this is generated from the backend UUID.
         If the display setting is recognised and set then that field is returned, otherwise the name is returned.
         If no name is set an empty string is returned.
         """
-        # Continue to support old behaviour
-        if getattr(settings, 'SITE_ANON_CONTACTS', False):
-            if self.uuid:
-                return self.uuid[:6].upper()
-            return ""
+        display_format = getattr(settings, 'SITE_CONTACT_DISPLAY', 'name')
 
-        contact_display_format = getattr(settings, 'SITE_CONTACT_DISPLAY', False)
-        if contact_display_format == "uuid" and self.uuid:
+        if display_format == "uuid" and self.uuid:
             return self.uuid[:6].upper()
-        if contact_display_format == "urns" and self.urns:
+        elif display_format == "urns" and self.urns:
             _scheme, path = URN.to_parts(self.urns[0])
             return path
-        # Default to name if the chosen format isn't set
-        if self.name:
+        elif display_format == "name" and self.name:
             return self.name
-        return ""
+
+        return "---"
 
     def get_fields(self, visible=None):
         fields = self.fields if self.fields else {}
@@ -432,7 +427,7 @@ class Contact(models.Model):
         """
         Prepares a contact for JSON serialization
         """
-        result = {'id': self.pk, 'display': self.get_display_name()}
+        result = {'id': self.pk, 'display': self.get_display()}
 
         if full:
             hidden_fields = getattr(settings, 'SITE_HIDE_CONTACT_FIELDS', [])
@@ -447,4 +442,4 @@ class Contact(models.Model):
         return result
 
     def __str__(self):
-        return self.get_display_name()
+        return self.get_display()

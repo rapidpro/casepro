@@ -118,28 +118,21 @@ class ContactTest(BaseCasesTest):
 
         self.assertEqual(set(contact.groups.all()), {spammers, boffins})
 
-    def test_get_display_name(self):
-        # if site uses anon contacts then obscure this
-        with override_settings(SITE_ANON_CONTACTS=True):
-            self.assertEqual(self.ann.get_display_name(), "7B7DD8")
-            self.ann.uuid = None
-            self.assertEqual(self.ann.get_display_name(), "")
-        self.ann.refresh_from_db()
-
+    def test_get_display(self):
         # if the site uses 'uuid' for the display
         with override_settings(SITE_CONTACT_DISPLAY="uuid"):
-            self.assertEqual(self.ann.get_display_name(), "7B7DD8")
+            self.assertEqual(self.ann.get_display(), "7B7DD8")
 
         # if the site uses 'urns' for the display
         self.ann.urns = ['tel:+2345']
         with override_settings(SITE_CONTACT_DISPLAY="urns"):
-            self.assertEqual(self.ann.get_display_name(), "+2345")
+            self.assertEqual(self.ann.get_display(), "+2345")
         self.ann.refresh_from_db()
 
         # if the site uses 'name' or something unrecognised for the display
-        self.assertEqual(self.ann.get_display_name(), "Ann")
+        self.assertEqual(self.ann.get_display(), "Ann")
         self.ann.name = None
-        self.assertEqual(self.ann.get_display_name(), "")
+        self.assertEqual(self.ann.get_display(), "---")
 
     def test_get_fields(self):
         self.assertEqual(self.ann.get_fields(), {'age': "32", 'state': "WA"})  # what is stored on the contact
