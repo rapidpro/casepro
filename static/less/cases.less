@@ -74,14 +74,33 @@ footer {
   }
 }
 
+.glyphicon-duplicate:before {
+  content: "\e224";
+}
+
+tr + .emptymessage {
+    display: none;
+}
+.table-striped > tbody > tr.emptymessage > td{
+  background-color: #fff;
+}
+
+::-ms-clear {
+  display: none;
+}
+
+.input-clear .glyphicon {
+      pointer-events: all;
+    }
+
 /**
  * Smartmin tweaks - consistent layout for read page tables
  */
 .read-label {
-  width: 33%
+  width: 10%
 }
 .read-value {
-  width: 66%;
+  width: 90%;
   word-break: break-word;
 }
 form {
@@ -96,6 +115,9 @@ form {
   /* use default bootstrap style */
   background-color: #f2dede;
   border: 1px solid transparent;
+}
+.table td.read-label {
+  text-align: left;
 }
 
 /**

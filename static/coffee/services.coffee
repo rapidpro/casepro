@@ -181,10 +181,40 @@ services.factory('FaqService', ['$rootScope', '$http', '$httpParamSerializer', (
       }
 
     #----------------------------------------------------------------------------
+    # Fetch FAQs to use in translations
+    #----------------------------------------------------------------------------
+    fetchAllFaqs: () ->
+      return $http.get('/faq/search/?').then((response) ->
+        return response.data.results
+      )
+      
+    #----------------------------------------------------------------------------
+    # Create a new FAQ
+    #----------------------------------------------------------------------------
+    createFaq: (data) ->
+      params = {question: data.question, answer: data.answer, parent: data.parent, language: data.language, labels: data.labels, id: data.id }
+      
+      return $http.post('/faq/create/', params)
+      
+    #----------------------------------------------------------------------------
+    # Updates a FAQ
+    #----------------------------------------------------------------------------
+    updateFaq: (data) ->
+      params = {question: data.question, answer: data.answer, parent: data.parent, language: data.language, labels: data.labels, id: data.id}
+      
+      return $http.post('/faq/update/' + data.id + '/', params)
+      
+    #----------------------------------------------------------------------------
     # Delete the given FAQ
     #----------------------------------------------------------------------------
     delete: (faq) ->
       return $http.post('/faq/delete/' + faq.id + '/')
+    
+    #----------------------------------------------------------------------------
+    # Delete the given Translation
+    #----------------------------------------------------------------------------
+    deleteTranslation: (translation) ->
+      return $http.post('/faq/delete/' + translation.id + '/')
 
     #----------------------------------------------------------------------------
     # Fetch a list of available languages
@@ -193,7 +223,15 @@ services.factory('FaqService', ['$rootScope', '$http', '$httpParamSerializer', (
       return $http.get('/faq/languages/').then((response) ->
         return response.data.results
       )
-
+      
+    #----------------------------------------------------------------------------
+    # Fetch a list of all languages
+    #----------------------------------------------------------------------------
+    fetchAllLanguages: () ->
+      return $http.get('/faq/languages/').then((response) ->
+        return response.data.iso_list
+      )
+    
 ])
 
 
@@ -583,7 +621,10 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
     dateRangeModal: (title, prompt) ->
       resolve = {title: (() -> title), prompt: (() -> prompt)}
       return $uibModal.open({templateUrl: '/partials/modal_daterange.html', controller: 'DateRangeModalController', resolve: resolve}).result
-
+      
+    faqModal: (title, translation, faq, isFaq) ->
+      resolve = {title: (() -> title), translation: (() -> translation), faq: (() -> faq), isFaq: (() -> isFaq)}
+      return $uibModal.open({templateUrl: '/partials/modal_faq.html', controller: 'FaqModalController', resolve: resolve}).result
 ])
 
 

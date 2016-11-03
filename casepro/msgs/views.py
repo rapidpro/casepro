@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import six
+import iso639
 
 from collections import defaultdict
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
@@ -501,6 +502,9 @@ class FaqCRUDL(SmartCRUDL):
 
         def get_form_kwargs(self):
             kwargs = super(FaqCRUDL.Create, self).get_form_kwargs()
+            # Get the data for post requests that didn't come through a form
+            if self.request.method == 'POST' and not self.request.POST and hasattr(self.request, 'json'):
+                kwargs['data'] = self.request.json
             kwargs['org'] = self.request.org
             return kwargs
 
@@ -540,6 +544,9 @@ class FaqCRUDL(SmartCRUDL):
 
         def get_form_kwargs(self):
             kwargs = super(FaqCRUDL.Update, self).get_form_kwargs()
+            # Get the data for post requests that didn't come through a form
+            if self.request.method == 'POST' and not self.request.POST and hasattr(self.request, 'json'):
+                kwargs['data'] = self.request.json
             kwargs['org'] = self.request.org
             return kwargs
 
@@ -603,9 +610,17 @@ class FaqCRUDL(SmartCRUDL):
             for lang in langs:
                 lang_list.append(FAQ.get_language_from_code(lang['language']))
             context['language_list'] = lang_list
+            iso_list = iso639._load_data()
+            # remove unwanted keys and only show name up to the first semicolon
+            for key in iso_list:
+                del key['iso639_2_t'], key['native'], key['iso639_1']
+                if 'name' in key.keys():
+                    key['name'] = key['name'].rsplit(';')[0]
+            context['iso_list'] = iso_list
             return context
 
         def render_to_response(self, context, **response_kwargs):
             return JsonResponse({
                 'results': context['language_list'],
+                'iso_list': context['iso_list'],
             }, encoder=JSONEncoder)

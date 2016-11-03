@@ -216,3 +216,65 @@ modals.controller('DateRangeModalController', ['$scope', '$uibModalInstance', 't
 
   $scope.cancel = () -> $uibModalInstance.dismiss(false)
 ])
+
+#=====================================================================
+# FAQ modal
+#=====================================================================
+modals.controller('FaqModalController', ['$scope', 'FaqService', 'LabelService', '$uibModalInstance', 'title', 'translation', 'faq', 'isFaq', ($scope, FaqService, LabelService, $uibModalInstance, title, translation, faq, isFaq) ->
+  $scope.title = title
+  $scope.faq = faq
+  $scope.isFaq = isFaq
+
+  $scope.init = () ->
+    $scope.modalType()
+    $scope.fetchAllLanguages()
+    $scope.fetchLabels()
+  
+  $scope.modalType = () ->
+    if isFaq == false
+      $scope.fields = {
+        question: {val: if translation then translation.question else ''}
+        answer: {val: if translation then translation.answer else ''}
+        parent: {val: faq.id}
+        language: {val: if translation then translation.language else ''}
+        labels: {val: (l.id for l in faq.labels)}
+        id: {val: if translation then translation.id else ''}
+        }
+    else if isFaq == true
+      $scope.fields = {
+        question: {val: if faq then faq.question else ''}
+        answer: {val: if faq then faq.answer else ''}
+        parent: {val: if faq then faq.parent else ''}
+        language: {val: if faq then faq.language else ''}
+        labels: {val: if faq then (l.id for l in faq.labels) else $scope.labels}
+        id: {val: if faq then faq.id else ''}
+      }
+    
+  $scope.fetchAllLanguages = () ->
+    FaqService.fetchAllLanguages().then((results) ->
+      $scope.iso_list = results
+    )
+  $scope.fetchLabels = () ->  
+    LabelService.fetchAll(true).then((labels) ->
+      $scope.labels = labels
+    )
+  
+  $scope.formatInput = ($model) ->
+    inputLabel = $scope.fields.language.val.name
+    angular.forEach $scope.iso_list, (language) ->
+      if $model == language.iso639_2_b
+        inputLabel = language.name
+    inputLabel
+    
+  $scope.clearInput = () ->
+    $scope.fields.language.val = ''
+  
+  $scope.ok = () ->
+    $scope.form.submitted = true
+    
+    if $scope.form.$valid
+      data = {question: $scope.fields.question.val, answer: $scope.fields.answer.val, parent: $scope.fields.parent.val, language: $scope.fields.language.val.code, labels: $scope.fields.labels.val, id: $scope.fields.id.val}
+      $uibModalInstance.close(data)
+          
+  $scope.cancel = () -> $uibModalInstance.dismiss(false)
+])

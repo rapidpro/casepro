@@ -34,6 +34,16 @@ describe('services:', () ->
 
       # faqs
       pregnant: {id: 701, name: "Pregnant"},
+
+      # language
+      language1: {code: "eng", name: "English"},
+      language2: {code: "afr", name: "Afrikaans"},
+
+      # FAQs
+      faq1: {id: 501, question: "Am I pregnant?", answer: "yes", language: {code: "eng", name: "English"}, labels: [{id: 201, name: "Tea"}, {id: 202, name: "Coffee"}], parent: null},
+      
+      # translation
+      translation1: {id: 601, question: "Is ek swanger", answer: "ja", language: {code: "afr", name: "Afrikaans"}, labels: {id: 201, name: "Tea"}, parent: 401},
     }
   )
 
@@ -383,13 +393,6 @@ describe('services:', () ->
 
     beforeEach(inject((_FaqService_) ->
       FaqService = _FaqService_
-
-      test.faq1 = {
-        id: 702,
-        question: "test question 2",
-        answer: "test answer 2",
-        labels: [test.tea]
-      }
     ))
 
     describe('fetchFaqs', () ->
@@ -438,13 +441,93 @@ describe('services:', () ->
       )
     )
 
+    describe('fetchAllFaqs', () ->
+      it('gets FAQs for use in translations', () ->
+        $httpBackend.expectGET('/faq/search/?')
+        .respond('{
+          "results": [{
+            "id": 401,
+            "question": "Am I pregnant?",
+            "answer": "yes",
+            "labels": [201, 202],
+            "language": [{"code": "eng", "name": "English"}],
+            "parent": null
+          }]
+        }')
+        FaqService.fetchAllFaqs().then((results) ->
+          expect(results).toEqual([{
+            id: 401,
+            question: "Am I pregnant?",
+            answer: "yes",
+            labels: [201, 202],
+            language: [{code: "eng", name: "English"}],
+            parent: null
+          }])
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('createFaq', () ->
+      it('posts to FAQ create endpoint', () ->
+        $httpBackend.expectPOST('/faq/create/', test.faq1).respond('')
+        FaqService.createFaq(test.faq1)
+        $httpBackend.flush()
+      )
+    )
+
+    describe('updateFaq', () ->
+      it('posts to FAQ update endpoint', () ->
+        $httpBackend.expectPOST('/faq/update/501/', test.faq1).respond('')
+        FaqService.updateFaq(test.faq1)
+        $httpBackend.flush()
+      )
+    )
+
     describe('delete', () ->
       it('posts to delete endpoint', () ->
-        $httpBackend.expectPOST('/faq/delete/702/', null).respond("")
+        $httpBackend.expectPOST('/faq/delete/501/', null).respond("")
         FaqService.delete(test.faq1)
         $httpBackend.flush()
       )
     )
+
+    describe('deleteTranslation', () ->
+      it('posts to delete translation endpoint', () ->
+        $httpBackend.expectPOST('/faq/delete/601/', null).respond("")
+        FaqService.deleteTranslation(test.translation1)
+        $httpBackend.flush()
+      )
+    )
+
+    describe('fetchLanguages', () ->
+      it('gets available languages', () ->
+        $httpBackend.expectGET('/faq/languages/')
+        .respond('{
+          "results": [{"code": "eng", "name": "English"}],
+          "iso_list": [{"iso639_2_b": "eng", "name": "English"}]
+        }')
+        FaqService.fetchLanguages().then((results) ->
+          expect(results).toEqual([{code: "eng", name: "English"}])
+        )
+        $httpBackend.flush()
+      )
+    )
+
+    describe('fetchAllLanguages', () ->
+      it('gets all languages from iso639', () ->
+        $httpBackend.expectGET('/faq/languages/')
+        .respond('{
+          "results": [{"code": "eng", "name": "English"}],
+          "iso_list": [{"iso639_2_b": "eng", "name": "English"}]
+        }')
+        FaqService.fetchAllLanguages().then((iso_list) ->
+          expect(iso_list).toEqual([{iso639_2_b: "eng", name: "English"}])
+        )
+        $httpBackend.flush()
+      )
+    )
+
   )
 
   #=======================================================================
@@ -696,6 +779,31 @@ describe('services:', () ->
         expect(modalOptions.resolve.partners()).toEqual([test.moh, test.who])
       )
     )
+
+    describe('dateRangeModal', () ->
+      it('opens date range modal', () ->
+        UtilsService.dateRangeModal("Label", "this...")
+
+        modalOptions = $uibModal.open.calls.mostRecent().args[0]
+        expect(modalOptions.templateUrl).toEqual('/partials/modal_daterange.html')
+        expect(modalOptions.resolve.title()).toEqual("Label")
+        expect(modalOptions.resolve.prompt()).toEqual("this...")
+      )
+    )
+
+    describe('faqModal', () ->
+      it('opens FAQ modal', () ->
+        UtilsService.faqModal("Title", [test.translation1], [test.faq1], true)
+
+        modalOptions = $uibModal.open.calls.mostRecent().args[0]
+        expect(modalOptions.templateUrl).toEqual('/partials/modal_faq.html')
+        expect(modalOptions.resolve.title()).toEqual("Title")
+        expect(modalOptions.resolve.translation()).toEqual([test.translation1])
+        expect(modalOptions.resolve.faq()).toEqual([test.faq1])
+        expect(modalOptions.resolve.isFaq()).toEqual(true)
+      )
+    )
+
   )
 
   #=======================================================================
