@@ -17,7 +17,7 @@
 
       %h2
         %span.glyphicon.glyphicon-phone
-        [[ contact.name ]]
+        [[ contact.display ]]
 
       %ul.header-details
         %li{ ng-if:"contact.blocked || contact.stopped" }
@@ -58,6 +58,16 @@
             - trans "Details"
           .panel-body
             .container-fluid
+              .row{ ng-if:"contact.name" }
+                .contact-field-label.col-sm-6
+                  - trans "Name"
+                .contact-field-value.col-sm-6
+                  [[ contact.name ]]
+              .row{ ng-repeat:"urn in contact.urns" }
+                .contact-field-label.col-sm-6
+                  [[ urn.scheme ]]
+                .contact-field-value.col-sm-6
+                  [[ urn.path ]]
               .row
                 .contact-field-label.col-sm-6
                   - trans "Language"

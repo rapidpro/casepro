@@ -699,7 +699,8 @@ controllers.controller('CaseTimelineController', ['$scope', '$timeout', 'CaseSer
 # Contact dashboard controller
 #============================================================================
 controllers.controller('ContactController', ['$scope', '$window', 'ContactService', ($scope, $window, ContactService) ->
-
+  contact = $window.contextData.contact
+  contact.urns = utils.formatUrns(contact.urns)
   $scope.contact = $window.contextData.contact
   $scope.fields = $window.contextData.fields
 

@@ -332,15 +332,26 @@ class Contact(models.Model):
 
     def get_display_name(self):
         """
-        Gets the display name of this contact. If name is empty or site uses anonymous contacts, this is generated from
-        the backend UUID. If no UUID is set for the contact, an empty string is returned.
+        Gets the display of this contact. If the site uses anonymous contacts this is generated from the backend UUID.
+        If the display setting is recognised and set then that field is returned, otherwise the name is returned.
+        If no name is set an empty string is returned.
         """
-        if not self.name or getattr(settings, 'SITE_ANON_CONTACTS', False):
+        # Continue to support old behaviour
+        if getattr(settings, 'SITE_ANON_CONTACTS', False):
             if self.uuid:
                 return self.uuid[:6].upper()
             return ""
-        else:
+
+        contact_display_format = getattr(settings, 'SITE_CONTACT_DISPLAY', False)
+        if contact_display_format == "uuid" and self.uuid:
+            return self.uuid[:6].upper()
+        if contact_display_format == "urns" and self.urns:
+            _scheme, path = URN.to_parts(self.urns[0])
+            return path
+        # Default to name if the chosen format isn't set
+        if self.name:
             return self.name
+        return ""
 
     def get_fields(self, visible=None):
         fields = self.fields if self.fields else {}
@@ -421,9 +432,12 @@ class Contact(models.Model):
         """
         Prepares a contact for JSON serialization
         """
-        result = {'id': self.pk, 'name': self.get_display_name()}
+        result = {'id': self.pk, 'display': self.get_display_name()}
 
         if full:
+            hidden_fields = getattr(settings, 'SITE_HIDE_CONTACT_FIELDS', [])
+            result['urns'] = self.urns if "urns" not in hidden_fields else []
+            result['name'] = self.name if "name" not in hidden_fields else None
             result['groups'] = [g.as_json(full=False) for g in self.groups.all()]
             result['fields'] = self.get_fields(visible=True)
             result['language'] = self.get_language()

@@ -61,4 +61,15 @@ describe('utils:', () ->
       expect(utils.trap(Foo, ((v) -> v), (-> null))(bar)).toEqual(null)
     )
   )
+
+  describe('formatUrns', () ->
+    it('formats urn arrays for display', () ->
+      urns = ['tel:+273456712', 'mailto:test@testing.com', 'twitter:tester']
+
+      expect(utils.formatUrns(urns)).toEqual([
+        {scheme: 'Phone', path: '+273456712'}, {scheme: 'Email', path: 'test@testing.com'},
+        {scheme: 'Twitter', path: 'tester'}
+      ])
+    )
+  )
 )

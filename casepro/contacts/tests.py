@@ -119,15 +119,27 @@ class ContactTest(BaseCasesTest):
         self.assertEqual(set(contact.groups.all()), {spammers, boffins})
 
     def test_get_display_name(self):
-        self.assertEqual(self.ann.get_display_name(), "Ann")
-
         # if site uses anon contacts then obscure this
         with override_settings(SITE_ANON_CONTACTS=True):
             self.assertEqual(self.ann.get_display_name(), "7B7DD8")
+            self.ann.uuid = None
+            self.assertEqual(self.ann.get_display_name(), "")
+        self.ann.refresh_from_db()
 
-        # likewise if name if empty
-        self.ann.name = ""
-        self.assertEqual(self.ann.get_display_name(), "7B7DD8")
+        # if the site uses 'uuid' for the display
+        with override_settings(SITE_CONTACT_DISPLAY="uuid"):
+            self.assertEqual(self.ann.get_display_name(), "7B7DD8")
+
+        # if the site uses 'urns' for the display
+        self.ann.urns = ['tel:+2345']
+        with override_settings(SITE_CONTACT_DISPLAY="urns"):
+            self.assertEqual(self.ann.get_display_name(), "+2345")
+        self.ann.refresh_from_db()
+
+        # if the site uses 'name' or something unrecognised for the display
+        self.assertEqual(self.ann.get_display_name(), "Ann")
+        self.ann.name = None
+        self.assertEqual(self.ann.get_display_name(), "")
 
     def test_get_fields(self):
         self.assertEqual(self.ann.get_fields(), {'age': "32", 'state': "WA"})  # what is stored on the contact
@@ -144,12 +156,14 @@ class ContactTest(BaseCasesTest):
         self.assertEqual(self.ann.incoming_messages.filter(is_active=False, is_handled=True).count(), 2)
 
     def test_as_json(self):
-        self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "Ann"})
+        self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'display': "Ann"})
 
         # full=True means include visible contact fields and laanguage etc
         self.assertEqual(self.ann.as_json(full=True), {
             'id': self.ann.pk,
+            'display': "Ann",
             'name': "Ann",
+            'urns': [],
             'language': {'code': 'eng', 'name': "English"},
             'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
             'fields': {'nickname': None, 'age': "32"},
@@ -158,11 +172,14 @@ class ContactTest(BaseCasesTest):
         })
 
         self.ann.language = None
+        self.ann.urns = ["tel:+2345678", "mailto:ann@test.com"]
         self.ann.save()
 
         self.assertEqual(self.ann.as_json(full=True), {
             'id': self.ann.pk,
+            'display': "Ann",
             'name': "Ann",
+            'urns': ["tel:+2345678", "mailto:ann@test.com"],
             'language': None,
             'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
             'fields': {'nickname': None, 'age': "32"},
@@ -170,9 +187,20 @@ class ContactTest(BaseCasesTest):
             'stopped': False
         })
 
-        # if site uses anon contacts then name is obscured
-        with override_settings(SITE_ANON_CONTACTS=True):
-            self.assertEqual(self.ann.as_json(full=False), {'id': self.ann.pk, 'name': "7B7DD8"})
+        # If the urns and name fields are hidden they should not be returned
+        # SITE_CONTACT_DISPLAY overrules this for the 'display' attr
+        with override_settings(SITE_HIDE_CONTACT_FIELDS=["urns", "name"], SITE_CONTACT_DISPLAY="uuid"):
+            self.assertEqual(self.ann.as_json(full=True), {
+                'id': self.ann.pk,
+                'display': "7B7DD8",
+                'urns': [],
+                'name': None,
+                'language': None,
+                'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],
+                'fields': {'nickname': None, 'age': "32"},
+                'blocked': False,
+                'stopped': False
+            })
 
     @patch('casepro.test.TestBackend.push_contact')
     def test_get_or_create_from_urn(self, mock_push_contact):
@@ -260,7 +288,9 @@ class ContactCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json, {
             'id': self.ann.pk,
+            'display': "Ann",
             'name': "Ann",
+            'urns': [],
             'language': {'code': 'eng', 'name': "English"},
             'fields': {'age': '32', 'nickname': None},
             'groups': [{'id': self.reporters.pk, 'name': "Reporters"}],

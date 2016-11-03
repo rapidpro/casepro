@@ -17,6 +17,7 @@ services.factory('ContactService', ['$http', ($http) ->
     #----------------------------------------------------------------------------
     fetch: (id) ->
       return $http.get('/contact/fetch/' + id + '/').then((response) ->
+        response.data.urns = utils.formatUrns(response.data.urns)
         return response.data
       )
 

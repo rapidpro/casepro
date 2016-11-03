@@ -161,11 +161,16 @@
             - trans "Contact"
           .panel-body
             .container-fluid
-              .row
+              .row{ ng-if:"contact.name" }
                 .contact-field-label.col-sm-6
                   - trans "Name"
                 .contact-field-value.col-sm-6
-                  [[ caseObj.contact.name ]]
+                  [[ contact.name ]]
+              .row{ ng-repeat:"urn in contact.urns" }
+                .contact-field-label.col-sm-6
+                  [[ urn.scheme ]]
+                .contact-field-value.col-sm-6
+                  [[ urn.path ]]
               .row{ ng-if:"contact.language" }
                 .contact-field-label.col-sm-6
                   - trans "Language"
