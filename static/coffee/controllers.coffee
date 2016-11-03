@@ -846,11 +846,11 @@ controllers.controller('FaqController', ['$scope', '$window', 'UtilsService', 'F
     FaqService.fetchAllFaqs().then((results) ->
         $scope.translations = results
     )
-    
+
   $scope.filterTranslations = (parent) ->
     (translation) ->
       translation.parent == parent
-      
+
   $scope.onDeleteFaq = () ->
     UtilsService.confirmModal("Warning! If this FAQ has any linked translation FAQs, they will be also be deleted. Delete this FAQ?", 'danger').then(() ->
       FaqService.delete($scope.faq).then(() ->
@@ -871,14 +871,14 @@ controllers.controller('FaqController', ['$scope', '$window', 'UtilsService', 'F
         UtilsService.navigate('')
       )
     )
-  
+
   $scope.onEditTranslation = (translation, faq) ->
     UtilsService.faqModal("Edit FAQ Translation", translation, faq, false).then((result) ->
       FaqService.updateFaq(result).then(() ->
         UtilsService.navigate('')
       )
     )
-    
+
   $scope.onEditFaq = (faq) ->
     UtilsService.faqModal("Edit FAQ", null, faq, true).then((result) ->
       FaqService.updateFaq(result).then(() ->
@@ -897,28 +897,21 @@ controllers.controller('FaqListController', ['$scope','UtilsService', 'FaqServic
   $scope.init = () ->
     FaqService.fetchAllFaqs().then((results) ->
       $scope.faqs = results
+      
+      parents = {}
+      angular.forEach $scope.faqs, (faq) ->
+        parents[faq.parent] = (parents[faq.parent] || 0) + 1
+      angular.forEach $scope.faqs, (faq) ->
+        if parents[faq.id] then faq.count = parents[faq.id] else faq.count = 0 
+    )
 
-      $scope.parents = {}
-      for faq in $scope.faqs
-        if faq.parent
-          if not $scope.parents[faq.parent]
-            $scope.parents[faq.parent] = 0
-          
-          $scope.parents[faq.parent] += 1
-          
-          for faq in $scope.faqs
-            faq.count = 0
-            if $scope.parents[faq.id]
-              faq.count = $scope.parents[faq.id]
-      )
-  
   $scope.onNewFaq = () ->
     UtilsService.faqModal("Create FAQ", null, null, true).then((result) ->
       FaqService.createFaq(result).then(() ->
         UtilsService.navigate('')
       )
     )
-  
+
   $scope.filterParents = (faq) ->
     faq.parent == null
     

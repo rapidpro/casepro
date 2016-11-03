@@ -54,9 +54,12 @@ describe('controllers:', () ->
       
       # FAQs
       faq1: {id: 401, question: "Am I pregnant?", answer: "yes", language: {code: "eng", name: "English"}, labels: [{id: 201, name: "Tea"}, {id: 202, name: "Coffee"}], parent: null},
+      faq2: {id: 402, question: "Can I drink coffee?", answer: "no", language: {code: "eng", name: "English"}, labels: [{id: 201, name: "Tea"}, {id: 202, name: "Coffee"}], parent: null},
       
       # translation
       translation1: {id: 601, question: "Is ek swanger", answer: "ja", language: {code: "afr", name: "Afrikaans"}, labels: {id: 201, name: "Tea"}, parent: 401},
+      translation2: {id: 602, question: "Is ek swanger", answer: "ja", language: {code: "afr", name: "Afrikaans"}, labels: {id: 201, name: "Tea"}, parent: 402},
+      translation3: {id: 603, question: "Curabitur blandit.", answer: "Lorem", language: {code: "ale", name: "Aleut"}, labels: {id: 201, name: "Tea"}, parent: 402},
     }
   )
 
@@ -631,15 +634,15 @@ describe('controllers:', () ->
       $controller('FaqController', {$scope: $scope})
     ))
 
-    it('init should fetch all FAQs', () ->
+    it('init should fetch all translations', () ->
       fetchAllFaqs = spyOnPromise($q, $scope, FaqService, 'fetchAllFaqs')
 
       $scope.init()
-
-      fetchAllFaqs.resolve(test.faq1)
+      
+      fetchAllFaqs.resolve([test.translation1, test.translation2])
 
       expect(FaqService.fetchAllFaqs).toHaveBeenCalled()
-      expect($scope.translations).toEqual(test.faq1)
+      expect($scope.translations).toEqual([test.translation1, test.translation2])
     )
 
     it('onDeleteFaq', () ->
@@ -732,13 +735,13 @@ describe('controllers:', () ->
       fetchAllFaqs = spyOnPromise($q, $scope, FaqService, 'fetchAllFaqs')
   
       $scope.init()
-  
-      fetchAllFaqs.resolve(test.faq1)
+
+      fetchAllFaqs.resolve([test.faq1, test.faq2])
   
       expect(FaqService.fetchAllFaqs).toHaveBeenCalled()
-      expect($scope.faqs).toEqual(test.faq1)
-      expect($scope.parents).toEqual({})
+      expect($scope.faqs).toEqual([test.faq1, test.faq2])
     )
+
   
     it('onNewFaq', () ->
       faqModal = spyOnPromise($q, $scope, UtilsService, 'faqModal')
