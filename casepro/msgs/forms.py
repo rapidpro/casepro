@@ -112,7 +112,7 @@ class FaqForm(forms.ModelForm):
         else:
             labels = None
 
-        if 'parent' in self.cleaned_data:
+        if 'parent' in self.cleaned_data and self.cleaned_data['parent']:
             parent = self.cleaned_data['parent']
         else:
             parent = None
