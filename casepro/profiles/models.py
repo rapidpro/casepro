@@ -331,6 +331,16 @@ def _user_can_edit(user, org, other):
     return other_partner and user.can_manage(other_partner)  # manager can edit users in same partner org
 
 
+def _user_must_use_faq(user):
+    """
+    Whether this user must reply using a pre-approved response (FAQ)
+    """
+    if user.has_profile():
+        return user.profile.must_use_faq
+    else:
+        return False
+
+
 def _user_str(user):
     if user.has_profile():
         if user.profile.full_name:
@@ -373,6 +383,7 @@ User.can_manage = _user_can_manage
 User.can_edit = _user_can_edit
 User.remove_from_org = _user_remove_from_org
 User.as_json = _user_as_json
+User.must_use_faq = _user_must_use_faq
 
 
 if six.PY2:
