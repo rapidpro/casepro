@@ -25,15 +25,14 @@
           %i.glyphicon.glyphicon-tag
           &nbsp;
           [[ activeLabel.name | deunderscore ]]
-      - if allow_case_without_message
-        .btn-group.page-header-buttons
+
+      .page-header-buttons.btn-group
+        - if perms.msgs.label_read or org_perms.msgs.label_read
+          %a.btn.btn-default{ ng-href:"/label/read/[[ activeLabel.id ]]/", ng-if:"activeLabel" }
+            - trans "View Label"
+        - if allow_case_without_message
           %button.btn.btn-default{ type:"button", ng-click:"onCaseWithoutMessage()"}
             - trans "Open Case"
-
-      .page-header-buttons{ ng-if:"activeLabel" }
-        - if perms.msgs.label_read or org_perms.msgs.label_read
-          %a.btn.btn-default{ ng-href:"/label/read/[[ activeLabel.id ]]/" }
-            - trans "View Label"
 
     .row
       .col-md-3
