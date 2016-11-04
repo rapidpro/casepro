@@ -242,7 +242,7 @@ class FAQ(models.Model):
         queryset = cls.objects.filter(org=org)
 
         if label:
-            queryset = queryset.filter(labels=label)
+            queryset = queryset.filter(Q(labels=label) | Q(parent__labels=label))
 
         return queryset
 

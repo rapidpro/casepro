@@ -56,9 +56,9 @@ class BaseCasesTest(DashTest):
         self.preg_faq1_eng = self.create_faq(self.unicef, "How do I know I'm pregnant?", "Do a pregnancy test.",
                                              "eng", None, [self.pregnancy])
         self.preg_faq1_bnt = self.create_faq(self.unicef, "BTN How do I know I'm pregnant?", "BTN Do a pregnancy test.",
-                                             "bnt", self.preg_faq1_eng, [self.pregnancy])
+                                             "bnt", self.preg_faq1_eng, [])
         self.preg_faq1_lug = self.create_faq(self.unicef, "LUG How do I know I'm pregnant?", "LUG Do a pregnancy test.",
-                                             "lug", self.preg_faq1_eng, [self.pregnancy])
+                                             "lug", self.preg_faq1_eng, [])
         self.preg_faq2_eng = self.create_faq(self.unicef, "How do I prevent HIV transfer to my baby?", "Take ARVs.",
                                              "eng", None, [self.pregnancy, self.aids])
         self.tea_faq1_eng = self.create_faq(self.unicef, "Does tea contain caffeine?", "It varies - black tea does.",
