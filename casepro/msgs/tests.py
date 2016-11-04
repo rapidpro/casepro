@@ -628,6 +628,17 @@ class FaqCRUDLTest(BaseCasesTest):
         })
         self.assertEqual(len(response.json['results']), 1)
 
+        # request FAQs - filter on label, should show both parent & translation
+        response = self.url_post('unicef', reverse('msgs.faq_create'), {
+            'question': "BNT Question with no labels",
+            'answer': "BNT Answer with no labels",
+            'language': 'bnt',
+            'parent': self.preg_faq1_eng.pk
+        })
+        self.assertEqual(response.status_code, 302)
+        response = self.url_get('unicef', url, {'label': self.pregnancy.pk})
+        self.assertEqual(len(response.json['results']), 5)
+
     def test_language(self):
         url = reverse('msgs.faq_languages')
 

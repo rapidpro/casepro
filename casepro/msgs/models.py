@@ -227,7 +227,7 @@ class FAQ(models.Model):
             # if not filtering by a single label, need distinct to avoid duplicates
             queryset = queryset.distinct()
 
-        queryset = queryset.filter(labels__in=list(labels))
+        queryset = queryset.filter(Q(labels__in=list(labels)) | Q(parent__labels__in=list(labels)))
 
         # Text filtering
         if text:
