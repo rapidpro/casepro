@@ -5,7 +5,7 @@ Pygments==2.0.2
 amqp==1.4.7
 anyjson==0.3.3
 billiard==3.3.0.22
-boto==2.38.0
+boto==2.43.0
 celery==3.1.24
 colorama==0.3.7
 -e git+https://github.com/nyaruka/confmodel.git@python3#egg=confmodel
@@ -23,7 +23,7 @@ django-hamlpy==0.85.0
 django-nose==1.4.3
 django-redis==4.4.3
 django-rosetta==0.7.6
-django-storages==1.1.8
+django-storages==1.5.1
 django-timezone-field==2.0
 enum34==1.1.6
 flake8==2.5.4
