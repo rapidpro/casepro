@@ -197,7 +197,10 @@ class FAQ(models.Model):
         A helper for creating FAQs since labels (many-to-many) needs to be added after initial creation
         """
         faq = cls.objects.create(org=org, question=question, answer=answer, language=language, parent=parent, **kwargs)
-        faq.labels.add(*labels)
+
+        if labels:
+            faq.labels.add(*labels)
+
         return faq
 
     @classmethod
@@ -224,7 +227,7 @@ class FAQ(models.Model):
             # if not filtering by a single label, need distinct to avoid duplicates
             queryset = queryset.distinct()
 
-        queryset = queryset.filter(labels__in=list(labels))
+        queryset = queryset.filter(Q(labels__in=list(labels)) | Q(parent__labels__in=list(labels)))
 
         # Text filtering
         if text:
@@ -239,7 +242,7 @@ class FAQ(models.Model):
         queryset = cls.objects.filter(org=org)
 
         if label:
-            queryset = queryset.filter(labels=label)
+            queryset = queryset.filter(Q(labels=label) | Q(parent__labels=label))
 
         return queryset
 

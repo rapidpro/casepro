@@ -114,14 +114,12 @@ class FaqForm(forms.ModelForm):
 
         if 'parent' in self.cleaned_data and self.cleaned_data['parent']:
             parent = self.cleaned_data['parent']
+            labels = None
         else:
             parent = None
 
         if parent is None and labels is None:
             raise forms.ValidationError(_("Labels are required if no Parent is selected"))
-
-        if parent is not None:
-            labels = parent.labels.all()
 
         return labels
 

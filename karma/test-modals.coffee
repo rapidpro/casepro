@@ -153,7 +153,7 @@ describe('modals:', () ->
     expect($scope.fields.answer).toEqual({val: "ja"})
     expect($scope.fields.parent).toEqual({val: 401})
     expect($scope.fields.language).toEqual({val: test.language2})
-    expect($scope.fields.labels).toEqual({val: [test.tea.id, test.coffee.id]})
+    expect($scope.fields.labels).toEqual({val: ''})
     expect($scope.fields.id).toEqual({val: 601})
     
 
@@ -161,12 +161,12 @@ describe('modals:', () ->
     $scope.fields.answer.val = "this is an answer"
     $scope.fields.parent.val = null
     $scope.fields.language.val = test.language1
-    $scope.fields.labels.val = [test.tea.id, test.coffee.id]
+    $scope.fields.labels.val = ''
     $scope.fields.id.val = null
     $scope.form = {$valid: true}
     $scope.ok()
 
-    expect(modalInstance.close).toHaveBeenCalledWith({question: "this is a question", answer: "this is an answer", parent: null, language: test.language1.code, labels: [test.tea.id, test.coffee.id], id: null})
+    expect(modalInstance.close).toHaveBeenCalledWith({question: "this is a question", answer: "this is an answer", parent: null, language: test.language1.code, labels: '', id: null})
 
     $scope.cancel()
 
