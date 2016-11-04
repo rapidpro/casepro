@@ -33,7 +33,7 @@
             .help-block{ ng-show:"form.question.$error.required && (form.question.$dirty || form.submitted)" }
               - trans "Required"
         
-        .form-group{ ng-class:'{"has-error": form.labels.$invalid && (form.labels.$dirty || form.submitted)}', ng-show:"isFaq"} 
+        .form-group{ ng-class:'{"has-error": form.labels.$invalid && (form.labels.$dirty || form.submitted)}', ng-if:"isFaq"} 
           %label.col-sm-2.control-label
               - trans "Label"
           .col-sm-10

@@ -266,7 +266,7 @@ modals.controller('FaqModalController', ['$scope', 'FaqService', 'LabelService',
         answer: {val: if translation then translation.answer else ''}
         parent: {val: faq.id}
         language: {val: if translation then translation.language else ''}
-        labels: {val: (l.id for l in faq.labels)}
+        labels: {val: ''}
         id: {val: if translation then translation.id else ''}
         }
     else if isFaq == true
