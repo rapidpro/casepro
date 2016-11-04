@@ -197,7 +197,10 @@ class FAQ(models.Model):
         A helper for creating FAQs since labels (many-to-many) needs to be added after initial creation
         """
         faq = cls.objects.create(org=org, question=question, answer=answer, language=language, parent=parent, **kwargs)
-        faq.labels.add(*labels)
+
+        if labels:
+            faq.labels.add(*labels)
+
         return faq
 
     @classmethod

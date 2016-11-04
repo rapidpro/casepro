@@ -383,7 +383,7 @@ class FaqCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 302)
         faq2 = FAQ.objects.get(question="BNT Question")
         self.assertEqual(faq2.parent, self.preg_faq1_eng)
-        self.assertEqual(faq2.labels.all()[0], self.pregnancy)
+        self.assertEqual(faq2.labels.all().count(), 0)
 
         # submit again with json data (has parent, no labels)
         response = self.url_post_json('unicef', url, {
@@ -395,7 +395,7 @@ class FaqCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 302)
         faq2 = FAQ.objects.get(question="ZUL Question")
         self.assertEqual(faq2.parent, self.preg_faq1_eng)
-        self.assertEqual(faq2.labels.all()[0], self.pregnancy)
+        self.assertEqual(faq2.labels.all().count(), 0)
 
         # submit again with valid data (has parent, wrong labels)
         response = self.url_post('unicef', url, {
@@ -409,7 +409,7 @@ class FaqCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 302)
         faq3 = FAQ.objects.get(question="BNT Is nausea during pregnancy normal?")
         self.assertEqual(faq3.parent, faq1)
-        self.assertEqual(faq3.labels.all()[0], self.pregnancy)
+        self.assertEqual(faq2.labels.all().count(), 0)
 
     def test_list(self):
         url = reverse('msgs.faq_list')
