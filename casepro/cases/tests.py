@@ -1335,7 +1335,7 @@ class PartnerCRUDLTest(BaseCasesTest):
             {
                 'id': self.moh.pk, 'name': "MOH", 'restricted': True,
                 'replies': {
-                    'average_replied_this_month': u'0\xa0minutes',
+                    'average_referral_response_time_this_month': u'0\xa0minutes',
                     'last_month': 0,
                     'this_month': 0,
                     'total': 0},
@@ -1348,7 +1348,7 @@ class PartnerCRUDLTest(BaseCasesTest):
             {
                 'id': self.who.pk, 'name': "WHO", 'restricted': True,
                 'replies': {
-                    'average_replied_this_month': u'0\xa0minutes',
+                    'average_referral_response_time_this_month': u'0\xa0minutes',
                     'last_month': 0,
                     'this_month': 0,
                     'total': 0},

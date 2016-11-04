@@ -431,9 +431,9 @@ class PartnerCRUDL(SmartCRUDL):
                     partners, DailyCount.TYPE_REPLIES, *month_range(0)).scope_totals()
                 replies_last_month = DailyCount.get_by_partner(
                     partners, DailyCount.TYPE_REPLIES, *month_range(-1)).scope_totals()
-                average_replied_this_month = DailySecondTotalCount.get_by_partner(
+                average_referral_response_time_this_month = DailySecondTotalCount.get_by_partner(
                     partners, DailySecondTotalCount.TYPE_TILL_REPLIED, *month_range(0))
-                average_replied_this_month = average_replied_this_month.scope_averages()
+                average_referral_response_time_this_month = average_referral_response_time_this_month.scope_averages()
                 average_closed_this_month = DailySecondTotalCount.get_by_partner(
                     partners, DailySecondTotalCount.TYPE_TILL_CLOSED, *month_range(0))
                 average_closed_this_month = average_closed_this_month.scope_averages()
@@ -454,7 +454,8 @@ class PartnerCRUDL(SmartCRUDL):
                             'this_month': replies_this_month.get(partner, 0),
                             'last_month': replies_last_month.get(partner, 0),
                             'total': replies_total.get(partner, 0),
-                            'average_replied_this_month': humanize_seconds(average_replied_this_month.get(partner, 0))
+                            'average_referral_response_time_this_month': humanize_seconds(
+                                average_referral_response_time_this_month.get(partner, 0))
                         },
                         'cases': {
                             'average_closed_this_month': humanize_seconds(average_closed_this_month.get(partner, 0)),

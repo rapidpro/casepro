@@ -56,13 +56,15 @@ def record_new_outgoing(sender, instance, created, **kwargs):
                     try:
                         action = case.actions.filter(action=CaseAction.REASSIGN, assignee=partner).latest('created_on')
                         start_date = action.created_on
-                    except CaseAction.DoesNotExist:
-                        start_date = case.opened_on
 
-                    td = instance.created_on - start_date
-                    seconds_since_open = ceil(td.total_seconds())
-                    DailySecondTotalCount.record_item(day, seconds_since_open,
-                                                      DailySecondTotalCount.TYPE_TILL_REPLIED, partner)
+                        td = instance.created_on - start_date
+                        seconds_since_open = ceil(td.total_seconds())
+                        DailySecondTotalCount.record_item(
+                            day, seconds_since_open,
+                            DailySecondTotalCount.TYPE_TILL_REPLIED, partner)
+                    except CaseAction.DoesNotExist:
+                        pass
+                        # Only count first response by partner after the cas was reassigned
 
 
 @receiver(m2m_changed, sender=Message.labels.through)
