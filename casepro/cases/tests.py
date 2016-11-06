@@ -1136,14 +1136,19 @@ class InboxViewsTest(BaseCasesTest):
         self.login(self.admin)
 
         response = self.url_get('unicef', url)
-        self.assertContains(response, "/org/home/")  # org-level users get link to org dashboard
+        self.assertContains(response, "Administration")  # org-level users admin menu
+        self.assertContains(response, "/org/home/")      # and link to org dashboard
 
-        # log in as regular user
+        # log in as partner manager
         self.login(self.user1)
 
         response = self.url_get('unicef', url)
+        self.assertNotContains(response, "Administration")
         self.assertNotContains(response, "/org/home/")
         self.assertContains(response, "/partner/read/%d/" % self.moh.pk)  # partner users get link to partner dashboard
+
+        self.assertContains(response, "Message Board")
+        self.assertContains(response, "/messageboard/")
 
 
 class PartnerTest(BaseCasesTest):
