@@ -580,6 +580,10 @@ class FaqCRUDL(SmartCRUDL):
         success_message = "File uploaded successfully. If your FAQs don't appear here soon, something went wrong."
         success_url = '@msgs.faq_list'
 
+        def post_save(self, task):
+            task.start(self.org)
+            return task
+
     class Languages(OrgPermsMixin, SmartTemplateView):
         """
         JSON endpoint for getting a list of currently all available languages
