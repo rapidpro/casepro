@@ -7,3 +7,7 @@
 .pod-item:nth-child(even) {
   background-color: #f9f9f9;
 }
+
+.pod-item-value {
+ word-wrap: break-word;
+}
