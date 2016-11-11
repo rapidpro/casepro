@@ -8,7 +8,7 @@ from datetime import timedelta
 logger = get_task_logger(__name__)
 
 
-@org_task('message-pull')
+@org_task('message-pull', lock_timeout=12 * 60 * 60)
 def pull_messages(org, since, until):
     """
     Pulls new unsolicited messages for an org
@@ -30,7 +30,7 @@ def pull_messages(org, since, until):
     }
 
 
-@org_task('message-handle')
+@org_task('message-handle', lock_timeout=12 * 60 * 60)
 def handle_messages(org):
     from casepro.backend import get_backend
     from casepro.cases.models import Case
