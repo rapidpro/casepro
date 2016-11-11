@@ -216,7 +216,7 @@ controllers.controller('BaseItemsController', ['$scope', 'UtilsService', ($scope
 #============================================================================
 # Incoming messages controller
 #============================================================================
-controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal', '$controller', 'CaseService', 'MessageService', 'PartnerService', 'UserService', 'UtilsService', ($scope, $timeout, $uibModal, $controller, CaseService, MessageService, PartnerService, UserService, UtilsService) ->
+controllers.controller('MessagesController', ['$scope', '$timeout', '$interval', '$uibModal', '$controller', 'CaseService', 'MessageService', 'PartnerService', 'UserService', 'UtilsService', ($scope, $timeout, $interval, $uibModal, $controller, CaseService, MessageService, PartnerService, UserService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
   $scope.advancedSearch = false
@@ -270,7 +270,17 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
     )
 
   $scope.fetchOldItems = (search, startTime, page) ->
-    return MessageService.fetchOld(search, startTime, page)
+    $scope.autoRefresh = ->
+      MessageService.fetchOld(search, startTime, page).then((data) ->
+        $scope.items = data.results
+        $scope.oldItemsMore = data.hasMore
+        $scope.oldItemsLoading = false
+      )
+    $scope.autoRefresh()
+    $interval($scope.autoRefresh, 30000)
+    
+  $scope.$on '$destroy', ->
+    $interval.cancel($scope.autoRefresh)
 
   $scope.onExpandMessage = (message) ->
     $scope.expandedMessageId = message.id
