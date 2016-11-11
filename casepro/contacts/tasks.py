@@ -6,7 +6,7 @@ from dash.orgs.tasks import org_task
 logger = get_task_logger(__name__)
 
 
-@org_task('contact-pull')
+@org_task('contact-pull', lock_timeout=12 * 60 * 60)
 def pull_contacts(org, since, until):
     """
     Fetches updated contacts from RapidPro and updates local contacts accordingly
