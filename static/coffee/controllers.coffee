@@ -277,7 +277,8 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$interval',
         $scope.oldItemsLoading = false
       )
     $scope.autoRefresh()
-    $interval($scope.autoRefresh, 30000)
+    $interval.cancel($scope.autoRefresh)
+    $interval($scope.autoRefresh, 10000)
     
   $scope.$on '$destroy', ->
     $interval.cancel($scope.autoRefresh)

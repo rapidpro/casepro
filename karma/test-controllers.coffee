@@ -372,7 +372,7 @@ describe('controllers:', () ->
 
         fetchOld.resolve({results: [test.msg3, test.msg2], hasMore: true})
         
-        expect($intervalSpy).toHaveBeenCalledWith($scope.autoRefresh, 30000)
+        expect($intervalSpy).toHaveBeenCalledWith($scope.autoRefresh, 10000)
 
         expect($scope.items).toEqual([test.msg3, test.msg2])
         expect($scope.oldItemsMore).toEqual(true)
