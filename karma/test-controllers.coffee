@@ -335,9 +335,14 @@ describe('controllers:', () ->
     # Tests for MessagesController
     #=======================================================================
     describe('MessagesController', () ->
+      $intervalSpy = null
 
       beforeEach(() ->
-        $controller('MessagesController', {$scope: $scope})
+        inject((_$interval_) ->
+          $intervalSpy = jasmine.createSpy('$interval', _$interval_).and.callThrough()
+        )
+        
+        $controller('MessagesController', {$scope: $scope, $interval: $intervalSpy})
 
         $inboxScope.init('inbox', serverTime)
         $scope.init()
@@ -355,7 +360,7 @@ describe('controllers:', () ->
         expect($scope.inactiveLabels).toEqual([test.tea, test.coffee])
       )
 
-      it('loadOldItems', () ->
+      it('should loadOldItems and auto-refresh on interval', () ->
         fetchOld = spyOnPromise($q, $scope, MessageService, 'fetchOld')
 
         $scope.loadOldItems()
@@ -366,11 +371,18 @@ describe('controllers:', () ->
         }, $scope.startTime, 1)
 
         fetchOld.resolve({results: [test.msg3, test.msg2], hasMore: true})
+        
+        expect($intervalSpy).toHaveBeenCalledWith($scope.autoRefresh, 10000)
 
         expect($scope.items).toEqual([test.msg3, test.msg2])
         expect($scope.oldItemsMore).toEqual(true)
         expect($scope.isInfiniteScrollEnabled()).toEqual(true)
       )
+
+      it 'should cancel the intervals on destroy', ->
+        spyOn($intervalSpy, 'cancel') 
+        $scope.$destroy()
+        expect($intervalSpy.cancel).toHaveBeenCalledWith($scope.autoRefresh)
 
       it('getItemFilter', () ->
         filter = $scope.getItemFilter()
