@@ -944,6 +944,11 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_post('unicef', reverse('profiles.user_delete', args=[self.admin.pk]))
         self.assertEqual(response.status_code, 302)
 
+    def test_login(self):
+        # test that logins are case-insensitive but passwords aren't
+        self.assertTrue(self.client.login(username="KIDUS@UNICEF.org", password="kidus@unicef.org"))
+        self.assertFalse(self.client.login(username="KIDUS@UNICEF.org", password="KIDUS@UNICEF.org"))
+
 
 class ForcePasswordChangeMiddlewareTest(BaseCasesTest):
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
