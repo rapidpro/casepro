@@ -586,6 +586,58 @@ class JunebugBackendTest(BaseCasesTest):
         self.backend.push_outgoing(self.unicef, [out_msg])
         self.assertEqual(len(responses.calls), 2)
 
+    @responses.activate
+    @override_settings(
+        JUNEBUG_FROM_ADDRESS="+4321", JUNEBUG_HUB_BASE_URL='http://localhost:8082/api/v1',
+        JUNEBUG_HUB_AUTH_TOKEN='sample-token')
+    def test_outgoing_with_hub_push_enabled_no_reply_to(self):
+        def message_send_callback(request):
+            data = json_decode(request.body)
+            self.assertEqual(data, {'to': "+1234", 'from': "+4321", 'content': "That's great"})
+            headers = {'Content-Type': "application/json"}
+            resp = {
+                'status': 201,
+                'code': "created",
+                'description': "message submitted",
+                'result': {
+                    'id': "message-uuid-1234",
+                },
+            }
+            return (201, headers, json.dumps(resp))
+
+        def hub_outgoing_callback(request):
+            data = json_decode(request.body)
+            self.assertEqual(data, {
+                'content': "That's great", 'created_on': '2016-11-16T10:30:00+00:00',
+                'label': '', 'reply_to': '', 'to': '+1234', 'user_id': 'C-002'})
+            headers = {'Content-Type': "application/json"}
+            resp = {
+                'status': 201,
+                'code': "created",
+                'description': "message submitted",
+                'result': {
+                    'id': "message-uuid-1234",
+                },
+            }
+            return (201, headers, json.dumps(resp))
+
+        responses.add_callback(
+            responses.POST, "http://localhost:8080/channels/replace-me/messages/",
+            callback=message_send_callback,
+            content_type="application/json")
+        self.add_hub_outgoing_callback(hub_outgoing_callback)
+
+        bob = self.create_contact(self.unicef, "C-002", "Bob")
+
+        # for messages created manually, there is not "reply-to"
+        self.backend = JunebugBackend()
+        out_msg = self.create_outgoing(
+            self.unicef, self.user1, None, "B", "That's great", bob, urn="tel:+1234",
+            created_on=datetime(2016, 11, 16, 10, 30, tzinfo=pytz.utc))
+
+        self.backend.push_outgoing(self.unicef, [out_msg])
+        self.assertEqual(len(responses.calls), 2)
+
     def test_outgoing_no_urn_no_contact(self):
         """
         If the outgoing message has no URN or contact, then we cannot send it.
