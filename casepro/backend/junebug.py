@@ -38,7 +38,7 @@ class HubMessageSender(object):
             reply_to = ''
             label = ''
         else:
-            reply_to = reply_to = outgoing.reply_to.text
+            reply_to = outgoing.reply_to.text
             label = ','.join([str(l) for l in outgoing.reply_to.labels.all()])
 
         return {
