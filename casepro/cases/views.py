@@ -495,6 +495,7 @@ class BaseInboxView(OrgPermsMixin, SmartTemplateView):
         context['open_case_count'] = Case.get_open(org, user).count()
         context['closed_case_count'] = Case.get_closed(org, user).count()
         context['allow_case_without_message'] = getattr(settings, 'SITE_ALLOW_CASE_WITHOUT_MESSAGE', False)
+        context['user_must_reply_with_faq'] = org and not user.is_anonymous() and user.must_use_faq()
         return context
 
 
