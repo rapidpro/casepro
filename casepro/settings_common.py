@@ -63,6 +63,9 @@ JUNEBUG_INBOUND_URL = r'^junebug/inbound$'
 JUNEBUG_CHANNEL_ID = 'replace-me'
 JUNEBUG_FROM_ADDRESS = None
 
+JUNEBUG_HUB_BASE_URL = None
+JUNEBUG_HUB_AUTH_TOKEN = None
+
 # identity store configuration
 IDENTITY_API_ROOT = 'http://localhost:8081/'
 IDENTITY_AUTH_TOKEN = 'replace-with-auth-token'
