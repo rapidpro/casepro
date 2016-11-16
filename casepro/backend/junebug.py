@@ -22,6 +22,34 @@ from dash.utils.sync import BaseSyncer, sync_local_to_changes
 from itertools import chain
 
 
+class HubMessageSender(object):
+    """Implements method for sending messages to the Hub"""
+
+    def __init__(self, base_url, auth_token):
+        self.base_url = base_url
+        self.auth_token = auth_token
+        self.session = requests.Session()
+        self.session.headers.update({
+            'Authorization': "Token %s" % self.auth_token})
+        self.session.headers.update({'Content-Type': "application/json"})
+
+    def build_outgoing_message_json(self, outgoing, to_addr):
+        return {
+            'to': to_addr,
+            'reply_to': outgoing.reply_to.text,
+            'content': outgoing.text,
+            'user_id': outgoing.contact.uuid,
+            'label': ','.join([str(l) for l in outgoing.reply_to.labels.all()]),
+            'created_on': outgoing.created_on.isoformat()}
+
+    def send_helpdesk_outgoing_message(self, outgoing, to_addr):
+        if self.base_url and self.auth_token:
+            json_data = self.build_outgoing_message_json(outgoing, to_addr)
+            self.session.post(
+                '%s/jembi/helpdesk/outgoing/' % self.base_url,
+                json=json_data)
+
+
 class IdentityStore(object):
     """Implements required methods for accessing the identity data in the identity store."""
     def __init__(self, base_url, auth_token, address_type):
@@ -189,6 +217,8 @@ class JunebugMessageSender(object):
         self.from_address = from_address
         self.identity_store = identity_store
         self.session = requests.Session()
+        self.hub_message_sender = HubMessageSender(
+            settings.JUNEBUG_HUB_BASE_URL, settings.JUNEBUG_HUB_AUTH_TOKEN)
 
     @property
     def url(self):
@@ -218,6 +248,7 @@ class JunebugMessageSender(object):
                 'content': message.text,
             }
             self.session.post(self.url, json=data)
+            self.hub_message_sender.send_helpdesk_outgoing_message(message, to_addr)
 
 
 class JunebugBackend(BaseBackend):

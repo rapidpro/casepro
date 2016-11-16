@@ -819,7 +819,7 @@ class UserCRUDLTest(BaseCasesTest):
                 'id': self.user1.pk, 'name': "Evan", 'email': "evan@unicef.org", 'role': "M",
                 'partner': {'id': self.moh.pk, 'name': "MOH"},
                 'replies': {'last_month': 1, 'this_month': 0, 'total': 2},
-                'cases': {'opened_this_month': 0, 'closed_this_month': 0, 'total': 2}
+                'cases': {'opened_this_month': 0, 'closed_this_month': 0, 'total': 0}
             },
             {
                 'id': self.user2.pk, 'name': "Rick", 'email': "rick@unicef.org", 'role': "Y",
@@ -945,6 +945,11 @@ class UserCRUDLTest(BaseCasesTest):
         # and not themselves
         response = self.url_post('unicef', reverse('profiles.user_delete', args=[self.admin.pk]))
         self.assertEqual(response.status_code, 302)
+
+    def test_login(self):
+        # test that logins are case-insensitive but passwords aren't
+        self.assertTrue(self.client.login(username="KIDUS@UNICEF.org", password="kidus@unicef.org"))
+        self.assertFalse(self.client.login(username="KIDUS@UNICEF.org", password="KIDUS@UNICEF.org"))
 
 
 class ForcePasswordChangeMiddlewareTest(BaseCasesTest):

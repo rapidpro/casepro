@@ -63,6 +63,9 @@ JUNEBUG_INBOUND_URL = r'^junebug/inbound$'
 JUNEBUG_CHANNEL_ID = 'replace-me'
 JUNEBUG_FROM_ADDRESS = None
 
+JUNEBUG_HUB_BASE_URL = None
+JUNEBUG_HUB_AUTH_TOKEN = None
+
 # identity store configuration
 IDENTITY_API_ROOT = 'http://localhost:8081/'
 IDENTITY_AUTH_TOKEN = 'replace-with-auth-token'
@@ -223,7 +226,10 @@ LOGGING = {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
             'formatter': 'verbose'
-        }
+        },
+        'null': {
+            'class': 'logging.NullHandler',
+        },
     },
     'loggers': {
         'httprouterthread': {
@@ -237,6 +243,10 @@ LOGGING = {
         'django.db.backends': {
             'level': 'ERROR',
             'handlers': ['console'],
+            'propagate': False,
+        },
+        'django.security.DisallowedHost': {
+            'handlers': ['null'],
             'propagate': False,
         },
     }
@@ -451,10 +461,7 @@ LOGOUT_URL = "/users/logout/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
-AUTHENTICATION_BACKENDS = (
-    'django.contrib.auth.backends.ModelBackend',
-    'guardian.backends.ObjectPermissionBackend',
-)
+AUTHENTICATION_BACKENDS = ('smartmin.backends.CaseInsensitiveBackend',)
 
 ANONYMOUS_USER_ID = -1
 

@@ -301,7 +301,7 @@ class UserCRUDL(SmartCRUDL):
                     org, users, DailyCount.TYPE_REPLIES, *month_range(-1)).scope_totals()
 
                 cases_total = DailyCount.get_by_user(
-                    org, users, DailyCount.TYPE_REPLIES, None, None).scope_totals()
+                    org, users, DailyCount.TYPE_CASE_OPENED, None, None).scope_totals()
                 cases_opened_this_month = DailyCount.get_by_user(
                     org, users, DailyCount.TYPE_CASE_OPENED, *month_range(0)).scope_totals()
                 cases_closed_this_month = DailyCount.get_by_user(
