@@ -248,9 +248,7 @@ class JunebugMessageSender(object):
                 'content': message.text,
             }
             self.session.post(self.url, json=data)
-
-            if settings.JUNEBUG_MUST_SEND_HUB_OUTGOING_MESSAGE:
-                self.hub_message_sender.send_helpdesk_outgoing_message(message, to_addr)
+            self.hub_message_sender.send_helpdesk_outgoing_message(message, to_addr)
 
 
 class JunebugBackend(BaseBackend):

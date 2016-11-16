@@ -535,7 +535,9 @@ class JunebugBackendTest(BaseCasesTest):
         self.assertEqual(len(responses.calls), 1)
 
     @responses.activate
-    @override_settings(JUNEBUG_FROM_ADDRESS="+4321", JUNEBUG_MUST_SEND_HUB_OUTGOING_MESSAGE=True)
+    @override_settings(
+        JUNEBUG_FROM_ADDRESS="+4321", JUNEBUG_HUB_BASE_URL='http://localhost:8082/api/v1',
+        JUNEBUG_HUB_AUTH_TOKEN='sample-token')
     def test_outgoing_with_hub_push_enabled(self):
         def message_send_callback(request):
             data = json_decode(request.body)
