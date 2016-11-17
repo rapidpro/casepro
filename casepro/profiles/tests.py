@@ -181,6 +181,14 @@ class UserTest(BaseCasesTest):
         self.assertTrue(self.admin.has_profile())
         self.assertTrue(self.user1.has_profile())
 
+    def test_must_use_faq(self):
+        self.assertFalse(self.superuser.must_use_faq())
+        self.assertFalse(self.user1.must_use_faq())
+
+        self.user1.must_use_faq = True
+        self.user1.save()
+        self.assertTrue(self.user1.must_use_faq())
+
     def test_get_full_name(self):
         self.assertEqual(self.superuser.get_full_name(), "")
         self.assertEqual(self.admin.get_full_name(), "Kidus")
