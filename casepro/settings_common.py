@@ -420,6 +420,8 @@ GROUP_PERMISSIONS = {
         'orgs.org_inbox',
         'orgs.org_charts',
 
+        'msgs.faq_search',
+        'msgs.faq_languages',
         'msgs.label_read',
         'msgs.message_action',
         'msgs.message_bulk_reply',
