@@ -46,6 +46,7 @@ class HubMessageSender(object):
             'reply_to': reply_to,
             'content': outgoing.text,
             'user_id': outgoing.contact.uuid,
+            'helpdesk_operator_id': outgoing.created_by.id,
             'label': label,
             'created_on': outgoing.created_on.isoformat()}
 
