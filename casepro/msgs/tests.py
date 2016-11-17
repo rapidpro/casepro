@@ -7,8 +7,10 @@ import six
 from dash.orgs.models import TaskState
 from datetime import datetime
 from django.core.urlresolvers import reverse
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test.utils import override_settings
 from django.utils.timezone import now
+
 from mock import patch, call
 from temba_client.utils import format_iso8601
 
@@ -16,13 +18,19 @@ from casepro.contacts.models import Contact
 from casepro.rules.models import ContainsTest, GroupsTest, FieldTest, WordCountTest, Quantifier
 from casepro.statistics.tasks import squash_counts
 from casepro.test import BaseCasesTest
-from smartmin.csv_imports.models import ImportTask
+from casepro.msgs.views import ImportTask
 
 
 from .models import (Label, FAQ, Message, MessageAction, MessageExport, MessageFolder, Outgoing,
                      OutgoingFolder, ReplyExport)
 
 from .tasks import handle_messages, pull_messages, faq_csv_import
+
+faq_good_import = b"""Parent ID,Parent Language,Parent Question,Parent Answer,Labels,afr ID,afr Question,afr Answer,bla ID,bla Question,bla Answer
+,eng,Can I drink tea while pregnant?,"Yes, but avoid too much caffeine","Tea, Pregnancy",,Kan ek tee drink tydens swangerskap?,"Ja, maar beperk jou kaffein inname",,Xtea Xpregnant?,Xyes
+,eng,What is Aids?,Acquired immune deficiency syndrome,AIDS,,Wat is Vigs?,Verworwe immuniteitsgebreksindroom,,Xaids?,Xaids
+,eng,Do you like tea?,Yes,Tea,,Hou jy van tee?,Ja,,Xtea?,Xyes
+""" # noqa
 
 
 class LabelTest(BaseCasesTest):
@@ -658,6 +666,7 @@ class FaqCRUDLTest(BaseCasesTest):
         ])
 
 
+@override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
 class FaqImportTest(BaseCasesTest):
     def create_importtask(self, user, filename):
         task = ImportTask.objects.create(
@@ -679,13 +688,10 @@ class FaqImportTest(BaseCasesTest):
             translations__isnull=False).count()
 
         # create the importtask object
-        importtask = self.create_importtask(self.admin, 'faq_good_import.csv')
-
-        # check task_id is None at this point
-        self.assertEqual(importtask.task_id, None)
-
-        # run the import
-        result = faq_csv_import(self.unicef, importtask.pk)
+        # importtask = self.create_importtask(self.admin, 'faq_good_import.csv')
+        self.login(self.admin)
+        with SimpleUploadedFile("faq_good_import.csv", faq_good_import) as csv_file:
+            self.url_post('unicef', reverse('msgs.faq_import'), {'csv_file': csv_file})
 
         # check situation after import
         self.assertEqual(FAQ.objects.all().count(), num_faqs + 9)
@@ -696,12 +702,11 @@ class FaqImportTest(BaseCasesTest):
         self.assertEqual(FAQ.objects.filter(parent__isnull=True).exclude(translations__isnull=False).count(),
                          num_faqs_parents_have_translations + 0)
 
-        # check task_id is not in returned result since we're calling directly, not using .delay
-        self.assertIsNone(result.task_id)
-
         # test running the same import again creates duplicates of the FAQs, but not the languages
         # run the import
-        result = faq_csv_import(self.unicef, importtask.pk)
+        self.login(self.admin)
+        with SimpleUploadedFile("faq_good_import.csv", faq_good_import) as csv_file:
+            self.url_post('unicef', reverse('msgs.faq_import'), {'csv_file': csv_file})
 
         # check situation after second import
         self.assertEqual(FAQ.objects.all().count(), num_faqs + 9 + 9)
