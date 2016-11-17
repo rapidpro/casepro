@@ -156,7 +156,7 @@ class ProfileTest(BaseCasesTest):
         self.assertIsNotNone(user1.password)
 
         # create org-level user
-        user2 = Profile.create_org_user(self.unicef,  "Cary McCase", "cary@unicef.org", "Qwerty123")
+        user2 = Profile.create_org_user(self.unicef, "Cary McCase", "cary@unicef.org", "Qwerty123")
         self.assertIn(user2, self.unicef.administrators.all())
         self.assertFalse(user2.partners.all())
 
@@ -182,12 +182,12 @@ class UserTest(BaseCasesTest):
         self.assertTrue(self.user1.has_profile())
 
     def test_must_use_faq(self):
-        self.assertFalse(self.superuser.must_use_faq())
-        self.assertFalse(self.user1.must_use_faq())
+        self.assertFalse(User.must_use_faq(self.superuser))
+        self.assertFalse(User.must_use_faq(self.user1))
 
-        self.user1.must_use_faq = True
+        self.user1.profile.must_use_faq = True
         self.user1.save()
-        self.assertTrue(self.user1.must_use_faq())
+        self.assertTrue(User.must_use_faq(self.user1))
 
     def test_get_full_name(self):
         self.assertEqual(self.superuser.get_full_name(), "")

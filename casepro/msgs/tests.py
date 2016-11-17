@@ -30,7 +30,7 @@ faq_good_import = b"""Parent ID,Parent Language,Parent Question,Parent Answer,La
 ,eng,Can I drink tea while pregnant?,"Yes, but avoid too much caffeine","Tea, Pregnancy",,Kan ek tee drink tydens swangerskap?,"Ja, maar beperk jou kaffein inname",,Xtea Xpregnant?,Xyes
 ,eng,What is Aids?,Acquired immune deficiency syndrome,AIDS,,Wat is Vigs?,Verworwe immuniteitsgebreksindroom,,Xaids?,Xaids
 ,eng,Do you like tea?,Yes,Tea,,Hou jy van tee?,Ja,,Xtea?,Xyes
-""" # noqa
+"""  # noqa
 
 
 class LabelTest(BaseCasesTest):
