@@ -34,12 +34,19 @@ class HubMessageSender(object):
         self.session.headers.update({'Content-Type': "application/json"})
 
     def build_outgoing_message_json(self, outgoing, to_addr):
+        if not outgoing.reply_to:
+            reply_to = ''
+            label = ''
+        else:
+            reply_to = outgoing.reply_to.text
+            label = ','.join([str(l) for l in outgoing.reply_to.labels.all()])
+
         return {
             'to': to_addr,
-            'reply_to': outgoing.reply_to.text,
+            'reply_to': reply_to,
             'content': outgoing.text,
             'user_id': outgoing.contact.uuid,
-            'label': ','.join([str(l) for l in outgoing.reply_to.labels.all()]),
+            'label': label,
             'created_on': outgoing.created_on.isoformat()}
 
     def send_helpdesk_outgoing_message(self, outgoing, to_addr):
