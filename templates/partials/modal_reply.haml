@@ -11,11 +11,11 @@
     - trans "Send the following reply. This will archive this message removing it from your Inbox."
 
   %p{ ng-if:'faqOnly && replies.length > 0' }
-    - trans "Please select one of the following FAQ replies."
+    - trans "Please select one of the following pre-approved replies."
   .alert.alert-danger{ ng-if:'faqOnly && replies.length == 0' }
     - trans "There are no pre-approved replies. Please contact your administrator."
   %p{ ng-if:'!faqOnly && replies.length > 0' }
-    - trans "You may select one of the following FAQ replies or enter a custom message below."
+    - trans "You may select one of the following pre-approved replies or enter a custom message below."
 
   %form{ name:"form", novalidate:"" }
     .form-group{ ng-if:"replies.length > 0" }
