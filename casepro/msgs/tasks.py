@@ -1,9 +1,20 @@
 from __future__ import absolute_import, unicode_literals
 
+import csv
+import traceback
 from celery import shared_task
+from celery.task import task
 from celery.utils.log import get_task_logger
+from django.db import transaction
+from django.utils import timezone
+from django.conf import settings
 from dash.orgs.tasks import org_task
 from datetime import timedelta
+from smartmin.csv_imports.models import ImportTask
+
+from casepro.utils import parse_csv
+from .models import FAQ, Label
+
 
 logger = get_task_logger(__name__)
 
@@ -89,3 +100,80 @@ def reply_export(export_id):
     logger.info("Starting replies export #%d..." % export_id)
 
     ReplyExport.objects.get(pk=export_id).do_export()
+
+
+def get_labels(task, org, labelstring):
+    """
+    Gets a list of label objects from a comma-separated string of the label codes, eg. "TB, aids"
+    """
+    labels = set()
+    labelstrings = parse_csv(labelstring)
+    for labelstring in labelstrings:
+        labelstring = labelstring.strip()
+
+        try:
+            label = Label.objects.get(org=org, name__iexact=labelstring)  # iexact removes case sensitivity
+            labels.add(label)
+        except Exception as e:
+            task.log("Label %s does not exist" % labelstring)
+            raise e
+    return list(labels)
+
+
+@task(track_started=True)
+def faq_csv_import(org, task_id):  # pragma: no cover
+    task = ImportTask.objects.get(pk=task_id)
+
+    task.task_id = faq_csv_import.request.id
+    task.log("Started import at %s" % timezone.now())
+    task.log("--------------------------------")
+    task.save()
+
+    try:
+        with transaction.atomic() and open(task.csv_file.path) as csv_file:  # transaction prevents partial csv import
+            # Load csv into Dict
+            records = csv.DictReader(csv_file)
+            lines = 0
+
+            for line in records:
+                lines += 1
+                # Get or create parent Language object
+                parent_lang = line['Parent Language']
+
+                # Get label objects
+                labels = get_labels(task, org, line['Labels'])
+
+                # Create parent FAQ
+                parent_faq = FAQ.create(org, line['Parent Question'], line['Parent Answer'],
+                                        parent_lang, None, labels)
+
+                # Start creation of translation FAQs
+                # get a list of the csv keys
+                keys = list(line)
+                # remove non-translation keys
+                parent_keys = ['Parent Question', 'Parent Language', 'Parent Answer', 'Parent ID', 'Labels']
+                [keys.remove(parent_key) for parent_key in parent_keys]
+                # get a set of unique translation language codes
+                lang_codes = set()
+                for key in keys:
+                    lang_code, name = key.split(' ')
+                    lang_codes.add(lang_code)
+                # Loop through for each translation
+                for lang_code in lang_codes:
+                    # Create translation FAQ
+                    FAQ.create(org, line['%s Question' % lang_code], line['%s Answer' % lang_code],
+                               lang_code, parent_faq, labels)
+
+            task.save()
+            task.log("Import finished at %s" % timezone.now())
+            task.log("%d FAQ(s) added." % lines)
+
+    except Exception as e:
+        if not settings.TESTING:
+            traceback.print_exc(e)
+
+        task.log("\nError: %s\n" % e)
+
+        raise e
+
+    return task

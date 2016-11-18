@@ -11,12 +11,13 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timesince import timesince
 from django.utils.timezone import now
+from django.db.models import Q
 from enum import Enum
 from django_redis import get_redis_connection
 
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact, Field
-from casepro.utils import json_encode
+from casepro.utils import json_encode, get_language_name
 from casepro.utils.export import BaseSearchExport
 
 LABEL_LOCK_KEY = 'lock:label:%d:%s'
@@ -170,6 +171,113 @@ class Label(models.Model):
 
     def __str__(self):
         return self.name
+
+
+@python_2_unicode_compatible
+class FAQ(models.Model):
+    """
+    Pre-approved questions and answers to be used when replying to a message.
+    """
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='faqs')
+
+    question = models.CharField(max_length=255)
+
+    answer = models.TextField()
+
+    language = models.CharField(max_length=3, verbose_name=_("Language"), null=True, blank=True,
+                                help_text=_("Language for this FAQ"))
+
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='translations')
+
+    labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this FAQ"), related_name='faqs')
+
+    @classmethod
+    def create(cls, org, question, answer, language, parent, labels=(), **kwargs):
+        """
+        A helper for creating FAQs since labels (many-to-many) needs to be added after initial creation
+        """
+        faq = cls.objects.create(org=org, question=question, answer=answer, language=language, parent=parent, **kwargs)
+
+        if labels:
+            faq.labels.add(*labels)
+
+        return faq
+
+    @classmethod
+    def search(cls, org, user, search):
+        """
+        Search for FAQs
+        """
+        language = search.get('language')
+        label_id = search.get('label')
+        text = search.get('text')
+
+        queryset = cls.objects.filter(org=org)
+
+        # Language filtering
+        if language:
+            queryset = queryset.filter(language=language)
+
+        # Label filtering
+        labels = Label.get_all(org, user)
+
+        if label_id:
+            labels = labels.filter(pk=label_id)
+        else:
+            # if not filtering by a single label, need distinct to avoid duplicates
+            queryset = queryset.distinct()
+
+        queryset = queryset.filter(Q(labels__in=list(labels)) | Q(parent__labels__in=list(labels)))
+
+        # Text filtering
+        if text:
+            queryset = queryset.filter(Q(question__icontains=text) | Q(answer__icontains=text))
+
+        queryset = queryset.prefetch_related('labels')
+
+        return queryset.order_by('question')
+
+    @classmethod
+    def get_all(cls, org, label=None):
+        queryset = cls.objects.filter(org=org)
+
+        if label:
+            queryset = queryset.filter(Q(labels=label) | Q(parent__labels=label))
+
+        return queryset
+
+    @staticmethod
+    def get_language_from_code(code):
+        return {'code': code, 'name': get_language_name(code)}
+
+    @classmethod
+    def get_all_languages(cls, org):
+        queryset = cls.objects.filter(org=org)
+        return queryset.values('language').order_by('language').distinct()
+
+    def get_language(self):
+        if self.language:
+            return self.get_language_from_code(self.language)
+        else:
+            return None
+
+    def as_json(self, full=True):
+        result = {'id': self.pk, 'question': self.question}
+        if full:
+            if not self.parent:
+                parent_json = None
+            else:
+                parent_json = self.parent.id
+
+            result['answer'] = self.answer
+            result['language'] = self.get_language()
+            result['parent'] = parent_json
+            result['labels'] = [l.as_json() for l in self.labels.all()]
+
+        return result
+
+    def __str__(self):
+        return self.question
 
 
 @python_2_unicode_compatible

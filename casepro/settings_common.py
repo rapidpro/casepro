@@ -318,6 +318,8 @@ PERMISSIONS = {
 
     'msgs.label': ('create', 'update', 'read', 'delete', 'list'),
 
+    'msgs.faq': ('create', 'read', 'update', 'delete', 'list', 'search', 'import', 'languages'),
+
     'msgs.message': ('action', 'bulk_reply', 'forward', 'label', 'history', 'search', 'unlabelled'),
 
     'msgs.messageexport': ('create', 'read'),
@@ -350,7 +352,10 @@ GROUP_PERMISSIONS = {
         'orgs.org_charts',
         'orgs.org_edit',
 
+        'csv_imports.importtask.*',
+
         'msgs.label.*',
+        'msgs.faq.*',
         'msgs.message.*',
         'msgs.messageexport.*',
         'msgs.outgoing.*',
@@ -377,6 +382,8 @@ GROUP_PERMISSIONS = {
         'orgs.org_charts',
 
         'msgs.label_read',
+        'msgs.faq_search',
+        'msgs.faq_languages',
         'msgs.message_action',
         'msgs.message_bulk_reply',
         'msgs.message_forward',
@@ -413,6 +420,8 @@ GROUP_PERMISSIONS = {
         'orgs.org_inbox',
         'orgs.org_charts',
 
+        'msgs.faq_search',
+        'msgs.faq_languages',
         'msgs.label_read',
         'msgs.message_action',
         'msgs.message_bulk_reply',

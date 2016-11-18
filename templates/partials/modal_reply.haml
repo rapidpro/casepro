@@ -1,23 +1,58 @@
 -load i18n
 
-.modal-header
+.modal-header.no-border
   %h3.modal-title
     - trans "Reply"
-  .modal-body
+  .modal-body.no-bottom-padding{ ng-init:'init()' }
     %p{ ng-if:'sendToMany' }
       - trans "Send the following reply to the selected message(s). This will remove the message(s) from your inbox to Archived."
     %p{ ng-if:'!sendToMany' }
       - trans "Send the following reply. This will archive this message removing it from your Inbox."
-
     %form{ name:"form", novalidate:"" }
       .form-group{ ng-class:'{"has-error": form.text.$invalid && (form.text.$dirty || form.submitted)}' }
-        %textarea.form-control{ ng-model:"fields.text.val", ng-maxlength:"fields.text.maxLength", name:"text", required:"" }
-        .help-block{ ng-show:"form.text.$error.required && (form.text.$dirty || form.submitted)" }
-          - trans "Required"
-        .help-block{ ng-show:"form.text.$error.maxlength" }
-          - trans "Too long"
-  .modal-footer
-    %button.btn.btn-primary{ ng-click:"ok()" }
-      - trans "Send & Archive"
-    %button.btn.btn-default{ ng-click:"cancel()" }
-      - trans "Cancel"
+      .form-group
+        .well.well-small.col-md-12
+          .row
+            .col-md-8.col-xs-8
+              %input.form-control{ type:"text", placeholder:'Search Label or Keyword',ng-model:'searchFaqs' }
+            .col-md-4.col-xs-4
+              .btn-group{ uib-dropdown:"true" }
+                %button.btn.btn-default.dropdown-toggle{ type:"button", uib-dropdown-toggle:"true" }
+                  [[lang]]
+                  %span.caret
+                %ul.dropdown-menu
+                  %li{ng-repeat:'language in languages'}
+                    %a{ ng-click:"filterByLanguage(language)" }
+                      [[language.name]]
+      %small
+        %label.control-label
+            -trans "Select a Response"
+      .form-group
+        %ul.list-group.col-md-12.col-xs-12{style:'overflow-x:auto;max-height:40vh;'}
+          %li.list-group-item{ng-repeat:"reply in replies | filter:searchFaqs"}
+            %span.small{ng-click:"setResponse(reply.answer)"}
+              %span.label-container{ ng-repeat:"label in reply.labels" }
+                %span.label.label-success
+                  [[ label.name ]]
+                &nbsp;
+              %b[[reply.question]]
+              %p.no-margin[[reply.answer]]
+
+      - if user_must_reply_with_faq
+        .form-group
+          %textarea.form-control{ ng-model:"fields.text.val", ng-maxlength:"fields.text.maxLength", name:"text", required:"", readonly:"" }
+      - else
+        .form-group.no-margin{ ng-class:'{"has-error": form.text.$invalid && (form.text.$dirty || form.submitted)}' }
+          %textarea.form-control{ ng-model:"fields.text.val", ng-maxlength:"fields.text.maxLength", name:"text", required:"", placeholder:'Enter a custom message' }
+            .help-block{ ng-show:"form.text.$error.required && (form.text.$dirty || form.submitted)" }
+              - trans "Required"
+            .help-block{ ng-show:"form.text.$error.maxlength" }
+              - trans "Too long"
+
+
+
+.modal-footer
+  %button.btn.btn-primary{ ng-click:"ok()" }
+    - trans "Send & Archive"
+  %button.btn.btn-default{ ng-click:"cancel()" }
+    - trans "Cancel"

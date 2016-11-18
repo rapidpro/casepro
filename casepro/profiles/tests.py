@@ -156,7 +156,7 @@ class ProfileTest(BaseCasesTest):
         self.assertIsNotNone(user1.password)
 
         # create org-level user
-        user2 = Profile.create_org_user(self.unicef,  "Cary McCase", "cary@unicef.org", "Qwerty123")
+        user2 = Profile.create_org_user(self.unicef, "Cary McCase", "cary@unicef.org", "Qwerty123")
         self.assertIn(user2, self.unicef.administrators.all())
         self.assertFalse(user2.partners.all())
 
@@ -180,6 +180,14 @@ class UserTest(BaseCasesTest):
         self.assertFalse(self.superuser.has_profile())
         self.assertTrue(self.admin.has_profile())
         self.assertTrue(self.user1.has_profile())
+
+    def test_must_use_faq(self):
+        self.assertFalse(User.must_use_faq(self.superuser))
+        self.assertFalse(User.must_use_faq(self.user1))
+
+        self.user1.profile.must_use_faq = True
+        self.user1.save()
+        self.assertTrue(User.must_use_faq(self.user1))
 
     def test_get_full_name(self):
         self.assertEqual(self.superuser.get_full_name(), "")
@@ -583,7 +591,8 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_get(None, url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(set(response.context['form'].fields.keys()), {'name', 'email', 'new_password',
-                                                                       'confirm_password', 'change_password', 'loc'})
+                                                                       'confirm_password', 'change_password',
+                                                                       'must_use_faq', 'loc'})
 
         # submit with all required fields, updating name
         response = self.url_post('unicef', url, {'name': "Richard", 'email': "rick@unicef.org",
@@ -605,7 +614,7 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(set(response.context['form'].fields.keys()), {'name', 'email', 'role', 'partner',
                                                                        'new_password', 'confirm_password',
-                                                                       'change_password', 'loc'})
+                                                                       'change_password', 'must_use_faq', 'loc'})
 
         # submit with no fields entered
         response = self.url_post('unicef', url, {})
@@ -661,7 +670,8 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(set(response.context['form'].fields.keys()), {'name', 'email', 'role', 'new_password',
-                                                                       'confirm_password', 'change_password', 'loc'})
+                                                                       'confirm_password', 'change_password',
+                                                                       'must_use_faq', 'loc'})
 
         # update partner colleague
         response = self.url_post('unicef', url, {'name': "Bob", 'email': "bob@unicef.org", 'role': ROLE_MANAGER,

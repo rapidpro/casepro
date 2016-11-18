@@ -7,8 +7,9 @@ from casepro.contacts.models import Group
 from casepro.rules.forms import FieldTestField
 from casepro.rules.models import ContainsTest
 from casepro.utils import parse_csv, normalize
+from iso639 import is_valid639_2
 
-from .models import Label
+from .models import Label, FAQ
 
 
 class LabelForm(forms.ModelForm):
@@ -79,3 +80,49 @@ class LabelForm(forms.ModelForm):
     class Meta:
         model = Label
         fields = ('name', 'description', 'is_synced', 'keywords', 'groups', 'field_test', 'ignore_single_words')
+
+
+class FaqForm(forms.ModelForm):
+
+    question = forms.CharField(label=_("Question"), max_length=255, widget=forms.Textarea)
+    answer = forms.CharField(label=_("Answer"), max_length=480, widget=forms.Textarea)
+    language = forms.CharField(label=_("Language"), max_length=3)
+    # limit the parent choices to FAQs that have a ForeignKey parent that is None
+    parent = forms.ModelChoiceField(queryset=FAQ.objects.filter(parent=None), required=False)
+    labels = forms.ModelMultipleChoiceField(queryset=Label.objects.filter(), required=False, help_text=_(
+        "If a Parent is selected, the labels will be copied from the Parent FAQ"))
+
+    def __init__(self, *args, **kwargs):
+        org = kwargs.pop('org')
+
+        super(FaqForm, self).__init__(*args, **kwargs)
+
+        self.fields['parent'].queryset = FAQ.get_all(org)
+        self.fields['labels'].queryset = Label.get_all(org)
+
+    def clean_language(self):
+        language = self.cleaned_data['language'].strip()
+        if not is_valid639_2(language):
+            raise forms.ValidationError(_("Language must be valid a ISO-639-2 code"))
+        return language
+
+    def clean_labels(self):
+        if 'labels' in self.cleaned_data and len(self.cleaned_data['labels']) != 0:
+            labels = self.cleaned_data['labels']
+        else:
+            labels = None
+
+        if 'parent' in self.cleaned_data and self.cleaned_data['parent']:
+            parent = self.cleaned_data['parent']
+            labels = None
+        else:
+            parent = None
+
+        if parent is None and labels is None:
+            raise forms.ValidationError(_("Labels are required if no Parent is selected"))
+
+        return labels
+
+    class Meta:
+        model = FAQ
+        fields = ('question', 'answer', 'language', 'parent', 'labels')

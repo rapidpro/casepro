@@ -67,9 +67,10 @@ class UserCRUDL(SmartCRUDL):
 
         def derive_fields(self):
             if self.request.org:
-                return 'name', 'role', 'partner', 'email', 'password', 'confirm_password', 'change_password'
+                return ('name', 'role', 'partner', 'email', 'password', 'confirm_password', 'change_password',
+                        'must_use_faq')
             else:
-                return 'name', 'email', 'password', 'confirm_password', 'change_password'
+                return 'name', 'email', 'password', 'confirm_password', 'change_password', 'must_use_faq'
 
         def save(self, obj):
             org = self.request.org
@@ -77,6 +78,7 @@ class UserCRUDL(SmartCRUDL):
             email = self.form.cleaned_data['email']
             password = self.form.cleaned_data['password']
             change_password = self.form.cleaned_data['change_password']
+            must_use_faq = self.form.cleaned_data['must_use_faq']
 
             if org:
                 role = self.form.cleaned_data['role']
@@ -84,11 +86,11 @@ class UserCRUDL(SmartCRUDL):
 
                 if partner:
                     self.object = Profile.create_partner_user(org, partner, role, name, email,
-                                                              password, change_password)
+                                                              password, change_password, must_use_faq)
                 else:
-                    self.object = Profile.create_org_user(org, name, email, password, change_password)
+                    self.object = Profile.create_org_user(org, name, email, password, change_password, must_use_faq)
             else:
-                self.object = Profile.create_user(name, email, password, change_password)
+                self.object = Profile.create_user(name, email, password, change_password, must_use_faq)
 
         def get_success_url(self):
             return reverse('profiles.user_read', args=[self.object.pk])
@@ -99,7 +101,7 @@ class UserCRUDL(SmartCRUDL):
         """
         permission = 'profiles.profile_user_create_in'
         form_class = PartnerUserForm
-        fields = ('name', 'role', 'email', 'password', 'confirm_password', 'change_password')
+        fields = ('name', 'role', 'email', 'password', 'confirm_password', 'change_password', 'must_use_faq')
 
         @classmethod
         def derive_url_pattern(cls, path, action):
@@ -116,8 +118,10 @@ class UserCRUDL(SmartCRUDL):
             email = self.form.cleaned_data['email']
             password = self.form.cleaned_data['password']
             change_password = self.form.cleaned_data['change_password']
+            must_use_faq = self.form.cleaned_data['must_use_faq']
 
-            self.object = Profile.create_partner_user(org, partner, role, name, email, password, change_password)
+            self.object = Profile.create_partner_user(org, partner, role, name, email, password, change_password,
+                                                      must_use_faq)
 
         def get_success_url(self):
             return reverse('profiles.user_read', args=[self.object.pk])
@@ -149,7 +153,7 @@ class UserCRUDL(SmartCRUDL):
 
         def derive_fields(self):
             profile_fields = ['name']
-            user_fields = ['email', 'new_password', 'confirm_password', 'change_password']
+            user_fields = ['email', 'new_password', 'confirm_password', 'change_password', 'must_use_faq']
 
             if self.request.org:
                 user_partner = self.request.user.get_partner(self.request.org)
@@ -199,6 +203,24 @@ class UserCRUDL(SmartCRUDL):
 
     class Read(OrgPermsMixin, SmartReadView):
         permission = 'profiles.profile_user_read'
+
+        def derive_title(self):
+            if self.object == self.request.user:
+                return _("My Profile")
+            else:
+                return super(UserCRUDL.Read, self).derive_title()
+
+        def derive_fields(self):
+            profile_fields = ['name']
+            user_fields = ['email']
+            if self.request.org:
+                user_partner = self.request.user.get_partner(self.request.org)
+                if user_partner:
+                    profile_fields += ['role']  # partner users can't change a user's partner
+                else:
+                    profile_fields += ['role', 'partner']
+
+            return tuple(profile_fields + user_fields)
 
         def get_queryset(self):
             if self.request.org:

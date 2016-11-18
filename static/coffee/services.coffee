@@ -35,7 +35,6 @@ services.factory('ContactService', ['$http', ($http) ->
 #=====================================================================
 # Incoming message service
 #=====================================================================
-
 services.factory('MessageService', ['$rootScope', '$http', '$httpParamSerializer', ($rootScope, $http, $httpParamSerializer) ->
   new class MessageService
 
@@ -47,7 +46,6 @@ services.factory('MessageService', ['$rootScope', '$http', '$httpParamSerializer
       if !search.before
         params.before = utils.formatIso8601(before)
       params.page = page
-
       return $http.get('/message/search/?' + $httpParamSerializer(params)).then((response) ->
         utils.parseDates(response.data.results, 'time')
         return {results: response.data.results, hasMore: response.data.has_more}
@@ -158,11 +156,89 @@ services.factory('MessageService', ['$rootScope', '$http', '$httpParamSerializer
       return $http.post('/message/action/' + action + '/', params)
 ])
 
+#=====================================================================
+# FAQ service
+#=====================================================================
+services.factory('FaqService', ['$rootScope', '$http', '$httpParamSerializer', ($rootScope, $http, $httpParamSerializer) ->
+  new class FaqService
+
+    #----------------------------------------------------------------------------
+    # Fetch FAQs to use in replies
+    #----------------------------------------------------------------------------
+    fetchFaqs: (search) ->
+      params = @_searchFaqsToParams(search)
+      return $http.get('/faq/search/?' + $httpParamSerializer(params)).then((response) ->
+        return response.data.results
+      )
+
+    #----------------------------------------------------------------------------
+    # Convert search object to URL params
+    #----------------------------------------------------------------------------
+    _searchFaqsToParams: (search) ->
+      return {
+        label: if search.label then search.label.id else null,
+        text: search.text,
+        language: search.language
+      }
+
+    #----------------------------------------------------------------------------
+    # Fetch FAQs to use in translations
+    #----------------------------------------------------------------------------
+    fetchAllFaqs: () ->
+      return $http.get('/faq/search/?').then((response) ->
+        return response.data.results
+      )
+      
+    #----------------------------------------------------------------------------
+    # Create a new FAQ
+    #----------------------------------------------------------------------------
+    createFaq: (data) ->
+      params = {question: data.question, answer: data.answer, parent: data.parent, language: data.language, labels: data.labels, id: data.id }
+      
+      return $http.post('/faq/create/', params)
+      
+    #----------------------------------------------------------------------------
+    # Updates a FAQ
+    #----------------------------------------------------------------------------
+    updateFaq: (data) ->
+      params = {question: data.question, answer: data.answer, parent: data.parent, language: data.language, labels: data.labels, id: data.id}
+      
+      return $http.post('/faq/update/' + data.id + '/', params)
+      
+    #----------------------------------------------------------------------------
+    # Delete the given FAQ
+    #----------------------------------------------------------------------------
+    delete: (faq) ->
+      return $http.post('/faq/delete/' + faq.id + '/')
+    
+    #----------------------------------------------------------------------------
+    # Delete the given Translation
+    #----------------------------------------------------------------------------
+    deleteTranslation: (translation) ->
+      return $http.post('/faq/delete/' + translation.id + '/')
+
+    #----------------------------------------------------------------------------
+    # Fetch a list of available languages
+    #----------------------------------------------------------------------------
+    fetchLanguages: (search) ->
+      return $http.get('/faq/languages/').then((response) ->
+        return response.data.results
+      )
+      
+    #----------------------------------------------------------------------------
+    # Fetch a list of all languages
+    #----------------------------------------------------------------------------
+    fetchAllLanguages: () ->
+      return $http.get('/faq/languages/').then((response) ->
+        return response.data.iso_list
+      )
+    
+])
+
 
 #=====================================================================
-# Incoming message service
+# Outgoing message service
 #=====================================================================
-
 services.factory('OutgoingService', ['$rootScope', '$http', '$httpParamSerializer', ($rootScope, $http, $httpParamSerializer) ->
   new class OutgoingService
 
@@ -216,7 +292,6 @@ services.factory('OutgoingService', ['$rootScope', '$http', '$httpParamSerialize
 #=====================================================================
 # Case service
 #=====================================================================
-
 services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($http, $httpParamSerializer, $window) ->
   new class CaseService
 
@@ -373,7 +448,6 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
 #=====================================================================
 # Label service
 #=====================================================================
-
 services.factory('LabelService', ['$http', '$httpParamSerializer', ($http, $httpParamSerializer) ->
   new class LabelService
 
@@ -563,7 +637,10 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
     dateRangeModal: (title, prompt) ->
       resolve = {title: (() -> title), prompt: (() -> prompt)}
       return $uibModal.open({templateUrl: '/partials/modal_daterange.html', controller: 'DateRangeModalController', resolve: resolve}).result
-
+      
+    faqModal: (title, translation, faq, isFaq) ->
+      resolve = {title: (() -> title), translation: (() -> translation), faq: (() -> faq), isFaq: (() -> isFaq)}
+      return $uibModal.open({templateUrl: '/partials/modal_faq.html', controller: 'FaqModalController', resolve: resolve}).result
 ])
 
 
