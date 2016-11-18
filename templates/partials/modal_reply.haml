@@ -4,17 +4,21 @@
   %h3.modal-title
     - trans "Reply"
 
-.modal-body{ ng-init:'init()' }
+.modal-body{ ng-init:'init({{ user_is_faq_only|yesno:"true,false" }})' }
   %p{ ng-if:'sendToMany' }
     - trans "Send the following reply to the selected message(s). This will remove the message(s) from your inbox to Archived."
   %p{ ng-if:'!sendToMany' }
     - trans "Send the following reply. This will archive this message removing it from your Inbox."
 
+  %p{ ng-if:'faqOnly && replies.length > 0' }
+    - trans "Please select one of the following FAQ replies."
+  .alert.alert-danger{ ng-if:'faqOnly && replies.length == 0' }
+    - trans "There are no pre-approved replies. Please contact your administrator."
+  %p{ ng-if:'!faqOnly && replies.length > 0' }
+    - trans "You may select one of the following FAQ replies or enter a custom message below."
+
   %form{ name:"form", novalidate:"" }
     .form-group{ ng-if:"replies.length > 0" }
-      %label.control-label
-        -trans "Select Response"
-
       .search-toolbar.clearfix
         .pull-back
           %input.form-control{ type:"text", placeholder:'Label or keyword', ng-model:'searchFaqs', style:"width: 250px" }
@@ -38,7 +42,7 @@
             %b[[reply.question]]
             %p.no-margin[[reply.answer]]
 
-    - if user_must_reply_with_faq
+    - if user_is_faq_only
       .form-group
         %textarea.form-control{ ng-model:"fields.text.val", ng-maxlength:"fields.text.maxLength", name:"text", required:"", readonly:"" }
     - else
