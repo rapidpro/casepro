@@ -557,7 +557,8 @@ class JunebugBackendTest(BaseCasesTest):
             data = json_decode(request.body)
             self.assertEqual(data, {
                 'content': "That's great", 'created_on': '2016-11-16T10:30:00+00:00',
-                'label': 'AIDS', 'reply_to': 'Hello', 'to': '+1234', 'user_id': 'C-002'})
+                'label': 'AIDS', 'reply_to': 'Hello', 'to': '+1234', 'user_id': 'C-002',
+                'helpdesk_operator_id': self.user1.id})
             headers = {'Content-Type': "application/json"}
             resp = {
                 'status': 201,
@@ -609,7 +610,7 @@ class JunebugBackendTest(BaseCasesTest):
             data = json_decode(request.body)
             self.assertEqual(data, {
                 'content': "That's great", 'created_on': '2016-11-16T10:30:00+00:00',
-                'label': '', 'reply_to': '', 'to': '+1234', 'user_id': 'C-002'})
+                'label': '', 'reply_to': '', 'to': '+1234', 'user_id': 'C-002', 'helpdesk_operator_id': self.user1.id})
             headers = {'Content-Type': "application/json"}
             resp = {
                 'status': 201,
