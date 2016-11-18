@@ -10,6 +10,7 @@ import unicodedata
 
 from dateutil.relativedelta import relativedelta
 from datetime import datetime, time, timedelta
+from django.utils.timesince import timeuntil
 from django.utils import timezone
 from enum import Enum
 from temba_client.utils import format_iso8601
@@ -196,3 +197,8 @@ def get_language_name(iso_code):
         LANGUAGES_BY_CODE[iso_code] = lang
 
     return LANGUAGES_BY_CODE[iso_code]
+
+
+def humanize_seconds(seconds):
+    now = timezone.now()
+    return timeuntil(now + timedelta(seconds=seconds), now)
