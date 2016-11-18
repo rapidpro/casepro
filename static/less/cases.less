@@ -39,19 +39,21 @@
 }
 
 .content {
-  border-radius: 0px;
+  border-radius: 0;
 }
 
 .no-margin {
   margin: 0;
 }
 
-.no-bottom-padding {
-  padding-bottom: 0;
-}
-
 .no-border {
   border: 0;
+}
+
+.search-toolbar {
+  padding: 7px;
+  background-color: #f7f7f7;
+  margin-top: 7px;
 }
 
 footer {
@@ -74,10 +76,6 @@ footer {
   }
 }
 
-.glyphicon-duplicate:before {
-  content: "\e224";
-}
-
 tr + .emptymessage {
     display: none;
 }
@@ -90,8 +88,8 @@ tr + .emptymessage {
 }
 
 .input-clear .glyphicon {
-      pointer-events: all;
-    }
+  pointer-events: all;
+}
 
 /**
  * Smartmin tweaks - consistent layout for read page tables
@@ -228,12 +226,4 @@ td.value-question {
 .field-test-widget .control-label {
   display: inline-block;
   padding: 5px 0;
-}
-
-.list-group-item {
-  padding: 5px 12px;
-  word-wrap: break-word;
-}
-.modal-body .well {
-  margin-bottom: 10px;
 }

@@ -63,12 +63,13 @@ modals.controller('ReplyModalController', ['$scope', 'FaqService', '$uibModalIns
   $scope.fields = {text: {val: '', maxLength: maxLength}}
   $scope.sendToMany = if selection then true else false
 
-  $scope.init = () ->
+  $scope.init = (faqOnly) ->
     $scope.searchField = $scope.searchFieldDefaults()
     $scope.search = $scope.buildSearch()
     $scope.fetchFaqs()
     $scope.fetchLanguages()
     $scope.lang = "Select language"
+    $scope.faqOnly = faqOnly
 
   $scope.buildSearch = () ->
     search = angular.copy($scope.searchField)

@@ -42,8 +42,9 @@ var/
 *.egg
 
 # Exclude media folder except files used for import testing
-media/test_orgs
-media/csv_imports
+media
+!media/test_orgs
+!media/csv_imports
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
