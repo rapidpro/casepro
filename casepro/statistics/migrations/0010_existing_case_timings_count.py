@@ -64,13 +64,13 @@ def calculate_totals_for_cases(apps, schema_editor):
             try:
                 action = case.actions.filter(action='A', assignee=partner).latest('created_on')
                 start_date = action.created_on
+                td = first_response.created_on - start_date
+                seconds_since_open = ceil(td.total_seconds())
+                DailySecondTotalCount.objects.create(day=day, item_type='A', scope='partner:%d' % partner.pk,
+                                                     count=1, seconds=seconds_since_open)
             except CaseAction.DoesNotExist:
-                start_date = case.opened_on
-
-            td = first_response.created_on - start_date
-            seconds_since_open = ceil(td.total_seconds())
-            DailySecondTotalCount.objects.create(day=day, item_type='A', scope='partner:%d' % partner.pk,
-                                                 count=1, seconds=seconds_since_open)
+                pass
+                # Only count first response by partner after the case was reassigned
 
 
 def remove_totals_for_cases(apps, schema_editor):
