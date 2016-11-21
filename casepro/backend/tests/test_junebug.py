@@ -943,6 +943,34 @@ class JunebugInboundViewTest(BaseCasesTest):
         self.assertEqual(responses.calls[1].request.method, "POST")
         self.assertEqual(responses.calls[1].request.url, create_url)
 
+    @responses.activate
+    def test_inbound_message_specified_timestamp(self):
+        """
+        If a timestamp is specified, then we should use that timestamp instead of the current time.
+        """
+        query = "?details__addresses__msisdn=%2B1234"
+        url = "%sapi/v1/identities/search/" % settings.IDENTITY_API_ROOT
+        responses.add_callback(
+            responses.GET, url + query, callback=self.single_identity_callback, match_querystring=True,
+            content_type="application/json")
+
+        request = self.factory.post(
+            self.url, content_type="application/json", data=json.dumps({
+                'message_id': "35f3336d4a1a46c7b40cd172a41c510d",
+                'content': "test message",
+                'from': "+1234",
+                'timestamp': "2016.11.21 07:30:05.123456",
+            })
+        )
+        request.org = self.unicef
+        response = received_junebug_message(request)
+        resp_data = json_decode(response.content)
+
+        message = Message.objects.get(backend_id=resp_data['id'])
+        self.assertEqual(message.text, "test message")
+        self.assertEqual(message.contact.uuid, "50d62fcf-856a-489c-914a-56f6e9506ee3")
+        self.assertEqual(message.created_on, datetime(2016, 11, 21, 7, 30, 5, 123456, pytz.utc))
+
 
 class IdentityStoreOptoutViewTest(BaseCasesTest):
     """
