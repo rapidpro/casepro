@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from datetime import datetime
+import dateutil.parser
 from django.conf import settings
 from django.conf.urls import url
 from django.http import JsonResponse
@@ -548,9 +549,18 @@ def received_junebug_message(request):
     contact = Contact.get_or_create(request.org, identity.get('id'))
 
     message_id = uuid_to_int(data.get('message_id'))
+
+    if 'timestamp' in data:
+        timestamp = dateutil.parser.parse(data['timestamp'])
+        if not timestamp.tzinfo:
+            # Assume UTC
+            timestamp = pytz.utc.localize(timestamp)
+    else:
+        timestamp = datetime.now(pytz.utc)
+
     msg = Message.objects.create(
         org=request.org, backend_id=message_id, contact=contact, type=Message.TYPE_INBOX,
-        text=(data.get('content') or ''), created_on=datetime.now(pytz.utc), has_labels=True)
+        text=(data.get('content') or ''), created_on=timestamp, has_labels=True)
 
     return JsonResponse(msg.as_json())
 
