@@ -515,7 +515,7 @@ class SecondTotalCountsTest(BaseStatsTest):
         self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').total(), 4)
         self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').seconds(), 4)
 
-        # First reply only counted for re-assignments, immediate replies NOT counteds
+        # First reply only counted for re-assignments, immediate replies NOT counted
         self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').total(), 0)
         self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').seconds(), 0)
         self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').average(), 0)
