@@ -134,7 +134,7 @@ class DailyCountsTest(BaseStatsTest):
         squash_counts()
 
         check_counts()
-        self.assertEqual(DailyCount.objects.count(), 26)
+        self.assertEqual(DailyCount.objects.count(), 37)
 
         # add new count on day that already has a squashed value
         self.new_outgoing(self.admin, date(2015, 1, 1), 1)
@@ -144,7 +144,7 @@ class DailyCountsTest(BaseStatsTest):
         # squash all daily counts again
         squash_counts()
 
-        self.assertEqual(DailyCount.objects.count(), 26)
+        self.assertEqual(DailyCount.objects.count(), 34)
         self.assertEqual(DailyCount.get_by_org([self.unicef], 'R').total(), 13)
 
     def test_incoming_counts(self):
@@ -528,16 +528,18 @@ class SecondTotalCountsTest(BaseStatsTest):
         self.create_outgoing(self.unicef, self.user1, 201, Outgoing.CASE_REPLY, "Good question", self.ann, case=case5)
         self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').total(), 5)
         self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').seconds(), 5)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').total(), 1)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').seconds(), 1)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').average(), 1)
+
+        # self-assigned cases should not be counted
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').total(), 0)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').seconds(), 0)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').average(), 0)
 
         # check empty partner metrics
         self.assertEqual(DailySecondTotalCount.get_by_partner([self.klab], 'A').average(), 0)
 
-        self.assertEqual(DailySecondTotalCount.objects.count(), 6)
+        self.assertEqual(DailySecondTotalCount.objects.count(), 5)
         squash_counts()
-        self.assertEqual(DailySecondTotalCount.objects.count(), 2)
+        self.assertEqual(DailySecondTotalCount.objects.count(), 1)
 
     def test_case_closed_counts(self):
         msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
@@ -587,4 +589,4 @@ class SecondTotalCountsTest(BaseStatsTest):
 
         self.assertEqual(DailySecondTotalCount.objects.count(), 8)
         squash_counts()
-        self.assertEqual(DailySecondTotalCount.objects.count(), 3)
+        self.assertEqual(DailySecondTotalCount.objects.count(), 8)

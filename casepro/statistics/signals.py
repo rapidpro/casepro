@@ -50,7 +50,7 @@ def record_new_outgoing(sender, instance, created, **kwargs):
                                                   DailySecondTotalCount.TYPE_TILL_REPLIED, org)
             user_partner = user.get_partner(org)
             # don't count self-assigned cases
-            if case.assignee == partner and user_partner and not user.partner == partner:
+            if case.assignee == partner and user_partner and not user_partner == partner:
                 # count the first response by this partner
                 if instance == case.outgoing_messages.filter(partner=partner).earliest('created_on'):
                     # only count the time since this case was (re)assigned to this partner
