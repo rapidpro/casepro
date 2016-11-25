@@ -500,46 +500,52 @@ class SecondTotalCountsTest(BaseStatsTest):
         msg3 = self.create_message(self.unicef, 345, self.ann, "Hello 3", [self.pregnancy])
         msg4 = self.create_message(self.nyaruka, 456, self.ned, "Hello 4", [self.code])
         msg5 = self.create_message(self.unicef, 789, self.ann, "Hello 5", [self.code])
+        msg6 = self.create_message(self.unicef, 678, self.ann, "Hello 6", [self.pregnancy])
 
         case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [self.aids])
         case2 = self.create_case(self.unicef, self.ned, self.moh, msg2, [self.aids, self.pregnancy])
         case3 = self.create_case(self.unicef, self.ann, self.who, msg3, [self.pregnancy])
         case4 = self.create_case(self.unicef, self.ned, self.who, msg4, [self.code])
-        case5 = self.create_case(self.unicef, self.ann, self.who, msg5, [self.pregnancy])
+
+        # create a case by "WHO" user and assign it to "WHO" partner
+        case5 = Case.get_or_open(self.unicef, self.user3, msg5, 'Hello', self.who)
+        # create a case by "MOH" user and assign it to "WHO" partner
+        case6 = Case.get_or_open(self.unicef, self.user1, msg6, 'Hello', self.who)
 
         self.create_outgoing(self.unicef, self.user1, 201, Outgoing.CASE_REPLY, "Good question", self.ann, case=case1)
         self.create_outgoing(self.unicef, self.user1, 201, Outgoing.CASE_REPLY, "Good question", self.ned, case=case2)
         self.create_outgoing(self.unicef, self.user3, 201, Outgoing.CASE_REPLY, "Good question", self.ann, case=case3)
         self.create_outgoing(self.unicef, self.user3, 201, Outgoing.CASE_REPLY, "Good question", self.ned, case=case4)
+        self.create_outgoing(self.unicef, self.user3, 201, Outgoing.CASE_REPLY, "Good question", self.ann, case=case6)
 
-        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').total(), 4)
-        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').seconds(), 4)
+        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').total(), 5)
+        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').seconds(), 5)
 
         # First reply only counted for re-assignments, immediate replies NOT counted
         self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').total(), 0)
         self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').seconds(), 0)
         self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').average(), 0)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'A').total(), 0)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'A').seconds(), 0)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'A').average(), 0)
+
+        # First replies should be counted for cases not created by self
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'A').total(), 1)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'A').seconds(), 1)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'A').average(), 1)
 
         # check a reassigned case response
         case5.reassign(self.user3, self.moh)
         self.create_outgoing(self.unicef, self.user1, 201, Outgoing.CASE_REPLY, "Good question", self.ann, case=case5)
-        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').total(), 5)
-        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').seconds(), 5)
-
-        # self-assigned cases should not be counted
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').total(), 0)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').seconds(), 0)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').average(), 0)
+        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').total(), 6)
+        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').seconds(), 6)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').total(), 1)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').seconds(), 1)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').average(), 1)
 
         # check empty partner metrics
         self.assertEqual(DailySecondTotalCount.get_by_partner([self.klab], 'A').average(), 0)
 
-        self.assertEqual(DailySecondTotalCount.objects.count(), 5)
+        self.assertEqual(DailySecondTotalCount.objects.count(), 8)
         squash_counts()
-        self.assertEqual(DailySecondTotalCount.objects.count(), 1)
+        self.assertEqual(DailySecondTotalCount.objects.count(), 3)
 
     def test_case_closed_counts(self):
         msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
