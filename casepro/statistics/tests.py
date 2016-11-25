@@ -134,7 +134,7 @@ class DailyCountsTest(BaseStatsTest):
         squash_counts()
 
         check_counts()
-        self.assertEqual(DailyCount.objects.count(), 37)
+        self.assertEqual(DailyCount.objects.count(), 26)
 
         # add new count on day that already has a squashed value
         self.new_outgoing(self.admin, date(2015, 1, 1), 1)
@@ -144,7 +144,7 @@ class DailyCountsTest(BaseStatsTest):
         # squash all daily counts again
         squash_counts()
 
-        self.assertEqual(DailyCount.objects.count(), 34)
+        self.assertEqual(DailyCount.objects.count(), 26)
         self.assertEqual(DailyCount.get_by_org([self.unicef], 'R').total(), 13)
 
     def test_incoming_counts(self):
@@ -589,4 +589,4 @@ class SecondTotalCountsTest(BaseStatsTest):
 
         self.assertEqual(DailySecondTotalCount.objects.count(), 8)
         squash_counts()
-        self.assertEqual(DailySecondTotalCount.objects.count(), 8)
+        self.assertEqual(DailySecondTotalCount.objects.count(), 3)
