@@ -54,7 +54,7 @@ def record_new_outgoing(sender, instance, created, **kwargs):
                 if instance == case.outgoing_messages.filter(partner=partner).earliest('created_on'):
                     author_action = case.actions.filter(action=CaseAction.OPEN).order_by('created_on').first()
                     reassign_action = case.actions.filter(
-                        action=CaseAction.REASSIGN, assignee=partner).order_by('created_on').last()
+                        action=CaseAction.REASSIGN, assignee=partner).order_by('created_on').first()
 
                     if author_action and author_action.created_by.get_partner(org) != partner:
                         # only count the time since this case was (re)assigned to this partner

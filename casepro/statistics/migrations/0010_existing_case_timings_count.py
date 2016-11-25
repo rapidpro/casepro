@@ -60,17 +60,25 @@ def calculate_totals_for_cases(apps, schema_editor):
                 continue
 
             day = datetime_to_date(first_response.created_on, case.org)
-            # only count the time since this case was (re)assigned to this partner
-            try:
-                action = case.actions.filter(action='A', assignee=partner).latest('created_on')
-                start_date = action.created_on
-            except CaseAction.DoesNotExist:
-                start_date = case.opened_on
 
-            td = first_response.created_on - start_date
-            seconds_since_open = ceil(td.total_seconds())
-            DailySecondTotalCount.objects.create(day=day, item_type='A', scope='partner:%d' % partner.pk,
-                                                 count=1, seconds=seconds_since_open)
+            # don't count self-assigned cases
+            if case.assignee == partner:
+                # count the first response by this partner
+                author_action = case.actions.filter(action='O').order_by('created_on').first()
+                reassign_action = case.actions.filter(action='A', assignee=partner).order_by('created_on').first()
+
+                if author_action and author_action.created_by.get_partner(org) != partner:
+                    # only count the time since this case was (re)assigned to this partner
+                    # or cases that were assigned during creation by another partner
+                    if reassign_action:
+                        start_date = reassign_action.created_on
+                    else:
+                        start_date = author_action.created_on
+
+                    td = first_response.created_on - start_date
+                    seconds_since_open = ceil(td.total_seconds())
+                    DailySecondTotalCount.objects.create(day=day, item_type='A', scope='partner:%d' % partner.pk,
+                                                         count=1, seconds=seconds_since_open)
 
 
 def remove_totals_for_cases(apps, schema_editor):
