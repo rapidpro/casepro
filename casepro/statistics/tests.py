@@ -528,16 +528,18 @@ class SecondTotalCountsTest(BaseStatsTest):
         self.create_outgoing(self.unicef, self.user1, 201, Outgoing.CASE_REPLY, "Good question", self.ann, case=case5)
         self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').total(), 5)
         self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').seconds(), 5)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').total(), 1)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').seconds(), 1)
-        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').average(), 1)
+
+        # self-assigned cases should not be counted
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').total(), 0)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').seconds(), 0)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').average(), 0)
 
         # check empty partner metrics
         self.assertEqual(DailySecondTotalCount.get_by_partner([self.klab], 'A').average(), 0)
 
-        self.assertEqual(DailySecondTotalCount.objects.count(), 6)
+        self.assertEqual(DailySecondTotalCount.objects.count(), 5)
         squash_counts()
-        self.assertEqual(DailySecondTotalCount.objects.count(), 2)
+        self.assertEqual(DailySecondTotalCount.objects.count(), 1)
 
     def test_case_closed_counts(self):
         msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
