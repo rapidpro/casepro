@@ -266,13 +266,14 @@ class FAQ(models.Model):
         if full:
             if not self.parent:
                 parent_json = None
+                result['labels'] = [l.as_json() for l in self.labels.all()]
             else:
                 parent_json = self.parent.id
+                result['labels'] = [l.as_json() for l in self.parent.labels.all()]
 
             result['answer'] = self.answer
             result['language'] = self.get_language()
             result['parent'] = parent_json
-            result['labels'] = [l.as_json() for l in self.labels.all()]
 
         return result
 
