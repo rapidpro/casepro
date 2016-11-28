@@ -269,7 +269,9 @@ class FAQ(models.Model):
                 result['labels'] = [l.as_json() for l in self.labels.all()]
             else:
                 parent_json = self.parent.id
-                result['labels'] = [l.as_json() for l in self.parent.labels.all()]
+
+                labels = FAQ.objects.prefetch_related('labels').get(pk=parent_json).labels.all()
+                result['labels'] = [l.as_json() for l in labels]
 
             result['answer'] = self.answer
             result['language'] = self.get_language()
