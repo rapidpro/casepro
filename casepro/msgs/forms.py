@@ -121,9 +121,6 @@ class FaqForm(forms.ModelForm):
         if parent is None and labels is None:
             raise forms.ValidationError(_("Labels are required if no Parent is selected"))
 
-        if labels is None:
-            labels = []
-
         return labels
 
     class Meta:
