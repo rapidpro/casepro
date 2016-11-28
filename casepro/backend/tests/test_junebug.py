@@ -556,7 +556,8 @@ class JunebugBackendTest(BaseCasesTest):
         def hub_outgoing_callback(request):
             data = json_decode(request.body)
             self.assertEqual(data, {
-                'content': "That's great", 'created_on': '2016-11-16T10:30:00+00:00',
+                'content': "That's great", 'inbound_created_on': '2016-11-16T10:30:00+00:00',
+                'outbound_created_on': '2016-11-17T10:30:00+00:00',
                 'label': 'AIDS', 'reply_to': 'Hello', 'to': '+1234', 'user_id': 'C-002',
                 'helpdesk_operator_id': self.user1.id})
             headers = {'Content-Type': "application/json"}
@@ -577,12 +578,13 @@ class JunebugBackendTest(BaseCasesTest):
         self.add_hub_outgoing_callback(hub_outgoing_callback)
 
         bob = self.create_contact(self.unicef, "C-002", "Bob")
-        msg = self.create_message(self.unicef, 123, bob, "Hello")
+        msg = self.create_message(
+            self.unicef, 123, bob, "Hello", created_on=datetime(2016, 11, 16, 10, 30, tzinfo=pytz.utc))
         msg.labels.add(self.aids)
         self.backend = JunebugBackend()
         out_msg = self.create_outgoing(
             self.unicef, self.user1, None, "B", "That's great", bob, urn="tel:+1234",
-            reply_to=msg, created_on=datetime(2016, 11, 16, 10, 30, tzinfo=pytz.utc))
+            reply_to=msg, created_on=datetime(2016, 11, 17, 10, 30, tzinfo=pytz.utc))
 
         self.backend.push_outgoing(self.unicef, [out_msg])
         self.assertEqual(len(responses.calls), 2)
@@ -609,7 +611,8 @@ class JunebugBackendTest(BaseCasesTest):
         def hub_outgoing_callback(request):
             data = json_decode(request.body)
             self.assertEqual(data, {
-                'content': "That's great", 'created_on': '2016-11-16T10:30:00+00:00',
+                'content': "That's great", 'inbound_created_on': '2016-11-17T10:30:00+00:00',
+                'outbound_created_on': '2016-11-17T10:30:00+00:00',
                 'label': '', 'reply_to': '', 'to': '+1234', 'user_id': 'C-002', 'helpdesk_operator_id': self.user1.id})
             headers = {'Content-Type': "application/json"}
             resp = {
@@ -634,7 +637,7 @@ class JunebugBackendTest(BaseCasesTest):
         self.backend = JunebugBackend()
         out_msg = self.create_outgoing(
             self.unicef, self.user1, None, "B", "That's great", bob, urn="tel:+1234",
-            created_on=datetime(2016, 11, 16, 10, 30, tzinfo=pytz.utc))
+            created_on=datetime(2016, 11, 17, 10, 30, tzinfo=pytz.utc))
 
         self.backend.push_outgoing(self.unicef, [out_msg])
         self.assertEqual(len(responses.calls), 2)
@@ -939,6 +942,34 @@ class JunebugInboundViewTest(BaseCasesTest):
         self.assertEqual(len(responses.calls), 2)
         self.assertEqual(responses.calls[1].request.method, "POST")
         self.assertEqual(responses.calls[1].request.url, create_url)
+
+    @responses.activate
+    def test_inbound_message_specified_timestamp(self):
+        """
+        If a timestamp is specified, then we should use that timestamp instead of the current time.
+        """
+        query = "?details__addresses__msisdn=%2B1234"
+        url = "%sapi/v1/identities/search/" % settings.IDENTITY_API_ROOT
+        responses.add_callback(
+            responses.GET, url + query, callback=self.single_identity_callback, match_querystring=True,
+            content_type="application/json")
+
+        request = self.factory.post(
+            self.url, content_type="application/json", data=json.dumps({
+                'message_id': "35f3336d4a1a46c7b40cd172a41c510d",
+                'content': "test message",
+                'from': "+1234",
+                'timestamp': "2016.11.21 07:30:05.123456",
+            })
+        )
+        request.org = self.unicef
+        response = received_junebug_message(request)
+        resp_data = json_decode(response.content)
+
+        message = Message.objects.get(backend_id=resp_data['id'])
+        self.assertEqual(message.text, "test message")
+        self.assertEqual(message.contact.uuid, "50d62fcf-856a-489c-914a-56f6e9506ee3")
+        self.assertEqual(message.created_on, datetime(2016, 11, 21, 7, 30, 5, 123456, pytz.utc))
 
 
 class IdentityStoreOptoutViewTest(BaseCasesTest):
