@@ -10,11 +10,12 @@ from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch
 
+from casepro.msgs.models import Outgoing
 from casepro.test import BaseCasesTest
 from casepro.utils import date_to_milliseconds
 from casepro.cases.models import Case
 
-from .models import DailyCount, DailyCountExport
+from .models import DailyCount, DailyCountExport, DailySecondTotalCount
 from .tasks import squash_counts
 
 
@@ -311,12 +312,20 @@ class DailyCountExportTest(BaseStatsTest):
 
         export = DailyCountExport.objects.get()
         workbook = self.openWorkbook(export.filename)
-        (replies_sheet, cases_opened_sheet, cases_closed_sheet) = workbook.sheets()
+        (replies_sheet, ave_reply_sheet, ave_closed_sheet, cases_opened_sheet, cases_closed_sheet) = workbook.sheets()
 
         self.assertEqual(replies_sheet.nrows, 32)
         self.assertExcelRow(replies_sheet, 0, ["Date", "MOH", "WHO"])
         self.assertExcelRow(replies_sheet, 1, [d1, 1, 0], tz=tz)
         self.assertExcelRow(replies_sheet, 15, [d2, 0, 1], tz=tz)
+
+        self.assertExcelRow(ave_reply_sheet, 0, ["Date", "MOH", "WHO"])
+        self.assertExcelRow(ave_reply_sheet, 1, [d1, 0, 0], tz=tz)
+        self.assertExcelRow(ave_reply_sheet, 15, [d2, 0, 0], tz=tz)
+
+        self.assertExcelRow(ave_closed_sheet, 0, ["Date", "MOH", "WHO"])
+        self.assertExcelRow(ave_closed_sheet, 1, [d1, 0, 0], tz=tz)
+        self.assertExcelRow(ave_closed_sheet, 15, [d2, 0, 0], tz=tz)
 
         self.assertExcelRow(cases_opened_sheet, 0, ["Date", "MOH", "WHO"])
         self.assertExcelRow(cases_opened_sheet, 1, [d1, 1, 0], tz=tz)
@@ -481,3 +490,101 @@ class ChartsTest(BaseStatsTest):
             self.assertEqual(series[2], {'y': 1, 'name': "Label #0"})  # labels with same count in alphabetical order
             self.assertEqual(series[8], {'y': 1, 'name': "Label #6"})
             self.assertEqual(series[9], {'y': 3, 'name': "Other"})
+
+
+class SecondTotalCountsTest(BaseStatsTest):
+
+    def test_first_reply_counts(self):
+        msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
+        msg2 = self.create_message(self.unicef, 234, self.ned, "Hello 2", [self.aids, self.pregnancy])
+        msg3 = self.create_message(self.unicef, 345, self.ann, "Hello 3", [self.pregnancy])
+        msg4 = self.create_message(self.nyaruka, 456, self.ned, "Hello 4", [self.code])
+        msg5 = self.create_message(self.unicef, 789, self.ann, "Hello 5", [self.code])
+
+        case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [self.aids])
+        case2 = self.create_case(self.unicef, self.ned, self.moh, msg2, [self.aids, self.pregnancy])
+        case3 = self.create_case(self.unicef, self.ann, self.who, msg3, [self.pregnancy])
+        case4 = self.create_case(self.unicef, self.ned, self.who, msg4, [self.code])
+        case5 = self.create_case(self.unicef, self.ann, self.who, msg5, [self.pregnancy])
+
+        self.create_outgoing(self.unicef, self.user1, 201, Outgoing.CASE_REPLY, "Good question", self.ann, case=case1)
+        self.create_outgoing(self.unicef, self.user1, 201, Outgoing.CASE_REPLY, "Good question", self.ned, case=case2)
+        self.create_outgoing(self.unicef, self.user3, 201, Outgoing.CASE_REPLY, "Good question", self.ann, case=case3)
+        self.create_outgoing(self.unicef, self.user3, 201, Outgoing.CASE_REPLY, "Good question", self.ned, case=case4)
+
+        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').total(), 4)
+        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').seconds(), 4)
+
+        # First reply only counted for re-assignments, immediate replies NOT counteds
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').total(), 0)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').seconds(), 0)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').average(), 0)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'A').total(), 0)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'A').seconds(), 0)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'A').average(), 0)
+
+        # check a reassigned case response
+        case5.reassign(self.user3, self.moh)
+        self.create_outgoing(self.unicef, self.user1, 201, Outgoing.CASE_REPLY, "Good question", self.ann, case=case5)
+        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').total(), 5)
+        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'A').seconds(), 5)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').total(), 1)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').seconds(), 1)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'A').average(), 1)
+
+        # check empty partner metrics
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.klab], 'A').average(), 0)
+
+        self.assertEqual(DailySecondTotalCount.objects.count(), 6)
+        squash_counts()
+        self.assertEqual(DailySecondTotalCount.objects.count(), 2)
+
+    def test_case_closed_counts(self):
+        msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
+        msg2 = self.create_message(self.unicef, 234, self.ned, "Hello 2", [self.aids, self.pregnancy])
+        msg3 = self.create_message(self.unicef, 345, self.ann, "Hello 3", [self.pregnancy])
+        msg4 = self.create_message(self.nyaruka, 456, self.ned, "Hello 4", [self.code])
+
+        case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [self.aids])
+        case2 = self.create_case(self.unicef, self.ned, self.moh, msg2, [self.aids, self.pregnancy])
+        case3 = self.create_case(self.unicef, self.ann, self.who, msg3, [self.pregnancy])
+        case4 = self.create_case(self.unicef, self.ned, self.who, msg4, [self.code])
+
+        case1.close(self.user1)
+        case2.reassign(self.user1, self.who)
+        case2.close(self.user3)
+        case3.close(self.user3)
+        case4.close(self.user3)
+
+        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'C').total(), 4)
+        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'C').seconds(), 4)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'C').total(), 1)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'C').seconds(), 1)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'C').average(), 1)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'C').total(), 3)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'C').seconds(), 3)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.who], 'C').average(), 1)
+
+        # check that reopened cases stats are not counted
+        case1.reopen(self.user1)
+        case1.close(self.user1)
+        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'C').total(), 4)
+        self.assertEqual(DailySecondTotalCount.get_by_org([self.unicef], 'C').seconds(), 4)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'C').total(), 1)
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'C').seconds(), 1)
+
+        # check month totals
+        today = datetime.today()
+        current_month = today.month
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.moh], 'C').month_totals(),
+                         [(float(current_month), 1, 1)])
+
+        # check user totals are empty as we are recording those
+        self.assertEqual(DailySecondTotalCount.get_by_user(self.unicef, [self.user1], 'C').total(), 0)
+
+        # check empty partner metrics
+        self.assertEqual(DailySecondTotalCount.get_by_partner([self.klab], 'C').average(), 0)
+
+        self.assertEqual(DailySecondTotalCount.objects.count(), 8)
+        squash_counts()
+        self.assertEqual(DailySecondTotalCount.objects.count(), 3)

@@ -1136,14 +1136,19 @@ class InboxViewsTest(BaseCasesTest):
         self.login(self.admin)
 
         response = self.url_get('unicef', url)
-        self.assertContains(response, "/org/home/")  # org-level users get link to org dashboard
+        self.assertContains(response, "Administration")  # org-level users admin menu
+        self.assertContains(response, "/org/home/")      # and link to org dashboard
 
-        # log in as regular user
+        # log in as partner manager
         self.login(self.user1)
 
         response = self.url_get('unicef', url)
+        self.assertNotContains(response, "Administration")
         self.assertNotContains(response, "/org/home/")
         self.assertContains(response, "/partner/read/%d/" % self.moh.pk)  # partner users get link to partner dashboard
+
+        self.assertContains(response, "Message Board")
+        self.assertContains(response, "/messageboard/")
 
 
 class PartnerTest(BaseCasesTest):
@@ -1334,13 +1339,29 @@ class PartnerCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json, {'results': [
             {
                 'id': self.moh.pk, 'name': "MOH", 'restricted': True,
-                'replies': {'last_month': 0, 'this_month': 0, 'total': 0},
-                'cases': {'opened_this_month': 0, 'closed_this_month': 0, 'total': 0},
+                'replies': {
+                    'average_referral_response_time_this_month': u'0\xa0minutes',
+                    'last_month': 0,
+                    'this_month': 0,
+                    'total': 0},
+                'cases': {
+                    'average_closed_this_month': u'0\xa0minutes',
+                    'opened_this_month': 0,
+                    'closed_this_month': 0,
+                    'total': 0},
             },
             {
                 'id': self.who.pk, 'name': "WHO", 'restricted': True,
-                'replies': {'last_month': 0, 'this_month': 0, 'total': 0},
-                'cases': {'opened_this_month': 0, 'closed_this_month': 0, 'total': 0},
+                'replies': {
+                    'average_referral_response_time_this_month': u'0\xa0minutes',
+                    'last_month': 0,
+                    'this_month': 0,
+                    'total': 0},
+                'cases': {
+                    'average_closed_this_month': u'0\xa0minutes',
+                    'opened_this_month': 0,
+                    'closed_this_month': 0,
+                    'total': 0},
             }
         ]})
 

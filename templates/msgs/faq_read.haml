@@ -1,0 +1,102 @@
+- extends "smartmin/read.html"
+- load smartmin i18n
+
+- block pre-content
+
+  %script{ type:"text/javascript" }
+    var contextData = {{ context_data_json|safe }};
+
+  .ng-cloak{ ng-controller:"FaqController", ng-cloak:"", ng-init:"init()" }
+    .page-header.clearfix
+      .page-header-buttons
+        - if edit_button_url
+          .btn-group
+            %a.btn.btn-default{ ng-click:"onEditFaq(faq)", tooltip:"Edit FAQ" }
+              %i.glyphicon.glyphicon-pencil
+            - if can_delete
+              %a.btn.btn-default{ ng-click:"onDeleteFaq()", tooltip:"Delete FAQ" }
+                %i.glyphicon.glyphicon-trash
+
+      %h2
+        FAQ: [[ faq.question ]]
+
+    %table.table.table-striped
+      %tbody
+        %tr
+          %td.read-label
+            - trans "Answer"
+          %td.read-value
+            %span
+              [[ faq.answer ]]
+        %tr
+          %td.read-label
+            - trans "Language"
+          %td.read-value
+            %spans
+            [[ faq.language.name ]]
+        %tr
+          %td.read-label
+            - trans "Labels"
+          %td.read-value
+            %span{ ng-repeat:'label in faq.labels' }
+              %span.label.label-success
+                [[ label.name ]]
+              &nbsp;
+        
+            
+    .page-header.clearfix
+      .page-header-buttons
+        - if edit_button_url
+          .btn-group
+            %a.btn.btn-default{ ng-click:"onNewTranslation(faq)", type:"button"  }
+              %span.glyphicon.glyphicon-plus
+              - trans "Add Translation"
+
+      %h3
+        Translations
+    
+    %table.table.table-striped
+      %thead
+        %tr
+          %th
+            - trans "Language"
+          %th
+            - trans "Question"
+          %th.col-xs-4
+            - trans "Answer"
+          %th
+
+      %tbody
+        %tr.translation{ ng-repeat:"translation in translations | filter:filterTranslations(faq.id)" }
+          %td
+            [[ translation.language.name ]]
+          %td
+            [[ translation.question ]]
+          %td
+            [[ translation.answer ]]
+          %td{ style:"text-align: right" }
+            .btn-group
+              %a.btn.btn-default{ ng-click:"onEditTranslation(translation, faq)", tooltip:"Edit Translation" }
+                %i.glyphicon.glyphicon-pencil
+              %a.btn.btn-default{ ng-click:"onDeleteFaqTranslation(translation)", tooltip:"Delete Translation" }
+                %i.glyphicon.glyphicon-trash
+        %tr.emptymessage
+          %td
+            - trans "No translations available"
+
+
+- block read-buttons
+- block pjax
+- block extra-fields
+- block extra-style
+  :css
+    .read-label {
+      width: 10%
+    }
+    .read-value {
+      width: 90%;
+      word-break: break-word;
+    }
+    .table td.read-label {
+      text-align: left;
+    }

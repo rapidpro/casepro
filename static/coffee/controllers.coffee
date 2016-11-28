@@ -294,7 +294,7 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
     )
 
   $scope.onReplyToSelection = () ->
-    $uibModal.open({templateUrl: '/partials/modal_reply.html', controller: 'ReplyModalController', resolve: {selection: (() -> $scope.selection), maxLength: (() -> OUTGOING_TEXT_MAX_LEN)}})
+    $uibModal.open({templateUrl: '/partials/modal_reply.html', controller: 'ReplyModalController', scope :$scope, resolve: {selection: (() -> $scope.selection), maxLength: (() -> OUTGOING_TEXT_MAX_LEN)}})
     .result.then((text) ->
       MessageService.bulkReply($scope.selection, text).then(() ->
         MessageService.bulkArchive($scope.selection).then(() ->
@@ -863,6 +863,88 @@ controllers.controller('UserController', ['$scope', '$controller', '$window', 'S
     )
 ])
 
+
+#============================================================================
+# Faq view controller
+#============================================================================
+controllers.controller('FaqController', ['$scope', '$window', 'UtilsService', 'FaqService', ($scope, $window, UtilsService, FaqService) ->
+
+  $scope.faq = $window.contextData.faq
+
+  $scope.init = () ->
+    FaqService.fetchAllFaqs().then((results) ->
+        $scope.translations = results
+    )
+
+  $scope.filterTranslations = (parent) ->
+    (translation) ->
+      translation.parent == parent
+
+  $scope.onDeleteFaq = () ->
+    UtilsService.confirmModal("Warning! If this FAQ has any linked translation FAQs, they will be also be deleted. Delete this FAQ?", 'danger').then(() ->
+      FaqService.delete($scope.faq).then(() ->
+        UtilsService.navigate('/faq/')
+      )
+    )
+  
+  $scope.onDeleteFaqTranslation = (translation) ->
+      UtilsService.confirmModal("Delete this Translation??", 'danger').then(() ->
+        FaqService.deleteTranslation(translation).then(() ->
+          UtilsService.navigate('')
+        )
+      )
+
+  $scope.onNewTranslation = (faq) ->
+    UtilsService.faqModal("Create FAQ Translation", null, faq, false).then((result) ->
+      FaqService.createFaq(result).then(() ->
+        UtilsService.navigate('')
+      )
+    )
+
+  $scope.onEditTranslation = (translation, faq) ->
+    UtilsService.faqModal("Edit FAQ Translation", translation, faq, false).then((result) ->
+      FaqService.updateFaq(result).then(() ->
+        UtilsService.navigate('')
+      )
+    )
+
+  $scope.onEditFaq = (faq) ->
+    UtilsService.faqModal("Edit FAQ", null, faq, true).then((result) ->
+      FaqService.updateFaq(result).then(() ->
+        UtilsService.navigate('')
+      )
+    )
+    
+])
+
+
+#============================================================================
+# Faq list controller
+#============================================================================
+controllers.controller('FaqListController', ['$scope','UtilsService', 'FaqService', ($scope, UtilsService, FaqService) ->
+
+  $scope.init = () ->
+    FaqService.fetchAllFaqs().then((results) ->
+      $scope.faqs = results
+      
+      parents = {}
+      angular.forEach $scope.faqs, (faq) ->
+        parents[faq.parent] = (parents[faq.parent] || 0) + 1
+      angular.forEach $scope.faqs, (faq) ->
+        if parents[faq.id] then faq.count = parents[faq.id] else faq.count = 0 
+    )
+
+  $scope.onNewFaq = () ->
+    UtilsService.faqModal("Create FAQ", null, null, true).then((result) ->
+      FaqService.createFaq(result).then(() ->
+        UtilsService.navigate('')
+      )
+    )
+
+  $scope.filterParents = (faq) ->
+    faq.parent == null
+    
+])
 
 #============================================================================
 # Date range controller

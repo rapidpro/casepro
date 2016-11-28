@@ -16,7 +16,7 @@ from casepro.test import BaseCasesTest
 
 from . import safe_max, normalize, match_keywords, truncate, str_to_bool, json_encode, TimelineItem, uuid_to_int
 from . import date_to_milliseconds, datetime_to_microseconds, microseconds_to_datetime, month_range, date_range
-from . import get_language_name, json_decode
+from . import get_language_name, json_decode, humanize_seconds
 from .email import send_email
 from .middleware import JSONMiddleware
 
@@ -143,6 +143,22 @@ class UtilsTest(BaseCasesTest):
         self.assertEqual(get_language_name('arc'), "Official Aramaic")
 
         self.assertIsNone(get_language_name('xxxxx'))
+
+    def test_humanize_seconds(self):
+        self.assertEqual(humanize_seconds(59), u"0\xa0minutes")
+        self.assertEqual(humanize_seconds(119), u"1\xa0minute")
+        self.assertEqual(humanize_seconds(120), u"2\xa0minutes")
+        self.assertEqual(humanize_seconds(3600), u"1\xa0hour")
+        self.assertEqual(humanize_seconds(7200), u"2\xa0hours")
+        self.assertEqual(humanize_seconds(3719), u"1\xa0hour, 1\xa0minute")
+        self.assertEqual(humanize_seconds(3720), u"1\xa0hour, 2\xa0minutes")
+        self.assertEqual(humanize_seconds(7319), u"2\xa0hours, 1\xa0minute")
+        self.assertEqual(humanize_seconds(7320), u"2\xa0hours, 2\xa0minutes")
+        self.assertEqual(humanize_seconds(86400), "1\xa0day")
+        self.assertEqual(humanize_seconds(172800), "2\xa0days")
+        self.assertEqual(humanize_seconds(93599), "1\xa0day, 1\xa0hour")
+        self.assertEqual(humanize_seconds(93600), "1\xa0day, 2\xa0hours")
+        self.assertEqual(humanize_seconds(180000), "2\xa0days, 2\xa0hours")
 
 
 class EmailTest(BaseCasesTest):

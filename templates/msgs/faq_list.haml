@@ -1,0 +1,48 @@
+- extends "smartmin/list.html"
+- load smartmin i18n
+
+- block pre-content
+
+- block table-controls
+
+  .ng-cloak{ ng-controller:"FaqListController", ng-cloak:"", ng-init:"init()" }
+    .clearfix
+      .page-header-buttons
+        .btn-group
+          %a.btn.btn-default{ ng-click:"onNewFaq(faq)", tooltip:"Add new FAQ" }
+            %span.glyphicon.glyphicon-plus
+            - trans "Add"
+          %a.btn.btn-default{ href:"{% url 'msgs.faq_import' %}" }
+            %span.glyphicon.glyphicon-import
+            - trans "Import"
+      .page-header
+        %h2
+          - trans "FAQs"
+      
+      %table.table.table-striped.list-table
+        %thead
+          %tr
+            %th
+              - trans "Question"
+            %th
+              - trans "Answer"
+            %th
+              - trans "Language"
+            %th
+              - trans "Translations"
+
+        %tbody
+          %tr{ ng-repeat:"faq in faqs | filter:filterParents" }
+            %td
+              %a{ ng-href:"/faq/read/[[ faq.id ]]/" }
+                [[ faq.question ]]
+            %td.col-xs-6
+              [[ faq.answer ]]
+            %td
+              [[ faq.language.name ]]
+            %td.text-center
+              %span.badge
+                [[ faq.count ]]
+            
+- block pjax
+

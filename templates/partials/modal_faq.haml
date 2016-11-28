@@ -1,0 +1,62 @@
+-load i18n
+
+.modal-header
+  %h3.modal-title
+    [[ title ]]
+  .modal-body{ ng-init:"init()", ng-cloak:"" }
+    .panel.panel-default{ ng-hide:"isFaq" }
+      .panel-heading
+        %h3.panel-title
+          - trans "Original FAQ"
+      .panel-body
+        %b
+          [[ faq.question ]]
+        %p
+          [[ faq.answer ]]
+          
+    %form{ name:"form", novalidate:"" }
+      .form-group
+      .form-group.form-horizontal
+        .form-group{ ng-class:'{"has-error": form.question.$invalid && (form.question.$dirty || form.submitted)}' }
+          %label.col-sm-2.control-label
+            - trans "Question"
+          .col-sm-10
+            %textarea.form-control{ type:"text", ng-model:"fields.question.val", name:"question", required:"" }
+            .help-block{ ng-show:"form.question.$error.required && (form.question.$dirty || form.submitted)" }
+              - trans "Required"
+        
+        .form-group{ ng-class:'{"has-error": form.answer.$invalid && (form.answer.$dirty || form.submitted)}' }
+          %label.col-sm-2.control-label
+            - trans "Answer"
+          .col-sm-10
+            %textarea.form-control{ type:"text", ng-model:"fields.answer.val", name:"answer", required:"" }
+            .help-block{ ng-show:"form.question.$error.required && (form.question.$dirty || form.submitted)" }
+              - trans "Required"
+        
+        .form-group{ ng-class:'{"has-error": form.labels.$invalid && (form.labels.$dirty || form.submitted)}', ng-if:"isFaq"} 
+          %label.col-sm-2.control-label
+              - trans "Label"
+          .col-sm-10
+            %select.form-control{ ng-model:"fields.labels.val", name:"labels",
+            ng-options:"label.id as label.name for label in labels", 
+            multiple:"multiple", required:"" }
+            .help-block{ ng-show:"form.answer.$error.required && (form.answer.$dirty || form.submitted)" }
+              - trans "Required"
+              
+        .form-group.has-feedback.input-clear{ ng-class:'{"has-error": form.language.$invalid && (form.language.$dirty || form.submitted)}' }
+          %label.col-sm-2.control-label
+            - trans "Language"
+          .col-sm-10
+              %input.form-control{ ng-model:"fields.language.val.code", type: "text", uib-typeahead: "language.iso639_2_b as language.name for language in iso_list | filter:$viewValue | limitTo:8", typeahead-editable:"false", typeahead-input-formatter:"formatInput($model)", name:"language", required:"", autocomplete:"off" }
+              %i.form-control-feedback.glyphicon.glyphicon-remove.form-control-feedback{ ng-show:"fields.language.val", ng-click:"clearInput()" }
+              .help-block{ ng-show:"form.language.$error.required && (form.language.$dirty || form.submitted)" }
+                - trans "Valid language required"
+            
+              
+  .modal-footer
+    %button.btn.btn-primary{ ng-click:"ok()" }
+      - trans "Submit"
+    %button.btn.btn-default{ ng-click:"cancel()" }
+      - trans "Cancel"
+      
+

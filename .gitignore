@@ -34,13 +34,17 @@ downloads/
 eggs/
 lib/
 lib64/
-media/
 parts/
 sdist/
 var/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# Exclude media folder except files used for import testing
+media
+!media/test_orgs
+!media/csv_imports
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

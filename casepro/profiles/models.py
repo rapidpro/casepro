@@ -37,8 +37,11 @@ class Profile(models.Model):
 
     change_password = models.BooleanField(default=False, help_text=_("User must change password on next login"))
 
+    must_use_faq = models.BooleanField(default=False, help_text=_(
+        "User is only allowed to reply with pre-approved responses"))
+
     @classmethod
-    def create_user(cls, name, email, password, change_password=False):
+    def create_user(cls, name, email, password, change_password=False, must_use_faq=False):
         """
         Creates an un-attached user
         """
@@ -48,28 +51,28 @@ class Profile(models.Model):
         user.save()
 
         # add profile
-        cls.objects.create(user=user, full_name=name, change_password=change_password)
+        cls.objects.create(user=user, full_name=name, change_password=change_password, must_use_faq=must_use_faq)
 
         return user
 
     @classmethod
-    def create_org_user(cls, org, name, email, password, change_password=False):
+    def create_org_user(cls, org, name, email, password, change_password=False, must_use_faq=False):
         """
         Creates an org-level user (for now these are always admins)
         """
-        user = cls.create_user(name, email, password, change_password=change_password)
+        user = cls.create_user(name, email, password, change_password=change_password, must_use_faq=must_use_faq)
         user.update_role(org, ROLE_ADMIN)
         return user
 
     @classmethod
-    def create_partner_user(cls, org, partner, role, name, email, password, change_password=False):
+    def create_partner_user(cls, org, partner, role, name, email, password, change_password=False, must_use_faq=False):
         """
         Creates a partner-level user
         """
         if not partner or partner.org != org:  # pragma: no cover
             raise ValueError("Can't create partner user without valid partner for org")
 
-        user = cls.create_user(name, email, password, change_password=change_password)
+        user = cls.create_user(name, email, password, change_password=change_password, must_use_faq=must_use_faq)
         user.update_role(org, role, partner)
         return user
 
@@ -328,6 +331,16 @@ def _user_can_edit(user, org, other):
     return other_partner and user.can_manage(other_partner)  # manager can edit users in same partner org
 
 
+def _user_must_use_faq(user):
+    """
+    Whether this user must reply using a pre-approved response (FAQ)
+    """
+    if user.has_profile():
+        return user.profile.must_use_faq
+    else:
+        return False
+
+
 def _user_str(user):
     if user.has_profile():
         if user.profile.full_name:
@@ -370,6 +383,7 @@ User.can_manage = _user_can_manage
 User.can_edit = _user_can_edit
 User.remove_from_org = _user_remove_from_org
 User.as_json = _user_as_json
+User.must_use_faq = _user_must_use_faq
 
 
 if six.PY2:

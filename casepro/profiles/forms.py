@@ -45,6 +45,10 @@ class UserForm(forms.ModelForm):
     change_password = forms.BooleanField(label=_("Require change"), required=False,
                                          help_text=_("Whether user must change password on next login."))
 
+    must_use_faq = forms.BooleanField(
+        label=_("Pre-approved responses only"), required=False,
+        help_text=_("Whether user will only be able to reply using pre-approved replies (FAQs)"))
+
     def __init__(self, *args, **kwargs):
         self.org = kwargs.pop('org')
         require_password_change = kwargs.pop('require_password_change', False)
