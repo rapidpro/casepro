@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from datetime import datetime
+import dateutil.parser
 from django.conf import settings
 from django.conf.urls import url
 from django.http import JsonResponse
@@ -37,9 +38,11 @@ class HubMessageSender(object):
         if not outgoing.reply_to:
             reply_to = ''
             label = ''
+            inbound_created_on = outgoing.created_on
         else:
             reply_to = outgoing.reply_to.text
             label = ','.join([str(l) for l in outgoing.reply_to.labels.all()])
+            inbound_created_on = outgoing.reply_to.created_on
 
         return {
             'to': to_addr,
@@ -48,7 +51,8 @@ class HubMessageSender(object):
             'user_id': outgoing.contact.uuid,
             'helpdesk_operator_id': outgoing.created_by.id,
             'label': label,
-            'created_on': outgoing.created_on.isoformat()}
+            'inbound_created_on': inbound_created_on.isoformat(),
+            'outbound_created_on': outgoing.created_on.isoformat()}
 
     def send_helpdesk_outgoing_message(self, outgoing, to_addr):
         if self.base_url and self.auth_token:
@@ -548,9 +552,18 @@ def received_junebug_message(request):
     contact = Contact.get_or_create(request.org, identity.get('id'))
 
     message_id = uuid_to_int(data.get('message_id'))
+
+    if 'timestamp' in data:
+        timestamp = dateutil.parser.parse(data['timestamp'])
+        if not timestamp.tzinfo:
+            # Assume UTC
+            timestamp = pytz.utc.localize(timestamp)
+    else:
+        timestamp = datetime.now(pytz.utc)
+
     msg = Message.objects.create(
         org=request.org, backend_id=message_id, contact=contact, type=Message.TYPE_INBOX,
-        text=(data.get('content') or ''), created_on=datetime.now(pytz.utc), has_labels=True)
+        text=(data.get('content') or ''), created_on=timestamp, has_labels=True)
 
     return JsonResponse(msg.as_json())
 
