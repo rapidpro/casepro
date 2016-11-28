@@ -546,7 +546,7 @@ class FaqCRUDL(SmartCRUDL):
             return initial
 
         def derive_fields(self):
-            fields = ['org', 'question', 'answer', 'language', 'parent']
+            fields = ['question', 'answer', 'language', 'parent']
             if not self.object.parent:
                 fields.append('labels')
 
