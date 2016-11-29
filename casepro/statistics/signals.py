@@ -48,23 +48,27 @@ def record_new_outgoing(sender, instance, created, **kwargs):
                 seconds_since_open = ceil(td.total_seconds())
                 DailySecondTotalCount.record_item(day, seconds_since_open,
                                                   DailySecondTotalCount.TYPE_TILL_REPLIED, org)
-
             if case.assignee == partner:
                 # count the first response by this partner
                 if instance == case.outgoing_messages.filter(partner=partner).earliest('created_on'):
-                    # only count the time since this case was (re)assigned to this partner
-                    try:
-                        action = case.actions.filter(action=CaseAction.REASSIGN, assignee=partner).latest('created_on')
-                        start_date = action.created_on
+                    author_action = case.actions.filter(action=CaseAction.OPEN).order_by('created_on').first()
+                    reassign_action = case.actions.filter(
+                        action=CaseAction.REASSIGN, assignee=partner).order_by('created_on').first()
+
+                    # don't count self-assigned cases
+                    if author_action and author_action.created_by.get_partner(org) != partner:
+                        # only count the time since this case was (re)assigned to this partner
+                        # or cases that were assigned during creation by another partner
+                        if reassign_action:
+                            start_date = reassign_action.created_on
+                        else:
+                            start_date = author_action.created_on
 
                         td = instance.created_on - start_date
                         seconds_since_open = ceil(td.total_seconds())
                         DailySecondTotalCount.record_item(
                             day, seconds_since_open,
                             DailySecondTotalCount.TYPE_TILL_REPLIED, partner)
-                    except CaseAction.DoesNotExist:
-                        pass
-                        # Only count first response by partner after the cas was reassigned
 
 
 @receiver(m2m_changed, sender=Message.labels.through)

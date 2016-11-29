@@ -545,6 +545,13 @@ class FaqCRUDL(SmartCRUDL):
             initial['labels'] = self.object.labels.all()
             return initial
 
+        def derive_fields(self):
+            fields = ['question', 'answer', 'language', 'parent']
+            if not self.object.parent:
+                fields.append('labels')
+
+            return tuple(fields)
+
     class Delete(OrgPermsMixin, SmartDeleteView):
         cancel_url = '@msgs.faq_list'
 
