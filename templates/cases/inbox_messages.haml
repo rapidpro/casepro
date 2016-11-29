@@ -137,15 +137,9 @@
             %i.glyphicon.glyphicon-flag
         .message-time
           <cp-date time="item.time" />
-        .message-contact
-          -if site_contact_display == "urns"
-            .message-contact-urns
-              %a{ ng-click:"activateContact(item.contact)" }><
-                <cp-contact contact="item.contact" fields="fields">
-          -else
-            .message-contact-default
-              %a{ ng-click:"activateContact(item.contact)" }><
-                <cp-contact contact="item.contact" fields="fields">
+        .{ class:"{% if site_contact_display == 'urns' %}message-contact-urns{% else %}message-contact-default{% endif %}" }
+          %a{ ng-click:"activateContact(item.contact)" }><
+            <cp-contact contact="item.contact" fields="fields">
         .message-text
           %span.label-container{ ng-if:"item.flow" }
             %span.label.label-info
