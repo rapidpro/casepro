@@ -571,7 +571,9 @@ class FaqCRUDLTest(BaseCasesTest):
         # log in as a non-administrator
         self.login(self.user1)
 
-        response = self.url_get('unicef', url, {})
+        # check that appropriate number of queries are executed
+        with self.assertNumQueries(28):
+            response = self.url_get('unicef', url, {})
         # should have 4 results as one is label restricted
         self.assertEqual(len(response.json['results']), 4)
 
