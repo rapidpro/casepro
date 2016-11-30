@@ -11,7 +11,7 @@
       .form-group{ ng-class:'{"has-error": form.summary.$invalid}' }
         %label.control-label
           - trans "Summary"
-        %textarea.form-control{ ng-model:"fields.summary.val", ng-maxlength:"fields.summary.maxLength", name:"summary", required:"" }
+        %textarea.form-control{ ng-model:"fields.summary.val", ng-maxlength:"{{ max_summary_chars }}", name:"summary", required:"" }
         .help-block{ ng-show:"form.summary.$error.required" }
           - trans "Required"
         .help-block{ ng-show:"form.summary.$error.maxlength" }

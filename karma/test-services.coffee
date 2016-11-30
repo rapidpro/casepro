@@ -41,7 +41,7 @@ describe('services:', () ->
 
       # FAQs
       faq1: {id: 501, question: "Am I pregnant?", answer: "yes", language: {code: "eng", name: "English"}, labels: [{id: 201, name: "Tea"}, {id: 202, name: "Coffee"}], parent: null},
-      
+
       # translation
       translation1: {id: 601, question: "Is ek swanger", answer: "ja", language: {code: "afr", name: "Afrikaans"}, labels: {id: 201, name: "Tea"}, parent: 401},
     }
@@ -709,25 +709,23 @@ describe('services:', () ->
 
     describe('editModal', () ->
       it('opens edit modal', () ->
-        UtilsService.editModal("Edit", "this...", 100)
+        UtilsService.editModal("Edit", "this...")
 
         modalOptions = $uibModal.open.calls.mostRecent().args[0]
         expect(modalOptions.templateUrl).toEqual('/partials/modal_edit.html')
         expect(modalOptions.resolve.title()).toEqual("Edit")
         expect(modalOptions.resolve.initial()).toEqual("this...")
-        expect(modalOptions.resolve.maxLength()).toEqual(100)
       )
     )
 
     describe('composeModal', () ->
       it('opens compose modal', () ->
-        UtilsService.composeModal("Compose", "this...", 100)
+        UtilsService.composeModal("Compose", "this...")
 
         modalOptions = $uibModal.open.calls.mostRecent().args[0]
         expect(modalOptions.templateUrl).toEqual('/partials/modal_compose.html')
         expect(modalOptions.resolve.title()).toEqual("Compose")
         expect(modalOptions.resolve.initial()).toEqual("this...")
-        expect(modalOptions.resolve.maxLength()).toEqual(100)
       )
     )
 
@@ -772,12 +770,11 @@ describe('services:', () ->
 
     describe('newCaseModal', () ->
       it('opens new case modal', () ->
-        UtilsService.newCaseModal("this...", 100, [test.moh, test.who])
+        UtilsService.newCaseModal("this...", [test.moh, test.who])
 
         modalOptions = $uibModal.open.calls.mostRecent().args[0]
         expect(modalOptions.templateUrl).toEqual('/partials/modal_newcase.html')
         expect(modalOptions.resolve.summaryInitial()).toEqual("this...")
-        expect(modalOptions.resolve.summaryMaxLength()).toEqual(100)
         expect(modalOptions.resolve.partners()).toEqual([test.moh, test.who])
       )
     )
@@ -914,7 +911,7 @@ describe('services:', () ->
             prompt: 'Bar?'
           })
           .then(-> fulfilled = true)
-          
+
           $rootScope.$apply()
           expect(fulfilled).toBe(false)
 

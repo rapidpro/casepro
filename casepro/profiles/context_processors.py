@@ -1,4 +1,5 @@
 from __future__ import absolute_import, unicode_literals
+from casepro.settings_common import MAX_MESSAGE_CHARS, CASE_SUMMARY_MAX_LEN
 
 
 def user(request):
@@ -17,5 +18,7 @@ def user(request):
     return {
         'user_is_admin': is_admin,
         'user_partner': partner,
-        'user_is_faq_only': is_faq_only
+        'user_is_faq_only': is_faq_only,
+        'max_msg_chars': MAX_MESSAGE_CHARS,
+        'max_summary_chars': CASE_SUMMARY_MAX_LEN,
     }

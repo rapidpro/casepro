@@ -24,7 +24,7 @@ from casepro.utils import json_encode, datetime_to_microseconds, microseconds_to
 from casepro.utils import month_range, humanize_seconds
 from casepro.utils.export import BaseDownloadView
 
-from . import MAX_MESSAGE_CHARS
+from casepro.settings_common import MAX_MESSAGE_CHARS
 from .forms import PartnerCreateForm, PartnerUpdateForm
 from .models import AccessLevel, Case, CaseFolder, CaseExport, Partner
 from .tasks import case_export

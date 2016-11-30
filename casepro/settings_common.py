@@ -56,6 +56,8 @@ SITE_BACKEND = 'casepro.backend.NoopBackend'
 SITE_HIDE_CONTACT_FIELDS = []  # Listed fields should not be displayed
 SITE_CONTACT_DISPLAY = "name"  # Overrules SITE_HIDE_CONTACT_FIELDS Options: 'name', 'uuid' or 'urns'
 SITE_ALLOW_CASE_WITHOUT_MESSAGE = True
+MAX_MESSAGE_CHARS = 640
+CASE_SUMMARY_MAX_LEN = 8000
 
 # junebug configuration
 JUNEBUG_API_ROOT = 'http://localhost:8080/'

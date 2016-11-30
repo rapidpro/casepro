@@ -188,29 +188,29 @@ services.factory('FaqService', ['$rootScope', '$http', '$httpParamSerializer', (
       return $http.get('/faq/search/?').then((response) ->
         return response.data.results
       )
-      
+
     #----------------------------------------------------------------------------
     # Create a new FAQ
     #----------------------------------------------------------------------------
     createFaq: (data) ->
       params = {question: data.question, answer: data.answer, parent: data.parent, language: data.language, labels: data.labels, id: data.id }
-      
+
       return $http.post('/faq/create/', params)
-      
+
     #----------------------------------------------------------------------------
     # Updates a FAQ
     #----------------------------------------------------------------------------
     updateFaq: (data) ->
       params = {question: data.question, answer: data.answer, parent: data.parent, language: data.language, labels: data.labels, id: data.id}
-      
+
       return $http.post('/faq/update/' + data.id + '/', params)
-      
+
     #----------------------------------------------------------------------------
     # Delete the given FAQ
     #----------------------------------------------------------------------------
     delete: (faq) ->
       return $http.post('/faq/delete/' + faq.id + '/')
-    
+
     #----------------------------------------------------------------------------
     # Delete the given Translation
     #----------------------------------------------------------------------------
@@ -224,7 +224,7 @@ services.factory('FaqService', ['$rootScope', '$http', '$httpParamSerializer', (
       return $http.get('/faq/languages/').then((response) ->
         return response.data.results
       )
-      
+
     #----------------------------------------------------------------------------
     # Fetch a list of all languages
     #----------------------------------------------------------------------------
@@ -232,7 +232,7 @@ services.factory('FaqService', ['$rootScope', '$http', '$httpParamSerializer', (
       return $http.get('/faq/languages/').then((response) ->
         return response.data.iso_list
       )
-    
+
 ])
 
 
@@ -610,12 +610,12 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
       resolve = {prompt: (() -> prompt), style: (() -> style)}
       return $uibModal.open({templateUrl: '/partials/modal_confirm.html', controller: 'ConfirmModalController', resolve: resolve}).result
 
-    editModal: (title, initial, maxLength) ->
-      resolve = {title: (() -> title), initial: (() -> initial), maxLength: (() -> maxLength)}
+    editModal: (title, initial) ->
+      resolve = {title: (() -> title), initial: (() -> initial)}
       return $uibModal.open({templateUrl: '/partials/modal_edit.html', controller: 'EditModalController', resolve: resolve}).result
 
-    composeModal: (title, initial, maxLength) ->
-      resolve = {title: (() -> title), initial: (() -> initial), maxLength: (() -> maxLength)}
+    composeModal: (title, initial) ->
+      resolve = {title: (() -> title), initial: (() -> initial)}
       return $uibModal.open({templateUrl: '/partials/modal_compose.html', controller: 'ComposeModalController', resolve: resolve}).result
 
     assignModal: (title, prompt, partners, users) ->
@@ -630,14 +630,14 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
       resolve = {title: (() -> title), prompt: (() -> prompt), labels: (() -> labels), initial: (() -> initial)}
       return $uibModal.open({templateUrl: '/partials/modal_label.html', controller: 'LabelModalController', resolve: resolve}).result
 
-    newCaseModal: (summaryInitial, summaryMaxLength, partners, users) ->
-      resolve = {summaryInitial: (() -> summaryInitial), summaryMaxLength: (() -> summaryMaxLength), partners: (() -> partners), users: (() -> users)}
+    newCaseModal: (summaryInitial, partners, users) ->
+      resolve = {summaryInitial: (() -> summaryInitial), partners: (() -> partners), users: (() -> users)}
       return $uibModal.open({templateUrl: '/partials/modal_newcase.html', controller: 'NewCaseModalController', resolve: resolve}).result
 
     dateRangeModal: (title, prompt) ->
       resolve = {title: (() -> title), prompt: (() -> prompt)}
       return $uibModal.open({templateUrl: '/partials/modal_daterange.html', controller: 'DateRangeModalController', resolve: resolve}).result
-      
+
     faqModal: (title, translation, faq, isFaq) ->
       resolve = {title: (() -> title), translation: (() -> translation), faq: (() -> faq), isFaq: (() -> isFaq)}
       return $uibModal.open({templateUrl: '/partials/modal_faq.html', controller: 'FaqModalController', resolve: resolve}).result

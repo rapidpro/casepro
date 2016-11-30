@@ -44,10 +44,10 @@
 
     - if user_is_faq_only
       .form-group
-        %textarea.form-control{ ng-model:"fields.text.val", ng-maxlength:"fields.text.maxLength", name:"text", required:"", readonly:"" }
+        %textarea.form-control{ ng-model:"fields.text.val", ng-maxlength:"{{ max_msg_chars }}", name:"text", required:"", readonly:"" }
     - else
       .form-group.no-margin{ ng-class:'{"has-error": form.text.$invalid && (form.text.$dirty || form.submitted)}' }
-        %textarea.form-control{ ng-model:"fields.text.val", ng-maxlength:"fields.text.maxLength", name:"text", required:"", placeholder:'Enter a custom message' }
+        %textarea.form-control{ ng-model:"fields.text.val", ng-maxlength:"{{ max_msg_chars }}", name:"text", required:"", placeholder:'Enter a custom message' }
           .help-block{ ng-show:"form.text.$error.required && (form.text.$dirty || form.submitted)" }
             - trans "Required"
           .help-block{ ng-show:"form.text.$error.maxlength" }
