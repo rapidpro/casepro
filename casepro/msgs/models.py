@@ -233,8 +233,7 @@ class FAQ(models.Model):
         if text:
             queryset = queryset.filter(Q(question__icontains=text) | Q(answer__icontains=text))
 
-        queryset = queryset.prefetch_related('labels')
-        queryset = queryset.prefetch_related('parent__labels')
+        queryset = queryset.prefetch_related('labels', 'parent__labels')
 
         return queryset.order_by('question')
 
