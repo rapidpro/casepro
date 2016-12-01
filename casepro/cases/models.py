@@ -153,7 +153,7 @@ class Case(models.Model):
 
     initial_message = models.OneToOneField(Message, null=True, related_name='initial_case')
 
-    summary = models.TextField(verbose_name=_("Summary"), max_length=255)
+    summary = models.CharField(verbose_name=_("Summary"), max_length=255)
 
     opened_on = models.DateTimeField(auto_now_add=True,
                                      help_text="When this case was opened")
