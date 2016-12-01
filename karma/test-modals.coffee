@@ -126,9 +126,9 @@ describe('modals:', () ->
   )
 
   it('EditModalController', () ->
-    $controller('EditModalController', {$scope: $scope, $uibModalInstance: modalInstance, title: "Title", initial: "this..."})
+    $controller('EditModalController', {$scope: $scope, $uibModalInstance: modalInstance, title: "Title", initial: "this...", maxLength: 10})
 
-    expect($scope.fields.text).toEqual({val: "this..."})
+    expect($scope.fields.text).toEqual({val: "this...", maxLength: 10})
 
     $scope.fields.text.val = "edited"
     $scope.form = {$valid: true}
@@ -204,9 +204,9 @@ describe('modals:', () ->
   )
 
   it('NewCaseModalController', () ->
-    $controller('NewCaseModalController', {$scope: $scope, $uibModalInstance: modalInstance, summaryInitial: "Hello", partners: [test.moh, test.who]})
+    $controller('NewCaseModalController', {$scope: $scope, $uibModalInstance: modalInstance, summaryInitial: "Hello", summaryMaxLength: 10, partners: [test.moh, test.who]})
 
-    expect($scope.fields.summary).toEqual({val: "Hello"})
+    expect($scope.fields.summary).toEqual({val: "Hello", maxLength: 10})
     expect($scope.fields.assignee).toEqual({val: test.moh})
     expect($scope.fields.user).toEqual({val: {id: null, name: "-- Anyone --"}})
     expect($scope.partners).toEqual([test.moh, test.who])
@@ -228,7 +228,7 @@ describe('modals:', () ->
   it('NewCaseModalController.refreshUserList', () ->
     usersForPartner = spyOnPromise($q, $scope, UserService, 'fetchInPartner')
 
-    $controller('NewCaseModalController', {$scope: $scope, $uibModalInstance: modalInstance, summaryInitial: "Hello", partners: [test.moh, test.who]})
+    $controller('NewCaseModalController', {$scope: $scope, $uibModalInstance: modalInstance, summaryInitial: "Hello", summaryMaxLength: 10, partners: [test.moh, test.who]})
 
     expect($scope.users).toEqual([{id: null, name: "-- Anyone --"}])
 

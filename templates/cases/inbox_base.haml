@@ -31,7 +31,7 @@
           %a.btn.btn-default{ ng-href:"/label/read/[[ activeLabel.id ]]/", ng-if:"activeLabel" }
             - trans "View Label"
         - if allow_case_without_message
-          %button.btn.btn-default{ type:"button", ng-click:"onCaseWithoutMessage({{ max_summary_chars }})"}
+          %button.btn.btn-default{ type:"button", ng-click:"onCaseWithoutMessage()"}
             - trans "Open Case"
 
     .row

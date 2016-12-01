@@ -610,8 +610,8 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
       resolve = {prompt: (() -> prompt), style: (() -> style)}
       return $uibModal.open({templateUrl: '/partials/modal_confirm.html', controller: 'ConfirmModalController', resolve: resolve}).result
 
-    editModal: (title, initial) ->
-      resolve = {title: (() -> title), initial: (() -> initial)}
+    editModal: (title, initial, maxLength) ->
+      resolve = {title: (() -> title), initial: (() -> initial), maxLength: (() -> maxLength)}
       return $uibModal.open({templateUrl: '/partials/modal_edit.html', controller: 'EditModalController', resolve: resolve}).result
 
     composeModal: (title, initial) ->
@@ -630,8 +630,8 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
       resolve = {title: (() -> title), prompt: (() -> prompt), labels: (() -> labels), initial: (() -> initial)}
       return $uibModal.open({templateUrl: '/partials/modal_label.html', controller: 'LabelModalController', resolve: resolve}).result
 
-    newCaseModal: (summaryInitial, partners, users) ->
-      resolve = {summaryInitial: (() -> summaryInitial), partners: (() -> partners), users: (() -> users)}
+    newCaseModal: (summaryInitial, summaryMaxLength, partners, users) ->
+      resolve = {summaryInitial: (() -> summaryInitial), summaryMaxLength: (() -> summaryMaxLength), partners: (() -> partners), users: (() -> users)}
       return $uibModal.open({templateUrl: '/partials/modal_newcase.html', controller: 'NewCaseModalController', resolve: resolve}).result
 
     dateRangeModal: (title, prompt) ->

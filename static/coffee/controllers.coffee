@@ -12,6 +12,7 @@ INTERVAL_CASE_TIMELINE = 30000
 INFINITE_SCROLL_MAX_ITEMS = 1000
 
 # Form constraints
+CASE_SUMMARY_MAX_LEN = 255
 CASE_NOTE_MAX_LEN = 1024
 
 SINGLETON_ALERTS = ['pod_load_api_failure']
@@ -67,10 +68,9 @@ controllers.controller('InboxController', ['$scope', '$window', '$location', 'La
     # filters out the active label from the given set of message labels
     if $scope.activeLabel then (l for l in labels when l.id != $scope.activeLabel.id) else labels
 
-  $scope.onCaseWithoutMessage = (maxLength) ->
+  $scope.onCaseWithoutMessage = () ->
     ModalService.createCase({
-      title: "Open Case",
-      maxLength: maxLength
+      title: "Open Case"
     }).then((result) ->
       CaseService.open(null, result.text, result.partner, result.user, result.urn).then((caseObj) ->
         caseUrl = 'case/read/' + caseObj.id + '/'
@@ -373,7 +373,7 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
     }})
 
   newCaseFromMessage = (message, possibleAssignees) ->
-    UtilsService.newCaseModal(message.text, possibleAssignees).then((data) ->
+    UtilsService.newCaseModal(message.text, CASE_SUMMARY_MAX_LEN, possibleAssignees).then((data) ->
       CaseService.open(message, data.summary, data.assignee, data.user).then((caseObj) ->
           caseUrl = '/case/read/' + caseObj.id + '/'
           if !caseObj.is_new
@@ -598,7 +598,7 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
     )
 
   $scope.onEditSummary = ->
-    UtilsService.editModal("Edit Summary", $scope.caseObj.summary).then((text) ->
+    UtilsService.editModal("Edit Summary", $scope.caseObj.summary, CASE_SUMMARY_MAX_LEN).then((text) ->
       CaseService.updateSummary($scope.caseObj, text).then(() ->
         $scope.$broadcast('timelineChanged')
       )

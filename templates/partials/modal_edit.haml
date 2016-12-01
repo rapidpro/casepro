@@ -6,7 +6,7 @@
   .modal-body
     %form{ name:"form", novalidate:"" }
       .form-group{ ng-class:'{"has-error": form.text.$invalid}' }
-        %textarea.form-control{ ng-model:"fields.text.val", ng-maxlength:"{{ max_summary_chars }}", name:"text", required:"" }
+        %textarea.form-control{ ng-model:"fields.text.val", ng-maxlength:"fields.text.maxLength", name:"text", required:"" }
         .help-block{ ng-show:"form.text.$error.required" }
           - trans "Required"
         .help-block{ ng-show:"form.text.$error.maxlength" }

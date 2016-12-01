@@ -770,11 +770,12 @@ describe('services:', () ->
 
     describe('newCaseModal', () ->
       it('opens new case modal', () ->
-        UtilsService.newCaseModal("this...", [test.moh, test.who])
+        UtilsService.newCaseModal("this...", 100, [test.moh, test.who])
 
         modalOptions = $uibModal.open.calls.mostRecent().args[0]
         expect(modalOptions.templateUrl).toEqual('/partials/modal_newcase.html')
         expect(modalOptions.resolve.summaryInitial()).toEqual("this...")
+        expect(modalOptions.resolve.summaryMaxLength()).toEqual(100)
         expect(modalOptions.resolve.partners()).toEqual([test.moh, test.who])
       )
     )

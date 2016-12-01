@@ -19,6 +19,5 @@ def user(request):
         'user_is_admin': is_admin,
         'user_partner': partner,
         'user_is_faq_only': is_faq_only,
-        'max_msg_chars': settings.MAX_MESSAGE_CHARS,
-        'max_summary_chars': settings.CASE_SUMMARY_MAX_LEN,
+        'max_msg_chars': settings.SITE_MAX_MESSAGE_CHARS,
     }

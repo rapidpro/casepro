@@ -555,8 +555,8 @@ describe('controllers:', () ->
         openCase = spyOnPromise($q, $scope, CaseService, 'open')
         redirect = spyOnPromise($q, $scope, UtilsService, 'navigate')
 
-        $scope.onCaseWithoutMessage(8000)
-        expect(ModalService.createCase).toHaveBeenCalledWith({title: 'Open Case', maxLength: 8000})
+        $scope.onCaseWithoutMessage()
+        expect(ModalService.createCase).toHaveBeenCalledWith({title: 'Open Case'})
 
         createCaseModal.resolve({text: 'test summary', partner: 2, user: 3, urn: 'tel:123'})
         expect(CaseService.open).toHaveBeenCalledWith(null, 'test summary', 2, 3, 'tel:123')
@@ -570,8 +570,8 @@ describe('controllers:', () ->
         openCase = spyOnPromise($q, $scope, CaseService, 'open')
         redirect = spyOnPromise($q, $scope, UtilsService, 'navigate')
 
-        $scope.onCaseWithoutMessage(8000)
-        expect(ModalService.createCase).toHaveBeenCalledWith({title: 'Open Case', maxLength: 8000})
+        $scope.onCaseWithoutMessage()
+        expect(ModalService.createCase).toHaveBeenCalledWith({title: 'Open Case'})
 
         createCaseModal.resolve({text: 'test summary', partner: 2, user: 3, urn: 'tel:123'})
         expect(CaseService.open).toHaveBeenCalledWith(null, 'test summary', 2, 3, 'tel:123')

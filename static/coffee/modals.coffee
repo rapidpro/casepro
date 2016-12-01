@@ -43,9 +43,9 @@ modals.controller 'NoteModalController', ['$scope', '$uibModalInstance', 'title'
 #=====================================================================
 # Edit text modal
 #=====================================================================
-modals.controller 'EditModalController', ['$scope', '$uibModalInstance', 'title', 'initial', ($scope, $uibModalInstance, title, initial) ->
+modals.controller 'EditModalController', ['$scope', '$uibModalInstance', 'title', 'initial', 'maxLength', ($scope, $uibModalInstance, title, initial, maxLength) ->
   $scope.title = title
-  $scope.fields = {text: {val: initial}}
+  $scope.fields = {text: {val: initial, maxLength: maxLength}}
 
   $scope.ok = () ->
     if $scope.form.$valid
@@ -116,12 +116,12 @@ modals.controller('ReplyModalController', ['$scope', 'FaqService', '$uibModalIns
 #=====================================================================
 # Open new case modal
 #=====================================================================
-modals.controller 'NewCaseModalController', ['$scope', '$uibModalInstance', 'summaryInitial', 'partners', 'UserService', ($scope, $uibModalInstance, summaryInitial, partners, UserService) ->
+modals.controller 'NewCaseModalController', ['$scope', '$uibModalInstance', 'summaryInitial', 'summaryMaxLength', 'partners', 'UserService', ($scope, $uibModalInstance, summaryInitial, summaryMaxLength, partners, UserService) ->
   $scope.partners = partners
   $scope.users = [ANYONE]
 
   $scope.fields = {
-    summary: {val: summaryInitial},
+    summary: {val: summaryInitial, maxLength: summaryMaxLength},
     assignee: {val: if partners then partners[0] else null},
     user: {val: ANYONE}
   }
