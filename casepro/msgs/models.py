@@ -303,7 +303,7 @@ class Message(models.Model):
 
     type = models.CharField(max_length=1)
 
-    text = models.TextField(max_length=640, verbose_name=_("Text"))
+    text = models.TextField(verbose_name=_("Text"))
 
     labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this message"), related_name='messages')
 
@@ -608,7 +608,7 @@ class Outgoing(models.Model):
 
     activity = models.CharField(max_length=1, choices=ACTIVITY_CHOICES)
 
-    text = models.TextField(max_length=640)
+    text = models.TextField()
 
     backend_broadcast_id = models.IntegerField(null=True, help_text=_("Broadcast id from the backend"))
 

@@ -43,9 +43,9 @@ modals.controller 'NoteModalController', ['$scope', '$uibModalInstance', 'title'
 #=====================================================================
 # Edit text modal
 #=====================================================================
-modals.controller 'EditModalController', ['$scope', '$uibModalInstance', 'title', 'initial', 'maxLength', ($scope, $uibModalInstance, title, initial, maxLength) ->
+modals.controller 'EditModalController', ['$scope', '$uibModalInstance', 'title', 'initial', ($scope, $uibModalInstance, title, initial) ->
   $scope.title = title
-  $scope.fields = {text: {val: initial, maxLength: maxLength}}
+  $scope.fields = {text: {val: initial}}
 
   $scope.ok = () ->
     if $scope.form.$valid
@@ -58,9 +58,9 @@ modals.controller 'EditModalController', ['$scope', '$uibModalInstance', 'title'
 #=====================================================================
 # Reply to contacts modal
 #=====================================================================
-modals.controller('ReplyModalController', ['$scope', 'FaqService', '$uibModalInstance', '$controller', 'selection', 'maxLength', ($scope , FaqService, $uibModalInstance, $controller, selection, maxLength) ->
+modals.controller('ReplyModalController', ['$scope', 'FaqService', '$uibModalInstance', '$controller', 'selection', ($scope , FaqService, $uibModalInstance, $controller, selection) ->
 
-  $scope.fields = {text: {val: '', maxLength: maxLength}}
+  $scope.fields = {text: {val: ''}}
   $scope.sendToMany = if selection then true else false
 
   $scope.init = (faqOnly) ->
@@ -116,12 +116,12 @@ modals.controller('ReplyModalController', ['$scope', 'FaqService', '$uibModalIns
 #=====================================================================
 # Open new case modal
 #=====================================================================
-modals.controller 'NewCaseModalController', ['$scope', '$uibModalInstance', 'summaryInitial', 'summaryMaxLength', 'partners', 'UserService', ($scope, $uibModalInstance, summaryInitial, summaryMaxLength, partners, UserService) ->
+modals.controller 'NewCaseModalController', ['$scope', '$uibModalInstance', 'summaryInitial', 'partners', 'UserService', ($scope, $uibModalInstance, summaryInitial, partners, UserService) ->
   $scope.partners = partners
   $scope.users = [ANYONE]
 
   $scope.fields = {
-    summary: {val: summaryInitial, maxLength: summaryMaxLength},
+    summary: {val: summaryInitial},
     assignee: {val: if partners then partners[0] else null},
     user: {val: ANYONE}
   }
@@ -192,11 +192,11 @@ modals.controller('LabelModalController', ['$scope', '$uibModalInstance', 'title
 #=====================================================================
 # Compose message to URN modal
 #=====================================================================
-modals.controller('ComposeModalController', ['$scope', '$uibModalInstance', 'title', 'initial', 'maxLength', ($scope, $uibModalInstance, title, initial, maxLength) ->
+modals.controller('ComposeModalController', ['$scope', '$uibModalInstance', 'title', 'initial', ($scope, $uibModalInstance, title, initial) ->
   $scope.title = title
   $scope.fields = {
     urn: {scheme: null, path: ''},
-    text: {val: initial, maxLength: maxLength}
+    text: {val: initial}
   }
 
   $scope.setScheme = (scheme) ->
@@ -259,7 +259,7 @@ modals.controller('FaqModalController', ['$scope', 'FaqService', 'LabelService',
     $scope.modalType()
     $scope.fetchAllLanguages()
     $scope.fetchLabels()
-  
+
   $scope.modalType = () ->
     if isFaq == false
       $scope.fields = {
@@ -279,32 +279,32 @@ modals.controller('FaqModalController', ['$scope', 'FaqService', 'LabelService',
         labels: {val: if faq then (l.id for l in faq.labels) else $scope.labels}
         id: {val: if faq then faq.id else ''}
       }
-    
+
   $scope.fetchAllLanguages = () ->
     FaqService.fetchAllLanguages().then((results) ->
       $scope.iso_list = results
     )
-  $scope.fetchLabels = () ->  
+  $scope.fetchLabels = () ->
     LabelService.fetchAll(true).then((labels) ->
       $scope.labels = labels
     )
-  
+
   $scope.formatInput = ($model) ->
     inputLabel = $scope.fields.language.val.name
     angular.forEach $scope.iso_list, (language) ->
       if $model == language.iso639_2_b
         inputLabel = language.name
     inputLabel
-    
+
   $scope.clearInput = () ->
     $scope.fields.language.val = ''
-  
+
   $scope.ok = () ->
     $scope.form.submitted = true
-    
+
     if $scope.form.$valid
       data = {question: $scope.fields.question.val, answer: $scope.fields.answer.val, parent: $scope.fields.parent.val, language: $scope.fields.language.val.code, labels: $scope.fields.labels.val, id: $scope.fields.id.val}
       $uibModalInstance.close(data)
-          
+
   $scope.cancel = () -> $uibModalInstance.dismiss(false)
 ])
