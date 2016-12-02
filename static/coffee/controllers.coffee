@@ -14,7 +14,6 @@ INFINITE_SCROLL_MAX_ITEMS = 1000
 # Form constraints
 CASE_SUMMARY_MAX_LEN = 255
 CASE_NOTE_MAX_LEN = 1024
-OUTGOING_TEXT_MAX_LEN = 480
 
 SINGLETON_ALERTS = ['pod_load_api_failure']
 
@@ -294,7 +293,7 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
     )
 
   $scope.onReplyToSelection = () ->
-    $uibModal.open({templateUrl: '/partials/modal_reply.html', controller: 'ReplyModalController', scope :$scope, resolve: {selection: (() -> $scope.selection), maxLength: (() -> OUTGOING_TEXT_MAX_LEN)}})
+    $uibModal.open({templateUrl: '/partials/modal_reply.html', controller: 'ReplyModalController', scope :$scope, resolve: {selection: (() -> $scope.selection)}})
     .result.then((text) ->
       MessageService.bulkReply($scope.selection, text).then(() ->
         MessageService.bulkArchive($scope.selection).then(() ->
@@ -328,7 +327,7 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
     )
 
   $scope.onReplyToMessage = (message) ->
-    $uibModal.open({templateUrl: '/partials/modal_reply.html', controller: 'ReplyModalController', resolve: {selection: (() -> null), maxLength: (() -> OUTGOING_TEXT_MAX_LEN)}})
+    $uibModal.open({templateUrl: '/partials/modal_reply.html', controller: 'ReplyModalController', resolve: {selection: (() -> null)}})
     .result.then((text) ->
       MessageService.bulkReply([message], text).then(() ->
         MessageService.bulkArchive([message]).then(() ->
@@ -341,7 +340,7 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
   $scope.onForwardMessage = (message) ->
     initialText = '"' + message.text + '"'
 
-    UtilsService.composeModal("Forward", initialText, OUTGOING_TEXT_MAX_LEN).then((data) ->
+    UtilsService.composeModal("Forward", initialText).then((data) ->
       MessageService.forward(message, data.text, data.urn).then(() ->
         UtilsService.displayAlert('success', "Message forwarded to " + data.urn.path)
       )
@@ -886,7 +885,7 @@ controllers.controller('FaqController', ['$scope', '$window', 'UtilsService', 'F
         UtilsService.navigate('/faq/')
       )
     )
-  
+
   $scope.onDeleteFaqTranslation = (translation) ->
       UtilsService.confirmModal("Delete this Translation??", 'danger').then(() ->
         FaqService.deleteTranslation(translation).then(() ->
@@ -914,7 +913,7 @@ controllers.controller('FaqController', ['$scope', '$window', 'UtilsService', 'F
         UtilsService.navigate('')
       )
     )
-    
+
 ])
 
 
@@ -926,12 +925,12 @@ controllers.controller('FaqListController', ['$scope','UtilsService', 'FaqServic
   $scope.init = () ->
     FaqService.fetchAllFaqs().then((results) ->
       $scope.faqs = results
-      
+
       parents = {}
       angular.forEach $scope.faqs, (faq) ->
         parents[faq.parent] = (parents[faq.parent] || 0) + 1
       angular.forEach $scope.faqs, (faq) ->
-        if parents[faq.id] then faq.count = parents[faq.id] else faq.count = 0 
+        if parents[faq.id] then faq.count = parents[faq.id] else faq.count = 0
     )
 
   $scope.onNewFaq = () ->
@@ -943,7 +942,7 @@ controllers.controller('FaqListController', ['$scope','UtilsService', 'FaqServic
 
   $scope.filterParents = (faq) ->
     faq.parent == null
-    
+
 ])
 
 #============================================================================

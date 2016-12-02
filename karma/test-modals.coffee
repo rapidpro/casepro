@@ -44,14 +44,14 @@ describe('modals:', () ->
       # partners
       moh: {id: 301, name: "MOH"},
       who: {id: 302, name: "WHO"},
-      
+
       # language
       language1: {code: "eng", name: "English"},
       language2: {code: "afr", name: "Afrikaans"},
-      
+
       # FAQs
       faq1: {id: 401, question: "Am I pregnant?", answer: "yes", language: {code: "eng", name: "English"}, labels: [{id: 201, name: "Tea"}, {id: 202, name: "Coffee"}], parent: null},
-      
+
       # translation
       translation1: {id: 601, question: "Is ek swanger", answer: "ja", language: {code: "afr", name: "Afrikaans"}, labels: {id: 201, name: "Tea"}, parent: 401},
 
@@ -93,10 +93,10 @@ describe('modals:', () ->
   )
 
   it('ComposeModalController', () ->
-    $controller('ComposeModalController', {$scope: $scope, $uibModalInstance: modalInstance, title: "Title", initial: "this...", maxLength: 10})
+    $controller('ComposeModalController', {$scope: $scope, $uibModalInstance: modalInstance, title: "Title", initial: "this..."})
 
     expect($scope.fields.urn).toEqual({scheme: 'tel', path: ""})
-    expect($scope.fields.text).toEqual({val: "this...", maxLength: 10})
+    expect($scope.fields.text).toEqual({val: "this..."})
 
     $scope.fields.text.val = "hello"
     $scope.fields.urn.scheme = "twitter"
@@ -144,9 +144,9 @@ describe('modals:', () ->
   it('FaqModalController', () ->
     fetchAllLanguages = spyOnPromise($q, $scope, FaqService, 'fetchAllLanguages')
     fetchLabels = spyOnPromise($q, $scope, LabelService, 'fetchAll')
-    
+
     $controller('FaqModalController', {$scope: $scope, $uibModalInstance: modalInstance, title: "Title", translation: test.translation1, faq: test.faq1, isFaq: false})
-    
+
     $scope.init()
 
     expect($scope.fields.question).toEqual({val: "Is ek swanger"})
@@ -155,7 +155,7 @@ describe('modals:', () ->
     expect($scope.fields.language).toEqual({val: test.language2})
     expect($scope.fields.labels).toEqual({val: ''})
     expect($scope.fields.id).toEqual({val: 601})
-    
+
 
     $scope.fields.question.val = "this is a question"
     $scope.fields.answer.val = "this is an answer"
@@ -257,9 +257,9 @@ describe('modals:', () ->
   )
 
   it('ReplyModalController', () ->
-    $controller('ReplyModalController', {$scope: $scope, $uibModalInstance: modalInstance, selection: null, maxLength: 10})
+    $controller('ReplyModalController', {$scope: $scope, $uibModalInstance: modalInstance, selection: null})
 
-    expect($scope.fields.text).toEqual({val: "", maxLength: 10})
+    expect($scope.fields.text).toEqual({val: ""})
 
     $scope.form = {$valid: true}
     $scope.ok()
