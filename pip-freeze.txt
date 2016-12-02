@@ -8,7 +8,7 @@ billiard==3.3.0.22
 boto==2.43.0
 celery==3.1.24
 colorama==0.3.7
--e git+https://github.com/nyaruka/confmodel.git@python3#egg=confmodel
+git+https://github.com/nyaruka/confmodel.git@python3#egg=confmodel
 coverage==4.0.3
 dj-database-url==0.3.0
 django-appconf==1.0.2
