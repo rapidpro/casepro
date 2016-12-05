@@ -45,7 +45,8 @@
             %li{ class:"{% if_url 'cases.inbox' 'active' '' %}" }
               %a{ href:"{% url 'cases.inbox' %}" }
                 - trans "Inbox"
-              %ul.label-menu{ ng-if:"labels.length > 0" }
+                  %span.caret.arrow{ ng-show:'folder == "inbox"' }
+              %ul.label-menu{ ng-if:"labels.length > 0", id:'inbox', ng-show:'folder == "inbox"' }
                 %li.label-link{ ng-repeat:"label in labels" }
                   %a{ ng-href:"/#?label=[[ label.name | urlencode ]]", ng-class:'{ strong: label == activeLabel }' }
                     %span.glyphicon.glyphicon-tag{ style:"font-size: 0.75em" }
@@ -56,6 +57,12 @@
             %li{ class:"{% if_url 'cases.archived' 'active' '' %}" }
               %a{ href:"{% url 'cases.archived' %}" }
                 - trans "Archived"
+                  %span.caret.arrow{ ng-show:'folder == "archived"' }
+              %ul.label-menu{ ng-if:"labels.length > 0", ng-show:'folder == "archived"' }
+                %li.label-link{ ng-repeat:"label in labels" }
+                  %a{ ng-href:"{% url 'cases.archived' %}#?label=[[ label.name | urlencode ]]", ng-class:'{ strong: label == activeLabel }' }
+                    %span.glyphicon.glyphicon-tag{ style:"font-size: 0.75em" }
+                    [[ label.name | deunderscore ]] ([[ label.counts.archived ]])
             - if perms.msgs.message_unlabelled or org_perms.msgs.message_unlabelled
               %li{ class:"{% if_url 'cases.unlabelled' 'active' '' %}" }
                 %a{ href:"{% url 'cases.unlabelled' %}" }

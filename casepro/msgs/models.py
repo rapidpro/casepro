@@ -356,7 +356,7 @@ class Message(models.Model):
         all_label_access = user.can_administer(org)
 
         if all_label_access:
-            if folder == MessageFolder.inbox:
+            if folder == MessageFolder.inbox or MessageFolder.archived:
                 queryset = queryset.filter(has_labels=True)
                 if label_id:
                     label = Label.get_all(org, user).filter(pk=label_id).first()
