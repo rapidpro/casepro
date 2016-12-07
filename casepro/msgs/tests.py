@@ -954,6 +954,10 @@ class MessageTest(BaseCasesTest):
         # archived as admin shows all archived
         assert_search(self.admin, {'folder': MessageFolder.archived}, [msg11, msg10, msg9, msg4])
 
+        # archived with label as admin shows all archived with that label
+        assert_search(self.admin, {'folder': MessageFolder.archived, 'label': self.aids.pk}, [msg11, msg9])
+        assert_search(self.admin, {'folder': MessageFolder.archived, 'label': self.pregnancy.pk}, [msg10])
+
         # unlabelled as admin shows all non-archived unlabelled
         assert_search(self.admin, {'folder': MessageFolder.unlabelled}, [msg3, msg2, msg1])
 
@@ -972,6 +976,10 @@ class MessageTest(BaseCasesTest):
         # archived as user shows all archived with their labels
         assert_search(self.user1, {'folder': MessageFolder.archived}, [msg11, msg10, msg9])
         assert_search(self.user3, {'folder': MessageFolder.archived}, [msg11, msg9])
+
+        # archived with label as user shows all archived with that label.. if user can see that label
+        assert_search(self.user1, {'folder': MessageFolder.archived, 'label': self.pregnancy.pk}, [msg10])
+        assert_search(self.user3, {'folder': MessageFolder.archived, 'label': self.pregnancy.pk}, [])
 
         # unlabelled as user throws exception
         self.assertRaises(ValueError, Message.search, self.unicef, self.user1, {'folder': MessageFolder.unlabelled})
