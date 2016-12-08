@@ -150,7 +150,7 @@
           - block messages
             - if messages
               - for message in messages
-                .alert{ class:"alert-={ message.tags }"}
+                .alert{ class:"alert-#{ message.tags }"}
                   %a.close{ data-dismiss:"alert"}
                     ×
                   {{ message }}

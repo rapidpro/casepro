@@ -44,7 +44,7 @@
         %li
           %strong><
             - trans "Assignee"
-          :
+          \:
           %a{ ng-href:"/partner/read/[[ caseObj.assignee.id ]]/" }
             [[ caseObj.assignee.name ]]
           %span{ ng-if:"caseObj.user_assignee" }
@@ -55,12 +55,12 @@
         %li
           %strong><
             - trans "Status"
-          :
+          \:
           [[ caseObj.is_closed ? "Closed" : "Open" ]]
         %li
           %strong><
             - trans "Labels"
-          :
+          \:
           %span.label-container{ ng-repeat:"label in caseObj.labels" }
             %span.label.label-success
               [[ label.name ]]
@@ -143,7 +143,7 @@
               %span{ ng-if:"event.item.sender" }
                 %a{ ng-href:"/user/read/[[ event.item.sender.id ]]/" }><
                   [[ event.item.sender.name ]]
-                :
+                \:
               [[ event.item.text ]]
       .col-md-4
         .panel.panel-default

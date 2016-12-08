@@ -23,7 +23,7 @@
         %li{ ng-if:"contact.blocked || contact.stopped" }
           %strong><
             - trans "Status"
-          :
+          \:
           %span.label-container{ ng-if:"contact.blocked" }
             %span.label.label-danger
               - trans "Blocked"
