@@ -77,13 +77,11 @@
             %label.control-label.col-sm-2
               - trans "Groups"
             .col-sm-10
-              // HAML doesn't seem to like dashes in tag names...
-              <ui-select multiple ng-model="searchFields.groups" theme="bootstrap" class="group-select">
-                <ui-select-match placeholder="Select groups">[[ $item.name ]]</ui-select-match>
-                <ui-select-choices repeat="group in groups">
+              %ui-select{ multiple, ng-model:"searchFields.groups", theme:"bootstrap", class:"group-select" }
+                %ui-select-match{ placeholder:"Select groups" }
+                  [[ $item.name ]]
+                %ui-select-choices{ repeat:"group in groups" }
                   [[ group.name ]]
-                </ui-select-choices>
-              </ui-select>
           .form-group{ ng-if:'folder == "flagged"' }
             %label.control-label.col-sm-2
               - trans "Include archived"
@@ -107,7 +105,7 @@
                     - trans "None"
 
           %span.selection-info{ ng-show:"selection.length > 0" }
-            <ng-pluralize count="selection.length" when="{'one': '1 message selected', 'other': '{} messages selected'}" />
+            %ng-pluralize{ count:"selection.length", when:"{'one': '1 message selected', 'other': '{} messages selected'}"}/
 
           .selection-actions.pull-away
             .btn-group{ ng-if:'folder != "archived"' }
@@ -136,10 +134,10 @@
           %a.flag{ ng-click:"onToggleMessageFlag(item)" }
             %i.glyphicon.glyphicon-flag
         .message-time
-          <cp-date time="item.time" />
+          %cp-date{ time:"item.time" }
         .{ class:"{% if site_contact_display == 'urns' %}message-contact-urns{% else %}message-contact-default{% endif %}" }
           %a{ ng-click:"activateContact(item.contact)" }><
-            <cp-contact contact="item.contact" fields="fields">
+            %cp-contact{ contact:"item.contact", fields:"fields" }
         .message-text
           %span.label-container{ ng-if:"item.flow" }
             %span.label.label-info

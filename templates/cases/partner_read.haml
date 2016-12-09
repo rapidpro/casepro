@@ -50,13 +50,12 @@
             %i
               - trans "No labels"
 
-    <uib-tabset active="active">
+    %uib-tabset{ active:"active" }
 
-      <uib-tab index="0" select="onTabSelect(0)">
-        <uib-tab-heading>
+      %uib-tab{ index:"0", select:"onTabSelect(0)" }
+        %uib-tab-heading
           %span.glyphicon.glyphicon-dashboard
           - trans "Summary"
-        </uib-tab-heading>
         %br
         .row
           .col-md-4
@@ -69,14 +68,12 @@
                 Number of closed cases: <strong>{{ summary.cases_closed | intcomma }}</strong>
           .col-md-8
             #chart-replies-by-month
-      </uib-tab>
 
       - if can_view_replies
-        <uib-tab index="1" select="onTabSelect(1)">
-          <uib-tab-heading>
+        %uib-tab{ index:"1", select:"onTabSelect(1)" }
+          %uib-tab-heading
             %span.glyphicon.glyphicon-comment
             - trans "Replies"
-          </uib-tab-heading>
           .ng-cloak{ ng-controller:"PartnerRepliesController", ng-init:"init()" }
             .search-toolbar.clearfix
               - if perms.msgs.replyexport_create or org_perms.msgs.replyexport_create
@@ -122,14 +119,15 @@
                 %tbody
                   %tr{ ng-repeat:"item in items" }
                     %td{ nowrap:"" }
-                      <cp-date time="item.time" tooltip-position="top-left" />
+                      %cp-date{ time:"item.time", tooltip-position:"top-left" }
                     %td
                       %a{ ng-href:"/user/read/[[ item.sender.id ]]/" }><
                         [[ item.sender.name ]]
                     %td
                       [[ item.text ]]
                     %td
-                      <span ng-class="{'time-warning': item.response.warning}">[[ item.response.delay ]]</span>
+                      %span{ ng-class:"{'time-warning': item.response.warning}" }>
+                        [[ item.response.delay ]]
                     %td.message-text
                       %span.label-container{ ng-if:"item.case" }
                         %span.label.label-warning
@@ -144,24 +142,23 @@
                       %span.glyphicon.glyphicon-flag{ ng-if:"item.reply_to.flagged" }
                     %td{ nowrap:"" }
                       %a{ ng-href:"/contact/read/[[ item.contact.id ]]" }><
-                        <cp-contact contact="item.contact" fields="fields">
+                        %cp-contact{ contact:"item.contact", fields:"fields" }
 
             .loading{ ng-if:"oldItemsLoading" }
             .none{ ng-hide:"oldItemsLoading || items.length > 0" }
               - trans "None"
             .none{ ng-hide:"oldItemsLoading || !hasTooManyItemsToDisplay()" }
               - trans "More items than can be displayed"
-        </uib-tab>
 
-      <uib-tab index="2" select="onTabSelect(2)">
-        <uib-tab-heading>
+      %uib-tab{ index:"2", select:"onTabSelect(2)" }
+        %uib-tab-heading
           %span.glyphicon.glyphicon-user
           - trans "Users"
-        </uib-tab-heading>
         .search-toolbar.clearfix
           - if can_manage
             .pull-away
-              <a class="btn btn-default" href="{% url 'profiles.user_create_in' object.pk %}">{% trans "New..." %}</a>
+              %a.btn.btn-default{ href: "{% url 'profiles.user_create_in' object.pk %}" }
+                - trans "New..."
 
           .{ style:"margin-top: 7px" }
             Total of <strong>[[ users.length ]]</strong> users
@@ -196,9 +193,6 @@
                 [[ user.replies.total ]]
         .none{ ng-if:"!users" }
           - trans "None"
-
-      </uib-tab>
-    </uib-tabset>
 
 
 - block extra-style

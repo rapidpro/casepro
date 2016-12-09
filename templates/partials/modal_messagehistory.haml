@@ -7,7 +7,7 @@
     .message-history
       .action.stackitem{ ng-repeat:"action in actions" }
         .action-time
-          <cp-date time="action.created_on" />
+          %cp-date{ time:"action.created_on" }
 
         %span{ ng-if:'action.action == "F"' }
           Flagged

@@ -41,7 +41,7 @@
           .list-group
             %a.list-group-item{ ng-repeat:"item in cases", ng-href:"/case/read/[[ item.id ]]/" }
               .case-time
-                <cp-date time="item.opened_on" />
+                %cp-date{ time:"item.opened_on" }
               .case-text
                 %span.label-container
                   %span.label.label-warning
@@ -77,7 +77,7 @@
                 .contact-field-label.col-sm-6
                   [[ field.label ]]
                 .contact-field-value.col-sm-6
-                  <cp-fieldvalue contact="contact" field="field" />
+                  %cp-fieldvalue{ contact:"contact", field:"field" }
 
         .panel.panel-default
           .panel-heading
