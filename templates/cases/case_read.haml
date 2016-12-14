@@ -44,7 +44,7 @@
         %li
           %strong><
             - trans "Assignee"
-          :
+          \:
           %a{ ng-href:"/partner/read/[[ caseObj.assignee.id ]]/" }
             [[ caseObj.assignee.name ]]
           %span{ ng-if:"caseObj.user_assignee" }
@@ -55,12 +55,12 @@
         %li
           %strong><
             - trans "Status"
-          :
+          \:
           [[ caseObj.is_closed ? "Closed" : "Open" ]]
         %li
           %strong><
             - trans "Labels"
-          :
+          \:
           %span.label-container{ ng-repeat:"label in caseObj.labels" }
             %span.label.label-success
               [[ label.name ]]
@@ -71,7 +71,7 @@
 
     .row
       .col-md-8
-        <cp-alerts alerts="alerts"></cp-alerts>
+        %cp-alerts{ alerts:"alerts" }
 
         %form.sendform{ ng-if:"!caseObj.is_closed" }
           // TODO maxlength not working
@@ -85,7 +85,7 @@
         .timeline{ ng-controller:"CaseTimelineController", ng-init:"init()" }
           .timeline-event.clearfix{ ng-repeat:"event in timeline | reverse", ng-class:'{ "timeline-action": (event.type == "A"), "timeline-incoming": (event.type == "I"), "timeline-outgoing": (event.type == "O") }' }
             .event-time
-              <cp-date time="event.time" />
+              %cp-date{ time:"event.time" }
 
             .{ ng-if:'event.type == "A"' }
               %a{ ng-href:"/user/read/[[ event.item.created_by.id ]]/" }
@@ -143,7 +143,7 @@
               %span{ ng-if:"event.item.sender" }
                 %a{ ng-href:"/user/read/[[ event.item.sender.id ]]/" }><
                   [[ event.item.sender.name ]]
-                :
+                \:
               [[ event.item.text ]]
       .col-md-4
         .panel.panel-default
@@ -180,7 +180,7 @@
                 .contact-field-label.col-sm-6
                   [[ field.label ]]
                 .contact-field-value.col-sm-6
-                  <cp-fieldvalue contact="contact" field="field" />
+                  %cp-fieldvalue{ contact:"contact", field:"field" }
               .row{ ng-if:"contact.blocked || contact.stopped" }
                 .contact-field-label.col-sm-6
                   - trans "Status"

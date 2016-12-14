@@ -17,13 +17,12 @@
         %h2
           - trans "My Organization"
 
-    <uib-tabset active="active">
+    %uib-tabset{ active:"active" }
 
-      <uib-tab index="0" select="onTabSelect(0)">
-        <uib-tab-heading>
+      %uib-tab{ index:"0", select:"onTabSelect(0)" }
+        %uib-tab-heading
           %span.glyphicon.glyphicon-dashboard
           - trans "Summary"
-        </uib-tab-heading>
         %br
         .row
           .col-md-4
@@ -45,13 +44,10 @@
           .col-md-6
             #chart-most-common-labels.chart{ style:"height: 300px" }
 
-      </uib-tab>
-
-      <uib-tab index="1" select="onTabSelect(1)">
-        <uib-tab-heading>
+      %uib-tab{ index:"1", select:"onTabSelect(1)" }
+        %uib-tab-heading
           %span.glyphicon.glyphicon-th-large
           - trans "Partners"
-        </uib-tab-heading>
         .search-toolbar.clearfix
           - if perms.cases.partner_create or org_perms.cases.partner_create
             .pull-away
@@ -108,13 +104,10 @@
         .none{ ng-if:"!partners" }
           - trans "None"
 
-      </uib-tab>
-
-      <uib-tab index="2" select="onTabSelect(2)">
-        <uib-tab-heading>
+      %uib-tab{ index:"2", select:"onTabSelect(2)" }
+        %uib-tab-heading
           %i.glyphicon.glyphicon-tags{ style:"margin-right: 4px" }
           - trans "Labels"
-        </uib-tab-heading>
         .search-toolbar.clearfix
           - if perms.msgs.label_create or org_perms.msgs.label_create
             .pull-away
@@ -151,13 +144,10 @@
         .none{ ng-if:"!labels" }
           - trans "None"
 
-      </uib-tab>
-
-      <uib-tab index="3" select="onTabSelect(3)">
-        <uib-tab-heading>
+      %uib-tab{ index:"3", select:"onTabSelect(3)" }
+        %uib-tab-heading
           %span.glyphicon.glyphicon-user
           - trans "Users"
-        </uib-tab-heading>
         .search-toolbar.clearfix
           - if perms.profiles.profile_user_create or org_perms.profiles.profile_user_create
             .pull-away
@@ -208,10 +198,6 @@
                 [[ user.cases.total ]]
         .none{ ng-if:"!users" }
           - trans "None"
-
-      </uib-tab>
-
-    </uib-tabset>
 
 
 - block extra-style

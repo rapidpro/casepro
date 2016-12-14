@@ -46,13 +46,12 @@
         %a{ ng-href:"mailto:[[ user.email ]]" }
           [[ user.email ]]
 
-    <uib-tabset active="active">
+    %uib-tabset{ active:"active" }
 
-      <uib-tab index="0" select="onTabSelect(0)">
-        <uib-tab-heading>
+      %uib-tab{ index:"0", select:"onTabSelect(0)" }
+        %uib-tab-heading
           %span.glyphicon.glyphicon-dashboard
           - trans "Summary"
-        </uib-tab-heading>
         %br
         .row
           .col-md-4
@@ -61,8 +60,6 @@
                 Total replies: <strong>{{ summary.total_replies | intcomma }}</strong>
           .col-md-8
             #chart-replies-by-month
-      </uib-tab>
-    </uib-tabset>
 
 
 - block extra-style

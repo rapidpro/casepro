@@ -32,13 +32,12 @@
         .
           [[ label.description ]]
 
-    <uib-tabset active="active">
+    %uib-tabset{ active: "active" }
 
-      <uib-tab index="0" select="onTabSelect(0)">
-        <uib-tab-heading>
+      %uib-tab{ index:"0", select:"onTabSelect(0)" }
+        %uib-tab-heading
           %i.glyphicon.glyphicon-dashboard
           - trans "Summary"
-        </uib-tab-heading>
         %br
         .row
           .col-md-4
@@ -49,8 +48,6 @@
                 Archived messages: <strong>[[ label.counts.archived | number ]]</strong>
           .col-md-8
             #chart-incoming-by-day
-      </uib-tab>
-    </uib-tabset>
 
 
 - block extra-style

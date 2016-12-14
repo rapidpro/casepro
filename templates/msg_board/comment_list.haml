@@ -15,10 +15,10 @@
           %button.btn-default.btn-xs.pin{ type:"button", ng-click:"onPin(comment)" }
             %i.glyphicon.glyphicon-pushpin
           .event-time
-            <cp-date time="comment.submitted_on" />
+            %cp-date{ time:"comment.submitted_on" }
           %a{ ng-href:"/user/read/[[ comment.user.id ]]/" }><
             [[ comment.user.name ]]
-          :
+          \:
           [[ comment.comment ]]
 
     .col-md-4
@@ -27,10 +27,10 @@
           %button.btn-default.btn-xs.unpin{ type:"button", ng-click:"onUnpin(comment)" }
             %i.glyphicon.glyphicon-remove
           .event-time
-            <cp-date time="comment.submitted_on" />
+            %cp-date{ time:"comment.submitted_on" }
           %a{ ng-href:"/user/read/[[ comment.user.id ]]/" }><
             [[ comment.user.name ]]
-          :
+          \:
           [[ comment.comment ]]
 
 - block extra-style
