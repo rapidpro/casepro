@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from django.conf import settings
 from django.conf.urls import include, url
+from django.views import static
 from casepro.backend import get_backend
 from casepro.utils.views import PartialTemplate
 
@@ -33,7 +34,6 @@ if settings.DEBUG:  # pragma: no cover
         pass
 
     urlpatterns = [
-        url(r'^media/(?P<path>.*)$', 'django.views.static.serve',
-            {'document_root': settings.MEDIA_ROOT, 'show_indexes': True}),
+        url(r'^media/(?P<path>.*)$', static.serve, {'document_root': settings.MEDIA_ROOT, 'show_indexes': True}),
         url(r'', include('django.contrib.staticfiles.urls'))
     ] + urlpatterns
