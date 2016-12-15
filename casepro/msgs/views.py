@@ -44,6 +44,7 @@ def override_start(self, org):  # pragma: no cover
     self.task_id = result.task_id
     self.save(update_fields=['task_id'])
 
+
 ImportTask.start = override_start
 
 
