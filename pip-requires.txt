@@ -1,12 +1,11 @@
 boto
-celery[redis]
+celery-with-redis
 colorama
-confmodel
+-e git+https://github.com/nyaruka/confmodel.git@python3#egg=confmodel
 coverage
 django
 django-celery-email
 django-compressor
-django-debug-toolbar
 django-digest
 django-el-pagination
 django-redis
@@ -17,6 +16,7 @@ django-contrib-comments
 enum34
 flake8
 gunicorn
+hypothesis
 iso639
 mock
 pillow
@@ -28,6 +28,7 @@ rapidpro-dash
 rapidpro-python
 raven
 regex
+responses
 smartmin
 sorl-thumbnail
 xlutils

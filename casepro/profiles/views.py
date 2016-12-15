@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from dash.orgs.views import OrgPermsMixin
 from django.utils.translation import ugettext_lazy as _
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.http import Http404, HttpResponse, JsonResponse
@@ -47,6 +48,7 @@ class UserUpdateMixin(OrgFormMixin):
         if password:
             obj.set_password(password)
             obj.save()
+            update_session_auth_hash(self.request, obj)
 
         return obj
 
