@@ -23,8 +23,10 @@ before_script:
 - ln -s $TRAVIS_BUILD_DIR/casepro/settings.py.dev $TRAVIS_BUILD_DIR/casepro/settings.py
 script:
 - coverage run manage.py test --verbosity=2 --noinput
-- flake8
 - python manage.py makemigrations --dry-run | grep 'No changes detected' || (echo 'There are changes which require migrations.' && exit 1)
+- python manage.py collectstatic --noinput
+- (! python manage.py compress --extension=".haml" --settings=casepro.settings_travis | grep 'Error') || exit 1
+- flake8
 - node_modules/karma/bin/karma start karma.conf.coffee --single-run --browsers PhantomJS
 after_success:
 - coveralls

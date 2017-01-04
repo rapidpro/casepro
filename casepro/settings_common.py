@@ -123,11 +123,6 @@ STATICFILES_FINDERS = (
     'compressor.finders.CompressorFinder',
 )
 
-COMPRESS_PRECOMPILERS = (
-    ('text/coffeescript', 'coffee --compile --stdio'),
-    ('text/less', 'casepro.compress.LessFilter'),
-)
-
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = '4-rr2sa6c#5*vr^2$m*2*j+5tc9duo2q+5e!xra%n($d5a$yp)'
 
@@ -508,5 +503,21 @@ CELERYBEAT_SCHEDULE = {
 
 CELERY_TIMEZONE = 'UTC'
 
+# -----------------------------------------------------------------------------------
+# Django Compressor configuration
+# -----------------------------------------------------------------------------------
+
+if TESTING:
+    # if only testing, disable coffeescript and less compilation
+    COMPRESS_PRECOMPILERS = ()
+else:
+    COMPRESS_PRECOMPILERS = (
+        ('text/less', 'lessc --include-path="%s" {infile} {outfile}' % os.path.join(PROJECT_DIR, '../static', 'less')),
+        ('text/coffeescript', 'coffee --compile --stdio')
+    )
+    COMPRESS_OFFLINE_CONTEXT = dict(STATIC_URL=STATIC_URL, base_template='frame.html')
+
+# -----------------------------------------------------------------------------------
 # Pods
+# -----------------------------------------------------------------------------------
 PODS = []
