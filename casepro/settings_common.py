@@ -473,7 +473,7 @@ INTERNAL_IPS = ('127.0.0.1',)
 # Django-celery
 # -----------------------------------------------------------------------------------
 BROKER_URL = 'redis://localhost:6379/%d' % (10 if TESTING else 15)
-CELERY_RESULT_BACKEND = BROKER_URL
+CELERY_RESULT_BACKEND = None  # task results are stored internally
 
 CELERYBEAT_SCHEDULE = {
     'message-pull': {
