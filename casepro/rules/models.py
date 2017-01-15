@@ -243,11 +243,12 @@ class FieldTest(Test):
         return "contact.%s is %s %s" % (self.key, Quantifier.ANY, ", ".join(quoted_values))
 
     def matches(self, message):
-        contact_value = normalize(message.contact.fields.get(self.key, ""))
+        if message.contact.fields:
+            contact_value = normalize(message.contact.fields.get(self.key, ""))
 
-        for value in self.values:
-            if value == contact_value:
-                return True
+            for value in self.values:
+                if value == contact_value:
+                    return True
         return False
 
     def __eq__(self, other):
