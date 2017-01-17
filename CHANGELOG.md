@@ -1,3 +1,7 @@
+v0.0.244
+----------
+ * Increase default maximum message length to 160
+
 v0.0.243
 ----------
  * Add CHANGELOG.md
