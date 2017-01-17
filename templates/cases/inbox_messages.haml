@@ -105,7 +105,7 @@
                     - trans "None"
 
           %span.selection-info{ ng-show:"selection.length > 0" }
-            %ng-pluralize{ count:"selection.length", when:"{'one': '1 message selected', 'other': '{} messages selected'}"}/
+            %ng-pluralize{ count:"selection.length", when:'{"one": "1 message selected", "other": "{} messages selected"}' }
 
           .selection-actions.pull-away
             .btn-group{ ng-if:'folder != "archived"' }
