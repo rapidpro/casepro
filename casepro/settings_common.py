@@ -56,7 +56,7 @@ SITE_BACKEND = 'casepro.backend.NoopBackend'
 SITE_HIDE_CONTACT_FIELDS = []  # Listed fields should not be displayed
 SITE_CONTACT_DISPLAY = "name"  # Overrules SITE_HIDE_CONTACT_FIELDS Options: 'name', 'uuid' or 'urns'
 SITE_ALLOW_CASE_WITHOUT_MESSAGE = True
-SITE_MAX_MESSAGE_CHARS = 140  # the max value for this is 800
+SITE_MAX_MESSAGE_CHARS = 160  # the max value for this is 800
 
 # junebug configuration
 JUNEBUG_API_ROOT = 'http://localhost:8080/'
@@ -286,6 +286,7 @@ TEMPLATES = [
                 'casepro.cases.context_processors.sentry_dsn',
                 'casepro.cases.context_processors.server_time',
                 'casepro.profiles.context_processors.user',
+                'casepro.msgs.context_processors.messages',
             ],
             'loaders': [
                 'dash.utils.haml.HamlFilesystemLoader',
