@@ -384,6 +384,16 @@ describe('services:', () ->
         $httpBackend.flush()
       )
     )
+
+    describe('checkBusy', () ->
+      it('posts to busy check endpoint', () ->
+        $httpBackend.expectPOST('/message/touch/busy/', {messages: [101, 102]}).respond('{"messages": [101, 102]}')
+        MessageService.checkBusy([test.msg1, test.msg2]).then((data) ->
+          expect(data.messages).toEqual([101, 102])
+        )
+        $httpBackend.flush()
+      )
+    )
   )
 
   #=======================================================================
