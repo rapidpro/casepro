@@ -321,7 +321,7 @@ PERMISSIONS = {
 
     'msgs.faq': ('create', 'read', 'update', 'delete', 'list', 'search', 'import', 'languages'),
 
-    'msgs.message': ('action', 'bulk_reply', 'forward', 'label', 'history', 'search', 'unlabelled'),
+    'msgs.message': ('action', 'bulk_reply', 'forward', 'label', 'history', 'search', 'unlabelled', 'touch'),
 
     'msgs.messageexport': ('create', 'read'),
 
