@@ -4,10 +4,12 @@ from datetime import datetime
 import dateutil.parser
 from django.conf import settings
 from django.conf.urls import url
+from django.db import IntegrityError, transaction
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 import functools
+import random
 import requests
 import pytz
 import six
@@ -561,9 +563,28 @@ def received_junebug_message(request):
     else:
         timestamp = datetime.now(pytz.utc)
 
-    msg = Message.objects.create(
-        org=request.org, backend_id=message_id, contact=contact, type=Message.TYPE_INBOX,
-        text=(data.get('content') or ''), created_on=timestamp, has_labels=True)
+    try:
+        # First try with the backend_id generated from the UUID
+        with transaction.atomic():
+            msg = Message.objects.create(
+                org=request.org, backend_id=message_id, contact=contact, type=Message.TYPE_INBOX,
+                text=(data.get('content') or ''), created_on=timestamp, has_labels=True)
+    except IntegrityError as e:
+        # If there's a clash, try to generate a random one that doesn't result in a clash
+        msg = None
+        for i in range(10):
+            message_id = random.randint(0, 2147483647)
+            try:
+                with transaction.atomic():
+                    msg = Message.objects.create(
+                        org=request.org, backend_id=message_id, contact=contact, type=Message.TYPE_INBOX,
+                        text=(data.get('content') or ''), created_on=timestamp, has_labels=True)
+                break
+            except IntegrityError:
+                pass
+        # If we cannot, then we raise the error again
+        if msg is None:
+            raise e
 
     return JsonResponse(msg.as_json())
 

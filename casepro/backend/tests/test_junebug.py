@@ -2,18 +2,21 @@ from __future__ import unicode_literals
 
 import json
 import responses
+import uuid
+import mock
 
 import pytz
 from datetime import datetime
 
 from django.conf import settings
+from django.db import IntegrityError
 from django.http import HttpResponse
 from django.test import override_settings, RequestFactory
 
 from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message
 from casepro.test import BaseCasesTest
-from casepro.utils import json_decode
+from casepro.utils import json_decode, uuid_to_int
 
 from ..junebug import (
     IdentityStore, JunebugBackend, JunebugMessageSendingError, IdentityStoreContactSyncer, IdentityStoreContact,
@@ -970,6 +973,69 @@ class JunebugInboundViewTest(BaseCasesTest):
         self.assertEqual(message.text, "test message")
         self.assertEqual(message.contact.uuid, "50d62fcf-856a-489c-914a-56f6e9506ee3")
         self.assertEqual(message.created_on, datetime(2016, 11, 21, 7, 30, 5, 123456, pytz.utc))
+
+    @responses.activate
+    def test_inbound_message_id_collision(self):
+        """
+        If there is a message ID collision, we should assign a random open ID, rather than raising an error.
+        """
+        query = "?details__addresses__msisdn=%2B1234"
+        url = "%sapi/v1/identities/search/" % settings.IDENTITY_API_ROOT
+        responses.add_callback(
+            responses.GET, url + query, callback=self.single_identity_callback, match_querystring=True,
+            content_type="application/json")
+
+        msg_id = str(uuid.uuid4())
+        contact = Contact.get_or_create(self.unicef, self.create_identity_obj()['id'])
+        msg = Message.objects.create(
+            org=self.unicef, backend_id=uuid_to_int(msg_id), contact=contact, type=Message.TYPE_INBOX,
+            text="collision message", created_on=datetime.utcnow().replace(tzinfo=pytz.utc), has_labels=True)
+
+        request = self.factory.post(
+            self.url, content_type="application/json", data=json.dumps({
+                'message_id': msg_id,
+                'content': "test message",
+                'from': "+1234",
+                'timestamp': "2016.11.21 07:30:05.123456",
+            })
+        )
+        request.org = self.unicef
+        response = received_junebug_message(request)
+        resp_data = json_decode(response.content)
+        self.assertNotEqual(resp_data['id'], msg.id)
+
+    @mock.patch('casepro.backend.junebug.random')
+    @responses.activate
+    def test_inbound_message_id_unavoidable_collision(self, random_mock):
+        """
+        If there is a message ID collision, and after multiple tries we cannot generate a random ID that doesn't result
+        in a collision, we should raise the original integrity error.
+        """
+        query = "?details__addresses__msisdn=%2B1234"
+        url = "%sapi/v1/identities/search/" % settings.IDENTITY_API_ROOT
+        responses.add_callback(
+            responses.GET, url + query, callback=self.single_identity_callback, match_querystring=True,
+            content_type="application/json")
+
+        msg_id = str(uuid.uuid4())
+        contact = Contact.get_or_create(self.unicef, self.create_identity_obj()['id'])
+        Message.objects.create(
+            org=self.unicef, backend_id=uuid_to_int(msg_id), contact=contact, type=Message.TYPE_INBOX,
+            text="collision message", created_on=datetime.utcnow().replace(tzinfo=pytz.utc), has_labels=True)
+
+        # Mock random so that it always returns the same value
+        random_mock.randint.return_value = uuid_to_int(msg_id)
+
+        request = self.factory.post(
+            self.url, content_type="application/json", data=json.dumps({
+                'message_id': msg_id,
+                'content': "test message",
+                'from': "+1234",
+                'timestamp': "2016.11.21 07:30:05.123456",
+            })
+        )
+        request.org = self.unicef
+        self.assertRaises(IntegrityError, received_junebug_message, request)
 
 
 class IdentityStoreOptoutViewTest(BaseCasesTest):
