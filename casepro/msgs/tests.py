@@ -1137,6 +1137,7 @@ class MessageTest(BaseCasesTest):
             'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
             'flagged': False,
             'archived': False,
+            'busy': False,
             'flow': False,
             'case': None
         })
@@ -1210,6 +1211,23 @@ class MessageCRUDLTest(BaseCasesTest):
             'id': case.pk, 'assignee': {'id': self.moh.pk, 'name': "MOH"},
             'user_assignee': {'id': self.user1.pk, 'name': "Evan"}})
         self.assertEqual(response.json['results'][1]['id'], 104)
+
+        t1 = now()
+        self.create_message(self.unicef, 210, self.ann, "Is this thing on?", [self.aids], is_handled=True)
+        Message.bulk_flag(self.unicef, self.user1, [msg5])
+
+        t2 = now()
+
+        # test the refresh, only new items and changes after the date is returned
+        response = self.url_get('unicef', url, {
+            'folder': 'inbox', 'text': "", 'page': 1, 'after': format_iso8601(t1), 'last_refresh': format_iso8601(t1),
+            'before': format_iso8601(t2)
+        })
+
+        self.assertEqual(len(response.json['results']), 2)
+        self.assertEqual(response.json['results'][0]['id'], 210)
+        self.assertEqual(response.json['results'][1]['id'], 105)
+        self.assertEqual(response.json['results'][1]['flagged'], True)
 
     @patch('casepro.test.TestBackend.flag_messages')
     @patch('casepro.test.TestBackend.unflag_messages')

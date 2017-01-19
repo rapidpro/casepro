@@ -17,6 +17,7 @@ from smartmin.views import (SmartListView, SmartCreateView, SmartUpdateView, Sma
                             SmartCSVImportView)
 from smartmin.csv_imports.models import ImportTask
 from temba_client.utils import parse_iso8601
+from django.utils import timezone
 
 from casepro.rules.mixins import RuleFormMixin
 from casepro.statistics.models import DailyCount
@@ -193,7 +194,7 @@ class MessageSearchMixin(object):
 
 
 class MessageCRUDL(SmartCRUDL):
-    actions = ('search', 'action', 'label', 'bulk_reply', 'forward', 'history')
+    actions = ('search', 'touch', 'action', 'label', 'bulk_reply', 'forward', 'history')
     model = Message
 
     class Search(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
@@ -207,7 +208,23 @@ class MessageCRUDL(SmartCRUDL):
             user = self.request.user
             page = int(self.request.GET.get('page', 1))
 
+            context['user_id'] = user.id
+
             search = self.derive_search()
+
+            # this is a refresh of messages
+            if self.request.GET.get('last_refresh', None):
+                new_messages = Message.search(org, user, search)
+
+                search['last_refresh'] = self.request.GET['last_refresh']
+
+                updated_messages = Message.search(org, user, search)
+
+                context['object_list'] = list(new_messages) + list(set(updated_messages) - set(new_messages))
+
+                context['has_more'] = False
+                return context
+
             messages = Message.search(org, user, search)
             paginator = LazyPaginator(messages, per_page=50)
 
@@ -217,9 +234,51 @@ class MessageCRUDL(SmartCRUDL):
 
         def render_to_response(self, context, **response_kwargs):
             return JsonResponse({
-                'results': [m.as_json() for m in context['object_list']],
+                'results': [m.as_json(context.get('user_id')) for m in context['object_list']],
                 'has_more': context['has_more']
             }, encoder=JSONEncoder)
+
+    class Touch(OrgPermsMixin, SmartTemplateView):
+        """
+        AJAX endpoint for updating messages with a date and user id.
+        Takes a list of message ids.
+        """
+        @classmethod
+        def derive_url_pattern(cls, path, action):
+            return r'^message/touch/(?P<action>\w+)/$'
+
+        def post(self, request, *args, **kwargs):
+            org = request.org
+            user = request.user
+
+            action = kwargs['action']
+
+            message_ids = request.json['messages']
+            messages = org.incoming_messages.filter(org=org, backend_id__in=message_ids)
+
+            busy_messages = []
+
+            if action == 'busy':
+                for message in messages:
+                    if message.get_busy(request.user.id):
+                        busy_messages.append(message.backend_id)
+
+                if not busy_messages:
+                    for message in messages:
+                        message.last_action = timezone.now()
+                        message.actioned_by = user
+                        message.save()
+
+            elif action == 'notbusy':
+                for message in messages:
+                    message.last_action = None
+                    message.actioned_by = None
+                    message.save()
+
+            else:
+                return HttpResponseBadRequest("Invalid action: %s", action)
+
+            return JsonResponse({'messages': busy_messages}, encoder=JSONEncoder)
 
     class Action(OrgPermsMixin, SmartTemplateView):
         """
