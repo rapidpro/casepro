@@ -5,6 +5,10 @@ from math import ceil
 from django.db import migrations, models
 
 
+def get_partner(org, user):
+    return user.partners.filter(org=org, is_active=True).first()
+
+
 def calculate_totals_for_cases(apps, schema_editor):
     from casepro.statistics.models import datetime_to_date
     Case = apps.get_model('cases', 'Case')
@@ -65,7 +69,7 @@ def calculate_totals_for_cases(apps, schema_editor):
             author_action = case.actions.filter(action='O').order_by('created_on').first()
             reassign_action = case.actions.filter(action='A', assignee=partner).order_by('created_on').first()
 
-            if author_action and author_action.created_by.get_partner(org) != partner:
+            if author_action and get_partner(org, author_action.created_by) != partner:
                 # only count the time since this case was (re)assigned to this partner
                 # or cases that were assigned during creation by another partner
                 if reassign_action:
