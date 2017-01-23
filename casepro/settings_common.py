@@ -317,7 +317,7 @@ PERMISSIONS = {
 
     'msgs.faq': ('create', 'read', 'update', 'delete', 'list', 'search', 'import', 'languages'),
 
-    'msgs.message': ('action', 'bulk_reply', 'forward', 'label', 'history', 'search', 'unlabelled', 'touch'),
+    'msgs.message': ('action', 'bulk_reply', 'forward', 'label', 'history', 'search', 'unlabelled', 'lock'),
 
     'msgs.messageexport': ('create', 'read'),
 
@@ -387,6 +387,7 @@ GROUP_PERMISSIONS = {
         'msgs.message_history',
         'msgs.message_label',
         'msgs.message_search',
+        'msgs.message_lock',
         'msgs.messageexport_create',
         'msgs.messageexport_read',
         'msgs.outgoing_search',
@@ -426,6 +427,7 @@ GROUP_PERMISSIONS = {
         'msgs.message_history',
         'msgs.message_label',
         'msgs.message_search',
+        'msgs.message_lock',
         'msgs.messageexport_create',
         'msgs.messageexport_read',
         'msgs.outgoing_search',
