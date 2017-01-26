@@ -8,7 +8,7 @@ controllers = angular.module('cases.controllers', ['cases.services', 'cases.moda
 # Component refresh intervals
 INTERVAL_CASE_INFO = 30000
 INTERVAL_CASE_TIMELINE = 30000
-INTERVAL_MSG_REFRESH = 10000
+INTERVAL_ITEM_REFRESH = 10000
 
 INFINITE_SCROLL_MAX_ITEMS = 1000
 
@@ -228,7 +228,7 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$timeout',
 
     $scope.pollBusy = false
     $scope.lastPollTime = new Date()
-    $interval($scope.poll, INTERVAL_MSG_REFRESH)
+    $interval($scope.poll, INTERVAL_ITEM_REFRESH)
 
     $scope.$on('activeLabelChange', () ->
       $scope.onResetSearch()
@@ -267,12 +267,12 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$timeout',
 
       # deactivate busy state after message lock interval
       for item in $scope.items
-        if item.busy and !item.timeoutId
-          notBusy = (busyItem) ->
-            busyItem.busy = false
-            busyItem.timeoutId = false
+        if item.lock and !item.timeoutId
+          unlocked = (lockedItem) ->
+            lockedItem.lock = false
+            lockedItem.timeoutId = false
 
-          item.timeoutId = $timeout(notBusy, item.busy * 1000, true, item)
+          item.timeoutId = $timeout(unlocked, item.lock * 1000, true, item)
 
       # items removed from current folder
       filter = $scope.getItemFilter()
@@ -329,11 +329,11 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$timeout',
   #----------------------------------------------------------------------------
   # Set busy state for individual messages when actioned before poll interval
   #----------------------------------------------------------------------------
-  $scope.busy = (results, message) ->
-    busyMessage = []
-    for item in message
-      if item.id in results.messages
-        busyMessage.push(item.text)
+  $scope.locked = (results, items) ->
+    lockedItem = []
+    for item in items
+      if item.id in results.items
+        lockedItem.push(item.text)
         item.busy = true
         item.selected = false
         $scope.expandedMessageId = false
@@ -341,8 +341,8 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$timeout',
     $scope.updateItems()
 
     # show busy alert
-    busyMessages = busyMessage.join('</li><li>')
-    UtilsService.displayAlert('error', '<strong>The following message(s) are busy:</strong><br><ul><li>' + busyMessages + '</li></ul>')
+    lockedItems = lockedItem.join('</li><li>')
+    UtilsService.displayAlert('error', '<strong>The following message(s) are busy:</strong><br><ul><li>' + lockedItems + '</li></ul>')
 
   #----------------------------------------------------------------------------
   # Selection actions
@@ -363,9 +363,9 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$timeout',
     )
 
   $scope.onReplyToSelection = () ->
-    MessageService.checkBusy($scope.selection).then((results) ->
-      if results.messages.length > 0
-        $scope.busy(results, $scope.selection)
+    MessageService.checkLock($scope.selection).then((results) ->
+      if results.items.length > 0
+        $scope.locked(results, $scope.selection)
       else
         $uibModal.open({templateUrl: '/partials/modal_reply.html', controller: 'ReplyModalController', scope :$scope, resolve: {selection: (() -> $scope.selection)}})
           .result.then((text) ->
@@ -376,7 +376,7 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$timeout',
               )
             )
           , ->
-            MessageService.checkBusy($scope.selection, true)
+            MessageService.checkLock($scope.selection, true)
           )
     )
 
@@ -404,9 +404,9 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$timeout',
     )
 
   $scope.onReplyToMessage = (message) ->
-    MessageService.checkBusy([message]).then((results) ->
-      if results.messages.length > 0
-        $scope.busy(results, [message])
+    MessageService.checkLock([message]).then((results) ->
+      if results.items.length > 0
+        $scope.locked(results, [message])
       else
         $uibModal.open({templateUrl: '/partials/modal_reply.html', controller: 'ReplyModalController', resolve: {selection: (() -> null)}})
           .result.then((text) ->
@@ -417,22 +417,22 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$timeout',
               )
             )
         , ->
-          MessageService.checkBusy([message], true)
+          MessageService.checkLock([message], true)
         )
     )
 
   $scope.onForwardMessage = (message) ->
     initialText = '"' + message.text + '"'
-    MessageService.checkBusy([message]).then((results) ->
-      if results.messages.length > 0
-        $scope.busy(results, [message])
+    MessageService.checkLock([message]).then((results) ->
+      if results.items.length > 0
+        $scope.locked(results, [message])
       else
         UtilsService.composeModal("Forward", initialText).then((data) ->
           MessageService.forward(message, data.text, data.urn).then(() ->
             UtilsService.displayAlert('success', "Message forwarded to " + data.urn.path)
           )
         , ->
-          MessageService.checkBusy([message], true)
+          MessageService.checkLock([message], true)
         )
     )
 
@@ -463,9 +463,9 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$timeout',
     }})
 
   newCaseFromMessage = (message, possibleAssignees) ->
-    MessageService.checkBusy([message]).then((results) ->
-      if results.messages.length > 0
-        $scope.busy(results, [message])
+    MessageService.checkLock([message]).then((results) ->
+      if results.items.length > 0
+        $scope.locked(results, [message])
       else
         UtilsService.newCaseModal(message.text, CASE_SUMMARY_MAX_LEN, possibleAssignees).then((data) ->
           CaseService.open(message, data.summary, data.assignee, data.user).then((caseObj) ->
@@ -475,7 +475,7 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$timeout',
               UtilsService.navigate(caseUrl)
           )
         , ->
-          MessageService.checkBusy([message], true)
+          MessageService.checkLock([message], true)
         )
     )
 ])
