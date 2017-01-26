@@ -115,7 +115,7 @@ controllers.controller('BaseTabsController', ['$scope', '$location', ($scope, $l
 # Base controller class for controllers which display fetched items with
 # infinite scrolling, e.g. lists of messages, cases etc
 #============================================================================
-controllers.controller('BaseItemsController', ['$scope', 'UtilsService', ($scope, UtilsService) ->
+controllers.controller('BaseItemsController', ['$scope', '$timeout', 'UtilsService', ($scope, $timeout, UtilsService) ->
 
   $scope.items = []
   $scope.oldItemsLoading = false
@@ -210,13 +210,83 @@ controllers.controller('BaseItemsController', ['$scope', 'UtilsService', ($scope
 
   $scope.hasTooManyItemsToDisplay = () ->
     $scope.oldItemsMore and $scope.items.length >= INFINITE_SCROLL_MAX_ITEMS
-])
 
+  #----------------------------------------------------------------------------
+  # Refresh poll
+  #----------------------------------------------------------------------------
+  $scope.poll = ->
+    # a poll is already in progress, skip this one
+    if $scope.pollBusy
+      return
+
+    $scope.pollBusy = true
+    $scope.activeSearchRefresh = $scope.buildSearch()
+    $scope.activeSearchRefresh.last_refresh = $scope.lastPollTime
+
+    $scope.fetchLockedItems($scope.activeSearchRefresh, $scope.lastPollTime, $scope.oldItemsPage).then((data) ->
+      $scope.lastPollTime = new Date()
+      $scope.pollBusy = false
+
+      # quick access to index of items
+      scopeItems = {}
+      for item, i in $scope.items
+        scopeItems[item.id] = i
+
+      for item in data.results
+        if scopeItems.hasOwnProperty(item.id)
+          # the item exists so replace with new data
+          item.selected = $scope.items[scopeItems[item.id]].selected
+          $scope.items[scopeItems[item.id]] = item
+        else
+          # new item so we add it to the top
+          $scope.items.unshift(item)
+
+      # deactivate busy state after message lock interval
+      for item in $scope.items
+        if item.lock and !item.timeoutId
+          unlocked = (lockedItem) ->
+            lockedItem.lock = false
+            lockedItem.timeoutId = false
+      
+          item.timeoutId = $timeout(unlocked, item.lock * 1000, true, item)
+
+      # items removed from current folder
+      filter = $scope.getItemFilter()
+      $scope.items = (item for item in $scope.items when filter(item))
+      
+      $scope.updateItems()
+      
+    ).catch((error) ->
+      $scope.pollBusy = false
+    )    
+
+  $scope.$on '$destroy', ->
+    $interval.cancel($scope.poll)
+    
+  #----------------------------------------------------------------------------
+  # Set busy state for individual items when actioned before poll interval
+  #----------------------------------------------------------------------------
+  $scope.locked = (results, items) ->
+    console.log 'run'
+    lockedItem = []
+    for item in items
+      if item.id in results.items
+        lockedItem.push(item.text)
+        item.lock = true
+        item.selected = false
+        $scope.expandedMessageId = false
+
+    $scope.updateItems()
+
+    # show busy alert
+    lockedItems = lockedItem.join('</li><li>')
+    UtilsService.displayAlert('error', '<strong>The following item(s) are locked:</strong><br><ul><li>' + lockedItems + '</li></ul>')
+])
 
 #============================================================================
 # Incoming messages controller
 #============================================================================
-controllers.controller('MessagesController', ['$scope', '$interval', '$timeout', '$uibModal', '$controller', 'CaseService', 'MessageService', 'PartnerService', 'UserService', 'UtilsService', ($scope, $interval, $timeout, $uibModal, $controller, CaseService, MessageService, PartnerService, UserService, UtilsService) ->
+controllers.controller('MessagesController', ['$scope', '$interval', '$uibModal', '$controller', 'CaseService', 'MessageService', 'PartnerService', 'UserService', 'UtilsService', ($scope, $interval, $uibModal, $controller, CaseService, MessageService, PartnerService, UserService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
   $scope.advancedSearch = false
@@ -238,53 +308,6 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$timeout',
       $scope.onResetSearch()
       $scope.setAdvancedSearch(false)
     )
-
-  $scope.poll = ->
-    # a poll is already in progress, skip this one
-    if $scope.pollBusy
-      return
-
-    $scope.pollBusy = true
-    $scope.activeSearchRefresh = $scope.buildSearch()
-    $scope.activeSearchRefresh.last_refresh = $scope.lastPollTime
-
-    MessageService.fetchOld($scope.activeSearchRefresh, $scope.lastPollTime, $scope.oldItemsPage).then((data) ->
-      $scope.lastPollTime = new Date()
-      $scope.pollBusy = false
-
-      # quick access to index of items
-      scopeItems = {}
-      for item, i in $scope.items
-        scopeItems[item.id] = i
-
-      for item in data.results
-        if scopeItems.hasOwnProperty(item.id)
-          # the item exists so replace with new data
-          $scope.items[scopeItems[item.id]] = item
-        else
-          # new item so we add it to the top
-          $scope.items.unshift(item)
-
-      # deactivate busy state after message lock interval
-      for item in $scope.items
-        if item.lock and !item.timeoutId
-          unlocked = (lockedItem) ->
-            lockedItem.lock = false
-            lockedItem.timeoutId = false
-
-          item.timeoutId = $timeout(unlocked, item.lock * 1000, true, item)
-
-      # items removed from current folder
-      filter = $scope.getItemFilter()
-      $scope.items = (item for item in $scope.items when filter(item))
-
-    ).catch((error) ->
-      $scope.pollBusy = false
-    )
-    $scope.updateItems()
-
-  $scope.$on '$destroy', ->
-    $interval.cancel($scope.poll)
 
   $scope.getItemFilter = () ->
     if $scope.folder == 'inbox'
@@ -320,29 +343,15 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$timeout',
       )
     )
 
+  $scope.fetchLockedItems = (activeSearchRefresh, lastPollTime, oldItemsPage) ->
+    return MessageService.fetchOld(activeSearchRefresh, lastPollTime, oldItemsPage)
+    
+
   $scope.fetchOldItems = (search, startTime, page) ->
     return MessageService.fetchOld(search, startTime, page)
 
   $scope.onExpandMessage = (message) ->
     $scope.expandedMessageId = message.id
-
-  #----------------------------------------------------------------------------
-  # Set busy state for individual messages when actioned before poll interval
-  #----------------------------------------------------------------------------
-  $scope.locked = (results, items) ->
-    lockedItem = []
-    for item in items
-      if item.id in results.items
-        lockedItem.push(item.text)
-        item.busy = true
-        item.selected = false
-        $scope.expandedMessageId = false
-
-    $scope.updateItems()
-
-    # show busy alert
-    lockedItems = lockedItem.join('</li><li>')
-    UtilsService.displayAlert('error', '<strong>The following message(s) are busy:</strong><br><ul><li>' + lockedItems + '</li></ul>')
 
   #----------------------------------------------------------------------------
   # Selection actions

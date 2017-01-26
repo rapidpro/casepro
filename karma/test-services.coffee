@@ -385,11 +385,11 @@ describe('services:', () ->
       )
     )
 
-    describe('checkBusy', () ->
-      it('posts to busy check endpoint', () ->
-        $httpBackend.expectPOST('/message/touch/busy/', {messages: [101, 102]}).respond('{"messages": [101, 102]}')
-        MessageService.checkBusy([test.msg1, test.msg2]).then((data) ->
-          expect(data.messages).toEqual([101, 102])
+    describe('checkLock', () ->
+      it('posts to lock check endpoint', () ->
+        $httpBackend.expectPOST('/message/lock/lock/', {messages: [101, 102]}).respond('{"messages": [101, 102]}')
+        MessageService.checkLock([test.msg1, test.msg2]).then((data) ->
+          expect(data.items).toEqual([101, 102])
         )
         $httpBackend.flush()
       )
