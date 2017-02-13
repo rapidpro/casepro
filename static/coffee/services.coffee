@@ -163,8 +163,10 @@ services.factory('MessageService', ['$rootScope', '$http', '$httpParamSerializer
     #----------------------------------------------------------------------------
     checkLock: (items, unlock) ->
       action = if unlock then 'unlock' else 'lock'
-      params = {messages: (i.id for i in items)}
-      
+      params = {
+        messages: if angular.isArray(items) then (i.id for i in items) else [items]
+      }
+
       return $http.post('/message/lock/' + action + '/', params).then((response) ->
         return {items: response.data.messages}
       )

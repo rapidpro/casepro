@@ -267,7 +267,6 @@ controllers.controller('BaseItemsController', ['$scope', '$timeout', 'UtilsServi
   # Set busy state for individual items when actioned before poll interval
   #----------------------------------------------------------------------------
   $scope.locked = (results, items) ->
-    console.log 'run'
     lockedItem = []
     for item in items
       if item.id in results.items
@@ -447,7 +446,12 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$uibModal'
 
   $scope.onCaseFromMessage = (message) ->
     if message.case
-      UtilsService.navigate('/case/read/' + message.case.id + '/')
+      MessageService.checkLock([message]).then((results) ->
+        if results.items.length > 0
+          $scope.locked(results, [message])
+        else
+          UtilsService.navigate('/case/read/' + message.case.id + '/')
+        )
       return
 
     if $scope.user.partner
@@ -657,6 +661,7 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
 
   $scope.allLabels = $window.contextData.all_labels
   $scope.fields = $window.contextData.fields
+  $scope.messageId = $window.contextData.message_id
 
   $scope.caseObj = null
   $scope.contact = null
@@ -709,6 +714,11 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
         $scope.$broadcast('timelineChanged')
       )
     )
+
+  # unlock message on exit
+  $window.onbeforeunload = ->
+    MessageService.checkLock($scope.messageId, true)
+    undefined # suppress browser dialog
 
   #----------------------------------------------------------------------------
   # Messaging
