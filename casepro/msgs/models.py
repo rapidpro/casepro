@@ -23,7 +23,7 @@ from casepro.utils.export import BaseSearchExport
 
 LABEL_LOCK_KEY = 'lock:label:%d:%s'
 MESSAGE_LOCK_KEY = 'lock:message:%d:%d'
-MESSAGE_BUSY_SECONDS = 300
+MESSAGE_LOCK_SECONDS = 300
 
 
 class MessageFolder(Enum):
@@ -324,9 +324,9 @@ class Message(models.Model):
 
     case = models.ForeignKey('cases.Case', null=True, related_name="incoming_messages")
 
-    last_action = models.DateTimeField(auto_now=True, null=True, help_text="Last action taken on this message")
+    locked_on = models.DateTimeField(auto_now=True, null=True, help_text="Last action taken on this message")
 
-    actioned_by = models.ForeignKey(User, null=True, related_name='actioned_messages')
+    locked_by = models.ForeignKey(User, null=True, related_name='actioned_messages')
 
     def __init__(self, *args, **kwargs):
         if self.SAVE_CONTACT_ATTR in kwargs:
@@ -394,7 +394,7 @@ class Message(models.Model):
         # if this is a refresh we want everything with new actions
         if last_refresh:
             queryset = queryset.filter(actions__created_on__gt=last_refresh) |\
-                       queryset.filter(last_action__gt=last_refresh)
+                       queryset.filter(locked_on__gt=last_refresh)
         else:
             # archived messages can be implicitly or explicitly included depending on folder
             if folder == MessageFolder.archived:
@@ -429,11 +429,11 @@ class Message(models.Model):
         """
         return self.actions.select_related('created_by', 'label').order_by('-pk')
 
-    def get_busy(self, user_id):
-        if self.last_action and self.actioned_by:
-            if self.last_action > (now() - timedelta(seconds=MESSAGE_BUSY_SECONDS)):
-                if self.actioned_by.id != user_id:
-                    diff = (self.last_action + timedelta(seconds=MESSAGE_BUSY_SECONDS)) - now()
+    def get_lock(self, user_id):
+        if self.locked_on and self.locked_by:
+            if self.locked_on > (now() - timedelta(seconds=MESSAGE_LOCK_SECONDS)):
+                if self.locked_by.id != user_id:
+                    diff = (self.locked_on + timedelta(seconds=MESSAGE_LOCK_SECONDS)) - now()
                     return diff.seconds
 
         return False
@@ -558,7 +558,7 @@ class Message(models.Model):
             'archived': self.is_archived,
             'flow': self.type == self.TYPE_FLOW,
             'case': self.case.as_json(full=False) if self.case else None,
-            'busy': self.get_busy(user_id) if user_id else False,
+            'lock': self.get_lock(user_id) if user_id else False,
         }
 
     def __str__(self):

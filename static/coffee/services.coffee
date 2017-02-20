@@ -45,6 +45,8 @@ services.factory('MessageService', ['$rootScope', '$http', '$httpParamSerializer
       params = @_searchToParams(search)
       if !search.before
         params.before = utils.formatIso8601(before)
+      if search.last_refresh
+        params.after = utils.formatIso8601(search.last_refresh)
       params.page = page
       return $http.get('/message/search/?' + $httpParamSerializer(params)).then((response) ->
         utils.parseDates(response.data.results, 'time')
@@ -157,14 +159,16 @@ services.factory('MessageService', ['$rootScope', '$http', '$httpParamSerializer
       return $http.post('/message/action/' + action + '/', params)
 
     #----------------------------------------------------------------------------
-    # Check if message is busy, set busy state and return busy message ids
+    # Check if message is locked, set locked state and return locked message ids
     #----------------------------------------------------------------------------
-    checkBusy: (messages, notBusy) ->
-      action = if notBusy then 'notbusy' else 'busy'
-      params = {messages: (m.id for m in messages)}
-      
-      return $http.post('/message/touch/' + action + '/', params).then((response) ->
-        return {messages: response.data.messages}
+    checkLock: (items, unlock) ->
+      action = if unlock then 'unlock' else 'lock'
+      params = {
+        messages: if angular.isArray(items) then (i.id for i in items) else [items]
+      }
+
+      return $http.post('/message/lock/' + action + '/', params).then((response) ->
+        return {items: response.data.messages}
       )
 ])
 

@@ -194,7 +194,7 @@ class MessageSearchMixin(object):
 
 
 class MessageCRUDL(SmartCRUDL):
-    actions = ('search', 'touch', 'action', 'label', 'bulk_reply', 'forward', 'history')
+    actions = ('search', 'lock', 'action', 'label', 'bulk_reply', 'forward', 'history')
     model = Message
 
     class Search(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
@@ -233,19 +233,28 @@ class MessageCRUDL(SmartCRUDL):
             return context
 
         def render_to_response(self, context, **response_kwargs):
+            results = []
+            for m in context['object_list']:
+                msg = m.as_json()
+
+                if context.get('user_id'):
+                    msg['lock'] = m.get_lock(context.get('user_id'))
+
+                results.append(msg)
+
             return JsonResponse({
-                'results': [m.as_json(context.get('user_id')) for m in context['object_list']],
+                'results': results,
                 'has_more': context['has_more']
             }, encoder=JSONEncoder)
 
-    class Touch(OrgPermsMixin, SmartTemplateView):
+    class Lock(OrgPermsMixin, SmartTemplateView):
         """
         AJAX endpoint for updating messages with a date and user id.
         Takes a list of message ids.
         """
         @classmethod
         def derive_url_pattern(cls, path, action):
-            return r'^message/touch/(?P<action>\w+)/$'
+            return r'^message/lock/(?P<action>\w+)/$'
 
         def post(self, request, *args, **kwargs):
             org = request.org
@@ -256,29 +265,29 @@ class MessageCRUDL(SmartCRUDL):
             message_ids = request.json['messages']
             messages = org.incoming_messages.filter(org=org, backend_id__in=message_ids)
 
-            busy_messages = []
+            lock_messages = []
 
-            if action == 'busy':
+            if action == 'lock':
                 for message in messages:
-                    if message.get_busy(request.user.id):
-                        busy_messages.append(message.backend_id)
+                    if message.get_lock(request.user.id):
+                        lock_messages.append(message.backend_id)
 
-                if not busy_messages:
+                if not lock_messages:
                     for message in messages:
-                        message.last_action = timezone.now()
-                        message.actioned_by = user
+                        message.locked_on = timezone.now()
+                        message.locked_by = user
                         message.save()
 
-            elif action == 'notbusy':
+            elif action == 'unlock':
                 for message in messages:
-                    message.last_action = None
-                    message.actioned_by = None
+                    message.locked_on = None
+                    message.locked_by = None
                     message.save()
 
             else:
                 return HttpResponseBadRequest("Invalid action: %s", action)
 
-            return JsonResponse({'messages': busy_messages}, encoder=JSONEncoder)
+            return JsonResponse({'messages': lock_messages}, encoder=JSONEncoder)
 
     class Action(OrgPermsMixin, SmartTemplateView):
         """

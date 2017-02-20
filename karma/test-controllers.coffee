@@ -397,28 +397,6 @@ describe('controllers:', () ->
         expect($scope.isInfiniteScrollEnabled()).toEqual(true)
       )
 
-      it('polls for new and updated messages ', () ->
-        fetchOld = spyOnPromise($q, $scope, MessageService, 'fetchOld')
-        $scope.poll()
-        
-        expect($scope.pollBusy).toEqual(true)
-        expect($scope.activeSearchRefresh.last_refresh).toEqual(utcdate(2016, 1, 2, 3, 0, 0, 0))
-
-        expect(MessageService.fetchOld).toHaveBeenCalledWith({
-          after: null, archived: false, before: null, contact: null, folder: 'inbox', groups: [], label: null, last_refresh: utcdate(2016, 1, 2, 3, 0, 0, 0), text: null, 
-        }, utcdate(2016, 1, 2, 3, 0, 0, 0), 0)
-
-        fetchOld.resolve({results: [test.msg3, test.msg2], hasMore: true})
-
-        expect($scope.items).toEqual([test.msg2, test.msg3])
-        expect($scope.pollBusy).toEqual(false)
-        )
-
-      it 'should cancel the intervals on destroy', ->
-        spyOn($intervalSpy, 'cancel') 
-        $scope.$destroy()
-        expect($intervalSpy.cancel).toHaveBeenCalledWith($scope.poll)
-
       it('getItemFilter', () ->
         filter = $scope.getItemFilter()
         expect(filter({archived: false})).toEqual(true)
@@ -511,7 +489,7 @@ describe('controllers:', () ->
       describe('onCaseFromMessage', () ->
         it('should open new case if message does not have one', () ->
           fetchPartners = spyOnPromise($q, $scope, PartnerService, 'fetchAll')
-          checkBusy = spyOnPromise($q, $scope, MessageService, 'checkBusy')
+          checkLock = spyOnPromise($q, $scope, MessageService, 'checkLock')
           newCaseModal = spyOnPromise($q, $scope, UtilsService, 'newCaseModal')
           openCase = spyOnPromise($q, $scope, CaseService, 'open')
           spyOn(UtilsService, 'navigate')
@@ -519,38 +497,41 @@ describe('controllers:', () ->
           $scope.onCaseFromMessage(test.msg1)
 
           fetchPartners.resolve([test.moh, test.who])
-          checkBusy.resolve({messages: 101})
+          checkLock.resolve({items: 101})
           newCaseModal.resolve({summary: "New case", assignee: test.moh, user: test.user1})
           openCase.resolve({id: 601, summary: "New case", isNew: false})
 
-          expect(MessageService.checkBusy).toHaveBeenCalledWith([test.msg1])
+          expect(MessageService.checkLock).toHaveBeenCalledWith([test.msg1])
           expect(CaseService.open).toHaveBeenCalledWith(test.msg1, "New case", test.moh, test.user1)
           expect(UtilsService.navigate).toHaveBeenCalledWith('/case/read/601/?alert=open_found_existing')
         )
 
         it('should redirect to an existing case', () ->
           spyOn(UtilsService, 'navigate')
+          checkLock = spyOnPromise($q, $scope, MessageService, 'checkLock')
 
           test.msg1.case = {id: 601, summary: "A case"}
           $scope.onCaseFromMessage(test.msg1)
+          checkLock.resolve({items: 101})
 
+          expect(MessageService.checkLock).toHaveBeenCalledWith([test.msg1])
           expect(UtilsService.navigate).toHaveBeenCalledWith('/case/read/601/')
         )
       )
 
       it('onForwardMessage', () ->
-        checkBusy = spyOnPromise($q, $scope, MessageService, 'checkBusy')
+        checkLock = spyOnPromise($q, $scope, MessageService, 'checkLock')
         composeModal = spyOnPromise($q, $scope, UtilsService, 'composeModal')
         forward = spyOnPromise($q, $scope, MessageService, 'forward')
         spyOn(UtilsService, 'displayAlert')
 
         $scope.onForwardMessage(test.msg1)
 
-        checkBusy.resolve({messages: 101})
+        checkLock.resolve({items: 101})
         composeModal.resolve({text: "FYI", urn: "tel:+260964153686"})
         forward.resolve()
 
-        expect(MessageService.checkBusy).toHaveBeenCalledWith([test.msg1])
+        expect(MessageService.checkLock).toHaveBeenCalledWith([test.msg1])
         expect(MessageService.forward).toHaveBeenCalledWith(test.msg1, "FYI", "tel:+260964153686")
         expect(UtilsService.displayAlert).toHaveBeenCalled()
       )
