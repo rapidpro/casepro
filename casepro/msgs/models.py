@@ -544,7 +544,7 @@ class Message(models.Model):
 
             MessageAction.create(org, user, messages, MessageAction.RESTORE)
 
-    def as_json(self, user_id=None):
+    def as_json(self):
         """
         Prepares this message for JSON serialization
         """
@@ -557,8 +557,7 @@ class Message(models.Model):
             'flagged': self.is_flagged,
             'archived': self.is_archived,
             'flow': self.type == self.TYPE_FLOW,
-            'case': self.case.as_json(full=False) if self.case else None,
-            'lock': self.get_lock(user_id) if user_id else False,
+            'case': self.case.as_json(full=False) if self.case else None
         }
 
     def __str__(self):

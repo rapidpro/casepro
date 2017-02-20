@@ -1137,7 +1137,6 @@ class MessageTest(BaseCasesTest):
             'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
             'flagged': False,
             'archived': False,
-            'lock': False,
             'flow': False,
             'case': None
         })
