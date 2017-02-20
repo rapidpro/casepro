@@ -284,7 +284,7 @@ class MessageCRUDL(SmartCRUDL):
                     message.locked_by = None
                     message.save()
 
-            else:
+            else:  # pragma: no cover
                 return HttpResponseBadRequest("Invalid action: %s", action)
 
             return JsonResponse({'messages': lock_messages}, encoder=JSONEncoder)
