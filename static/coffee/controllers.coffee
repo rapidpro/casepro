@@ -247,22 +247,22 @@ controllers.controller('BaseItemsController', ['$scope', '$timeout', 'UtilsServi
           unlocked = (lockedItem) ->
             lockedItem.lock = false
             lockedItem.timeoutId = false
-      
+
           item.timeoutId = $timeout(unlocked, item.lock * 1000, true, item)
 
       # items removed from current folder
       filter = $scope.getItemFilter()
       $scope.items = (item for item in $scope.items when filter(item))
-      
+
       $scope.updateItems()
-      
+
     ).catch((error) ->
       $scope.pollBusy = false
-    )    
+    )
 
   $scope.$on '$destroy', ->
     $interval.cancel($scope.poll)
-    
+
   #----------------------------------------------------------------------------
   # Set busy state for individual items when actioned before poll interval
   #----------------------------------------------------------------------------
@@ -344,7 +344,7 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$uibModal'
 
   $scope.fetchLockedItems = (activeSearchRefresh, lastPollTime, oldItemsPage) ->
     return MessageService.fetchOld(activeSearchRefresh, lastPollTime, oldItemsPage)
-    
+
 
   $scope.fetchOldItems = (search, startTime, page) ->
     return MessageService.fetchOld(search, startTime, page)
@@ -661,7 +661,6 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
 
   $scope.allLabels = $window.contextData.all_labels
   $scope.fields = $window.contextData.fields
-  $scope.messageId = $window.contextData.message_id
 
   $scope.caseObj = null
   $scope.contact = null
@@ -717,7 +716,7 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
 
   # unlock message on exit
   $window.onbeforeunload = ->
-    MessageService.checkLock($scope.messageId, true)
+    MessageService.checkLock($scope.caseObj.msg_backend_id, true)
     undefined # suppress browser dialog
 
   #----------------------------------------------------------------------------

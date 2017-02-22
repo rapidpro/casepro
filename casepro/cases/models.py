@@ -458,7 +458,8 @@ class Case(models.Model):
                 'labels': [l.as_json(full=False) for l in self.labels.all()],
                 'summary': self.summary,
                 'opened_on': self.opened_on,
-                'is_closed': self.is_closed
+                'is_closed': self.is_closed,
+                'msg_backend_id': self.initial_message.backend_id if self.initial_message else None,
             }
         else:
             return {
