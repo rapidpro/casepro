@@ -776,6 +776,7 @@ class CaseCRUDLTest(BaseCasesTest):
             'is_closed': False,
             'watching': False,
             'user_assignee': {'id': self.user1.pk, 'name': "Evan"},
+            'msg_backend_id': 101,
         })
 
         # users with label access can also fetch
@@ -983,7 +984,8 @@ class CaseCRUDLTest(BaseCasesTest):
                 'labels': [],
                 'summary': "",
                 'opened_on': format_iso8601(case2.opened_on),
-                'is_closed': False
+                'is_closed': False,
+                'msg_backend_id': 102,
             },
             {
                 'id': self.case.pk,
@@ -993,7 +995,8 @@ class CaseCRUDLTest(BaseCasesTest):
                 'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
                 'summary': "Summary",
                 'opened_on': format_iso8601(self.case.opened_on),
-                'is_closed': False
+                'is_closed': False,
+                'msg_backend_id': 101,
             }
         ])
 
@@ -1010,7 +1013,8 @@ class CaseCRUDLTest(BaseCasesTest):
                 'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
                 'summary': "Summary",
                 'opened_on': format_iso8601(self.case.opened_on),
-                'is_closed': False
+                'is_closed': False,
+                'msg_backend_id': 101
             }
         ])
 
