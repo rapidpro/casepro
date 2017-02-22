@@ -280,7 +280,6 @@ class MessageCRUDL(SmartCRUDL):
 
             elif action == 'unlock':
                 for message in messages:
-                    message.locked_on = None
                     message.locked_by = None
                     message.save(update_fields=['locked_on', 'locked_by'])
 
