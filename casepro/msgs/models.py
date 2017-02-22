@@ -324,7 +324,7 @@ class Message(models.Model):
 
     case = models.ForeignKey('cases.Case', null=True, related_name="incoming_messages")
 
-    locked_on = models.DateTimeField(auto_now=True, null=True, help_text="Last action taken on this message")
+    locked_on = models.DateTimeField(null=True, help_text="Last action taken on this message")
 
     locked_by = models.ForeignKey(User, null=True, related_name='actioned_messages')
 

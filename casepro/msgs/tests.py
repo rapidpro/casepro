@@ -1264,7 +1264,7 @@ class MessageCRUDLTest(BaseCasesTest):
 
         # Can't lock becuase it is locked by another user
         msg.locked_by = self.user1
-        msg.locked_at = now()
+        msg.locked_on = now()
         msg.save()
 
         response = self.url_post_json('unicef', get_url('lock'), {'messages': [101]})
@@ -1273,7 +1273,7 @@ class MessageCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json['messages'], [101])
 
         msg.locked_by = self.admin
-        msg.locked_at = now()
+        msg.locked_on = now()
         msg.save()
 
         response = self.url_post_json('unicef', get_url('unlock'), {'messages': [101]})
