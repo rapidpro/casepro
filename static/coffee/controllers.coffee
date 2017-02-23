@@ -247,22 +247,22 @@ controllers.controller('BaseItemsController', ['$scope', '$timeout', 'UtilsServi
           unlocked = (lockedItem) ->
             lockedItem.lock = false
             lockedItem.timeoutId = false
-
+      
           item.timeoutId = $timeout(unlocked, item.lock * 1000, true, item)
 
       # items removed from current folder
       filter = $scope.getItemFilter()
       $scope.items = (item for item in $scope.items when filter(item))
-
+      
       $scope.updateItems()
-
+      
     ).catch((error) ->
       $scope.pollBusy = false
-    )
+    )    
 
   $scope.$on '$destroy', ->
     $interval.cancel($scope.poll)
-
+    
   #----------------------------------------------------------------------------
   # Set busy state for individual items when actioned before poll interval
   #----------------------------------------------------------------------------
@@ -344,7 +344,7 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$uibModal'
 
   $scope.fetchLockedItems = (activeSearchRefresh, lastPollTime, oldItemsPage) ->
     return MessageService.fetchOld(activeSearchRefresh, lastPollTime, oldItemsPage)
-
+    
 
   $scope.fetchOldItems = (search, startTime, page) ->
     return MessageService.fetchOld(search, startTime, page)
