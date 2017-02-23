@@ -661,7 +661,6 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
 
   $scope.allLabels = $window.contextData.all_labels
   $scope.fields = $window.contextData.fields
-  $scope.messageId = $window.contextData.message_id
 
   $scope.caseObj = null
   $scope.contact = null
@@ -717,7 +716,7 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
 
   # unlock message on exit
   $window.onbeforeunload = ->
-    MessageService.checkLock($scope.messageId, true)
+    MessageService.checkLock($scope.caseObj.msg_backend_id, true)
     undefined # suppress browser dialog
 
   #----------------------------------------------------------------------------

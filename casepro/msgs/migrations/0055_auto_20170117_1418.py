@@ -23,6 +23,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='message',
             name='locked_on',
-            field=models.DateTimeField(auto_now=True, help_text='Last action taken on this message', null=True),
+            field=models.DateTimeField(help_text='Last action taken on this message', null=True),
         ),
     ]
