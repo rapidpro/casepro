@@ -508,13 +508,10 @@ describe('controllers:', () ->
 
         it('should redirect to an existing case', () ->
           spyOn(UtilsService, 'navigate')
-          checkLock = spyOnPromise($q, $scope, MessageService, 'checkLock')
 
           test.msg1.case = {id: 601, summary: "A case"}
           $scope.onCaseFromMessage(test.msg1)
-          checkLock.resolve({items: 101})
 
-          expect(MessageService.checkLock).toHaveBeenCalledWith([test.msg1])
           expect(UtilsService.navigate).toHaveBeenCalledWith('/case/read/601/')
         )
       )

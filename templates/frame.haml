@@ -203,9 +203,6 @@
 
       function displayAlert(type, text) {
         $('.content').prepend('<div class="alert alert-' + type + '"><a class="close" data-dismiss="alert">×</a>' + text + '</div>');
-        $(".alert").delay(4000).fadeOut(500, function() {
-          $(this).alert('close');
-        });
       }
 
       /* Set HighCharts theme and localization */
