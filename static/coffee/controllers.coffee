@@ -446,12 +446,7 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$uibModal'
 
   $scope.onCaseFromMessage = (message) ->
     if message.case
-      MessageService.checkLock([message]).then((results) ->
-        if results.items.length > 0
-          $scope.locked(results, [message])
-        else
-          UtilsService.navigate('/case/read/' + message.case.id + '/')
-        )
+      UtilsService.navigate('/case/read/' + message.case.id + '/')
       return
 
     if $scope.user.partner
@@ -713,11 +708,6 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
         $scope.$broadcast('timelineChanged')
       )
     )
-
-  # unlock message on exit
-  $window.onbeforeunload = ->
-    MessageService.checkLock($scope.caseObj.msg_backend_id, true)
-    undefined # suppress browser dialog
 
   #----------------------------------------------------------------------------
   # Messaging
