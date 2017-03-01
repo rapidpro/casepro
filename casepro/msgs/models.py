@@ -430,9 +430,9 @@ class Message(models.Model):
         return self.actions.select_related('created_by', 'label').order_by('-pk')
 
     def get_lock(self, user):
-        if self.locked_on and self.locked_by:
+        if self.locked_on and self.locked_by_id:
             if self.locked_on > (now() - timedelta(seconds=MESSAGE_LOCK_SECONDS)):
-                if self.locked_by.id != user.id:
+                if self.locked_by_id != user.id:
                     diff = (self.locked_on + timedelta(seconds=MESSAGE_LOCK_SECONDS)) - now()
                     return diff.seconds
 

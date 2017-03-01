@@ -1232,21 +1232,24 @@ class MessageCRUDLTest(BaseCasesTest):
         msg = self.create_message(self.unicef, 101, self.ann, "Normal", [self.aids, self.pregnancy])
 
         # The message is not locked
-        self.assertFalse(msg.get_lock(self.user1))
+        with self.assertNumQueries(0):
+            self.assertFalse(msg.get_lock(self.user1))
 
         # The message is locked by the same user
         msg.locked_by = self.user2
         msg.locked_on = now()
         msg.save()
 
-        self.assertFalse(msg.get_lock(self.user2))
+        with self.assertNumQueries(0):
+            self.assertFalse(msg.get_lock(self.user2))
 
         # The message is locked by another user
         msg.locked_by = self.user1
         msg.locked_on = now()
         msg.save()
 
-        self.assertNotEqual(msg.get_lock(self.user2), False)
+        with self.assertNumQueries(0):
+            self.assertNotEqual(msg.get_lock(self.user2), False)
 
     def test_lock_messages(self):
         def get_url(action):
