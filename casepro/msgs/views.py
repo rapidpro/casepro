@@ -17,6 +17,7 @@ from smartmin.views import (SmartListView, SmartCreateView, SmartUpdateView, Sma
                             SmartCSVImportView)
 from smartmin.csv_imports.models import ImportTask
 from temba_client.utils import parse_iso8601
+from django.utils import timezone
 
 from casepro.rules.mixins import RuleFormMixin
 from casepro.statistics.models import DailyCount
@@ -193,7 +194,7 @@ class MessageSearchMixin(object):
 
 
 class MessageCRUDL(SmartCRUDL):
-    actions = ('search', 'action', 'label', 'bulk_reply', 'forward', 'history')
+    actions = ('search', 'lock', 'action', 'label', 'bulk_reply', 'forward', 'history')
     model = Message
 
     class Search(OrgPermsMixin, MessageSearchMixin, SmartTemplateView):
@@ -208,6 +209,20 @@ class MessageCRUDL(SmartCRUDL):
             page = int(self.request.GET.get('page', 1))
 
             search = self.derive_search()
+
+            # this is a refresh of messages
+            if self.request.GET.get('last_refresh', None):
+                new_messages = Message.search(org, user, search)
+
+                search['last_refresh'] = self.request.GET['last_refresh']
+
+                updated_messages = Message.search(org, user, search)
+
+                context['object_list'] = list(new_messages) + list(set(updated_messages) - set(new_messages))
+
+                context['has_more'] = False
+                return context
+
             messages = Message.search(org, user, search)
             paginator = LazyPaginator(messages, per_page=50)
 
@@ -216,10 +231,60 @@ class MessageCRUDL(SmartCRUDL):
             return context
 
         def render_to_response(self, context, **response_kwargs):
+            results = []
+            for m in context['object_list']:
+                msg = m.as_json()
+
+                msg['lock'] = m.get_lock(self.request.user)
+
+                results.append(msg)
+
             return JsonResponse({
-                'results': [m.as_json() for m in context['object_list']],
+                'results': results,
                 'has_more': context['has_more']
             }, encoder=JSONEncoder)
+
+    class Lock(OrgPermsMixin, SmartTemplateView):
+        """
+        AJAX endpoint for updating messages with a date and user id.
+        Takes a list of message ids.
+        """
+        @classmethod
+        def derive_url_pattern(cls, path, action):
+            return r'^message/lock/(?P<action>\w+)/$'
+
+        def post(self, request, *args, **kwargs):
+            org = request.org
+            user = request.user
+
+            action = kwargs['action']
+
+            message_ids = request.json['messages']
+            messages = org.incoming_messages.filter(org=org, backend_id__in=message_ids)
+
+            lock_messages = []
+
+            if action == 'lock':
+                for message in messages:
+                    if message.get_lock(request.user):
+                        lock_messages.append(message.backend_id)
+
+                if not lock_messages:
+                    for message in messages:
+                        message.locked_on = timezone.now()
+                        message.locked_by = user
+                        message.save(update_fields=['locked_on', 'locked_by'])
+
+            elif action == 'unlock':
+                for message in messages:
+                    message.locked_on = timezone.now()
+                    message.locked_by = None
+                    message.save(update_fields=['locked_on', 'locked_by'])
+
+            else:  # pragma: no cover
+                return HttpResponseBadRequest("Invalid action: %s", action)
+
+            return JsonResponse({'messages': lock_messages}, encoder=JSONEncoder)
 
     class Action(OrgPermsMixin, SmartTemplateView):
         """

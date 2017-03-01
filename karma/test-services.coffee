@@ -384,6 +384,16 @@ describe('services:', () ->
         $httpBackend.flush()
       )
     )
+
+    describe('checkLock', () ->
+      it('posts to lock check endpoint', () ->
+        $httpBackend.expectPOST('/message/lock/lock/', {messages: [101, 102]}).respond('{"messages": [101, 102]}')
+        MessageService.checkLock([test.msg1, test.msg2]).then((data) ->
+          expect(data.items).toEqual([101, 102])
+        )
+        $httpBackend.flush()
+      )
+    )
   )
 
   #=======================================================================

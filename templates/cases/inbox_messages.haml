@@ -105,7 +105,7 @@
                     - trans "None"
 
           %span.selection-info{ ng-show:"selection.length > 0" }
-            %ng-pluralize{ count:"selection.length", when:"{'one': '1 message selected', 'other': '{} messages selected'}"}/
+            %ng-pluralize{ count:"selection.length", when:'{"one": "1 message selected", "other": "{} messages selected"}' }
 
           .selection-actions.pull-away
             .btn-group{ ng-if:'folder != "archived"' }
@@ -128,9 +128,10 @@
                 - trans "Restore"
 
     .messages{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"!isInfiniteScrollEnabled()" }
-      .stackitem.clearfix.hoverable{ ng-repeat:"item in items | filter: getItemFilter()", ng-click:"onExpandMessage(item)", ng-class:"{ flagged: item.flagged, selected: item.selected, archived: item.archived }" }
+      .stackitem.clearfix.hoverable{ ng-repeat:"item in items | filter: getItemFilter()", ng-click:"onExpandMessage(item)", ng-class:"{ flagged: item.flagged, selected: item.selected, archived: item.archived, lock: item.lock }" }
         .message-actions
-          %input{ type:"checkbox", ng-model:"item.selected", ng-change:"onChangeSelection()" }
+          %input{ type:"checkbox", ng-model:"item.selected", ng-change:"onChangeSelection()", ng-hide:'item.lock'}
+          %i.lockglyph.glyphicon.glyphicon-ban-circle{ ng-show:'item.lock' }
           %a.flag{ ng-click:"onToggleMessageFlag(item)" }
             %i.glyphicon.glyphicon-flag
         .message-time

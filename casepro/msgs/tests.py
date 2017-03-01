@@ -1211,6 +1211,75 @@ class MessageCRUDLTest(BaseCasesTest):
             'user_assignee': {'id': self.user1.pk, 'name': "Evan"}})
         self.assertEqual(response.json['results'][1]['id'], 104)
 
+        t1 = now()
+        self.create_message(self.unicef, 210, self.ann, "Is this thing on?", [self.aids], is_handled=True)
+        Message.bulk_flag(self.unicef, self.user1, [msg5])
+
+        t2 = now()
+
+        # test the refresh, only new items and changes after the date is returned
+        response = self.url_get('unicef', url, {
+            'folder': 'inbox', 'text': "", 'page': 1, 'after': format_iso8601(t1), 'last_refresh': format_iso8601(t1),
+            'before': format_iso8601(t2)
+        })
+
+        self.assertEqual(len(response.json['results']), 2)
+        self.assertEqual(response.json['results'][0]['id'], 210)
+        self.assertEqual(response.json['results'][1]['id'], 105)
+        self.assertEqual(response.json['results'][1]['flagged'], True)
+
+    def test_get_lock(self):
+        msg = self.create_message(self.unicef, 101, self.ann, "Normal", [self.aids, self.pregnancy])
+
+        # The message is not locked
+        self.assertFalse(msg.get_lock(self.user1))
+
+        # The message is locked by the same user
+        msg.locked_by = self.user2
+        msg.locked_on = now()
+        msg.save()
+
+        self.assertFalse(msg.get_lock(self.user2))
+
+        # The message is locked by another user
+        msg.locked_by = self.user1
+        msg.locked_on = now()
+        msg.save()
+
+        self.assertNotEqual(msg.get_lock(self.user2), False)
+
+    def test_lock_messages(self):
+        def get_url(action):
+            return reverse('msgs.message_lock', kwargs={'action': action})
+
+        # unlock_url = reverse('msgs.message_lock', kwargs={'action': 'unlock'})
+        msg = self.create_message(self.unicef, 101, self.ann, "Normal", [self.aids, self.pregnancy])
+
+        # Successfully lock message
+        self.login(self.user2)
+        response = self.url_post_json('unicef', get_url('lock'), {'messages': [101]})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json['messages'], [])
+
+        # Can't lock becuase it is locked by another user
+        msg.locked_by = self.user1
+        msg.locked_on = now()
+        msg.save()
+
+        response = self.url_post_json('unicef', get_url('lock'), {'messages': [101]})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json['messages'], [101])
+
+        msg.locked_by = self.admin
+        msg.locked_on = now()
+        msg.save()
+
+        response = self.url_post_json('unicef', get_url('unlock'), {'messages': [101]})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json['messages'], [])
+
     @patch('casepro.test.TestBackend.flag_messages')
     @patch('casepro.test.TestBackend.unflag_messages')
     @patch('casepro.test.TestBackend.archive_messages')

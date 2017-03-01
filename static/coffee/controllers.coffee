@@ -8,6 +8,7 @@ controllers = angular.module('cases.controllers', ['cases.services', 'cases.moda
 # Component refresh intervals
 INTERVAL_CASE_INFO = 30000
 INTERVAL_CASE_TIMELINE = 30000
+INTERVAL_ITEM_REFRESH = 10000
 
 INFINITE_SCROLL_MAX_ITEMS = 1000
 
@@ -114,7 +115,7 @@ controllers.controller('BaseTabsController', ['$scope', '$location', ($scope, $l
 # Base controller class for controllers which display fetched items with
 # infinite scrolling, e.g. lists of messages, cases etc
 #============================================================================
-controllers.controller('BaseItemsController', ['$scope', 'UtilsService', ($scope, UtilsService) ->
+controllers.controller('BaseItemsController', ['$scope', '$timeout', 'UtilsService', ($scope, $timeout, UtilsService) ->
 
   $scope.items = []
   $scope.oldItemsLoading = false
@@ -209,13 +210,82 @@ controllers.controller('BaseItemsController', ['$scope', 'UtilsService', ($scope
 
   $scope.hasTooManyItemsToDisplay = () ->
     $scope.oldItemsMore and $scope.items.length >= INFINITE_SCROLL_MAX_ITEMS
-])
 
+  #----------------------------------------------------------------------------
+  # Refresh poll
+  #----------------------------------------------------------------------------
+  $scope.poll = ->
+    # a poll is already in progress, skip this one
+    if $scope.pollBusy
+      return
+
+    $scope.pollBusy = true
+    $scope.activeSearchRefresh = $scope.buildSearch()
+    $scope.activeSearchRefresh.last_refresh = $scope.lastPollTime
+
+    $scope.fetchLockedItems($scope.activeSearchRefresh, $scope.lastPollTime, $scope.oldItemsPage).then((data) ->
+      $scope.lastPollTime = new Date()
+      $scope.pollBusy = false
+
+      # quick access to index of items
+      scopeItems = {}
+      for item, i in $scope.items
+        scopeItems[item.id] = i
+
+      for item in data.results
+        if scopeItems.hasOwnProperty(item.id)
+          # the item exists so replace with new data
+          item.selected = $scope.items[scopeItems[item.id]].selected
+          $scope.items[scopeItems[item.id]] = item
+        else
+          # new item so we add it to the top
+          $scope.items.unshift(item)
+
+      # deactivate busy state after message lock interval
+      for item in $scope.items
+        if item.lock and !item.timeoutId
+          unlocked = (lockedItem) ->
+            lockedItem.lock = false
+            lockedItem.timeoutId = false
+      
+          item.timeoutId = $timeout(unlocked, item.lock * 1000, true, item)
+
+      # items removed from current folder
+      filter = $scope.getItemFilter()
+      $scope.items = (item for item in $scope.items when filter(item))
+      
+      $scope.updateItems()
+      
+    ).catch((error) ->
+      $scope.pollBusy = false
+    )    
+
+  $scope.$on '$destroy', ->
+    $interval.cancel($scope.poll)
+    
+  #----------------------------------------------------------------------------
+  # Set busy state for individual items when actioned before poll interval
+  #----------------------------------------------------------------------------
+  $scope.locked = (results, items) ->
+    lockedItem = []
+    for item in items
+      if item.id in results.items
+        lockedItem.push(item.text)
+        item.lock = true
+        item.selected = false
+        $scope.expandedMessageId = false
+
+    $scope.updateItems()
+
+    # show busy alert
+    lockedItems = lockedItem.join('</li><li>')
+    UtilsService.displayAlert('error', '<strong>The following item(s) are locked:</strong><br><ul><li>' + lockedItems + '</li></ul>')
+])
 
 #============================================================================
 # Incoming messages controller
 #============================================================================
-controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal', '$controller', 'CaseService', 'MessageService', 'PartnerService', 'UserService', 'UtilsService', ($scope, $timeout, $uibModal, $controller, CaseService, MessageService, PartnerService, UserService, UtilsService) ->
+controllers.controller('MessagesController', ['$scope', '$interval', '$uibModal', '$controller', 'CaseService', 'MessageService', 'PartnerService', 'UserService', 'UtilsService', ($scope, $interval, $uibModal, $controller, CaseService, MessageService, PartnerService, UserService, UtilsService) ->
   $controller('BaseItemsController', {$scope: $scope})
 
   $scope.advancedSearch = false
@@ -224,6 +294,10 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
   $scope.init = () ->
     $scope.searchFields = $scope.searchFieldDefaults()
     $scope.activeSearch = $scope.buildSearch()
+
+    $scope.pollBusy = false
+    $scope.lastPollTime = new Date()
+    $interval($scope.poll, INTERVAL_ITEM_REFRESH)
 
     $scope.$on('activeLabelChange', () ->
       $scope.onResetSearch()
@@ -268,6 +342,10 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
       )
     )
 
+  $scope.fetchLockedItems = (activeSearchRefresh, lastPollTime, oldItemsPage) ->
+    return MessageService.fetchOld(activeSearchRefresh, lastPollTime, oldItemsPage)
+    
+
   $scope.fetchOldItems = (search, startTime, page) ->
     return MessageService.fetchOld(search, startTime, page)
 
@@ -293,14 +371,21 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
     )
 
   $scope.onReplyToSelection = () ->
-    $uibModal.open({templateUrl: '/partials/modal_reply.html', controller: 'ReplyModalController', scope :$scope, resolve: {selection: (() -> $scope.selection)}})
-    .result.then((text) ->
-      MessageService.bulkReply($scope.selection, text).then(() ->
-        MessageService.bulkArchive($scope.selection).then(() ->
-          UtilsService.displayAlert('success', "Reply sent and messages archived")
-          $scope.updateItems()
-        )
-      )
+    MessageService.checkLock($scope.selection).then((results) ->
+      if results.items.length > 0
+        $scope.locked(results, $scope.selection)
+      else
+        $uibModal.open({templateUrl: '/partials/modal_reply.html', controller: 'ReplyModalController', scope :$scope, resolve: {selection: (() -> $scope.selection)}})
+          .result.then((text) ->
+            MessageService.bulkReply($scope.selection, text).then(() ->
+              MessageService.bulkArchive($scope.selection).then(() ->
+                UtilsService.displayAlert('success', "Reply sent and messages archived")
+                $scope.updateItems()
+              )
+            )
+          , ->
+            MessageService.checkLock($scope.selection, true)
+          )
     )
 
   $scope.onArchiveSelection = () ->
@@ -327,23 +412,36 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
     )
 
   $scope.onReplyToMessage = (message) ->
-    $uibModal.open({templateUrl: '/partials/modal_reply.html', controller: 'ReplyModalController', resolve: {selection: (() -> null)}})
-    .result.then((text) ->
-      MessageService.bulkReply([message], text).then(() ->
-        MessageService.bulkArchive([message]).then(() ->
-          UtilsService.displayAlert('success', "Reply sent and message archived")
-          $scope.updateItems()
+    MessageService.checkLock([message]).then((results) ->
+      if results.items.length > 0
+        $scope.locked(results, [message])
+      else
+        $uibModal.open({templateUrl: '/partials/modal_reply.html', controller: 'ReplyModalController', resolve: {selection: (() -> null)}})
+          .result.then((text) ->
+            MessageService.bulkReply([message], text).then(() ->
+              MessageService.bulkArchive([message]).then(() ->
+                UtilsService.displayAlert('success', "Reply sent and message archived")
+                $scope.updateItems()
+              )
+            )
+        , ->
+          MessageService.checkLock([message], true)
         )
-      )
     )
 
   $scope.onForwardMessage = (message) ->
     initialText = '"' + message.text + '"'
-
-    UtilsService.composeModal("Forward", initialText).then((data) ->
-      MessageService.forward(message, data.text, data.urn).then(() ->
-        UtilsService.displayAlert('success', "Message forwarded to " + data.urn.path)
-      )
+    MessageService.checkLock([message]).then((results) ->
+      if results.items.length > 0
+        $scope.locked(results, [message])
+      else
+        UtilsService.composeModal("Forward", initialText).then((data) ->
+          MessageService.forward(message, data.text, data.urn).then(() ->
+            UtilsService.displayAlert('success', "Message forwarded to " + data.urn.path)
+          )
+        , ->
+          MessageService.checkLock([message], true)
+        )
     )
 
   $scope.onCaseFromMessage = (message) ->
@@ -373,13 +471,20 @@ controllers.controller('MessagesController', ['$scope', '$timeout', '$uibModal',
     }})
 
   newCaseFromMessage = (message, possibleAssignees) ->
-    UtilsService.newCaseModal(message.text, CASE_SUMMARY_MAX_LEN, possibleAssignees).then((data) ->
-      CaseService.open(message, data.summary, data.assignee, data.user).then((caseObj) ->
-          caseUrl = '/case/read/' + caseObj.id + '/'
-          if !caseObj.is_new
-            caseUrl += '?alert=open_found_existing'
-          UtilsService.navigate(caseUrl)
-      )
+    MessageService.checkLock([message]).then((results) ->
+      if results.items.length > 0
+        $scope.locked(results, [message])
+      else
+        UtilsService.newCaseModal(message.text, CASE_SUMMARY_MAX_LEN, possibleAssignees).then((data) ->
+          CaseService.open(message, data.summary, data.assignee, data.user).then((caseObj) ->
+              caseUrl = '/case/read/' + caseObj.id + '/'
+              if !caseObj.is_new
+                caseUrl += '?alert=open_found_existing'
+              UtilsService.navigate(caseUrl)
+          )
+        , ->
+          MessageService.checkLock([message], true)
+        )
     )
 ])
 

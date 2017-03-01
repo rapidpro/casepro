@@ -69,7 +69,7 @@ class CaseCRUDL(SmartCRUDL):
             # angular app requires context data in JSON format
             context['context_data_json'] = json_encode({
                 'all_labels': [l.as_json() for l in labels],
-                'fields': [f.as_json() for f in fields]
+                'fields': [f.as_json() for f in fields],
             })
 
             context['can_update'] = can_update

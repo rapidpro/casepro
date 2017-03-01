@@ -348,12 +348,20 @@ describe('controllers:', () ->
     # Tests for MessagesController
     #=======================================================================
     describe('MessagesController', () ->
+      $intervalSpy = null
 
       beforeEach(() ->
-        $controller('MessagesController', {$scope: $scope})
+        inject((_$interval_) ->
+          $intervalSpy = jasmine.createSpy('$interval', _$interval_).and.callThrough()
+        )
+        
+        $controller('MessagesController', {$scope: $scope, $interval: $intervalSpy})
 
         $inboxScope.init('inbox', serverTime)
         $scope.init()
+        
+        $scope.lastPollTime = utcdate(2016, 1, 2, 3, 0, 0, 0)
+        jasmine.clock().mockDate($scope.lastPollTime)
 
         # extra test data
         test.msg1 = {id: 101, text: "Hello 1", labels: [test.tea], flagged: true, archived: false}
@@ -366,6 +374,10 @@ describe('controllers:', () ->
         expect($scope.activeLabel).toEqual(null)
         expect($scope.activeContact).toEqual(null)
         expect($scope.inactiveLabels).toEqual([test.tea, test.coffee])
+        
+        expect($scope.pollBusy).toEqual(false)
+        expect($scope.lastPollTime).toEqual(utcdate(2016, 1, 2, 3, 0, 0, 0))
+        expect($intervalSpy).toHaveBeenCalledWith($scope.poll, 10000)
       )
 
       it('loadOldItems', () ->
@@ -477,6 +489,7 @@ describe('controllers:', () ->
       describe('onCaseFromMessage', () ->
         it('should open new case if message does not have one', () ->
           fetchPartners = spyOnPromise($q, $scope, PartnerService, 'fetchAll')
+          checkLock = spyOnPromise($q, $scope, MessageService, 'checkLock')
           newCaseModal = spyOnPromise($q, $scope, UtilsService, 'newCaseModal')
           openCase = spyOnPromise($q, $scope, CaseService, 'open')
           spyOn(UtilsService, 'navigate')
@@ -484,9 +497,11 @@ describe('controllers:', () ->
           $scope.onCaseFromMessage(test.msg1)
 
           fetchPartners.resolve([test.moh, test.who])
+          checkLock.resolve({items: 101})
           newCaseModal.resolve({summary: "New case", assignee: test.moh, user: test.user1})
           openCase.resolve({id: 601, summary: "New case", isNew: false})
 
+          expect(MessageService.checkLock).toHaveBeenCalledWith([test.msg1])
           expect(CaseService.open).toHaveBeenCalledWith(test.msg1, "New case", test.moh, test.user1)
           expect(UtilsService.navigate).toHaveBeenCalledWith('/case/read/601/?alert=open_found_existing')
         )
@@ -502,15 +517,18 @@ describe('controllers:', () ->
       )
 
       it('onForwardMessage', () ->
+        checkLock = spyOnPromise($q, $scope, MessageService, 'checkLock')
         composeModal = spyOnPromise($q, $scope, UtilsService, 'composeModal')
         forward = spyOnPromise($q, $scope, MessageService, 'forward')
         spyOn(UtilsService, 'displayAlert')
 
         $scope.onForwardMessage(test.msg1)
 
+        checkLock.resolve({items: 101})
         composeModal.resolve({text: "FYI", urn: "tel:+260964153686"})
         forward.resolve()
 
+        expect(MessageService.checkLock).toHaveBeenCalledWith([test.msg1])
         expect(MessageService.forward).toHaveBeenCalledWith(test.msg1, "FYI", "tel:+260964153686")
         expect(UtilsService.displayAlert).toHaveBeenCalled()
       )

@@ -14,6 +14,7 @@ from django.utils.timezone import now
 from django.db.models import Q
 from enum import Enum
 from django_redis import get_redis_connection
+from datetime import timedelta
 
 from casepro.backend import get_backend
 from casepro.contacts.models import Contact, Field
@@ -22,6 +23,7 @@ from casepro.utils.export import BaseSearchExport
 
 LABEL_LOCK_KEY = 'lock:label:%d:%s'
 MESSAGE_LOCK_KEY = 'lock:message:%d:%d'
+MESSAGE_LOCK_SECONDS = 300
 
 
 class MessageFolder(Enum):
@@ -322,6 +324,10 @@ class Message(models.Model):
 
     case = models.ForeignKey('cases.Case', null=True, related_name="incoming_messages")
 
+    locked_on = models.DateTimeField(null=True, help_text="Last action taken on this message")
+
+    locked_by = models.ForeignKey(User, null=True, related_name='actioned_messages')
+
     def __init__(self, *args, **kwargs):
         if self.SAVE_CONTACT_ATTR in kwargs:
             setattr(self, self.SAVE_CONTACT_ATTR, kwargs.pop(self.SAVE_CONTACT_ATTR))
@@ -351,6 +357,7 @@ class Message(models.Model):
         group_ids = search.get('groups')
         after = search.get('after')
         before = search.get('before')
+        last_refresh = search.get('last_refresh')
 
         # only show non-deleted handled messages
         queryset = org.incoming_messages.filter(is_active=True, is_handled=True)
@@ -380,18 +387,23 @@ class Message(models.Model):
             if folder == MessageFolder.unlabelled:
                 raise ValueError("Unlabelled folder is only accessible to administrators")
 
-        # only show flagged messages in flagged folder
-        if folder == MessageFolder.flagged:
-            queryset = queryset.filter(is_flagged=True)
-
-        # archived messages can be implicitly or explicitly included depending on folder
-        if folder == MessageFolder.archived:
-            queryset = queryset.filter(is_archived=True)
-        elif folder == MessageFolder.flagged:
-            if not include_archived:
-                queryset = queryset.filter(is_archived=False)
+        # if this is a refresh we want everything with new actions
+        if last_refresh:
+            queryset = queryset.filter(actions__created_on__gt=last_refresh) |\
+                       queryset.filter(locked_on__gt=last_refresh)
         else:
-            queryset = queryset.filter(is_archived=False)
+            # only show flagged messages in flagged folder
+            if folder == MessageFolder.flagged:
+                queryset = queryset.filter(is_flagged=True)
+
+            # archived messages can be implicitly or explicitly included depending on folder
+            if folder == MessageFolder.archived:
+                queryset = queryset.filter(is_archived=True)
+            elif folder == MessageFolder.flagged:
+                if not include_archived:
+                    queryset = queryset.filter(is_archived=False)
+            else:
+                queryset = queryset.filter(is_archived=False)
 
         if text:
             queryset = queryset.filter(text__icontains=text)
@@ -401,7 +413,7 @@ class Message(models.Model):
         if group_ids:
             queryset = queryset.filter(contact__groups__pk__in=group_ids).distinct()
 
-        if after:
+        if after and not last_refresh:
             queryset = queryset.filter(created_on__gt=after)
         if before:
             queryset = queryset.filter(created_on__lt=before)
@@ -416,6 +428,15 @@ class Message(models.Model):
         :return: the actions
         """
         return self.actions.select_related('created_by', 'label').order_by('-pk')
+
+    def get_lock(self, user):
+        if self.locked_on and self.locked_by_id:
+            if self.locked_on > (now() - timedelta(seconds=MESSAGE_LOCK_SECONDS)):
+                if self.locked_by_id != user.id:
+                    diff = (self.locked_on + timedelta(seconds=MESSAGE_LOCK_SECONDS)) - now()
+                    return diff.seconds
+
+        return False
 
     def release(self):
         """
