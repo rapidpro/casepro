@@ -208,8 +208,6 @@ class MessageCRUDL(SmartCRUDL):
             user = self.request.user
             page = int(self.request.GET.get('page', 1))
 
-            context['user_id'] = user.id
-
             search = self.derive_search()
 
             # this is a refresh of messages
@@ -237,8 +235,7 @@ class MessageCRUDL(SmartCRUDL):
             for m in context['object_list']:
                 msg = m.as_json()
 
-                if context.get('user_id'):
-                    msg['lock'] = m.get_lock(context.get('user_id'))
+                msg['lock'] = m.get_lock(self.request.user)
 
                 results.append(msg)
 
@@ -269,7 +266,7 @@ class MessageCRUDL(SmartCRUDL):
 
             if action == 'lock':
                 for message in messages:
-                    if message.get_lock(request.user.id):
+                    if message.get_lock(request.user):
                         lock_messages.append(message.backend_id)
 
                 if not lock_messages:
