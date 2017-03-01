@@ -235,8 +235,7 @@ class MessageCRUDL(SmartCRUDL):
             for m in context['object_list']:
                 msg = m.as_json()
 
-                if context.get('user_id'):
-                    msg['lock'] = m.get_lock(context.get('user'))
+                msg['lock'] = m.get_lock(self.request.user)
 
                 results.append(msg)
 
