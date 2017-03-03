@@ -1,3 +1,8 @@
+v0.0.245
+----------
+ * Inbox refreshing and message locking
+ * Django 1.10 fix
+
 v0.0.244
 ----------
  * Increase default maximum message length to 160
