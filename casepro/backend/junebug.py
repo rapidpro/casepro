@@ -15,7 +15,7 @@ import pytz
 import six
 
 from . import BaseBackend
-from ..contacts.models import Contact
+from ..contacts.models import Contact, URN
 from ..msgs.models import Message
 from ..utils import uuid_to_int, json_decode
 
@@ -544,13 +544,15 @@ def received_junebug_message(request):
     except ValueError as e:
         return JsonResponse({'reason': "JSON decode error", 'details': six.text_type(e)}, status=400)
 
+    from_addr = URN.normalize_phone(data.get('from'))
+
     identity_store = IdentityStore(
         settings.IDENTITY_API_ROOT, settings.IDENTITY_AUTH_TOKEN, settings.IDENTITY_ADDRESS_TYPE)
-    identities = identity_store.get_identities_for_address(data.get('from'))
+    identities = identity_store.get_identities_for_address(from_addr)
     try:
         identity = next(identities)
     except StopIteration:
-        identity = identity_store.create_identity(['%s:%s' % (settings.IDENTITY_ADDRESS_TYPE, data.get('from'))])
+        identity = identity_store.create_identity(['%s:%s' % (settings.IDENTITY_ADDRESS_TYPE, from_addr)])
     contact = Contact.get_or_create(request.org, identity.get('id'))
 
     message_id = uuid_to_int(data.get('message_id'))

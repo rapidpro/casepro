@@ -892,6 +892,32 @@ class JunebugInboundViewTest(BaseCasesTest):
         self.assertEqual(message.text, "test message")
         self.assertEqual(message.contact.uuid, "50d62fcf-856a-489c-914a-56f6e9506ee3")
 
+    @responses.activate
+    def test_inbound_message_improperly_formatted_address(self):
+        """
+        If the from address is incorrectly formatted, it should be properly before searching for an identity
+        """
+        query = "?details__addresses__msisdn=%2B27741234567"
+        url = "%sapi/v1/identities/search/" % settings.IDENTITY_API_ROOT
+        responses.add_callback(
+            responses.GET, url + query, callback=self.single_identity_callback, match_querystring=True,
+            content_type="application/json")
+
+        request = self.factory.post(
+            self.url, content_type="application/json", data=json.dumps({
+                'message_id': "35f3336d4a1a46c7b40cd172a41c510d",
+                'content': "test message",
+                'from': "27741234567",
+            })
+        )
+        request.org = self.unicef
+        response = received_junebug_message(request)
+        resp_data = json_decode(response.content)
+
+        message = Message.objects.get(backend_id=resp_data['id'])
+        self.assertEqual(message.text, "test message")
+        self.assertEqual(message.contact.uuid, "50d62fcf-856a-489c-914a-56f6e9506ee3")
+
     def create_identity_callback(self, request):
         data = json_decode(request.body)
         self.assertEqual(data.get('details'), {
