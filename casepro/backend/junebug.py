@@ -631,7 +631,7 @@ def receive_identity_store_optout(request):
             local_contact.incoming_messages.update(text='<redacted>')
             local_contact.outgoing_messages.update(text='<redacted>', urn='<redacted>')
 
-            for incoming in local_contact.incoming_messages.all():
+            for incoming in local_contact.incoming_messages.all().iterator():
                 incoming.replies.update(text='<redacted>', urn='<redacted>')
 
             local_contact.release()
