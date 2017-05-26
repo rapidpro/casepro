@@ -635,7 +635,6 @@ def receive_identity_store_optout(request):
                 incoming.replies.update(text='<redacted>', urn='<redacted>')
 
             local_contact.release()
-
             return JsonResponse({'success': True}, status=200)
 
         elif optout_type == "stop" or optout_type == "stopall":

@@ -1124,9 +1124,14 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         """
         Forget optouts should unset the contact's is_active flag
         """
-        contact = Contact.objects.create(org=self.unicef, uuid="test_id2", name="test", language="eng",
+        contact = Contact.objects.create(org=self.unicef, uuid="test_id", name="test", language="eng",
                                          urns=["tel:+1234"])
-        msg1 = self.create_message(self.unicef, 101, contact, "Normal", [self.aids, self.pregnancy, self.tea])
+
+        msg_in = self.create_message(self.unicef, 101, contact, "Normal", [self.aids, self.pregnancy, self.tea])
+        outgoing = self.create_outgoing(self.unicef, self.user1, None, "B", "Outgoing msg", contact, urn="tel:+1234")
+        reply = self.create_outgoing(self.unicef, self.user1, None, "B", "Outgoing reply", None, urn="tel:+1234",
+                                     reply_to=msg_in)
+
         self.assertTrue(contact.is_active)
 
         request = self.get_optout_request(contact.uuid, "forget")
@@ -1136,12 +1141,20 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         self.assertEqual(json_decode(response.content), {"success": True})
 
         # refresh contact from db
-        contact = Contact.get_or_create(self.unicef, "test_id2", "testing")
+        contact = Contact.get_or_create(self.unicef, "test_id", "testing")
         self.assertFalse(contact.is_active)
         self.assertEqual(contact.urns, [])
 
-        msg1.refresh_from_db()
-        self.assertEqual(msg1.text, '<redacted>')
+        msg_in.refresh_from_db()
+        self.assertEqual(msg_in.text, '<redacted>')
+
+        outgoing.refresh_from_db()
+        self.assertEqual(outgoing.text, '<redacted>')
+        self.assertEqual(outgoing.urn, '<redacted>')
+
+        reply.refresh_from_db()
+        self.assertEqual(reply.text, '<redacted>')
+        self.assertEqual(reply.urn, '<redacted>')
 
     @responses.activate
     def test_stop_optout_received(self):
