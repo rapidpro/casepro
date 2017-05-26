@@ -1124,7 +1124,9 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         """
         Forget optouts should unset the contact's is_active flag
         """
-        contact = Contact.get_or_create(self.unicef, "test_id", "testing")
+        contact = Contact.objects.create(org=self.unicef, uuid="test_id2", name="test", language="eng",
+                                         urns=["tel:+1234"])
+        msg1 = self.create_message(self.unicef, 101, contact, "Normal", [self.aids, self.pregnancy, self.tea])
         self.assertTrue(contact.is_active)
 
         request = self.get_optout_request(contact.uuid, "forget")
@@ -1134,8 +1136,12 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
         self.assertEqual(json_decode(response.content), {"success": True})
 
         # refresh contact from db
-        contact = Contact.get_or_create(self.unicef, "test_id", "testing")
+        contact = Contact.get_or_create(self.unicef, "test_id2", "testing")
         self.assertFalse(contact.is_active)
+        self.assertEqual(contact.urns, [])
+
+        msg1.refresh_from_db()
+        self.assertEqual(msg1.text, '<redacted>')
 
     @responses.activate
     def test_stop_optout_received(self):

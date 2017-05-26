@@ -625,9 +625,17 @@ def receive_identity_store_optout(request):
             return JsonResponse({'reason': "No Contact for id: " + identity_id}, status=400)
 
         if optout_type == "forget":
-            # TODO: Removed any identifying details from the contact
-            # (to uphold 'Right to be forgotten')
+            local_contact.urns = []
+            local_contact.save()
+
+            local_contact.incoming_messages.update(text='<redacted>')
+            local_contact.outgoing_messages.update(text='<redacted>', urn='<redacted>')
+
+            for incoming in local_contact.incoming_messages.all():
+                incoming.replies.update(text='<redacted>', urn='<redacted>')
+
             local_contact.release()
+
             return JsonResponse({'success': True}, status=200)
 
         elif optout_type == "stop" or optout_type == "stopall":
