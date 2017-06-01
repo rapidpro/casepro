@@ -1,3 +1,7 @@
+v0.0.246
+----------
+ * delete personal info on Junebug optout
+
 v0.0.245
 ----------
  * Inbox refreshing and message locking
