@@ -144,7 +144,7 @@ class BaseSecondTotal(BaseCount):
             COALESCE((SELECT SUM("seconds") FROM removed), 0)
         );"""
 
-    seconds = models.IntegerField()
+    seconds = models.BigIntegerField()
 
     class CountSet(BaseCount.CountSet):
         """
