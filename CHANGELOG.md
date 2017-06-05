@@ -1,3 +1,8 @@
+v0.0.247
+----------
+ * Python 3.6 support
+ * Switch DailySecondCount.seconds field to big integer to avoid overflow
+
 v0.0.246
 ----------
  * delete personal info on Junebug optout
