@@ -64,7 +64,7 @@ smartmin==1.10.6
 sorl-thumbnail==12.3
 xlrd==1.0.0               # via rapidpro-dash, smartmin, xlutils
 xlutils==2.0.0
-xlwt==1.1.2               # via rapidpro-dash, smartmin, xlutils
+xlwt==1.2.0               # via rapidpro-dash, smartmin, xlutils
 zope.interface==4.3.3
 
 # The following packages are considered to be unsafe in a requirements file:
