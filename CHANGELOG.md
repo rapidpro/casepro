@@ -1,3 +1,7 @@
+v0.0.248
+----------
+ * Update to latest django, dash and smartmin
+
 v0.0.247
 ----------
  * Python 3.6 support
