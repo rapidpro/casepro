@@ -5,67 +5,67 @@
 #    pip-compile --output-file pip-freeze.txt pip-requires.txt
 #
 -e git+https://github.com/nyaruka/confmodel.git@python3#egg=confmodel
-amqp==1.4.9               # via kombu
-anyjson==0.3.3            # via kombu
-billiard==3.3.0.23        # via celery
-boto==2.45.0
-celery-with-redis==3.0
-celery==3.1.25            # via celery-with-redis, django-celery-email, smartmin
-colorama==0.3.7
-contextlib2==0.5.4        # via raven
+amqp==2.1.4               # via kombu
+billiard==3.5.0.2         # via celery
+boto==2.47.0
+celery==4.0.2
+certifi==2017.4.17        # via requests
+chardet==3.0.3            # via requests
+colorama==0.3.9
+contextlib2==0.5.5        # via raven
 cookies==2.2.1            # via responses
-coverage==4.2
-dj-database-url==0.4.1
+coverage==4.4.1
+dj-database-url==0.4.2
 django-appconf==1.0.2     # via django-celery-email, django-compressor
 django-celery-email==1.1.5
-django-compressor==2.1
-django-contrib-comments==1.7.3
+django-compressor==2.1.1
+django-contrib-comments==1.8.0
 django-digest==1.13
-django-el-pagination==3.0.1
-django-guardian==1.4.6    # via rapidpro-dash, smartmin
-django-hamlpy==1.0        # via rapidpro-dash
-django-redis==4.6.0
-django-rosetta==0.7.12
-django-storages==1.5.1
+django-el-pagination==3.1.0
+django-hamlpy==1.1.1      # via rapidpro-dash
+django-redis==4.8.0
+django-rosetta==0.7.13
+django-storages==1.5.2
 django-timezone-field==2.0  # via rapidpro-dash
-django==1.10.5
+django==1.11.2
 enum34==1.1.6
-flake8==3.2.1
+flake8==3.3.0
 future==0.16.0            # via django-hamlpy
-gunicorn==19.6.0
-hypothesis==3.6.0
+gunicorn==19.7.1
+hypothesis==3.11.1
+idna==2.5                 # via requests
 iso639==0.1.4
-kombu==3.0.37             # via celery
-mccabe==0.5.3             # via flake8
+kombu==4.0.2              # via celery
+mccabe==0.6.1             # via flake8
 microsofttranslator==0.8  # via django-rosetta
 mock==2.0.0
-pbr==1.10.0               # via mock
-phonenumbers==8.0.0       # via rapidpro-dash
-pillow==3.4.2
+olefile==0.44             # via pillow
+pbr==3.0.1                # via mock
+phonenumbers==8.5.0       # via rapidpro-dash
+pillow==4.1.1
 pisa==3.0.33
 polib==1.0.8              # via django-rosetta
-psycopg2==2.6.2
-pycodestyle==2.2.0        # via flake8
-pycountry==16.11.27.1
-pyflakes==1.3.0           # via flake8
+psycopg2==2.7.1
+pycodestyle==2.3.1        # via flake8
+pycountry==17.5.14
+pyflakes==1.5.0           # via flake8
 python-dateutil==2.6.0
-pytz==2016.10             # via celery, django-timezone-field, rapidpro-python, smartmin
-rapidpro-dash==1.1.1
-rapidpro-python==2.1.4
-raven==5.32.0
+pytz==2017.2              # via celery, django, django-timezone-field, rapidpro-python, smartmin
+rapidpro-dash==1.2
+rapidpro-python==2.1.7
+raven==6.1.0
 rcssmin==1.0.6            # via django-compressor
-redis==2.10.5             # via celery-with-redis, django-redis, smartmin
-regex==2016.11.21
-requests==2.12.4          # via django-rosetta, microsofttranslator, rapidpro-dash, rapidpro-python, responses
+redis==2.10.5
+regex==2017.5.26
+requests==2.17.3          # via django-rosetta, microsofttranslator, rapidpro-dash, rapidpro-python, responses
 responses==0.5.1
 rjsmin==1.0.12            # via django-compressor
-six==1.10.0               # via django-guardian, django-hamlpy, django-rosetta, microsofttranslator, mock, python-dateutil, rapidpro-dash, rapidpro-python, responses, smartmin
-smartmin==1.10.6
+six==1.10.0               # via django-hamlpy, django-rosetta, microsofttranslator, mock, python-dateutil, rapidpro-dash, rapidpro-python, responses, smartmin
+smartmin==1.11
 sorl-thumbnail==12.3
+urllib3==1.21.1           # via requests
+vine==1.1.3               # via amqp
 xlrd==1.0.0               # via rapidpro-dash, smartmin, xlutils
 xlutils==2.0.0
 xlwt==1.2.0               # via rapidpro-dash, smartmin, xlutils
-zope.interface==4.3.3
-
-# The following packages are considered to be unsafe in a requirements file:
-# setuptools                # via zope.interface
+zope.interface==4.4.1
