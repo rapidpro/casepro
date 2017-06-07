@@ -4,7 +4,7 @@ import six
 
 from django.contrib.auth.models import User
 from django.core.mail import EmailMultiAlternatives, get_connection
-from django.template import loader, Context
+from django.template import loader
 from django.conf import settings
 
 
@@ -15,8 +15,8 @@ def send_email(recipients, subject, template, context):
     html_template = loader.get_template(template + ".html")
     text_template = loader.get_template(template + ".txt")
 
-    html = html_template.render(Context(context))
-    text = text_template.render(Context(context))
+    html = html_template.render(context)
+    text = text_template.render(context)
 
     send_raw_email(recipients, subject, text, html)
 

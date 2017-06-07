@@ -8,11 +8,10 @@ from datetime import datetime, date, time
 from django.conf import settings
 from django.core import mail
 from django.utils.timezone import now
-from django.test import override_settings
 from xlrd import open_workbook, xldate_as_tuple
 from xlrd.sheet import XL_CELL_DATE
 
-from casepro.backend import NoopBackend
+from casepro import backend
 from casepro.cases.models import Case, Partner
 from casepro.contacts.models import Contact, Group, Field
 from casepro.msgs.models import Label, FAQ, Message, Outgoing
@@ -20,14 +19,13 @@ from casepro.profiles.models import Profile, ROLE_ANALYST, ROLE_MANAGER
 from casepro.rules.models import ContainsTest, Quantifier, LabelAction, Rule
 
 
-class TestBackend(NoopBackend):
+class TestBackend(backend.NoopBackend):
     """
     A stub backend which doesn't do anything but can be mocked
     """
     pass
 
 
-@override_settings(SITE_BACKEND='casepro.test.TestBackend')
 class BaseCasesTest(DashTest):
     """
     Base class for all test cases
@@ -35,7 +33,10 @@ class BaseCasesTest(DashTest):
     def setUp(self):
         super(BaseCasesTest, self).setUp()
 
+        settings.SITE_BACKEND = 'casepro.test.TestBackend'
         settings.SITE_ORGS_STORAGE_ROOT = 'test_orgs'
+
+        backend._ACTIVE_BACKEND = None
 
         # some orgs
         self.unicef = self.create_org("UNICEF", timezone=pytz.timezone("Africa/Kampala"), subdomain="unicef")

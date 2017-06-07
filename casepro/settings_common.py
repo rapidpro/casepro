@@ -167,29 +167,15 @@ INSTALLED_APPS = (
     'django_comments',
 
     'djcelery_email',
-
-    # mo-betta permission management
-    'guardian',
-
-    # the django admin
-    # 'django.contrib.admin',
-
-    # compress our CSS and js
     'compressor',
-
-    # thumbnail
     'sorl.thumbnail',
 
     # smartmin
     'smartmin',
-
-    # import tasks
     'smartmin.csv_imports',
-
-    # users
     'smartmin.users',
 
-    # dash apps
+    # dash
     'dash.orgs',
     'dash.utils',
 
@@ -463,8 +449,6 @@ LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
 AUTHENTICATION_BACKENDS = ('smartmin.backends.CaseInsensitiveBackend',)
-
-ANONYMOUS_USER_ID = -1
 
 # -----------------------------------------------------------------------------------
 # Debug Toolbar

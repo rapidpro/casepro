@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django import forms
-from django.utils.safestring import mark_safe
 
 from casepro.contacts.models import Field
 from casepro.utils import parse_csv
@@ -11,20 +10,13 @@ from .models import FieldTest
 
 class FieldTestWidget(forms.widgets.MultiWidget):
 
+    template_name = 'widgets/fieldtest.html'
+
     def decompress(self, test):
         if test:
             return test.key, ", ".join(test.values)
         else:
             return None, ""
-
-    def format_output(self, rendered_widgets):
-        return mark_safe(
-            '<div class="field-test-widget">' +
-            rendered_widgets[0] +
-            '<span class="control-label"> is equal to </span>' +
-            rendered_widgets[1] +
-            '</div>'
-        )
 
 
 class FieldTestField(forms.fields.MultiValueField):
