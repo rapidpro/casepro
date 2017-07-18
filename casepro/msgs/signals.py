@@ -42,7 +42,7 @@ def update_message_labels(sender, instance, created, **kwargs):
 
     cur_labels_by_uuid = {} if created else {l.uuid: l for l in instance.labels.all() if l.uuid}
 
-    # remove this contact from any labels not in the new set
+    # remove this message from any labels not in the new set
     remove_from = []
     for l in cur_labels_by_uuid.values():
         # don't remove un-synced local labels

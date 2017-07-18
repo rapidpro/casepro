@@ -318,6 +318,8 @@ class Message(models.Model):
 
     created_on = models.DateTimeField()
 
+    modified_on = models.DateTimeField(null=True, help_text="When message was last modified")
+
     is_handled = models.BooleanField(default=False)
 
     is_active = models.BooleanField(default=True)
@@ -445,7 +447,8 @@ class Message(models.Model):
         self.labels.clear()
 
         self.is_active = False
-        self.save(update_fields=('is_active',))
+        self.modified_on = now()
+        self.save(update_fields=('is_active', 'modified_on'))
 
     def label(self, *labels):
         """
@@ -484,7 +487,8 @@ class Message(models.Model):
     def bulk_flag(org, user, messages):
         messages = list(messages)
         if messages:
-            org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(is_flagged=True)
+            org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(is_flagged=True,
+                                                                                          modified_on=now())
 
             get_backend().flag_messages(org, messages)
 
@@ -494,7 +498,8 @@ class Message(models.Model):
     def bulk_unflag(org, user, messages):
         messages = list(messages)
         if messages:
-            org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(is_flagged=False)
+            org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(is_flagged=False,
+                                                                                          modified_on=now())
 
             get_backend().unflag_messages(org, messages)
 
@@ -506,6 +511,8 @@ class Message(models.Model):
         if messages:
             for msg in messages:
                 msg.label(label)
+
+            org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(modified_on=now())
 
             if label.is_synced:
                 get_backend().label_messages(org, messages, label)
@@ -519,6 +526,8 @@ class Message(models.Model):
             for msg in messages:
                 msg.unlabel(label)
 
+            org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(modified_on=now())
+
             if label.is_synced:
                 get_backend().unlabel_messages(org, messages, label)
 
@@ -528,7 +537,8 @@ class Message(models.Model):
     def bulk_archive(org, user, messages):
         messages = list(messages)
         if messages:
-            org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(is_archived=True)
+            org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(is_archived=True,
+                                                                                          modified_on=now())
 
             get_backend().archive_messages(org, messages)
 
@@ -538,7 +548,8 @@ class Message(models.Model):
     def bulk_restore(org, user, messages):
         messages = list(messages)
         if messages:
-            org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(is_archived=False)
+            org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(is_archived=False,
+                                                                                          modified_on=now())
 
             get_backend().restore_messages(org, messages)
 
