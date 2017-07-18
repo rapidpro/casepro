@@ -574,6 +574,9 @@ class Message(models.Model):
     def __str__(self):
         return self.text if self.text else self.pk
 
+    class Meta:
+        index_together = ('org', 'modified_on')
+
 
 class MessageAction(models.Model):
     """
