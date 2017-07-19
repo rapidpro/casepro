@@ -1,3 +1,7 @@
+v0.0.251
+----------
+ * Start using modified_on to fetch messages that have been acted on or locked
+
 v0.0.250
 ----------
  * Add index on Message.modified_on (large deployments should fake this and add manually with CONCURRENTLY)
