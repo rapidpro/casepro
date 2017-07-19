@@ -389,10 +389,9 @@ class Message(models.Model):
             if folder == MessageFolder.unlabelled:
                 raise ValueError("Unlabelled folder is only accessible to administrators")
 
-        # if this is a refresh we want everything with new actions
+        # if this is a refresh we want everything with new actions and locks
         if last_refresh:
-            queryset = queryset.filter(actions__created_on__gt=last_refresh) |\
-                       queryset.filter(locked_on__gt=last_refresh)
+            queryset = queryset.filter(modified_on__gt=last_refresh)
         else:
             # only show flagged messages in flagged folder
             if folder == MessageFolder.flagged:
