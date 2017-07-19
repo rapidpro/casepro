@@ -1,3 +1,7 @@
+v0.0.250
+----------
+ * Add index on Message.modified_on (large deployments should fake this and add manually with CONCURRENTLY)
+
 v0.0.249
 ----------
  * Add Message.modified_on field and start populating it for new messages
