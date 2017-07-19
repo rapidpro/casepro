@@ -273,13 +273,15 @@ class MessageCRUDL(SmartCRUDL):
                     for message in messages:
                         message.locked_on = timezone.now()
                         message.locked_by = user
-                        message.save(update_fields=['locked_on', 'locked_by'])
+                        message.modified_on = timezone.now()
+                        message.save(update_fields=['locked_on', 'locked_by', 'modified_on'])
 
             elif action == 'unlock':
                 for message in messages:
                     message.locked_on = timezone.now()
                     message.locked_by = None
-                    message.save(update_fields=['locked_on', 'locked_by'])
+                    message.modified_on = timezone.now()
+                    message.save(update_fields=['locked_on', 'locked_by', 'modified_on'])
 
             else:  # pragma: no cover
                 return HttpResponseBadRequest("Invalid action: %s", action)
