@@ -219,12 +219,15 @@ controllers.controller('BaseItemsController', ['$scope', '$timeout', 'UtilsServi
     if $scope.pollBusy
       return
 
+    lastPollTime = $scope.lastPollTime
+    thisPollTime = new Date()
+
     $scope.pollBusy = true
     $scope.activeSearchRefresh = $scope.buildSearch()
-    $scope.activeSearchRefresh.last_refresh = $scope.lastPollTime
+    $scope.activeSearchRefresh.last_refresh = lastPollTime
 
-    $scope.fetchNewItems($scope.activeSearchRefresh, $scope.lastPollTime, $scope.oldItemsPage).then((data) ->
-      $scope.lastPollTime = new Date()
+    $scope.fetchNewItems($scope.activeSearchRefresh, lastPollTime, thisPollTime, $scope.oldItemsPage).then((data) ->
+      $scope.lastPollTime = thisPollTime
       $scope.pollBusy = false
 
       # quick access to index of items
@@ -342,9 +345,8 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$uibModal'
       )
     )
 
-  $scope.fetchNewItems = (activeSearchRefresh, lastPollTime, oldItemsPage) ->
-    return MessageService.fetchNew(activeSearchRefresh, lastPollTime, oldItemsPage)
-    
+  $scope.fetchNewItems = (activeSearchRefresh, startTime, endTime, oldItemsPage) ->
+    return MessageService.fetchNew(activeSearchRefresh, startTime, endTime, oldItemsPage)
 
   $scope.fetchOldItems = (search, startTime, page) ->
     return MessageService.fetchOld(search, startTime, page)
