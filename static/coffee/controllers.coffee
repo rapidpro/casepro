@@ -223,7 +223,7 @@ controllers.controller('BaseItemsController', ['$scope', '$timeout', 'UtilsServi
     $scope.activeSearchRefresh = $scope.buildSearch()
     $scope.activeSearchRefresh.last_refresh = $scope.lastPollTime
 
-    $scope.fetchLockedItems($scope.activeSearchRefresh, $scope.lastPollTime, $scope.oldItemsPage).then((data) ->
+    $scope.fetchNewItems($scope.activeSearchRefresh, $scope.lastPollTime, $scope.oldItemsPage).then((data) ->
       $scope.lastPollTime = new Date()
       $scope.pollBusy = false
 
@@ -342,8 +342,8 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$uibModal'
       )
     )
 
-  $scope.fetchLockedItems = (activeSearchRefresh, lastPollTime, oldItemsPage) ->
-    return MessageService.fetchOld(activeSearchRefresh, lastPollTime, oldItemsPage)
+  $scope.fetchNewItems = (activeSearchRefresh, lastPollTime, oldItemsPage) ->
+    return MessageService.fetchNew(activeSearchRefresh, lastPollTime, oldItemsPage)
     
 
   $scope.fetchOldItems = (search, startTime, page) ->

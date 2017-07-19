@@ -45,6 +45,17 @@ services.factory('MessageService', ['$rootScope', '$http', '$httpParamSerializer
       params = @_searchToParams(search)
       if !search.before
         params.before = utils.formatIso8601(before)
+      params.page = page
+      return $http.get('/message/search/?' + $httpParamSerializer(params)).then((response) ->
+        utils.parseDates(response.data.results, 'time')
+        return {results: response.data.results, hasMore: response.data.has_more}
+      )
+
+    #----------------------------------------------------------------------------
+    # Fetches new messages for the given search
+    #----------------------------------------------------------------------------
+    fetchNew: (search, after, page) ->
+      params = @_searchToParams(search)
       if search.last_refresh
         params.after = utils.formatIso8601(search.last_refresh)
       params.page = page
