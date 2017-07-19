@@ -1,3 +1,7 @@
+v0.0.252
+----------
+ * Fix new item polling in inbox controller 
+
 v0.0.251
 ----------
  * Start using modified_on to fetch messages that have been acted on or locked
