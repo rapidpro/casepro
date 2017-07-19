@@ -1,3 +1,7 @@
+v0.0.249
+----------
+ * Add Message.modified_on field and start populating it for new messages
+
 v0.0.248
 ----------
  * Update to latest django, dash and smartmin
