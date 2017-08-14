@@ -331,7 +331,8 @@ class Case(models.Model):
 
     @case_action()
     def close(self, user, note=None):
-        self.contact.restore_groups()
+        if not (self.contact.is_blocked or self.contact.is_stopped):
+            self.contact.restore_groups()
 
         action = CaseAction.create(self, user, CaseAction.CLOSE, note=note)
 

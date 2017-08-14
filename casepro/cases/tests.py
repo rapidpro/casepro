@@ -254,6 +254,24 @@ class CaseTest(BaseCasesTest):
         self.assertFalse(case3.is_new)
         self.assertEqual(case, case3)
 
+    @patch('casepro.test.TestBackend.add_to_group')
+    @patch('casepro.test.TestBackend.remove_from_group')
+    def test_close_case_when_contact_stopped(self, mock_remove_from_group, mock_add_to_group):
+        msg = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
+        case = Case.get_or_open(self.unicef, self.user1, msg, "Summary", self.moh)
+
+        # check that opening the case removed contact from specified suspend groups
+        mock_remove_from_group.assert_called_once_with(self.unicef, self.ann, self.reporters)
+
+        # stop the contact
+        self.ann.is_stopped = True
+        self.ann.save()
+
+        case.close(self.user1)
+
+        # check we don't try to put this contact back in their groups
+        mock_add_to_group.assert_not_called()
+
     def test_get_all(self):
         bob = self.create_contact(self.unicef, 'C-002', "Bob")
         cat = self.create_contact(self.unicef, 'C-003', "Cat")
