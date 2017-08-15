@@ -1,3 +1,7 @@
+v0.0.253
+----------
+ * Don't try to restore contacts into their groups if they are now stopped or blocked
+
 v0.0.252
 ----------
  * Fix new item polling in inbox controller 
