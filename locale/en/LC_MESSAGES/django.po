@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-05-08 07:58+0000\n"
+"POT-Creation-Date: 2017-08-17 15:11+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,3607 +17,1316 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: casepro/cases/models.py:41 casepro/cases/models.py:102
-#: casepro/cases/models.py:220 casepro/cases/models.py:258
-#: casepro/cases/models.py:321 casepro/cases/models.py:657
-#: casepro/orgs_ext/views.py:54 env/src/dash/dash/orgs/views.py:115
+#: casepro/cases/forms.py:11 casepro/cases/models.py:51
+#: casepro/msgs/forms.py:18 casepro/msgs/models.py:51
+msgid "Description"
+msgstr ""
+
+#: casepro/cases/forms.py:13
+msgid "Can Access"
+msgstr ""
+
+#: casepro/cases/models.py:46 casepro/cases/models.py:142
+#: casepro/contacts/models.py:152 casepro/contacts/models.py:223
+#: casepro/contacts/models.py:270 casepro/msgs/models.py:45
+#: casepro/msgs/models.py:183 casepro/msgs/models.py:301
+#: casepro/msgs/models.py:598 casepro/msgs/models.py:640
+#: casepro/orgs_ext/forms.py:38 casepro/rules/models.py:382
+#: casepro/utils/export.py:31 templates/frame.haml:146 templates/frame.haml:154
 msgid "Organization"
 msgstr ""
 
-#: casepro/cases/models.py:43 casepro/cases/models.py:222
-#: casepro/cases/models.py:260 casepro/cases/views.py:298
-#: casepro/cases/views.py:571 env/src/dash/dash/orgs/models.py:22
-#: env/src/dash/dash/orgs/models.py:336
+#: casepro/cases/models.py:48 casepro/msgs/forms.py:16
+#: casepro/msgs/models.py:49 casepro/profiles/forms.py:32
+#: templates/cases/case_read.haml:204 templates/cases/partner_read.haml:237
+#: templates/contacts/contact_read.haml:86 templates/orgs_ext/org_home.haml:94
+#: templates/orgs_ext/org_home.haml:183 templates/orgs_ext/org_home.haml:244
 msgid "Name"
 msgstr ""
 
-#: casepro/cases/models.py:44
-msgid "Name of this filter group"
+#: casepro/cases/models.py:49
+msgid "Name of this partner organization"
 msgstr ""
 
-#: casepro/cases/models.py:157
+#: casepro/cases/models.py:53
+msgid "Primary Contact"
+msgstr ""
+
+#: casepro/cases/models.py:56
+msgid "Restricted Access"
+msgstr ""
+
+#: casepro/cases/models.py:57
+msgid "Whether this partner's access is restricted by labels"
+msgstr ""
+
+#: casepro/cases/models.py:59 templates/cases/case_read.haml:72
+#: templates/msgs/faq_read.haml:54 templates/orgs_ext/org_home.haml:159
+msgid "Labels"
+msgstr ""
+
+#: casepro/cases/models.py:60
+msgid "Labels that this partner can access"
+msgstr ""
+
+#: casepro/cases/models.py:63
+msgid "Users that belong to this partner"
+msgstr ""
+
+#: casepro/cases/models.py:65
+msgid "Logo"
+msgstr ""
+
+#: casepro/cases/models.py:144
+msgid "Labels assigned to this case"
+msgstr ""
+
+#: casepro/cases/models.py:156 templates/cases/case_read.haml:189
+#: templates/cases/partner_read.haml:78 templates/msgs/label_read.haml:54
+#: templates/orgs_ext/org_home.haml:33 templates/partials/modal_newcase.haml:15
+#: templates/profiles/user_read.haml:73
+msgid "Summary"
+msgstr ""
+
+#: casepro/cases/models.py:488 templates/cases/inbox_base.haml:116
+#: templates/partials/modal_newcase.haml:41
+msgid "Open"
+msgstr ""
+
+#: casepro/cases/models.py:489 templates/cases/case_read.haml:43
+msgid "Add Note"
+msgstr ""
+
+#: casepro/cases/models.py:490
+msgid "Reassign"
+msgstr ""
+
+#: casepro/cases/models.py:491 casepro/contacts/models.py:227
+#: casepro/msgs/models.py:593 templates/partials/modal_faq.haml:53
+msgid "Label"
+msgstr ""
+
+#: casepro/cases/models.py:492 casepro/msgs/models.py:594
+msgid "Remove Label"
+msgstr ""
+
+#: casepro/cases/models.py:493 templates/cases/case_read.haml:50
+#: templates/partials/modal_messagehistory.haml:50
+msgid "Close"
+msgstr ""
+
+#: casepro/cases/models.py:494
+msgid "Reopen"
+msgstr ""
+
+#: casepro/cases/models.py:568
+#, python-format
+msgid "Cases %d"
+msgstr ""
+
+#: casepro/cases/views.py:334
+msgid "Download Cases"
+msgstr ""
+
+#: casepro/cases/views.py:514 casepro/msgs/models.py:294
+#: templates/cases/inbox_base.haml:63 templates/frame.haml:138
+msgid "Inbox"
+msgstr ""
+
+#: casepro/cases/views.py:524 templates/cases/inbox_base.haml:77
+msgid "Flagged"
+msgstr ""
+
+#: casepro/cases/views.py:534 templates/cases/inbox_base.haml:82
+msgid "Archived"
+msgstr ""
+
+#: casepro/cases/views.py:544 templates/cases/inbox_base.haml:97
+msgid "Unlabelled"
+msgstr ""
+
+#: casepro/cases/views.py:554 templates/cases/inbox_base.haml:103
+msgid "Sent"
+msgstr ""
+
+#: casepro/cases/views.py:564
+msgid "Open Cases"
+msgstr ""
+
+#: casepro/cases/views.py:574
+msgid "Closed Cases"
+msgstr ""
+
+#: casepro/contacts/models.py:160
+msgid "Whether this group is dynamic"
+msgstr ""
+
+#: casepro/contacts/models.py:162
+msgid "When this group was created"
+msgstr ""
+
+#: casepro/contacts/models.py:164
+msgid "Whether this group is active"
+msgstr ""
+
+#: casepro/contacts/models.py:166
+msgid "Whether this group is visible to partner users"
+msgstr ""
+
+#: casepro/contacts/models.py:169
+msgid "Whether contacts should be suspended from this group during a case"
+msgstr ""
+
+#: casepro/contacts/models.py:225
+msgid "Key"
+msgstr ""
+
+#: casepro/contacts/models.py:229
+msgid "Value data type"
+msgstr ""
+
+#: casepro/contacts/models.py:233
+msgid "Whether this field is visible to partner users"
+msgstr ""
+
+#: casepro/contacts/models.py:274 casepro/profiles/models.py:36
+msgid "Full name"
+msgstr ""
+
+#: casepro/contacts/models.py:275
+msgid "The name of this contact"
+msgstr ""
+
+#: casepro/contacts/models.py:281 casepro/msgs/forms.py:89
+#: casepro/msgs/models.py:189 templates/cases/case_read.haml:220
+#: templates/contacts/contact_read.haml:102 templates/msgs/faq_list.haml:40
+#: templates/msgs/faq_read.haml:45 templates/msgs/faq_read.haml:90
+#: templates/partials/modal_faq.haml:65
+msgid "Language"
+msgstr ""
+
+#: casepro/contacts/models.py:282
+msgid "Language for this contact"
+msgstr ""
+
+#: casepro/contacts/models.py:292
+msgid "Groups this contact has been suspended from"
+msgstr ""
+
+#: casepro/contacts/models.py:294
+msgid "When this contact was created"
+msgstr ""
+
+#: casepro/contacts/models.py:297
+msgid "List of URNs of the format 'scheme:path'"
+msgstr ""
+
+#: casepro/contacts/views.py:87 casepro/msgs/forms.py:31
+#: templates/cases/inbox_messages.haml:112
+#: templates/contacts/contact_read.haml:121 templates/frame.haml:127
+msgid "Groups"
+msgstr ""
+
+#: casepro/contacts/views.py:88
+msgid "Contact groups visible to partner users."
+msgstr ""
+
+#: casepro/contacts/views.py:100
+msgid "Contact Groups"
+msgstr ""
+
+#: casepro/contacts/views.py:103
+msgid "Update"
+msgstr ""
+
+#: casepro/contacts/views.py:104
+msgid "Updated contact groups visible to partner users"
+msgstr ""
+
+#: casepro/msgs/forms.py:21
+msgid "Is synced"
+msgstr ""
+
+#: casepro/msgs/forms.py:22
+msgid "Whether label should be kept synced with backend"
+msgstr ""
+
+#: casepro/msgs/forms.py:26
+msgid "Keywords"
+msgstr ""
+
+#: casepro/msgs/forms.py:27
+msgid "Match messages containing any of these words (comma separated)"
+msgstr ""
+
+#: casepro/msgs/forms.py:32
+msgid "Match messages from these groups (select none to include all groups)"
+msgstr ""
+
+#: casepro/msgs/forms.py:38
+msgid "Ignore single words"
+msgstr ""
+
+#: casepro/msgs/forms.py:39
+msgid "Whether to ignore messages consisting of a single word"
+msgstr ""
+
+#: casepro/msgs/forms.py:55
+msgid "Field criteria"
+msgstr ""
+
+#: casepro/msgs/forms.py:56
+msgid ""
+"Match messages where contact field value is equal to any of these values "
+"(comma separated)"
+msgstr ""
+
+#: casepro/msgs/forms.py:62
+msgid "Reserved label name"
+msgstr ""
+
+#: casepro/msgs/forms.py:64
+msgid "Label name cannot start with + or -"
+msgstr ""
+
+#: casepro/msgs/forms.py:74
+#, python-format
+msgid "Invalid keyword: %s"
+msgstr ""
+
+#: casepro/msgs/forms.py:87 templates/msgs/faq_list.haml:34
+#: templates/msgs/faq_read.haml:93 templates/partials/modal_faq.haml:29
+msgid "Question"
+msgstr ""
+
+#: casepro/msgs/forms.py:88 templates/msgs/faq_list.haml:37
+#: templates/msgs/faq_read.haml:35 templates/msgs/faq_read.haml:96
+#: templates/partials/modal_faq.haml:41
+msgid "Answer"
+msgstr ""
+
+#: casepro/msgs/forms.py:93
+msgid "If a Parent is selected, the labels will be copied from the Parent FAQ"
+msgstr ""
+
+#: casepro/msgs/forms.py:106
+msgid "Language must be valid a ISO-639-2 code"
+msgstr ""
+
+#: casepro/msgs/forms.py:122
+msgid "Labels are required if no Parent is selected"
+msgstr ""
+
+#: casepro/msgs/models.py:49
+msgid "Name of this label"
+msgstr ""
+
+#: casepro/msgs/models.py:190
+msgid "Language for this FAQ"
+msgstr ""
+
+#: casepro/msgs/models.py:194
+msgid "Labels assigned to this FAQ"
+msgstr ""
+
+#: casepro/msgs/models.py:294 templates/cases/inbox_messages.haml:215
+msgid "Flow"
+msgstr ""
+
+#: casepro/msgs/models.py:303
+msgid "Backend identifier for this message"
+msgstr ""
+
+#: casepro/msgs/models.py:309
+msgid "Text"
+msgstr ""
+
+#: casepro/msgs/models.py:311
+msgid "Labels assigned to this message"
+msgstr ""
+
+#: casepro/msgs/models.py:591
+msgid "Flag"
+msgstr ""
+
+#: casepro/msgs/models.py:592
+msgid "Un-flag"
+msgstr ""
+
+#: casepro/msgs/models.py:595 templates/cases/inbox_messages.haml:186
+msgid "Archive"
+msgstr ""
+
+#: casepro/msgs/models.py:596 templates/cases/inbox_messages.haml:191
+msgid "Restore"
+msgstr ""
+
+#: casepro/msgs/models.py:635
+msgid "Bulk Reply"
+msgstr ""
+
+#: casepro/msgs/models.py:635 templates/cases/inbox_messages.haml:246
+msgid "Forward"
+msgstr ""
+
+#: casepro/msgs/models.py:648
+msgid "Broadcast id from the backend"
+msgstr ""
+
+#: casepro/msgs/models.py:817
 #, python-format
 msgid "Messages %d"
 msgstr ""
 
-#: casepro/cases/models.py:223
-msgid "Name of this partner organization"
+#: casepro/msgs/models.py:865
+#, python-format
+msgid "Replies %d"
 msgstr ""
 
-#: casepro/cases/models.py:260
-msgid "Name of this label"
-msgstr ""
-
-#: casepro/cases/models.py:262 casepro/cases/views.py:300
-msgid "Description"
-msgstr ""
-
-#: casepro/cases/models.py:264 casepro/cases/views.py:302
-msgid "Keywords"
-msgstr ""
-
-#: casepro/cases/models.py:267
-msgid "Partner organizations who can access messages with this label"
-msgstr ""
-
-#: casepro/cases/models.py:323
-msgid "Labels"
-msgstr ""
-
-#: casepro/cases/models.py:333
-msgid "Summary"
-msgstr ""
-
-#: casepro/cases/models.py:499
-msgid "Open"
-msgstr ""
-
-#: casepro/cases/models.py:500
-msgid "Add Note"
-msgstr ""
-
-#: casepro/cases/models.py:501
-msgid "Reassign"
-msgstr ""
-
-#: casepro/cases/models.py:502 casepro/cases/models.py:652
-msgid "Label"
-msgstr ""
-
-#: casepro/cases/models.py:503 casepro/cases/models.py:653
-msgid "Remove Label"
-msgstr ""
-
-#: casepro/cases/models.py:504
-msgid "Close"
-msgstr ""
-
-#: casepro/cases/models.py:505
-msgid "Reopen"
-msgstr ""
-
-#: casepro/cases/models.py:650
-msgid "Flag"
-msgstr ""
-
-#: casepro/cases/models.py:651
-msgid "Un-flag"
-msgstr ""
-
-#: casepro/cases/models.py:654
-msgid "Archive"
-msgstr ""
-
-#: casepro/cases/models.py:655
-msgid "Restore"
-msgstr ""
-
-#: casepro/cases/views.py:266 env/src/smartmin/smartmin/users/views.py:198
-#: env/src/smartmin/smartmin/users/views.py:220
-msgid "Groups"
-msgstr ""
-
-#: casepro/cases/views.py:267
-msgid "Contact groups to be used as filter groups."
-msgstr ""
-
-#: casepro/cases/views.py:281
-msgid "Filter Groups"
-msgstr ""
-
-#: casepro/cases/views.py:284
-msgid "Update"
-msgstr ""
-
-#: casepro/cases/views.py:285
-msgid "Updated contact groups to use as filter groups"
-msgstr ""
-
-#: casepro/cases/views.py:303
-msgid "Match messages containing any of these words"
-msgstr ""
-
-#: casepro/cases/views.py:305
-msgid "Visible to"
-msgstr ""
-
-#: casepro/cases/views.py:544
+#: casepro/msgs/views.py:425
 msgid "Download Messages"
 msgstr ""
 
-#: casepro/cases/views.py:663
-msgid "Inbox"
+#: casepro/msgs/views.py:527
+msgid "Download Replies"
 msgstr ""
 
-#: casepro/cases/views.py:673
-msgid "Flagged"
-msgstr ""
-
-#: casepro/cases/views.py:683
-msgid "Open Cases"
-msgstr ""
-
-#: casepro/cases/views.py:693
-msgid "Closed Cases"
-msgstr ""
-
-#: casepro/cases/views.py:703
-msgid "Archived"
-msgstr ""
-
-#: casepro/orgs_ext/views.py:34
-msgid "RapidPro API Token"
-msgstr ""
-
-#: casepro/orgs_ext/views.py:38
-msgid "My Organization"
-msgstr ""
-
-#: casepro/orgs_ext/views.py:55 env/src/dash/dash/orgs/models.py:23
-#: env/src/dash/dash/orgs/views.py:116
+#: casepro/orgs_ext/forms.py:39
 msgid "The name of this organization"
 msgstr ""
 
-#: casepro/orgs_ext/views.py:57 env/src/dash/dash/orgs/views.py:120
+#: casepro/orgs_ext/forms.py:41
 msgid "The timezone your organization is in"
 msgstr ""
 
-#: casepro/orgs_ext/views.py:59
-msgid "Contact fields"
-msgstr ""
-
-#: casepro/orgs_ext/views.py:60 casepro/settings_common.py:177
-msgid "Contact fields to display"
-msgstr ""
-
-#: casepro/orgs_ext/views.py:62
+#: casepro/orgs_ext/forms.py:43
 msgid "Banner text"
 msgstr ""
 
-#: casepro/orgs_ext/views.py:63 casepro/settings_common.py:179
+#: casepro/orgs_ext/forms.py:44 casepro/settings_common.py:156
 msgid "Banner text displayed to all users"
 msgstr ""
 
-#: casepro/orgs_ext/views.py:83
+#: casepro/orgs_ext/forms.py:46
+msgid "Contact fields"
+msgstr ""
+
+#: casepro/orgs_ext/forms.py:47 casepro/settings_common.py:154
+msgid "Contact fields to display"
+msgstr ""
+
+#: casepro/orgs_ext/forms.py:50
+msgid "Suspend groups"
+msgstr ""
+
+#: casepro/orgs_ext/forms.py:51
+msgid "Groups to remove contacts from when creating cases"
+msgstr ""
+
+#: casepro/orgs_ext/views.py:49
 msgid "Edit My Organization"
 msgstr ""
 
-#: casepro/profiles/__init__.py:12 casepro/profiles/views.py:215
-msgid "Data Analyst"
+#: casepro/profiles/forms.py:23
+#, python-format
+msgid "Must be at least %d characters long"
 msgstr ""
 
-#: casepro/profiles/__init__.py:12 casepro/profiles/views.py:213
-msgid "Manager"
+#: casepro/profiles/forms.py:30
+#, python-format
+msgid "Password used to log in (minimum of %d characters)."
 msgstr ""
 
-#: casepro/profiles/__init__.py:49
-msgid "Email address already taken."
+#: casepro/profiles/forms.py:34 templates/partials/modal_compose.haml:32
+#: templates/smartmin/users/login.haml:33
+msgid "Email"
+msgstr ""
+
+#: casepro/profiles/forms.py:35
+msgid "Email address and login."
+msgstr ""
+
+#: casepro/profiles/forms.py:37 templates/smartmin/users/login.haml:42
+msgid "Password"
+msgstr ""
+
+#: casepro/profiles/forms.py:40
+msgid "New password"
+msgstr ""
+
+#: casepro/profiles/forms.py:43
+msgid "Confirm password"
+msgstr ""
+
+#: casepro/profiles/forms.py:45
+msgid "Require change"
+msgstr ""
+
+#: casepro/profiles/forms.py:46
+msgid "Whether user must change password on next login."
+msgstr ""
+
+#: casepro/profiles/forms.py:49
+msgid "Pre-approved responses only"
+msgstr ""
+
+#: casepro/profiles/forms.py:50
+msgid ""
+"Whether user will only be able to reply using pre-approved replies (FAQs)"
+msgstr ""
+
+#: casepro/profiles/forms.py:68
+msgid "Passwords don't match."
+msgstr ""
+
+#: casepro/profiles/forms.py:81 casepro/profiles/forms.py:101
+#: templates/cases/partner_read.haml:240
+msgid "Role"
+msgstr ""
+
+#: casepro/profiles/forms.py:83
+msgid "Partner Organization"
+msgstr ""
+
+#: casepro/profiles/forms.py:94
+msgid "Required for role."
 msgstr ""
 
 #: casepro/profiles/middleware.py:25
 msgid "You are required to change your password"
 msgstr ""
 
-#: casepro/profiles/models.py:17 casepro/profiles/views.py:20
-msgid "Full name"
-msgstr ""
-
-#: casepro/profiles/models.py:19
-msgid "User must change password on next login"
-msgstr ""
-
-#: casepro/profiles/views.py:22
-msgid "Partner Organization"
-msgstr ""
-
-#: casepro/profiles/views.py:24
-msgid "Role"
-msgstr ""
-
-#: casepro/profiles/views.py:26 env/src/dash/dash/orgs/models.py:280
-msgid "Email"
-msgstr ""
-
-#: casepro/profiles/views.py:27
-msgid "Email address and login."
-msgstr ""
-
-#: casepro/profiles/views.py:29 env/src/smartmin/smartmin/users/views.py:78
-#: env/src/smartmin/smartmin/users/views.py:199
-#: env/src/smartmin/smartmin/users/views.py:247
-msgid "Password"
-msgstr ""
-
-#: casepro/profiles/views.py:30
-msgid "Password used to log in (minimum of 8 characters)."
-msgstr ""
-
-#: casepro/profiles/views.py:33
-msgid "New password"
-msgstr ""
-
-#: casepro/profiles/views.py:34
-msgid "Password used to login (minimum of 8 characters, optional)."
-msgstr ""
-
-#: casepro/profiles/views.py:36
-msgid "Confirm password"
-msgstr ""
-
-#: casepro/profiles/views.py:38
-msgid "Require change"
-msgstr ""
-
-#: casepro/profiles/views.py:39
-msgid "Whether user must change password on next login."
-msgstr ""
-
-#: casepro/profiles/views.py:41
-msgid "Active"
-msgstr ""
-
-#: casepro/profiles/views.py:42
-msgid "Whether this user is active, disable to remove access."
-msgstr ""
-
-#: casepro/profiles/views.py:58
-msgid "Passwords don't match."
-msgstr ""
-
-#: casepro/profiles/views.py:143
-msgid "Profile updated"
-msgstr ""
-
-#: casepro/profiles/views.py:144
-msgid "Edit My Profile"
-msgstr ""
-
-#: casepro/profiles/views.py:155
-msgid "User doesn't have a profile"
-msgstr ""
-
-#: casepro/profiles/views.py:179
-msgid "My Profile"
-msgstr ""
-
-#: casepro/profiles/views.py:211 env/src/dash/dash/orgs/models.py:271
+#: casepro/profiles/models.py:21 templates/profiles/user_read.haml:47
 msgid "Administrator"
 msgstr ""
 
-#: casepro/settings_common.py:69
+#: casepro/profiles/models.py:22
+msgid "Partner Manager"
+msgstr ""
+
+#: casepro/profiles/models.py:23
+msgid "Partner Data Analyst"
+msgstr ""
+
+#: casepro/profiles/models.py:24 templates/cases/partner_read.haml:257
+#: templates/profiles/user_read.haml:51
+msgid "Manager"
+msgstr ""
+
+#: casepro/profiles/models.py:25 templates/cases/partner_read.haml:260
+msgid "Data Analyst"
+msgstr ""
+
+#: casepro/profiles/models.py:38
+msgid "User must change password on next login"
+msgstr ""
+
+#: casepro/profiles/models.py:41
+msgid "User is only allowed to reply with pre-approved responses"
+msgstr ""
+
+#: casepro/profiles/models.py:152
+msgid "New labelled message"
+msgstr ""
+
+#: casepro/profiles/models.py:160
+#, python-format
+msgid "New case assignment #%d"
+msgstr ""
+
+#: casepro/profiles/models.py:172
+#, python-format
+msgid "New note in case #%d"
+msgstr ""
+
+#: casepro/profiles/models.py:175
+#, python-format
+msgid "Case #%d was closed"
+msgstr ""
+
+#: casepro/profiles/models.py:178
+#, python-format
+msgid "Case #%d was reopened"
+msgstr ""
+
+#: casepro/profiles/models.py:181
+#, python-format
+msgid "Case #%d was reassigned"
+msgstr ""
+
+#: casepro/profiles/models.py:193
+#, python-format
+msgid "New reply in case #%d"
+msgstr ""
+
+#: casepro/profiles/models.py:201
+msgid "Email address already taken."
+msgstr ""
+
+#: casepro/profiles/views.py:179
+msgid "Profile updated"
+msgstr ""
+
+#: casepro/profiles/views.py:180
+msgid "Edit My Profile"
+msgstr ""
+
+#: casepro/profiles/views.py:196
+msgid "User doesn't have a profile"
+msgstr ""
+
+#: casepro/profiles/views.py:211
+msgid "My Profile"
+msgstr ""
+
+#: casepro/rules/models.py:30
+msgid "none of"
+msgstr ""
+
+#: casepro/rules/models.py:31
+msgid "any of"
+msgstr ""
+
+#: casepro/rules/models.py:32
+msgid "all of"
+msgstr ""
+
+#: casepro/rules/models.py:403 casepro/rules/models.py:412
+msgid " and "
+msgstr ""
+
+#: casepro/settings_common.py:94
 msgid "English"
 msgstr ""
 
-#: casepro/settings_common.py:69
+#: casepro/settings_common.py:94
 msgid "French"
 msgstr ""
 
-#: casepro/translation.py:16
-msgid "Something to trigger localizations"
+#: casepro/settings_common.py:94
+msgid "Portuguese"
 msgstr ""
 
-#: env/djcelery/templates/admin/djcelery/change_list.html:7
-#: env/djcelery/templates/djcelery/confirm_rate_limit.html:6
-msgid "Home"
+#: casepro/statistics/models.py:45
+msgid "The thing being counted"
 msgstr ""
 
-#: env/djcelery/templates/djcelery/confirm_rate_limit.html:9
-#: env/lib/python2.7/site-packages/djcelery/admin.py:174
-msgid "Rate limit selected tasks"
+#: casepro/statistics/models.py:47
+msgid "The scope in which it is being counted"
 msgstr ""
 
-#: env/djcelery/templates/djcelery/confirm_rate_limit.html:22
-msgid "Rate limit"
+#: casepro/statistics/models.py:230 casepro/statistics/models.py:427
+msgid "The day this count is for"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/contrib/messages/apps.py:7
+#: casepro/statistics/models.py:314
+msgid "Incoming Messages"
+msgstr ""
+
+#: casepro/statistics/models.py:333 casepro/statistics/models.py:368
+msgid "Replies Sent"
+msgstr ""
+
+#: casepro/statistics/models.py:334 casepro/statistics/models.py:371
+msgid "Cases Opened"
+msgstr ""
+
+#: casepro/statistics/models.py:335 casepro/statistics/models.py:372
+msgid "Cases Closed"
+msgstr ""
+
+#: casepro/statistics/models.py:369
+msgid "Average Reply Time"
+msgstr ""
+
+#: casepro/statistics/models.py:370
+msgid "Average Closed Time"
+msgstr ""
+
+#: casepro/statistics/views.py:25
+msgid "January"
+msgstr ""
+
+#: casepro/statistics/views.py:25
+msgid "February"
+msgstr ""
+
+#: casepro/statistics/views.py:25
+msgid "March"
+msgstr ""
+
+#: casepro/statistics/views.py:25
+msgid "April"
+msgstr ""
+
+#: casepro/statistics/views.py:25
+msgid "May"
+msgstr ""
+
+#: casepro/statistics/views.py:25
+msgid "June"
+msgstr ""
+
+#: casepro/statistics/views.py:26
+msgid "July"
+msgstr ""
+
+#: casepro/statistics/views.py:26
+msgid "August"
+msgstr ""
+
+#: casepro/statistics/views.py:26
+msgid "September"
+msgstr ""
+
+#: casepro/statistics/views.py:26
+msgid "October"
+msgstr ""
+
+#: casepro/statistics/views.py:26
+msgid "November"
+msgstr ""
+
+#: casepro/statistics/views.py:26
+msgid "December"
+msgstr ""
+
+#: casepro/statistics/views.py:158
+msgid "Other"
+msgstr ""
+
+#: casepro/statistics/views.py:182
+msgid "Download Export"
+msgstr ""
+
+#: templates/cases/case_read.haml:18
+msgid "Could not open new case as message was already handled by this case"
+msgstr ""
+
+#: templates/cases/case_read.haml:21
+msgid "Could not open new case as contact already has this open case"
+msgstr ""
+
+#: templates/cases/case_read.haml:36 templates/msgs/label_read.haml:22
+msgid "Watch"
+msgstr ""
+
+#: templates/cases/case_read.haml:40 templates/msgs/label_read.haml:26
+msgid "Unwatch"
+msgstr ""
+
+#: templates/cases/case_read.haml:47 templates/partials/modal_assign.haml:26
+msgid "Re-assign"
+msgstr ""
+
+#: templates/cases/case_read.haml:53
+msgid "Re-open"
+msgstr ""
+
+#: templates/cases/case_read.haml:61
+msgid "Assignee"
+msgstr ""
+
+#: templates/cases/case_read.haml:69 templates/cases/case_read.haml:236
+#: templates/contacts/contact_read.haml:30
+msgid "Status"
+msgstr ""
+
+#: templates/cases/case_read.haml:94 templates/partials/modal_compose.haml:60
+msgid "Send"
+msgstr ""
+
+#: templates/cases/case_read.haml:198 templates/cases/partner_read.haml:166
+msgid "Contact"
+msgstr ""
+
+#: templates/cases/case_read.haml:241 templates/contacts/contact_read.haml:33
+msgid "Blocked"
+msgstr ""
+
+#: templates/cases/case_read.haml:247 templates/contacts/contact_read.haml:39
+msgid "Stopped"
+msgstr ""
+
+#: templates/cases/case_read.haml:258 templates/cases/inbox_outgoing.haml:19
+msgid "View"
+msgstr ""
+
+#: templates/cases/inbox_base.haml:41
+msgid "View Label"
+msgstr ""
+
+#: templates/cases/inbox_base.haml:46 templates/cases/inbox_messages.haml:239
+#: templates/partials/modal_newcase.haml:5
+msgid "Open Case"
+msgstr ""
+
+#: templates/cases/inbox_base.haml:57
 msgid "Messages"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/contrib/sitemaps/apps.py:7
-msgid "Site Maps"
+#: templates/cases/inbox_base.haml:110 templates/contacts/contact_read.haml:51
+msgid "Cases"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/contrib/staticfiles/apps.py:7
-msgid "Static Files"
+#: templates/cases/inbox_base.haml:122
+msgid "Closed"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/contrib/syndication/apps.py:7
-msgid "Syndication"
+#: templates/cases/inbox_cases.haml:12
+msgid "Assigned to"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/contrib/webdesign/apps.py:7
-msgid "Web Design"
+#: templates/cases/inbox_cases.haml:16
+msgid "Anyone"
 msgstr ""
 
-#: env/lib/python2.7/site-packages/django/core/validators.py:20
-msgid "Enter a valid value."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/core/validators.py:87
-#: env/lib/python2.7/site-packages/django/forms/fields.py:710
-msgid "Enter a valid URL."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/core/validators.py:133
-msgid "Enter a valid integer."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/core/validators.py:138
-msgid "Enter a valid email address."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/core/validators.py:212
-msgid ""
-"Enter a valid 'slug' consisting of letters, numbers, underscores or hyphens."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/core/validators.py:217
-#: env/lib/python2.7/site-packages/django/core/validators.py:236
-msgid "Enter a valid IPv4 address."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/core/validators.py:222
-#: env/lib/python2.7/site-packages/django/core/validators.py:237
-msgid "Enter a valid IPv6 address."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/core/validators.py:232
-#: env/lib/python2.7/site-packages/django/core/validators.py:235
-msgid "Enter a valid IPv4 or IPv6 address."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/core/validators.py:260
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1144
-msgid "Enter only digits separated by commas."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/core/validators.py:269
-#, python-format
-msgid "Ensure this value is %(limit_value)s (it is %(show_value)s)."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/core/validators.py:295
-#, python-format
-msgid "Ensure this value is less than or equal to %(limit_value)s."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/core/validators.py:302
-#, python-format
-msgid "Ensure this value is greater than or equal to %(limit_value)s."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/core/validators.py:311
-#, python-format
-msgid ""
-"Ensure this value has at least %(limit_value)d character (it has "
-"%(show_value)d)."
-msgid_plural ""
-"Ensure this value has at least %(limit_value)d characters (it has "
-"%(show_value)d)."
-msgstr[0] ""
-msgstr[1] ""
-
-#: env/lib/python2.7/site-packages/django/core/validators.py:322
-#, python-format
-msgid ""
-"Ensure this value has at most %(limit_value)d character (it has "
-"%(show_value)d)."
-msgid_plural ""
-"Ensure this value has at most %(limit_value)d characters (it has "
-"%(show_value)d)."
-msgstr[0] ""
-msgstr[1] ""
-
-#: env/lib/python2.7/site-packages/django/db/models/base.py:1106
-#: env/lib/python2.7/site-packages/django/forms/models.py:722
-msgid "and"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/base.py:1108
-#, python-format
-msgid "%(model_name)s with this %(field_labels)s already exists."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:107
-#, python-format
-msgid "Value %(value)r is not a valid choice."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:108
-msgid "This field cannot be null."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:109
-msgid "This field cannot be blank."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:110
-#, python-format
-msgid "%(model_name)s with this %(field_label)s already exists."
-msgstr ""
-
-#. Translators: The 'lookup_type' is one of 'date', 'year' or 'month'.
-#. Eg: "Title must be unique for pub_date year"
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:114
-#, python-format
-msgid ""
-"%(field_label)s must be unique for %(date_field_label)s %(lookup_type)s."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:132
-#, python-format
-msgid "Field of type: %(field_type)s"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:922
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1832
-msgid "Integer"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:926
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1830
-#, python-format
-msgid "'%(value)s' value must be an integer."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1001
-#, python-format
-msgid "'%(value)s' value must be either True or False."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1003
-msgid "Boolean (Either True or False)"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1078
-#, python-format
-msgid "String (up to %(max_length)s)"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1139
-msgid "Comma-separated integers"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1188
-#, python-format
-msgid ""
-"'%(value)s' value has an invalid date format. It must be in YYYY-MM-DD "
-"format."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1190
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1340
-#, python-format
-msgid ""
-"'%(value)s' value has the correct format (YYYY-MM-DD) but it is an invalid "
-"date."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1193
-msgid "Date (without time)"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1338
-#, python-format
-msgid ""
-"'%(value)s' value has an invalid format. It must be in YYYY-MM-DD HH:MM[:ss[."
-"uuuuuu]][TZ] format."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1342
-#, python-format
-msgid ""
-"'%(value)s' value has the correct format (YYYY-MM-DD HH:MM[:ss[.uuuuuu]]"
-"[TZ]) but it is an invalid date/time."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1346
-msgid "Date (with time)"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1498
-#, python-format
-msgid "'%(value)s' value must be a decimal number."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1500
-msgid "Decimal number"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1651
-#, python-format
-msgid ""
-"'%(value)s' value has an invalid format. It must be in [DD] [HH:[MM:]]ss[."
-"uuuuuu] format."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1654
-msgid "Duration"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1705
-msgid "Email address"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1729
-msgid "File path"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1796
-#, python-format
-msgid "'%(value)s' value must be a float."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1798
-msgid "Floating point number"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1899
-msgid "Big (8 byte) integer"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1914
-msgid "IPv4 address"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:1950
-msgid "IP address"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2029
-#, python-format
-msgid "'%(value)s' value must be either None, True or False."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2031
-msgid "Boolean (Either True, False or None)"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2091
-msgid "Positive integer"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2103
-msgid "Positive small integer"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2116
-#, python-format
-msgid "Slug (up to %(max_length)s)"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2145
-msgid "Small integer"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2152
-msgid "Text"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2175
-#, python-format
-msgid ""
-"'%(value)s' value has an invalid format. It must be in HH:MM[:ss[.uuuuuu]] "
-"format."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2177
-#, python-format
-msgid ""
-"'%(value)s' value has the correct format (HH:MM[:ss[.uuuuuu]]) but it is an "
-"invalid time."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2180
-msgid "Time"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2308
-msgid "URL"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2331
-msgid "Raw binary data"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/__init__.py:2375
-#, python-format
-msgid "'%(value)s' is not a valid UUID."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/files.py:239
-msgid "File"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/files.py:389
-msgid "Image"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/related.py:1791
-#, python-format
-msgid "%(model)s instance with %(field)s %(value)r does not exist."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/related.py:1793
-msgid "Foreign Key (type determined by related field)"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/related.py:2020
-msgid "One-to-one relationship"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/db/models/fields/related.py:2110
-msgid "Many-to-many relationship"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/fields.py:64
-msgid "This field is required."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/fields.py:237
-msgid "Enter a whole number."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/fields.py:280
-#: env/lib/python2.7/site-packages/django/forms/fields.py:317
-msgid "Enter a number."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/fields.py:319
-#, python-format
-msgid "Ensure that there are no more than %(max)s digit in total."
-msgid_plural "Ensure that there are no more than %(max)s digits in total."
-msgstr[0] ""
-msgstr[1] ""
-
-#: env/lib/python2.7/site-packages/django/forms/fields.py:323
-#, python-format
-msgid "Ensure that there are no more than %(max)s decimal place."
-msgid_plural "Ensure that there are no more than %(max)s decimal places."
-msgstr[0] ""
-msgstr[1] ""
-
-#: env/lib/python2.7/site-packages/django/forms/fields.py:327
-#, python-format
-msgid ""
-"Ensure that there are no more than %(max)s digit before the decimal point."
-msgid_plural ""
-"Ensure that there are no more than %(max)s digits before the decimal point."
-msgstr[0] ""
-msgstr[1] ""
-
-#: env/lib/python2.7/site-packages/django/forms/fields.py:438
-#: env/lib/python2.7/site-packages/django/forms/fields.py:1191
-msgid "Enter a valid date."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/fields.py:462
-#: env/lib/python2.7/site-packages/django/forms/fields.py:1192
-msgid "Enter a valid time."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/fields.py:484
-msgid "Enter a valid date/time."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/fields.py:525
-msgid "Enter a valid duration."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/fields.py:591
-msgid "No file was submitted. Check the encoding type on the form."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/fields.py:592
-msgid "No file was submitted."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/fields.py:593
-msgid "The submitted file is empty."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/fields.py:595
-#, python-format
-msgid "Ensure this filename has at most %(max)d character (it has %(length)d)."
-msgid_plural ""
-"Ensure this filename has at most %(max)d characters (it has %(length)d)."
-msgstr[0] ""
-msgstr[1] ""
-
-#: env/lib/python2.7/site-packages/django/forms/fields.py:598
-msgid "Please either submit a file or check the clear checkbox, not both."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/fields.py:660
-msgid ""
-"Upload a valid image. The file you uploaded was either not an image or a "
-"corrupted image."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/fields.py:825
-#: env/lib/python2.7/site-packages/django/forms/fields.py:919
-#: env/lib/python2.7/site-packages/django/forms/models.py:1233
-#, python-format
-msgid "Select a valid choice. %(value)s is not one of the available choices."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/fields.py:920
-#: env/lib/python2.7/site-packages/django/forms/fields.py:1035
-#: env/lib/python2.7/site-packages/django/forms/models.py:1232
-msgid "Enter a list of values."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/fields.py:1036
-msgid "Enter a complete value."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/fields.py:1262
-msgid "Enter a valid UUID."
-msgstr ""
-
-#. Translators: This is the default suffix added to form field labels
-#: env/lib/python2.7/site-packages/django/forms/forms.py:129
-msgid ":"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/forms.py:214
-#, python-format
-msgid "(Hidden field %(name)s) %(error)s"
-msgstr ""
-
-#. Translators: If found as last label character, these punctuation
-#. characters will prevent the default label_suffix to be appended to the label
-#: env/lib/python2.7/site-packages/django/forms/forms.py:665
-msgid ":?.!"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/formsets.py:96
-msgid "ManagementForm data is missing or has been tampered with"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/formsets.py:333
-#, python-format
-msgid "Please submit %d or fewer forms."
-msgid_plural "Please submit %d or fewer forms."
-msgstr[0] ""
-msgstr[1] ""
-
-#: env/lib/python2.7/site-packages/django/forms/formsets.py:340
-#, python-format
-msgid "Please submit %d or more forms."
-msgid_plural "Please submit %d or more forms."
-msgstr[0] ""
-msgstr[1] ""
-
-#: env/lib/python2.7/site-packages/django/forms/formsets.py:368
-#: env/lib/python2.7/site-packages/django/forms/formsets.py:370
-msgid "Order"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/formsets.py:372
-msgid "Delete"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/models.py:716
-#, python-format
-msgid "Please correct the duplicate data for %(field)s."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/models.py:720
-#, python-format
-msgid "Please correct the duplicate data for %(field)s, which must be unique."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/models.py:726
-#, python-format
-msgid ""
-"Please correct the duplicate data for %(field_name)s which must be unique "
-"for the %(lookup)s in %(date_field)s."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/models.py:734
-msgid "Please correct the duplicate values below."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/models.py:1052
-msgid "The inline foreign key did not match the parent instance primary key."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/models.py:1118
-msgid "Select a valid choice. That choice is not one of the available choices."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/models.py:1235
-#, python-format
-msgid "\"%(pk)s\" is not a valid value for a primary key."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/utils.py:165
-#, python-format
-msgid ""
-"%(datetime)s couldn't be interpreted in time zone %(current_timezone)s; it "
-"may be ambiguous or it may not exist."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/widgets.py:345
-msgid "Currently"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/widgets.py:346
-msgid "Change"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/widgets.py:347
-msgid "Clear"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/widgets.py:555
-msgid "Unknown"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/widgets.py:556
-#: env/src/dash/dash/stories/views.py:47
-msgid "Yes"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/forms/widgets.py:557
-#: env/src/dash/dash/stories/views.py:48
-msgid "No"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:860
-msgid "yes,no,maybe"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:889
-#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:901
-#, python-format
-msgid "%(size)d byte"
-msgid_plural "%(size)d bytes"
-msgstr[0] ""
-msgstr[1] ""
-
-#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:903
-#, python-format
-msgid "%s KB"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:905
-#, python-format
-msgid "%s MB"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:907
-#, python-format
-msgid "%s GB"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:909
-#, python-format
-msgid "%s TB"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/template/defaultfilters.py:911
-#, python-format
-msgid "%s PB"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dateformat.py:61
-msgid "p.m."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dateformat.py:62
-msgid "a.m."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dateformat.py:67
-msgid "PM"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dateformat.py:68
-msgid "AM"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dateformat.py:151
-msgid "midnight"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dateformat.py:153
-msgid "noon"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:6
-msgid "Monday"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:6
-msgid "Tuesday"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:6
-msgid "Wednesday"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:6
-msgid "Thursday"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:6
-msgid "Friday"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:7
-msgid "Saturday"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:7
-msgid "Sunday"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:10
-msgid "Mon"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:10
-msgid "Tue"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:10
-msgid "Wed"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:10
-msgid "Thu"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:10
-msgid "Fri"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:11
-msgid "Sat"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:11
-msgid "Sun"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:18
-msgid "January"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:18
-msgid "February"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:18
-msgid "March"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:18
-msgid "April"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:18
-msgid "May"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:18
-msgid "June"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:19
-msgid "July"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:19
-msgid "August"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:19
-msgid "September"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:19
-msgid "October"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:19
-msgid "November"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:20
-msgid "December"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:23
-msgid "jan"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:23
-msgid "feb"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:23
-msgid "mar"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:23
-msgid "apr"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:23
-msgid "may"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:23
-msgid "jun"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:24
-msgid "jul"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:24
-msgid "aug"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:24
-msgid "sep"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:24
-msgid "oct"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:24
-msgid "nov"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:24
-msgid "dec"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:31
-msgctxt "abbrev. month"
-msgid "Jan."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:32
-msgctxt "abbrev. month"
-msgid "Feb."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:33
-msgctxt "abbrev. month"
-msgid "March"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:34
-msgctxt "abbrev. month"
-msgid "April"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:35
-msgctxt "abbrev. month"
-msgid "May"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:36
-msgctxt "abbrev. month"
-msgid "June"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:37
-msgctxt "abbrev. month"
-msgid "July"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:38
-msgctxt "abbrev. month"
-msgid "Aug."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:39
-msgctxt "abbrev. month"
-msgid "Sept."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:40
-msgctxt "abbrev. month"
-msgid "Oct."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:41
-msgctxt "abbrev. month"
-msgid "Nov."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:42
-msgctxt "abbrev. month"
-msgid "Dec."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:45
-msgctxt "alt. month"
-msgid "January"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:46
-msgctxt "alt. month"
-msgid "February"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:47
-msgctxt "alt. month"
-msgid "March"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:48
-msgctxt "alt. month"
-msgid "April"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:49
-msgctxt "alt. month"
-msgid "May"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:50
-msgctxt "alt. month"
-msgid "June"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:51
-msgctxt "alt. month"
-msgid "July"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:52
-msgctxt "alt. month"
-msgid "August"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:53
-msgctxt "alt. month"
-msgid "September"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:54
-msgctxt "alt. month"
-msgid "October"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:55
-msgctxt "alt. month"
-msgid "November"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/dates.py:56
-msgctxt "alt. month"
-msgid "December"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/ipv6.py:10
-msgid "This is not a valid IPv6 address."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/text.py:79
-#, python-format
-msgctxt "String to return when truncating text"
-msgid "%(truncated_text)s..."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/text.py:248
-msgid "or"
-msgstr ""
-
-#. Translators: This string is used as a separator between list elements
-#: env/lib/python2.7/site-packages/django/utils/text.py:267
-#: env/lib/python2.7/site-packages/django/utils/timesince.py:58
-msgid ", "
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/utils/timesince.py:10
-#, python-format
-msgid "%d year"
-msgid_plural "%d years"
-msgstr[0] ""
-msgstr[1] ""
-
-#: env/lib/python2.7/site-packages/django/utils/timesince.py:11
-#, python-format
-msgid "%d month"
-msgid_plural "%d months"
-msgstr[0] ""
-msgstr[1] ""
-
-#: env/lib/python2.7/site-packages/django/utils/timesince.py:12
-#, python-format
-msgid "%d week"
-msgid_plural "%d weeks"
-msgstr[0] ""
-msgstr[1] ""
-
-#: env/lib/python2.7/site-packages/django/utils/timesince.py:13
-#, python-format
-msgid "%d day"
-msgid_plural "%d days"
-msgstr[0] ""
-msgstr[1] ""
-
-#: env/lib/python2.7/site-packages/django/utils/timesince.py:14
-#, python-format
-msgid "%d hour"
-msgid_plural "%d hours"
-msgstr[0] ""
-msgstr[1] ""
-
-#: env/lib/python2.7/site-packages/django/utils/timesince.py:15
-#, python-format
-msgid "%d minute"
-msgid_plural "%d minutes"
-msgstr[0] ""
-msgstr[1] ""
-
-#: env/lib/python2.7/site-packages/django/utils/timesince.py:47
-msgid "0 minutes"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/csrf.py:107
-msgid "Forbidden"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/csrf.py:108
-msgid "CSRF verification failed. Request aborted."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/csrf.py:112
-msgid ""
-"You are seeing this message because this HTTPS site requires a 'Referer "
-"header' to be sent by your Web browser, but none was sent. This header is "
-"required for security reasons, to ensure that your browser is not being "
-"hijacked by third parties."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/csrf.py:117
-msgid ""
-"If you have configured your browser to disable 'Referer' headers, please re-"
-"enable them, at least for this site, or for HTTPS connections, or for 'same-"
-"origin' requests."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/csrf.py:122
-msgid ""
-"You are seeing this message because this site requires a CSRF cookie when "
-"submitting forms. This cookie is required for security reasons, to ensure "
-"that your browser is not being hijacked by third parties."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/csrf.py:127
-msgid ""
-"If you have configured your browser to disable cookies, please re-enable "
-"them, at least for this site, or for 'same-origin' requests."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/csrf.py:132
-msgid "More information is available with DEBUG=True."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/debug.py:583
-msgid "Welcome to Django"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/debug.py:584
-msgid "It worked!"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/debug.py:585
-msgid "Congratulations on your first Django-powered page."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/debug.py:586
-msgid ""
-"Of course, you haven't actually done any work yet. Next, start your first "
-"app by running <code>python manage.py startapp [app_label]</code>."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/debug.py:588
-msgid ""
-"You're seeing this message because you have <code>DEBUG = True</code> in "
-"your Django settings file and you haven't configured any URLs. Get to work!"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/generic/dates.py:48
-msgid "No year specified"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/generic/dates.py:104
-msgid "No month specified"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/generic/dates.py:163
-msgid "No day specified"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/generic/dates.py:219
-msgid "No week specified"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/generic/dates.py:378
-#: env/lib/python2.7/site-packages/django/views/generic/dates.py:406
-#, python-format
-msgid "No %(verbose_name_plural)s available"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/generic/dates.py:660
-#, python-format
-msgid ""
-"Future %(verbose_name_plural)s not available because %(class_name)s."
-"allow_future is False."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/generic/dates.py:694
-#, python-format
-msgid "Invalid date string '%(datestr)s' given format '%(format)s'"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/generic/detail.py:55
-#, python-format
-msgid "No %(verbose_name)s found matching the query"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/generic/list.py:76
-msgid "Page is not 'last', nor can it be converted to an int."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/generic/list.py:81
-#, python-format
-msgid "Invalid page (%(page_number)s): %(message)s"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/generic/list.py:172
-#, python-format
-msgid "Empty list and '%(class_name)s.allow_empty' is False."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/static.py:58
-msgid "Directory indexes are not allowed here."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/static.py:60
-#, python-format
-msgid "\"%(path)s\" does not exist"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/django/views/static.py:100
-#, python-format
-msgid "Index of %(directory)s"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/admin.py:53
-#: env/lib/python2.7/site-packages/djcelery/admin.py:60
-#: env/lib/python2.7/site-packages/djcelery/models.py:30
-#: env/lib/python2.7/site-packages/djcelery/models.py:329
-msgid "state"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/admin.py:67
-#: env/lib/python2.7/site-packages/djcelery/models.py:338
-msgid "ETA"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/admin.py:74
-msgid "when"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/admin.py:81
-#: env/lib/python2.7/site-packages/djcelery/models.py:205
-#: env/lib/python2.7/site-packages/djcelery/models.py:333
-#: env/lib/python2.7/site-packages/kombu/transport/django/models.py:12
-msgid "name"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/admin.py:115
-msgid "Task detail"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/admin.py:116
-msgid "Tasks"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/admin.py:131
-#: env/lib/python2.7/site-packages/djcelery/models.py:331
-msgid "UUID"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/admin.py:155
-msgid "Revoke selected tasks"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/admin.py:161
-msgid "Terminate selected tasks"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/admin.py:167
-msgid "Kill selected tasks"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/admin.py:187
-msgid "Rate limit selection"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/admin.py:212
-msgid "Node detail"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/admin.py:213
-msgid "Worker Nodes"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/admin.py:220
-msgid "Shutdown selected worker nodes"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/admin.py:224
-msgid "Enable event mode for selected nodes."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/admin.py:229
-msgid "Disable event mode for selected nodes."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/admin.py:281
-msgid "Task (registered)"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/admin.py:283
-msgid "Task (custom)"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/admin.py:296
-msgid "Need name of task"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/admin.py:307
-#, python-format
-msgid "Unable to parse JSON: %s"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/humanize.py:10
-#, python-brace-format
-msgid "{num} year ago"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/humanize.py:10
-#, python-brace-format
-msgid "{num} years ago"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/humanize.py:14
-#, python-brace-format
-msgid "{num} month ago"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/humanize.py:14
-#, python-brace-format
-msgid "{num} months ago"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/humanize.py:18
-#, python-brace-format
-msgid "{num} week ago"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/humanize.py:18
-#, python-brace-format
-msgid "{num} weeks ago"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/humanize.py:22
-#, python-brace-format
-msgid "{num} day ago"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/humanize.py:22
-#, python-brace-format
-msgid "{num} days ago"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/humanize.py:56
-#: env/lib/python2.7/site-packages/djcelery/humanize.py:71
-msgid "just now"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/humanize.py:62
-#, python-brace-format
-msgid "{minutes} minute ago"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/humanize.py:63
-#, python-brace-format
-msgid "{minutes} minutes ago"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/humanize.py:68
-#, python-brace-format
-msgid "{seconds} second ago"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/humanize.py:69
-#, python-brace-format
-msgid "{seconds} seconds ago"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/humanize.py:74
-#, python-brace-format
-msgid "{hours} hour ago"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/humanize.py:74
-#, python-brace-format
-msgid "{hours} hours ago"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/humanize.py:78
-#, python-brace-format
-msgid "yesterday at {time}"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:28
-msgid "task id"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:34
-msgid "done at"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:35
-#: env/lib/python2.7/site-packages/djcelery/models.py:341
-msgid "traceback"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:46
-msgid "task state"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:47
-msgid "task states"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:65
-msgid "group id"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:67
-msgid "created at"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:74
-msgid "saved group result"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:75
-msgid "saved group results"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:87
-msgid "Days"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:88
-msgid "Hours"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:89
-msgid "Minutes"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:90
-msgid "Seconds"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:91
-msgid "Microseconds"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:96
-msgid "every"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:98
-msgid "period"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:102
-#: env/lib/python2.7/site-packages/djcelery/models.py:211
-msgid "interval"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:103
-msgid "intervals"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:123
-#, python-brace-format
-msgid "every {0.period_singular}"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:124
-#, python-brace-format
-msgid "every {0.every} {0.period}"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:133
-msgid "minute"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:134
-msgid "hour"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:136
-msgid "day of week"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:139
-msgid "day of month"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:142
-msgid "month of year"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:146
-#: env/lib/python2.7/site-packages/djcelery/models.py:214
-msgid "crontab"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:147
-msgid "crontabs"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:206
-msgid "Useful description"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:208
-msgid "task name"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:215
-msgid "Use one of interval/crontab"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:218
-#: env/lib/python2.7/site-packages/djcelery/models.py:336
-msgid "Arguments"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:219
-msgid "JSON encoded positional arguments"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:222
-#: env/lib/python2.7/site-packages/djcelery/models.py:337
-msgid "Keyword arguments"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:223
-msgid "JSON encoded keyword arguments"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:226
-#: env/lib/python2.7/site-packages/kombu/transport/django/models.py:20
-msgid "queue"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:227
-msgid "Queue defined in CELERY_QUEUES"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:230
-msgid "exchange"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:233
-msgid "routing key"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:236
-#: env/lib/python2.7/site-packages/djcelery/models.py:339
-msgid "expires"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:239
-msgid "enabled"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:249
-msgid "description"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:255
-msgid "periodic task"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:256
-msgid "periodic tasks"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:295
-msgid "hostname"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:296
-msgid "last heartbeat"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:303
-#: env/lib/python2.7/site-packages/djcelery/models.py:348
-msgid "worker"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:304
-msgid "workers"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:335
-msgid "event received at"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:340
-msgid "result"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:343
-msgid "execution time"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:344
-msgid "in seconds if task succeeded"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:346
-msgid "number of retries"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:356
-msgid "task"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/djcelery/models.py:357
-msgid "tasks"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:313
-msgid "usage: "
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:821
-msgid ".__call__() not defined"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1105
-#, python-format
-msgid "unknown parser %r (choices: %s)"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1146
-#, python-format
-msgid "argument \"-\" with mode %r"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1349
-#, python-format
-msgid "cannot merge actions - two groups are named %r"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1387
-msgid "'required' is an invalid argument for positionals"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1407
-#, python-format
-msgid "invalid option string %r: must start with a character %r"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1428
-#, python-format
-msgid "dest= is required for options like %r"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1445
-#, python-format
-msgid "invalid conflict_resolution value: %r"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1463
-#, python-format
-msgid "conflicting option string(s): %s"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1526
-msgid "mutually exclusive arguments must be optional"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1596
-msgid "positional arguments"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1597
-msgid "optional arguments"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1615
-msgid "show this help message and exit"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1621
-msgid "show program's version number and exit"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1653
-msgid "cannot have multiple subparser arguments"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1705
-#, python-format
-msgid "unrecognized arguments: %s"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1802
-#, python-format
-msgid "not allowed with argument %s"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1848
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1862
-#, python-format
-msgid "ignored explicit argument %r"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1952
-msgid "too few arguments"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1959
-#, python-format
-msgid "argument %s is required"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:1973
-#, python-format
-msgid "one of the arguments %s is required"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:2019
-msgid "expected one argument"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:2020
-msgid "expected at most one argument"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:2021
-msgid "expected at least one argument"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:2023
-#, python-format
-msgid "expected %s argument(s)"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:2080
-#, python-format
-msgid "ambiguous option: %s could match %s"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:2142
-#, python-format
-msgid "unexpected option string: %s"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:2243
-#, python-format
-msgid "%r is not callable"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:2259
-#, python-format
-msgid "invalid %s value: %r"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:2269
-#, python-format
-msgid "invalid choice: %r (choose from %s)"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/gunicorn/argparse_compat.py:2362
-#, python-format
-msgid "%s: error: %s\n"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/kombu/transport/django/models.py:21
-msgid "queues"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/kombu/transport/django/models.py:28
-msgid "payload"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/kombu/transport/django/models.py:37
-msgid "message"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/kombu/transport/django/models.py:38
-msgid "messages"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:11
-msgid "Null character in input stream, replaced with U+FFFD."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:13
-msgid "Invalid codepoint in stream."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:15
-msgid "Solidus (/) incorrectly placed in tag."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:17
-msgid "Incorrect CR newline entity, replaced with LF."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:19
-msgid "Entity used with illegal number (windows-1252 reference)."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:21
-#, python-format
-msgid ""
-"Numeric entity couldn't be converted to character (codepoint U+"
-"%(charAsInt)08x)."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:24
-#, python-format
-msgid "Numeric entity represents an illegal codepoint: U+%(charAsInt)08x."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:27
-msgid "Numeric entity didn't end with ';'."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:29
-msgid "Numeric entity expected. Got end of file instead."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:31
-msgid "Numeric entity expected but none found."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:33
-msgid "Named entity didn't end with ';'."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:35
-msgid "Named entity expected. Got none."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:37
-msgid "End tag contains unexpected attributes."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:39
-msgid "End tag contains unexpected self-closing flag."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:41
-msgid "Expected tag name. Got '>' instead."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:43
-msgid ""
-"Expected tag name. Got '?' instead. (HTML doesn't support processing "
-"instructions.)"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:46
-msgid "Expected tag name. Got something else instead"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:48
-msgid "Expected closing tag. Got '>' instead. Ignoring '</>'."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:50
-msgid "Expected closing tag. Unexpected end of file."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:52
-#, python-format
-msgid "Expected closing tag. Unexpected character '%(data)s' found."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:54
-msgid "Unexpected end of file in the tag name."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:56
-msgid "Unexpected end of file. Expected attribute name instead."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:58
-msgid "Unexpected end of file in attribute name."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:60
-msgid "Invalid character in attribute name"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:62
-msgid "Dropped duplicate attribute on tag."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:64
-msgid "Unexpected end of file. Expected = or end of tag."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:66
-msgid "Unexpected end of file. Expected attribute value."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:68
-msgid "Expected attribute value. Got '>' instead."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:70
-msgid "Unexpected = in unquoted attribute"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:72
-msgid "Unexpected character in unquoted attribute"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:74
-msgid "Unexpected character after attribute name."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:76
-msgid "Unexpected character after attribute value."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:78
-msgid "Unexpected end of file in attribute value (\")."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:80
-msgid "Unexpected end of file in attribute value (')."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:82
-msgid "Unexpected end of file in attribute value."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:84
-msgid "Unexpected end of file in tag. Expected >"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:86
-msgid "Unexpected character after / in tag. Expected >"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:88
-msgid "Expected '--' or 'DOCTYPE'. Not found."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:90
-msgid "Unexpected ! after -- in comment"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:92
-msgid "Unexpected space after -- in comment"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:94
-msgid "Incorrect comment."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:96
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:104
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:106
-msgid "Unexpected end of file in comment."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:98
-msgid "Unexpected end of file in comment (-)"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:100
-msgid "Unexpected '-' after '--' found in comment."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:102
-msgid "Unexpected end of file in comment (--)."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:108
-msgid "Unexpected character in comment found."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:110
-msgid "No space after literal string 'DOCTYPE'."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:112
-msgid "Unexpected > character. Expected DOCTYPE name."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:114
-msgid "Unexpected end of file. Expected DOCTYPE name."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:116
-msgid "Unexpected end of file in DOCTYPE name."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:118
-msgid "Unexpected end of file in DOCTYPE."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:120
-#, python-format
-msgid "Expected space or '>'. Got '%(data)s'"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:122
-msgid "Unexpected end of DOCTYPE."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:124
-msgid "Unexpected character in DOCTYPE."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:126
-msgid "XXX innerHTML EOF"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:128
-msgid "Unexpected DOCTYPE. Ignored."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:130
-msgid "html needs to be the first start tag."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:132
-msgid "Unexpected End of file. Expected DOCTYPE."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:134
-msgid "Erroneous DOCTYPE."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:136
-msgid "Unexpected non-space characters. Expected DOCTYPE."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:138
-#, python-format
-msgid "Unexpected start tag (%(name)s). Expected DOCTYPE."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:140
-#, python-format
-msgid "Unexpected end tag (%(name)s). Expected DOCTYPE."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:142
-#, python-format
-msgid "Unexpected end tag (%(name)s) after the (implied) root element."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:144
-#, python-format
-msgid "Unexpected end of file. Expected end tag (%(name)s)."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:146
-msgid "Unexpected start tag head in existing head. Ignored."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:148
-#, python-format
-msgid "Unexpected end tag (%(name)s). Ignored."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:150
-#, python-format
-msgid "Unexpected start tag (%(name)s) that can be in head. Moved."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:152
-#, python-format
-msgid "Unexpected start tag (%(name)s)."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:154
-#, python-format
-msgid "Missing end tag (%(name)s)."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:156
-#, python-format
-msgid "Missing end tags (%(name)s)."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:158
-#, python-format
-msgid "Unexpected start tag (%(startName)s) implies end tag (%(endName)s)."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:161
-#, python-format
-msgid "Unexpected start tag (%(originalName)s). Treated as %(newName)s."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:163
-#, python-format
-msgid "Unexpected start tag %(name)s. Don't use it!"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:165
-#, python-format
-msgid "Unexpected start tag %(name)s. Ignored."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:167
-#, python-format
-msgid "Unexpected end tag (%(gotName)s). Missing end tag (%(expectedName)s)."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:170
-#, python-format
-msgid "End tag (%(name)s) seen too early. Expected other end tag."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:172
-#, python-format
-msgid "Unexpected end tag (%(gotName)s). Expected end tag (%(expectedName)s)."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:174
-#, python-format
-msgid "End tag (%(name)s) seen too early. Ignored."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:176
-#, python-format
-msgid ""
-"End tag (%(name)s) violates step 1, paragraph 1 of the adoption agency "
-"algorithm."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:179
-#, python-format
-msgid ""
-"End tag (%(name)s) violates step 1, paragraph 2 of the adoption agency "
-"algorithm."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:182
-#, python-format
-msgid ""
-"End tag (%(name)s) violates step 1, paragraph 3 of the adoption agency "
-"algorithm."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:185
-#, python-format
-msgid ""
-"End tag (%(name)s) violates step 4, paragraph 4 of the adoption agency "
-"algorithm."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:188
-#, python-format
-msgid "Unexpected end tag (%(originalName)s). Treated as %(newName)s."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:190
-#, python-format
-msgid "This element (%(name)s) has no end tag."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:192
-#, python-format
-msgid "Unexpected implied end tag (%(name)s) in the table phase."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:194
-#, python-format
-msgid "Unexpected implied end tag (%(name)s) in the table body phase."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:196
-msgid "Unexpected non-space characters in table context caused voodoo mode."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:199
-msgid "Unexpected input with type hidden in table context."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:201
-msgid "Unexpected form in table context."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:203
-#, python-format
-msgid "Unexpected start tag (%(name)s) in table context caused voodoo mode."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:206
-#, python-format
-msgid "Unexpected end tag (%(name)s) in table context caused voodoo mode."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:209
-#, python-format
-msgid "Unexpected table cell start tag (%(name)s) in the table body phase."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:212
-#, python-format
-msgid "Got table cell end tag (%(name)s) while required end tags are missing."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:215
-#, python-format
-msgid "Unexpected end tag (%(name)s) in the table body phase. Ignored."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:217
-#, python-format
-msgid "Unexpected implied end tag (%(name)s) in the table row phase."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:219
-#, python-format
-msgid "Unexpected end tag (%(name)s) in the table row phase. Ignored."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:221
-msgid ""
-"Unexpected select start tag in the select phase treated as select end tag."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:224
-msgid "Unexpected input start tag in the select phase."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:226
-#, python-format
-msgid "Unexpected start tag token (%(name)s in the select phase. Ignored."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:229
-#, python-format
-msgid "Unexpected end tag (%(name)s) in the select phase. Ignored."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:231
-#, python-format
-msgid ""
-"Unexpected table element start tag (%(name)s) in the select in table phase."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:233
-#, python-format
-msgid ""
-"Unexpected table element end tag (%(name)s) in the select in table phase."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:235
-msgid "Unexpected non-space characters in the after body phase."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:237
-#, python-format
-msgid "Unexpected start tag token (%(name)s) in the after body phase."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:240
-#, python-format
-msgid "Unexpected end tag token (%(name)s) in the after body phase."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:243
-msgid "Unexpected characters in the frameset phase. Characters ignored."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:245
-#, python-format
-msgid "Unexpected start tag token (%(name)s) in the frameset phase. Ignored."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:248
-msgid "Unexpected end tag token (frameset) in the frameset phase (innerHTML)."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:251
-#, python-format
-msgid "Unexpected end tag token (%(name)s) in the frameset phase. Ignored."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:254
-msgid "Unexpected non-space characters in the after frameset phase. Ignored."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:257
-#, python-format
-msgid "Unexpected start tag (%(name)s) in the after frameset phase. Ignored."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:260
-#, python-format
-msgid "Unexpected end tag (%(name)s) in the after frameset phase. Ignored."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:263
-msgid "Unexpected end tag after body(innerHtml)"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:265
-msgid "Unexpected non-space characters. Expected end of file."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:267
-#, python-format
-msgid "Unexpected start tag (%(name)s). Expected end of file."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:270
-#, python-format
-msgid "Unexpected end tag (%(name)s). Expected end of file."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:273
-msgid "Unexpected end of file. Expected table content."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:275
-msgid "Unexpected end of file. Expected select content."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:277
-msgid "Unexpected end of file. Expected frameset content."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:279
-msgid "Unexpected end of file. Expected script content."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:281
-msgid "Unexpected end of file. Expected foreign content"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:283
-#, python-format
-msgid "Trailing solidus not allowed on element %(name)s"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:285
-#, python-format
-msgid "Element %(name)s not allowed in a non-html context"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:287
-#, python-format
-msgid "Unexpected end tag (%(name)s) before html."
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/constants.py:289
-msgid "Undefined error (this sucks and should be fixed)"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/filters/lint.py:26
-#, python-format
-msgid "StartTag not in PCDATA content model flag: %s"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/filters/lint.py:28
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/filters/lint.py:54
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/filters/lint.py:84
-#, python-format
-msgid "Tag name is not a string: %r"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/filters/lint.py:30
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/filters/lint.py:56
-msgid "Empty tag name"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/filters/lint.py:32
-#, python-format
-msgid "Void element reported as StartTag token: %s"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/filters/lint.py:34
-#, python-format
-msgid "Non-void element reported as EmptyTag token: %s"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/filters/lint.py:39
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/filters/lint.py:71
-#, python-format
-msgid "Attribute name is not a string: %r"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/filters/lint.py:41
-msgid "Empty attribute name"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/filters/lint.py:43
-#, python-format
-msgid "Attribute value is not a string: %r"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/filters/lint.py:58
-#, python-format
-msgid "Void element reported as EndTag token: %s"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/filters/lint.py:61
-#, python-format
-msgid "EndTag (%s) does not match StartTag (%s)"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/filters/lint.py:66
-msgid "Comment not in PCDATA content model flag"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/filters/lint.py:73
-#, python-format
-msgid "%s token with empty data"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/filters/lint.py:77
-msgid "Non-space character(s) found in SpaceCharacters token: "
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/filters/lint.py:82
-#, python-format
-msgid "Doctype not in PCDATA content model flag: %s"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/filters/lint.py:91
-#, python-format
-msgid "Unknown token type: %s"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/serializer/htmlserializer.py:200
-msgid "System identifer contains both single and double quote characters"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/serializer/htmlserializer.py:212
-msgid "Unexpected </ in CDATA"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/serializer/htmlserializer.py:223
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/serializer/htmlserializer.py:271
-msgid "Unexpected child element of a CDATA element"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/serializer/htmlserializer.py:277
-msgid "Comment contains --"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/serializer/htmlserializer.py:284
-#, python-format
-msgid "Entity %s not recognized"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/treewalkers/_base.py:33
-msgid "Void element has children"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/treewalkers/_base.py:95
-msgid "Unknown node type: "
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/treewalkers/lxmletree.py:137
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/treewalkers/lxmletree.py:187
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/treewalkers/lxmletree.py:203
-#, python-format
-msgid "Text nodes are text or tail, found %s"
-msgstr ""
-
-#: env/lib/python2.7/site-packages/pip/_vendor/html5lib/treewalkers/lxmletree.py:176
-msgid "Text nodes have no children"
-msgstr ""
-
-#: env/src/dash/dash/categories/models.py:12
-msgid "The name of this category"
-msgstr ""
-
-#: env/src/dash/dash/categories/models.py:15
-msgid "An optional image that can describe this category"
-msgstr ""
-
-#: env/src/dash/dash/categories/models.py:18
-msgid "The organization this category applies to"
-msgstr ""
-
-#: env/src/dash/dash/categories/models.py:31
-msgid "Categories"
-msgstr ""
-
-#: env/src/dash/dash/categories/models.py:35
-#: env/src/dash/dash/stories/models.py:87
-msgid "The name to describe this image"
-msgstr ""
-
-#: env/src/dash/dash/categories/models.py:38
-msgid "The category this image represents"
-msgstr ""
-
-#: env/src/dash/dash/categories/models.py:41
-#: env/src/dash/dash/stories/models.py:93
-msgid "The image file to use"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:13
-msgid "The human readable name for this content type"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:15
-msgid "The slug to idenfity this content type, used with the template tags"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:17
-msgid ""
-"A description of where this content type is used on the site and how it will "
-"be dsiplayed"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:20
-msgid "Whether this content should include a title"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:22
-msgid "Whether this content should include an image"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:24
-msgid "Whether this content should use a rich HTML editor"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:26
-msgid "Whether this content should include a summary field"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:28
-msgid "Whether this content should include a link"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:30
-msgid ""
-"Whether this content should allow upload of additional images, ie a gallery"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:32
-msgid "Whether this content has a color field"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:34
-msgid "Whether this content should allow setting a YouTube id"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:36
-msgid "Whether this content should allow tags"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:47
-msgid "Content Type"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:48
-msgid "The category, or type for this content block"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:51
-msgid "The title for this block of content, optional"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:53
-msgid "The summary for this item, should be short"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:55
-msgid "The body of text for this content block, optional"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:57
-msgid "Any image that should be displayed with this content block, optional"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:59
-msgid "A background color to use for the image, in the format: #rrggbb"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:61
-msgid "Any link that should be associated with this content block, optional"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:63
-msgid "The id of the YouTube video that should be linked to this item"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:65
-msgid ""
-"Any tags for this content block, separated by spaces, can be used to do more "
-"advanced filtering, optional"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:67
-msgid "The priority for this block, higher priority blocks come first"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/models.py:70
-msgid "The organization this content block belongs to"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/views.py:12
-msgid "Content Types"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/views.py:111
-msgid "Content Blocks"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/views.py:113
-#, python-format
-msgid "%s Blocks"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/views.py:147
-#: env/src/smartmin/smartmin/views.py:1093
-#, python-format
-msgid "Edit %s"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/views.py:166
-#: env/src/smartmin/smartmin/views.py:1282
-#, python-format
-msgid "Create %s"
-msgstr ""
-
-#: env/src/dash/dash/dashblocks/views.py:168
-msgid "Create Content Block"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:26
-msgid "The logo that should be used for this organization"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:28 env/src/dash/dash/orgs/views.py:321
-msgid "Administrators"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:29
-msgid "The administrators in your organization"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:31
-msgid "Viewers"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:32
-msgid "The viewers in your organization"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:34 env/src/dash/dash/orgs/views.py:321
-msgid "Editors"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:35
-msgid "The editors in your organization"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:37
-msgid "Language"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:38
-msgid "The main language used by this organization"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:40
-msgid "Subdomain"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:40
-msgid "This subdomain is not available"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:41
-msgid "The subdomain for this UReport instance"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:43
-msgid "Timezone"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:46
-msgid "The API token for the RapidPro account this dashboard is tied to"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:49
-msgid ""
-"JSON blob used to store configuration information associated with this "
-"organization"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:272
-msgid "Editor"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:273
-msgid "Viewer"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:277 env/src/dash/dash/orgs/models.py:332
-msgid "Org"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:278
-msgid "The organization to which the account is invited to view"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:280
-msgid "The email to which we send the invitation of the viewer"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:282
-msgid "Secret"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:283
-msgid "a unique code associated with this invitation"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:285
-msgid "User Role"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:316
-#, python-format
-msgid "%s Invitation"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:328
-msgid "Banner"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:329
-msgid "Pattern"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:333
-msgid "The organization in which the image will be used"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:337
-msgid "The name to describe this background"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:339
-msgid "Background type"
-msgstr ""
-
-#: env/src/dash/dash/orgs/models.py:341
-msgid "The image file"
-msgstr ""
-
-#: env/src/dash/dash/orgs/templates/orgs/email/invitation_email.html:9
-#, python-format
-msgid ""
-"\n"
-"      You've been invited to join %(org_name)s.\n"
-"      <br/>\n"
-"      To accept the invitation, <a href='%(host)s%(join_url)s'>click here</"
-"a>.\n"
-"  "
-msgstr ""
-
-#: env/src/dash/dash/orgs/templates/orgs/email/invitation_email.txt:3
-msgid "You are invited to join {{org.name}}."
-msgstr ""
-
-#: env/src/dash/dash/orgs/templates/orgs/email/invitation_email.txt:5
-msgid "Click this link to join"
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:110
-msgid "Your first name"
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:111
-msgid "Your last name"
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:112
-msgid "Your email address"
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:114
-msgid "Your password, at least eight letters please"
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:118
-msgid "The subdomain of this organization"
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:128
-msgid "That email address is already used"
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:136
-msgid "Passwords must contain at least 8 letters."
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:196
-msgid "Select your Organization"
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:206
-msgid ""
-"Your account is not associated to an organization. Please Contact the "
-"adminstrator."
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:245 env/src/dash/dash/orgs/views.py:255
-msgid "Your Organization"
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:252
-msgid "Not Set"
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:320
-msgid "Invite people to your organization"
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:322
-msgid "User group"
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:332
-msgid "One of the emails you entered is invalid."
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:345
-#, python-format
-msgid "Manage %(name)s Accounts"
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:462 env/src/smartmin/smartmin/views.py:1257
-msgid "Create"
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:470
-msgid ""
-"Your invitation link is invalid. Please contact your organization "
-"administrator."
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:525 env/src/dash/dash/orgs/views.py:568
-#, python-format
-msgid "Join %(name)s"
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:547
-msgid "Join"
-msgstr ""
-
-#: env/src/dash/dash/orgs/views.py:555
-msgid ""
-"Your invitation link has expired. Please contact your organization "
-"administrator."
-msgstr ""
-
-#: env/src/dash/dash/stories/models.py:10
-msgid "The title for this story"
-msgstr ""
-
-#: env/src/dash/dash/stories/models.py:13
-msgid "Whether this story is featured"
-msgstr ""
-
-#: env/src/dash/dash/stories/models.py:14
-msgid "The summary for the story"
-msgstr ""
-
-#: env/src/dash/dash/stories/models.py:16
-msgid "The body of text for the story"
-msgstr ""
-
-#: env/src/dash/dash/stories/models.py:19
-msgid ""
-"The id of the YouTube video that should be linked to this story (this is the "
-"text that comes afer v= and before & in the YouTube URL)"
-msgstr ""
-
-#: env/src/dash/dash/stories/models.py:22
-msgid ""
-"Any tags for this story, separated by spaces, can be used to do more "
-"advanced filtering, optional"
-msgstr ""
-
-#: env/src/dash/dash/stories/models.py:25
-msgid "The category for this story"
-msgstr ""
-
-#: env/src/dash/dash/stories/models.py:27
-msgid "The organization this story belongs to"
-msgstr ""
-
-#: env/src/dash/dash/stories/models.py:83
-msgid "Stories"
-msgstr ""
-
-#: env/src/dash/dash/stories/models.py:90
-msgid "The story to associate to"
-msgstr ""
-
-#: env/src/dash/dash/stories/views.py:67
-msgid "Story Images"
-msgstr ""
-
-#: env/src/dash/dash/stories/views.py:78 env/src/dash/dash/stories/views.py:85
-#, python-format
-msgid "Image %d"
-msgstr ""
-
-#: env/src/dash/dash/stories/views.py:79
-msgid "Image to display on story page and in previews. (optional)"
-msgstr ""
-
-#: env/src/dash/dash/stories/views.py:86
-msgid "Image to display on story page and in previews (optional)"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:309
-msgid "The shortcode that users will use to contact U-report locally"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:310
-msgid "The short text used to direct visitors to join U-report"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:311
-msgid "The color used to draw the text on the join bar"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:312
-msgid "The color used to draw the background on the join bar"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:313
-msgid "The primary color for styling for this organization"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:314
-msgid "The secondary color for styling for this organization"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:315
-msgid "The background color for the site"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:316
-msgid "Up to 6 colors for styling charts, use comma between colors"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:317
-msgid "The Google Analytics Tracking ID for this organization"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:318
-msgid "The URL to the Youtube channel for this organization"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:319
-msgid "The URL to the Facebook page for this organization"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:320
-msgid "The Twitter handle for this organization"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:321
-msgid "The Twitter widget used for following new users"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:322
-msgid "The Twitter widget used for searching"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:323
-msgid "The name of txbhe Contact Group that contains registered reporters"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:324
-msgid ""
-"The label of the Contact Field that contains the birth date of reporters"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:325
-msgid "The label of the Contact Field that contains the gender of reporters"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:326
-msgid ""
-"The label of the Contact Field that contains the occupation of reporters"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:327
-msgid ""
-"The label of the Contact Field that contains the registration date of "
-"reporters"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:328
-msgid "The label of the Contact Field that contains the State of reporters"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:329
-msgid "The label of the Contact Field that contains the District of reporters"
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:330
-msgid "The label assigned to U-reporters that are Male."
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:331
-msgid "The label assigned to U-reporters that are Female."
-msgstr ""
-
-#: env/src/dash/dash_test_runner/settings.py:332
-msgid "If there are jobs to be shown on the public site"
-msgstr ""
-
-#: env/src/django-guardian/docs/theme/rtd_theme/layout.html:62
-#: env/src/django-guardian/docs/theme/rtd_theme/layout_old.html:131
-msgid "About these documents"
-msgstr ""
-
-#: env/src/django-guardian/docs/theme/rtd_theme/layout.html:66
-#: env/src/django-guardian/docs/theme/rtd_theme/layout_old.html:134
-msgid "Index"
-msgstr ""
-
-#: env/src/django-guardian/docs/theme/rtd_theme/layout.html:70
-#: env/src/django-guardian/docs/theme/rtd_theme/layout_old.html:137
-#: env/src/django-guardian/docs/theme/rtd_theme/search.html:11
-#: env/src/smartmin/smartmin/templates/smartmin/list.html:14
+#: templates/cases/inbox_cases.haml:22 templates/cases/inbox_messages.haml:38
+#: templates/cases/inbox_messages.haml:64
+#: templates/cases/inbox_outgoing.haml:37
 msgid "Search"
 msgstr ""
 
-#: env/src/django-guardian/docs/theme/rtd_theme/layout.html:73
-#: env/src/django-guardian/docs/theme/rtd_theme/layout_old.html:140
-msgid "Copyright"
+#: templates/cases/inbox_cases.haml:62
+msgid "No cases"
 msgstr ""
 
-#: env/src/django-guardian/docs/theme/rtd_theme/layout_old.html:29
-msgid "Navigation"
+#: templates/cases/inbox_cases.haml:65 templates/cases/inbox_messages.haml:262
+#: templates/cases/inbox_outgoing.haml:76
+msgid "Search returned more items than can be displayed"
 msgstr ""
 
-#: env/src/django-guardian/docs/theme/rtd_theme/search.html:33
-msgid "Search Results"
+#: templates/cases/inbox_messages.haml:19
+msgid "View Contact"
 msgstr ""
 
-#: env/src/django-guardian/docs/theme/rtd_theme/search.html:35
-msgid ""
-"Your search did not match any documents. Please make sure that all words are "
-"spelled correctly and that you've selected enough categories."
+#: templates/cases/inbox_messages.haml:23
+#: templates/cases/inbox_outgoing.haml:25
+msgid "Back"
 msgstr ""
 
-#: env/src/smartmin/smartmin/templates/smartmin/delete_confirm.html:11
-msgid "Remove Item?"
+#: templates/cases/inbox_messages.haml:41
+msgid "Advanced..."
 msgstr ""
 
-#: env/src/smartmin/smartmin/templates/smartmin/delete_confirm.html:13
-#, python-format
-msgid ""
-"\n"
-"    Are you sure you want to remove <b>%(object)s</b>?\n"
-"    "
+#: templates/cases/inbox_messages.haml:53
+msgid "include archived"
 msgstr ""
 
-#: env/src/smartmin/smartmin/templates/smartmin/delete_confirm.html:17
-msgid ""
-"Once it is removed, it will be gone forever. There is no way to undo this "
-"operation."
+#: templates/cases/inbox_messages.haml:67
+msgid "Clear"
 msgstr ""
 
-#: env/src/smartmin/smartmin/templates/smartmin/delete_confirm.html:24
-#: env/src/smartmin/smartmin/templates/smartmin/form.html:50
-#: env/src/smartmin/smartmin/templates/smartmin/update.html:8
-msgid "Cancel"
+#: templates/cases/inbox_messages.haml:75
+msgid "Containing"
 msgstr ""
 
-#: env/src/smartmin/smartmin/templates/smartmin/delete_confirm.html:26
-#: env/src/smartmin/smartmin/templates/smartmin/update.html:10
-msgid "Remove"
+#: templates/cases/inbox_messages.haml:84
+msgid "When"
 msgstr ""
 
-#: env/src/smartmin/smartmin/templates/smartmin/list.html:25
+#: templates/cases/inbox_messages.haml:97 templates/cases/partner_read.haml:131
+#: templates/partials/modal_daterange.haml:31
+msgid "Until"
+msgstr ""
+
+#: templates/cases/inbox_messages.haml:127
+msgid "Include archived"
+msgstr ""
+
+#: templates/cases/inbox_messages.haml:143
+msgid "Select"
+msgstr ""
+
+#: templates/cases/inbox_messages.haml:149
+msgid "All"
+msgstr ""
+
+#: templates/cases/inbox_messages.haml:154
+#: templates/cases/partner_read.haml:206 templates/cases/partner_read.haml:276
+#: templates/contacts/contact_read.haml:128
+#: templates/orgs_ext/org_home.haml:152 templates/orgs_ext/org_home.haml:211
+#: templates/orgs_ext/org_home.haml:295
+msgid "None"
+msgstr ""
+
+#: templates/cases/inbox_messages.haml:183
+#: templates/cases/inbox_messages.haml:242
+#: templates/partials/modal_reply.haml:5
+msgid "Reply"
+msgstr ""
+
+#: templates/cases/inbox_messages.haml:259
+#: templates/cases/inbox_outgoing.haml:73
+msgid "No messages"
+msgstr ""
+
+#: templates/cases/partner_list.haml:15 templates/msgs/faq_list.haml:16
+#: templates/profiles/user_list.haml:10
 msgid "Add"
 msgstr ""
 
-#: env/src/smartmin/smartmin/templates/smartmin/list.html:79
-#, python-format
-msgid ""
-"\n"
-"\t %(counter)s result\n"
-"\t"
+#: templates/cases/partner_list.haml:20 templates/frame.haml:162
+#: templates/orgs_ext/org_home.haml:70
+msgid "Partners"
+msgstr ""
+
+#: templates/cases/partner_read.haml:47
+msgid "No primary contact"
+msgstr ""
+
+#: templates/cases/partner_read.haml:66
+msgid "No labels"
+msgstr ""
+
+#: templates/cases/partner_read.haml:104
+msgid "Replies"
+msgstr ""
+
+#: templates/cases/partner_read.haml:112
+msgid "Export..."
+msgstr ""
+
+#: templates/cases/partner_read.haml:120
+#: templates/partials/modal_daterange.haml:15
+msgid "From"
+msgstr ""
+
+#: templates/cases/partner_read.haml:148
+msgid "On"
+msgstr ""
+
+#: templates/cases/partner_read.haml:151
+msgid "User"
+msgstr ""
+
+#: templates/cases/partner_read.haml:154
+#: templates/partials/modal_compose.haml:46
+msgid "Message"
+msgstr ""
+
+#: templates/cases/partner_read.haml:157
+msgid "Delay"
+msgstr ""
+
+#: templates/cases/partner_read.haml:160
+msgid "Reply to"
+msgstr ""
+
+#: templates/cases/partner_read.haml:209
+msgid "More items than can be displayed"
+msgstr ""
+
+#: templates/cases/partner_read.haml:218 templates/orgs_ext/org_home.haml:218
+msgid "Users"
+msgstr ""
+
+#: templates/cases/partner_read.haml:224
+msgid "New..."
+msgstr ""
+
+#: templates/cases/partner_read.haml:243
+msgid "Replies (this month)"
+msgstr ""
+
+#: templates/cases/partner_read.haml:246
+msgid "Replies (last month)"
+msgstr ""
+
+#: templates/cases/partner_read.haml:249
+msgid "Replies (total)"
+msgstr ""
+
+#: templates/comments/form.html:6
+msgid "Please correct the error below"
 msgid_plural ""
-"\n"
-"         %(counter)s results\n"
-"        "
+"Please correct the\n"
+"        errors below"
 msgstr[0] ""
 msgstr[1] ""
 
-#: env/src/smartmin/smartmin/templates/smartmin/list.html:85
-#, python-format
+#: templates/contacts/contact_read.haml:19
+msgid "View External"
+msgstr ""
+
+#: templates/contacts/contact_read.haml:80
+msgid "Details"
+msgstr ""
+
+#: templates/contacts/group_list.haml:7
 msgid ""
 "\n"
-"\tResults %(start)s-%(end)s of %(count)s\n"
-"\t"
+"        These are the groups visible to partner organizations.\n"
+"\n"
+"      "
 msgstr ""
 
-#: env/src/smartmin/smartmin/templates/smartmin/list.html:95
-#: env/src/smartmin/smartmin/templates/smartmin/list.html:97
-msgid "Previous"
+#: templates/contacts/group_list.haml:16
+msgid "Select Groups"
 msgstr ""
 
-#: env/src/smartmin/smartmin/templates/smartmin/list.html:128
-#: env/src/smartmin/smartmin/templates/smartmin/list.html:130
-msgid "Next"
+#: templates/download.haml:15
+msgid ""
+"\n"
+"        Your download should start automatically. If it doesn't start in a "
+"few seconds, use the button below to download.\n"
+"      "
 msgstr ""
 
-#: env/src/smartmin/smartmin/templates/smartmin/read.html:13
-msgid "edit"
+#: templates/download.haml:21
+msgid "Download Now"
 msgstr ""
 
-#: env/src/smartmin/smartmin/templates/smartmin/users/login.html:10
-msgid "Sign in"
+#: templates/frame.haml:10 templates/frame.haml:78
+msgid "CasePro"
 msgstr ""
 
-#: env/src/smartmin/smartmin/templates/smartmin/users/login.html:33
+#: templates/frame.haml:61
+msgid "Toggle navigation"
+msgstr ""
+
+#: templates/frame.haml:90
+msgid "Site Manage"
+msgstr ""
+
+#: templates/frame.haml:96
+msgid "Orgs"
+msgstr ""
+
+#: templates/frame.haml:101
+msgid "Tasks"
+msgstr ""
+
+#: templates/frame.haml:112
+msgid "Administration"
+msgstr ""
+
+#: templates/frame.haml:119 templates/msgs/faq_list.haml:26
+msgid "FAQs"
+msgstr ""
+
+#: templates/frame.haml:170
+msgid "Message Board"
+msgstr ""
+
+#: templates/frame.haml:190
+msgid "Profile"
+msgstr ""
+
+#: templates/frame.haml:197
+msgid "Logout"
+msgstr ""
+
+#: templates/frame.haml:207 templates/smartmin/users/login.haml:13
+#: templates/smartmin/users/login.haml:51
 msgid "Login"
 msgstr ""
 
-#: env/src/smartmin/smartmin/templates/smartmin/users/login.html:35
-msgid "Forgot Password?"
+#: templates/msgs/faq_list.haml:20
+msgid "Import"
 msgstr ""
 
-#: env/src/smartmin/smartmin/templates/smartmin/users/user_expired.html:7
-msgid "Token Expired"
+#: templates/msgs/faq_list.haml:43
+msgid "Translations"
 msgstr ""
 
-#: env/src/smartmin/smartmin/templates/smartmin/users/user_failed.html:9
-msgid "Login Failure"
+#: templates/msgs/faq_read.haml:75
+msgid "Add Translation"
 msgstr ""
 
-#: env/src/smartmin/smartmin/templates/smartmin/users/user_failed.html:11
-#, python-format
+#: templates/msgs/faq_read.haml:125
+msgid "No translations available"
+msgstr ""
+
+#: templates/org_chooser.haml:5
 msgid ""
 "\n"
-"      Sorry, you cannot log in at this time because we received "
-"%(failed_login_limit)s incorrect login attempts.\n"
-"      "
-msgstr ""
-
-#: env/src/smartmin/smartmin/templates/smartmin/users/user_failed.html:18
-#, python-format
-msgid ""
-"\n"
-"      Please wait %(lockout_timeout)s minutes before to try log in again.\n"
-"      "
-msgstr ""
-
-#: env/src/smartmin/smartmin/templates/smartmin/users/user_failed.html:25
-msgid ""
-"Alternatively, you can fill out the form below to have your password reset "
-"via e-mail."
-msgstr ""
-
-#: env/src/smartmin/smartmin/templates/smartmin/users/user_failed.html:27
-msgid "Please contact the website administrator to have your password reset."
-msgstr ""
-
-#: env/src/smartmin/smartmin/templates/smartmin/users/user_failed.html:39
-msgid "Email Address"
-msgstr ""
-
-#: env/src/smartmin/smartmin/templates/smartmin/users/user_failed.html:41
-msgid "Recover"
-msgstr ""
-
-#: env/src/smartmin/smartmin/templates/smartmin/users/user_forget.html:6
-msgid ""
-"Please enter the email address you used to sign up and we will help you "
-"recover your password."
-msgstr ""
-
-#: env/src/smartmin/smartmin/templates/smartmin/users/user_newpassword.html:7
-#, python-format
-msgid ""
-"\n"
-"  <strong>Your password has expired.</strong> Site policy states that you "
-"must pick a new password every %(expire_days)s days, and that passwords must "
-"not have been used within the previous %(window_days)s days.\n"
+"    No site selected, please contact your administrator to find valid "
+"organization sites.\n"
 "  "
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:28
-#: env/src/smartmin/smartmin/users/views.py:64
-#: env/src/smartmin/smartmin/users/views.py:79
-#: env/src/smartmin/smartmin/users/views.py:124
-#: env/src/smartmin/smartmin/users/views.py:221
-#: env/src/smartmin/smartmin/users/views.py:248
-msgid "New Password"
+#: templates/orgs_ext/org_home.haml:23
+msgid "My Organization"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:36
-#: env/src/smartmin/smartmin/users/views.py:70
-#: env/src/smartmin/smartmin/users/views.py:102
-#: env/src/smartmin/smartmin/users/views.py:148
-msgid ""
-"Passwords must have at least 8 characters, including one uppercase, one "
-"lowercase and one number"
+#: templates/orgs_ext/org_home.haml:77 templates/orgs_ext/org_home.haml:166
+#: templates/orgs_ext/org_home.haml:225
+msgid "New"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:73
-#: env/src/smartmin/smartmin/users/views.py:105
-#: env/src/smartmin/smartmin/users/views.py:151
-msgid ""
-"You have used this password before in the past year, please use a new "
-"password."
+#: templates/orgs_ext/org_home.haml:80 templates/orgs_ext/org_home.haml:169
+msgid "Export Stats..."
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:80
-msgid "Confirm Password"
+#: templates/orgs_ext/org_home.haml:97 templates/orgs_ext/org_home.haml:247
+msgid "Replies this month"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:86
-msgid "Please enter your password to save changes."
+#: templates/orgs_ext/org_home.haml:100 templates/orgs_ext/org_home.haml:250
+msgid "Replies last month"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:95
-msgid "Confirm the new password by filling the this field"
+#: templates/orgs_ext/org_home.haml:103 templates/orgs_ext/org_home.haml:253
+msgid "Total replies"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:98
-msgid "New password doesn't match with its confirmation"
+#: templates/orgs_ext/org_home.haml:106 templates/orgs_ext/org_home.haml:256
+msgid "Cases opened this month"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:110
-msgid "Your Email"
+#: templates/orgs_ext/org_home.haml:109 templates/orgs_ext/org_home.haml:259
+msgid "Cases closed this month"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:117
-msgid ""
-"E-mail recovery is not supported, please contact the website administrator "
-"to reset your password manually."
+#: templates/orgs_ext/org_home.haml:112 templates/orgs_ext/org_home.haml:262
+msgid "Total cases opened"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:122
-msgid "Current Password"
+#: templates/orgs_ext/org_home.haml:115
+msgid "Average referral response time this month"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:123
-msgid "Your current password"
+#: templates/orgs_ext/org_home.haml:118
+msgid "Average time to close this month"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:125
-msgid "Your new password."
+#: templates/orgs_ext/org_home.haml:186
+msgid "Messages this month"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:126
-msgid "Confirm new Password"
+#: templates/orgs_ext/org_home.haml:189
+msgid "Messages last month"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:127
-msgid "Confirm your new password."
+#: templates/orgs_ext/org_home.haml:192
+msgid "Total messages"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:132
-msgid "Please enter your password to save changes"
+#: templates/orgs_ext/org_home.haml:228
+msgid "Export Users..."
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:141
-msgid "Confirm your new password by entering it here"
+#: templates/orgs_ext/org_home.haml:237
+msgid "include partner users"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:144
-msgid "Mismatch between your new password and confirmation, try again"
+#: templates/partials/modal_assign.haml:13
+#: templates/partials/modal_newcase.haml:27
+msgid "Assign to Partner"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:195
-msgid "New user created successfully."
+#: templates/partials/modal_assign.haml:19
+#: templates/partials/modal_newcase.haml:33
+msgid "Specific User (Optional)"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:198
-msgid "Users will only get those permissions that are allowed for their group."
+#: templates/partials/modal_assign.haml:29
+#: templates/partials/modal_compose.haml:63
+#: templates/partials/modal_confirm.haml:17
+#: templates/partials/modal_daterange.haml:53
+#: templates/partials/modal_edit.haml:25 templates/partials/modal_faq.haml:85
+#: templates/partials/modal_label.haml:26
+#: templates/partials/modal_newcase.haml:44
+#: templates/partials/modal_note.haml:31 templates/partials/modal_reply.haml:90
+msgid "Cancel"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:199
-msgid "Set the user's initial password here."
+#: templates/partials/modal_compose.haml:11
+msgid "Recipient"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:218
-msgid "Last Login"
+#: templates/partials/modal_compose.haml:22
+msgid "Phone"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:219
-msgid "Is Active"
+#: templates/partials/modal_compose.haml:27
+msgid "Twitter"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:219
-msgid "Whether this user is allowed to log into the site"
+#: templates/partials/modal_compose.haml:40
+#: templates/partials/modal_compose.haml:50
+#: templates/partials/modal_daterange.haml:26
+#: templates/partials/modal_daterange.haml:42
+#: templates/partials/modal_edit.haml:12 templates/partials/modal_faq.haml:34
+#: templates/partials/modal_faq.haml:46 templates/partials/modal_faq.haml:58
+#: templates/partials/modal_newcase.haml:19
+#: templates/partials/modal_note.haml:18 templates/partials/modal_reply.haml:74
+msgid "Required"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:220
-msgid "Users will only get those permissions that are allowed for their group"
+#: templates/partials/modal_compose.haml:53
+#: templates/partials/modal_edit.haml:15
+#: templates/partials/modal_newcase.haml:22
+#: templates/partials/modal_note.haml:21 templates/partials/modal_reply.haml:77
+msgid "Too long"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:221
-msgid "You can reset the user's password by entering a new password here"
+#: templates/partials/modal_confirm.haml:14
+#: templates/partials/modal_daterange.haml:50
+#: templates/partials/modal_label.haml:23 templates/partials/modal_note.haml:28
+msgid "OK"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:246
-msgid "Username"
+#: templates/partials/modal_edit.haml:22
+msgid "Save"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:247
-msgid "Your password"
+#: templates/partials/modal_faq.haml:11
+msgid "Original FAQ"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:248
-msgid "If you want to set a new password, enter it here"
+#: templates/partials/modal_faq.haml:71
+msgid "Valid language required"
 msgstr ""
 
-#: env/src/smartmin/smartmin/users/views.py:249
-msgid "Confirm New Password"
-msgstr ""
-
-#: env/src/smartmin/smartmin/users/views.py:249
-msgid "Confirm your new password"
-msgstr ""
-
-#: env/src/smartmin/smartmin/users/views.py:264
-msgid "Edit your profile"
-msgstr ""
-
-#: env/src/smartmin/smartmin/users/views.py:267
-#: env/src/smartmin/smartmin/users/views.py:296
-msgid "Password Recovery"
-msgstr ""
-
-#: env/src/smartmin/smartmin/users/views.py:271
-msgid "An Email has been sent to your account with further instructions."
-msgstr ""
-
-#: env/src/smartmin/smartmin/users/views.py:300
-msgid "Password Recovery Request"
-msgstr ""
-
-#: env/src/smartmin/smartmin/users/views.py:309
-msgid "Pick a new password"
-msgstr ""
-
-#: env/src/smartmin/smartmin/users/views.py:311
-msgid "Your password has successfully been updated, thank you."
-msgstr ""
-
-#: env/src/smartmin/smartmin/users/views.py:337
-#, python-format
-msgid "You are now logged in as %s"
-msgstr ""
-
-#: env/src/smartmin/smartmin/users/views.py:350
-msgid ""
-"Password Updated Successfully. Now you can log in using your new password."
-msgstr ""
-
-#: env/src/smartmin/smartmin/users/views.py:353
-msgid "Reset your Password"
-msgstr ""
-
-#: env/src/smartmin/smartmin/users/views.py:364
-msgid ""
-"Your link has expired for security reasons. Please reinitiate the process by "
-"entering your email here."
-msgstr ""
-
-#: env/src/smartmin/smartmin/views.py:834
+#: templates/partials/modal_faq.haml:82
 msgid "Submit"
 msgstr ""
 
-#: env/src/smartmin/smartmin/views.py:841
-msgid "Form"
+#: templates/partials/modal_messagehistory.haml:5
+msgid "Message History"
 msgstr ""
 
-#: env/src/smartmin/smartmin/views.py:1162
-msgid "Save Changes"
+#: templates/partials/modal_messagehistory.haml:45
+msgid "No events"
 msgstr ""
 
-#: env/src/smartmin/smartmin/views.py:1273
-#, python-format
-msgid "Your new %s has been created."
-msgstr ""
-
-#: env/src/smartmin/smartmin/views.py:1292
-#, python-format
-msgid "Import %s"
-msgstr ""
-
-#: templates/cases/email/message_export.html:4
-msgid "Hi there!"
-msgstr ""
-
-#: templates/cases/email/message_export.html:6
+#: templates/partials/modal_newcase.haml:9
 msgid ""
-"Your message export is ready and can be downloaded by clicking on the "
-"following link:"
+"Open a new case for this contact? This will archive all messages from the "
+"contact."
 msgstr ""
 
-#: templates/cases/email/message_export.html:11
-msgid "Thanks,"
+#: templates/partials/modal_note.haml:14
+msgid "Note"
 msgstr ""
 
-#: templates/cases/email/message_export.html:13
-msgid "The U-Report Partners Team"
+#: templates/partials/modal_reply.haml:11
+msgid ""
+"Send the following reply to the selected message(s). This will remove the "
+"message(s) from your inbox to Archived."
 msgstr ""
 
-#: templates/cases/email/message_export.txt:4
+#: templates/partials/modal_reply.haml:14
+msgid ""
+"Send the following reply. This will archive this message removing it from "
+"your Inbox."
+msgstr ""
+
+#: templates/partials/modal_reply.haml:18
+msgid "Please select one of the following pre-approved replies."
+msgstr ""
+
+#: templates/partials/modal_reply.haml:21
+msgid "There are no pre-approved replies. Please contact your administrator."
+msgstr ""
+
+#: templates/partials/modal_reply.haml:24
+msgid ""
+"You may select one of the following pre-approved replies or enter a custom "
+"message below."
+msgstr ""
+
+#: templates/partials/modal_reply.haml:87
+msgid "Send & Archive"
+msgstr ""
+
+#: templates/profiles/email/case_assignment.html:2
+#: templates/profiles/email/case_assignment.txt:2
+#, python-format
+msgid "User %(user)s assigned this case to your organization."
+msgstr ""
+
+#: templates/profiles/email/case_assignment.html:5
+#, python-format
+msgid "Click <a href=\"%(case_url)s\">here</a> to view the case."
+msgstr ""
+
+#: templates/profiles/email/case_assignment.txt:4
+#, python-format
+msgid "Go to %(case_url)s to view the case."
+msgstr ""
+
+#: templates/profiles/email/case_closed.html:2
+#: templates/profiles/email/case_closed.txt:2
+#, python-format
+msgid "User %(user)s closed the case with the following note:"
+msgstr ""
+
+#: templates/profiles/email/case_new_note.html:2
+#: templates/profiles/email/case_new_note.txt:2
+#, python-format
+msgid "User %(user)s added a new note:"
+msgstr ""
+
+#: templates/profiles/email/case_reassigned.html:2
+#: templates/profiles/email/case_reassigned.txt:2
+#, python-format
+msgid "User %(user)s reassigned the case to %(assignee)s."
+msgstr ""
+
+#: templates/profiles/email/case_reopened.html:2
+#: templates/profiles/email/case_reopened.txt:2
+#, python-format
+msgid "User %(user)s reopened the case with the following note:"
+msgstr ""
+
+#: templates/profiles/email/common/case_notification_footer.html:2
+#, python-format
+msgid ""
+"Click <a href=\"%(case_url)s\">here</a> to view the case. You are receiving\n"
+"this email because you are watching this case. You can unwatch from the case "
+"page."
+msgstr ""
+
+#: templates/profiles/email/common/case_notification_footer.txt:1
+#, python-format
+msgid ""
+"Go to %(case_url)s to view the case. You are receiving this email because\n"
+"you are watching this case. You can unwatch from the case page."
+msgstr ""
+
+#: templates/profiles/email/message_labelling.html:5
 #, python-format
 msgid ""
 "\n"
-"Hi there!\n"
+"Go to <a href=\"%(inbox_url)s\">here</a> to view the message. You are "
+"receiving this email because you are watching\n"
+"those labels. You can unwatch from the label pages.\n"
+msgstr ""
+
+#: templates/profiles/email/message_labelling.txt:4
+#, python-format
+msgid ""
+"Go to %(inbox_url)s to view the message. You are receiving this email "
+"because you are watching those labels. You can\n"
+"unwatch from the label pages."
+msgstr ""
+
+#: templates/profiles/user_read.haml:32
+msgid "Become"
+msgstr ""
+
+#: templates/profiles/user_read.haml:54
+msgid "Analyst"
+msgstr ""
+
+#: templates/smartmin/users/login.haml:57
+msgid "Forgot Password?"
+msgstr ""
+
+#: templates/utils/email/export.html:2
+#, python-format
+msgid ""
 "\n"
-"Your message export is ready and can be downloaded by clicking on the "
-"following link:\n"
+"Your export is ready and can be downloaded by clicking <a href="
+"\"%(download_url)s\">here</a>.\n"
+msgstr ""
+
+#: templates/utils/email/export.txt:2
+#, python-format
+msgid ""
 "\n"
-"%(link)s\n"
-"\n"
-"Thanks,\n"
-"\n"
-"The U-Report Partners Team\n"
+"Your export is ready and can be downloaded by clicking %(download_url)s.\n"
 msgstr ""
