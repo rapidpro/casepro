@@ -25,6 +25,7 @@
 
     <!-- Place favicon.ico & apple-touch-icon.png in the root of your domain and delete these references -->
     %link{ rel:"icon", type:"image/x-icon", href:"{{ STATIC_URL }}img/favicon.png"}
+    <script src="{% url 'django.views.i18n.javascript_catalog' %}"></script>
 
     :css
     - compress css
