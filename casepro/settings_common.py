@@ -91,7 +91,7 @@ MODELTRANSLATION_TRANSLATION_REGISTRY = "translation"
 LANGUAGE_CODE = 'en'
 
 # Available languages for translation
-LANGUAGES = (('en', _("English")), ('fr', _("French")), ('pt', _("Portuguese")))
+LANGUAGES = (('en', _("English")), ('fr', _("French")), ('pt-br', _("Portuguese")))
 RTL_LANGUAGES = {}
 DEFAULT_LANGUAGE = "en"
 
@@ -169,6 +169,9 @@ INSTALLED_APPS = (
     'djcelery_email',
     'compressor',
     'sorl.thumbnail',
+
+    # Haml-like templates
+    'hamlpy',
 
     # smartmin
     'smartmin',
@@ -275,6 +278,8 @@ TEMPLATES = [
                 'casepro.msgs.context_processors.messages',
             ],
             'loaders': [
+                'hamlpy.template.loaders.HamlPyFilesystemLoader',
+                'hamlpy.template.loaders.HamlPyAppDirectoriesLoader',
                 'dash.utils.haml.HamlFilesystemLoader',
                 'dash.utils.haml.HamlAppDirectoriesLoader',
                 'django.template.loaders.filesystem.Loader',
