@@ -278,8 +278,6 @@ TEMPLATES = [
                 'casepro.msgs.context_processors.messages',
             ],
             'loaders': [
-                'hamlpy.template.loaders.HamlPyFilesystemLoader',
-                'hamlpy.template.loaders.HamlPyAppDirectoriesLoader',
                 'dash.utils.haml.HamlFilesystemLoader',
                 'dash.utils.haml.HamlAppDirectoriesLoader',
                 'django.template.loaders.filesystem.Loader',
