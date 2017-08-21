@@ -94,7 +94,7 @@ msgstr "Sumário"
 #: casepro/cases/models.py:488 templates/cases/inbox_base.haml:116
 #: templates/partials/modal_newcase.haml:41
 msgid "Open"
-msgstr "Abrir"
+msgstr "Abertos"
 
 #: casepro/cases/models.py:489 templates/cases/case_read.haml:43
 msgid "Add Note"
@@ -154,11 +154,11 @@ msgstr "Enviado"
 
 #: casepro/cases/views.py:564
 msgid "Open Cases"
-msgstr "Abrir Ticket"
+msgstr "Abrir Casos"
 
 #: casepro/cases/views.py:574
 msgid "Closed Cases"
-msgstr "Fechar Ticket"
+msgstr "Fechar Caso"
 
 #: casepro/contacts/models.py:160
 msgid "Whether this group is dynamic"
@@ -787,7 +787,7 @@ msgstr "Casos"
 
 #: templates/cases/inbox_base.haml:122
 msgid "Closed"
-msgstr "Fechado"
+msgstr "Fechados"
 
 #: templates/cases/inbox_cases.haml:12
 msgid "Assigned to"
