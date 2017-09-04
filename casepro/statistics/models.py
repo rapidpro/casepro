@@ -35,6 +35,8 @@ class BaseCount(models.Model):
     TYPE_CASE_OPENED = 'C'
     TYPE_CASE_CLOSED = 'D'
 
+    id = models.BigAutoField(auto_created=True, primary_key=True, verbose_name='ID')
+
     squash_sql = """
         WITH removed as (
             DELETE FROM %(table_name)s WHERE %(delete_cond)s RETURNING "count"
