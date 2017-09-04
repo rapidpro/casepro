@@ -1,3 +1,8 @@
+v0.0.254
+----------
+ * Use BigInt primary keys on squashable models
+ * Add portuguese as supported languages
+
 v0.0.253
 ----------
  * Don't try to restore contacts into their groups if they are now stopped or blocked
