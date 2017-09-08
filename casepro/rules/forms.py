@@ -29,10 +29,11 @@ class FieldTestField(forms.fields.MultiValueField):
             forms.ModelChoiceField(queryset=org_fields, required=False, to_field_name='key'),
             forms.CharField(max_length=64)
         )
+        widgets = (fields[0].widget, fields[1].widget)
 
         super(FieldTestField, self).__init__(fields, *args, **kwargs)
 
-        self.widget = FieldTestWidget([fields[0].widget, fields[1].widget])
+        self.widget = FieldTestWidget(widgets)
 
     def compress(self, values):
         field, values_csv = values if values else (None, "")

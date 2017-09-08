@@ -87,6 +87,12 @@ class LabelCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
 
+        # form should list our groups and fields
+        self.assertContains(response, "Reporters")
+        self.assertContains(response, "Registered")
+        self.assertContains(response, "age")
+        self.assertContains(response, "state")
+
         # submit with no data
         response = self.url_post('unicef', url, {})
         self.assertEqual(response.status_code, 200)
