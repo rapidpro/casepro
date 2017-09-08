@@ -1,3 +1,7 @@
+v0.0.255
+----------
+ * Fix fields not being listed on label edit form
+
 v0.0.254
 ----------
  * Use BigInt primary keys on squashable models
