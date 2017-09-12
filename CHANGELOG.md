@@ -1,3 +1,7 @@
+v0.0.256
+----------
+ * Increase max infinite scroll items to 2000
+
 v0.0.255
 ----------
  * Fix fields not being listed on label edit form
