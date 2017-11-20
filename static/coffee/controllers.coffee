@@ -115,7 +115,7 @@ controllers.controller('BaseTabsController', ['$scope', '$location', ($scope, $l
 # Base controller class for controllers which display fetched items with
 # infinite scrolling, e.g. lists of messages, cases etc
 #============================================================================
-controllers.controller('BaseItemsController', ['$scope', '$timeout', 'UtilsService', ($scope, $timeout, UtilsService) ->
+controllers.controller('BaseItemsController', ['$scope', '$timeout', '$filter', 'UtilsService', ($scope, $timeout, $filter, UtilsService) ->
 
   $scope.items = []
   $scope.oldItemsLoading = false
@@ -230,7 +230,7 @@ controllers.controller('BaseItemsController', ['$scope', '$timeout', 'UtilsServi
       $scope.lastPollTime = thisPollTime
       $scope.pollBusy = false
 
-      # quick access to index of items
+      # quick access to index of existing messages
       scopeItems = {}
       for item, i in $scope.items
         scopeItems[item.id] = i
@@ -241,8 +241,9 @@ controllers.controller('BaseItemsController', ['$scope', '$timeout', 'UtilsServi
           item.selected = $scope.items[scopeItems[item.id]].selected
           $scope.items[scopeItems[item.id]] = item
         else
-          # new item so we add it to the top
-          $scope.items.unshift(item)
+          $scope.items.push(item)
+
+      $scope.items = $filter('orderBy')($scope.items, 'time', true)
 
       # deactivate busy state after message lock interval
       for item in $scope.items

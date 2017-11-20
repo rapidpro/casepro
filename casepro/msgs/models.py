@@ -318,7 +318,7 @@ class Message(models.Model):
 
     created_on = models.DateTimeField()
 
-    modified_on = models.DateTimeField(null=True, help_text="When message was last modified")
+    modified_on = models.DateTimeField(null=True, help_text="When message was last modified", default=now)
 
     is_handled = models.BooleanField(default=False)
 
@@ -572,9 +572,6 @@ class Message(models.Model):
 
     def __str__(self):
         return self.text if self.text else self.pk
-
-    class Meta:
-        index_together = ('org', 'modified_on')
 
 
 class MessageAction(models.Model):

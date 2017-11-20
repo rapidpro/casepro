@@ -207,19 +207,18 @@ class MessageCRUDL(SmartCRUDL):
             org = self.request.org
             user = self.request.user
             page = int(self.request.GET.get('page', 1))
+            last_refresh = self.request.GET.get('last_refresh')
 
             search = self.derive_search()
 
-            # this is a refresh of messages
-            if self.request.GET.get('last_refresh', None):
-                new_messages = Message.search(org, user, search)
+            # this is a refresh of new and modified messages
+            if last_refresh:
+                search['last_refresh'] = last_refresh
 
-                search['last_refresh'] = self.request.GET['last_refresh']
+                messages = Message.search(org, user, search)
 
-                updated_messages = Message.search(org, user, search)
-
-                context['object_list'] = list(new_messages) + list(set(updated_messages) - set(new_messages))
-
+                # don't use paging for these messages
+                context['object_list'] = list(messages)
                 context['has_more'] = False
                 return context
 

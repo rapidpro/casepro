@@ -79,7 +79,7 @@ def handle_messages(org):
         rule_processor.apply_actions()
 
         # mark all of these messages as handled
-        Message.objects.filter(pk__in=[m.pk for m in unhandled]).update(is_handled=True)
+        Message.objects.filter(pk__in=[m.pk for m in unhandled]).update(is_handled=True, modified_on=timezone.now())
 
     return {'handled': len(unhandled), 'rules_matched': num_rules_matched, 'case_replies': len(case_replies)}
 
