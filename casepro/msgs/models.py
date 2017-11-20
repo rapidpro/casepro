@@ -322,6 +322,8 @@ class Message(models.Model):
 
     is_handled = models.BooleanField(default=False)
 
+    handled_on = models.DateTimeField(null=True)
+
     is_active = models.BooleanField(default=True)
 
     case = models.ForeignKey('cases.Case', null=True, related_name="incoming_messages")
