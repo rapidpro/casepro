@@ -17,13 +17,11 @@ from smartmin.views import (SmartListView, SmartCreateView, SmartUpdateView, Sma
                             SmartCSVImportView)
 from smartmin.csv_imports.models import ImportTask
 from temba_client.utils import parse_iso8601
-from django.utils import timezone
 
 from casepro.rules.mixins import RuleFormMixin
 from casepro.statistics.models import DailyCount
 from casepro.utils import parse_csv, str_to_bool, JSONEncoder, json_encode, month_range
 from casepro.utils.export import BaseDownloadView
-
 
 from .forms import LabelForm, FaqForm
 from .models import Label, FAQ, Message, MessageExport, MessageFolder, Outgoing, OutgoingFolder, ReplyExport
