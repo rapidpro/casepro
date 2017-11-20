@@ -431,11 +431,10 @@ class Message(models.Model):
         return self.actions.select_related('created_by', 'label').order_by('-pk')
 
     def get_lock(self, user):
-        if self.locked_on and self.locked_by_id:
-            if self.locked_on > (now() - timedelta(seconds=MESSAGE_LOCK_SECONDS)):
-                if self.locked_by_id != user.id:
-                    diff = (self.locked_on + timedelta(seconds=MESSAGE_LOCK_SECONDS)) - now()
-                    return diff.seconds
+        if self.locked_by_id and self.locked_on and self.locked_on > (now() - timedelta(seconds=MESSAGE_LOCK_SECONDS)):
+            if self.locked_by_id != user.id:
+                diff = (self.locked_on + timedelta(seconds=MESSAGE_LOCK_SECONDS)) - now()
+                return diff.seconds
 
         return False
 
@@ -481,6 +480,24 @@ class Message(models.Model):
                 self.bulk_label(self.org, user, [self], label)
             for label in rem_labels:
                 self.bulk_unlabel(self.org, user, [self], label)
+
+    def user_lock(self, user):
+        """
+        Marks this message as locked by a user
+        """
+        self.locked_on = now()
+        self.locked_by = user
+        self.modified_on = now()
+        self.save(update_fields=('locked_on', 'locked_by', 'modified_on'))
+
+    def user_unlock(self):
+        """
+        Marks this message as no longer locked by a user
+        """
+        self.locked_on = None
+        self.locked_by = None
+        self.modified_on = now()
+        self.save(update_fields=('locked_on', 'locked_by', 'modified_on'))
 
     @staticmethod
     def bulk_flag(org, user, messages):
