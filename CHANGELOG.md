@@ -1,3 +1,7 @@
+v0.0.257
+----------
+ * Fix fetching of modified and new messages
+
 v0.0.256
 ----------
  * Increase max infinite scroll items to 2000
