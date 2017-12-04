@@ -6,8 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 from casepro.contacts.models import Group
 from casepro.rules.forms import FieldTestField
 from casepro.rules.models import ContainsTest
-from casepro.utils import parse_csv, normalize
-from iso639 import is_valid639_2
+from casepro.utils import parse_csv, normalize, is_valid_language_code
 
 from .models import Label, FAQ
 
@@ -102,8 +101,8 @@ class FaqForm(forms.ModelForm):
 
     def clean_language(self):
         language = self.cleaned_data['language'].strip()
-        if not is_valid639_2(language):
-            raise forms.ValidationError(_("Language must be valid a ISO-639-2 code"))
+        if not is_valid_language_code(language):
+            raise forms.ValidationError(_("Language must be valid a ISO-639-3 code"))
         return language
 
     def clean_labels(self):

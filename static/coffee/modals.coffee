@@ -292,7 +292,7 @@ modals.controller('FaqModalController', ['$scope', 'FaqService', 'LabelService',
   $scope.formatInput = ($model) ->
     inputLabel = $scope.fields.language.val.name
     angular.forEach $scope.iso_list, (language) ->
-      if $model == language.iso639_2_b
+      if $model == language.code
         inputLabel = language.name
     inputLabel
 

@@ -404,7 +404,7 @@ class UserTest(BaseCasesTest):
         self.assertEqual(0, self.admin.partners_primary.filter(org=self.nyaruka).count())
 
     def test_str(self):
-        self.assertEqual(six.text_type(self.superuser), "root")
+        self.assertEqual(six.text_type(self.superuser), "testroot")
 
         self.assertEqual(six.text_type(self.user1), "Evan (evan@unicef.org)")
         self.user1.profile.full_name = None

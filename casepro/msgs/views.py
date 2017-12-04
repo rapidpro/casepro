@@ -663,12 +663,9 @@ class FaqCRUDL(SmartCRUDL):
             for lang in langs:
                 lang_list.append(FAQ.get_language_from_code(lang['language']))
             context['language_list'] = lang_list
-            iso_list = iso639._load_data()
-            # remove unwanted keys and only show name up to the first semicolon
-            for key in iso_list:
-                del key['iso639_2_t'], key['native'], key['iso639_1']
-                if 'name' in key.keys():
-                    key['name'] = key['name'].rsplit(';')[0]
+
+            iso_list = [{'name': l.name, 'code': l.part3} for l in iso639.languages]
+
             context['iso_list'] = iso_list
             return context
 
