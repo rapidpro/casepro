@@ -34,7 +34,7 @@ future==0.16.0            # via django-hamlpy
 gunicorn==19.7.1
 hypothesis==3.11.1
 idna==2.5                 # via requests
-iso639==0.1.4
+iso-639==0.4.5
 kombu==4.0.2              # via celery
 mccabe==0.6.1             # via flake8
 microsofttranslator==0.8  # via django-rosetta
@@ -51,7 +51,7 @@ pycountry==17.5.14
 pyflakes==1.5.0           # via flake8
 python-dateutil==2.6.0
 pytz==2017.2              # via celery, django, django-timezone-field, rapidpro-python, smartmin
-rapidpro-dash==1.2
+rapidpro-dash==1.2.2
 rapidpro-python==2.1.7
 raven==6.1.0
 rcssmin==1.0.6            # via django-compressor

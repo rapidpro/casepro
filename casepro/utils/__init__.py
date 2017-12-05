@@ -184,19 +184,32 @@ def uuid_to_int(uuid):
 
 def get_language_name(iso_code):
     """
-    Gets the language name for the given ISO639-2 code.
+    Gets the language name for the given ISO639-3 code.
     """
     if iso_code not in LANGUAGES_BY_CODE:
         try:
-            lang = iso639.to_name(iso_code)
-        except iso639.NonExistentLanguageError:
-            return None
+            lang = iso639.languages.get(part3=iso_code)
+        except KeyError:
+            lang = None
 
-        # we only show up to the first semi or paren
-        lang = re.split(';|\(', lang)[0].strip()
+        if lang:
+            # we only show up to the first semi or paren
+            lang = re.split(';|\(', lang.name)[0].strip()
+
         LANGUAGES_BY_CODE[iso_code] = lang
 
     return LANGUAGES_BY_CODE[iso_code]
+
+
+def is_valid_language_code(code):
+    """
+    Gets whether the given code is a valid ISO639-3 code.
+    """
+    try:
+        iso639.languages.get(part3=code)
+        return True
+    except KeyError:
+        return False
 
 
 def humanize_seconds(seconds):
