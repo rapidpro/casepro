@@ -1,3 +1,7 @@
+v0.0.258
+----------
+ * Migrate languages from ISO639-2 to ISO639-3
+
 v0.0.257
 ----------
  * Fix fetching of modified and new messages
