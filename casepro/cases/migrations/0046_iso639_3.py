@@ -45,16 +45,16 @@ def iso6392_to_iso6393(iso_code, timezone=None):
     if iso_code == '':
         raise ValueError('iso_code must not be empty')
 
-    cache_key = '{}:{}'.format('XX' if timezone is None else timezone, iso_code)
+    cache_key = '{}:{}'.format('*' if timezone is None else timezone, iso_code)
 
     if cache_key not in migration_lang_cache:
 
         # build our key
-        override_key = '%s:%s' % (timezone, iso_code) if timezone else 'XX:%s' % iso_code
+        override_key = '%s:%s' % (timezone, iso_code) if timezone else '*:%s' % iso_code
         override = MIGRATION_OVERRIDES.get(override_key)
 
         if not override and timezone:
-            override_key = 'XX:%s' % iso_code
+            override_key = '*:%s' % iso_code
             override = MIGRATION_OVERRIDES.get(override_key)
 
         if override:
@@ -94,12 +94,12 @@ def migrate_language(Contact, FAQ):
     total_contacts = contacts.count()
 
     if total_contacts:
-        print("Found %d contacts to migrate languages for...")
+        print("Found %d contacts to migrate languages for..." % total_contacts)
         num_updated = 0
 
-        for id_batch in chunks(contacts.only('id'), 1000):
+        for batch in chunks(contacts.only('id'), 1000):
             with transaction.atomic():
-                contact_batch = Contact.objects.filter(id__in=id_batch).select_related('org')
+                contact_batch = Contact.objects.filter(id__in=[c.id for c in batch]).select_related('org')
 
                 for contact in contact_batch:
                     new_language = iso6392_to_iso6393(contact.language, contact.org.timezone)
@@ -115,7 +115,7 @@ def migrate_language(Contact, FAQ):
     faqs = list(FAQ.objects.exclude(Q(language=None) | Q(language="") | Q(language="eng")).select_related('org'))
 
     if len(faqs):
-        print("Found %d FAQs to migrate languages for...")
+        print("Found %d FAQs to migrate languages for..." % len(faqs))
 
         for faq in faqs:
             new_language = iso6392_to_iso6393(faq.language, faq.org.timezone)
