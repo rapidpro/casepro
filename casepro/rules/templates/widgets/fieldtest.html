@@ -1,5 +1,9 @@
 <div class="field-test-widget">
-  {% include widget.subwidgets.0.template_name %}
+  {% with field_select=widget.subwidgets.0 %}
+    {% include field_select.template_name with widget=field_select %}
+  {% endwith %}
   <span class="control-label">is equal to</span>
-  {% include widget.subwidgets.1.template_name %}
+  {% with value_input=widget.subwidgets.1 %}
+    {% include value_input.template_name with widget=value_input %}
+  {% endwith %}
 </div>

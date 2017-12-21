@@ -56,8 +56,8 @@ class BaseCasesTest(DashTest):
         # some message faqs
         self.preg_faq1_eng = self.create_faq(self.unicef, "How do I know I'm pregnant?", "Do a pregnancy test.",
                                              "eng", None, [self.pregnancy])
-        self.preg_faq1_bnt = self.create_faq(self.unicef, "BTN How do I know I'm pregnant?", "BTN Do a pregnancy test.",
-                                             "bnt", self.preg_faq1_eng, [])
+        self.preg_faq1_zul = self.create_faq(self.unicef, "ZUL How do I know I'm pregnant?", "ZUL Do a pregnancy test.",
+                                             "zul", self.preg_faq1_eng, [])
         self.preg_faq1_lug = self.create_faq(self.unicef, "LUG How do I know I'm pregnant?", "LUG Do a pregnancy test.",
                                              "lug", self.preg_faq1_eng, [])
         self.preg_faq2_eng = self.create_faq(self.unicef, "How do I prevent HIV transfer to my baby?", "Take ARVs.",
@@ -206,3 +206,8 @@ class BaseCasesTest(DashTest):
 
         if reset_outbox:
             mail.outbox = []
+
+    def login(self, user):
+        password = 'root' if user == self.superuser else user.username
+        result = self.client.login(username=user.username, password=password)
+        self.assertTrue(result, "Couldn't login as %(user)s / %(user)s" % dict(user=user.username))

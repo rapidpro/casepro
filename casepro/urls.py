@@ -5,7 +5,13 @@ from django.conf.urls import include, url
 from django.views import static
 from casepro.backend import get_backend
 from casepro.utils.views import PartialTemplate
+from django.views.i18n import javascript_catalog
 
+
+# javascript translation packages
+js_info_dict = {
+    'packages': (),  # this is empty due to the fact that all translation are in one folder
+}
 
 urlpatterns = [
     url(r'', include('casepro.cases.urls')),
@@ -20,7 +26,8 @@ urlpatterns = [
     url(r'^users/', include('dash.users.urls')),
     url(r'^i18n/', include('django.conf.urls.i18n')),
     url(r'^comments/', include('django_comments.urls')),
-    url(r'^partials/(?P<template>[a-z0-9\-_]+)\.html$', PartialTemplate.as_view(), name='utils.partial_template')
+    url(r'^partials/(?P<template>[a-z0-9\-_]+)\.html$', PartialTemplate.as_view(), name='utils.partial_template'),
+    url(r'^jsi18n/$', javascript_catalog, js_info_dict, name='django.views.i18n.javascript_catalog'),
 ]
 
 backend_urls = get_backend().get_url_patterns() or []

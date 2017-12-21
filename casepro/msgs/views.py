@@ -17,13 +17,11 @@ from smartmin.views import (SmartListView, SmartCreateView, SmartUpdateView, Sma
                             SmartCSVImportView)
 from smartmin.csv_imports.models import ImportTask
 from temba_client.utils import parse_iso8601
-from django.utils import timezone
 
 from casepro.rules.mixins import RuleFormMixin
 from casepro.statistics.models import DailyCount
 from casepro.utils import parse_csv, str_to_bool, JSONEncoder, json_encode, month_range
 from casepro.utils.export import BaseDownloadView
-
 
 from .forms import LabelForm, FaqForm
 from .models import Label, FAQ, Message, MessageExport, MessageFolder, Outgoing, OutgoingFolder, ReplyExport
@@ -207,19 +205,18 @@ class MessageCRUDL(SmartCRUDL):
             org = self.request.org
             user = self.request.user
             page = int(self.request.GET.get('page', 1))
+            last_refresh = self.request.GET.get('last_refresh')
 
             search = self.derive_search()
 
-            # this is a refresh of messages
-            if self.request.GET.get('last_refresh', None):
-                new_messages = Message.search(org, user, search)
+            # this is a refresh of new and modified messages
+            if last_refresh:
+                search['last_refresh'] = last_refresh
 
-                search['last_refresh'] = self.request.GET['last_refresh']
+                messages = Message.search(org, user, search)
 
-                updated_messages = Message.search(org, user, search)
-
-                context['object_list'] = list(new_messages) + list(set(updated_messages) - set(new_messages))
-
+                # don't use paging for these messages
+                context['object_list'] = list(messages)
                 context['has_more'] = False
                 return context
 
@@ -271,17 +268,11 @@ class MessageCRUDL(SmartCRUDL):
 
                 if not lock_messages:
                     for message in messages:
-                        message.locked_on = timezone.now()
-                        message.locked_by = user
-                        message.modified_on = timezone.now()
-                        message.save(update_fields=['locked_on', 'locked_by', 'modified_on'])
+                        message.user_lock(user)
 
             elif action == 'unlock':
                 for message in messages:
-                    message.locked_on = timezone.now()
-                    message.locked_by = None
-                    message.modified_on = timezone.now()
-                    message.save(update_fields=['locked_on', 'locked_by', 'modified_on'])
+                    message.user_unlock()
 
             else:  # pragma: no cover
                 return HttpResponseBadRequest("Invalid action: %s", action)
@@ -672,12 +663,9 @@ class FaqCRUDL(SmartCRUDL):
             for lang in langs:
                 lang_list.append(FAQ.get_language_from_code(lang['language']))
             context['language_list'] = lang_list
-            iso_list = iso639._load_data()
-            # remove unwanted keys and only show name up to the first semicolon
-            for key in iso_list:
-                del key['iso639_2_t'], key['native'], key['iso639_1']
-                if 'name' in key.keys():
-                    key['name'] = key['name'].rsplit(';')[0]
+
+            iso_list = [{'name': l.name, 'code': l.part3} for l in iso639.languages]
+
             context['iso_list'] = iso_list
             return context
 

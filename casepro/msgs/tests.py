@@ -87,6 +87,12 @@ class LabelCRUDLTest(BaseCasesTest):
         response = self.url_get('unicef', url)
         self.assertEqual(response.status_code, 200)
 
+        # form should list our groups and fields
+        self.assertContains(response, "Reporters")
+        self.assertContains(response, "Registered")
+        self.assertContains(response, "age")
+        self.assertContains(response, "state")
+
         # submit with no data
         response = self.url_post('unicef', url, {})
         self.assertEqual(response.status_code, 200)
@@ -322,7 +328,7 @@ class LabelCRUDLTest(BaseCasesTest):
 
 class FaqTest(BaseCasesTest):
     def test_get_all(self):
-        self.assertEqual(set(FAQ.get_all(self.unicef)), {self.preg_faq1_eng, self.preg_faq1_bnt, self.preg_faq1_lug,
+        self.assertEqual(set(FAQ.get_all(self.unicef)), {self.preg_faq1_eng, self.preg_faq1_zul, self.preg_faq1_lug,
                                                          self.preg_faq2_eng, self.tea_faq1_eng})
         self.assertEqual(set(FAQ.get_all(self.unicef, self.tea)), {self.tea_faq1_eng})
 
@@ -360,11 +366,11 @@ class FaqCRUDLTest(BaseCasesTest):
         response = self.url_post('unicef', url, {
             'question': "Is nausea during pregnancy normal?",
             'answer': "Yes, especially in the first 3 months",
-            'language': 'abc',
+            'language': 'xxx',
         })
         self.assertEqual(response.status_code, 200)
         self.assertFormError(response, 'form', 'labels', 'Labels are required if no Parent is selected')
-        self.assertFormError(response, 'form', 'language', 'Language must be valid a ISO-639-2 code')
+        self.assertFormError(response, 'form', 'language', 'Language must be valid a ISO-639-3 code')
 
         # submit again with valid data (no parent, has labels)
         response = self.url_post('unicef', url, {
@@ -383,18 +389,6 @@ class FaqCRUDLTest(BaseCasesTest):
 
         # submit again with valid data (has parent, no labels)
         response = self.url_post('unicef', url, {
-            'question': "BNT Question",
-            'answer': "BNT Answer",
-            'language': 'bnt',
-            'parent': self.preg_faq1_eng.pk
-        })
-        self.assertEqual(response.status_code, 302)
-        faq2 = FAQ.objects.get(question="BNT Question")
-        self.assertEqual(faq2.parent, self.preg_faq1_eng)
-        self.assertEqual(faq2.labels.all().count(), 0)
-
-        # submit again with json data (has parent, no labels)
-        response = self.url_post_json('unicef', url, {
             'question': "ZUL Question",
             'answer': "ZUL Answer",
             'language': 'zul',
@@ -405,17 +399,29 @@ class FaqCRUDLTest(BaseCasesTest):
         self.assertEqual(faq2.parent, self.preg_faq1_eng)
         self.assertEqual(faq2.labels.all().count(), 0)
 
+        # submit again with json data (has parent, no labels)
+        response = self.url_post_json('unicef', url, {
+            'question': "KIN Question",
+            'answer': "KIN Answer",
+            'language': 'kin',
+            'parent': self.preg_faq1_eng.pk
+        })
+        self.assertEqual(response.status_code, 302)
+        faq2 = FAQ.objects.get(question="KIN Question")
+        self.assertEqual(faq2.parent, self.preg_faq1_eng)
+        self.assertEqual(faq2.labels.all().count(), 0)
+
         # submit again with valid data (has parent, wrong labels)
         response = self.url_post('unicef', url, {
-            'question': "BNT Is nausea during pregnancy normal?",
-            'answer': "BNT Yes, especially in the first 3 months",
-            'language': 'bnt',
+            'question': "ZUL Is nausea during pregnancy normal?",
+            'answer': "ZUL Yes, especially in the first 3 months",
+            'language': 'zul',
             'parent': faq1.pk,
             'labels': [self.aids.pk]
         })
 
         self.assertEqual(response.status_code, 302)
-        faq3 = FAQ.objects.get(question="BNT Is nausea during pregnancy normal?")
+        faq3 = FAQ.objects.get(question="ZUL Is nausea during pregnancy normal?")
         self.assertEqual(faq3.parent, faq1)
         self.assertEqual(faq2.labels.all().count(), 0)
 
@@ -434,8 +440,8 @@ class FaqCRUDLTest(BaseCasesTest):
                 self.tea_faq1_eng,
                 self.preg_faq1_eng,
                 self.preg_faq2_eng,
-                self.preg_faq1_bnt,
-                self.preg_faq1_lug
+                self.preg_faq1_lug,
+                self.preg_faq1_zul,
             ]
         )
 
@@ -519,7 +525,7 @@ class FaqCRUDLTest(BaseCasesTest):
     def test_delete(self):
         preg_faq1_eng_pk = self.preg_faq1_eng.pk
         preg_faq1_lug_pk = self.preg_faq1_lug.pk
-        preg_faq1_bnt_pk = self.preg_faq1_bnt.pk
+        preg_faq1_zul_pk = self.preg_faq1_zul.pk
 
         url = reverse('msgs.faq_delete', args=[preg_faq1_eng_pk])
 
@@ -543,7 +549,7 @@ class FaqCRUDLTest(BaseCasesTest):
         with self.assertRaises(FAQ.DoesNotExist):
             FAQ.objects.get(pk=preg_faq1_lug_pk)
         with self.assertRaises(FAQ.DoesNotExist):
-            FAQ.objects.get(pk=preg_faq1_bnt_pk)
+            FAQ.objects.get(pk=preg_faq1_zul_pk)
 
     def test_read(self):
         preg_faq1_pk = self.preg_faq1_eng.pk
@@ -640,9 +646,9 @@ class FaqCRUDLTest(BaseCasesTest):
 
         # request FAQs - filter on label, should show both parent & translation
         response = self.url_post('unicef', reverse('msgs.faq_create'), {
-            'question': "BNT Question with no labels",
-            'answer': "BNT Answer with no labels",
-            'language': 'bnt',
+            'question': "ZUL Question with no labels",
+            'answer': "ZUL Answer with no labels",
+            'language': 'zul',
             'parent': self.preg_faq1_eng.pk
         })
         self.assertEqual(response.status_code, 302)
@@ -662,9 +668,9 @@ class FaqCRUDLTest(BaseCasesTest):
         # should have 4 results as one is label restricted
         self.assertEqual(len(response.json['results']), 3)
         self.assertEqual(response.json['results'], [
-            {'code': 'bnt', 'name': 'Bantu'},
             {'code': 'eng', 'name': 'English'},
-            {'code': 'lug', 'name': 'Ganda'}
+            {'code': 'lug', 'name': 'Ganda'},
+            {'code': 'zul', 'name': 'Zulu'},
         ])
 
 

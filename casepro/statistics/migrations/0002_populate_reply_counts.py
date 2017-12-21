@@ -47,6 +47,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('statistics', '0001_initial'),
+        ('msgs', '0047_outgoing_urn'),
     ]
 
     operations = [

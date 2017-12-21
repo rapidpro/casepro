@@ -9,6 +9,7 @@ db/
 dash
 deploy
 celerybeat-schedule.db
+celerybeat-schedule
 src/
 node_modules/
 

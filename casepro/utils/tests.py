@@ -16,7 +16,7 @@ from casepro.test import BaseCasesTest
 
 from . import safe_max, normalize, match_keywords, truncate, str_to_bool, json_encode, TimelineItem, uuid_to_int
 from . import date_to_milliseconds, datetime_to_microseconds, microseconds_to_datetime, month_range, date_range
-from . import get_language_name, json_decode, humanize_seconds
+from . import get_language_name, is_valid_language_code, json_decode, humanize_seconds
 from .email import send_email
 from .middleware import JSONMiddleware
 
@@ -135,14 +135,18 @@ class UtilsTest(BaseCasesTest):
         self.assertTrue(uuid_to_int(uuid.hex) >= 0)
 
     def test_get_language_name(self):
-        self.assertEqual(get_language_name('fre'), "French")
-        self.assertEqual(get_language_name('fre'), "French")  # from cache
-        self.assertEqual(get_language_name('cpe'), "Creoles and pidgins, English based")
+        self.assertEqual(get_language_name('fra'), "French")
+        self.assertEqual(get_language_name('fra'), "French")  # from cache
+        self.assertEqual(get_language_name('pcm'), "Nigerian Pidgin")
 
         # should strip off anything after an open paren or semicolon
         self.assertEqual(get_language_name('arc'), "Official Aramaic")
 
         self.assertIsNone(get_language_name('xxxxx'))
+
+    def test_is_valid_language_code(self):
+        self.assertTrue(is_valid_language_code('fra'))
+        self.assertFalse(is_valid_language_code('fre'))  # old ISO639-2 code
 
     def test_humanize_seconds(self):
         self.assertEqual(humanize_seconds(59), u"0\xa0minutes")

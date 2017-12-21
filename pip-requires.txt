@@ -17,7 +17,7 @@ enum34
 flake8
 gunicorn
 hypothesis
-iso639
+iso-639
 mock
 pillow
 pisa

@@ -2,7 +2,7 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
+# 
 #, fuzzy
 msgid ""
 msgstr ""
@@ -10,21 +10,22 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-08-17 15:11+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"Last-Translator: Ilhasoft <contato@ilhasoft.com.br>, 2017\n"
+"Language-Team: Portuguese (Brazil) (https://www.transifex.com/ilhasoft/teams/56822/pt_BR/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: pt_BR\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #: casepro/cases/forms.py:11 casepro/cases/models.py:51
 #: casepro/msgs/forms.py:18 casepro/msgs/models.py:51
 msgid "Description"
-msgstr ""
+msgstr "Descrição "
 
 #: casepro/cases/forms.py:13
 msgid "Can Access"
-msgstr ""
+msgstr "Pode Acessar"
 
 #: casepro/cases/models.py:46 casepro/cases/models.py:142
 #: casepro/contacts/models.py:152 casepro/contacts/models.py:223
@@ -32,9 +33,10 @@ msgstr ""
 #: casepro/msgs/models.py:183 casepro/msgs/models.py:301
 #: casepro/msgs/models.py:598 casepro/msgs/models.py:640
 #: casepro/orgs_ext/forms.py:38 casepro/rules/models.py:382
-#: casepro/utils/export.py:31 templates/frame.haml:146 templates/frame.haml:154
+#: casepro/utils/export.py:31 templates/frame.haml:146
+#: templates/frame.haml:154
 msgid "Organization"
-msgstr ""
+msgstr "Organização"
 
 #: casepro/cases/models.py:48 casepro/msgs/forms.py:16
 #: casepro/msgs/models.py:49 casepro/profiles/forms.py:32
@@ -42,160 +44,161 @@ msgstr ""
 #: templates/contacts/contact_read.haml:86 templates/orgs_ext/org_home.haml:94
 #: templates/orgs_ext/org_home.haml:183 templates/orgs_ext/org_home.haml:244
 msgid "Name"
-msgstr ""
+msgstr "Nome"
 
 #: casepro/cases/models.py:49
 msgid "Name of this partner organization"
-msgstr ""
+msgstr "Nome do parceiro desta organização"
 
 #: casepro/cases/models.py:53
 msgid "Primary Contact"
-msgstr ""
+msgstr "Contato Primário"
 
 #: casepro/cases/models.py:56
 msgid "Restricted Access"
-msgstr ""
+msgstr "Acesso Restrito"
 
 #: casepro/cases/models.py:57
 msgid "Whether this partner's access is restricted by labels"
-msgstr ""
+msgstr "Se o acesso deste parceiro é restrito por etiquetas"
 
 #: casepro/cases/models.py:59 templates/cases/case_read.haml:72
 #: templates/msgs/faq_read.haml:54 templates/orgs_ext/org_home.haml:159
 msgid "Labels"
-msgstr ""
+msgstr "Rótulos"
 
 #: casepro/cases/models.py:60
 msgid "Labels that this partner can access"
-msgstr ""
+msgstr "Etiquetas que este parceiro pode acessar"
 
 #: casepro/cases/models.py:63
 msgid "Users that belong to this partner"
-msgstr ""
+msgstr "Usuários que pertencem a este parceiro"
 
 #: casepro/cases/models.py:65
 msgid "Logo"
-msgstr ""
+msgstr "Logo"
 
 #: casepro/cases/models.py:144
 msgid "Labels assigned to this case"
-msgstr ""
+msgstr "Etiquetas atribuídas a este caso"
 
 #: casepro/cases/models.py:156 templates/cases/case_read.haml:189
 #: templates/cases/partner_read.haml:78 templates/msgs/label_read.haml:54
-#: templates/orgs_ext/org_home.haml:33 templates/partials/modal_newcase.haml:15
+#: templates/orgs_ext/org_home.haml:33
+#: templates/partials/modal_newcase.haml:15
 #: templates/profiles/user_read.haml:73
 msgid "Summary"
-msgstr ""
+msgstr "Sumário"
 
 #: casepro/cases/models.py:488 templates/cases/inbox_base.haml:116
 #: templates/partials/modal_newcase.haml:41
 msgid "Open"
-msgstr ""
+msgstr "Abertos"
 
 #: casepro/cases/models.py:489 templates/cases/case_read.haml:43
 msgid "Add Note"
-msgstr ""
+msgstr "Adicionar nota"
 
 #: casepro/cases/models.py:490
 msgid "Reassign"
-msgstr ""
+msgstr "Reatribuir"
 
 #: casepro/cases/models.py:491 casepro/contacts/models.py:227
 #: casepro/msgs/models.py:593 templates/partials/modal_faq.haml:53
 msgid "Label"
-msgstr ""
+msgstr "Rótulo"
 
 #: casepro/cases/models.py:492 casepro/msgs/models.py:594
 msgid "Remove Label"
-msgstr ""
+msgstr "Remover Rótulo"
 
 #: casepro/cases/models.py:493 templates/cases/case_read.haml:50
 #: templates/partials/modal_messagehistory.haml:50
 msgid "Close"
-msgstr ""
+msgstr "Fechar"
 
 #: casepro/cases/models.py:494
 msgid "Reopen"
-msgstr ""
+msgstr "Reabrir "
 
 #: casepro/cases/models.py:568
 #, python-format
 msgid "Cases %d"
-msgstr ""
+msgstr "Casos %d"
 
 #: casepro/cases/views.py:334
 msgid "Download Cases"
-msgstr ""
+msgstr "Baixar Casos"
 
 #: casepro/cases/views.py:514 casepro/msgs/models.py:294
 #: templates/cases/inbox_base.haml:63 templates/frame.haml:138
 msgid "Inbox"
-msgstr ""
+msgstr "Inbox"
 
 #: casepro/cases/views.py:524 templates/cases/inbox_base.haml:77
 msgid "Flagged"
-msgstr ""
+msgstr "Marcada"
 
 #: casepro/cases/views.py:534 templates/cases/inbox_base.haml:82
 msgid "Archived"
-msgstr ""
+msgstr "Arquivado"
 
 #: casepro/cases/views.py:544 templates/cases/inbox_base.haml:97
 msgid "Unlabelled"
-msgstr ""
+msgstr "Não marcadas"
 
 #: casepro/cases/views.py:554 templates/cases/inbox_base.haml:103
 msgid "Sent"
-msgstr ""
+msgstr "Enviado"
 
 #: casepro/cases/views.py:564
 msgid "Open Cases"
-msgstr ""
+msgstr "Abrir Casos"
 
 #: casepro/cases/views.py:574
 msgid "Closed Cases"
-msgstr ""
+msgstr "Fechar Caso"
 
 #: casepro/contacts/models.py:160
 msgid "Whether this group is dynamic"
-msgstr ""
+msgstr "Se este grupo é dinâmico"
 
 #: casepro/contacts/models.py:162
 msgid "When this group was created"
-msgstr ""
+msgstr "Quando este grupo foi criado"
 
 #: casepro/contacts/models.py:164
 msgid "Whether this group is active"
-msgstr ""
+msgstr "Se este grupo está ativo"
 
 #: casepro/contacts/models.py:166
 msgid "Whether this group is visible to partner users"
-msgstr ""
+msgstr "Se este grupo é visível para usuários parceiros"
 
 #: casepro/contacts/models.py:169
 msgid "Whether contacts should be suspended from this group during a case"
-msgstr ""
+msgstr "Se os contatos devem ser suspensos deste grupo durante um caso"
 
 #: casepro/contacts/models.py:225
 msgid "Key"
-msgstr ""
+msgstr "Chave"
 
 #: casepro/contacts/models.py:229
 msgid "Value data type"
-msgstr ""
+msgstr "Tipo de dados do valor"
 
 #: casepro/contacts/models.py:233
 msgid "Whether this field is visible to partner users"
-msgstr ""
+msgstr "Se este campo é visível para os usuários parceiros"
 
 #: casepro/contacts/models.py:274 casepro/profiles/models.py:36
 msgid "Full name"
-msgstr ""
+msgstr "Nome completo"
 
 #: casepro/contacts/models.py:275
 msgid "The name of this contact"
-msgstr ""
+msgstr "O nome deste contato"
 
 #: casepro/contacts/models.py:281 casepro/msgs/forms.py:89
 #: casepro/msgs/models.py:189 templates/cases/case_read.haml:220
@@ -203,644 +206,658 @@ msgstr ""
 #: templates/msgs/faq_read.haml:45 templates/msgs/faq_read.haml:90
 #: templates/partials/modal_faq.haml:65
 msgid "Language"
-msgstr ""
+msgstr "Idioma"
 
 #: casepro/contacts/models.py:282
 msgid "Language for this contact"
-msgstr ""
+msgstr "Idioma para este contato"
 
 #: casepro/contacts/models.py:292
 msgid "Groups this contact has been suspended from"
-msgstr ""
+msgstr "Grupos deste contato foram suspensos de"
 
 #: casepro/contacts/models.py:294
 msgid "When this contact was created"
-msgstr ""
+msgstr "Quando este contato foi criado"
 
 #: casepro/contacts/models.py:297
 msgid "List of URNs of the format 'scheme:path'"
-msgstr ""
+msgstr "Lista de URNs do formato 'scheme: path'"
 
 #: casepro/contacts/views.py:87 casepro/msgs/forms.py:31
 #: templates/cases/inbox_messages.haml:112
 #: templates/contacts/contact_read.haml:121 templates/frame.haml:127
 msgid "Groups"
-msgstr ""
+msgstr "Grupos"
 
 #: casepro/contacts/views.py:88
 msgid "Contact groups visible to partner users."
-msgstr ""
+msgstr "Grupos de contato visíveis para usuários parceiros."
 
 #: casepro/contacts/views.py:100
 msgid "Contact Groups"
-msgstr ""
+msgstr "Grupos de Contato"
 
 #: casepro/contacts/views.py:103
 msgid "Update"
-msgstr ""
+msgstr "Atualizar"
 
 #: casepro/contacts/views.py:104
 msgid "Updated contact groups visible to partner users"
-msgstr ""
+msgstr "Grupos de contatos atualizados visíveis para usuários parceiros"
 
 #: casepro/msgs/forms.py:21
 msgid "Is synced"
-msgstr ""
+msgstr "Está sincronizado"
 
 #: casepro/msgs/forms.py:22
 msgid "Whether label should be kept synced with backend"
-msgstr ""
+msgstr "Se o rótulo deve ser mantido sincronizado com o backend"
 
 #: casepro/msgs/forms.py:26
 msgid "Keywords"
-msgstr ""
+msgstr "Palavras chave"
 
 #: casepro/msgs/forms.py:27
 msgid "Match messages containing any of these words (comma separated)"
 msgstr ""
+"Combinar mensagens contendo qualquer uma dessas palavras (separadas por "
+"vírgulas)"
 
 #: casepro/msgs/forms.py:32
 msgid "Match messages from these groups (select none to include all groups)"
 msgstr ""
+"Combinar mensagens desses grupos (selecione nenhum para incluir todos os "
+"grupos)"
 
 #: casepro/msgs/forms.py:38
 msgid "Ignore single words"
-msgstr ""
+msgstr "Ignorar palavras únicas"
 
 #: casepro/msgs/forms.py:39
 msgid "Whether to ignore messages consisting of a single word"
-msgstr ""
+msgstr "Caso seja para ignorar mensagens consistindo de uma única palavra"
 
 #: casepro/msgs/forms.py:55
 msgid "Field criteria"
-msgstr ""
+msgstr "Critérios de campo"
 
 #: casepro/msgs/forms.py:56
 msgid ""
 "Match messages where contact field value is equal to any of these values "
 "(comma separated)"
 msgstr ""
+"Mensagens de correspondência onde o valor do campo de contato é igual a "
+"qualquer um desses valores (separado por vírgula)"
 
 #: casepro/msgs/forms.py:62
 msgid "Reserved label name"
-msgstr ""
+msgstr "Nome do rótulo reservado"
 
 #: casepro/msgs/forms.py:64
 msgid "Label name cannot start with + or -"
-msgstr ""
+msgstr "O nome do rótulo não pode começar com + ou -"
 
 #: casepro/msgs/forms.py:74
 #, python-format
 msgid "Invalid keyword: %s"
-msgstr ""
+msgstr "Palavra-chave inválida: %s"
 
 #: casepro/msgs/forms.py:87 templates/msgs/faq_list.haml:34
 #: templates/msgs/faq_read.haml:93 templates/partials/modal_faq.haml:29
 msgid "Question"
-msgstr ""
+msgstr "Questão"
 
 #: casepro/msgs/forms.py:88 templates/msgs/faq_list.haml:37
 #: templates/msgs/faq_read.haml:35 templates/msgs/faq_read.haml:96
 #: templates/partials/modal_faq.haml:41
 msgid "Answer"
-msgstr ""
+msgstr "Responda"
 
 #: casepro/msgs/forms.py:93
 msgid "If a Parent is selected, the labels will be copied from the Parent FAQ"
 msgstr ""
+"Se um Parent for selecionado, os rótulos serão copiados das perguntas-chave "
+"do Parent"
 
 #: casepro/msgs/forms.py:106
 msgid "Language must be valid a ISO-639-2 code"
-msgstr ""
+msgstr "O idioma deve ser válido com um código ISO-639-2"
 
 #: casepro/msgs/forms.py:122
 msgid "Labels are required if no Parent is selected"
-msgstr ""
+msgstr "São necessárias etiquetas se nenhum Parent for selecionado"
 
 #: casepro/msgs/models.py:49
 msgid "Name of this label"
-msgstr ""
+msgstr "Nome deste rótulo"
 
 #: casepro/msgs/models.py:190
 msgid "Language for this FAQ"
-msgstr ""
+msgstr "Idioma para este FAQ"
 
 #: casepro/msgs/models.py:194
 msgid "Labels assigned to this FAQ"
-msgstr ""
+msgstr "Etiquetas atribuídas a esta FAQ"
 
 #: casepro/msgs/models.py:294 templates/cases/inbox_messages.haml:215
 msgid "Flow"
-msgstr ""
+msgstr "Fluxo"
 
 #: casepro/msgs/models.py:303
 msgid "Backend identifier for this message"
-msgstr ""
+msgstr "Identificador de backend para esta mensagem"
 
 #: casepro/msgs/models.py:309
 msgid "Text"
-msgstr ""
+msgstr "Texto"
 
 #: casepro/msgs/models.py:311
 msgid "Labels assigned to this message"
-msgstr ""
+msgstr "Etiquetas atribuídas a esta mensagem"
 
 #: casepro/msgs/models.py:591
 msgid "Flag"
-msgstr ""
+msgstr "Marcar"
 
 #: casepro/msgs/models.py:592
 msgid "Un-flag"
-msgstr ""
+msgstr "Desmarcar"
 
 #: casepro/msgs/models.py:595 templates/cases/inbox_messages.haml:186
 msgid "Archive"
-msgstr ""
+msgstr "Arquivo"
 
 #: casepro/msgs/models.py:596 templates/cases/inbox_messages.haml:191
 msgid "Restore"
-msgstr ""
+msgstr "Restaurar"
 
 #: casepro/msgs/models.py:635
 msgid "Bulk Reply"
-msgstr ""
+msgstr "Resposta em massa"
 
 #: casepro/msgs/models.py:635 templates/cases/inbox_messages.haml:246
 msgid "Forward"
-msgstr ""
+msgstr "Encaminhar"
 
 #: casepro/msgs/models.py:648
 msgid "Broadcast id from the backend"
-msgstr ""
+msgstr "ID da transmissão do backend"
 
 #: casepro/msgs/models.py:817
 #, python-format
 msgid "Messages %d"
-msgstr ""
+msgstr "Menssagens %d"
 
 #: casepro/msgs/models.py:865
 #, python-format
 msgid "Replies %d"
-msgstr ""
+msgstr "Respostas %d"
 
 #: casepro/msgs/views.py:425
 msgid "Download Messages"
-msgstr ""
+msgstr "Baixar Menssagens"
 
 #: casepro/msgs/views.py:527
 msgid "Download Replies"
-msgstr ""
+msgstr "Baixar Respostas"
 
 #: casepro/orgs_ext/forms.py:39
 msgid "The name of this organization"
-msgstr ""
+msgstr "Nome desta organização"
 
 #: casepro/orgs_ext/forms.py:41
 msgid "The timezone your organization is in"
-msgstr ""
+msgstr "O fuso horário da sua organização está em"
 
 #: casepro/orgs_ext/forms.py:43
 msgid "Banner text"
-msgstr ""
+msgstr "Texto do banner"
 
 #: casepro/orgs_ext/forms.py:44 casepro/settings_common.py:156
 msgid "Banner text displayed to all users"
-msgstr ""
+msgstr "Texto do banner exibido para todos os usuários"
 
 #: casepro/orgs_ext/forms.py:46
 msgid "Contact fields"
-msgstr ""
+msgstr "Campos do contato"
 
 #: casepro/orgs_ext/forms.py:47 casepro/settings_common.py:154
 msgid "Contact fields to display"
-msgstr ""
+msgstr "Campos do contato a exibir"
 
 #: casepro/orgs_ext/forms.py:50
 msgid "Suspend groups"
-msgstr ""
+msgstr "Suspender grupos"
 
 #: casepro/orgs_ext/forms.py:51
 msgid "Groups to remove contacts from when creating cases"
-msgstr ""
+msgstr "Grupos para remover contatos ao criar casos"
 
 #: casepro/orgs_ext/views.py:49
 msgid "Edit My Organization"
-msgstr ""
+msgstr "Editar minha organização"
 
 #: casepro/profiles/forms.py:23
 #, python-format
 msgid "Must be at least %d characters long"
-msgstr ""
+msgstr "Deve ter pelo menos %d caractere"
 
 #: casepro/profiles/forms.py:30
 #, python-format
 msgid "Password used to log in (minimum of %d characters)."
-msgstr ""
+msgstr "Senha usada para fazer login (minimo de %d caracteres)."
 
 #: casepro/profiles/forms.py:34 templates/partials/modal_compose.haml:32
 #: templates/smartmin/users/login.haml:33
 msgid "Email"
-msgstr ""
+msgstr "Email"
 
 #: casepro/profiles/forms.py:35
 msgid "Email address and login."
-msgstr ""
+msgstr "Email e login"
 
 #: casepro/profiles/forms.py:37 templates/smartmin/users/login.haml:42
 msgid "Password"
-msgstr ""
+msgstr "Senha"
 
 #: casepro/profiles/forms.py:40
 msgid "New password"
-msgstr ""
+msgstr "Nova senha"
 
 #: casepro/profiles/forms.py:43
 msgid "Confirm password"
-msgstr ""
+msgstr "Confirmar senha"
 
 #: casepro/profiles/forms.py:45
 msgid "Require change"
-msgstr ""
+msgstr "Solicitar alteração"
 
 #: casepro/profiles/forms.py:46
 msgid "Whether user must change password on next login."
-msgstr ""
+msgstr "Se o usuário deva alterar a senha no próximo login."
 
 #: casepro/profiles/forms.py:49
 msgid "Pre-approved responses only"
-msgstr ""
+msgstr "Apenas respostas pré-aprovadas"
 
 #: casepro/profiles/forms.py:50
 msgid ""
 "Whether user will only be able to reply using pre-approved replies (FAQs)"
 msgstr ""
+"Se o usuário só poderá responder usando respostas pré-aprovadas (FAQs)"
 
 #: casepro/profiles/forms.py:68
 msgid "Passwords don't match."
-msgstr ""
+msgstr "Senhas não correspondem."
 
 #: casepro/profiles/forms.py:81 casepro/profiles/forms.py:101
 #: templates/cases/partner_read.haml:240
 msgid "Role"
-msgstr ""
+msgstr "Atribuição"
 
 #: casepro/profiles/forms.py:83
 msgid "Partner Organization"
-msgstr ""
+msgstr "Organização Parceira"
 
 #: casepro/profiles/forms.py:94
 msgid "Required for role."
-msgstr ""
+msgstr "Obrigatório para função."
 
 #: casepro/profiles/middleware.py:25
 msgid "You are required to change your password"
-msgstr ""
+msgstr "Você deve alterar sua senha"
 
 #: casepro/profiles/models.py:21 templates/profiles/user_read.haml:47
 msgid "Administrator"
-msgstr ""
+msgstr "Administrador"
 
 #: casepro/profiles/models.py:22
 msgid "Partner Manager"
-msgstr ""
+msgstr "Gerente do parceiro"
 
 #: casepro/profiles/models.py:23
 msgid "Partner Data Analyst"
-msgstr ""
+msgstr "Analista de dados do parceiro"
 
 #: casepro/profiles/models.py:24 templates/cases/partner_read.haml:257
 #: templates/profiles/user_read.haml:51
 msgid "Manager"
-msgstr ""
+msgstr "Gerenciar"
 
 #: casepro/profiles/models.py:25 templates/cases/partner_read.haml:260
 msgid "Data Analyst"
-msgstr ""
+msgstr "Análise de dados"
 
 #: casepro/profiles/models.py:38
 msgid "User must change password on next login"
-msgstr ""
+msgstr "Usuário deve alterar a senha no próximo login"
 
 #: casepro/profiles/models.py:41
 msgid "User is only allowed to reply with pre-approved responses"
-msgstr ""
+msgstr "O usuário só pode responder com respostas pré-aprovadas"
 
 #: casepro/profiles/models.py:152
 msgid "New labelled message"
-msgstr ""
+msgstr "Nova mensagem rotulada"
 
 #: casepro/profiles/models.py:160
 #, python-format
 msgid "New case assignment #%d"
-msgstr ""
+msgstr "Nova atribuição de caso #%d"
 
 #: casepro/profiles/models.py:172
 #, python-format
 msgid "New note in case #%d"
-msgstr ""
+msgstr "Nova nota no caso #%d"
 
 #: casepro/profiles/models.py:175
 #, python-format
 msgid "Case #%d was closed"
-msgstr ""
+msgstr "Caso #%d foi fechado"
 
 #: casepro/profiles/models.py:178
 #, python-format
 msgid "Case #%d was reopened"
-msgstr ""
+msgstr "Caso #%d foi reaberto"
 
 #: casepro/profiles/models.py:181
 #, python-format
 msgid "Case #%d was reassigned"
-msgstr ""
+msgstr "Caso #%d foi reatribuído"
 
 #: casepro/profiles/models.py:193
 #, python-format
 msgid "New reply in case #%d"
-msgstr ""
+msgstr "Nova resposta no caso #%d"
 
 #: casepro/profiles/models.py:201
 msgid "Email address already taken."
-msgstr ""
+msgstr "Email já cadastrado"
 
 #: casepro/profiles/views.py:179
 msgid "Profile updated"
-msgstr ""
+msgstr "Perfil atualizado"
 
 #: casepro/profiles/views.py:180
 msgid "Edit My Profile"
-msgstr ""
+msgstr "Editar Meu Perfil"
 
 #: casepro/profiles/views.py:196
 msgid "User doesn't have a profile"
-msgstr ""
+msgstr "Usuário não tem um perfil"
 
 #: casepro/profiles/views.py:211
 msgid "My Profile"
-msgstr ""
+msgstr "Meu Perfil"
 
 #: casepro/rules/models.py:30
 msgid "none of"
-msgstr ""
+msgstr "nenhum de"
 
 #: casepro/rules/models.py:31
 msgid "any of"
-msgstr ""
+msgstr "qualquer um de"
 
 #: casepro/rules/models.py:32
 msgid "all of"
-msgstr ""
+msgstr "todos de"
 
 #: casepro/rules/models.py:403 casepro/rules/models.py:412
 msgid " and "
-msgstr ""
+msgstr "e"
 
 #: casepro/settings_common.py:94
 msgid "English"
-msgstr ""
+msgstr "Inglês"
 
 #: casepro/settings_common.py:94
 msgid "French"
-msgstr ""
+msgstr "Francês "
 
 #: casepro/settings_common.py:94
 msgid "Portuguese"
-msgstr ""
+msgstr "Português"
 
 #: casepro/statistics/models.py:45
 msgid "The thing being counted"
-msgstr ""
+msgstr "A coisa sendo contada"
 
 #: casepro/statistics/models.py:47
 msgid "The scope in which it is being counted"
-msgstr ""
+msgstr "O escopo em que está sendo contado"
 
 #: casepro/statistics/models.py:230 casepro/statistics/models.py:427
 msgid "The day this count is for"
-msgstr ""
+msgstr "O dia em que esta conta é para"
 
 #: casepro/statistics/models.py:314
 msgid "Incoming Messages"
-msgstr ""
+msgstr "Mensagens de entrada"
 
 #: casepro/statistics/models.py:333 casepro/statistics/models.py:368
 msgid "Replies Sent"
-msgstr ""
+msgstr "Respostas Enviadas"
 
 #: casepro/statistics/models.py:334 casepro/statistics/models.py:371
 msgid "Cases Opened"
-msgstr ""
+msgstr "Casos Abertos"
 
 #: casepro/statistics/models.py:335 casepro/statistics/models.py:372
 msgid "Cases Closed"
-msgstr ""
+msgstr "Casos Fechados"
 
 #: casepro/statistics/models.py:369
 msgid "Average Reply Time"
-msgstr ""
+msgstr "Tempo Médio de Resposta"
 
 #: casepro/statistics/models.py:370
 msgid "Average Closed Time"
-msgstr ""
+msgstr "Tempo Médio de Encerramento"
 
 #: casepro/statistics/views.py:25
 msgid "January"
-msgstr ""
+msgstr "Janeiro"
 
 #: casepro/statistics/views.py:25
 msgid "February"
-msgstr ""
+msgstr "Fevereiro"
 
 #: casepro/statistics/views.py:25
 msgid "March"
-msgstr ""
+msgstr "Março"
 
 #: casepro/statistics/views.py:25
 msgid "April"
-msgstr ""
+msgstr "Abril"
 
 #: casepro/statistics/views.py:25
 msgid "May"
-msgstr ""
+msgstr "Maio"
 
 #: casepro/statistics/views.py:25
 msgid "June"
-msgstr ""
+msgstr "Junho"
 
 #: casepro/statistics/views.py:26
 msgid "July"
-msgstr ""
+msgstr "Julho"
 
 #: casepro/statistics/views.py:26
 msgid "August"
-msgstr ""
+msgstr "Agosto"
 
 #: casepro/statistics/views.py:26
 msgid "September"
-msgstr ""
+msgstr "Setembro"
 
 #: casepro/statistics/views.py:26
 msgid "October"
-msgstr ""
+msgstr "Outubro"
 
 #: casepro/statistics/views.py:26
 msgid "November"
-msgstr ""
+msgstr "Novembro"
 
 #: casepro/statistics/views.py:26
 msgid "December"
-msgstr ""
+msgstr "Dezembro"
 
 #: casepro/statistics/views.py:158
 msgid "Other"
-msgstr ""
+msgstr "Outro"
 
 #: casepro/statistics/views.py:182
 msgid "Download Export"
-msgstr ""
+msgstr "Fazer o download da exportação"
 
 #: templates/cases/case_read.haml:18
 msgid "Could not open new case as message was already handled by this case"
 msgstr ""
+"Não foi possível abrir um novo caso, já que a mensagem já foi tratada pora "
+"este caso"
 
 #: templates/cases/case_read.haml:21
 msgid "Could not open new case as contact already has this open case"
 msgstr ""
+"Não foi possível abrir um novo caso, já que o contato já possui esse caso "
+"aberto"
 
 #: templates/cases/case_read.haml:36 templates/msgs/label_read.haml:22
 msgid "Watch"
-msgstr ""
+msgstr "Acompanhar"
 
 #: templates/cases/case_read.haml:40 templates/msgs/label_read.haml:26
 msgid "Unwatch"
-msgstr ""
+msgstr "Desacompanhar"
 
 #: templates/cases/case_read.haml:47 templates/partials/modal_assign.haml:26
 msgid "Re-assign"
-msgstr ""
+msgstr "Re-atribuir"
 
 #: templates/cases/case_read.haml:53
 msgid "Re-open"
-msgstr ""
+msgstr "Reabrir"
 
 #: templates/cases/case_read.haml:61
 msgid "Assignee"
-msgstr ""
+msgstr "Administrador"
 
 #: templates/cases/case_read.haml:69 templates/cases/case_read.haml:236
 #: templates/contacts/contact_read.haml:30
 msgid "Status"
-msgstr ""
+msgstr "Status"
 
 #: templates/cases/case_read.haml:94 templates/partials/modal_compose.haml:60
 msgid "Send"
-msgstr ""
+msgstr "Enviar"
 
 #: templates/cases/case_read.haml:198 templates/cases/partner_read.haml:166
 msgid "Contact"
-msgstr ""
+msgstr "Contato"
 
 #: templates/cases/case_read.haml:241 templates/contacts/contact_read.haml:33
 msgid "Blocked"
-msgstr ""
+msgstr "Bloqueado"
 
 #: templates/cases/case_read.haml:247 templates/contacts/contact_read.haml:39
 msgid "Stopped"
-msgstr ""
+msgstr "Parado"
 
 #: templates/cases/case_read.haml:258 templates/cases/inbox_outgoing.haml:19
 msgid "View"
-msgstr ""
+msgstr "View"
 
 #: templates/cases/inbox_base.haml:41
 msgid "View Label"
-msgstr ""
+msgstr "Etiqueta de exibição"
 
 #: templates/cases/inbox_base.haml:46 templates/cases/inbox_messages.haml:239
 #: templates/partials/modal_newcase.haml:5
 msgid "Open Case"
-msgstr ""
+msgstr "Abrir Caso"
 
 #: templates/cases/inbox_base.haml:57
 msgid "Messages"
-msgstr ""
+msgstr "Mensagens"
 
 #: templates/cases/inbox_base.haml:110 templates/contacts/contact_read.haml:51
 msgid "Cases"
-msgstr ""
+msgstr "Casos"
 
 #: templates/cases/inbox_base.haml:122
 msgid "Closed"
-msgstr ""
+msgstr "Fechados"
 
 #: templates/cases/inbox_cases.haml:12
 msgid "Assigned to"
-msgstr ""
+msgstr "Atribuído a"
 
 #: templates/cases/inbox_cases.haml:16
 msgid "Anyone"
-msgstr ""
+msgstr "Qualquer um"
 
 #: templates/cases/inbox_cases.haml:22 templates/cases/inbox_messages.haml:38
 #: templates/cases/inbox_messages.haml:64
 #: templates/cases/inbox_outgoing.haml:37
 msgid "Search"
-msgstr ""
+msgstr "Procurar"
 
 #: templates/cases/inbox_cases.haml:62
 msgid "No cases"
-msgstr ""
+msgstr "Nenhum caso"
 
 #: templates/cases/inbox_cases.haml:65 templates/cases/inbox_messages.haml:262
 #: templates/cases/inbox_outgoing.haml:76
 msgid "Search returned more items than can be displayed"
-msgstr ""
+msgstr "A pesquisa retornou mais itens do que podem ser exibidos"
 
 #: templates/cases/inbox_messages.haml:19
 msgid "View Contact"
-msgstr ""
+msgstr "Ver Contato"
 
 #: templates/cases/inbox_messages.haml:23
 #: templates/cases/inbox_outgoing.haml:25
 msgid "Back"
-msgstr ""
+msgstr "Voltar"
 
 #: templates/cases/inbox_messages.haml:41
 msgid "Advanced..."
-msgstr ""
+msgstr "Avançado..."
 
 #: templates/cases/inbox_messages.haml:53
 msgid "include archived"
-msgstr ""
+msgstr "incluir arquivado"
 
 #: templates/cases/inbox_messages.haml:67
 msgid "Clear"
-msgstr ""
+msgstr "Limpar"
 
 #: templates/cases/inbox_messages.haml:75
 msgid "Containing"
-msgstr ""
+msgstr "Contendo"
 
 #: templates/cases/inbox_messages.haml:84
 msgid "When"
-msgstr ""
+msgstr "Quando"
 
-#: templates/cases/inbox_messages.haml:97 templates/cases/partner_read.haml:131
+#: templates/cases/inbox_messages.haml:97
+#: templates/cases/partner_read.haml:131
 #: templates/partials/modal_daterange.haml:31
 msgid "Until"
-msgstr ""
+msgstr "Até"
 
 #: templates/cases/inbox_messages.haml:127
 msgid "Include archived"
-msgstr ""
+msgstr "Incluir arquivado"
 
 #: templates/cases/inbox_messages.haml:143
 msgid "Select"
-msgstr ""
+msgstr "Selecionar"
 
 #: templates/cases/inbox_messages.haml:149
 msgid "All"
-msgstr ""
+msgstr "Todos"
 
 #: templates/cases/inbox_messages.haml:154
 #: templates/cases/partner_read.haml:206 templates/cases/partner_read.haml:276
@@ -848,94 +865,94 @@ msgstr ""
 #: templates/orgs_ext/org_home.haml:152 templates/orgs_ext/org_home.haml:211
 #: templates/orgs_ext/org_home.haml:295
 msgid "None"
-msgstr ""
+msgstr "Nenhum"
 
 #: templates/cases/inbox_messages.haml:183
 #: templates/cases/inbox_messages.haml:242
 #: templates/partials/modal_reply.haml:5
 msgid "Reply"
-msgstr ""
+msgstr "Responder"
 
 #: templates/cases/inbox_messages.haml:259
 #: templates/cases/inbox_outgoing.haml:73
 msgid "No messages"
-msgstr ""
+msgstr "Sem mensagens"
 
 #: templates/cases/partner_list.haml:15 templates/msgs/faq_list.haml:16
 #: templates/profiles/user_list.haml:10
 msgid "Add"
-msgstr ""
+msgstr "Adicionar"
 
 #: templates/cases/partner_list.haml:20 templates/frame.haml:162
 #: templates/orgs_ext/org_home.haml:70
 msgid "Partners"
-msgstr ""
+msgstr "Parceiros"
 
 #: templates/cases/partner_read.haml:47
 msgid "No primary contact"
-msgstr ""
+msgstr "Nenhum contato primário"
 
 #: templates/cases/partner_read.haml:66
 msgid "No labels"
-msgstr ""
+msgstr "Nenhum rótulo"
 
 #: templates/cases/partner_read.haml:104
 msgid "Replies"
-msgstr ""
+msgstr "Respostas"
 
 #: templates/cases/partner_read.haml:112
 msgid "Export..."
-msgstr ""
+msgstr "Exportar..."
 
 #: templates/cases/partner_read.haml:120
 #: templates/partials/modal_daterange.haml:15
 msgid "From"
-msgstr ""
+msgstr "De"
 
 #: templates/cases/partner_read.haml:148
 msgid "On"
-msgstr ""
+msgstr "Em"
 
 #: templates/cases/partner_read.haml:151
 msgid "User"
-msgstr ""
+msgstr "Usuário"
 
 #: templates/cases/partner_read.haml:154
 #: templates/partials/modal_compose.haml:46
 msgid "Message"
-msgstr ""
+msgstr "Mensagem"
 
 #: templates/cases/partner_read.haml:157
 msgid "Delay"
-msgstr ""
+msgstr "Atraso"
 
 #: templates/cases/partner_read.haml:160
 msgid "Reply to"
-msgstr ""
+msgstr "Responder para"
 
 #: templates/cases/partner_read.haml:209
 msgid "More items than can be displayed"
-msgstr ""
+msgstr "Mais itens do que podem ser exibidos"
 
 #: templates/cases/partner_read.haml:218 templates/orgs_ext/org_home.haml:218
 msgid "Users"
-msgstr ""
+msgstr "Usuários"
 
 #: templates/cases/partner_read.haml:224
 msgid "New..."
-msgstr ""
+msgstr "Novo..."
 
 #: templates/cases/partner_read.haml:243
 msgid "Replies (this month)"
-msgstr ""
+msgstr "Respostas (este mês)"
 
 #: templates/cases/partner_read.haml:246
 msgid "Replies (last month)"
-msgstr ""
+msgstr "Respostas (mês passado)"
 
 #: templates/cases/partner_read.haml:249
 msgid "Replies (total)"
-msgstr ""
+msgstr "Respostas (total)"
 
 #: templates/comments/form.html:6
 msgid "Please correct the error below"
@@ -943,15 +960,19 @@ msgid_plural ""
 "Please correct the\n"
 "        errors below"
 msgstr[0] ""
+"Corrija o\n"
+"         Erros abaixo"
 msgstr[1] ""
+"Corrija os\n"
+"         Erros abaixo"
 
 #: templates/contacts/contact_read.haml:19
 msgid "View External"
-msgstr ""
+msgstr "Visão externa"
 
 #: templates/contacts/contact_read.haml:80
 msgid "Details"
-msgstr ""
+msgstr "Detalhes"
 
 #: templates/contacts/group_list.haml:7
 msgid ""
@@ -960,166 +981,170 @@ msgid ""
 "\n"
 "      "
 msgstr ""
+"\n"
+"          Estes são os grupos visíveis para as organizações parceiras."
 
 #: templates/contacts/group_list.haml:16
 msgid "Select Groups"
-msgstr ""
+msgstr "Selecionar Grupos"
 
 #: templates/download.haml:15
 msgid ""
 "\n"
-"        Your download should start automatically. If it doesn't start in a "
-"few seconds, use the button below to download.\n"
+"        Your download should start automatically. If it doesn't start in a few seconds, use the button below to download.\n"
 "      "
 msgstr ""
+"\n"
+"Seu download deve começar automaticamente. Se não iniciar em alguns segundos, use o botão abaixo para fazer o download."
 
 #: templates/download.haml:21
 msgid "Download Now"
-msgstr ""
+msgstr "Download Now"
 
 #: templates/frame.haml:10 templates/frame.haml:78
 msgid "CasePro"
-msgstr ""
+msgstr "Inbox"
 
 #: templates/frame.haml:61
 msgid "Toggle navigation"
-msgstr ""
+msgstr "Alternar navegação"
 
 #: templates/frame.haml:90
 msgid "Site Manage"
-msgstr ""
+msgstr "Gerenciar Site"
 
 #: templates/frame.haml:96
 msgid "Orgs"
-msgstr ""
+msgstr "Orgs"
 
 #: templates/frame.haml:101
 msgid "Tasks"
-msgstr ""
+msgstr "Tarefas"
 
 #: templates/frame.haml:112
 msgid "Administration"
-msgstr ""
+msgstr "Administração"
 
 #: templates/frame.haml:119 templates/msgs/faq_list.haml:26
 msgid "FAQs"
-msgstr ""
+msgstr "FAQs"
 
 #: templates/frame.haml:170
 msgid "Message Board"
-msgstr ""
+msgstr "Quadro de mensagens"
 
 #: templates/frame.haml:190
 msgid "Profile"
-msgstr ""
+msgstr "Perfil"
 
 #: templates/frame.haml:197
 msgid "Logout"
-msgstr ""
+msgstr "Logout"
 
 #: templates/frame.haml:207 templates/smartmin/users/login.haml:13
 #: templates/smartmin/users/login.haml:51
 msgid "Login"
-msgstr ""
+msgstr "Login"
 
 #: templates/msgs/faq_list.haml:20
 msgid "Import"
-msgstr ""
+msgstr "Importar"
 
 #: templates/msgs/faq_list.haml:43
 msgid "Translations"
-msgstr ""
+msgstr "Traduções"
 
 #: templates/msgs/faq_read.haml:75
 msgid "Add Translation"
-msgstr ""
+msgstr "Adicionar Tradução"
 
 #: templates/msgs/faq_read.haml:125
 msgid "No translations available"
-msgstr ""
+msgstr "Nenhuma tradução disponível"
 
 #: templates/org_chooser.haml:5
 msgid ""
 "\n"
-"    No site selected, please contact your administrator to find valid "
-"organization sites.\n"
+"    No site selected, please contact your administrator to find valid organization sites.\n"
 "  "
 msgstr ""
+"\n"
+"Nenhum site selecionado, entre em contato com o administrador para encontrar sites de organização válidos."
 
 #: templates/orgs_ext/org_home.haml:23
 msgid "My Organization"
-msgstr ""
+msgstr "Minha Organização"
 
 #: templates/orgs_ext/org_home.haml:77 templates/orgs_ext/org_home.haml:166
 #: templates/orgs_ext/org_home.haml:225
 msgid "New"
-msgstr ""
+msgstr "Novo"
 
 #: templates/orgs_ext/org_home.haml:80 templates/orgs_ext/org_home.haml:169
 msgid "Export Stats..."
-msgstr ""
+msgstr "Exportar Estatisticas..."
 
 #: templates/orgs_ext/org_home.haml:97 templates/orgs_ext/org_home.haml:247
 msgid "Replies this month"
-msgstr ""
+msgstr "Respostas este mês"
 
 #: templates/orgs_ext/org_home.haml:100 templates/orgs_ext/org_home.haml:250
 msgid "Replies last month"
-msgstr ""
+msgstr "Respostas mês passado"
 
 #: templates/orgs_ext/org_home.haml:103 templates/orgs_ext/org_home.haml:253
 msgid "Total replies"
-msgstr ""
+msgstr "Total de respostas"
 
 #: templates/orgs_ext/org_home.haml:106 templates/orgs_ext/org_home.haml:256
 msgid "Cases opened this month"
-msgstr ""
+msgstr "Casos abertos este mês"
 
 #: templates/orgs_ext/org_home.haml:109 templates/orgs_ext/org_home.haml:259
 msgid "Cases closed this month"
-msgstr ""
+msgstr "Casos encerrados este mês"
 
 #: templates/orgs_ext/org_home.haml:112 templates/orgs_ext/org_home.haml:262
 msgid "Total cases opened"
-msgstr ""
+msgstr "Total de casos abertos"
 
 #: templates/orgs_ext/org_home.haml:115
 msgid "Average referral response time this month"
-msgstr ""
+msgstr "Tempo de resposta médio este mês"
 
 #: templates/orgs_ext/org_home.haml:118
 msgid "Average time to close this month"
-msgstr ""
+msgstr "Tempo médio para fechar este mês"
 
 #: templates/orgs_ext/org_home.haml:186
 msgid "Messages this month"
-msgstr ""
+msgstr "Mensagens deste mês"
 
 #: templates/orgs_ext/org_home.haml:189
 msgid "Messages last month"
-msgstr ""
+msgstr "Mensagens no mês passado"
 
 #: templates/orgs_ext/org_home.haml:192
 msgid "Total messages"
-msgstr ""
+msgstr "Total de mensagens"
 
 #: templates/orgs_ext/org_home.haml:228
 msgid "Export Users..."
-msgstr ""
+msgstr "Exportar Usuários ..."
 
 #: templates/orgs_ext/org_home.haml:237
 msgid "include partner users"
-msgstr ""
+msgstr "Incluir usuários parceiros"
 
 #: templates/partials/modal_assign.haml:13
 #: templates/partials/modal_newcase.haml:27
 msgid "Assign to Partner"
-msgstr ""
+msgstr "Atribuir ao Parceiro"
 
 #: templates/partials/modal_assign.haml:19
 #: templates/partials/modal_newcase.haml:33
 msgid "Specific User (Optional)"
-msgstr ""
+msgstr "Usuário específico (opcional)"
 
 #: templates/partials/modal_assign.haml:29
 #: templates/partials/modal_compose.haml:63
@@ -1128,21 +1153,22 @@ msgstr ""
 #: templates/partials/modal_edit.haml:25 templates/partials/modal_faq.haml:85
 #: templates/partials/modal_label.haml:26
 #: templates/partials/modal_newcase.haml:44
-#: templates/partials/modal_note.haml:31 templates/partials/modal_reply.haml:90
+#: templates/partials/modal_note.haml:31
+#: templates/partials/modal_reply.haml:90
 msgid "Cancel"
-msgstr ""
+msgstr "Cancelar"
 
 #: templates/partials/modal_compose.haml:11
 msgid "Recipient"
-msgstr ""
+msgstr "Recipiente"
 
 #: templates/partials/modal_compose.haml:22
 msgid "Phone"
-msgstr ""
+msgstr "Telefone"
 
 #: templates/partials/modal_compose.haml:27
 msgid "Twitter"
-msgstr ""
+msgstr "Twitter"
 
 #: templates/partials/modal_compose.haml:40
 #: templates/partials/modal_compose.haml:50
@@ -1151,134 +1177,147 @@ msgstr ""
 #: templates/partials/modal_edit.haml:12 templates/partials/modal_faq.haml:34
 #: templates/partials/modal_faq.haml:46 templates/partials/modal_faq.haml:58
 #: templates/partials/modal_newcase.haml:19
-#: templates/partials/modal_note.haml:18 templates/partials/modal_reply.haml:74
+#: templates/partials/modal_note.haml:18
+#: templates/partials/modal_reply.haml:74
 msgid "Required"
-msgstr ""
+msgstr "Requerido"
 
 #: templates/partials/modal_compose.haml:53
 #: templates/partials/modal_edit.haml:15
 #: templates/partials/modal_newcase.haml:22
-#: templates/partials/modal_note.haml:21 templates/partials/modal_reply.haml:77
+#: templates/partials/modal_note.haml:21
+#: templates/partials/modal_reply.haml:77
 msgid "Too long"
-msgstr ""
+msgstr "Muito longo"
 
 #: templates/partials/modal_confirm.haml:14
 #: templates/partials/modal_daterange.haml:50
-#: templates/partials/modal_label.haml:23 templates/partials/modal_note.haml:28
+#: templates/partials/modal_label.haml:23
+#: templates/partials/modal_note.haml:28
 msgid "OK"
-msgstr ""
+msgstr "OK"
 
 #: templates/partials/modal_edit.haml:22
 msgid "Save"
-msgstr ""
+msgstr "Salvar"
 
 #: templates/partials/modal_faq.haml:11
 msgid "Original FAQ"
-msgstr ""
+msgstr "FAQ Original "
 
 #: templates/partials/modal_faq.haml:71
 msgid "Valid language required"
-msgstr ""
+msgstr "Idioma válido requerido"
 
 #: templates/partials/modal_faq.haml:82
 msgid "Submit"
-msgstr ""
+msgstr "Enviar"
 
 #: templates/partials/modal_messagehistory.haml:5
 msgid "Message History"
-msgstr ""
+msgstr "Histórico de mensagens"
 
 #: templates/partials/modal_messagehistory.haml:45
 msgid "No events"
-msgstr ""
+msgstr "Sem eventos"
 
 #: templates/partials/modal_newcase.haml:9
 msgid ""
 "Open a new case for this contact? This will archive all messages from the "
 "contact."
 msgstr ""
+"Abra um novo caso para este contato? Isso arquivará todas as mensagens do "
+"contato."
 
 #: templates/partials/modal_note.haml:14
 msgid "Note"
-msgstr ""
+msgstr "Nota"
 
 #: templates/partials/modal_reply.haml:11
 msgid ""
 "Send the following reply to the selected message(s). This will remove the "
 "message(s) from your inbox to Archived."
 msgstr ""
+"Envie a seguinte resposta para a(s) mensagem(s) selecionada(s). Isso "
+"removerá a(s) mensagem(s) da sua caixa de entrada para Arquivado."
 
 #: templates/partials/modal_reply.haml:14
 msgid ""
 "Send the following reply. This will archive this message removing it from "
 "your Inbox."
 msgstr ""
+"Envie a seguinte resposta. Isso arquivará essa mensagem removendo-a da sua "
+"caixa de entrada."
 
 #: templates/partials/modal_reply.haml:18
 msgid "Please select one of the following pre-approved replies."
-msgstr ""
+msgstr "Selecione uma das seguintes respostas pré-aprovadas."
 
 #: templates/partials/modal_reply.haml:21
 msgid "There are no pre-approved replies. Please contact your administrator."
 msgstr ""
+"Não há respostas pré-aprovadas. Entre em contato com seu administrador."
 
 #: templates/partials/modal_reply.haml:24
 msgid ""
 "You may select one of the following pre-approved replies or enter a custom "
 "message below."
 msgstr ""
+"Você pode selecionar uma das seguintes respostas pré-aprovadas ou insira uma"
+" mensagem personalizada abaixo."
 
 #: templates/partials/modal_reply.haml:87
 msgid "Send & Archive"
-msgstr ""
+msgstr "Enviar & Arquivar"
 
 #: templates/profiles/email/case_assignment.html:2
 #: templates/profiles/email/case_assignment.txt:2
 #, python-format
 msgid "User %(user)s assigned this case to your organization."
-msgstr ""
+msgstr "O usuário %(user)s atribuiu este caso à sua organização."
 
 #: templates/profiles/email/case_assignment.html:5
 #, python-format
 msgid "Click <a href=\"%(case_url)s\">here</a> to view the case."
-msgstr ""
+msgstr "Click <a href=\"%(case_url)s\">aqui</a> para ver o caso."
 
 #: templates/profiles/email/case_assignment.txt:4
 #, python-format
 msgid "Go to %(case_url)s to view the case."
-msgstr ""
+msgstr "Vá para %(case_url)s para ver este caso."
 
 #: templates/profiles/email/case_closed.html:2
 #: templates/profiles/email/case_closed.txt:2
 #, python-format
 msgid "User %(user)s closed the case with the following note:"
-msgstr ""
+msgstr "Usuário %(user)s encerrou o caso com a seguinte nota:"
 
 #: templates/profiles/email/case_new_note.html:2
 #: templates/profiles/email/case_new_note.txt:2
 #, python-format
 msgid "User %(user)s added a new note:"
-msgstr ""
+msgstr "Usuário %(user)s adicionou uma nota nova:"
 
 #: templates/profiles/email/case_reassigned.html:2
 #: templates/profiles/email/case_reassigned.txt:2
 #, python-format
 msgid "User %(user)s reassigned the case to %(assignee)s."
-msgstr ""
+msgstr "Usuário %(user)s reatribuí o caso a %(assignee)s."
 
 #: templates/profiles/email/case_reopened.html:2
 #: templates/profiles/email/case_reopened.txt:2
 #, python-format
 msgid "User %(user)s reopened the case with the following note:"
-msgstr ""
+msgstr "Usuário %(user)s reabriu o caso com a seguinte nota:"
 
 #: templates/profiles/email/common/case_notification_footer.html:2
 #, python-format
 msgid ""
 "Click <a href=\"%(case_url)s\">here</a> to view the case. You are receiving\n"
-"this email because you are watching this case. You can unwatch from the case "
-"page."
+"this email because you are watching this case. You can unwatch from the case page."
 msgstr ""
+"Click <a href=\"%(case_url)s\">aqui</a> para ver o caso. Você está recebendo\n"
+"Este e-mail porque você está seguindo este caso. Você pode parar de seguir na página do caso."
 
 #: templates/profiles/email/common/case_notification_footer.txt:1
 #, python-format
@@ -1286,43 +1325,49 @@ msgid ""
 "Go to %(case_url)s to view the case. You are receiving this email because\n"
 "you are watching this case. You can unwatch from the case page."
 msgstr ""
+"Vá para %(case_url)s para ver o caso. Você está recebendo este e-mail porque\n"
+"Você está acompanhando este caso. Você pode para de acompanhar na página do caso."
 
 #: templates/profiles/email/message_labelling.html:5
 #, python-format
 msgid ""
 "\n"
-"Go to <a href=\"%(inbox_url)s\">here</a> to view the message. You are "
-"receiving this email because you are watching\n"
+"Go to <a href=\"%(inbox_url)s\">here</a> to view the message. You are receiving this email because you are watching\n"
 "those labels. You can unwatch from the label pages.\n"
 msgstr ""
+"\n"
+"Entre <a href=\"%(inbox_url)s\">aqui</a> para ver a mensagem. Você está recebendo este e-mail porque está acompanhando\n"
+"esses rótulos. Você pode para de acompnhar na página de rótulos.\n"
 
 #: templates/profiles/email/message_labelling.txt:4
 #, python-format
 msgid ""
-"Go to %(inbox_url)s to view the message. You are receiving this email "
-"because you are watching those labels. You can\n"
+"Go to %(inbox_url)s to view the message. You are receiving this email because you are watching those labels. You can\n"
 "unwatch from the label pages."
 msgstr ""
+"Vá para %(inbox_url)s para ver a mensagem. Você está recebendo este e-mail porque está acompanhando esses rótulos. Você pode\n"
+"parar de acompanhar na página de etiquetas."
 
 #: templates/profiles/user_read.haml:32
 msgid "Become"
-msgstr ""
+msgstr "Tornar-se"
 
 #: templates/profiles/user_read.haml:54
 msgid "Analyst"
-msgstr ""
+msgstr "Analista"
 
 #: templates/smartmin/users/login.haml:57
 msgid "Forgot Password?"
-msgstr ""
+msgstr "Esqueceu a senha?"
 
 #: templates/utils/email/export.html:2
 #, python-format
 msgid ""
 "\n"
-"Your export is ready and can be downloaded by clicking <a href="
-"\"%(download_url)s\">here</a>.\n"
+"Your export is ready and can be downloaded by clicking <a href=\"%(download_url)s\">here</a>.\n"
 msgstr ""
+"\n"
+"Sua exportação está pronta e pode ser baixada clicando <a href=\"%(download_url)s\">aqui</a>.\n"
 
 #: templates/utils/email/export.txt:2
 #, python-format
@@ -1330,3 +1375,5 @@ msgid ""
 "\n"
 "Your export is ready and can be downloaded by clicking %(download_url)s.\n"
 msgstr ""
+"\n"
+"Sua exportação está pronta e pode ser baixada clicando %(download_url)s.\n"

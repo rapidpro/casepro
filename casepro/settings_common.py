@@ -91,7 +91,7 @@ MODELTRANSLATION_TRANSLATION_REGISTRY = "translation"
 LANGUAGE_CODE = 'en'
 
 # Available languages for translation
-LANGUAGES = (('en', _("English")), ('fr', _("French")))
+LANGUAGES = (('en', _("English")), ('fr', _("French")), ('pt-br', _("Portuguese")))
 RTL_LANGUAGES = {}
 DEFAULT_LANGUAGE = "en"
 
@@ -169,6 +169,9 @@ INSTALLED_APPS = (
     'djcelery_email',
     'compressor',
     'sorl.thumbnail',
+
+    # Haml-like templates
+    'hamlpy',
 
     # smartmin
     'smartmin',
