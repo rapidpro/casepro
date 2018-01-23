@@ -583,7 +583,7 @@ class JunebugBackendTest(BaseCasesTest):
         bob = self.create_contact(self.unicef, "C-002", "Bob")
         msg = self.create_message(
             self.unicef, 123, bob, "Hello", created_on=datetime(2016, 11, 16, 10, 30, tzinfo=pytz.utc))
-        msg.labels.add(self.aids)
+        msg.label(self.aids)
         self.backend = JunebugBackend()
         out_msg = self.create_outgoing(
             self.unicef, self.user1, None, "B", "That's great", bob, urn="tel:+1234",
@@ -711,7 +711,7 @@ class JunebugBackendTest(BaseCasesTest):
         """
         bob = self.create_contact(self.unicef, "C-002", "Bob")
         msg = self.create_message(self.unicef, 123, bob, "Hello")
-        msg.labels.add(self.aids)
+        msg.label(self.aids)
         self.backend.unlabel_messages(self.unicef, [msg], self.aids)
 
         msg.refresh_from_db()

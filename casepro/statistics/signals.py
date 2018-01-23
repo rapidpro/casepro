@@ -71,21 +71,6 @@ def record_new_outgoing(sender, instance, created, **kwargs):
                             DailySecondTotalCount.TYPE_TILL_REPLIED, partner)
 
 
-@receiver(m2m_changed, sender=Message.labels.through)
-def record_incoming_labelling(sender, instance, action, reverse, model, pk_set, **kwargs):
-    day = datetime_to_date(instance.created_on, instance.org)
-
-    if action == 'post_add':
-        for label_id in pk_set:
-            DailyCount.record_item(day, DailyCount.TYPE_INCOMING, Label(pk=label_id))
-    elif action == 'post_remove':
-        for label_id in pk_set:
-            DailyCount.record_removal(day, DailyCount.TYPE_INCOMING, Label(pk=label_id))
-    elif action == 'pre_clear':
-        for label in instance.labels.all():
-            DailyCount.record_removal(day, DailyCount.TYPE_INCOMING, label)
-
-
 @receiver(post_save, sender=CaseAction)
 def record_new_case_action(sender, instance, created, **kwargs):
     """

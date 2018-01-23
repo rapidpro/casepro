@@ -471,10 +471,16 @@ class Message(models.Model):
         Adds the given labels to this message
         """
         from casepro.profiles.models import Notification
+        from casepro.statistics.models import DailyCount, datetime_to_date
 
-        existing_label_ids = list(Labelling.objects.filter(message=self, label__in=labels).values_list('label', flat=True))
-        new_labellings = [Labelling(message=self, label=l) for l in labels if l.id not in existing_label_ids]
+        existing_label_ids = Labelling.objects.filter(message=self, label__in=labels).values_list('label', flat=True)
+        add_labels = [l for l in labels if l.id not in existing_label_ids]
+        new_labellings = [Labelling(message=self, label=l) for l in add_labels]
         Labelling.objects.bulk_create(new_labellings)
+
+        day = datetime_to_date(self.created_on, self.org)
+        for label in add_labels:
+            DailyCount.record_item(day, DailyCount.TYPE_INCOMING, label)
 
         # notify all users who watch these labels
         for watcher in set(User.objects.filter(watched_labels__in=labels)):
@@ -484,7 +490,27 @@ class Message(models.Model):
         """
         Removes the given labels from this message
         """
-        Labelling.objects.filter(message=self, label__in=labels).delete()
+        from casepro.statistics.models import DailyCount, datetime_to_date
+
+        existing_labellings = Labelling.objects.filter(message=self, label__in=labels).select_related('label')
+
+        day = datetime_to_date(self.created_on, self.org)
+        for labelling in existing_labellings:
+            DailyCount.record_removal(day, DailyCount.TYPE_INCOMING, labelling.label)
+
+        Labelling.objects.filter(id__in=[l.id for l in existing_labellings]).delete()
+
+    def clear_labels(self):
+        """
+        Removes all labels from this message
+        """
+        from casepro.statistics.models import DailyCount, datetime_to_date
+
+        day = datetime_to_date(self.created_on, self.org)
+        for label in self.labels.all():
+            DailyCount.record_removal(day, DailyCount.TYPE_INCOMING, label)
+
+        Labelling.objects.filter(message=self).delete()
 
     def update_labels(self, user, labels):
         """
