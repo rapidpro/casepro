@@ -32,4 +32,8 @@ class Migration(migrations.Migration):
             name='message',
             field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='msgs.Message'),
         ),
+        migrations.AlterUniqueTogether(
+            name='labelling',
+            unique_together=set([('message', 'label')]),
+        ),
     ]

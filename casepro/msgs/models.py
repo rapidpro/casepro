@@ -284,11 +284,16 @@ class FAQ(models.Model):
 
 
 class Labelling(models.Model):
+    """
+    An application of a label to a message
+    """
     message = models.ForeignKey('msgs.Message', on_delete=models.CASCADE)
+
     label = models.ForeignKey(Label, on_delete=models.CASCADE)
 
     class Meta:
         db_table = 'msgs_message_labels'
+        unique_together = ('message', 'label')
 
 
 @python_2_unicode_compatible
@@ -467,7 +472,9 @@ class Message(models.Model):
         """
         from casepro.profiles.models import Notification
 
-        self.labels.add(*labels)
+        existing_label_ids = list(Labelling.objects.filter(message=self, label__in=labels).values_list('label', flat=True))
+        new_labellings = [Labelling(message=self, label=l) for l in labels if l.id not in existing_label_ids]
+        Labelling.objects.bulk_create(new_labellings)
 
         # notify all users who watch these labels
         for watcher in set(User.objects.filter(watched_labels__in=labels)):
@@ -477,7 +484,7 @@ class Message(models.Model):
         """
         Removes the given labels from this message
         """
-        self.labels.remove(*labels)
+        Labelling.objects.filter(message=self, label__in=labels).delete()
 
     def update_labels(self, user, labels):
         """
