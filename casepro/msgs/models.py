@@ -283,6 +283,14 @@ class FAQ(models.Model):
         return self.question
 
 
+class Labelling(models.Model):
+    message = models.ForeignKey('msgs.Message', on_delete=models.CASCADE)
+    label = models.ForeignKey(Label, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'msgs_message_labels'
+
+
 @python_2_unicode_compatible
 class Message(models.Model):
     """
@@ -308,7 +316,12 @@ class Message(models.Model):
 
     text = models.TextField(max_length=640, verbose_name=_("Text"))
 
-    labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this message"), related_name='messages')
+    labels = models.ManyToManyField(
+        Label,
+        through=Labelling,
+        help_text=_("Labels assigned to this message"),
+        related_name='messages'
+    )
 
     has_labels = models.BooleanField(default=False)  # maintained via db triggers
 
