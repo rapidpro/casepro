@@ -14,6 +14,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='message',
             name='labels',
-            field=models.ManyToManyField(help_text='Labels assigned to this message', related_name='messages', to='msgs.Label'),
+            field=models.ManyToManyField(help_text='Labels assigned to this message', through='msgs.Labelling', related_name='messages', to='msgs.Label')
+
         ),
     ]
