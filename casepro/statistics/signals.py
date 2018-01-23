@@ -1,11 +1,11 @@
 from __future__ import unicode_literals
 
-from django.db.models.signals import post_save, m2m_changed
+from django.db.models.signals import post_save
 from django.dispatch import receiver
 from math import ceil
 
 from casepro.cases.models import CaseAction
-from casepro.msgs.models import Message, Label, Outgoing
+from casepro.msgs.models import Message, Outgoing
 
 from .models import datetime_to_date, DailyCount, DailySecondTotalCount, record_case_closed_time
 
