@@ -1,11 +1,11 @@
 from __future__ import unicode_literals
 
-from django.db.models.signals import post_save, m2m_changed
+from django.db.models.signals import post_save
 from django.dispatch import receiver
 from math import ceil
 
 from casepro.cases.models import CaseAction
-from casepro.msgs.models import Message, Label, Outgoing
+from casepro.msgs.models import Message, Outgoing
 
 from .models import datetime_to_date, DailyCount, DailySecondTotalCount, record_case_closed_time
 
@@ -69,21 +69,6 @@ def record_new_outgoing(sender, instance, created, **kwargs):
                         DailySecondTotalCount.record_item(
                             day, seconds_since_open,
                             DailySecondTotalCount.TYPE_TILL_REPLIED, partner)
-
-
-@receiver(m2m_changed, sender=Message.labels.through)
-def record_incoming_labelling(sender, instance, action, reverse, model, pk_set, **kwargs):
-    day = datetime_to_date(instance.created_on, instance.org)
-
-    if action == 'post_add':
-        for label_id in pk_set:
-            DailyCount.record_item(day, DailyCount.TYPE_INCOMING, Label(pk=label_id))
-    elif action == 'post_remove':
-        for label_id in pk_set:
-            DailyCount.record_removal(day, DailyCount.TYPE_INCOMING, Label(pk=label_id))
-    elif action == 'pre_clear':
-        for label in instance.labels.all():
-            DailyCount.record_removal(day, DailyCount.TYPE_INCOMING, label)
 
 
 @receiver(post_save, sender=CaseAction)
