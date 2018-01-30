@@ -289,10 +289,15 @@ class Labelling(models.Model):
     """
     message = models.ForeignKey('msgs.Message', on_delete=models.CASCADE)
 
-    label = models.ForeignKey(Label, on_delete=models.CASCADE)
+    label = models.ForeignKey(Label, db_index=False, on_delete=models.CASCADE)
+
+    message_created_on = models.DateTimeField()
 
     class Meta:
         db_table = 'msgs_message_labels'
+        indexes = [
+            models.Index(fields=['label', '-message_created_on'])
+        ]
         unique_together = ('message', 'label')
 
 
@@ -383,12 +388,16 @@ class Message(models.Model):
         queryset = org.incoming_messages.filter(is_active=True, is_handled=True)
         all_label_access = user.can_administer(org)
 
+        order_by_labels = False
+
         if all_label_access:
             if folder == MessageFolder.inbox or (folder == MessageFolder.archived and label_id):
                 queryset = queryset.filter(has_labels=True)
                 if label_id:
                     label = Label.get_all(org, user).filter(pk=label_id).first()
                     queryset = queryset.filter(labels=label)
+
+                order_by_labels = True
 
             elif folder == MessageFolder.unlabelled:
                 # only show inbox messages in unlabelled
@@ -403,6 +412,8 @@ class Message(models.Model):
                 queryset = queryset.distinct()
 
             queryset = queryset.filter(has_labels=True, labels__in=list(labels))
+
+            order_by_labels = True
 
             if folder == MessageFolder.unlabelled:
                 raise ValueError("Unlabelled folder is only accessible to administrators")
@@ -439,7 +450,12 @@ class Message(models.Model):
 
         queryset = queryset.prefetch_related('contact', 'labels', 'case__assignee', 'case__user_assignee')
 
-        return queryset.order_by('-created_on')
+        if order_by_labels:
+            queryset = queryset.order_by('-labelling__message_created_on')
+        else:
+            queryset = queryset.order_by('-created_on')
+
+        return queryset
 
     def get_history(self):
         """
@@ -475,7 +491,7 @@ class Message(models.Model):
 
         existing_label_ids = Labelling.objects.filter(message=self, label__in=labels).values_list('label', flat=True)
         add_labels = [l for l in labels if l.id not in existing_label_ids]
-        new_labellings = [Labelling(message=self, label=l) for l in add_labels]
+        new_labellings = [Labelling(message=self, label=l, message_created_on=self.created_on) for l in add_labels]
         Labelling.objects.bulk_create(new_labellings)
 
         day = datetime_to_date(self.created_on, self.org)
