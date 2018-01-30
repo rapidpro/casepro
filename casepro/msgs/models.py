@@ -291,10 +291,13 @@ class Labelling(models.Model):
 
     label = models.ForeignKey(Label, on_delete=models.CASCADE)
 
-    message_created_on = models.DateTimeField(null=True)
+    message_created_on = models.DateTimeField()
 
     class Meta:
         db_table = 'msgs_message_labels'
+        indexes = [
+            models.Index(fields=['label', '-message_created_on'])
+        ]
         unique_together = ('message', 'label')
 
 
@@ -385,12 +388,16 @@ class Message(models.Model):
         queryset = org.incoming_messages.filter(is_active=True, is_handled=True)
         all_label_access = user.can_administer(org)
 
+        order_by_labels = False
+
         if all_label_access:
             if folder == MessageFolder.inbox or (folder == MessageFolder.archived and label_id):
                 queryset = queryset.filter(has_labels=True)
                 if label_id:
                     label = Label.get_all(org, user).filter(pk=label_id).first()
                     queryset = queryset.filter(labels=label)
+
+                order_by_labels = True
 
             elif folder == MessageFolder.unlabelled:
                 # only show inbox messages in unlabelled
@@ -405,6 +412,8 @@ class Message(models.Model):
                 queryset = queryset.distinct()
 
             queryset = queryset.filter(has_labels=True, labels__in=list(labels))
+
+            order_by_labels = True
 
             if folder == MessageFolder.unlabelled:
                 raise ValueError("Unlabelled folder is only accessible to administrators")
@@ -441,7 +450,12 @@ class Message(models.Model):
 
         queryset = queryset.prefetch_related('contact', 'labels', 'case__assignee', 'case__user_assignee')
 
-        return queryset.order_by('-created_on')
+        if order_by_labels:
+            queryset = queryset.order_by('-labelling__message_created_on')
+        else:
+            queryset = queryset.order_by('-created_on')
+
+        return queryset
 
     def get_history(self):
         """
