@@ -289,7 +289,7 @@ class Labelling(models.Model):
     """
     message = models.ForeignKey('msgs.Message', on_delete=models.CASCADE)
 
-    label = models.ForeignKey(Label, on_delete=models.CASCADE)
+    label = models.ForeignKey(Label, db_index=False, on_delete=models.CASCADE)
 
     message_created_on = models.DateTimeField()
 
