@@ -485,14 +485,12 @@ class BaseInboxView(OrgPermsMixin, SmartTemplateView):
         labels = list(Label.get_all(org, user).order_by('name'))
         Label.bulk_cache_initialize(labels)
 
-        groups = Group.get_all(org, visible=True).order_by('name')
         fields = Field.get_all(org, visible=True).order_by('label')
 
         # angular app requires context data in JSON format
         context['context_data_json'] = json_encode({
             'user': {'id': user.pk, 'partner': partner.as_json() if partner else None},
             'labels': [l.as_json() for l in labels],
-            'groups': [g.as_json() for g in groups],
             'fields': [f.as_json() for f in fields],
         })
 
