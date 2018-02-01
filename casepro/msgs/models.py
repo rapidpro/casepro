@@ -376,7 +376,6 @@ class Message(models.Model):
         include_archived = search.get('include_archived')
         text = search.get('text')
         contact_id = search.get('contact')
-        group_ids = search.get('groups')
         after = search.get('after')
         before = search.get('before')
         last_refresh = search.get('last_refresh')
@@ -431,8 +430,6 @@ class Message(models.Model):
 
         if contact_id:
             queryset = queryset.filter(contact__pk=contact_id)
-        if group_ids:
-            queryset = queryset.filter(contact__groups__pk__in=group_ids).distinct()
 
         if after and not last_refresh:
             queryset = queryset.filter(created_on__gt=after)

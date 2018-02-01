@@ -998,9 +998,6 @@ class MessageTest(BaseCasesTest):
         # by contact in the inbox
         assert_search(self.admin, {'folder': MessageFolder.inbox, 'contact': bob.pk}, [msg8, msg6])
 
-        # by contact group in the inbox
-        assert_search(self.admin, {'folder': MessageFolder.inbox, 'groups': [self.reporters.pk]}, [msg8, msg6])
-
         # by text
         assert_search(self.admin, {'folder': MessageFolder.inbox, 'text': "LO 5"}, [msg5])
 
