@@ -175,7 +175,6 @@ class MessageSearchMixin(object):
         include_archived = str_to_bool(self.request.GET.get('archived', ''))
         text = self.request.GET.get('text', None)
         contact_id = self.request.GET.get('contact', None)
-        group_ids = parse_csv(self.request.GET.get('groups', ''), as_ints=True)
         after = parse_iso8601(self.request.GET.get('after', None))
         before = parse_iso8601(self.request.GET.get('before', None))
 
@@ -185,7 +184,6 @@ class MessageSearchMixin(object):
             'include_archived': include_archived,  # only applies to flagged folder
             'text': text,
             'contact': contact_id,
-            'groups': group_ids,
             'after': after,
             'before': before
         }
