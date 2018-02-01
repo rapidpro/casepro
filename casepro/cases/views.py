@@ -16,7 +16,7 @@ from smartmin.views import SmartCRUDL, SmartListView, SmartCreateView, SmartRead
 from smartmin.views import SmartUpdateView, SmartDeleteView, SmartTemplateView
 from temba_client.utils import parse_iso8601
 
-from casepro.contacts.models import Contact, Field, Group
+from casepro.contacts.models import Contact, Field
 from casepro.msgs.models import Label, Message, MessageFolder, OutgoingFolder
 from casepro.pods import registry as pod_registry
 from casepro.statistics.models import DailyCount, DailySecondTotalCount
