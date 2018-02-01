@@ -386,8 +386,7 @@ describe('controllers:', () ->
         $scope.loadOldItems()
 
         expect(MessageService.fetchOld).toHaveBeenCalledWith({
-          folder: 'inbox', label: null, contact: null, text: null,
-          groups: [], archived: false, after: null, before: null
+          folder: 'inbox', label: null, contact: null, text: null, archived: false, after: null, before: null
         }, $scope.startTime, 1)
 
         fetchOld.resolve({results: [test.msg3, test.msg2], hasMore: true})
@@ -441,8 +440,7 @@ describe('controllers:', () ->
         startExport.resolve()
 
         expect(MessageService.startExport).toHaveBeenCalledWith({
-          folder: 'inbox', label: null, contact: null, text: null,
-          groups: [], archived: false, after: null, before: null
+          folder: 'inbox', label: null, contact: null, text: null, archived: false, after: null, before: null
         })
         expect(UtilsService.displayAlert).toHaveBeenCalled()
       )
