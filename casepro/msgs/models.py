@@ -65,6 +65,8 @@ class Label(models.Model):
     INBOX_COUNT_CACHE_ATTR = '_inbox_count'
     ARCHIVED_COUNT_CACHE_ATTR = '_archived_count'
 
+    MAX_NAME_LEN = 64
+
     @classmethod
     def create(cls, org, name, description, tests, is_synced):
         label = cls.objects.create(org=org, name=name, description=description, is_synced=is_synced)
