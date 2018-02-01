@@ -1,3 +1,10 @@
+v0.0.259
+----------
+ * Update to latest Django
+ * Don't allow label names which are invalid in RapidPro
+ * Remove searching by group - this should be done by labelling by group which we can actually optimize
+ * Fixes to language migration
+
 v0.0.258
 ----------
  * Migrate languages from ISO639-2 to ISO639-3
