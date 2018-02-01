@@ -20,7 +20,7 @@ from temba_client.utils import parse_iso8601
 
 from casepro.rules.mixins import RuleFormMixin
 from casepro.statistics.models import DailyCount
-from casepro.utils import parse_csv, str_to_bool, JSONEncoder, json_encode, month_range
+from casepro.utils import str_to_bool, JSONEncoder, json_encode, month_range
 from casepro.utils.export import BaseDownloadView
 
 from .forms import LabelForm, FaqForm
