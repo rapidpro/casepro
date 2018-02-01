@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import regex
+
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 
@@ -59,8 +61,13 @@ class LabelForm(forms.ModelForm):
         name = self.cleaned_data['name'].strip()
         if name.lower() == 'flagged':
             raise forms.ValidationError(_("Reserved label name"))
-        elif name.startswith('+') or name.startswith('-'):
-            raise forms.ValidationError(_("Label name cannot start with + or -"))
+
+        elif len(name) > Label.MAX_NAME_LEN:
+            raise forms.ValidationError(_("Label name must be %d characters or less") % Label.MAX_NAME_LEN)
+
+        # first character must be a word char
+        elif not regex.match('\w', name[0], flags=regex.UNICODE):
+            raise forms.ValidationError(_("Label name must start with a letter or digit"))
         return name
 
     def clean_keywords(self):

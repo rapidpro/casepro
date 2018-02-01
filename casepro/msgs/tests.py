@@ -107,7 +107,12 @@ class LabelCRUDLTest(BaseCasesTest):
         # submit with name that is invalid
         response = self.url_post('unicef', url, {'name': '+Ebola'})
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'name', "Label name cannot start with + or -")
+        self.assertFormError(response, 'form', 'name', "Label name must start with a letter or digit")
+
+        # submit with name that is too long
+        response = self.url_post('unicef', url, {'name': 'a' * 65})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'name', "Label name must be 64 characters or less")
 
         # submit with a keyword that is too short
         response = self.url_post('unicef', url, {'name': 'Ebola', 'keywords': 'a, ebola'})
@@ -992,9 +997,6 @@ class MessageTest(BaseCasesTest):
 
         # by contact in the inbox
         assert_search(self.admin, {'folder': MessageFolder.inbox, 'contact': bob.pk}, [msg8, msg6])
-
-        # by contact group in the inbox
-        assert_search(self.admin, {'folder': MessageFolder.inbox, 'groups': [self.reporters.pk]}, [msg8, msg6])
 
         # by text
         assert_search(self.admin, {'folder': MessageFolder.inbox, 'text': "LO 5"}, [msg5])
