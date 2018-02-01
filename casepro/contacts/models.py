@@ -63,7 +63,7 @@ class URN(object):
         """
         try:
             scheme, path = urn.split(':', 1)
-        except:
+        except ValueError:
             raise ValueError("URN strings must contain scheme and path components")
 
         if not scheme or scheme not in cls.VALID_SCHEMES:
