@@ -73,15 +73,6 @@
                   %span.input-group-btn
                     %button.btn.btn-default{ type:"button", ng-click:"openBefore($event)" }
                       %i.glyphicon.glyphicon-calendar
-          .form-group
-            %label.control-label.col-sm-2
-              - trans "Groups"
-            .col-sm-10
-              %ui-select{ multiple, ng-model:"searchFields.groups", theme:"bootstrap", class:"group-select" }
-                %ui-select-match{ placeholder:"Select groups" }
-                  [[ $item.name ]]
-                %ui-select-choices{ repeat:"group in groups" }
-                  [[ group.name ]]
           .form-group{ ng-if:'folder == "flagged"' }
             %label.control-label.col-sm-2
               - trans "Include archived"

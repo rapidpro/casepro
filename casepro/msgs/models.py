@@ -65,6 +65,8 @@ class Label(models.Model):
     INBOX_COUNT_CACHE_ATTR = '_inbox_count'
     ARCHIVED_COUNT_CACHE_ATTR = '_archived_count'
 
+    MAX_NAME_LEN = 64
+
     @classmethod
     def create(cls, org, name, description, tests, is_synced):
         label = cls.objects.create(org=org, name=name, description=description, is_synced=is_synced)
@@ -376,7 +378,6 @@ class Message(models.Model):
         include_archived = search.get('include_archived')
         text = search.get('text')
         contact_id = search.get('contact')
-        group_ids = search.get('groups')
         after = search.get('after')
         before = search.get('before')
         last_refresh = search.get('last_refresh')
@@ -431,8 +432,6 @@ class Message(models.Model):
 
         if contact_id:
             queryset = queryset.filter(contact__pk=contact_id)
-        if group_ids:
-            queryset = queryset.filter(contact__groups__pk__in=group_ids).distinct()
 
         if after and not last_refresh:
             queryset = queryset.filter(created_on__gt=after)
