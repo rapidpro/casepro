@@ -14,16 +14,16 @@ from .forms import OrgForm, OrgEditForm
 
 
 class OrgExtCRUDL(SmartCRUDL):
-    actions = ('create', 'update', 'list', 'home', 'edit', 'chooser', 'choose')
+    actions = ('create', 'update', 'list', 'home', 'edit', 'chooser', 'choose', 'tokens')
     model = Org
 
     class Create(OrgCRUDL.Create):
         form_class = OrgForm
-        fields = ('name', 'language', 'timezone', 'subdomain', 'api_token', 'logo', 'administrators')
+        fields = ('name', 'language', 'timezone', 'subdomain', 'logo', 'administrators')
 
     class Update(OrgCRUDL.Update):
         form_class = OrgForm
-        fields = ('name', 'language', 'timezone', 'subdomain', 'api_token', 'logo', 'administrators', 'is_active')
+        fields = ('name', 'language', 'timezone', 'subdomain', 'logo', 'administrators', 'is_active')
 
     class List(OrgCRUDL.List):
         default_order = ('name',)
@@ -75,6 +75,9 @@ class OrgExtCRUDL(SmartCRUDL):
         pass
 
     class Choose(OrgCRUDL.Choose):
+        pass
+
+    class Tokens(OrgCRUDL.Tokens):
         pass
 
 
