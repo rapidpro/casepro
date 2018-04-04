@@ -25,7 +25,6 @@ controllers.controller('InboxController', ['$scope', '$window', '$location', 'La
 
   $scope.user = $window.contextData.user
   $scope.labels = $window.contextData.labels
-  $scope.groups = $window.contextData.groups
   $scope.fields = $window.contextData.fields
 
   $scope.activeLabel = null
@@ -334,7 +333,7 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$uibModal'
 
     return search
 
-  $scope.searchFieldDefaults = () -> { text: null, groups: [], after: null, before: null, archived: false }
+  $scope.searchFieldDefaults = () -> { text: null, after: null, before: null, archived: false }
 
   $scope.setAdvancedSearch = (state) ->
     $scope.advancedSearch = state

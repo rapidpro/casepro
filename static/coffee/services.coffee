@@ -156,7 +156,6 @@ services.factory('MessageService', ['$rootScope', '$http', '$httpParamSerializer
         text: search.text,
         after: utils.formatIso8601(search.after),
         before: utils.formatIso8601(search.before),
-        groups: if search.groups then (g.id for g in search.groups) else null,
         contact: if search.contact then search.contact.id else null,
         label: if search.label then search.label.id else null,
         archived: if search.archived then 1 else 0,

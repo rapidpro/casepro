@@ -15,7 +15,7 @@ from six.moves import reload_module
 from temba_client.utils import format_iso8601
 
 from casepro.contacts.models import Contact
-from casepro.msgs.models import Message, Outgoing
+from casepro.msgs.models import Message, Outgoing, Label
 from casepro.msgs.tasks import handle_messages
 from casepro.profiles.models import ROLE_ANALYST, ROLE_MANAGER, Notification
 from casepro.test import BaseCasesTest
@@ -1245,6 +1245,16 @@ class PartnerCRUDLTest(BaseCasesTest):
         self.assertEqual(set(internal.labels.all()), set())  # submitted labels are ignored
         self.assertEqual(set(internal.get_labels()), {self.aids, self.pregnancy, self.tea})
         self.assertEqual(internal.description, "")
+
+        # remove all labels and check that form is still usable
+        Label.objects.all().delete()
+        response = self.url_get('unicef', url)
+        self.assertEqual(response.status_code, 200)
+
+        response = self.url_post('unicef', url, {'name': "Labelless", 'description': "No labels",
+                                                 'logo': None, 'is_restricted': True})
+        self.assertEqual(response.status_code, 302)
+        Partner.objects.get(name="Labelless")
 
     def test_read(self):
         url = reverse('cases.partner_read', args=[self.moh.pk])

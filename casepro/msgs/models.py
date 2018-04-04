@@ -65,6 +65,8 @@ class Label(models.Model):
     INBOX_COUNT_CACHE_ATTR = '_inbox_count'
     ARCHIVED_COUNT_CACHE_ATTR = '_archived_count'
 
+    MAX_NAME_LEN = 64
+
     @classmethod
     def create(cls, org, name, description, tests, is_synced):
         label = cls.objects.create(org=org, name=name, description=description, is_synced=is_synced)
@@ -283,6 +285,19 @@ class FAQ(models.Model):
         return self.question
 
 
+class Labelling(models.Model):
+    """
+    An application of a label to a message
+    """
+    message = models.ForeignKey('msgs.Message', on_delete=models.CASCADE)
+
+    label = models.ForeignKey(Label, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'msgs_message_labels'
+        unique_together = ('message', 'label')
+
+
 @python_2_unicode_compatible
 class Message(models.Model):
     """
@@ -308,7 +323,12 @@ class Message(models.Model):
 
     text = models.TextField(max_length=640, verbose_name=_("Text"))
 
-    labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this message"), related_name='messages')
+    labels = models.ManyToManyField(
+        Label,
+        through=Labelling,
+        help_text=_("Labels assigned to this message"),
+        related_name='messages'
+    )
 
     has_labels = models.BooleanField(default=False)  # maintained via db triggers
 
@@ -356,7 +376,6 @@ class Message(models.Model):
         include_archived = search.get('include_archived')
         text = search.get('text')
         contact_id = search.get('contact')
-        group_ids = search.get('groups')
         after = search.get('after')
         before = search.get('before')
         last_refresh = search.get('last_refresh')
@@ -411,8 +430,6 @@ class Message(models.Model):
 
         if contact_id:
             queryset = queryset.filter(contact__pk=contact_id)
-        if group_ids:
-            queryset = queryset.filter(contact__groups__pk__in=group_ids).distinct()
 
         if after and not last_refresh:
             queryset = queryset.filter(created_on__gt=after)
@@ -453,8 +470,16 @@ class Message(models.Model):
         Adds the given labels to this message
         """
         from casepro.profiles.models import Notification
+        from casepro.statistics.models import DailyCount, datetime_to_date
 
-        self.labels.add(*labels)
+        existing_label_ids = Labelling.objects.filter(message=self, label__in=labels).values_list('label', flat=True)
+        add_labels = [l for l in labels if l.id not in existing_label_ids]
+        new_labellings = [Labelling(message=self, label=l) for l in add_labels]
+        Labelling.objects.bulk_create(new_labellings)
+
+        day = datetime_to_date(self.created_on, self.org)
+        for label in add_labels:
+            DailyCount.record_item(day, DailyCount.TYPE_INCOMING, label)
 
         # notify all users who watch these labels
         for watcher in set(User.objects.filter(watched_labels__in=labels)):
@@ -464,7 +489,27 @@ class Message(models.Model):
         """
         Removes the given labels from this message
         """
-        self.labels.remove(*labels)
+        from casepro.statistics.models import DailyCount, datetime_to_date
+
+        existing_labellings = Labelling.objects.filter(message=self, label__in=labels).select_related('label')
+
+        day = datetime_to_date(self.created_on, self.org)
+        for labelling in existing_labellings:
+            DailyCount.record_removal(day, DailyCount.TYPE_INCOMING, labelling.label)
+
+        Labelling.objects.filter(id__in=[l.id for l in existing_labellings]).delete()
+
+    def clear_labels(self):
+        """
+        Removes all labels from this message
+        """
+        from casepro.statistics.models import DailyCount, datetime_to_date
+
+        day = datetime_to_date(self.created_on, self.org)
+        for label in self.labels.all():
+            DailyCount.record_removal(day, DailyCount.TYPE_INCOMING, label)
+
+        Labelling.objects.filter(message=self).delete()
 
     def update_labels(self, user, labels):
         """
