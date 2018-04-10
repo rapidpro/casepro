@@ -35,7 +35,7 @@
         
         .form-group{ ng-class:'{"has-error": form.labels.$invalid && (form.labels.$dirty || form.submitted)}', ng-if:"isFaq"} 
           %label.col-sm-2.control-label
-              - trans "Label"
+            - trans "Label"
           .col-sm-10
             %select.form-control{ ng-model:"fields.labels.val", name:"labels",
             ng-options:"label.id as label.name for label in labels", 
@@ -47,7 +47,7 @@
           %label.col-sm-2.control-label
             - trans "Language"
           .col-sm-10
-              %input.form-control{ ng-model:"fields.language.val.code", type: "text", uib-typeahead: "language.iso639_2_b as language.name for language in iso_list | filter:$viewValue | limitTo:8", typeahead-editable:"false", typeahead-input-formatter:"formatInput($model)", name:"language", required:"", autocomplete:"off" }
+            %input.form-control{ ng-model:"fields.language.val.code", type: "text", uib-typeahead: "language.code as language.name for language in iso_list | filter:$viewValue | limitTo:8", typeahead-editable:"false", typeahead-input-formatter:"formatInput($model)", name:"language", required:"", autocomplete:"off" }
               %i.form-control-feedback.glyphicon.glyphicon-remove.form-control-feedback{ ng-show:"fields.language.val", ng-click:"clearInput()" }
               .help-block{ ng-show:"form.language.$error.required && (form.language.$dirty || form.submitted)" }
                 - trans "Valid language required"
