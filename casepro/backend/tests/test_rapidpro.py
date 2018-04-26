@@ -22,7 +22,7 @@ from ..rapidpro import RapidProBackend, ContactSyncer, MessageSyncer
 
 
 class ContactSyncerTest(BaseCasesTest):
-    
+
     def setUp(self):
         super(ContactSyncerTest, self).setUp()
 

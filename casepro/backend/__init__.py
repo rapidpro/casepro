@@ -1,8 +1,6 @@
 from __future__ import unicode_literals
 
 from abc import ABCMeta, abstractmethod
-from django.conf import settings
-from dash.orgs.models import OrgBackend
 
 
 class BaseBackend(object):

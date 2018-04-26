@@ -216,7 +216,8 @@ class RapidProBackend(BaseBackend):
         deleted_query = client.get_contacts(deleted=True, after=modified_after, before=modified_before)
         deleted_fetches = deleted_query.iterfetches(retry_on_rate_exceed=True)
 
-        return sync_local_to_changes(org, ContactSyncer(backend=self.backend), fetches, deleted_fetches, progress_callback)
+        return sync_local_to_changes(org, ContactSyncer(backend=self.backend), fetches,
+                                     deleted_fetches, progress_callback)
 
     def pull_fields(self, org):
         client = self._get_client(org)
@@ -243,7 +244,8 @@ class RapidProBackend(BaseBackend):
         query = client.get_messages(folder='incoming', after=modified_after, before=modified_before)
         fetches = query.iterfetches(retry_on_rate_exceed=True)
 
-        return sync_local_to_changes(org, MessageSyncer(backend=self.backend, as_handled=as_handled), fetches, [], progress_callback)
+        return sync_local_to_changes(org, MessageSyncer(backend=self.backend, as_handled=as_handled), fetches,
+                                     [], progress_callback)
 
     def push_label(self, org, label):
         client = self._get_client(org)
