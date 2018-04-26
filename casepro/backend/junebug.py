@@ -190,6 +190,9 @@ class IdentityStoreContactSyncer(BaseSyncer):
     model = Contact
     remote_id_attr = 'id'
 
+    def __init__(self):
+        self.backend = None
+
     def local_kwargs(self, org, remote):
         return {
             'org': org,

@@ -24,8 +24,7 @@ def pull_messages(org, since, until):
     """
     Pulls new unsolicited messages for an org
     """
-    from casepro.backend import get_backend
-    backend = get_backend()
+    backend = org.get_backend()
 
     # if we're running for the first time, then we'll fetch back to 1 hour ago
     if not since:
@@ -43,11 +42,10 @@ def pull_messages(org, since, until):
 
 @org_task('message-handle', lock_timeout=12 * 60 * 60)
 def handle_messages(org):
-    from casepro.backend import get_backend
     from casepro.cases.models import Case
     from casepro.rules.models import Rule
     from .models import Message
-    backend = get_backend()
+    backend = org.get_backend()
 
     case_replies = []
     num_rules_matched = 0

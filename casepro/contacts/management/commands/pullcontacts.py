@@ -5,8 +5,6 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 from six.moves import input
 
-from casepro.backend import get_backend
-
 
 class Command(BaseCommand):
     help = 'Pulls all contacts, groups and fields from the backend for the specified org'
@@ -32,7 +30,7 @@ Type 'yes' to continue, or 'no' to cancel: """ % (org.name, org.pk)
         def progress_callback(num_synced):
             self.stdout.write(" > Synced %d contacts..." % num_synced)
 
-        backend = get_backend()
+        backend = org.get_backend()
 
         created, updated, deleted, ignored = backend.pull_fields(org)
 

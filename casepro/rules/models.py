@@ -13,7 +13,6 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from enum import Enum
 
-from casepro.backend import get_backend
 from casepro.contacts.models import Group
 from casepro.msgs.models import Label, Message
 from casepro.utils import normalize, json_encode
@@ -322,7 +321,7 @@ class LabelAction(Action):
             msg.label(self.label)
 
         if self.label.is_synced:
-            get_backend().label_messages(org, messages, self.label)
+            org.get_backend().label_messages(org, messages, self.label)
 
     def __eq__(self, other):
         return self.TYPE == other.TYPE and self.label == other.label
@@ -350,7 +349,7 @@ class FlagAction(Action):
     def apply_to(self, org, messages):
         Message.objects.filter(pk__in=[m.pk for m in messages]).update(is_flagged=True)
 
-        get_backend().flag_messages(org, messages)
+        org.get_backend().flag_messages(org, messages)
 
 
 class ArchiveAction(Action):
@@ -372,7 +371,7 @@ class ArchiveAction(Action):
     def apply_to(self, org, messages):
         Message.objects.filter(pk__in=[m.pk for m in messages]).update(is_archived=True)
 
-        get_backend().archive_messages(org, messages)
+        org.get_backend().archive_messages(org, messages)
 
 
 class Rule(models.Model):

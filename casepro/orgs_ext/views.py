@@ -14,7 +14,7 @@ from .forms import OrgForm, OrgEditForm
 
 
 class OrgExtCRUDL(SmartCRUDL):
-    actions = ('create', 'update', 'list', 'home', 'edit', 'chooser', 'choose', 'tokens')
+    actions = ('create', 'update', 'list', 'home', 'edit', 'chooser', 'choose')
     model = Org
 
     class Create(OrgCRUDL.Create):
@@ -75,9 +75,6 @@ class OrgExtCRUDL(SmartCRUDL):
         pass
 
     class Choose(OrgCRUDL.Choose):
-        pass
-
-    class Tokens(OrgCRUDL.Tokens):
         pass
 
 
