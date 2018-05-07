@@ -4,7 +4,6 @@ from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.db.models import Q, Count, Prefetch
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from enum import Enum, IntEnum
 from itertools import chain
@@ -33,7 +32,6 @@ class AccessLevel(IntEnum):
     update = 2
 
 
-@python_2_unicode_compatible
 class Partner(models.Model):
     """
     Corresponds to a partner organization
@@ -129,7 +127,6 @@ class case_action(object):
         return wrapped
 
 
-@python_2_unicode_compatible
 class Case(models.Model):
     """
     A case between a partner organization and a contact

@@ -5,7 +5,6 @@ from dash.orgs.models import Org
 from django.conf import settings
 from django.contrib.postgres.fields import HStoreField, ArrayField
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from django_redis import get_redis_connection
 
@@ -140,7 +139,6 @@ class URN(object):
         return True
 
 
-@python_2_unicode_compatible
 class Group(models.Model):
     """
     A contact group in RapidPro
@@ -199,7 +197,6 @@ class Group(models.Model):
         return self.name
 
 
-@python_2_unicode_compatible
 class Field(models.Model):
     """
     A custom contact field in RapidPro
@@ -252,7 +249,6 @@ class Field(models.Model):
         unique_together = ('org', 'key')
 
 
-@python_2_unicode_compatible
 class Contact(models.Model):
     """
     A contact in RapidPro
