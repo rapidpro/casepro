@@ -1,5 +1,4 @@
 import pytz
-import six
 
 from dash.orgs.models import Org
 from datetime import timedelta
@@ -134,7 +133,7 @@ class Command(BaseCommand):
 
 
 def row_to_str(row):
-    return "".join([six.text_type(cell[0]).ljust(cell[1]) for cell in row])
+    return "".join([str(cell[0]).ljust(cell[1]) for cell in row])
 
 
 def row_width(row):

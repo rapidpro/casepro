@@ -3,7 +3,6 @@ import functools
 import random
 import requests
 import pytz
-import six
 
 from dash.utils import is_dict_equal
 from dash.utils.sync import BaseSyncer, sync_local_to_changes
@@ -538,7 +537,7 @@ def received_junebug_message(request):
     try:
         data = json_decode(request.body)
     except ValueError as e:
-        return JsonResponse({'reason': "JSON decode error", 'details': six.text_type(e)}, status=400)
+        return JsonResponse({'reason': "JSON decode error", 'details': str(e)}, status=400)
 
     from_addr = URN.normalize_phone(data.get('from'))
 
@@ -601,7 +600,7 @@ def receive_identity_store_optout(request):
     try:
         data = json_decode(request.body)
     except ValueError as e:
-        return JsonResponse({'reason': "JSON decode error", 'details': six.text_type(e)}, status=400)
+        return JsonResponse({'reason': "JSON decode error", 'details': str(e)}, status=400)
 
     try:
         identity_id = data['identity']

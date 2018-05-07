@@ -1,6 +1,5 @@
 import phonenumbers
 import regex
-import six
 
 from dash.orgs.models import Org
 from django.conf import settings
@@ -79,7 +78,7 @@ class URN(object):
         """
         scheme, path = cls.to_parts(urn)
 
-        norm_path = six.text_type(path).strip()
+        norm_path = str(path).strip()
 
         if scheme == cls.SCHEME_TEL:
             norm_path = cls.normalize_phone(norm_path)
@@ -131,7 +130,7 @@ class URN(object):
         try:
             parsed = phonenumbers.parse(number)
         except phonenumbers.NumberParseException as e:
-            raise InvalidURN(six.text_type(e))
+            raise InvalidURN(str(e))
 
         if number != phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164):
             raise InvalidURN("Phone numbers must be in E164 format")

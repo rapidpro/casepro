@@ -1,5 +1,4 @@
 import pytz
-import six
 
 from datetime import datetime, timedelta
 from django.contrib.auth.models import User
@@ -1171,7 +1170,7 @@ class PartnerTest(BaseCasesTest):
         wfp = Partner.create(self.unicef, "WFP", "World Food Program", None, True, [self.aids, self.pregnancy])
         self.assertEqual(wfp.org, self.unicef)
         self.assertEqual(wfp.name, "WFP")
-        self.assertEqual(six.text_type(wfp), "WFP")
+        self.assertEqual(str(wfp), "WFP")
         self.assertEqual(set(wfp.get_labels()), {self.aids, self.pregnancy})
 
         # create some users for this partner

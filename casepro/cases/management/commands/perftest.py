@@ -1,4 +1,3 @@
-import six
 import time
 
 from collections import namedtuple
@@ -144,11 +143,11 @@ def colorcoded(val, limits):
 
 
 def colored(val, color):
-    return color + six.text_type(val) + Fore.RESET
+    return color + str(val) + Fore.RESET
 
 
 def styled(val, style):
-    return style + six.text_type(val) + Style.RESET_ALL
+    return style + str(val) + Style.RESET_ALL
 
 
 class DjangoClient(Client):

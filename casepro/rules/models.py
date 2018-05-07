@@ -58,7 +58,7 @@ class Quantifier(Enum):
             return True
 
     def __str__(self):
-        return six.text_type(self.text)
+        return str(self.text)
 
 
 class DeserializationContext(object):
@@ -135,7 +135,7 @@ class ContainsTest(Test):
 
     def get_description(self):
         quoted_keywords = ['"%s"' % w for w in self.keywords]
-        return "message contains %s %s" % (six.text_type(self.quantifier), ", ".join(quoted_keywords))
+        return "message contains %s %s" % (str(self.quantifier), ", ".join(quoted_keywords))
 
     def matches(self, message):
         text = normalize(message.text)
@@ -203,7 +203,7 @@ class GroupsTest(Test):
 
     def get_description(self):
         group_names = [g.name for g in self.groups]
-        return "contact belongs to %s %s" % (six.text_type(self.quantifier), ", ".join(group_names))
+        return "contact belongs to %s %s" % (str(self.quantifier), ", ".join(group_names))
 
     def matches(self, message):
         contact_groups = set(message.contact.groups.all())
@@ -326,7 +326,7 @@ class LabelAction(Action):
         return self.TYPE == other.TYPE and self.label == other.label
 
     def __hash__(self):
-        return hash(self.TYPE + six.text_type(self.label.pk))
+        return hash(self.TYPE + str(self.label.pk))
 
 
 class FlagAction(Action):

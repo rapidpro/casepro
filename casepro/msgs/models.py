@@ -1,5 +1,3 @@
-import six
-
 from dash.orgs.models import Org
 from dash.utils import get_obj_cacheable
 from django.contrib.auth.models import User
@@ -871,7 +869,7 @@ class MessageExport(BaseSearchExport):
         items = Message.search(self.org, self.created_by, search)
 
         def add_sheet(num):
-            sheet = book.add_sheet(six.text_type(_("Messages %d" % num)))
+            sheet = book.add_sheet(str(_("Messages %d" % num)))
             self.write_row(sheet, 0, all_fields)
             return sheet
 
@@ -919,7 +917,7 @@ class ReplyExport(BaseSearchExport):
         items = Outgoing.search_replies(self.org, self.created_by, search)
 
         def add_sheet(num):
-            sheet = book.add_sheet(six.text_type(_("Replies %d" % num)))
+            sheet = book.add_sheet(str(_("Replies %d" % num)))
             self.write_row(sheet, 0, all_fields)
             return sheet
 

@@ -311,7 +311,7 @@ class DailyCountExport(BaseExport):
 
     def render_book(self, book):
         if self.type == self.TYPE_LABEL:
-            sheet = book.add_sheet(six.text_type(_("Incoming Messages")))
+            sheet = book.add_sheet(str(_("Incoming Messages")))
 
             labels = list(Label.get_all(self.org).order_by('name'))
 
@@ -330,9 +330,9 @@ class DailyCountExport(BaseExport):
                 row += 1
 
         elif self.type == self.TYPE_USER:
-            replies_sheet = book.add_sheet(six.text_type(_("Replies Sent")))
-            cases_opened_sheet = book.add_sheet(six.text_type(_("Cases Opened")))
-            cases_closed_sheet = book.add_sheet(six.text_type(_("Cases Closed")))
+            replies_sheet = book.add_sheet(str(_("Replies Sent")))
+            cases_opened_sheet = book.add_sheet(str(_("Cases Opened")))
+            cases_closed_sheet = book.add_sheet(str(_("Cases Closed")))
 
             users = self.org.get_org_users().order_by('profile__full_name')
 
@@ -365,11 +365,11 @@ class DailyCountExport(BaseExport):
                 row += 1
 
         elif self.type == self.TYPE_PARTNER:
-            replies_sheet = book.add_sheet(six.text_type(_("Replies Sent")))
-            ave_sheet = book.add_sheet(six.text_type(_("Average Reply Time")))
-            ave_closed_sheet = book.add_sheet(six.text_type(_("Average Closed Time")))
-            cases_opened_sheet = book.add_sheet(six.text_type(_("Cases Opened")))
-            cases_closed_sheet = book.add_sheet(six.text_type(_("Cases Closed")))
+            replies_sheet = book.add_sheet(str(_("Replies Sent")))
+            ave_sheet = book.add_sheet(str(_("Average Reply Time")))
+            ave_closed_sheet = book.add_sheet(str(_("Average Closed Time")))
+            cases_opened_sheet = book.add_sheet(str(_("Cases Opened")))
+            cases_closed_sheet = book.add_sheet(str(_("Cases Closed")))
 
             partners = list(Partner.get_all(self.org).order_by('name'))
 

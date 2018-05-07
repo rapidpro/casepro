@@ -138,7 +138,7 @@ class Notification(models.Model):
             subject, template, context = getattr(notification, '_build_%s_email' % type_name)()
             template_path = 'profiles/email/%s' % template
 
-            send_email([notification.user], six.text_type(subject), template_path, context)
+            send_email([notification.user], str(subject), template_path, context)
 
         unsent.update(is_sent=True)
 
