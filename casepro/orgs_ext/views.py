@@ -19,11 +19,11 @@ class OrgExtCRUDL(SmartCRUDL):
 
     class Create(OrgCRUDL.Create):
         form_class = OrgForm
-        fields = ('name', 'language', 'timezone', 'subdomain', 'api_token', 'logo', 'administrators')
+        fields = ('name', 'language', 'timezone', 'subdomain', 'logo', 'administrators')
 
     class Update(OrgCRUDL.Update):
         form_class = OrgForm
-        fields = ('name', 'language', 'timezone', 'subdomain', 'api_token', 'logo', 'administrators', 'is_active')
+        fields = ('name', 'language', 'timezone', 'subdomain', 'logo', 'administrators', 'is_active')
 
     class List(OrgCRUDL.List):
         default_order = ('name',)

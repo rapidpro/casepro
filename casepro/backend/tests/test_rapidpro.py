@@ -22,7 +22,11 @@ from ..rapidpro import RapidProBackend, ContactSyncer, MessageSyncer
 
 
 class ContactSyncerTest(BaseCasesTest):
-    syncer = ContactSyncer()
+
+    def setUp(self):
+        super(ContactSyncerTest, self).setUp()
+
+        self.syncer = ContactSyncer(self.rapidpro_backend)
 
     def test_local_kwargs(self):
         kwargs = self.syncer.local_kwargs(self.unicef, TembaContact.create(
@@ -142,7 +146,7 @@ class MessageSyncerTest(BaseCasesTest):
     def setUp(self):
         super(MessageSyncerTest, self).setUp()
 
-        self.syncer = MessageSyncer(as_handled=False)
+        self.syncer = MessageSyncer(backend=self.rapidpro_backend, as_handled=False)
         self.ann = self.create_contact(self.unicef, 'C-001', "Ann")
 
     def test_fetch_local(self):
@@ -273,11 +277,11 @@ class RapidProBackendTest(BaseCasesTest):
     def setUp(self):
         super(RapidProBackendTest, self).setUp()
 
-        self.backend = RapidProBackend()
+        self.backend = RapidProBackend(backend=self.rapidpro_backend)
         self.ann = self.create_contact(self.unicef, 'C-001', "Ann")
         self.bob = self.create_contact(self.unicef, 'C-002', "Bob")
 
-    @patch('dash.orgs.models.TembaClient2.get_contacts')
+    @patch('dash.orgs.models.TembaClient.get_contacts')
     def test_pull_contacts(self, mock_get_contacts):
         # start with nothing...
         Group.objects.all().delete()
@@ -318,7 +322,7 @@ class RapidProBackendTest(BaseCasesTest):
             )
         ]
 
-        with self.assertNumQueries(15):
+        with self.assertNumQueries(16):
             num_created, num_updated, num_deleted, num_ignored = self.backend.pull_contacts(self.unicef, None, None)
 
         self.assertEqual((num_created, num_updated, num_deleted, num_ignored), (3, 0, 0, 0))
@@ -361,7 +365,7 @@ class RapidProBackendTest(BaseCasesTest):
             )
         ]
 
-        with self.assertNumQueries(12):
+        with self.assertNumQueries(13):
             self.assertEqual(self.backend.pull_contacts(self.unicef, None, None), (0, 1, 1, 0))
 
         self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, ann})
@@ -389,13 +393,13 @@ class RapidProBackendTest(BaseCasesTest):
             MockClientQuery([])
         ]
 
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(3):
             self.assertEqual(self.backend.pull_contacts(self.unicef, None, None), (0, 0, 0, 1))
 
         self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, ann})
         self.assertEqual(set(Contact.objects.filter(is_active=False)), {jim})
 
-    @patch('dash.orgs.models.TembaClient2.get_fields')
+    @patch('dash.orgs.models.TembaClient.get_fields')
     def test_pull_fields(self, mock_get_fields):
         # start with no fields
         Field.objects.all().delete()
@@ -405,7 +409,7 @@ class RapidProBackendTest(BaseCasesTest):
             TembaField.create(key="age", label="Age", value_type="numeric"),
         ])
 
-        with self.assertNumQueries(5):
+        with self.assertNumQueries(6):
             num_created, num_updated, num_deleted, num_ignored = self.backend.pull_fields(self.unicef)
 
         self.assertEqual((num_created, num_updated, num_deleted, num_ignored), (2, 0, 0, 0))
@@ -418,7 +422,7 @@ class RapidProBackendTest(BaseCasesTest):
             TembaField.create(key="homestate", label="Homestate", value_type="state"),
         ])
 
-        with self.assertNumQueries(6):
+        with self.assertNumQueries(7):
             num_created, num_updated, num_deleted, num_ignored = self.backend.pull_fields(self.unicef)
 
         self.assertEqual((num_created, num_updated, num_deleted, num_ignored), (1, 1, 1, 0))
@@ -428,12 +432,12 @@ class RapidProBackendTest(BaseCasesTest):
         Field.objects.get(key="homestate", label="Homestate", value_type="S", is_active=True)
 
         # check that no changes means no updates
-        with self.assertNumQueries(3):
+        with self.assertNumQueries(4):
             num_created, num_updated, num_deleted, num_ignored = self.backend.pull_fields(self.unicef)
 
         self.assertEqual((num_created, num_updated, num_deleted, num_ignored), (0, 0, 0, 2))
 
-    @patch('dash.orgs.models.TembaClient2.get_groups')
+    @patch('dash.orgs.models.TembaClient.get_groups')
     def test_pull_groups(self, mock_get_groups):
         # start with no groups
         Group.objects.all().delete()
@@ -443,7 +447,7 @@ class RapidProBackendTest(BaseCasesTest):
             TembaGroup.create(uuid="G-002", name="Developers", query="isdev=yes", count=32),
         ])
 
-        with self.assertNumQueries(5):
+        with self.assertNumQueries(6):
             num_created, num_updated, num_deleted, num_ignored = self.backend.pull_groups(self.unicef)
 
         self.assertEqual((num_created, num_updated, num_deleted, num_ignored), (2, 0, 0, 0))
@@ -456,7 +460,7 @@ class RapidProBackendTest(BaseCasesTest):
             TembaGroup.create(uuid="G-003", name="Spammers", query=None, count=13),
         ])
 
-        with self.assertNumQueries(6):
+        with self.assertNumQueries(7):
             num_created, num_updated, num_deleted, num_ignored = self.backend.pull_groups(self.unicef)
 
         self.assertEqual((num_created, num_updated, num_deleted, num_ignored), (1, 1, 1, 0))
@@ -466,12 +470,12 @@ class RapidProBackendTest(BaseCasesTest):
         Group.objects.get(uuid="G-003", name="Spammers", count=13, is_dynamic=False, is_active=True)
 
         # check that no changes means no updates
-        with self.assertNumQueries(3):
+        with self.assertNumQueries(4):
             num_created, num_updated, num_deleted, num_ignored = self.backend.pull_groups(self.unicef)
 
         self.assertEqual((num_created, num_updated, num_deleted, num_ignored), (0, 0, 0, 2))
 
-    @patch('dash.orgs.models.TembaClient2.get_labels')
+    @patch('dash.orgs.models.TembaClient.get_labels')
     def test_pull_labels(self, mock_get_labels):
         # start with one un-synced label
         Label.objects.all().delete()
@@ -486,7 +490,7 @@ class RapidProBackendTest(BaseCasesTest):
 
         self.unicef = Org.objects.prefetch_related('labels').get(pk=self.unicef.pk)
 
-        with self.assertNumQueries(7):
+        with self.assertNumQueries(8):
             num_created, num_updated, num_deleted, num_ignored = self.backend.pull_labels(self.unicef)
 
         self.assertEqual((num_created, num_updated, num_deleted, num_ignored), (2, 0, 0, 2))
@@ -502,7 +506,7 @@ class RapidProBackendTest(BaseCasesTest):
             TembaLabel.create(uuid="L-003", name="Spam", count=13),
         ])
 
-        with self.assertNumQueries(6):
+        with self.assertNumQueries(7):
             num_created, num_updated, num_deleted, num_ignored = self.backend.pull_labels(self.unicef)
 
         self.assertEqual((num_created, num_updated, num_deleted, num_ignored), (1, 1, 1, 0))
@@ -513,12 +517,12 @@ class RapidProBackendTest(BaseCasesTest):
         Label.objects.get(uuid="L-003", name="Spam", is_active=True)
 
         # check that no changes means no updates
-        with self.assertNumQueries(3):
+        with self.assertNumQueries(4):
             num_created, num_updated, num_deleted, num_ignored = self.backend.pull_labels(self.unicef)
 
         self.assertEqual((num_created, num_updated, num_deleted, num_ignored), (0, 0, 0, 2))
 
-    @patch('dash.orgs.models.TembaClient2.get_messages')
+    @patch('dash.orgs.models.TembaClient.get_messages')
     def test_pull_messages(self, mock_get_messages):
         d1 = now() - timedelta(hours=10)
         d2 = now() - timedelta(hours=9)
@@ -604,8 +608,8 @@ class RapidProBackendTest(BaseCasesTest):
 
         self.assertEqual(set(msg1.labels.all()), {self.aids, important})
 
-    @patch('dash.orgs.models.TembaClient2.create_label')
-    @patch('dash.orgs.models.TembaClient2.get_labels')
+    @patch('dash.orgs.models.TembaClient.create_label')
+    @patch('dash.orgs.models.TembaClient.get_labels')
     def test_push_label(self, mock_get_labels, mock_create_label):
         mock_get_labels.return_value = MockClientQuery([
             TembaLabel.create(uuid="L-011", name="Tea", count=213)
@@ -635,7 +639,7 @@ class RapidProBackendTest(BaseCasesTest):
         mock_create_label.assert_called_once_with(name="Tea")
 
     @patch('casepro.backend.rapidpro.send_raw_email')
-    @patch('dash.orgs.models.TembaClient2.create_broadcast')
+    @patch('dash.orgs.models.TembaClient.create_broadcast')
     def test_push_outgoing(self, mock_create_broadcast, mock_send_raw_email):
         # test with replies sent separately
         mock_create_broadcast.side_effect = [
@@ -733,25 +737,25 @@ class RapidProBackendTest(BaseCasesTest):
         self.bob.refresh_from_db()
         self.assertEqual(self.bob.__dict__, old_bob)
 
-    @patch('dash.orgs.models.TembaClient2.bulk_add_contacts')
+    @patch('dash.orgs.models.TembaClient.bulk_add_contacts')
     def test_add_to_group(self, mock_add_contacts):
         self.backend.add_to_group(self.unicef, self.bob, self.reporters)
 
         mock_add_contacts.assert_called_once_with(['C-002'], group='G-003')
 
-    @patch('dash.orgs.models.TembaClient2.bulk_remove_contacts')
+    @patch('dash.orgs.models.TembaClient.bulk_remove_contacts')
     def test_remove_from_group(self, mock_remove_contacts):
         self.backend.remove_from_group(self.unicef, self.bob, self.reporters)
 
         mock_remove_contacts.assert_called_once_with(['C-002'], group='G-003')
 
-    @patch('dash.orgs.models.TembaClient2.bulk_interrupt_contacts')
+    @patch('dash.orgs.models.TembaClient.bulk_interrupt_contacts')
     def test_stop_runs(self, mock_expire_contacts):
         self.backend.stop_runs(self.unicef, self.bob)
 
         mock_expire_contacts.assert_called_once_with(contacts=['C-002'])
 
-    @patch('dash.orgs.models.TembaClient2.bulk_label_messages')
+    @patch('dash.orgs.models.TembaClient.bulk_label_messages')
     def test_label_messages(self, mock_label_messages):
         # empty message list shouldn't make API call
         self.backend.label_messages(self.unicef, [], self.aids)
@@ -765,7 +769,7 @@ class RapidProBackendTest(BaseCasesTest):
 
         mock_label_messages.assert_called_once_with(messages=[123, 234], label='L-001')
 
-    @patch('dash.orgs.models.TembaClient2.bulk_unlabel_messages')
+    @patch('dash.orgs.models.TembaClient.bulk_unlabel_messages')
     def test_unlabel_messages(self, mock_unlabel_messages):
         # empty message list shouldn't make API call
         self.backend.unlabel_messages(self.unicef, [], self.aids)
@@ -779,7 +783,7 @@ class RapidProBackendTest(BaseCasesTest):
 
         mock_unlabel_messages.assert_called_once_with(messages=[123, 234], label='L-001')
 
-    @patch('dash.orgs.models.TembaClient2.bulk_archive_messages')
+    @patch('dash.orgs.models.TembaClient.bulk_archive_messages')
     def test_archive_messages(self, mock_archive_messages):
         # empty message list shouldn't make API call
         self.backend.archive_messages(self.unicef, [])
@@ -806,13 +810,13 @@ class RapidProBackendTest(BaseCasesTest):
         self.assertIsInstance(kwargs['messages'], list)
         self.assertEqual(set(kwargs['messages']), {0, 1, 2, 3, 4})
 
-    @patch('dash.orgs.models.TembaClient2.bulk_archive_contacts')
+    @patch('dash.orgs.models.TembaClient.bulk_archive_contacts')
     def test_archive_contact_messages(self, mock_archive_contacts):
         self.backend.archive_contact_messages(self.unicef, self.bob)
 
         mock_archive_contacts.assert_called_once_with(contacts=['C-002'])
 
-    @patch('dash.orgs.models.TembaClient2.bulk_restore_messages')
+    @patch('dash.orgs.models.TembaClient.bulk_restore_messages')
     def test_restore_messages(self, mock_restore_messages):
         # empty message list shouldn't make API call
         self.backend.restore_messages(self.unicef, [])
@@ -826,7 +830,7 @@ class RapidProBackendTest(BaseCasesTest):
 
         mock_restore_messages.assert_called_once_with(messages=[123, 234])
 
-    @patch('dash.orgs.models.TembaClient2.bulk_label_messages')
+    @patch('dash.orgs.models.TembaClient.bulk_label_messages')
     def test_flag_messages(self, mock_label_messages):
         # empty message list shouldn't make API call
         self.backend.flag_messages(self.unicef, [])
@@ -840,7 +844,7 @@ class RapidProBackendTest(BaseCasesTest):
 
         mock_label_messages.assert_called_once_with(messages=[123, 234], label_name='Flagged')
 
-    @patch('dash.orgs.models.TembaClient2.bulk_unlabel_messages')
+    @patch('dash.orgs.models.TembaClient.bulk_unlabel_messages')
     def test_unflag_messages(self, mock_unlabel_messages):
         # empty message list shouldn't make API call
         self.backend.unflag_messages(self.unicef, [])
@@ -854,7 +858,7 @@ class RapidProBackendTest(BaseCasesTest):
 
         mock_unlabel_messages.assert_called_once_with(messages=[123, 234], label_name='Flagged')
 
-    @patch('dash.orgs.models.TembaClient2.get_messages')
+    @patch('dash.orgs.models.TembaClient.get_messages')
     def test_fetch_contact_messages(self, mock_get_messages):
         d1 = datetime(2015, 1, 2, 13, 0, tzinfo=pytz.UTC)
         d2 = datetime(2015, 1, 2, 14, 0, tzinfo=pytz.UTC)
@@ -907,11 +911,11 @@ class PerfTest(BaseCasesTest):
     def setUp(self):
         super(PerfTest, self).setUp()
 
-        self.backend = RapidProBackend()
+        self.backend = RapidProBackend(self.rapidpro_backend)
 
-    @patch('dash.orgs.models.TembaClient2.get_contacts')
-    @patch('dash.orgs.models.TembaClient2.get_fields')
-    @patch('dash.orgs.models.TembaClient2.get_groups')
+    @patch('dash.orgs.models.TembaClient.get_contacts')
+    @patch('dash.orgs.models.TembaClient.get_fields')
+    @patch('dash.orgs.models.TembaClient.get_groups')
     # @override_settings(DEBUG=True)
     def test_contact_sync(self, mock_get_groups, mock_get_fields, mock_get_contacts):
         # start with no groups or fields

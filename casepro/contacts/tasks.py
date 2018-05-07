@@ -11,8 +11,7 @@ def pull_contacts(org, since, until):
     """
     Fetches updated contacts from RapidPro and updates local contacts accordingly
     """
-    from casepro.backend import get_backend
-    backend = get_backend()
+    backend = org.get_backend()
 
     if not since:
         logger.warn("First time run for org #%d. Will sync all contacts" % org.pk)

@@ -42,6 +42,10 @@ class BaseCasesTest(DashTest):
         self.unicef = self.create_org("UNICEF", timezone=pytz.timezone("Africa/Kampala"), subdomain="unicef")
         self.nyaruka = self.create_org("Nyaruka", timezone=pytz.timezone("Africa/Kigali"), subdomain="nyaruka")
 
+        self.unicef.backends.all().delete()
+        self.rapidpro_backend = self.unicef.backends.create(backend_type='casepro.test.TestBackend', slug="rapidpro",
+                                                            created_by=self.superuser, modified_by=self.superuser)
+
         # some admins for those orgs
         self.admin = self.create_admin(self.unicef, "Kidus", "kidus@unicef.org")
         self.norbert = self.create_admin(self.nyaruka, "Norbert Kwizera", "norbert@nyaruka.com")

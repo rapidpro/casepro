@@ -5,15 +5,13 @@ import six
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 
-from casepro.backend import get_backend
-
 from .models import Label, Message
 
 
 @receiver(post_save, sender=Label)
 def update_label_uuid(sender, instance, **kwargs):
     if instance.is_synced and not instance.uuid:
-        get_backend().push_label(instance.org, instance)
+        instance.org.get_backend().push_label(instance.org, instance)
 
 
 @receiver(pre_save, sender=Message)

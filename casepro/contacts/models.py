@@ -12,7 +12,6 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from django_redis import get_redis_connection
 
-from casepro.backend import get_backend
 from casepro.utils import get_language_name
 
 FIELD_LOCK_KEY = 'lock:field:%d:%s'
@@ -327,7 +326,7 @@ class Contact(models.Model):
             URN.validate(normalized_urn)
 
             contact = cls.objects.create(org=org, name=name, urns=[normalized_urn], is_stub=False)
-            get_backend().push_contact(org, contact)
+            org.get_backend().push_contact(org, contact)
         return contact
 
     @classmethod
@@ -396,24 +395,24 @@ class Contact(models.Model):
                     self.groups.remove(group)
                     self.suspended_groups.add(group)
 
-                    get_backend().remove_from_group(self.org, self, group)
+                    self.org.get_backend().remove_from_group(self.org, self, group)
 
     def restore_groups(self):
         with self.lock(self.org, self.uuid):
             for group in list(self.suspended_groups.all()):
                 if not group.is_dynamic:
                     self.groups.add(group)
-                    get_backend().add_to_group(self.org, self, group)
+                    self.org.get_backend().add_to_group(self.org, self, group)
 
                 self.suspended_groups.remove(group)
 
     def expire_flows(self):
-        get_backend().stop_runs(self.org, self)
+        self.org.get_backend().stop_runs(self.org, self)
 
     def archive_messages(self):
         self.incoming_messages.update(is_archived=True)
 
-        get_backend().archive_contact_messages(self.org, self)
+        self.org.get_backend().archive_contact_messages(self.org, self)
 
     def release(self):
         """
