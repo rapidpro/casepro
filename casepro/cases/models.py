@@ -10,7 +10,6 @@ from enum import Enum, IntEnum
 from itertools import chain
 from django_redis import get_redis_connection
 
-from casepro.backend import get_backend
 from casepro.contacts.models import Contact
 from casepro.msgs.models import Label, Message, Outgoing
 from casepro.utils import TimelineItem
@@ -286,7 +285,7 @@ class Case(models.Model):
 
         if merge_from_backend:
             # if this is the initial request, fetch additional messages from the backend
-            backend = get_backend()
+            backend = self.org.get_backend()
             backend_messages = backend.fetch_contact_messages(self.org, self.contact, after, before)
 
             # add any backend messages that don't exist locally

@@ -1,10 +1,9 @@
 from django.conf import settings
 from django.conf.urls import include, url
 from django.views import static
-from casepro.backend import get_backend
 from casepro.utils.views import PartialTemplate
 from django.views.i18n import javascript_catalog
-
+from pydoc import locate
 
 # javascript translation packages
 js_info_dict = {
@@ -28,8 +27,10 @@ urlpatterns = [
     url(r'^jsi18n/$', javascript_catalog, js_info_dict, name='django.views.i18n.javascript_catalog'),
 ]
 
-backend_urls = get_backend().get_url_patterns() or []
-urlpatterns += backend_urls
+backend_options = getattr(settings, 'DATA_API_BACKEND_TYPES', [])
+for backend_option in backend_options:
+    backend_urls = locate(backend_option[0])(backend=None).get_url_patterns() or []
+    urlpatterns += backend_urls
 
 if settings.DEBUG:  # pragma: no cover
     try:

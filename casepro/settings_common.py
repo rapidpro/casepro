@@ -148,6 +148,11 @@ CACHES = {
     }
 }
 
+
+DATA_API_BACKEND_TYPES = (
+    ('casepro.backend.rapidpro.RapidProBackend', "RapidPro Backend Type"),
+)
+
 ORG_CONFIG_FIELDS = [dict(name='contact_fields',
                           field=dict(help_text=_("Contact fields to display"), required=False)),
                      dict(name='banner_text',

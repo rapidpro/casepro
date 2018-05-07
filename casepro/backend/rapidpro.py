@@ -147,7 +147,8 @@ class MessageSyncer(BaseSyncer):
     select_related = ('contact',)
     prefetch_related = ('labels',)
 
-    def __init__(self, as_handled=False):
+    def __init__(self, backend=None, as_handled=False):
+        super(MessageSyncer, self).__init__(backend)
         self.as_handled = as_handled
 
     def local_kwargs(self, org, remote):
@@ -213,25 +214,26 @@ class RapidProBackend(BaseBackend):
         deleted_query = client.get_contacts(deleted=True, after=modified_after, before=modified_before)
         deleted_fetches = deleted_query.iterfetches(retry_on_rate_exceed=True)
 
-        return sync_local_to_changes(org, ContactSyncer(), fetches, deleted_fetches, progress_callback)
+        return sync_local_to_changes(org, ContactSyncer(backend=self.backend), fetches,
+                                     deleted_fetches, progress_callback)
 
     def pull_fields(self, org):
         client = self._get_client(org)
         incoming_objects = client.get_fields().all(retry_on_rate_exceed=True)
 
-        return sync_local_to_set(org, FieldSyncer(), incoming_objects)
+        return sync_local_to_set(org, FieldSyncer(backend=self.backend), incoming_objects)
 
     def pull_groups(self, org):
         client = self._get_client(org)
         incoming_objects = client.get_groups().all(retry_on_rate_exceed=True)
 
-        return sync_local_to_set(org, GroupSyncer(), incoming_objects)
+        return sync_local_to_set(org, GroupSyncer(backend=self.backend), incoming_objects)
 
     def pull_labels(self, org):
         client = self._get_client(org)
         incoming_objects = client.get_labels().all(retry_on_rate_exceed=True)
 
-        return sync_local_to_set(org, LabelSyncer(), incoming_objects)
+        return sync_local_to_set(org, LabelSyncer(backend=self.backend), incoming_objects)
 
     def pull_messages(self, org, modified_after, modified_before, as_handled=False, progress_callback=None):
         client = self._get_client(org)
@@ -240,7 +242,8 @@ class RapidProBackend(BaseBackend):
         query = client.get_messages(folder='incoming', after=modified_after, before=modified_before)
         fetches = query.iterfetches(retry_on_rate_exceed=True)
 
-        return sync_local_to_changes(org, MessageSyncer(as_handled), fetches, [], progress_callback)
+        return sync_local_to_changes(org, MessageSyncer(backend=self.backend, as_handled=as_handled), fetches,
+                                     [], progress_callback)
 
     def push_label(self, org, label):
         client = self._get_client(org)

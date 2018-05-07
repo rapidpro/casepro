@@ -12,7 +12,6 @@ from enum import Enum
 from django_redis import get_redis_connection
 from datetime import timedelta
 
-from casepro.backend import get_backend
 from casepro.contacts.models import Contact, Field
 from casepro.utils import json_encode, get_language_name
 from casepro.utils.export import BaseSearchExport
@@ -547,7 +546,7 @@ class Message(models.Model):
             org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(is_flagged=True,
                                                                                           modified_on=now())
 
-            get_backend().flag_messages(org, messages)
+            org.get_backend().flag_messages(org, messages)
 
             MessageAction.create(org, user, messages, MessageAction.FLAG)
 
@@ -558,7 +557,7 @@ class Message(models.Model):
             org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(is_flagged=False,
                                                                                           modified_on=now())
 
-            get_backend().unflag_messages(org, messages)
+            org.get_backend().unflag_messages(org, messages)
 
             MessageAction.create(org, user, messages, MessageAction.UNFLAG)
 
@@ -572,7 +571,7 @@ class Message(models.Model):
             org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(modified_on=now())
 
             if label.is_synced:
-                get_backend().label_messages(org, messages, label)
+                org.get_backend().label_messages(org, messages, label)
 
             MessageAction.create(org, user, messages, MessageAction.LABEL, label)
 
@@ -586,7 +585,7 @@ class Message(models.Model):
             org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(modified_on=now())
 
             if label.is_synced:
-                get_backend().unlabel_messages(org, messages, label)
+                org.get_backend().unlabel_messages(org, messages, label)
 
             MessageAction.create(org, user, messages, MessageAction.UNLABEL, label)
 
@@ -597,7 +596,7 @@ class Message(models.Model):
             org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(is_archived=True,
                                                                                           modified_on=now())
 
-            get_backend().archive_messages(org, messages)
+            org.get_backend().archive_messages(org, messages)
 
             MessageAction.create(org, user, messages, MessageAction.ARCHIVE)
 
@@ -608,7 +607,7 @@ class Message(models.Model):
             org.incoming_messages.filter(org=org, pk__in=[m.pk for m in messages]).update(is_archived=False,
                                                                                           modified_on=now())
 
-            get_backend().restore_messages(org, messages)
+            org.get_backend().restore_messages(org, messages)
 
             MessageAction.create(org, user, messages, MessageAction.RESTORE)
 
@@ -725,7 +724,7 @@ class Outgoing(models.Model):
             replies.append(reply)
 
         # push together as a single broadcast
-        get_backend().push_outgoing(org, replies, as_broadcast=True)
+        org.get_backend().push_outgoing(org, replies, as_broadcast=True)
 
         return replies
 
@@ -743,7 +742,7 @@ class Outgoing(models.Model):
             forwards.append(cls._create(org, user, cls.FORWARD, text, original_message, urn=urn, push=False))
 
         # push together as a single broadcast
-        get_backend().push_outgoing(org, forwards, as_broadcast=True)
+        org.get_backend().push_outgoing(org, forwards, as_broadcast=True)
 
         return forwards
 
@@ -761,7 +760,7 @@ class Outgoing(models.Model):
                                  created_by=user)
 
         if push:
-            get_backend().push_outgoing(org, [msg])
+            org.get_backend().push_outgoing(org, [msg])
 
         return msg
 
