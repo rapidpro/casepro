@@ -1,6 +1,3 @@
-# coding=utf-8
-from __future__ import unicode_literals
-
 from dash.orgs.models import TaskState
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings

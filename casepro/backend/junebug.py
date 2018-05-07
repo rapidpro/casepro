@@ -1,28 +1,24 @@
-from __future__ import unicode_literals
-
-from datetime import datetime
 import dateutil.parser
-from django.conf import settings
-from django.conf.urls import url
-from django.db import IntegrityError, transaction
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-
 import functools
 import random
 import requests
 import pytz
 import six
 
+from dash.utils import is_dict_equal
+from dash.utils.sync import BaseSyncer, sync_local_to_changes
+from datetime import datetime
+from django.conf import settings
+from django.conf.urls import url
+from django.db import IntegrityError, transaction
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from itertools import chain
+
 from . import BaseBackend
 from ..contacts.models import Contact, URN
 from ..msgs.models import Message
 from ..utils import uuid_to_int, json_decode
-
-from dash.utils import is_dict_equal
-from dash.utils.sync import BaseSyncer, sync_local_to_changes
-
-from itertools import chain
 
 
 class HubMessageSender(object):

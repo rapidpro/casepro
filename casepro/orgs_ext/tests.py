@@ -1,5 +1,3 @@
-from __future__ import absolute_import, unicode_literals
-
 import pytz
 
 from dash.orgs.models import TaskState

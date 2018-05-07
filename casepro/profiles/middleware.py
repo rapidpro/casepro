@@ -1,5 +1,3 @@
-from __future__ import absolute_import, unicode_literals
-
 from django.http import HttpResponseRedirect
 from django.contrib import messages
 from django.core.urlresolvers import reverse

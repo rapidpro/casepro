@@ -1,7 +1,6 @@
-from __future__ import absolute_import, unicode_literals
-
 import csv
 import traceback
+
 from celery import shared_task
 from celery.task import task
 from celery.utils.log import get_task_logger

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, unicode_literals
-
 from dash.orgs.models import Org
 from dateutil.relativedelta import relativedelta
 from django.core.management.base import BaseCommand, CommandError

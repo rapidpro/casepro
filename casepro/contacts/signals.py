@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import six
 
 from django.db.models.signals import post_save

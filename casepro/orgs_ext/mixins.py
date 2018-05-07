@@ -1,6 +1,3 @@
-from __future__ import unicode_literals
-
-
 class OrgFormMixin(object):
     """
     Mixin for views that need to pass org to their form

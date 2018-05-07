@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from casepro.utils import parse_csv
 
 from .models import ContainsTest, GroupsTest, WordCountTest, Quantifier

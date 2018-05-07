@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import six
 
 from dash.utils import is_dict_equal, chunks
