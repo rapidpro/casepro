@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals
 
-import six
-
 from collections import defaultdict, Counter
 from django.db import migrations
 
@@ -32,12 +30,12 @@ def populate_reply_counts(apps, schema_editor):
 
             # record day counts for each partner
             partner_counts = Counter([r['partner'] for r in day_replies if r['partner']])
-            for partner_id, count in six.iteritems(partner_counts):
+            for partner_id, count in partner_counts.items():
                 DailyCount.objects.create(day=day, item_type='R', scope='partner:%d' % partner_id, count=count)
 
             # record day counts for each org/user
             user_counts = Counter([r['created_by'] for r in day_replies])
-            for user_id, count in six.iteritems(user_counts):
+            for user_id, count in user_counts.items():
                 DailyCount.objects.create(day=day, item_type='R', scope='org:%d:user:%d' % (org.pk, user_id), count=count)
 
         print("Created reply counts for org %s [%d] with %d replies" % (org.name, org.pk, len(replies)))

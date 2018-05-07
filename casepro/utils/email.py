@@ -1,5 +1,3 @@
-import six
-
 from django.contrib.auth.models import User
 from django.core.mail import EmailMultiAlternatives, get_connection
 from django.template import loader
@@ -27,7 +25,7 @@ def send_raw_email(recipients, subject, text, html):
     for recipient in recipients:
         if isinstance(recipient, User):
             to_addresses.append(recipient.email)
-        elif isinstance(recipient, six.string_types):
+        elif isinstance(recipient, str):
             to_addresses.append(recipient)
         else:  # pragma: no cover
             raise ValueError("Email recipients must users or email addresses")

@@ -2,7 +2,6 @@ from dash.orgs.models import Org
 from dateutil.relativedelta import relativedelta
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
-from six.moves import input
 
 
 class Command(BaseCommand):

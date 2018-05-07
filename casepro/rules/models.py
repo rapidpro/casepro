@@ -1,6 +1,5 @@
 import json
 import regex
-import six
 
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
@@ -450,5 +449,5 @@ class Rule(models.Model):
             """
             Applies the actions gathered by this processor
             """
-            for action, messages in six.iteritems(self.messages_by_action):
+            for action, messages in self.messages_by_action.items():
                 action.apply_to(self.org, messages)

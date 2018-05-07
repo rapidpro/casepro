@@ -7,7 +7,7 @@ from django.core.urlresolvers import reverse
 from django.test.utils import override_settings, modify_settings
 from django.utils import timezone
 from mock import patch
-from six.moves import reload_module
+from importlib import reload
 from temba_client.utils import format_iso8601
 
 from casepro.contacts.models import Contact
@@ -454,7 +454,7 @@ class CaseCRUDLTest(BaseCasesTest):
     def setUp(self):
         super(CaseCRUDLTest, self).setUp()
 
-        reload_module(pod_registry)
+        reload(pod_registry)
 
         self.ann = self.create_contact(self.unicef, 'C-001', "Ann",
                                        fields={'age': "34"}, groups=[self.females, self.reporters])

@@ -3,7 +3,6 @@ import iso639
 import json
 import pytz
 import re
-import six
 import unicodedata
 
 from dateutil.relativedelta import relativedelta
@@ -63,7 +62,7 @@ def json_decode(data):
     """
     Decodes the given JSON as primitives
     """
-    if isinstance(data, six.binary_type):
+    if isinstance(data, bytes):
         data = data.decode('utf-8')
 
     return json.loads(data)

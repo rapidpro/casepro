@@ -1,5 +1,3 @@
-import six
-
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -382,9 +380,4 @@ User.can_edit = _user_can_edit
 User.remove_from_org = _user_remove_from_org
 User.as_json = _user_as_json
 User.must_use_faq = _user_must_use_faq
-
-
-if six.PY2:
-    User.__unicode__ = _user_str
-else:
-    User.__str__ = _user_str
+User.__str__ = _user_str

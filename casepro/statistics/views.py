@@ -1,5 +1,3 @@
-import six
-
 from dash.orgs.views import OrgPermsMixin
 from datetime import timedelta
 from dateutil.relativedelta import relativedelta
@@ -139,7 +137,7 @@ class MostUsedLabelsChart(BaseChart):
         counts_by_label = DailyCount.get_by_label(labels, DailyCount.TYPE_INCOMING, since).scope_totals()
 
         # sort by highest count DESC, label name ASC
-        by_usage = sorted(six.iteritems(counts_by_label), key=lambda c: (-c[1], c[0].name))
+        by_usage = sorted(counts_by_label.items(), key=lambda c: (-c[1], c[0].name))
         by_usage = [c for c in by_usage if c[1]]  # remove zero counts
 
         if len(by_usage) > self.num_items:
