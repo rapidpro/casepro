@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from dash.orgs.models import Org
 from dash.orgs.views import OrgCRUDL, TaskCRUDL, InferOrgMixin, OrgPermsMixin
 from django.core.urlresolvers import reverse

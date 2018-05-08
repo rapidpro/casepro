@@ -1,8 +1,4 @@
-# coding=utf-8
-from __future__ import unicode_literals
-
 import pytz
-import six
 
 from dash.orgs.models import TaskState
 from datetime import datetime
@@ -45,7 +41,7 @@ class LabelTest(BaseCasesTest):
         self.assertEqual(label.description, "Msgs about ebola")
         self.assertEqual(label.get_tests(), tests)
         self.assertEqual(label.is_synced, False)
-        self.assertEqual(six.text_type(label), "Ebola")
+        self.assertEqual(str(label), "Ebola")
 
         self.assertNotCalled(mock_push_label)
 
@@ -854,7 +850,7 @@ class MessageTest(BaseCasesTest):
         self.assertEqual(message.is_flagged, True)
         self.assertEqual(message.is_archived, False)
         self.assertEqual(message.created_on, d1)
-        self.assertEqual(six.text_type(message), "I have lots of questions!")
+        self.assertEqual(str(message), "I have lots of questions!")
 
         spam = Label.objects.get(org=self.unicef, uuid="L-001", name="Spam", is_synced=True)
 
@@ -1530,7 +1526,7 @@ class OutgoingTest(BaseCasesTest):
         self.assertEqual(outgoing[0].reply_to, msg1)
         self.assertEqual(outgoing[0].case, None)
         self.assertEqual(outgoing[0].created_by, self.user1)
-        self.assertEqual(six.text_type(outgoing[0]), "That's great")
+        self.assertEqual(str(outgoing[0]), "That's great")
         self.assertEqual(outgoing[1].contact, self.bob)
         self.assertEqual(outgoing[1].reply_to, msg2)
 

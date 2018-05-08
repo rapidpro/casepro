@@ -1,13 +1,8 @@
-from __future__ import unicode_literals
-
-import six
-
 from dash.orgs.models import Org
 from dash.utils import get_obj_cacheable
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timesince import timesince
 from django.utils.timezone import now
@@ -36,7 +31,6 @@ class OutgoingFolder(Enum):
     sent = 1
 
 
-@python_2_unicode_compatible
 class Label(models.Model):
     """
     Corresponds to a message label in RapidPro. Used for determining visibility of messages to different partners.
@@ -176,7 +170,6 @@ class Label(models.Model):
         return self.name
 
 
-@python_2_unicode_compatible
 class FAQ(models.Model):
     """
     Pre-approved questions and answers to be used when replying to a message.
@@ -297,7 +290,6 @@ class Labelling(models.Model):
         unique_together = ('message', 'label')
 
 
-@python_2_unicode_compatible
 class Message(models.Model):
     """
     A incoming message from the backend
@@ -681,7 +673,6 @@ class MessageAction(models.Model):
         }
 
 
-@python_2_unicode_compatible
 class Outgoing(models.Model):
     """
     An outgoing message (i.e. broadcast) sent by a user
@@ -872,7 +863,7 @@ class MessageExport(BaseSearchExport):
         items = Message.search(self.org, self.created_by, search)
 
         def add_sheet(num):
-            sheet = book.add_sheet(six.text_type(_("Messages %d" % num)))
+            sheet = book.add_sheet(str(_("Messages %d" % num)))
             self.write_row(sheet, 0, all_fields)
             return sheet
 
@@ -920,7 +911,7 @@ class ReplyExport(BaseSearchExport):
         items = Outgoing.search_replies(self.org, self.created_by, search)
 
         def add_sheet(num):
-            sheet = book.add_sheet(six.text_type(_("Replies %d" % num)))
+            sheet = book.add_sheet(str(_("Replies %d" % num)))
             self.write_row(sheet, 0, all_fields)
             return sheet
 

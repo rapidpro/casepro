@@ -1,7 +1,3 @@
-from __future__ import unicode_literals
-
-import six
-
 from dash.orgs.views import OrgPermsMixin
 from datetime import timedelta
 from dateutil.relativedelta import relativedelta
@@ -84,7 +80,7 @@ class BasePerMonthChart(BaseChart):
             month = this_month + m
             if month < 1:
                 month += 12
-            categories.append(six.text_type(MONTH_NAMES[month - 1]))
+            categories.append(str(MONTH_NAMES[month - 1]))
             series.append(totals_by_month.get(month, 0))
 
         return {'categories': categories, 'series': series}
@@ -141,7 +137,7 @@ class MostUsedLabelsChart(BaseChart):
         counts_by_label = DailyCount.get_by_label(labels, DailyCount.TYPE_INCOMING, since).scope_totals()
 
         # sort by highest count DESC, label name ASC
-        by_usage = sorted(six.iteritems(counts_by_label), key=lambda c: (-c[1], c[0].name))
+        by_usage = sorted(counts_by_label.items(), key=lambda c: (-c[1], c[0].name))
         by_usage = [c for c in by_usage if c[1]]  # remove zero counts
 
         if len(by_usage) > self.num_items:
@@ -155,7 +151,7 @@ class MostUsedLabelsChart(BaseChart):
 
         # if there are remaining items, merge into single "Other" zone
         if others:
-            series.append({'name': six.text_type(_("Other")), 'y': sum([o[1] for o in others])})
+            series.append({'name': str(_("Other")), 'y': sum([o[1] for o in others])})
 
         return {'series': series}
 

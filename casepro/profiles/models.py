@@ -1,7 +1,3 @@
-from __future__ import absolute_import, unicode_literals
-
-import six
-
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -140,7 +136,7 @@ class Notification(models.Model):
             subject, template, context = getattr(notification, '_build_%s_email' % type_name)()
             template_path = 'profiles/email/%s' % template
 
-            send_email([notification.user], six.text_type(subject), template_path, context)
+            send_email([notification.user], str(subject), template_path, context)
 
         unsent.update(is_sent=True)
 
@@ -384,9 +380,4 @@ User.can_edit = _user_can_edit
 User.remove_from_org = _user_remove_from_org
 User.as_json = _user_as_json
 User.must_use_faq = _user_must_use_faq
-
-
-if six.PY2:
-    User.__unicode__ = _user_str
-else:
-    User.__str__ = _user_str
+User.__str__ = _user_str

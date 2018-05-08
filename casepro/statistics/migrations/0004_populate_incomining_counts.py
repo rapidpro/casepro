@@ -1,8 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals
-
-import six
-
 from collections import defaultdict
 from django.db import migrations
 
@@ -48,7 +43,7 @@ def populate_incoming_counts(apps, schema_editor):
                         label_counts[label] += 1
 
                 # record day count for labels
-                for label, label_count in six.iteritems(label_counts):
+                for label, label_count in label_counts.items():
                     DailyCount.objects.create(day=day, item_type='I', scope='label:%d' % label.pk, count=label_count)
 
             num_processed += len(id_batch)

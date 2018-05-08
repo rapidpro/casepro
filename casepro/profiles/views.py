@@ -1,5 +1,3 @@
-from __future__ import absolute_import, unicode_literals
-
 from dash.orgs.views import OrgPermsMixin
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth import update_session_auth_hash

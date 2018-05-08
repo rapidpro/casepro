@@ -1,4 +1,3 @@
-from __future__ import absolute_import, unicode_literals
 from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgPermsMixin, OrgObjPermsMixin
 from datetime import timedelta

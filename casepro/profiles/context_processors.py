@@ -1,6 +1,3 @@
-from __future__ import absolute_import, unicode_literals
-
-
 def user(request):
     """
     Context processor that adds boolean of whether current user is an admin for current org

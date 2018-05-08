@@ -1,7 +1,3 @@
-from __future__ import unicode_literals
-
-import six
-
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -119,7 +115,7 @@ class BaseCount(models.Model):
             total_by_encoded_scope = {t[0]: t[1] for t in totals}
 
             total_by_scope = {}
-            for encoded_scope, scope in six.iteritems(self.scopes):
+            for encoded_scope, scope in self.scopes.items():
                 total_by_scope[scope] = total_by_encoded_scope.get(encoded_scope, 0)
 
             return total_by_scope
@@ -178,7 +174,7 @@ class BaseSecondTotal(BaseCount):
             total_by_encoded_scope = {t['scope']: (t['cases'], t['seconds']) for t in totals}
 
             average_by_scope = {}
-            for encoded_scope, scope in six.iteritems(self.scopes):
+            for encoded_scope, scope in self.scopes.items():
                 cases, seconds = total_by_encoded_scope.get(encoded_scope, (1, 0))
                 average_by_scope[scope] = float(seconds) / cases
 
@@ -313,7 +309,7 @@ class DailyCountExport(BaseExport):
 
     def render_book(self, book):
         if self.type == self.TYPE_LABEL:
-            sheet = book.add_sheet(six.text_type(_("Incoming Messages")))
+            sheet = book.add_sheet(str(_("Incoming Messages")))
 
             labels = list(Label.get_all(self.org).order_by('name'))
 
@@ -332,9 +328,9 @@ class DailyCountExport(BaseExport):
                 row += 1
 
         elif self.type == self.TYPE_USER:
-            replies_sheet = book.add_sheet(six.text_type(_("Replies Sent")))
-            cases_opened_sheet = book.add_sheet(six.text_type(_("Cases Opened")))
-            cases_closed_sheet = book.add_sheet(six.text_type(_("Cases Closed")))
+            replies_sheet = book.add_sheet(str(_("Replies Sent")))
+            cases_opened_sheet = book.add_sheet(str(_("Cases Opened")))
+            cases_closed_sheet = book.add_sheet(str(_("Cases Closed")))
 
             users = self.org.get_org_users().order_by('profile__full_name')
 
@@ -367,11 +363,11 @@ class DailyCountExport(BaseExport):
                 row += 1
 
         elif self.type == self.TYPE_PARTNER:
-            replies_sheet = book.add_sheet(six.text_type(_("Replies Sent")))
-            ave_sheet = book.add_sheet(six.text_type(_("Average Reply Time")))
-            ave_closed_sheet = book.add_sheet(six.text_type(_("Average Closed Time")))
-            cases_opened_sheet = book.add_sheet(six.text_type(_("Cases Opened")))
-            cases_closed_sheet = book.add_sheet(six.text_type(_("Cases Closed")))
+            replies_sheet = book.add_sheet(str(_("Replies Sent")))
+            ave_sheet = book.add_sheet(str(_("Average Reply Time")))
+            ave_closed_sheet = book.add_sheet(str(_("Average Closed Time")))
+            cases_opened_sheet = book.add_sheet(str(_("Cases Opened")))
+            cases_closed_sheet = book.add_sheet(str(_("Cases Closed")))
 
             partners = list(Partner.get_all(self.org).order_by('name'))
 

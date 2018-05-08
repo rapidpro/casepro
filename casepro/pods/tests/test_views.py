@@ -1,8 +1,6 @@
-from __future__ import unicode_literals
-
 from django.core.urlresolvers import reverse
 from django.test import modify_settings
-from six.moves import reload_module
+from importlib import reload
 
 from casepro.cases.models import CaseAction
 from casepro.test import BaseCasesTest
@@ -25,7 +23,7 @@ class ViewPodDataView(BaseCasesTest):
 
         with self.settings(PODS=[{'label': 'base_pod'}]):
             from casepro.pods import registry
-            reload_module(registry)
+            reload(registry)
 
     def test_invalid_method(self):
         """
@@ -122,7 +120,7 @@ class PerformPodActionView(BaseCasesTest):
 
         with self.settings(PODS=[{'label': 'base_pod'}]):
             from casepro.pods import registry
-            reload_module(registry)
+            reload(registry)
 
     def test_invalid_method(self):
         """
@@ -195,7 +193,7 @@ class PerformPodActionView(BaseCasesTest):
         """
         with self.settings(PODS=[{'label': 'success_pod'}]):
             from casepro.pods import registry
-            reload_module(registry)
+            reload(registry)
 
         response = self.url_post_json(
             'unicef', reverse('perform_pod_action', args=('0',)), {

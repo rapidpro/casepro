@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from celery.utils.log import get_task_logger
 from dash.orgs.tasks import org_task
 

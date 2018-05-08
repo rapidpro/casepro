@@ -1,7 +1,3 @@
-from __future__ import unicode_literals
-
-import six
-
 from dash.utils import is_dict_equal, chunks
 from dash.utils.sync import BaseSyncer, sync_local_to_set, sync_local_to_changes
 from django.utils.timezone import now
@@ -38,7 +34,7 @@ class ContactSyncer(BaseSyncer):
     def local_kwargs(self, org, remote):
         # groups and fields are updated via a post save signal handler
         groups = [(g.uuid, g.name) for g in remote.groups]
-        fields = {k: v for k, v in six.iteritems(remote.fields) if v is not None}  # don't include none values
+        fields = {k: v for k, v in remote.fields.items() if v is not None}  # don't include none values
 
         return {
             'org': org,

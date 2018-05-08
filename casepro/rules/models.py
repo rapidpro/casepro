@@ -1,15 +1,11 @@
-from __future__ import unicode_literals
-
 import json
 import regex
-import six
 
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from dash.orgs.models import Org
 from dash.utils import get_obj_cacheable
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from enum import Enum
 
@@ -21,7 +17,6 @@ from casepro.utils import normalize, json_encode
 KEYWORD_REGEX = regex.compile(r'^\w[\w\- ]*\w$', flags=regex.UNICODE | regex.V0)
 
 
-@python_2_unicode_compatible
 class Quantifier(Enum):
     """
     Tests are typically composed of multiple conditions, e.g. contains ANY of X, Y or Z.
@@ -59,7 +54,7 @@ class Quantifier(Enum):
             return True
 
     def __str__(self):
-        return six.text_type(self.text)
+        return str(self.text)
 
 
 class DeserializationContext(object):
@@ -136,7 +131,7 @@ class ContainsTest(Test):
 
     def get_description(self):
         quoted_keywords = ['"%s"' % w for w in self.keywords]
-        return "message contains %s %s" % (six.text_type(self.quantifier), ", ".join(quoted_keywords))
+        return "message contains %s %s" % (str(self.quantifier), ", ".join(quoted_keywords))
 
     def matches(self, message):
         text = normalize(message.text)
@@ -204,7 +199,7 @@ class GroupsTest(Test):
 
     def get_description(self):
         group_names = [g.name for g in self.groups]
-        return "contact belongs to %s %s" % (six.text_type(self.quantifier), ", ".join(group_names))
+        return "contact belongs to %s %s" % (str(self.quantifier), ", ".join(group_names))
 
     def matches(self, message):
         contact_groups = set(message.contact.groups.all())
@@ -327,7 +322,7 @@ class LabelAction(Action):
         return self.TYPE == other.TYPE and self.label == other.label
 
     def __hash__(self):
-        return hash(self.TYPE + six.text_type(self.label.pk))
+        return hash(self.TYPE + str(self.label.pk))
 
 
 class FlagAction(Action):
@@ -452,5 +447,5 @@ class Rule(models.Model):
             """
             Applies the actions gathered by this processor
             """
-            for action, messages in six.iteritems(self.messages_by_action):
+            for action, messages in self.messages_by_action.items():
                 action.apply_to(self.org, messages)

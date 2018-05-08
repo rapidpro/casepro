@@ -1,6 +1,3 @@
-from __future__ import unicode_literals
-
-import six
 import iso639
 
 from collections import defaultdict
@@ -360,7 +357,7 @@ class MessageCRUDL(SmartCRUDL):
 
             # the actual message that will be replied to is the oldest selected message for each contact
             reply_tos = []
-            for contact, contact_messages in six.iteritems(messages_by_contact):
+            for contact, contact_messages in messages_by_contact.items():
                 contact_messages = sorted(contact_messages, key=lambda m: m.created_on, reverse=True)
                 reply_tos.append(contact_messages[0])
 

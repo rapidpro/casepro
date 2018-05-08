@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.core.urlresolvers import reverse
 from django_comments.forms import CommentForm
 from temba_client.utils import format_iso8601

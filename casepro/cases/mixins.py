@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from dash.orgs.views import OrgPermsMixin
 
 

@@ -1,13 +1,10 @@
-from __future__ import unicode_literals
-
 import json
 import responses
 import uuid
 import mock
-
 import pytz
-from datetime import datetime
 
+from datetime import datetime
 from django.conf import settings
 from django.db import IntegrityError
 from django.http import HttpResponse

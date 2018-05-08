@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from dash.orgs.models import Org
 from django.db import models
 from django.utils import timezone
