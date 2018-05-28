@@ -704,13 +704,20 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_post(
             "unicef",
             url,
-            {"name": "Richard", "email": "rick@unicef.org", "partner": self.moh.pk, "role": ROLE_ANALYST},
+            {
+                "name": "Richard",
+                "email": "rick@unicef.org",
+                "partner": self.moh.pk,
+                "role": ROLE_ANALYST,
+                "change_password": True
+            },
         )
         self.assertEqual(response.status_code, 302)
 
         self.user2.refresh_from_db()
         self.user2.profile.refresh_from_db()
         self.assertEqual(self.user2.profile.full_name, "Richard")
+        self.assertEqual(self.user2.profile.change_password, True)
         self.assertEqual(self.user2.email, "rick@unicef.org")
         self.assertEqual(self.user2.username, "rick@unicef.org")
         self.assertIn(self.user2, self.unicef.viewers.all())
