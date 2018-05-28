@@ -287,6 +287,8 @@ class Labelling(models.Model):
 
     label = models.ForeignKey(Label, on_delete=models.CASCADE)
 
+    message_created_on = models.DateTimeField(null=True)
+
     class Meta:
         db_table = "msgs_message_labels"
         unique_together = ("message", "label")
@@ -464,7 +466,7 @@ class Message(models.Model):
 
         existing_label_ids = Labelling.objects.filter(message=self, label__in=labels).values_list("label", flat=True)
         add_labels = [l for l in labels if l.id not in existing_label_ids]
-        new_labellings = [Labelling(message=self, label=l) for l in add_labels]
+        new_labellings = [Labelling(message=self, label=l, message_created_on=self.created_on) for l in add_labels]
         Labelling.objects.bulk_create(new_labellings)
 
         day = datetime_to_date(self.created_on, self.org)
