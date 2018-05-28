@@ -46,6 +46,12 @@ class OrgExtCRUDLTest(BaseCasesTest):
         self.assertContains(response, "/label/create/")
         self.assertContains(response, "/partner/create/")
         self.assertContains(response, "/user/create/")
+        self.assertNotContains(response, reverse('orgs.orgbackend_list'))
+
+        self.login(self.superuser)
+
+        response = self.url_get("unicef", url)
+        self.assertContains(response, reverse('orgs.orgbackend_list'))
 
     def test_edit(self):
         url = reverse("orgs_ext.org_edit")
