@@ -1,7 +1,7 @@
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.mail import EmailMultiAlternatives, get_connection
 from django.template import loader
-from django.conf import settings
 
 
 def send_email(recipients, subject, template, context):
@@ -30,9 +30,9 @@ def send_raw_email(recipients, subject, text, html):
         else:  # pragma: no cover
             raise ValueError("Email recipients must users or email addresses")
 
-    from_address = getattr(settings, 'DEFAULT_FROM_EMAIL', 'website@casepro.io')
+    from_address = getattr(settings, "DEFAULT_FROM_EMAIL", "website@casepro.io")
 
-    if getattr(settings, 'SEND_EMAILS', False):
+    if getattr(settings, "SEND_EMAILS", False):
         # send individual messages so as to not leak users email addresses, but use bulk send operation for speed
         messages = []
         for to_address in to_addresses:

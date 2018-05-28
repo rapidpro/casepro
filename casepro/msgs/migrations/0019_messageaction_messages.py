@@ -5,8 +5,8 @@ from django.db import migrations, models
 
 
 def populate_messages_new(apps, schema_editor):
-    Message = apps.get_model('msgs', 'Message')
-    MessageAction = apps.get_model('msgs', 'MessageAction')
+    Message = apps.get_model("msgs", "Message")
+    MessageAction = apps.get_model("msgs", "MessageAction")
 
     actions = list(MessageAction.objects.all())
 
@@ -29,19 +29,14 @@ def populate_messages_new(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('msgs', '0018_deleted_contact_messages'),
-    ]
+    dependencies = [("msgs", "0018_deleted_contact_messages")]
 
     operations = [
         migrations.AddField(
-            model_name='messageaction',
-            name='messages_new',
-            field=models.ManyToManyField(related_name='actions', to='msgs.Message'),
+            model_name="messageaction",
+            name="messages_new",
+            field=models.ManyToManyField(related_name="actions", to="msgs.Message"),
         ),
         migrations.RunPython(populate_messages_new),
-        migrations.RemoveField(
-            model_name='messageaction',
-            name='messages',
-        )
+        migrations.RemoveField(model_name="messageaction", name="messages"),
     ]

@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 
 from django.db import migrations
 
-
 INDEX_SQL = """
 DROP INDEX msgs_inbox;
 CREATE INDEX msgs_inbox
@@ -19,10 +18,6 @@ WHERE is_active = TRUE AND is_handled = TRUE AND is_archived = FALSE AND "type" 
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('msgs', '0028_message_triggers'),
-    ]
+    dependencies = [("msgs", "0028_message_triggers")]
 
-    operations = [
-        migrations.RunSQL(INDEX_SQL)
-    ]
+    operations = [migrations.RunSQL(INDEX_SQL)]

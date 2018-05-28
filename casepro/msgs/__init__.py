@@ -1,1 +1,1 @@
-default_app_config = 'casepro.msgs.apps.Config'
+default_app_config = "casepro.msgs.apps.Config"

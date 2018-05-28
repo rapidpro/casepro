@@ -6,9 +6,9 @@ from django.db import migrations, models
 
 
 def populate_is_stopped(apps, schema_editor):
-    Contact = apps.get_model('contacts', 'Contact')
+    Contact = apps.get_model("contacts", "Contact")
 
-    contact_ids = list(Contact.objects.values_list('id', flat=True))
+    contact_ids = list(Contact.objects.values_list("id", flat=True))
     num_updated = 0
 
     for id_batch in chunks(contact_ids, 5000):
@@ -20,15 +20,13 @@ def populate_is_stopped(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('contacts', '0021_contact_is_stopped_pt1'),
-    ]
+    dependencies = [("contacts", "0021_contact_is_stopped_pt1")]
 
     operations = [
         migrations.RunPython(populate_is_stopped),
         migrations.AlterField(
-            model_name='contact',
-            name='is_stopped',
-            field=models.BooleanField(default=False, help_text='Whether this contact opted out of receiving messages'),
+            model_name="contact",
+            name="is_stopped",
+            field=models.BooleanField(default=False, help_text="Whether this contact opted out of receiving messages"),
         ),
     ]

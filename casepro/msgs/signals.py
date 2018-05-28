@@ -1,4 +1,4 @@
-from django.db.models.signals import pre_save, post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
 from .models import Label, Message
@@ -47,8 +47,7 @@ def update_message_labels(sender, instance, created, **kwargs):
         instance.unlabel(*remove_from)
 
     # add this message to any labels not in the current set
-    add_to_by_uuid = {uuid: name for uuid, name in new_labels_by_uuid.items()
-                      if uuid not in cur_labels_by_uuid.keys()}
+    add_to_by_uuid = {uuid: name for uuid, name in new_labels_by_uuid.items() if uuid not in cur_labels_by_uuid.keys()}
     if add_to_by_uuid:
         org_labels_by_uuid = {l.uuid: l for l in org.labels.all()}
         org_unsynced_names = {l.name for l in org.labels.all() if not l.is_synced}

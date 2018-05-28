@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 
 def delete_empty_messages(apps, schema_editor):
-    Outgoing = apps.get_model('msgs', 'Outgoing')
+    Outgoing = apps.get_model("msgs", "Outgoing")
 
     empties = Outgoing.objects.filter(text=None)
     num_empties = len(empties)
@@ -18,10 +18,6 @@ def delete_empty_messages(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('msgs', '0037_outgoing_indexes'),
-    ]
+    dependencies = [("msgs", "0037_outgoing_indexes")]
 
-    operations = [
-        migrations.RunPython(delete_empty_messages)
-    ]
+    operations = [migrations.RunPython(delete_empty_messages)]

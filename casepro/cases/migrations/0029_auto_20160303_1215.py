@@ -6,14 +6,6 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('cases', '0028_case_initial_message'),
-    ]
+    dependencies = [("cases", "0028_case_initial_message")]
 
-    operations = [
-        migrations.AlterField(
-            model_name='case',
-            name='message_id',
-            field=models.IntegerField(null=True),
-        ),
-    ]
+    operations = [migrations.AlterField(model_name="case", name="message_id", field=models.IntegerField(null=True))]

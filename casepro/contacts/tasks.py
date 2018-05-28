@@ -4,7 +4,7 @@ from dash.orgs.tasks import org_task
 logger = get_task_logger(__name__)
 
 
-@org_task('contact-pull', lock_timeout=12 * 60 * 60)
+@org_task("contact-pull", lock_timeout=12 * 60 * 60)
 def pull_contacts(org, since, until):
     """
     Fetches updated contacts from RapidPro and updates local contacts accordingly
@@ -21,7 +21,7 @@ def pull_contacts(org, since, until):
     contacts_created, contacts_updated, contacts_deleted, ignored = backend.pull_contacts(org, since, until)
 
     return {
-        'fields': {'created': fields_created, 'updated': fields_updated, 'deleted': fields_deleted},
-        'groups': {'created': groups_created, 'updated': groups_updated, 'deleted': groups_deleted},
-        'contacts': {'created': contacts_created, 'updated': contacts_updated, 'deleted': contacts_deleted}
+        "fields": {"created": fields_created, "updated": fields_updated, "deleted": fields_deleted},
+        "groups": {"created": groups_created, "updated": groups_updated, "deleted": groups_deleted},
+        "contacts": {"created": contacts_created, "updated": contacts_updated, "deleted": contacts_deleted},
     }

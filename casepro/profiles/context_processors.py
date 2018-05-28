@@ -11,8 +11,4 @@ def user(request):
         partner = request.user.get_partner(request.org)
         is_faq_only = request.user.must_use_faq()
 
-    return {
-        'user_is_admin': is_admin,
-        'user_partner': partner,
-        'user_is_faq_only': is_faq_only
-    }
+    return {"user_is_admin": is_admin, "user_partner": partner, "user_is_faq_only": is_faq_only}

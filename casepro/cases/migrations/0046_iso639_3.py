@@ -3,11 +3,9 @@
 from __future__ import unicode_literals
 
 import iso639
-
 from dash.utils import chunks
 from django.db import migrations, transaction
 from django.db.models import Q
-
 
 migration_lang_cache = {}
 
@@ -15,21 +13,21 @@ migration_lang_cache = {}
 # maps country and iso639-2 codes to a specific iso639-3 language code. It isn't inclusive but covers the cases
 # we know about at the time of our 639-2 -> 639-3 migration.
 MIGRATION_OVERRIDES = {
-    'Africa/Lagos:cpe': 'pcm',
-    'Africa/Monrovia:cpe': 'lir',
-    'America/Managua:cpe': 'bzk',
-    '*:mkh': 'khm',
-    '*:cpe': 'pcm',
-    '*:art': 'epo',
-    '*:cpf': 'gcr',
-    '*:phi': 'fil',
-    '*:smi': 'smj',
-    '*:afa': 'ara',
-    '*:aus': 'rop',
-    '*:cpp': 'kea',
-    '*:him': 'xnr',
-    '*:kar': 'blk',
-    '*:esp': 'spa',
+    "Africa/Lagos:cpe": "pcm",
+    "Africa/Monrovia:cpe": "lir",
+    "America/Managua:cpe": "bzk",
+    "*:mkh": "khm",
+    "*:cpe": "pcm",
+    "*:art": "epo",
+    "*:cpf": "gcr",
+    "*:phi": "fil",
+    "*:smi": "smj",
+    "*:afa": "ara",
+    "*:aus": "rop",
+    "*:cpp": "kea",
+    "*:him": "xnr",
+    "*:kar": "blk",
+    "*:esp": "spa",
 }
 
 
@@ -42,19 +40,19 @@ def iso6392_to_iso6393(iso_code, timezone=None):
 
     iso_code = iso_code.lower().strip()
 
-    if iso_code == '':
-        raise ValueError('iso_code must not be empty')
+    if iso_code == "":
+        raise ValueError("iso_code must not be empty")
 
-    cache_key = '{}:{}'.format('*' if timezone is None else timezone, iso_code)
+    cache_key = "{}:{}".format("*" if timezone is None else timezone, iso_code)
 
     if cache_key not in migration_lang_cache:
 
         # build our key
-        override_key = '%s:%s' % (timezone, iso_code) if timezone else '*:%s' % iso_code
+        override_key = "%s:%s" % (timezone, iso_code) if timezone else "*:%s" % iso_code
         override = MIGRATION_OVERRIDES.get(override_key)
 
         if not override and timezone:
-            override_key = '*:%s' % iso_code
+            override_key = "*:%s" % iso_code
             override = MIGRATION_OVERRIDES.get(override_key)
 
         if override:
@@ -97,22 +95,22 @@ def migrate_language(Contact, FAQ):
         print("Found %d contacts to migrate languages for..." % total_contacts)
         num_updated = 0
 
-        for batch in chunks(contacts.only('id'), 1000):
+        for batch in chunks(contacts.only("id"), 1000):
             with transaction.atomic():
-                contact_batch = Contact.objects.filter(id__in=[c.id for c in batch]).select_related('org')
+                contact_batch = Contact.objects.filter(id__in=[c.id for c in batch]).select_related("org")
 
                 for contact in contact_batch:
                     new_language = iso6392_to_iso6393(contact.language, contact.org.timezone)
 
                     if new_language != contact.language:
                         contact.language = new_language
-                        contact.save(update_fields=('language',))
+                        contact.save(update_fields=("language",))
 
                     num_updated += 1
 
             print(" > Updated %d of %d contacts" % (num_updated, total_contacts))
 
-    faqs = list(FAQ.objects.exclude(Q(language=None) | Q(language="") | Q(language="eng")).select_related('org'))
+    faqs = list(FAQ.objects.exclude(Q(language=None) | Q(language="") | Q(language="eng")).select_related("org"))
 
     if len(faqs):
         print("Found %d FAQs to migrate languages for..." % len(faqs))
@@ -122,28 +120,24 @@ def migrate_language(Contact, FAQ):
 
             if new_language != faq.language:
                 faq.language = new_language
-                faq.save(update_fields=('language',))
+                faq.save(update_fields=("language",))
 
 
 def apply_manual():
     from casepro.contacts.models import Contact
     from casepro.msgs.models import FAQ
+
     migrate_language(Contact, FAQ)
 
 
 def apply_as_migration(apps, schema_editor):
-    Contact = apps.get_model('contacts', 'Contact')
-    FAQ = apps.get_model('msgs', 'FAQ')
+    Contact = apps.get_model("contacts", "Contact")
+    FAQ = apps.get_model("msgs", "FAQ")
     migrate_language(Contact, FAQ)
 
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('cases', '0045_auto_20161014_1341'),
-        ('msgs', '0053_faq'),
-    ]
+    dependencies = [("cases", "0045_auto_20161014_1341"), ("msgs", "0053_faq")]
 
-    operations = [
-        migrations.RunPython(apply_as_migration)
-    ]
+    operations = [migrations.RunPython(apply_as_migration)]

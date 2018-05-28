@@ -22,7 +22,7 @@ def parse_csv(csv, as_ints=False):
     Parses a comma separated list of values as strings or integers
     """
     items = []
-    for val in csv.split(','):
+    for val in csv.split(","):
         val = val.strip()
         if val:
             items.append(int(val) if as_ints else val)
@@ -33,19 +33,20 @@ def str_to_bool(text):
     """
     Parses a boolean value from the given text
     """
-    return text and text.lower() in ['true', 'y', 'yes', '1']
+    return text and text.lower() in ["true", "y", "yes", "1"]
 
 
 class JSONEncoder(json.JSONEncoder):
     """
     JSON encoder which encodes datetime values as strings
     """
+
     def default(self, val):
         if isinstance(val, datetime):
             return format_iso8601(val)
         elif isinstance(val, Enum):
             return val.name
-        elif hasattr(val, 'to_json') and callable(val.to_json):
+        elif hasattr(val, "to_json") and callable(val.to_json):
             return val.to_json()
 
         return json.JSONEncoder.default(self, val)  # pragma: no cover
@@ -63,7 +64,7 @@ def json_decode(data):
     Decodes the given JSON as primitives
     """
     if isinstance(data, bytes):
-        data = data.decode('utf-8')
+        data = data.decode("utf-8")
 
     return json.loads(data)
 
@@ -86,7 +87,7 @@ def normalize(text):
     Normalizes text before keyword matching. Converts to lowercase, performs KD unicode normalization and replaces
     multiple whitespace characters with single spaces.
     """
-    return unicodedata.normalize('NFKD', re.sub(r'\s+', ' ', text.lower()))
+    return unicodedata.normalize("NFKD", re.sub(r"\s+", " ", text.lower()))
 
 
 def match_keywords(text, keywords):
@@ -94,17 +95,17 @@ def match_keywords(text, keywords):
     Checks the given text for a keyword match
     """
     for keyword in keywords:
-        if re.search(r'\b' + keyword + r'\b', text, flags=re.IGNORECASE):
+        if re.search(r"\b" + keyword + r"\b", text, flags=re.IGNORECASE):
             return True
     return False
 
 
-def truncate(text, length=100, suffix='...'):
+def truncate(text, length=100, suffix="..."):
     """
     Truncates the given text to be no longer than the given length
     """
     if len(text) > length:
-        return text[:length-len(suffix)] + suffix
+        return text[: length - len(suffix)] + suffix
     else:
         return text
 
@@ -158,6 +159,7 @@ class TimelineItem(object):
     """
     Wraps a message or action for easier inclusion in a merged timeline
     """
+
     def __init__(self, item):
         self.item = item
 
@@ -165,7 +167,7 @@ class TimelineItem(object):
         return self.item.created_on
 
     def to_json(self):
-        return {'time': self.get_time(), 'type': self.item.TIMELINE_TYPE, 'item': self.item.as_json()}
+        return {"time": self.get_time(), "type": self.item.TIMELINE_TYPE, "item": self.item.as_json()}
 
 
 def uuid_to_int(uuid):
@@ -191,7 +193,7 @@ def get_language_name(iso_code):
 
         if lang:
             # we only show up to the first semi or paren
-            lang = re.split(';|\(', lang.name)[0].strip()
+            lang = re.split(";|\(", lang.name)[0].strip()
 
         LANGUAGES_BY_CODE[iso_code] = lang
 

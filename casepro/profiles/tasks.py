@@ -7,4 +7,5 @@ logger = get_task_logger(__name__)
 @shared_task
 def send_notifications():
     from .models import Notification
+
     Notification.send_all()

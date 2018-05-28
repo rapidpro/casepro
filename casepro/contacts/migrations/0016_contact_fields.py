@@ -8,15 +8,9 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('contacts', '0015_no_more_none_values'),
-    ]
+    dependencies = [("contacts", "0015_no_more_none_values")]
 
     operations = [
         HStoreExtension(),
-        migrations.AddField(
-            model_name='contact',
-            name='fields',
-            field=HStoreField(null=True),
-        ),
+        migrations.AddField(model_name="contact", name="fields", field=HStoreField(null=True)),
     ]

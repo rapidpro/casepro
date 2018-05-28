@@ -10,15 +10,16 @@ from casepro.cases.models import CaseAction
 from casepro.msgs.models import Message
 from casepro.utils.email import send_email
 
-ROLE_ADMIN = 'A'
-ROLE_MANAGER = 'M'
-ROLE_ANALYST = 'Y'
+ROLE_ADMIN = "A"
+ROLE_MANAGER = "M"
+ROLE_ANALYST = "Y"
 
-ROLE_ORG_CHOICES = ((ROLE_ADMIN, _("Administrator")),
-                    (ROLE_MANAGER, _("Partner Manager")),
-                    (ROLE_ANALYST, _("Partner Data Analyst")))
-ROLE_PARTNER_CHOICES = ((ROLE_MANAGER, _("Manager")),
-                        (ROLE_ANALYST, _("Data Analyst")))
+ROLE_ORG_CHOICES = (
+    (ROLE_ADMIN, _("Administrator")),
+    (ROLE_MANAGER, _("Partner Manager")),
+    (ROLE_ANALYST, _("Partner Data Analyst")),
+)
+ROLE_PARTNER_CHOICES = ((ROLE_MANAGER, _("Manager")), (ROLE_ANALYST, _("Data Analyst")))
 
 PARTNER_ROLES = {ROLE_MANAGER, ROLE_ANALYST}  # roles that are tied to a partner
 
@@ -33,8 +34,9 @@ class Profile(models.Model):
 
     change_password = models.BooleanField(default=False, help_text=_("User must change password on next login"))
 
-    must_use_faq = models.BooleanField(default=False, help_text=_(
-        "User is only allowed to reply with pre-approved responses"))
+    must_use_faq = models.BooleanField(
+        default=False, help_text=_("User is only allowed to reply with pre-approved responses")
+    )
 
     @classmethod
     def create_user(cls, name, email, password, change_password=False, must_use_faq=False):
@@ -84,21 +86,21 @@ class Notification(models.Model):
     """
     A notification sent to a user
     """
-    TYPE_MESSAGE_LABELLING = 'L'
-    TYPE_CASE_ASSIGNMENT = 'C'
-    TYPE_CASE_ACTION = 'A'
-    TYPE_CASE_REPLY = 'R'
+    TYPE_MESSAGE_LABELLING = "L"
+    TYPE_CASE_ASSIGNMENT = "C"
+    TYPE_CASE_ACTION = "A"
+    TYPE_CASE_REPLY = "R"
 
     TYPE_NAME = {
-        TYPE_MESSAGE_LABELLING: 'message_labelling',
-        TYPE_CASE_ASSIGNMENT: 'case_assignment',
-        TYPE_CASE_ACTION: 'case_action',
-        TYPE_CASE_REPLY: 'case_reply',
+        TYPE_MESSAGE_LABELLING: "message_labelling",
+        TYPE_CASE_ASSIGNMENT: "case_assignment",
+        TYPE_CASE_ACTION: "case_action",
+        TYPE_CASE_REPLY: "case_reply",
     }
 
     org = models.ForeignKey(Org)
 
-    user = models.ForeignKey(User, related_name='notifications')
+    user = models.ForeignKey(User, related_name="notifications")
 
     type = models.CharField(max_length=1)
 
@@ -129,12 +131,12 @@ class Notification(models.Model):
     @classmethod
     def send_all(cls):
         unsent = cls.objects.filter(is_sent=False)
-        unsent = unsent.select_related('org', 'user', 'message', 'case_action').order_by('created_on')
+        unsent = unsent.select_related("org", "user", "message", "case_action").order_by("created_on")
 
         for notification in unsent:
             type_name = cls.TYPE_NAME[notification.type]
-            subject, template, context = getattr(notification, '_build_%s_email' % type_name)()
-            template_path = 'profiles/email/%s' % template
+            subject, template, context = getattr(notification, "_build_%s_email" % type_name)()
+            template_path = "profiles/email/%s" % template
 
             send_email([notification.user], str(subject), template_path, context)
 
@@ -142,40 +144,40 @@ class Notification(models.Model):
 
     def _build_message_labelling_email(self):
         context = {
-            'labels': set(self.user.watched_labels.all()).intersection(self.message.labels.all()),
-            'inbox_url': self.org.make_absolute_url(reverse('cases.inbox'))
+            "labels": set(self.user.watched_labels.all()).intersection(self.message.labels.all()),
+            "inbox_url": self.org.make_absolute_url(reverse("cases.inbox")),
         }
-        return _("New labelled message"), 'message_labelling', context
+        return _("New labelled message"), "message_labelling", context
 
     def _build_case_assignment_email(self):
         case = self.case_action.case
         context = {
-            'user': self.case_action.created_by,
-            'case_url': self.org.make_absolute_url(reverse('cases.case_read', args=[case.pk]))
+            "user": self.case_action.created_by,
+            "case_url": self.org.make_absolute_url(reverse("cases.case_read", args=[case.pk])),
         }
-        return _("New case assignment #%d") % case.pk, 'case_assignment', context
+        return _("New case assignment #%d") % case.pk, "case_assignment", context
 
     def _build_case_action_email(self):
         case = self.case_action.case
         context = {
-            'user': self.case_action.created_by,
-            'note': self.case_action.note,
-            'assignee': self.case_action.assignee,
-            'case_url': self.org.make_absolute_url(reverse('cases.case_read', args=[case.pk]))
+            "user": self.case_action.created_by,
+            "note": self.case_action.note,
+            "assignee": self.case_action.assignee,
+            "case_url": self.org.make_absolute_url(reverse("cases.case_read", args=[case.pk])),
         }
 
         if self.case_action.action == CaseAction.ADD_NOTE:
             subject = _("New note in case #%d") % case.pk
-            template = 'case_new_note'
+            template = "case_new_note"
         elif self.case_action.action == CaseAction.CLOSE:
             subject = _("Case #%d was closed") % case.pk
-            template = 'case_closed'
+            template = "case_closed"
         elif self.case_action.action == CaseAction.REOPEN:
             subject = _("Case #%d was reopened") % case.pk
-            template = 'case_reopened'
+            template = "case_reopened"
         elif self.case_action.action == CaseAction.REASSIGN:
             subject = _("Case #%d was reassigned") % case.pk
-            template = 'case_reassigned'
+            template = "case_reassigned"
         else:  # pragma: no cover
             raise ValueError("Notifications not supported for case action type %s" % self.case_action.action)
 
@@ -183,13 +185,12 @@ class Notification(models.Model):
 
     def _build_case_reply_email(self):
         case = self.message.case
-        context = {
-            'case_url': self.org.make_absolute_url(reverse('cases.case_read', args=[case.pk]))
-        }
-        return _("New reply in case #%d") % case.pk, 'case_reply', context
+        context = {"case_url": self.org.make_absolute_url(reverse("cases.case_read", args=[case.pk]))}
+        return _("New reply in case #%d") % case.pk, "case_reply", context
 
 
 # ================================== Monkey patching for the User class ====================================
+
 
 def _user_clean(user):
     # we use email for login
@@ -340,7 +341,7 @@ def _user_must_use_faq(user):
 def _user_str(user):
     if user.has_profile():
         if user.profile.full_name:
-            return '%s (%s)' % (user.profile.full_name, user.email)
+            return "%s (%s)" % (user.profile.full_name, user.email)
     else:
         return user.username  # superuser
 
@@ -358,14 +359,14 @@ def _user_as_json(user, full=True, org=None):
             partner_json = None
 
         return {
-            'id': user.pk,
-            'name': user.get_full_name(),
-            'email': user.email,
-            'role': role_json,
-            'partner': partner_json
+            "id": user.pk,
+            "name": user.get_full_name(),
+            "email": user.email,
+            "role": role_json,
+            "partner": partner_json,
         }
     else:
-        return {'id': user.pk, 'name': user.get_full_name()}
+        return {"id": user.pk, "name": user.get_full_name()}
 
 
 User.clean = _user_clean

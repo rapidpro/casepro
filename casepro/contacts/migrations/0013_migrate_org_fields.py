@@ -7,21 +7,21 @@ from django.db import migrations, models
 
 
 def migrate_contact_fields(apps, schema_editor):
-    Org = apps.get_model('orgs', 'Org')
-    Field = apps.get_model('contacts', 'Field')
+    Org = apps.get_model("orgs", "Org")
+    Field = apps.get_model("contacts", "Field")
 
     num_created = 0
     num_updated = 0
 
     for org in Org.objects.all():
         config = json.loads(org.config) if org.config else {}
-        contact_fields = config.get('contact_fields', [])
+        contact_fields = config.get("contact_fields", [])
 
         for field_key in contact_fields:
             field = Field.objects.filter(org=org, key=field_key).first()
             if field:
                 field.is_visible = True
-                field.save(update_fields=('is_visible',))
+                field.save(update_fields=("is_visible",))
                 num_updated += 1
             else:
                 # create placeholder which will be updated in next contacts sync
@@ -34,10 +34,6 @@ def migrate_contact_fields(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('contacts', '0012_field_is_visible'),
-    ]
+    dependencies = [("contacts", "0012_field_is_visible")]
 
-    operations = [
-        migrations.RunPython(migrate_contact_fields)
-    ]
+    operations = [migrations.RunPython(migrate_contact_fields)]

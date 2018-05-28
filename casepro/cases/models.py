@@ -1,12 +1,13 @@
+from enum import Enum, IntEnum
+from itertools import chain
+
 from dash.orgs.models import Org
 from dash.utils import intersection
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import models
-from django.db.models import Q, Count, Prefetch
+from django.db.models import Count, Prefetch, Q
 from django.utils.translation import ugettext_lazy as _
-from enum import Enum, IntEnum
-from itertools import chain
 from django_redis import get_redis_connection
 
 from casepro.contacts.models import Contact
@@ -14,8 +15,7 @@ from casepro.msgs.models import Label, Message, Outgoing
 from casepro.utils import TimelineItem
 from casepro.utils.export import BaseSearchExport
 
-
-CASE_LOCK_KEY = 'org:%d:case_lock:%s'
+CASE_LOCK_KEY = "org:%d:case_lock:%s"
 
 
 class CaseFolder(Enum):
@@ -36,26 +36,29 @@ class Partner(models.Model):
     """
     Corresponds to a partner organization
     """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='partners')
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="partners")
 
-    name = models.CharField(verbose_name=_("Name"), max_length=128,
-                            help_text=_("Name of this partner organization"))
+    name = models.CharField(verbose_name=_("Name"), max_length=128, help_text=_("Name of this partner organization"))
 
     description = models.CharField(verbose_name=_("Description"), null=True, blank=True, max_length=255)
 
-    primary_contact = models.ForeignKey(User, verbose_name=_("Primary Contact"), related_name='partners_primary',
-                                        null=True, blank=True)
+    primary_contact = models.ForeignKey(
+        User, verbose_name=_("Primary Contact"), related_name="partners_primary", null=True, blank=True
+    )
 
-    is_restricted = models.BooleanField(default=True, verbose_name=_("Restricted Access"),
-                                        help_text=_("Whether this partner's access is restricted by labels"))
+    is_restricted = models.BooleanField(
+        default=True,
+        verbose_name=_("Restricted Access"),
+        help_text=_("Whether this partner's access is restricted by labels"),
+    )
 
-    labels = models.ManyToManyField(Label, verbose_name=_("Labels"), related_name='partners',
-                                    help_text=_("Labels that this partner can access"))
+    labels = models.ManyToManyField(
+        Label, verbose_name=_("Labels"), related_name="partners", help_text=_("Labels that this partner can access")
+    )
 
-    users = models.ManyToManyField(User, related_name='partners',
-                                   help_text=_("Users that belong to this partner"))
+    users = models.ManyToManyField(User, related_name="partners", help_text=_("Users that belong to this partner"))
 
-    logo = models.ImageField(verbose_name=_("Logo"), upload_to='partner_logos', null=True, blank=True)
+    logo = models.ImageField(verbose_name=_("Logo"), upload_to="partner_logos", null=True, blank=True)
 
     is_active = models.BooleanField(default=True, help_text="Whether this partner is active")
 
@@ -64,8 +67,14 @@ class Partner(models.Model):
         if labels and not restricted:
             raise ValueError("Can't specify labels for a partner which is not restricted")
 
-        partner = cls.objects.create(org=org, name=name, description=description, primary_contact=primary_contact,
-                                     logo=logo, is_restricted=restricted)
+        partner = cls.objects.create(
+            org=org,
+            name=name,
+            description=description,
+            primary_contact=primary_contact,
+            logo=logo,
+            is_restricted=restricted,
+        )
 
         if restricted:
             partner.labels.add(*labels)
@@ -90,13 +99,13 @@ class Partner(models.Model):
 
     def release(self):
         self.is_active = False
-        self.save(update_fields=('is_active',))
+        self.save(update_fields=("is_active",))
 
     def as_json(self, full=True):
-        result = {'id': self.pk, 'name': self.name}
+        result = {"id": self.pk, "name": self.name}
 
         if full:
-            result['restricted'] = self.is_restricted
+            result["restricted"] = self.is_restricted
 
         return result
 
@@ -108,11 +117,13 @@ class case_action(object):
     """
     Helper decorator for case action methods that should check the user is allowed to update the case
     """
+
     def __init__(self, require_update=True, become_watcher=False):
         self.require_update = require_update
         self.become_watcher = become_watcher
 
     def __call__(self, func):
+
         def wrapped(case, user, *args, **kwargs):
             access = case.access_level(user)
             if (access == AccessLevel.update) or (not self.require_update and access == AccessLevel.read):
@@ -124,6 +135,7 @@ class case_action(object):
                 return result
             else:
                 raise PermissionDenied()
+
         return wrapped
 
 
@@ -131,30 +143,33 @@ class Case(models.Model):
     """
     A case between a partner organization and a contact
     """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='cases')
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="cases")
 
     labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this case"))
 
-    assignee = models.ForeignKey(Partner, related_name='cases')
+    assignee = models.ForeignKey(Partner, related_name="cases")
 
     user_assignee = models.ForeignKey(
-        User, null=True, on_delete=models.SET_NULL, related_name='cases',
-        help_text="The (optional) user that this case is assigned to")
+        User,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="cases",
+        help_text="The (optional) user that this case is assigned to",
+    )
 
-    contact = models.ForeignKey(Contact, related_name='cases')
+    contact = models.ForeignKey(Contact, related_name="cases")
 
-    initial_message = models.OneToOneField(Message, null=True, related_name='initial_case')
+    initial_message = models.OneToOneField(Message, null=True, related_name="initial_case")
 
     summary = models.CharField(verbose_name=_("Summary"), max_length=255)
 
-    opened_on = models.DateTimeField(auto_now_add=True,
-                                     help_text="When this case was opened")
+    opened_on = models.DateTimeField(auto_now_add=True, help_text="When this case was opened")
 
-    closed_on = models.DateTimeField(null=True,
-                                     help_text="When this case was closed")
+    closed_on = models.DateTimeField(null=True, help_text="When this case was closed")
 
-    watchers = models.ManyToManyField(User, related_name='watched_cases',
-                                      help_text="Users to be notified of case activity")
+    watchers = models.ManyToManyField(
+        User, related_name="watched_cases", help_text="Users to be notified of case activity"
+    )
 
     @classmethod
     def get_all(cls, org, user=None, label=None):
@@ -193,17 +208,17 @@ class Case(models.Model):
         """
         Search for cases
         """
-        folder = search.get('folder')
-        assignee_id = search.get('assignee')
-        after = search.get('after')
-        before = search.get('before')
+        folder = search.get("folder")
+        assignee_id = search.get("assignee")
+        after = search.get("after")
+        before = search.get("before")
 
         if folder == CaseFolder.open:
             queryset = Case.get_open(org, user)
         elif folder == CaseFolder.closed:
             queryset = Case.get_closed(org, user)
         else:  # pragma: no cover
-            raise ValueError('Invalid folder for cases')
+            raise ValueError("Invalid folder for cases")
 
         if assignee_id:
             queryset = queryset.filter(assignee__pk=assignee_id)
@@ -213,13 +228,11 @@ class Case(models.Model):
         if before:
             queryset = queryset.filter(opened_on__lte=before)
 
-        queryset = queryset.select_related('contact', 'assignee', 'user_assignee')
+        queryset = queryset.select_related("contact", "assignee", "user_assignee")
 
-        queryset = queryset.prefetch_related(
-            Prefetch('labels', Label.objects.filter(is_active=True))
-        )
+        queryset = queryset.prefetch_related(Prefetch("labels", Label.objects.filter(is_active=True)))
 
-        return queryset.order_by('-opened_on')
+        return queryset.order_by("-opened_on")
 
     @classmethod
     def get_or_open(cls, org, user, message, summary, assignee, user_assignee=None, contact=None):
@@ -232,6 +245,7 @@ class Case(models.Model):
             raise ValueError("Opening a case requires a message or contact")
 
         from casepro.profiles.models import Notification
+
         r = get_redis_connection()
         contact = message.contact if message else contact
 
@@ -250,15 +264,21 @@ class Case(models.Model):
             # suspend from groups, expire flows and archive messages
             contact.prepare_for_case()
 
-            case = cls.objects.create(org=org, assignee=assignee, initial_message=message, contact=contact,
-                                      summary=summary, user_assignee=user_assignee)
+            case = cls.objects.create(
+                org=org,
+                assignee=assignee,
+                initial_message=message,
+                contact=contact,
+                summary=summary,
+                user_assignee=user_assignee,
+            )
 
             if message:
                 case.labels.add(*list(message.labels.all()))  # copy labels from message to new case
 
                 # attach message to this case
                 message.case = case
-                message.save(update_fields=('case',))
+                message.save(update_fields=("case",))
 
             case.is_new = True
             case.watchers.add(user)
@@ -271,11 +291,11 @@ class Case(models.Model):
 
     def get_timeline(self, after, before, merge_from_backend):
         local_outgoing = self.outgoing_messages.filter(created_on__gte=after, created_on__lte=before)
-        local_outgoing = local_outgoing.select_related('case', 'contact', 'created_by').order_by('-created_on')
+        local_outgoing = local_outgoing.select_related("case", "contact", "created_by").order_by("-created_on")
 
         local_incoming = self.incoming_messages.filter(created_on__gte=after, created_on__lte=before)
-        local_incoming = local_incoming.select_related('case', 'contact').prefetch_related('labels')
-        local_incoming = local_incoming.order_by('-created_on')
+        local_incoming = local_incoming.select_related("case", "contact").prefetch_related("labels")
+        local_incoming = local_incoming.order_by("-created_on")
 
         # merge local incoming and outgoing
         timeline = [TimelineItem(msg) for msg in chain(local_outgoing, local_incoming)]
@@ -295,7 +315,7 @@ class Case(models.Model):
 
         # fetch and append actions
         actions = self.actions.filter(created_on__gte=after, created_on__lte=before)
-        actions = actions.select_related('assignee', 'user_assignee', 'created_by')
+        actions = actions.select_related("assignee", "user_assignee", "created_by")
         timeline += [TimelineItem(a) for a in actions]
 
         # sort timeline by reverse chronological order
@@ -304,14 +324,14 @@ class Case(models.Model):
     def add_reply(self, message):
         message.case = self
         message.is_archived = True
-        message.save(update_fields=('case', 'is_archived'))
+        message.save(update_fields=("case", "is_archived"))
 
         self.notify_watchers(reply=message)
 
     @case_action()
     def update_summary(self, user, summary):
         self.summary = summary
-        self.save(update_fields=('summary',))
+        self.save(update_fields=("summary",))
 
         CaseAction.create(self, user, CaseAction.UPDATE_SUMMARY, note=None)
 
@@ -329,14 +349,14 @@ class Case(models.Model):
         action = CaseAction.create(self, user, CaseAction.CLOSE, note=note)
 
         self.closed_on = action.created_on
-        self.save(update_fields=('closed_on',))
+        self.save(update_fields=("closed_on",))
 
         self.notify_watchers(action=action)
 
     @case_action(become_watcher=True)
     def reopen(self, user, note=None, update_contact=True):
         self.closed_on = None
-        self.save(update_fields=('closed_on',))
+        self.save(update_fields=("closed_on",))
 
         action = CaseAction.create(self, user, CaseAction.REOPEN, note=note)
 
@@ -352,10 +372,11 @@ class Case(models.Model):
 
         self.assignee = partner
         self.user_assignee = user_assignee
-        self.save(update_fields=('assignee', 'user_assignee'))
+        self.save(update_fields=("assignee", "user_assignee"))
 
         action = CaseAction.create(
-            self, user, CaseAction.REASSIGN, assignee=partner, note=note, user_assignee=user_assignee)
+            self, user, CaseAction.REASSIGN, assignee=partner, note=note, user_assignee=user_assignee
+        )
 
         self.notify_watchers(action=action)
 
@@ -444,48 +465,50 @@ class Case(models.Model):
     def as_json(self, full=True):
         if full:
             return {
-                'id': self.pk,
-                'assignee': self.assignee.as_json(full=False),
-                'user_assignee': self.user_assignee.as_json(full=False) if self.user_assignee else None,
-                'contact': self.contact.as_json(full=False),
-                'labels': [l.as_json(full=False) for l in self.labels.all()],
-                'summary': self.summary,
-                'opened_on': self.opened_on,
-                'is_closed': self.is_closed
+                "id": self.pk,
+                "assignee": self.assignee.as_json(full=False),
+                "user_assignee": self.user_assignee.as_json(full=False) if self.user_assignee else None,
+                "contact": self.contact.as_json(full=False),
+                "labels": [l.as_json(full=False) for l in self.labels.all()],
+                "summary": self.summary,
+                "opened_on": self.opened_on,
+                "is_closed": self.is_closed,
             }
         else:
             return {
-                'id': self.pk,
-                'assignee': self.assignee.as_json(full=False),
-                'user_assignee': self.user_assignee.as_json(full=False) if self.user_assignee else None,
+                "id": self.pk,
+                "assignee": self.assignee.as_json(full=False),
+                "user_assignee": self.user_assignee.as_json(full=False) if self.user_assignee else None,
             }
 
     def __str__(self):
-        return '#%d' % self.pk
+        return "#%d" % self.pk
 
 
 class CaseAction(models.Model):
     """
     An action performed on a case
     """
-    OPEN = 'O'
-    UPDATE_SUMMARY = 'S'
-    ADD_NOTE = 'N'
-    REASSIGN = 'A'
-    LABEL = 'L'
-    UNLABEL = 'U'
-    CLOSE = 'C'
-    REOPEN = 'R'
+    OPEN = "O"
+    UPDATE_SUMMARY = "S"
+    ADD_NOTE = "N"
+    REASSIGN = "A"
+    LABEL = "L"
+    UNLABEL = "U"
+    CLOSE = "C"
+    REOPEN = "R"
 
-    ACTION_CHOICES = ((OPEN, _("Open")),
-                      (ADD_NOTE, _("Add Note")),
-                      (REASSIGN, _("Reassign")),
-                      (LABEL, _("Label")),
-                      (UNLABEL, _("Remove Label")),
-                      (CLOSE, _("Close")),
-                      (REOPEN, _("Reopen")))
+    ACTION_CHOICES = (
+        (OPEN, _("Open")),
+        (ADD_NOTE, _("Add Note")),
+        (REASSIGN, _("Reassign")),
+        (LABEL, _("Label")),
+        (UNLABEL, _("Remove Label")),
+        (CLOSE, _("Close")),
+        (REOPEN, _("Reopen")),
+    )
 
-    TIMELINE_TYPE = 'A'
+    TIMELINE_TYPE = "A"
 
     case = models.ForeignKey(Case, related_name="actions")
 
@@ -498,8 +521,12 @@ class CaseAction(models.Model):
     assignee = models.ForeignKey(Partner, null=True, related_name="case_actions")
 
     user_assignee = models.ForeignKey(
-        User, null=True, on_delete=models.SET_NULL, related_name='case_assigned_actions',
-        help_text="The (optional) user that the case was assigned to.")
+        User,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="case_assigned_actions",
+        help_text="The (optional) user that the case was assigned to.",
+    )
 
     label = models.ForeignKey(Label, null=True)
 
@@ -508,19 +535,25 @@ class CaseAction(models.Model):
     @classmethod
     def create(cls, case, user, action, assignee=None, label=None, note=None, user_assignee=None):
         return CaseAction.objects.create(
-            case=case, action=action, created_by=user, assignee=assignee, label=label, note=note,
-            user_assignee=user_assignee)
+            case=case,
+            action=action,
+            created_by=user,
+            assignee=assignee,
+            label=label,
+            note=note,
+            user_assignee=user_assignee,
+        )
 
     def as_json(self):
         return {
-            'id': self.pk,
-            'action': self.action,
-            'created_by': self.created_by.as_json(full=False),
-            'created_on': self.created_on,
-            'assignee': self.assignee.as_json() if self.assignee else None,
-            'user_assignee': self.user_assignee.as_json() if self.user_assignee else None,
-            'label': self.label.as_json() if self.label else None,
-            'note': self.note
+            "id": self.pk,
+            "action": self.action,
+            "created_by": self.created_by.as_json(full=False),
+            "created_on": self.created_on,
+            "assignee": self.assignee.as_json() if self.assignee else None,
+            "user_assignee": self.user_assignee.as_json() if self.user_assignee else None,
+            "label": self.label.as_json() if self.label else None,
+            "note": self.note,
         }
 
 
@@ -528,20 +561,27 @@ class CaseExport(BaseSearchExport):
     """
     An export of cases
     """
-    directory = 'case_exports'
-    download_view = 'cases.caseexport_read'
+    directory = "case_exports"
+    download_view = "cases.caseexport_read"
 
     def get_search(self):
         search = super(CaseExport, self).get_search()
-        search['folder'] = CaseFolder[search['folder']]
+        search["folder"] = CaseFolder[search["folder"]]
         return search
 
     def render_search(self, book, search):
         from casepro.contacts.models import Field
 
         base_fields = [
-            "Message On", "Opened On", "Closed On", "Assigned Partner", "Labels", "Summary",
-            "Messages Sent", "Messages Received", "Contact"
+            "Message On",
+            "Opened On",
+            "Closed On",
+            "Assigned Partner",
+            "Labels",
+            "Summary",
+            "Messages Sent",
+            "Messages Received",
+            "Contact",
         ]
         contact_fields = Field.get_all(self.org, visible=True)
         all_fields = base_fields + [f.label for f in contact_fields]
@@ -549,11 +589,11 @@ class CaseExport(BaseSearchExport):
         # load all messages to be exported
         items = Case.search(self.org, self.created_by, search)
 
-        items = items.select_related('initial_message')  # need for "Message On"
+        items = items.select_related("initial_message")  # need for "Message On"
 
         items = items.annotate(
-            incoming_count=Count('incoming_messages', distinct=True),
-            outgoing_count=Count('outgoing_messages', distinct=True)
+            incoming_count=Count("incoming_messages", distinct=True),
+            outgoing_count=Count("outgoing_messages", distinct=True),
         )
 
         def add_sheet(num):
@@ -571,16 +611,16 @@ class CaseExport(BaseSearchExport):
                 row = 1
 
             values = [
-                item.initial_message.created_on if item.initial_message else '',
+                item.initial_message.created_on if item.initial_message else "",
                 item.opened_on,
                 item.closed_on,
                 item.assignee.name,
-                ', '.join([l.name for l in item.labels.all()]),
+                ", ".join([l.name for l in item.labels.all()]),
                 item.summary,
                 item.outgoing_count,
                 # subtract 1 for the initial messages
                 item.incoming_count - 1 if item.initial_message else item.incoming_count,
-                item.contact.uuid
+                item.contact.uuid,
             ]
 
             fields = item.contact.get_fields()
