@@ -1,3 +1,7 @@
+v1.0.1
+----------
+ * Import orgbackend CRUDL from dash
+
 v1.0.0
 ----------
  * Code formatting with black+isort
