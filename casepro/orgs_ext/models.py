@@ -1,13 +1,10 @@
-from __future__ import unicode_literals
-
 from dash.orgs.models import Org
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db.models import Q
 
-
 ORG_CACHE_TTL = 60 * 60 * 24 * 7  # 1 week
-ORG_CONFIG_BANNER_TEXT = 'banner_text'
+ORG_CONFIG_BANNER_TEXT = "banner_text"
 
 
 def _org_get_users(org):

@@ -1,25 +1,11 @@
-from __future__ import unicode_literals
-
 from abc import ABCMeta, abstractmethod
-from django.conf import settings
-from pydoc import locate
-
-
-_ACTIVE_BACKEND = None
-
-
-def get_backend():
-    """
-    Gets the active backend for this casepro instance
-    """
-    global _ACTIVE_BACKEND
-    if not _ACTIVE_BACKEND:
-        _ACTIVE_BACKEND = locate(settings.SITE_BACKEND)()
-    return _ACTIVE_BACKEND
 
 
 class BaseBackend(object):
     __metaclass__ = ABCMeta
+
+    def __init__(self, backend):
+        self.backend = backend
 
     @abstractmethod
     def pull_contacts(self, org, modified_after, modified_before, progress_callback=None):

@@ -9,6 +9,11 @@
     .page-header.clearfix{ style:"border-bottom: none" }
       .clearfix{ style:"margin-bottom: 10px" }
         .page-header-buttons
+          - if request.user.is_superuser or org_perms.orgs.orgbackend_list
+            .btn-group
+              %a.btn.btn-default{href:"{% url 'orgs.orgbackend_list' %}", tooltip:"Manage Backends" }
+                %span.glyphicon.glyphicon-cog
+
           - if perms.orgs.org_edit or org_perms.orgs.org_edit
             .btn-group
               %a.btn.btn-default{ href:"{% url 'orgs_ext.org_edit' %}", tooltip:"Edit Organization" }

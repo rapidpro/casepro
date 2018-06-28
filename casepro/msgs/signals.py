@@ -1,11 +1,5 @@
-from __future__ import unicode_literals
-
-import six
-
-from django.db.models.signals import pre_save, post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
-
-from casepro.backend import get_backend
 
 from .models import Label, Message
 
@@ -13,7 +7,7 @@ from .models import Label, Message
 @receiver(post_save, sender=Label)
 def update_label_uuid(sender, instance, **kwargs):
     if instance.is_synced and not instance.uuid:
-        get_backend().push_label(instance.org, instance)
+        instance.org.get_backend().push_label(instance.org, instance)
 
 
 @receiver(pre_save, sender=Message)
@@ -46,22 +40,21 @@ def update_message_labels(sender, instance, created, **kwargs):
     remove_from = []
     for l in cur_labels_by_uuid.values():
         # don't remove un-synced local labels
-        if l.uuid not in six.viewkeys(new_labels_by_uuid) and l.is_synced:
+        if l.uuid not in new_labels_by_uuid.keys() and l.is_synced:
             remove_from.append(l)
 
     if remove_from:
         instance.unlabel(*remove_from)
 
     # add this message to any labels not in the current set
-    add_to_by_uuid = {uuid: name for uuid, name in six.iteritems(new_labels_by_uuid)
-                      if uuid not in six.viewkeys(cur_labels_by_uuid)}
+    add_to_by_uuid = {uuid: name for uuid, name in new_labels_by_uuid.items() if uuid not in cur_labels_by_uuid.keys()}
     if add_to_by_uuid:
         org_labels_by_uuid = {l.uuid: l for l in org.labels.all()}
         org_unsynced_names = {l.name for l in org.labels.all() if not l.is_synced}
 
         # create any labels that don't exist
         add_to_labels = []
-        for uuid, name in six.iteritems(add_to_by_uuid):
+        for uuid, name in add_to_by_uuid.items():
             label = org_labels_by_uuid.get(uuid)
             if not label and name not in org_unsynced_names:
                 # create stub

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django import forms
 
 from casepro.contacts.models import Field
@@ -10,7 +8,7 @@ from .models import FieldTest
 
 class FieldTestWidget(forms.widgets.MultiWidget):
 
-    template_name = 'widgets/fieldtest.html'
+    template_name = "widgets/fieldtest.html"
 
     def decompress(self, test):
         if test:
@@ -22,12 +20,12 @@ class FieldTestWidget(forms.widgets.MultiWidget):
 class FieldTestField(forms.fields.MultiValueField):
 
     def __init__(self, *args, **kwargs):
-        org = kwargs.pop('org')
-        org_fields = Field.get_all(org).order_by('label')
+        org = kwargs.pop("org")
+        org_fields = Field.get_all(org).order_by("label")
 
         fields = (
-            forms.ModelChoiceField(queryset=org_fields, required=False, to_field_name='key'),
-            forms.CharField(max_length=64)
+            forms.ModelChoiceField(queryset=org_fields, required=False, to_field_name="key"),
+            forms.CharField(max_length=64),
         )
         widgets = (fields[0].widget, fields[1].widget)
 

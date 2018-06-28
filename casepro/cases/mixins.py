@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from dash.orgs.views import OrgPermsMixin
 
 
@@ -8,6 +6,7 @@ class PartnerPermsMixin(OrgPermsMixin):
     Permissions mixin that requires users to have the view specific permission AND either be in the same partner org,
     or not be attached to a partner.
     """
+
     def has_permission(self, request, *args, **kwargs):
         if not super(PartnerPermsMixin, self).has_permission(request, *args, **kwargs):
             return False

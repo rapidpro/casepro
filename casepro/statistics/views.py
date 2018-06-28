@@ -1,34 +1,40 @@
-from __future__ import unicode_literals
-
-import six
+from datetime import timedelta
 
 from dash.orgs.views import OrgPermsMixin
-from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 from django.http import JsonResponse
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from smartmin.mixins import NonAtomicMixin
-from smartmin.views import SmartCRUDL, SmartTemplateView, SmartCreateView
+from smartmin.views import SmartCreateView, SmartCRUDL, SmartTemplateView
 from temba_client.utils import parse_iso8601
 
 from casepro.cases.models import Partner
 from casepro.msgs.models import Label
-from casepro.utils import date_to_milliseconds, month_range, JSONEncoder
+from casepro.utils import JSONEncoder, date_to_milliseconds, month_range
 from casepro.utils.export import BaseDownloadView
 
-from .models import datetime_to_date, DailyCount, DailyCountExport
+from .models import DailyCount, DailyCountExport, datetime_to_date
 from .tasks import daily_count_export
 
-
 MONTH_NAMES = (
-    _("January"), _("February"), _("March"), _("April"), _("May"), _("June"),
-    _("July"), _("August"), _("September"), _("October"), _("November"), _("December")
+    _("January"),
+    _("February"),
+    _("March"),
+    _("April"),
+    _("May"),
+    _("June"),
+    _("July"),
+    _("August"),
+    _("September"),
+    _("October"),
+    _("November"),
+    _("December"),
 )
 
 
 class BaseChart(OrgPermsMixin, SmartTemplateView):
-    permission = 'orgs.org_charts'
+    permission = "orgs.org_charts"
 
     def get(self, request, *args, **kwargs):
         return JsonResponse(self.get_data(request), encoder=JSONEncoder)
@@ -58,7 +64,7 @@ class BasePerDayChart(BaseChart):
 
             day += relativedelta(days=1)
 
-        return {'series': series}
+        return {"series": series}
 
     def get_day_totals(self, request, since):
         """
@@ -84,10 +90,10 @@ class BasePerMonthChart(BaseChart):
             month = this_month + m
             if month < 1:
                 month += 12
-            categories.append(six.text_type(MONTH_NAMES[month - 1]))
+            categories.append(str(MONTH_NAMES[month - 1]))
             series.append(totals_by_month.get(month, 0))
 
-        return {'categories': categories, 'series': series}
+        return {"categories": categories, "series": series}
 
     def get_month_totals(self, request, since):
         """
@@ -99,8 +105,9 @@ class IncomingPerDayChart(BasePerDayChart):
     """
     Chart of incoming per day for either the current org or a given label
     """
+
     def get_day_totals(self, request, since):
-        label_id = request.GET.get('label')
+        label_id = request.GET.get("label")
 
         if label_id:
             label = Label.get_all(org=request.org).get(pk=label_id)
@@ -113,9 +120,10 @@ class RepliesPerMonthChart(BasePerMonthChart):
     """
     Chart of replies per month for either the current org, a given partner, or a given user
     """
+
     def get_month_totals(self, request, since):
-        partner_id = request.GET.get('partner')
-        user_id = request.GET.get('user')
+        partner_id = request.GET.get("partner")
+        user_id = request.GET.get("user")
 
         if partner_id:
             partner = Partner.objects.get(org=request.org, pk=partner_id)
@@ -141,43 +149,44 @@ class MostUsedLabelsChart(BaseChart):
         counts_by_label = DailyCount.get_by_label(labels, DailyCount.TYPE_INCOMING, since).scope_totals()
 
         # sort by highest count DESC, label name ASC
-        by_usage = sorted(six.iteritems(counts_by_label), key=lambda c: (-c[1], c[0].name))
+        by_usage = sorted(counts_by_label.items(), key=lambda c: (-c[1], c[0].name))
         by_usage = [c for c in by_usage if c[1]]  # remove zero counts
 
         if len(by_usage) > self.num_items:
-            label_zones = by_usage[:self.num_items - 1]
-            others = by_usage[self.num_items - 1:]
+            label_zones = by_usage[: self.num_items - 1]
+            others = by_usage[self.num_items - 1 :]
         else:
             label_zones = by_usage
             others = []
 
-        series = [{'name': l[0].name, 'y': l[1]} for l in label_zones]
+        series = [{"name": l[0].name, "y": l[1]} for l in label_zones]
 
         # if there are remaining items, merge into single "Other" zone
         if others:
-            series.append({'name': six.text_type(_("Other")), 'y': sum([o[1] for o in others])})
+            series.append({"name": str(_("Other")), "y": sum([o[1] for o in others])})
 
-        return {'series': series}
+        return {"series": series}
 
 
 class DailyCountExportCRUDL(SmartCRUDL):
     model = DailyCountExport
-    actions = ('create', 'read')
+    actions = ("create", "read")
 
     class Create(NonAtomicMixin, OrgPermsMixin, SmartCreateView):
+
         def post(self, request, *args, **kwargs):
-            of_type = request.json['type']
+            of_type = request.json["type"]
 
             # parse dates and adjust max so it's exclusive
-            after = parse_iso8601(request.json['after']).date()
-            before = parse_iso8601(request.json['before']).date() + timedelta(days=1)
+            after = parse_iso8601(request.json["after"]).date()
+            before = parse_iso8601(request.json["before"]).date() + timedelta(days=1)
 
             export = DailyCountExport.create(self.request.org, self.request.user, of_type, after, before)
 
             daily_count_export.delay(export.pk)
 
-            return JsonResponse({'export_id': export.pk})
+            return JsonResponse({"export_id": export.pk})
 
     class Read(BaseDownloadView):
         title = _("Download Export")
-        filename = 'daily_count_export.xls'
+        filename = "daily_count_export.xls"

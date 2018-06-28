@@ -7,14 +7,6 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('orgs', '0018_auto_20170301_0914'),
-        ('msgs', '0056_message_modified_on'),
-    ]
+    dependencies = [("orgs", "0018_auto_20170301_0914"), ("msgs", "0056_message_modified_on")]
 
-    operations = [
-        migrations.AlterIndexTogether(
-            name='message',
-            index_together=set([('org', 'modified_on')]),
-        ),
-    ]
+    operations = [migrations.AlterIndexTogether(name="message", index_together=set([("org", "modified_on")]))]

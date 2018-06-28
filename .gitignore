@@ -19,6 +19,8 @@ casepro/settings.py.staging
 fabfile.py
 fabconfig.py
 
+.vscode/
+
 .idea/
 .DS_Store
 

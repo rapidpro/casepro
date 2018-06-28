@@ -1,6 +1,4 @@
-from __future__ import unicode_literals
-
-from .views import ContactCRUDL, GroupCRUDL, FieldCRUDL
+from .views import ContactCRUDL, FieldCRUDL, GroupCRUDL
 
 urlpatterns = ContactCRUDL().as_urlpatterns()
 urlpatterns += GroupCRUDL().as_urlpatterns()

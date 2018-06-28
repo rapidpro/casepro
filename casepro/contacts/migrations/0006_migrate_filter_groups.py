@@ -5,8 +5,8 @@ from django.db import migrations, models
 
 
 def migrate_filter_groups(apps, schema_editor):
-    OldGroup = apps.get_model('cases', 'Group')
-    Group = apps.get_model('contacts', 'Group')
+    OldGroup = apps.get_model("cases", "Group")
+    Group = apps.get_model("contacts", "Group")
 
     old_groups = list(OldGroup.objects.filter(is_active=True))
 
@@ -18,7 +18,7 @@ def migrate_filter_groups(apps, schema_editor):
         new = Group.objects.filter(uuid=old.uuid).first()
         if new:
             new.is_visible = True
-            new.save(update_fields=('is_visible',))
+            new.save(update_fields=("is_visible",))
             num_updated += 1
         else:
             # create placeholder which will be updated in next contacts sync
@@ -26,16 +26,14 @@ def migrate_filter_groups(apps, schema_editor):
             num_created += 1
 
     if old_groups:
-        print("Migrated %d old filter groups (%d new groups created, %d updated)" % (len(old_groups), num_created, num_updated))
+        print(
+            "Migrated %d old filter groups (%d new groups created, %d updated)"
+            % (len(old_groups), num_created, num_updated)
+        )
 
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('contacts', '0005_group_is_visible'),
-        ('cases', '0001_initial'),
-    ]
+    dependencies = [("contacts", "0005_group_is_visible"), ("cases", "0001_initial")]
 
-    operations = [
-        migrations.RunPython(migrate_filter_groups)
-    ]
+    operations = [migrations.RunPython(migrate_filter_groups)]

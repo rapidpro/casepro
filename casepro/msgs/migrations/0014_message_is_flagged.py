@@ -6,14 +6,8 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('msgs', '0013_auto_20160223_0917'),
-    ]
+    dependencies = [("msgs", "0013_auto_20160223_0917")]
 
     operations = [
-        migrations.AddField(
-            model_name='message',
-            name='is_flagged',
-            field=models.BooleanField(default=False),
-        ),
+        migrations.AddField(model_name="message", name="is_flagged", field=models.BooleanField(default=False))
     ]

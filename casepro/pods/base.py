@@ -1,7 +1,7 @@
-from __future__ import unicode_literals
-
 import json
-from confmodel import fields, Config as ConfmodelConfig
+
+from confmodel import Config as ConfmodelConfig
+from confmodel import fields
 from django.apps import AppConfig
 
 
@@ -12,17 +12,17 @@ class PodConfig(ConfmodelConfig):
     index = fields.ConfigInt(
         "A unique identifier for the specific instance of this pod. Automatically determined and set in the pod"
         "registry.",
-        required=True)
+        required=True,
+    )
 
-    title = fields.ConfigText(
-        "The title to show in the UI for this pod",
-        default=None)
+    title = fields.ConfigText("The title to show in the UI for this pod", default=None)
 
 
 class Pod(object):
     """
     The base class for all pod plugins.
     """
+
     def __init__(self, pod_type, config):
         self.pod_type = pod_type
         self.config = config
@@ -84,25 +84,25 @@ class Pod(object):
         For the base implementation, payload is an object with a 'message' key, which is the error message if success
         is false, or the message to place in the case action note if success is true.
         """
-        return (False, {'message': ''})
+        return (False, {"message": ""})
 
 
 class PodPlugin(AppConfig):
-    name = 'casepro.pods'
+    name = "casepro.pods"
     pod_class = Pod
     config_class = PodConfig
 
     # django application label, used to determine which pod type to use when loading pods configured in `settings.PODS`
-    label = 'base_pod'
+    label = "base_pod"
 
     # default title to use when configuring each pod
-    title = 'Pod'
+    title = "Pod"
 
     # override to use a different angular controller
-    controller = 'PodController'
+    controller = "PodController"
 
     # override to use a different angular directive
-    directive = 'cp-pod'
+    directive = "cp-pod"
 
     # override with paths to custom scripts that the pod needs
     scripts = ()

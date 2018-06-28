@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 
 def populate_case_watchers(apps, schema_editor):
-    Case = apps.get_model('cases', 'Case')
+    Case = apps.get_model("cases", "Case")
 
     cases = Case.objects.all()
 
@@ -14,7 +14,7 @@ def populate_case_watchers(apps, schema_editor):
         repliers = {o.created_by for o in case.outgoing_messages.all()}
 
         # get all users who have acted on this case in a way that would now make them a watcher
-        actors = {a.created_by for a in case.actions.filter(action__in=('O', 'R', 'N'))}
+        actors = {a.created_by for a in case.actions.filter(action__in=("O", "R", "N"))}
 
         watchers = repliers.union(actors)
 
@@ -27,11 +27,6 @@ def populate_case_watchers(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('cases', '0038_case_watchers'),
-        ('msgs', '0049_remove_label_tests'),
-    ]
+    dependencies = [("cases", "0038_case_watchers"), ("msgs", "0049_remove_label_tests")]
 
-    operations = [
-        migrations.RunPython(populate_case_watchers)
-    ]
+    operations = [migrations.RunPython(populate_case_watchers)]

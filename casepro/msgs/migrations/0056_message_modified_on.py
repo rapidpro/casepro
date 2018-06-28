@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('msgs', '0055_auto_20170117_1418'),
-    ]
+    dependencies = [("msgs", "0055_auto_20170117_1418")]
 
     operations = [
         migrations.AddField(
-            model_name='message',
-            name='modified_on',
-            field=models.DateTimeField(help_text='When message was last modified', null=True),
-        ),
+            model_name="message",
+            name="modified_on",
+            field=models.DateTimeField(help_text="When message was last modified", null=True),
+        )
     ]
