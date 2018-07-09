@@ -6,14 +6,12 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('cases', '0044_caseaction_user_assignee'),
-    ]
+    dependencies = [("cases", "0044_caseaction_user_assignee")]
 
     operations = [
         migrations.AlterField(
-            model_name='case',
-            name='initial_message',
-            field=models.OneToOneField(related_name='initial_case', null=True, to='msgs.Message'),
-        ),
+            model_name="case",
+            name="initial_message",
+            field=models.OneToOneField(related_name="initial_case", null=True, to="msgs.Message"),
+        )
     ]

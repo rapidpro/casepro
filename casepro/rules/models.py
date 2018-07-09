@@ -1,28 +1,21 @@
-from __future__ import unicode_literals
-
 import json
-import regex
-import six
-
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
+from enum import Enum
+
+import regex
 from dash.orgs.models import Org
 from dash.utils import get_obj_cacheable
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from enum import Enum
 
-from casepro.backend import get_backend
 from casepro.contacts.models import Group
 from casepro.msgs.models import Label, Message
-from casepro.utils import normalize, json_encode
+from casepro.utils import json_encode, normalize
+
+KEYWORD_REGEX = regex.compile(r"^\w[\w\- ]*\w$", flags=regex.UNICODE | regex.V0)
 
 
-KEYWORD_REGEX = regex.compile(r'^\w[\w\- ]*\w$', flags=regex.UNICODE | regex.V0)
-
-
-@python_2_unicode_compatible
 class Quantifier(Enum):
     """
     Tests are typically composed of multiple conditions, e.g. contains ANY of X, Y or Z.
@@ -60,13 +53,14 @@ class Quantifier(Enum):
             return True
 
     def __str__(self):
-        return six.text_type(self.text)
+        return str(self.text)
 
 
 class DeserializationContext(object):
     """
     Context object passed to all test or action from_json methods
     """
+
     def __init__(self, org):
         self.org = org
 
@@ -90,7 +84,7 @@ class Test(object):
                 FieldTest.TYPE: FieldTest,
             }
 
-        test_type = json_obj['type']
+        test_type = json_obj["type"]
         test_cls = cls.CLASS_BY_TYPE.get(test_type, None)
         if not test_cls:  # pragma: no cover
             raise ValueError("Unknown test type: %s" % test_type)
@@ -122,7 +116,7 @@ class ContainsTest(Test):
     """
     Test that returns whether the message text contains or doesn't contain the given keywords
     """
-    TYPE = 'contains'
+    TYPE = "contains"
 
     def __init__(self, keywords, quantifier):
         self.keywords = [normalize(word) for word in keywords]
@@ -130,20 +124,20 @@ class ContainsTest(Test):
 
     @classmethod
     def from_json(cls, json_obj, context):
-        return cls(json_obj['keywords'], Quantifier.from_json(json_obj['quantifier']))
+        return cls(json_obj["keywords"], Quantifier.from_json(json_obj["quantifier"]))
 
     def to_json(self):
-        return {'type': self.TYPE, 'keywords': self.keywords, 'quantifier': self.quantifier.to_json()}
+        return {"type": self.TYPE, "keywords": self.keywords, "quantifier": self.quantifier.to_json()}
 
     def get_description(self):
         quoted_keywords = ['"%s"' % w for w in self.keywords]
-        return "message contains %s %s" % (six.text_type(self.quantifier), ", ".join(quoted_keywords))
+        return "message contains %s %s" % (str(self.quantifier), ", ".join(quoted_keywords))
 
     def matches(self, message):
         text = normalize(message.text)
 
         def keyword_check(w):
-            return lambda: bool(regex.search(r'\b' + w + r'\b', text, flags=regex.UNICODE | regex.V0))
+            return lambda: bool(regex.search(r"\b" + w + r"\b", text, flags=regex.UNICODE | regex.V0))
 
         checks = [keyword_check(keyword) for keyword in self.keywords]
 
@@ -154,31 +148,35 @@ class ContainsTest(Test):
         return KEYWORD_REGEX.match(keyword)
 
     def __eq__(self, other):
-        return other and self.TYPE == other.TYPE \
-               and self.keywords == other.keywords and self.quantifier == other.quantifier
+        return (
+            other
+            and self.TYPE == other.TYPE
+            and self.keywords == other.keywords
+            and self.quantifier == other.quantifier
+        )
 
 
 class WordCountTest(Test):
     """
     Test that returns whether the message text contains at least the given number of words
     """
-    TYPE = 'words'
+    TYPE = "words"
 
     def __init__(self, minimum):
         self.minimum = minimum
 
     @classmethod
     def from_json(cls, json_obj, context):
-        return cls(json_obj['minimum'])
+        return cls(json_obj["minimum"])
 
     def to_json(self):
-        return {'type': self.TYPE, 'minimum': self.minimum}
+        return {"type": self.TYPE, "minimum": self.minimum}
 
     def get_description(self):
         return "message has at least %d words" % self.minimum
 
     def matches(self, message):
-        num_words = len(regex.findall(r'\w+', message.text, flags=regex.UNICODE | regex.V0))
+        num_words = len(regex.findall(r"\w+", message.text, flags=regex.UNICODE | regex.V0))
         return num_words >= self.minimum
 
     def __eq__(self, other):
@@ -189,7 +187,7 @@ class GroupsTest(Test):
     """
     Test that returns whether the message was sent from the given contact groups
     """
-    TYPE = 'groups'
+    TYPE = "groups"
 
     def __init__(self, groups, quantifier):
         self.groups = groups
@@ -197,15 +195,15 @@ class GroupsTest(Test):
 
     @classmethod
     def from_json(cls, json_obj, context):
-        groups = list(Group.objects.filter(org=context.org, pk__in=json_obj['groups']).order_by('pk'))
-        return cls(groups, Quantifier.from_json(json_obj['quantifier']))
+        groups = list(Group.objects.filter(org=context.org, pk__in=json_obj["groups"]).order_by("pk"))
+        return cls(groups, Quantifier.from_json(json_obj["quantifier"]))
 
     def to_json(self):
-        return {'type': self.TYPE, 'groups': [g.pk for g in self.groups], 'quantifier': self.quantifier.to_json()}
+        return {"type": self.TYPE, "groups": [g.pk for g in self.groups], "quantifier": self.quantifier.to_json()}
 
     def get_description(self):
         group_names = [g.name for g in self.groups]
-        return "contact belongs to %s %s" % (six.text_type(self.quantifier), ", ".join(group_names))
+        return "contact belongs to %s %s" % (str(self.quantifier), ", ".join(group_names))
 
     def matches(self, message):
         contact_groups = set(message.contact.groups.all())
@@ -218,14 +216,16 @@ class GroupsTest(Test):
         return self.quantifier.evaluate(checks)
 
     def __eq__(self, other):
-        return other and self.TYPE == other.TYPE and self.groups == other.groups and self.quantifier == other.quantifier
+        return (
+            other and self.TYPE == other.TYPE and self.groups == other.groups and self.quantifier == other.quantifier
+        )
 
 
 class FieldTest(Test):
     """
     Test that returns whether the message was sent from a contact with the given field value
     """
-    TYPE = 'field'
+    TYPE = "field"
 
     def __init__(self, key, values):
         self.key = key
@@ -233,10 +233,10 @@ class FieldTest(Test):
 
     @classmethod
     def from_json(cls, json_obj, context):
-        return cls(json_obj['key'], json_obj['values'])
+        return cls(json_obj["key"], json_obj["values"])
 
     def to_json(self):
-        return {'type': self.TYPE, 'key': self.key, 'values': self.values}
+        return {"type": self.TYPE, "key": self.key, "values": self.values}
 
     def get_description(self):
         quoted_values = ['"%s"' % v for v in self.values]
@@ -273,7 +273,7 @@ class Action(object):
                 ArchiveAction.TYPE: ArchiveAction,
             }
 
-        action_type = json_obj['type']
+        action_type = json_obj["type"]
         action_cls = cls.CLASS_BY_TYPE.get(action_type)
         if not action_cls:  # pragma: no cover
             raise ValueError("Unknown action type: %s" % action_type)
@@ -302,17 +302,17 @@ class LabelAction(Action):
     """
     Adds a label to the message
     """
-    TYPE = 'label'
+    TYPE = "label"
 
     def __init__(self, label):
         self.label = label
 
     @classmethod
     def from_json(cls, json_obj, context):
-        return cls(Label.objects.get(org=context.org, pk=json_obj['label']))
+        return cls(Label.objects.get(org=context.org, pk=json_obj["label"]))
 
     def to_json(self):
-        return {'type': self.TYPE, 'label': self.label.pk}
+        return {"type": self.TYPE, "label": self.label.pk}
 
     def get_description(self):
         return "apply label '%s'" % self.label.name
@@ -322,27 +322,27 @@ class LabelAction(Action):
             msg.label(self.label)
 
         if self.label.is_synced:
-            get_backend().label_messages(org, messages, self.label)
+            org.get_backend().label_messages(org, messages, self.label)
 
     def __eq__(self, other):
         return self.TYPE == other.TYPE and self.label == other.label
 
     def __hash__(self):
-        return hash(self.TYPE + six.text_type(self.label.pk))
+        return hash(self.TYPE + str(self.label.pk))
 
 
 class FlagAction(Action):
     """
     Flags the message
     """
-    TYPE = 'flag'
+    TYPE = "flag"
 
     @classmethod
     def from_json(cls, json_obj, context):
         return cls()
 
     def to_json(self):
-        return {'type': self.TYPE}
+        return {"type": self.TYPE}
 
     def get_description(self):
         return "flag"
@@ -350,21 +350,21 @@ class FlagAction(Action):
     def apply_to(self, org, messages):
         Message.objects.filter(pk__in=[m.pk for m in messages]).update(is_flagged=True)
 
-        get_backend().flag_messages(org, messages)
+        org.get_backend().flag_messages(org, messages)
 
 
 class ArchiveAction(Action):
     """
     Archives the message
     """
-    TYPE = 'archive'
+    TYPE = "archive"
 
     @classmethod
     def from_json(cls, json_obj, context):
         return cls()
 
     def to_json(self):
-        return {'type': self.TYPE}
+        return {"type": self.TYPE}
 
     def get_description(self):
         return "archive"
@@ -372,14 +372,14 @@ class ArchiveAction(Action):
     def apply_to(self, org, messages):
         Message.objects.filter(pk__in=[m.pk for m in messages]).update(is_archived=True)
 
-        get_backend().archive_messages(org, messages)
+        org.get_backend().archive_messages(org, messages)
 
 
 class Rule(models.Model):
     """
     At some point this will become a first class object, but for now it is always attached to a label.
     """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='rules')
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="rules")
 
     tests = models.TextField()
 
@@ -394,7 +394,7 @@ class Rule(models.Model):
         return org.rules.all()
 
     def get_tests(self):
-        return get_obj_cacheable(self, '_tests', lambda: self._get_tests())
+        return get_obj_cacheable(self, "_tests", lambda: self._get_tests())
 
     def _get_tests(self):
         return [Test.from_json(t, DeserializationContext(self.org)) for t in json.loads(self.tests)]
@@ -403,7 +403,7 @@ class Rule(models.Model):
         return _(" and ").join([t.get_description() for t in self.get_tests()])
 
     def get_actions(self):
-        return get_obj_cacheable(self, '_actions', lambda: self._get_actions())
+        return get_obj_cacheable(self, "_actions", lambda: self._get_actions())
 
     def _get_actions(self):
         return [Action.from_json(a, DeserializationContext(self.org)) for a in json.loads(self.actions)]
@@ -425,6 +425,7 @@ class Rule(models.Model):
         Applies a set of rules to a batch of messages in a way that allows same actions to be merged and reduces needed
         calls to the backend.
         """
+
         def __init__(self, org, rules):
             self.org = org
             self.rules = rules
@@ -453,5 +454,5 @@ class Rule(models.Model):
             """
             Applies the actions gathered by this processor
             """
-            for action, messages in six.iteritems(self.messages_by_action):
+            for action, messages in self.messages_by_action.items():
                 action.apply_to(self.org, messages)

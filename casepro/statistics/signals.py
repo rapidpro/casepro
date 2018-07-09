@@ -1,13 +1,12 @@
-from __future__ import unicode_literals
+from math import ceil
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from math import ceil
 
 from casepro.cases.models import CaseAction
 from casepro.msgs.models import Message, Outgoing
 
-from .models import datetime_to_date, DailyCount, DailySecondTotalCount, record_case_closed_time
+from .models import DailyCount, DailySecondTotalCount, datetime_to_date, record_case_closed_time
 
 
 @receiver(post_save, sender=Message)
@@ -43,17 +42,21 @@ def record_new_outgoing(sender, instance, created, **kwargs):
 
         if case:
             # count the very first response on an org level
-            if instance == case.outgoing_messages.earliest('created_on'):
+            if instance == case.outgoing_messages.earliest("created_on"):
                 td = instance.created_on - case.opened_on
                 seconds_since_open = ceil(td.total_seconds())
-                DailySecondTotalCount.record_item(day, seconds_since_open,
-                                                  DailySecondTotalCount.TYPE_TILL_REPLIED, org)
+                DailySecondTotalCount.record_item(
+                    day, seconds_since_open, DailySecondTotalCount.TYPE_TILL_REPLIED, org
+                )
             if case.assignee == partner:
                 # count the first response by this partner
-                if instance == case.outgoing_messages.filter(partner=partner).earliest('created_on'):
-                    author_action = case.actions.filter(action=CaseAction.OPEN).order_by('created_on').first()
-                    reassign_action = case.actions.filter(
-                        action=CaseAction.REASSIGN, assignee=partner).order_by('created_on').first()
+                if instance == case.outgoing_messages.filter(partner=partner).earliest("created_on"):
+                    author_action = case.actions.filter(action=CaseAction.OPEN).order_by("created_on").first()
+                    reassign_action = (
+                        case.actions.filter(action=CaseAction.REASSIGN, assignee=partner)
+                        .order_by("created_on")
+                        .first()
+                    )
 
                     # don't count self-assigned cases
                     if author_action and author_action.created_by.get_partner(org) != partner:
@@ -67,8 +70,8 @@ def record_new_outgoing(sender, instance, created, **kwargs):
                         td = instance.created_on - start_date
                         seconds_since_open = ceil(td.total_seconds())
                         DailySecondTotalCount.record_item(
-                            day, seconds_since_open,
-                            DailySecondTotalCount.TYPE_TILL_REPLIED, partner)
+                            day, seconds_since_open, DailySecondTotalCount.TYPE_TILL_REPLIED, partner
+                        )
 
 
 @receiver(post_save, sender=CaseAction)

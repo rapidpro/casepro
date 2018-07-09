@@ -7,14 +7,8 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('statistics', '0010_existing_case_timings_count'),
-    ]
+    dependencies = [("statistics", "0010_existing_case_timings_count")]
 
     operations = [
-        migrations.AlterField(
-            model_name='dailysecondtotalcount',
-            name='seconds',
-            field=models.BigIntegerField(),
-        ),
+        migrations.AlterField(model_name="dailysecondtotalcount", name="seconds", field=models.BigIntegerField())
     ]

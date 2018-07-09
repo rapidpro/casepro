@@ -1,47 +1,50 @@
-# coding=utf-8
-from __future__ import absolute_import, unicode_literals
+from datetime import datetime, timedelta
+from importlib import reload
 
 import pytz
-import six
-
-from datetime import datetime, timedelta
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
-from django.test.utils import override_settings, modify_settings
+from django.test.utils import modify_settings, override_settings
 from django.utils import timezone
 from mock import patch
-from six.moves import reload_module
 from temba_client.utils import format_iso8601
 
 from casepro.contacts.models import Contact
-from casepro.msgs.models import Message, Outgoing, Label
+from casepro.msgs.models import Label, Message, Outgoing
 from casepro.msgs.tasks import handle_messages
+from casepro.pods import registry as pod_registry
+from casepro.pods.tests.utils import DummyPodPlugin
 from casepro.profiles.models import ROLE_ANALYST, ROLE_MANAGER, Notification
 from casepro.test import BaseCasesTest
 from casepro.utils import datetime_to_microseconds, microseconds_to_datetime
-from casepro.pods import registry as pod_registry
-from casepro.pods.tests.utils import DummyPodPlugin
 
 from .context_processors import sentry_dsn
 from .models import AccessLevel, Case, CaseAction, CaseExport, CaseFolder, Partner
 
 
 class CaseTest(BaseCasesTest):
+
     def setUp(self):
         super(CaseTest, self).setUp()
 
-        self.ann = self.create_contact(self.unicef, 'C-001', "Ann",
-                                       fields={'age': "34"},
-                                       groups=[self.females, self.reporters, self.registered])
+        self.ann = self.create_contact(
+            self.unicef, "C-001", "Ann", fields={"age": "34"}, groups=[self.females, self.reporters, self.registered]
+        )
 
-    @patch('casepro.test.TestBackend.archive_contact_messages')
-    @patch('casepro.test.TestBackend.archive_messages')
-    @patch('casepro.test.TestBackend.stop_runs')
-    @patch('casepro.test.TestBackend.add_to_group')
-    @patch('casepro.test.TestBackend.remove_from_group')
-    def test_lifecycle(self, mock_remove_from_group, mock_add_to_group, mock_stop_runs,
-                       mock_archive_messages, mock_archive_contact_messages):
+    @patch("casepro.test.TestBackend.archive_contact_messages")
+    @patch("casepro.test.TestBackend.archive_messages")
+    @patch("casepro.test.TestBackend.stop_runs")
+    @patch("casepro.test.TestBackend.add_to_group")
+    @patch("casepro.test.TestBackend.remove_from_group")
+    def test_lifecycle(
+        self,
+        mock_remove_from_group,
+        mock_add_to_group,
+        mock_stop_runs,
+        mock_archive_messages,
+        mock_archive_contact_messages,
+    ):
 
         d0 = datetime(2015, 1, 2, 6, 0, tzinfo=pytz.UTC)
         d1 = datetime(2015, 1, 2, 7, 0, tzinfo=pytz.UTC)
@@ -55,7 +58,7 @@ class CaseTest(BaseCasesTest):
         self.create_message(self.unicef, 123, self.ann, "Hello", created_on=d0)
         msg2 = self.create_message(self.unicef, 234, self.ann, "Hello again", [self.aids], created_on=d1)
 
-        with patch.object(timezone, 'now', return_value=d1):
+        with patch.object(timezone, "now", return_value=d1):
             # MOH opens new case
             case = Case.get_or_open(self.unicef, self.user1, msg2, "Summary", self.moh)
 
@@ -70,7 +73,7 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(case.opened_on, d1)
         self.assertIsNone(case.closed_on)
 
-        actions = case.actions.order_by('pk')
+        actions = case.actions.order_by("pk")
         self.assertEqual(len(actions), 1)
         self.assertEqual(actions[0].action, CaseAction.OPEN)
         self.assertEqual(actions[0].created_by, self.user1)
@@ -124,11 +127,11 @@ class CaseTest(BaseCasesTest):
         self.assertTrue(msg3.is_archived)
         self.assertEqual(msg3.case, case)
 
-        with patch.object(timezone, 'now', return_value=d2):
+        with patch.object(timezone, "now", return_value=d2):
             # other user in MOH adds a note
             case.add_note(self.user2, "Interesting")
 
-        actions = case.actions.order_by('pk')
+        actions = case.actions.order_by("pk")
         self.assertEqual(len(actions), 2)
         self.assertEqual(actions[1].action, CaseAction.ADD_NOTE)
         self.assertEqual(actions[1].created_by, self.user2)
@@ -145,14 +148,14 @@ class CaseTest(BaseCasesTest):
         self.assertRaises(PermissionDenied, case.reassign, self.user3)
         self.assertRaises(PermissionDenied, case.close, self.user3)
 
-        with patch.object(timezone, 'now', return_value=d3):
+        with patch.object(timezone, "now", return_value=d3):
             # first user closes the case
             case.close(self.user1)
 
         self.assertEqual(case.opened_on, d1)
         self.assertEqual(case.closed_on, d3)
 
-        actions = case.actions.order_by('pk')
+        actions = case.actions.order_by("pk")
         self.assertEqual(len(actions), 3)
         self.assertEqual(actions[2].action, CaseAction.CLOSE)
         self.assertEqual(actions[2].created_by, self.user1)
@@ -163,8 +166,9 @@ class CaseTest(BaseCasesTest):
         Notification.objects.get(user=self.user2, type=Notification.TYPE_CASE_ACTION, case_action=actions[2])
 
         # check that contacts groups were restored
-        self.assertEqual(set(Contact.objects.get(pk=self.ann.pk).groups.all()),
-                         {self.females, self.reporters, self.registered})
+        self.assertEqual(
+            set(Contact.objects.get(pk=self.ann.pk).groups.all()), {self.females, self.reporters, self.registered}
+        )
         self.assertEqual(set(Contact.objects.get(pk=self.ann.pk).suspended_groups.all()), set())
 
         mock_add_to_group.assert_called_once_with(self.unicef, self.ann, self.reporters)
@@ -180,14 +184,14 @@ class CaseTest(BaseCasesTest):
         msg4.refresh_from_db()
         self.assertFalse(msg4.is_archived)
 
-        with patch.object(timezone, 'now', return_value=d4):
+        with patch.object(timezone, "now", return_value=d4):
             # but second user re-opens it
             case.reopen(self.user2)
 
         self.assertEqual(case.opened_on, d1)  # unchanged
         self.assertIsNone(case.closed_on)
 
-        actions = case.actions.order_by('pk')
+        actions = case.actions.order_by("pk")
         self.assertEqual(len(actions), 4)
         self.assertEqual(actions[3].action, CaseAction.REOPEN)
         self.assertEqual(actions[3].created_by, self.user2)
@@ -203,13 +207,13 @@ class CaseTest(BaseCasesTest):
         msg4.refresh_from_db()
         self.assertTrue(msg4.is_archived)
 
-        with patch.object(timezone, 'now', return_value=d5):
+        with patch.object(timezone, "now", return_value=d5):
             # and re-assigns it to different partner
             case.reassign(self.user2, self.who)
 
         self.assertEqual(case.assignee, self.who)
 
-        actions = case.actions.order_by('pk')
+        actions = case.actions.order_by("pk")
         self.assertEqual(len(actions), 5)
         self.assertEqual(actions[4].action, CaseAction.REASSIGN)
         self.assertEqual(actions[4].created_by, self.user2)
@@ -221,11 +225,11 @@ class CaseTest(BaseCasesTest):
         Notification.objects.get(user=self.user1, type=Notification.TYPE_CASE_ACTION, case_action=actions[4])
         Notification.objects.get(user=self.user3, type=Notification.TYPE_CASE_ASSIGNMENT, case_action=actions[4])
 
-        with patch.object(timezone, 'now', return_value=d6):
+        with patch.object(timezone, "now", return_value=d6):
             # user from that partner re-labels it
             case.update_labels(self.user3, [self.pregnancy])
 
-        actions = case.actions.order_by('pk')
+        actions = case.actions.order_by("pk")
         self.assertEqual(len(actions), 7)
         self.assertEqual(actions[5].action, CaseAction.LABEL)
         self.assertEqual(actions[5].created_by, self.user3)
@@ -236,14 +240,14 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(actions[6].created_on, d6)
         self.assertEqual(actions[6].label, self.aids)
 
-        with patch.object(timezone, 'now', return_value=d7):
+        with patch.object(timezone, "now", return_value=d7):
             # user from that partner org closes it again
             case.close(self.user3)
 
         self.assertEqual(case.opened_on, d1)
         self.assertEqual(case.closed_on, d7)
 
-        actions = case.actions.order_by('pk')
+        actions = case.actions.order_by("pk")
         self.assertEqual(len(actions), 8)
         self.assertEqual(actions[7].action, CaseAction.CLOSE)
         self.assertEqual(actions[7].created_by, self.user3)
@@ -254,8 +258,8 @@ class CaseTest(BaseCasesTest):
         self.assertFalse(case3.is_new)
         self.assertEqual(case, case3)
 
-    @patch('casepro.test.TestBackend.add_to_group')
-    @patch('casepro.test.TestBackend.remove_from_group')
+    @patch("casepro.test.TestBackend.add_to_group")
+    @patch("casepro.test.TestBackend.remove_from_group")
     def test_close_case_when_contact_stopped(self, mock_remove_from_group, mock_add_to_group):
         msg = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
         case = Case.get_or_open(self.unicef, self.user1, msg, "Summary", self.moh)
@@ -273,9 +277,9 @@ class CaseTest(BaseCasesTest):
         mock_add_to_group.assert_not_called()
 
     def test_get_all(self):
-        bob = self.create_contact(self.unicef, 'C-002', "Bob")
-        cat = self.create_contact(self.unicef, 'C-003', "Cat")
-        nic = self.create_contact(self.nyaruka, 'C-104', "Nic")
+        bob = self.create_contact(self.unicef, "C-002", "Bob")
+        cat = self.create_contact(self.unicef, "C-003", "Cat")
+        nic = self.create_contact(self.nyaruka, "C-104", "Nic")
 
         msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
         msg2 = self.create_message(self.unicef, 234, bob, "Hello 2", [self.aids, self.pregnancy])
@@ -345,8 +349,9 @@ class CaseTest(BaseCasesTest):
         the created case action should also have the assigned user.
         """
         msg = self.create_message(
-            self.unicef, 123, self.ann, "Hello", created_on=datetime(2014, 1, 5, 0, 0, tzinfo=pytz.UTC))
-        case = Case.get_or_open(self.unicef, self.user2, msg, 'Hello', self.moh, user_assignee=self.user1)
+            self.unicef, 123, self.ann, "Hello", created_on=datetime(2014, 1, 5, 0, 0, tzinfo=pytz.UTC)
+        )
+        case = Case.get_or_open(self.unicef, self.user2, msg, "Hello", self.moh, user_assignee=self.user1)
 
         self.assertEqual(case.user_assignee, self.user1)
 
@@ -358,7 +363,8 @@ class CaseTest(BaseCasesTest):
         We should be able to create a case with no initial message, but by supplying a contact instead.
         """
         case = Case.get_or_open(
-            self.unicef, self.user2, None, 'Hello', self.moh, user_assignee=self.user1, contact=self.ann)
+            self.unicef, self.user2, None, "Hello", self.moh, user_assignee=self.user1, contact=self.ann
+        )
 
         self.assertEqual(case.contact, self.ann)
         self.assertEqual(case.assignee, self.moh)
@@ -378,9 +384,11 @@ class CaseTest(BaseCasesTest):
         open case, it should return that case instead of creating a new one.
         """
         case1 = Case.get_or_open(
-            self.unicef, self.user2, None, 'Hello', self.moh, user_assignee=self.user1, contact=self.ann)
+            self.unicef, self.user2, None, "Hello", self.moh, user_assignee=self.user1, contact=self.ann
+        )
         case2 = Case.get_or_open(
-            self.unicef, self.user2, None, 'Hello', self.moh, user_assignee=self.user1, contact=self.ann)
+            self.unicef, self.user2, None, "Hello", self.moh, user_assignee=self.user1, contact=self.ann
+        )
 
         self.assertEqual(case2.is_new, False)
         self.assertEqual(case1, case2)
@@ -388,7 +396,8 @@ class CaseTest(BaseCasesTest):
         case1.close(self.user1)
 
         case3 = Case.get_or_open(
-            self.unicef, self.user2, None, 'Hello', self.moh, user_assignee=self.user1, contact=self.ann)
+            self.unicef, self.user2, None, "Hello", self.moh, user_assignee=self.user1, contact=self.ann
+        )
         self.assertEqual(case3.is_new, True)
         self.assertNotEqual(case2, case3)
 
@@ -396,8 +405,17 @@ class CaseTest(BaseCasesTest):
         """
         When using get_or_open with no initial message and no existing contact a ValueError should be raised.
         """
-        self.assertRaises(ValueError, Case.get_or_open, self.unicef, self.user2, None, 'Hello', self.moh,
-                          user_assignee=self.user1, contact=None)
+        self.assertRaises(
+            ValueError,
+            Case.get_or_open,
+            self.unicef,
+            self.user2,
+            None,
+            "Hello",
+            self.moh,
+            user_assignee=self.user1,
+            contact=None,
+        )
 
     def test_search(self):
         d1 = datetime(2014, 1, 9, 0, 0, tzinfo=pytz.UTC)
@@ -405,8 +423,8 @@ class CaseTest(BaseCasesTest):
         d3 = datetime(2014, 1, 11, 0, 0, tzinfo=pytz.UTC)
         d4 = datetime(2014, 1, 12, 0, 0, tzinfo=pytz.UTC)
 
-        bob = self.create_contact(self.unicef, 'C-002', "Bob")
-        cat = self.create_contact(self.unicef, 'C-003', "Cat")
+        bob = self.create_contact(self.unicef, "C-002", "Bob")
+        cat = self.create_contact(self.unicef, "C-003", "Cat")
         nic = self.create_contact(self.nyaruka, "C-005", "Nic")
 
         msg1 = self.create_message(self.unicef, 101, self.ann, "Hello 1")
@@ -427,19 +445,19 @@ class CaseTest(BaseCasesTest):
             self.assertEqual(list(Case.search(self.unicef, user, params)), results)
 
         # by org admin (sees all cases)
-        assert_search(self.admin, {'folder': CaseFolder.open}, [case4, case3, case2])
-        assert_search(self.admin, {'folder': CaseFolder.closed}, [case1])
+        assert_search(self.admin, {"folder": CaseFolder.open}, [case4, case3, case2])
+        assert_search(self.admin, {"folder": CaseFolder.closed}, [case1])
 
         # by partner user (sees only cases assigned to them)
-        assert_search(self.user1, {'folder': CaseFolder.open}, [case2])
-        assert_search(self.user1, {'folder': CaseFolder.closed}, [case1])
+        assert_search(self.user1, {"folder": CaseFolder.open}, [case2])
+        assert_search(self.user1, {"folder": CaseFolder.closed}, [case1])
 
         # by assignee
-        assert_search(self.user1, {'folder': CaseFolder.open, 'assignee': self.moh.pk}, [case2])
+        assert_search(self.user1, {"folder": CaseFolder.open, "assignee": self.moh.pk}, [case2])
 
         # by before/after
-        assert_search(self.admin, {'folder': CaseFolder.open, 'before': d2}, [case2])
-        assert_search(self.admin, {'folder': CaseFolder.open, 'after': d3}, [case4, case3])
+        assert_search(self.admin, {"folder": CaseFolder.open, "before": d2}, [case2])
+        assert_search(self.admin, {"folder": CaseFolder.open, "after": d3}, [case4, case3])
 
     def test_access_level(self):
         msg = self.create_message(self.unicef, 234, self.ann, "Hello")
@@ -452,25 +470,28 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(case.access_level(self.user4), AccessLevel.none)  # user from different org
 
 
-@modify_settings(INSTALLED_APPS={'append': 'casepro.pods.tests.utils.DummyPodPlugin'})
-@override_settings(PODS=[{'label': 'dummy_pod', 'title': 'FooPod'}])
+@modify_settings(INSTALLED_APPS={"append": "casepro.pods.tests.utils.DummyPodPlugin"})
+@override_settings(PODS=[{"label": "dummy_pod", "title": "FooPod"}])
 class CaseCRUDLTest(BaseCasesTest):
+
     def setUp(self):
         super(CaseCRUDLTest, self).setUp()
 
-        reload_module(pod_registry)
+        reload(pod_registry)
 
-        self.ann = self.create_contact(self.unicef, 'C-001', "Ann",
-                                       fields={'age': "34"}, groups=[self.females, self.reporters])
+        self.ann = self.create_contact(
+            self.unicef, "C-001", "Ann", fields={"age": "34"}, groups=[self.females, self.reporters]
+        )
 
         self.msg = self.create_message(self.unicef, 101, self.ann, "Hello", [self.aids])
         self.case = self.create_case(
-            self.unicef, self.ann, self.moh, self.msg, [self.aids], summary="Summary", user_assignee=self.user1)
+            self.unicef, self.ann, self.moh, self.msg, [self.aids], summary="Summary", user_assignee=self.user1
+        )
 
-    @patch('casepro.test.TestBackend.archive_contact_messages')
-    @patch('casepro.test.TestBackend.stop_runs')
-    @patch('casepro.test.TestBackend.add_to_group')
-    @patch('casepro.test.TestBackend.remove_from_group')
+    @patch("casepro.test.TestBackend.archive_contact_messages")
+    @patch("casepro.test.TestBackend.stop_runs")
+    @patch("casepro.test.TestBackend.add_to_group")
+    @patch("casepro.test.TestBackend.remove_from_group")
     def test_open(self, mock_remove_contacts, mock_add_contacts, mock_stop_runs, mock_archive_contact_messages):
         CaseAction.objects.all().delete()
         Case.objects.all().delete()
@@ -478,20 +499,23 @@ class CaseCRUDLTest(BaseCasesTest):
 
         msg1 = self.create_message(self.unicef, 101, self.ann, "Hello", [self.aids])
 
-        url = reverse('cases.case_open')
+        url = reverse("cases.case_open")
 
         # log in as an administrator
         self.login(self.admin)
 
-        response = self.url_post_json('unicef', url, {
-            'message': 101, 'summary': "Summary", 'assignee': self.moh.pk, 'user_assignee': self.user1.pk})
+        response = self.url_post_json(
+            "unicef",
+            url,
+            {"message": 101, "summary": "Summary", "assignee": self.moh.pk, "user_assignee": self.user1.pk},
+        )
         self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(response.json['summary'], "Summary")
-        self.assertEqual(response.json['is_new'], True)
-        self.assertEqual(response.json['watching'], True)
+        self.assertEqual(response.json["summary"], "Summary")
+        self.assertEqual(response.json["is_new"], True)
+        self.assertEqual(response.json["watching"], True)
 
-        case1 = Case.objects.get(pk=response.json['id'])
+        case1 = Case.objects.get(pk=response.json["id"])
         self.assertEqual(case1.initial_message, msg1)
         self.assertEqual(case1.summary, "Summary")
         self.assertEqual(case1.assignee, self.moh)
@@ -500,16 +524,16 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(case1.contact, msg1.contact)
 
         # try again as a non-administrator who can't create cases for other partner orgs
-        rick = self.create_contact(self.unicef, 'C-002', "Richard")
+        rick = self.create_contact(self.unicef, "C-002", "Richard")
         msg2 = self.create_message(self.unicef, 102, rick, "Hello", [self.aids])
 
         # log in as a non-administrator
         self.login(self.user1)
 
-        response = self.url_post_json('unicef', url, {'message': 102, 'summary': "Summary"})
+        response = self.url_post_json("unicef", url, {"message": 102, "summary": "Summary"})
         self.assertEqual(response.status_code, 200)
 
-        case2 = Case.objects.get(pk=response.json['id'])
+        case2 = Case.objects.get(pk=response.json["id"])
         self.assertEqual(case2.initial_message, msg2)
         self.assertEqual(case2.summary, "Summary")
         self.assertEqual(case2.assignee, self.moh)
@@ -523,9 +547,11 @@ class CaseCRUDLTest(BaseCasesTest):
         self.login(self.admin)
         msg = self.create_message(self.unicef, 102, self.ann, "Hello", [self.aids])
 
-        response = self.url_post_json('unicef', reverse('cases.case_open'), {
-            'message': msg.backend_id, 'summary': "Summary", 'assignee': self.moh.pk, 'user_assignee': self.user3.pk
-            })
+        response = self.url_post_json(
+            "unicef",
+            reverse("cases.case_open"),
+            {"message": msg.backend_id, "summary": "Summary", "assignee": self.moh.pk, "user_assignee": self.user3.pk},
+        )
         self.assertEqual(response.status_code, 404)
 
     def test_open_no_message_id(self):
@@ -533,18 +559,26 @@ class CaseCRUDLTest(BaseCasesTest):
         If a case is opened, and no initial message is supplied, but instead a contact is supplied, the case should
         open with a contact and no initial message instead of getting the contact from the initial message.
         """
-        contact = self.create_contact(self.unicef, 'C-002', "TestContact")
-        contact.urns = ['tel:+27741234567']
+        contact = self.create_contact(self.unicef, "C-002", "TestContact")
+        contact.urns = ["tel:+27741234567"]
         contact.save()
 
-        url = reverse('cases.case_open')
+        url = reverse("cases.case_open")
         self.login(self.admin)
-        response = self.url_post_json('unicef', url, {
-            'message': None, 'summary': "Summary", 'assignee': self.moh.pk, 'user_assignee': self.user1.pk,
-            'urn': contact.urns[0]})
+        response = self.url_post_json(
+            "unicef",
+            url,
+            {
+                "message": None,
+                "summary": "Summary",
+                "assignee": self.moh.pk,
+                "user_assignee": self.user1.pk,
+                "urn": contact.urns[0],
+            },
+        )
         self.assertEqual(response.status_code, 200)
 
-        case = Case.objects.get(pk=response.json['id'])
+        case = Case.objects.get(pk=response.json["id"])
         self.assertEqual(case.initial_message, None)
         self.assertEqual(case.contact, contact)
 
@@ -553,28 +587,36 @@ class CaseCRUDLTest(BaseCasesTest):
         If a case is opened, and no initial message is supplied, but an URN is supplied instead, and the URN doesn't
         match any existing users, then a new contact should be created, and the case assigned to that contact.
         """
-        url = reverse('cases.case_open')
+        url = reverse("cases.case_open")
         self.login(self.admin)
-        response = self.url_post_json('unicef', url, {
-            'message': None, 'summary': "Summary", 'assignee': self.moh.pk, 'user_assignee': self.user1.pk,
-            'urn': "tel:+27741234567"})
+        response = self.url_post_json(
+            "unicef",
+            url,
+            {
+                "message": None,
+                "summary": "Summary",
+                "assignee": self.moh.pk,
+                "user_assignee": self.user1.pk,
+                "urn": "tel:+27741234567",
+            },
+        )
         self.assertEqual(response.status_code, 200)
 
-        case = Case.objects.get(pk=response.json['id'])
+        case = Case.objects.get(pk=response.json["id"])
         self.assertEqual(case.initial_message, None)
         self.assertEqual(case.contact.urns, ["tel:+27741234567"])
 
     def test_read(self):
-        url = reverse('cases.case_read', args=[self.case.pk])
+        url = reverse("cases.case_read", args=[self.case.pk])
 
         # log in as non-administrator
         self.login(self.user1)
 
-        response = self.url_get('unicef', url)
+        response = self.url_get("unicef", url)
         self.assertEqual(response.status_code, 200)
 
         # check testing pod has been included
-        self.assertContains(response, 'FooPod')
+        self.assertContains(response, "FooPod")
         self.assertContains(response, DummyPodPlugin.controller)
         self.assertContains(response, DummyPodPlugin.directive)
 
@@ -586,12 +628,12 @@ class CaseCRUDLTest(BaseCasesTest):
             self.assertContains(response, script)
 
     def test_note(self):
-        url = reverse('cases.case_note', args=[self.case.pk])
+        url = reverse("cases.case_note", args=[self.case.pk])
 
         # log in as manager user in assigned partner
         self.login(self.user1)
 
-        response = self.url_post_json('unicef', url, {'note': "This is a note"})
+        response = self.url_post_json("unicef", url, {"note": "This is a note"})
         self.assertEqual(response.status_code, 204)
 
         action = CaseAction.objects.get()
@@ -603,28 +645,28 @@ class CaseCRUDLTest(BaseCasesTest):
         # users from other partners with label access are allowed to add notes
         self.login(self.user3)
 
-        response = self.url_post_json('unicef', url, {'note': "This is another note"})
+        response = self.url_post_json("unicef", url, {"note": "This is another note"})
         self.assertEqual(response.status_code, 204)
 
         # but not if they lose label-based access
         self.case.update_labels(self.admin, [self.pregnancy])
 
-        response = self.url_post_json('unicef', url, {'note': "Yet another"})
+        response = self.url_post_json("unicef", url, {"note": "Yet another"})
         self.assertEqual(response.status_code, 403)
 
         # and users from other orgs certainly aren't allowed to
         self.login(self.user4)
 
-        response = self.url_post_json('unicef', url, {'note': "Hey guys"})
+        response = self.url_post_json("unicef", url, {"note": "Hey guys"})
         self.assertEqual(response.status_code, 302)
 
     def test_reassign(self):
-        url = reverse('cases.case_reassign', args=[self.case.pk])
+        url = reverse("cases.case_reassign", args=[self.case.pk])
 
         # log in as manager user in currently assigned partner
         self.login(self.user1)
 
-        response = self.url_post_json('unicef', url, {'assignee': self.who.pk, 'user_assignee': self.user3.pk})
+        response = self.url_post_json("unicef", url, {"assignee": self.who.pk, "user_assignee": self.user3.pk})
         self.assertEqual(response.status_code, 204)
 
         action = CaseAction.objects.get()
@@ -638,30 +680,30 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(self.case.user_assignee, self.user3)
 
         # only user from assigned partner can re-assign
-        response = self.url_post_json('unicef', url, {'assignee': self.moh.pk})
+        response = self.url_post_json("unicef", url, {"assignee": self.moh.pk})
         self.assertEqual(response.status_code, 403)
 
         # can only be assigned to user from assigned partner
-        response = self.url_post_json('unicef', url, {'assignee': self.who.pk, 'user_assignee': self.user2.pk})
+        response = self.url_post_json("unicef", url, {"assignee": self.who.pk, "user_assignee": self.user2.pk})
         self.assertEqual(response.status_code, 404)
 
     def test_reassign_no_user(self):
         """The user field should be optional, and reassignment should still work without it."""
-        url = reverse('cases.case_reassign', args=[self.case.pk])
+        url = reverse("cases.case_reassign", args=[self.case.pk])
 
         # log in as manager user in currently assigned partner
         self.login(self.user1)
 
-        response = self.url_post_json('unicef', url, {'assignee': self.who.pk, 'user_assignee': None})
+        response = self.url_post_json("unicef", url, {"assignee": self.who.pk, "user_assignee": None})
         self.assertEqual(response.status_code, 204)
 
     def test_close(self):
-        url = reverse('cases.case_close', args=[self.case.pk])
+        url = reverse("cases.case_close", args=[self.case.pk])
 
         # log in as manager user in currently assigned partner
         self.login(self.user1)
 
-        response = self.url_post_json('unicef', url, {'note': "It's over"})
+        response = self.url_post_json("unicef", url, {"note": "It's over"})
         self.assertEqual(response.status_code, 204)
 
         action = CaseAction.objects.get()
@@ -677,18 +719,18 @@ class CaseCRUDLTest(BaseCasesTest):
 
         self.case.reopen(self.admin, "Because")
 
-        response = self.url_post_json('unicef', url, {'note': "It's over"})
+        response = self.url_post_json("unicef", url, {"note": "It's over"})
         self.assertEqual(response.status_code, 403)
 
     def test_reopen(self):
         self.case.close(self.admin, "Done")
 
-        url = reverse('cases.case_reopen', args=[self.case.pk])
+        url = reverse("cases.case_reopen", args=[self.case.pk])
 
         # log in as manager user in currently assigned partner
         self.login(self.user1)
 
-        response = self.url_post_json('unicef', url, {'note': "Unfinished business"})
+        response = self.url_post_json("unicef", url, {"note": "Unfinished business"})
         self.assertEqual(response.status_code, 204)
 
         action = CaseAction.objects.get(created_by=self.user1)
@@ -703,11 +745,11 @@ class CaseCRUDLTest(BaseCasesTest):
 
         self.case.close(self.admin, "Done")
 
-        response = self.url_post_json('unicef', url, {'note': "Unfinished business"})
+        response = self.url_post_json("unicef", url, {"note": "Unfinished business"})
         self.assertEqual(response.status_code, 403)
 
     def test_label(self):
-        url = reverse('cases.case_label', args=[self.case.pk])
+        url = reverse("cases.case_label", args=[self.case.pk])
 
         # log in as manager user in currently assigned partner
         self.login(self.user1)
@@ -715,10 +757,10 @@ class CaseCRUDLTest(BaseCasesTest):
         # add additional label to case which this user can't access
         self.case.labels.add(self.tea)
 
-        response = self.url_post_json('unicef', url, {'labels': [self.pregnancy.pk]})
+        response = self.url_post_json("unicef", url, {"labels": [self.pregnancy.pk]})
         self.assertEqual(response.status_code, 204)
 
-        actions = CaseAction.objects.filter(case=self.case).order_by('pk')
+        actions = CaseAction.objects.filter(case=self.case).order_by("pk")
         self.assertEqual(len(actions), 2)
         self.assertEqual(actions[0].action, CaseAction.LABEL)
         self.assertEqual(actions[0].label, self.pregnancy)
@@ -732,16 +774,16 @@ class CaseCRUDLTest(BaseCasesTest):
         # only user from assigned partner can label
         self.login(self.user3)
 
-        response = self.url_post_json('unicef', url, {'labels': [self.aids.pk]})
+        response = self.url_post_json("unicef", url, {"labels": [self.aids.pk]})
         self.assertEqual(response.status_code, 403)
 
     def test_update_summary(self):
-        url = reverse('cases.case_update_summary', args=[self.case.pk])
+        url = reverse("cases.case_update_summary", args=[self.case.pk])
 
         # log in as manager user in currently assigned partner
         self.login(self.user1)
 
-        response = self.url_post_json('unicef', url, {'summary': "New summary"})
+        response = self.url_post_json("unicef", url, {"summary": "New summary"})
         self.assertEqual(response.status_code, 204)
 
         action = CaseAction.objects.get(case=self.case)
@@ -753,16 +795,16 @@ class CaseCRUDLTest(BaseCasesTest):
         # only user from assigned partner can change the summary
         self.login(self.user3)
 
-        response = self.url_post_json('unicef', url, {'summary': "Something else"})
+        response = self.url_post_json("unicef", url, {"summary": "Something else"})
         self.assertEqual(response.status_code, 403)
 
     def test_reply(self):
-        url = reverse('cases.case_reply', args=[self.case.pk])
+        url = reverse("cases.case_reply", args=[self.case.pk])
 
         # log in as manager user in currently assigned partner
         self.login(self.user1)
 
-        response = self.url_post_json('unicef', url, {'text': "We can help"})
+        response = self.url_post_json("unicef", url, {"text": "We can help"})
         self.assertEqual(response.status_code, 200)
 
         outgoing = Outgoing.objects.get()
@@ -773,36 +815,39 @@ class CaseCRUDLTest(BaseCasesTest):
         # only user from assigned partner can reply
         self.login(self.user3)
 
-        response = self.url_post_json('unicef', url, {'text': "Hi"})
+        response = self.url_post_json("unicef", url, {"text": "Hi"})
         self.assertEqual(response.status_code, 403)
 
     def test_fetch(self):
-        url = reverse('cases.case_fetch', args=[self.case.pk])
+        url = reverse("cases.case_fetch", args=[self.case.pk])
 
         # log in as manager user in currently assigned partner
         self.login(self.user1)
 
-        response = self.url_get('unicef', url)
+        response = self.url_get("unicef", url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json, {
-            'id': self.case.pk,
-            'contact': {'id': self.ann.pk, 'display': "Ann"},
-            'assignee': {'id': self.moh.pk, 'name': "MOH"},
-            'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
-            'summary': "Summary",
-            'opened_on': format_iso8601(self.case.opened_on),
-            'is_closed': False,
-            'watching': False,
-            'user_assignee': {'id': self.user1.pk, 'name': "Evan"},
-        })
+        self.assertEqual(
+            response.json,
+            {
+                "id": self.case.pk,
+                "contact": {"id": self.ann.pk, "display": "Ann"},
+                "assignee": {"id": self.moh.pk, "name": "MOH"},
+                "labels": [{"id": self.aids.pk, "name": "AIDS"}],
+                "summary": "Summary",
+                "opened_on": format_iso8601(self.case.opened_on),
+                "is_closed": False,
+                "watching": False,
+                "user_assignee": {"id": self.user1.pk, "name": "Evan"},
+            },
+        )
 
         # users with label access can also fetch
         self.login(self.user3)
 
-        response = self.url_get('unicef', url)
+        response = self.url_get("unicef", url)
         self.assertEqual(response.status_code, 200)
 
-    @patch('casepro.test.TestBackend.fetch_contact_messages')
+    @patch("casepro.test.TestBackend.fetch_contact_messages")
     def test_timeline(self, mock_fetch_contact_messages):
         CaseAction.objects.all().delete()
         Case.objects.all().delete()
@@ -821,30 +866,32 @@ class CaseCRUDLTest(BaseCasesTest):
         CaseAction.create(case, self.user1, CaseAction.OPEN, assignee=self.moh, user_assignee=self.user1)
 
         # backend has a message in the case time window that we don't have locally
-        remote_message1 = Outgoing(backend_broadcast_id=102, contact=self.ann, text="Non casepro message...",
-                                   created_on=d2)
+        remote_message1 = Outgoing(
+            backend_broadcast_id=102, contact=self.ann, text="Non casepro message...", created_on=d2
+        )
         mock_fetch_contact_messages.return_value = [remote_message1]
 
-        timeline_url = reverse('cases.case_timeline', args=[case.pk])
+        timeline_url = reverse("cases.case_timeline", args=[case.pk])
 
         # log in as non-administrator
         self.login(self.user1)
 
         # request all of a timeline up to now
-        response = self.url_get('unicef', '%s?after=' % timeline_url)
-        t0 = microseconds_to_datetime(response.json['max_time'])
+        response = self.url_get("unicef", "%s?after=" % timeline_url)
+        t0 = microseconds_to_datetime(response.json["max_time"])
 
-        self.assertEqual(len(response.json['results']), 3)
-        self.assertEqual(response.json['results'][0]['type'], 'I')
-        self.assertEqual(response.json['results'][0]['item']['text'], "What is AIDS?")
-        self.assertEqual(response.json['results'][0]['item']['contact'], {'id': self.ann.pk, 'display': "Ann"})
+        self.assertEqual(len(response.json["results"]), 3)
+        self.assertEqual(response.json["results"][0]["type"], "I")
+        self.assertEqual(response.json["results"][0]["item"]["text"], "What is AIDS?")
+        self.assertEqual(response.json["results"][0]["item"]["contact"], {"id": self.ann.pk, "display": "Ann"})
         self.assertEqual(
-            response.json['results'][0]['item']['case']['user_assignee'], {'id': self.user1.pk, 'name': "Evan"})
-        self.assertEqual(response.json['results'][1]['type'], 'O')
-        self.assertEqual(response.json['results'][1]['item']['text'], "Non casepro message...")
-        self.assertEqual(response.json['results'][1]['item']['contact'], {'id': self.ann.pk, 'display': "Ann"})
-        self.assertEqual(response.json['results'][2]['type'], 'A')
-        self.assertEqual(response.json['results'][2]['item']['action'], 'O')
+            response.json["results"][0]["item"]["case"]["user_assignee"], {"id": self.user1.pk, "name": "Evan"}
+        )
+        self.assertEqual(response.json["results"][1]["type"], "O")
+        self.assertEqual(response.json["results"][1]["item"]["text"], "Non casepro message...")
+        self.assertEqual(response.json["results"][1]["item"]["contact"], {"id": self.ann.pk, "display": "Ann"})
+        self.assertEqual(response.json["results"][2]["type"], "A")
+        self.assertEqual(response.json["results"][2]["item"]["action"], "O")
 
         # as this was the initial request, messages will have been fetched from the backend
         mock_fetch_contact_messages.assert_called_once_with(self.unicef, self.ann, d1, t0)
@@ -852,9 +899,9 @@ class CaseCRUDLTest(BaseCasesTest):
         mock_fetch_contact_messages.return_value = []
 
         # page looks for new timeline activity
-        response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t0)))
-        t1 = microseconds_to_datetime(response.json['max_time'])
-        self.assertEqual(len(response.json['results']), 0)
+        response = self.url_get("unicef", "%s?after=%s" % (timeline_url, datetime_to_microseconds(t0)))
+        t1 = microseconds_to_datetime(response.json["max_time"])
+        self.assertEqual(len(response.json["results"]), 0)
 
         # messages won't have been fetched from the backend this time
         self.assertNotCalled(mock_fetch_contact_messages)
@@ -863,14 +910,14 @@ class CaseCRUDLTest(BaseCasesTest):
         case.add_note(self.user2, "Looks interesting")
 
         # page again looks for new timeline activity
-        response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t1)))
-        t2 = microseconds_to_datetime(response.json['max_time'])
+        response = self.url_get("unicef", "%s?after=%s" % (timeline_url, datetime_to_microseconds(t1)))
+        t2 = microseconds_to_datetime(response.json["max_time"])
 
         self.assertNotCalled(mock_fetch_contact_messages)
 
-        self.assertEqual(len(response.json['results']), 1)
-        self.assertEqual(response.json['results'][0]['type'], 'A')
-        self.assertEqual(response.json['results'][0]['item']['note'], "Looks interesting")
+        self.assertEqual(len(response.json["results"]), 1)
+        self.assertEqual(response.json["results"][0]["type"], "A")
+        self.assertEqual(response.json["results"][0]["item"]["note"], "Looks interesting")
 
         # user sends an outgoing message
         d3 = timezone.now()
@@ -879,12 +926,12 @@ class CaseCRUDLTest(BaseCasesTest):
         outgoing.save()
 
         # page again looks for new timeline activity
-        response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t2)))
-        t3 = microseconds_to_datetime(response.json['max_time'])
+        response = self.url_get("unicef", "%s?after=%s" % (timeline_url, datetime_to_microseconds(t2)))
+        t3 = microseconds_to_datetime(response.json["max_time"])
 
-        self.assertEqual(len(response.json['results']), 1)
-        self.assertEqual(response.json['results'][0]['type'], 'O')
-        self.assertEqual(response.json['results'][0]['item']['text'], "It's bad")
+        self.assertEqual(len(response.json["results"]), 1)
+        self.assertEqual(response.json["results"][0]["type"], "O")
+        self.assertEqual(response.json["results"][0]["item"]["text"], "It's bad")
 
         # contact sends a reply
         d4 = timezone.now()
@@ -892,17 +939,17 @@ class CaseCRUDLTest(BaseCasesTest):
         handle_messages(self.unicef.pk)
 
         # page again looks for new timeline activity
-        response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t3)))
-        t4 = microseconds_to_datetime(response.json['max_time'])
+        response = self.url_get("unicef", "%s?after=%s" % (timeline_url, datetime_to_microseconds(t3)))
+        t4 = microseconds_to_datetime(response.json["max_time"])
 
-        self.assertEqual(len(response.json['results']), 1)
-        self.assertEqual(response.json['results'][0]['type'], 'I')
-        self.assertEqual(response.json['results'][0]['item']['text'], "OK thanks")
+        self.assertEqual(len(response.json["results"]), 1)
+        self.assertEqual(response.json["results"][0]["type"], "I")
+        self.assertEqual(response.json["results"][0]["item"]["text"], "OK thanks")
 
         # page again looks for new timeline activity
-        response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t4)))
-        t5 = microseconds_to_datetime(response.json['max_time'])
-        self.assertEqual(len(response.json['results']), 0)
+        response = self.url_get("unicef", "%s?after=%s" % (timeline_url, datetime_to_microseconds(t4)))
+        t5 = microseconds_to_datetime(response.json["max_time"])
+        self.assertEqual(len(response.json["results"]), 0)
 
         # user closes case
         case.close(self.user1)
@@ -913,50 +960,50 @@ class CaseCRUDLTest(BaseCasesTest):
         handle_messages(self.unicef.pk)
 
         # page again looks for new timeline activity
-        response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t5)))
-        t6 = microseconds_to_datetime(response.json['max_time'])
+        response = self.url_get("unicef", "%s?after=%s" % (timeline_url, datetime_to_microseconds(t5)))
+        t6 = microseconds_to_datetime(response.json["max_time"])
 
         # should show the close action but not the message after it
-        self.assertEqual(len(response.json['results']), 1)
-        self.assertEqual(response.json['results'][0]['type'], 'A')
-        self.assertEqual(response.json['results'][0]['item']['action'], 'C')
+        self.assertEqual(len(response.json["results"]), 1)
+        self.assertEqual(response.json["results"][0]["type"], "A")
+        self.assertEqual(response.json["results"][0]["item"]["action"], "C")
 
         # another look for new timeline activity
-        response = self.url_get('unicef', '%s?after=%s' % (timeline_url, datetime_to_microseconds(t6)))
+        response = self.url_get("unicef", "%s?after=%s" % (timeline_url, datetime_to_microseconds(t6)))
 
         # nothing to see
-        self.assertEqual(len(response.json['results']), 0)
+        self.assertEqual(len(response.json["results"]), 0)
 
         # user now refreshes page...
 
         # backend has the message sent during the case as well as the unrelated message
         mock_fetch_contact_messages.return_value = [
             Outgoing(backend_broadcast_id=202, contact=self.ann, text="It's bad", created_on=d3),
-            remote_message1
+            remote_message1,
         ]
 
         # which requests all of the timeline up to now
-        response = self.url_get('unicef', '%s?after=' % timeline_url)
-        items = response.json['results']
+        response = self.url_get("unicef", "%s?after=" % timeline_url)
+        items = response.json["results"]
 
         self.assertEqual(len(items), 7)
-        self.assertEqual(items[0]['type'], 'I')
-        self.assertEqual(items[0]['item']['text'], "What is AIDS?")
-        self.assertEqual(items[0]['item']['contact'], {'id': self.ann.pk, 'display': "Ann"})
-        self.assertEqual(items[1]['type'], 'O')
-        self.assertEqual(items[1]['item']['text'], "Non casepro message...")
-        self.assertEqual(items[1]['item']['contact'], {'id': self.ann.pk, 'display': "Ann"})
-        self.assertEqual(items[1]['item']['sender'], None)
-        self.assertEqual(items[2]['type'], 'A')
-        self.assertEqual(items[2]['item']['action'], 'O')
-        self.assertEqual(items[3]['type'], 'A')
-        self.assertEqual(items[3]['item']['action'], 'N')
-        self.assertEqual(items[4]['type'], 'O')
-        self.assertEqual(items[4]['item']['sender'], {'id': self.user1.pk, 'name': "Evan"})
-        self.assertEqual(items[5]['type'], 'I')
-        self.assertEqual(items[5]['item']['text'], "OK thanks")
-        self.assertEqual(items[6]['type'], 'A')
-        self.assertEqual(items[6]['item']['action'], 'C')
+        self.assertEqual(items[0]["type"], "I")
+        self.assertEqual(items[0]["item"]["text"], "What is AIDS?")
+        self.assertEqual(items[0]["item"]["contact"], {"id": self.ann.pk, "display": "Ann"})
+        self.assertEqual(items[1]["type"], "O")
+        self.assertEqual(items[1]["item"]["text"], "Non casepro message...")
+        self.assertEqual(items[1]["item"]["contact"], {"id": self.ann.pk, "display": "Ann"})
+        self.assertEqual(items[1]["item"]["sender"], None)
+        self.assertEqual(items[2]["type"], "A")
+        self.assertEqual(items[2]["item"]["action"], "O")
+        self.assertEqual(items[3]["type"], "A")
+        self.assertEqual(items[3]["item"]["action"], "N")
+        self.assertEqual(items[4]["type"], "O")
+        self.assertEqual(items[4]["item"]["sender"], {"id": self.user1.pk, "name": "Evan"})
+        self.assertEqual(items[5]["type"], "I")
+        self.assertEqual(items[5]["item"]["text"], "OK thanks")
+        self.assertEqual(items[6]["type"], "A")
+        self.assertEqual(items[6]["item"]["action"], "C")
 
         # as this was the initial request, messages will have been fetched from the backend
         mock_fetch_contact_messages.assert_called_once_with(self.unicef, self.ann, d1, case.closed_on)
@@ -969,82 +1016,88 @@ class CaseCRUDLTest(BaseCasesTest):
         case = self.create_case(self.unicef, self.ann, self.moh, message=None, user_assignee=self.user1)
         caseaction = CaseAction.create(case, self.user1, CaseAction.OPEN, assignee=self.moh, user_assignee=self.user1)
 
-        timeline_url = reverse('cases.case_timeline', args=[case.pk])
+        timeline_url = reverse("cases.case_timeline", args=[case.pk])
         self.login(self.user1)
-        response = self.url_get('unicef', '%s?after=' % timeline_url)
+        response = self.url_get("unicef", "%s?after=" % timeline_url)
 
-        [case_open] = response.json['results']
-        self.assertEqual(case_open['item']['action'], CaseAction.OPEN)
-        self.assertEqual(case_open['item']['id'], caseaction.pk)
+        [case_open] = response.json["results"]
+        self.assertEqual(case_open["item"]["action"], CaseAction.OPEN)
+        self.assertEqual(case_open["item"]["id"], caseaction.pk)
 
     def test_search(self):
-        url = reverse('cases.case_search')
+        url = reverse("cases.case_search")
 
         # create another case
         msg2 = self.create_message(self.unicef, 102, self.ann, "I ♡ RapidPro")
         case2 = self.create_case(self.unicef, self.ann, self.who, msg2)
 
         # try unauthenticated
-        response = self.url_get('unicef', url)
-        self.assertLoginRedirect(response, 'unicef', url)
+        response = self.url_get("unicef", url)
+        self.assertLoginRedirect(response, "unicef", url)
 
         # test as org administrator
         self.login(self.admin)
 
-        response = self.url_get('unicef', url, {'folder': 'open'})
-        self.assertEqual(response.json['results'], [
-            {
-                'id': case2.pk,
-                'assignee': {'id': self.who.pk, 'name': "WHO"},
-                'user_assignee': None,
-                'contact': {'id': self.ann.pk, 'display': "Ann"},
-                'labels': [],
-                'summary': "",
-                'opened_on': format_iso8601(case2.opened_on),
-                'is_closed': False
-            },
-            {
-                'id': self.case.pk,
-                'assignee': {'id': self.moh.pk, 'name': "MOH"},
-                'user_assignee': {'id': self.user1.pk, 'name': "Evan"},
-                'contact': {'id': self.ann.pk, 'display': "Ann"},
-                'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
-                'summary': "Summary",
-                'opened_on': format_iso8601(self.case.opened_on),
-                'is_closed': False
-            }
-        ])
+        response = self.url_get("unicef", url, {"folder": "open"})
+        self.assertEqual(
+            response.json["results"],
+            [
+                {
+                    "id": case2.pk,
+                    "assignee": {"id": self.who.pk, "name": "WHO"},
+                    "user_assignee": None,
+                    "contact": {"id": self.ann.pk, "display": "Ann"},
+                    "labels": [],
+                    "summary": "",
+                    "opened_on": format_iso8601(case2.opened_on),
+                    "is_closed": False,
+                },
+                {
+                    "id": self.case.pk,
+                    "assignee": {"id": self.moh.pk, "name": "MOH"},
+                    "user_assignee": {"id": self.user1.pk, "name": "Evan"},
+                    "contact": {"id": self.ann.pk, "display": "Ann"},
+                    "labels": [{"id": self.aids.pk, "name": "AIDS"}],
+                    "summary": "Summary",
+                    "opened_on": format_iso8601(self.case.opened_on),
+                    "is_closed": False,
+                },
+            ],
+        )
 
         # test as partner user
         self.login(self.user1)
 
-        response = self.url_get('unicef', url, {'folder': 'open'})
-        self.assertEqual(response.json['results'], [
-            {
-                'id': self.case.pk,
-                'assignee': {'id': self.moh.pk, 'name': "MOH"},
-                'user_assignee': {'id': self.user1.pk, 'name': "Evan"},
-                'contact': {'id': self.ann.pk, 'display': "Ann"},
-                'labels': [{'id': self.aids.pk, 'name': "AIDS"}],
-                'summary': "Summary",
-                'opened_on': format_iso8601(self.case.opened_on),
-                'is_closed': False
-            }
-        ])
+        response = self.url_get("unicef", url, {"folder": "open"})
+        self.assertEqual(
+            response.json["results"],
+            [
+                {
+                    "id": self.case.pk,
+                    "assignee": {"id": self.moh.pk, "name": "MOH"},
+                    "user_assignee": {"id": self.user1.pk, "name": "Evan"},
+                    "contact": {"id": self.ann.pk, "display": "Ann"},
+                    "labels": [{"id": self.aids.pk, "name": "AIDS"}],
+                    "summary": "Summary",
+                    "opened_on": format_iso8601(self.case.opened_on),
+                    "is_closed": False,
+                }
+            ],
+        )
 
     def test_watch_and_unwatch(self):
-        watch_url = reverse('cases.case_watch', args=[self.case.pk])
-        unwatch_url = reverse('cases.case_unwatch', args=[self.case.pk])
+        watch_url = reverse("cases.case_watch", args=[self.case.pk])
+        unwatch_url = reverse("cases.case_unwatch", args=[self.case.pk])
 
         # log in as manager user in currently assigned partner
         self.login(self.user1)
 
-        response = self.url_post('unicef', watch_url)
+        response = self.url_post("unicef", watch_url)
         self.assertEqual(response.status_code, 204)
 
         self.assertIn(self.user1, self.case.watchers.all())
 
-        response = self.url_post('unicef', unwatch_url)
+        response = self.url_post("unicef", unwatch_url)
         self.assertEqual(response.status_code, 204)
 
         self.assertNotIn(self.user1, self.case.watchers.all())
@@ -1053,19 +1106,22 @@ class CaseCRUDLTest(BaseCasesTest):
         self.who.labels.remove(self.aids)
         self.login(self.user3)
 
-        response = self.url_post('unicef', watch_url)
+        response = self.url_post("unicef", watch_url)
         self.assertEqual(response.status_code, 403)
 
         self.assertNotIn(self.user3, self.case.watchers.all())
 
 
 class CaseExportCRUDLTest(BaseCasesTest):
-    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND="memory")
     def test_create_and_read(self):
-        ann = self.create_contact(self.unicef, "C-001", "Ann", fields={'nickname': "Annie", 'age': "28", 'state': "WA"})
-        bob = self.create_contact(self.unicef, "C-002", "Bob", fields={'age': "32", 'state': "IN"})
-        cat = self.create_contact(self.unicef, "C-003", "Cat", fields={'age': "64", 'state': "CA"})
-        don = self.create_contact(self.unicef, "C-004", "Don", fields={'age': "22", 'state': "NV"})
+        ann = self.create_contact(
+            self.unicef, "C-001", "Ann", fields={"nickname": "Annie", "age": "28", "state": "WA"}
+        )
+        bob = self.create_contact(self.unicef, "C-002", "Bob", fields={"age": "32", "state": "IN"})
+        cat = self.create_contact(self.unicef, "C-003", "Cat", fields={"age": "64", "state": "CA"})
+        don = self.create_contact(self.unicef, "C-004", "Don", fields={"age": "22", "state": "NV"})
 
         msg1 = self.create_message(self.unicef, 101, ann, "What is HIV?")
         msg2 = self.create_message(self.unicef, 102, bob, "I ♡ RapidPro")
@@ -1088,7 +1144,7 @@ class CaseExportCRUDLTest(BaseCasesTest):
         # log in as a non-administrator
         self.login(self.user1)
 
-        response = self.url_post('unicef', '%s?folder=open' % reverse('cases.caseexport_create'))
+        response = self.url_post("unicef", "%s?folder=open" % reverse("cases.caseexport_create"))
         self.assertEqual(response.status_code, 200)
 
         export = CaseExport.objects.get()
@@ -1098,69 +1154,105 @@ class CaseExportCRUDLTest(BaseCasesTest):
         sheet = workbook.sheets()[0]
 
         self.assertEqual(sheet.nrows, 3)
-        self.assertExcelRow(sheet, 0, [
-            "Message On", "Opened On", "Closed On", "Assigned Partner", "Labels", "Summary",
-            "Messages Sent", "Messages Received", "Contact", "Nickname", "Age"
-        ])
-        self.assertExcelRow(sheet, 1, [
-            msg2.created_on, case2.opened_on, "", "WHO", "Pregnancy", "I ♡ RapidPro", 0, 0, "C-002", "", "32"
-        ], pytz.UTC)
-        self.assertExcelRow(sheet, 2, [
-            msg1.created_on, case1.opened_on, "", "MOH", "AIDS", "What is HIV?", 2, 3, "C-001", "Annie", "28"
-        ], pytz.UTC)
+        self.assertExcelRow(
+            sheet,
+            0,
+            [
+                "Message On",
+                "Opened On",
+                "Closed On",
+                "Assigned Partner",
+                "Labels",
+                "Summary",
+                "Messages Sent",
+                "Messages Received",
+                "Contact",
+                "Nickname",
+                "Age",
+            ],
+        )
+        self.assertExcelRow(
+            sheet,
+            1,
+            [msg2.created_on, case2.opened_on, "", "WHO", "Pregnancy", "I ♡ RapidPro", 0, 0, "C-002", "", "32"],
+            pytz.UTC,
+        )
+        self.assertExcelRow(
+            sheet,
+            2,
+            [msg1.created_on, case1.opened_on, "", "MOH", "AIDS", "What is HIV?", 2, 3, "C-001", "Annie", "28"],
+            pytz.UTC,
+        )
 
-        read_url = reverse('cases.caseexport_read', args=[export.pk])
+        read_url = reverse("cases.caseexport_read", args=[export.pk])
 
-        response = self.url_get('unicef', read_url)
+        response = self.url_get("unicef", read_url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['download_url'], "/caseexport/download/%d/?download=1" % export.pk)
+        self.assertEqual(response.context["download_url"], "/caseexport/download/%d/?download=1" % export.pk)
 
         # user from another org can't access this download
         self.login(self.norbert)
 
-        response = self.url_get('unicef', read_url)
+        response = self.url_get("unicef", read_url)
         self.assertEqual(response.status_code, 302)
 
-    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND='memory')
+    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND="memory")
     def test_create_with_no_initial_message(self):
         """When a case is exported with initial_message=None, the field should be a blank string."""
         ann = self.create_contact(self.unicef, "C-001", "Ann")
         case = self.create_case(self.unicef, ann, self.moh, None, [self.aids], summary="What is HIV?")
 
         self.login(self.user1)
-        self.url_post('unicef', '%s?folder=open' % reverse('cases.caseexport_create'))
+        self.url_post("unicef", "%s?folder=open" % reverse("cases.caseexport_create"))
 
         export = CaseExport.objects.get()
         workbook = self.openWorkbook(export.filename)
         sheet = workbook.sheets()[0]
 
-        self.assertExcelRow(sheet, 0, [
-            "Message On", "Opened On", "Closed On", "Assigned Partner", "Labels", "Summary",
-            "Messages Sent", "Messages Received", "Contact", "Nickname", "Age"
-        ])
-        self.assertExcelRow(sheet, 1, [
-            "", case.opened_on, "", self.moh.name, self.aids.name, "What is HIV?", 0, 0, ann.uuid, "", ""
-        ], pytz.UTC)
+        self.assertExcelRow(
+            sheet,
+            0,
+            [
+                "Message On",
+                "Opened On",
+                "Closed On",
+                "Assigned Partner",
+                "Labels",
+                "Summary",
+                "Messages Sent",
+                "Messages Received",
+                "Contact",
+                "Nickname",
+                "Age",
+            ],
+        )
+        self.assertExcelRow(
+            sheet,
+            1,
+            ["", case.opened_on, "", self.moh.name, self.aids.name, "What is HIV?", 0, 0, ann.uuid, "", ""],
+            pytz.UTC,
+        )
 
 
 class InboxViewsTest(BaseCasesTest):
-    def test_inbox(self):
-        url = reverse('cases.inbox')
 
-        response = self.url_get('unicef', url)
-        self.assertLoginRedirect(response, 'unicef', url)
+    def test_inbox(self):
+        url = reverse("cases.inbox")
+
+        response = self.url_get("unicef", url)
+        self.assertLoginRedirect(response, "unicef", url)
 
         # log in as administrator
         self.login(self.admin)
 
-        response = self.url_get('unicef', url)
+        response = self.url_get("unicef", url)
         self.assertContains(response, "Administration")  # org-level users admin menu
-        self.assertContains(response, "/org/home/")      # and link to org dashboard
+        self.assertContains(response, "/org/home/")  # and link to org dashboard
 
         # log in as partner manager
         self.login(self.user1)
 
-        response = self.url_get('unicef', url)
+        response = self.url_get("unicef", url)
         self.assertNotContains(response, "Administration")
         self.assertNotContains(response, "/org/home/")
         self.assertContains(response, "/partner/read/%d/" % self.moh.pk)  # partner users get link to partner dashboard
@@ -1170,11 +1262,12 @@ class InboxViewsTest(BaseCasesTest):
 
 
 class PartnerTest(BaseCasesTest):
+
     def test_create(self):
         wfp = Partner.create(self.unicef, "WFP", "World Food Program", None, True, [self.aids, self.pregnancy])
         self.assertEqual(wfp.org, self.unicef)
         self.assertEqual(wfp.name, "WFP")
-        self.assertEqual(six.text_type(wfp), "WFP")
+        self.assertEqual(str(wfp), "WFP")
         self.assertEqual(set(wfp.get_labels()), {self.aids, self.pregnancy})
 
         # create some users for this partner
@@ -1196,8 +1289,9 @@ class PartnerTest(BaseCasesTest):
         self.assertEqual(set(internal.get_labels()), {self.aids, self.pregnancy, self.tea})
 
         # can't create an unrestricted partner with labels
-        self.assertRaises(ValueError, Partner.create, self.unicef, "Testers", "Testers Description", None, False,
-                          [self.aids])
+        self.assertRaises(
+            ValueError, Partner.create, self.unicef, "Testers", "Testers Description", None, False, [self.aids]
+        )
 
     def test_release(self):
         self.who.release()
@@ -1207,28 +1301,41 @@ class PartnerTest(BaseCasesTest):
 
 
 class PartnerCRUDLTest(BaseCasesTest):
+
     def test_create(self):
-        url = reverse('cases.partner_create')
+        url = reverse("cases.partner_create")
 
         # can't access as partner user
         self.login(self.user1)
-        response = self.url_get('unicef', url)
-        self.assertLoginRedirect(response, 'unicef', url)
+        response = self.url_get("unicef", url)
+        self.assertLoginRedirect(response, "unicef", url)
 
         self.login(self.admin)
-        response = self.url_get('unicef', url)
+        response = self.url_get("unicef", url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(list(response.context['form'].fields.keys()),
-                         ['name', 'description', 'logo', 'is_restricted', 'labels', 'loc'])
+        self.assertEqual(
+            list(response.context["form"].fields.keys()),
+            ["name", "description", "logo", "is_restricted", "labels", "loc"],
+        )
 
         # create label restricted partner
-        response = self.url_post('unicef', url, {'name': "Helpers", 'description': "Helpers Description",
-                                                 'logo': None, 'is_restricted': True, 'labels': [self.tea.pk]})
+        response = self.url_post(
+            "unicef",
+            url,
+            {
+                "name": "Helpers",
+                "description": "Helpers Description",
+                "logo": None,
+                "is_restricted": True,
+                "labels": [self.tea.pk],
+            },
+        )
 
         helpers = Partner.objects.get(name="Helpers")
 
-        self.assertRedirects(response, 'http://unicef.localhost/partner/read/%d/' % helpers.pk,
-                             fetch_redirect_response=False)
+        self.assertRedirects(
+            response, "http://unicef.localhost/partner/read/%d/" % helpers.pk, fetch_redirect_response=False
+        )
 
         self.assertTrue(helpers.is_restricted)
         self.assertEqual(set(helpers.get_labels()), {self.tea})
@@ -1236,8 +1343,9 @@ class PartnerCRUDLTest(BaseCasesTest):
         self.assertEqual(helpers.primary_contact, None)
 
         # create unrestricted partner
-        response = self.url_post('unicef', url, {'name': "Internal", 'logo': None, 'is_restricted': False,
-                                                 'labels': [self.tea.pk]})
+        response = self.url_post(
+            "unicef", url, {"name": "Internal", "logo": None, "is_restricted": False, "labels": [self.tea.pk]}
+        )
         self.assertEqual(response.status_code, 302)
 
         internal = Partner.objects.get(name="Internal")
@@ -1248,193 +1356,220 @@ class PartnerCRUDLTest(BaseCasesTest):
 
         # remove all labels and check that form is still usable
         Label.objects.all().delete()
-        response = self.url_get('unicef', url)
+        response = self.url_get("unicef", url)
         self.assertEqual(response.status_code, 200)
 
-        response = self.url_post('unicef', url, {'name': "Labelless", 'description': "No labels",
-                                                 'logo': None, 'is_restricted': True})
+        response = self.url_post(
+            "unicef", url, {"name": "Labelless", "description": "No labels", "logo": None, "is_restricted": True}
+        )
         self.assertEqual(response.status_code, 302)
         Partner.objects.get(name="Labelless")
 
     def test_read(self):
-        url = reverse('cases.partner_read', args=[self.moh.pk])
+        url = reverse("cases.partner_read", args=[self.moh.pk])
 
         # manager user from same partner gets full view of their own partner org
         self.login(self.user1)
-        response = self.url_get('unicef', url)
+        response = self.url_get("unicef", url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['can_manage'], True)
-        self.assertEqual(response.context['can_view_replies'], True)
+        self.assertEqual(response.context["can_manage"], True)
+        self.assertEqual(response.context["can_view_replies"], True)
 
         # data-analyst user from same partner gets can't edit users
         self.login(self.user2)
-        response = self.url_get('unicef', url)
-        self.assertEqual(response.context['can_manage'], False)
-        self.assertEqual(response.context['can_view_replies'], True)
+        response = self.url_get("unicef", url)
+        self.assertEqual(response.context["can_manage"], False)
+        self.assertEqual(response.context["can_view_replies"], True)
 
         # user from different partner but same org has limited view
         self.login(self.user3)
-        response = self.url_get('unicef', url)
+        response = self.url_get("unicef", url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['can_manage'], False)
-        self.assertEqual(response.context['can_view_replies'], False)
+        self.assertEqual(response.context["can_manage"], False)
+        self.assertEqual(response.context["can_view_replies"], False)
 
         # user from different org can't
         self.login(self.user4)
 
-        response = self.url_get('unicef', url)
-        self.assertLoginRedirect(response, 'unicef', url)
+        response = self.url_get("unicef", url)
+        self.assertLoginRedirect(response, "unicef", url)
 
     def test_update(self):
-        url = reverse('cases.partner_update', args=[self.moh.pk])
+        url = reverse("cases.partner_update", args=[self.moh.pk])
 
         # login as analyst user
         self.login(self.user2)
 
-        response = self.url_get('unicef', url)
-        self.assertLoginRedirect(response, 'unicef', url)
+        response = self.url_get("unicef", url)
+        self.assertLoginRedirect(response, "unicef", url)
 
         # login as manager user
         self.login(self.user1)
 
         # get update page
-        response = self.url_get('unicef', url)
+        response = self.url_get("unicef", url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(list(response.context['form'].fields.keys()),
-                         ['name', 'description', 'primary_contact', 'logo', 'is_restricted', 'labels', 'loc'])
+        self.assertEqual(
+            list(response.context["form"].fields.keys()),
+            ["name", "description", "primary_contact", "logo", "is_restricted", "labels", "loc"],
+        )
 
         # post update without name field
-        response = self.url_post('unicef', url)
-        self.assertFormError(response, 'form', 'name', 'This field is required.')
+        response = self.url_post("unicef", url)
+        self.assertFormError(response, "form", "name", "This field is required.")
 
         # post name change
-        response = self.url_post('unicef', url, {'name': "MOH2"})
-        self.assertRedirects(response, 'http://unicef.localhost/partner/read/%d/' % self.moh.pk,
-                             fetch_redirect_response=False)
+        response = self.url_post("unicef", url, {"name": "MOH2"})
+        self.assertRedirects(
+            response, "http://unicef.localhost/partner/read/%d/" % self.moh.pk, fetch_redirect_response=False
+        )
 
         moh = Partner.objects.get(pk=self.moh.pk)
         self.assertEqual(moh.name, "MOH2")
 
         # post primary contact change
-        response = self.url_post('unicef', url, {'name': "MOH", 'primary_contact': self.user1.pk})
-        self.assertRedirects(response, 'http://unicef.localhost/partner/read/%d/' % self.moh.pk,
-                             fetch_redirect_response=False)
+        response = self.url_post("unicef", url, {"name": "MOH", "primary_contact": self.user1.pk})
+        self.assertRedirects(
+            response, "http://unicef.localhost/partner/read/%d/" % self.moh.pk, fetch_redirect_response=False
+        )
 
         moh = Partner.objects.get(pk=self.moh.pk)
         self.assertEqual(moh.primary_contact, self.user1)
 
     def test_delete(self):
-        url = reverse('cases.partner_delete', args=[self.moh.pk])
+        url = reverse("cases.partner_delete", args=[self.moh.pk])
 
         # try first as manager (not allowed)
         self.login(self.user1)
 
-        response = self.url_post('unicef', url)
-        self.assertLoginRedirect(response, 'unicef', url)
+        response = self.url_post("unicef", url)
+        self.assertLoginRedirect(response, "unicef", url)
 
         self.assertTrue(Partner.objects.get(pk=self.moh.pk).is_active)
 
         # try again as administrator
         self.login(self.admin)
 
-        response = self.url_post('unicef', url)
+        response = self.url_post("unicef", url)
         self.assertEqual(response.status_code, 204)
 
         self.assertFalse(Partner.objects.get(pk=self.moh.pk).is_active)
 
     def test_list(self):
-        url = reverse('cases.partner_list')
+        url = reverse("cases.partner_list")
 
         # try as regular user
         self.login(self.user2)
 
-        response = self.url_get('unicef', url)
+        response = self.url_get("unicef", url)
         self.assertEqual(response.status_code, 200)
 
-        partners = list(response.context['object_list'])
+        partners = list(response.context["object_list"])
         self.assertEqual(len(partners), 2)
         self.assertEqual(partners[0].name, "MOH")
         self.assertEqual(partners[1].name, "WHO")
 
-        response = self.url_get('unicef', url, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-        self.assertEqual(response.json, {'results': [
-            {'id': self.moh.pk, 'name': "MOH", 'restricted': True},
-            {'id': self.who.pk, 'name': "WHO", 'restricted': True}
-        ]})
-
-        response = self.url_get('unicef', url + '?with_activity=1', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-        self.assertEqual(response.json, {'results': [
+        response = self.url_get("unicef", url, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+        self.assertEqual(
+            response.json,
             {
-                'id': self.moh.pk, 'name': "MOH", 'restricted': True,
-                'replies': {
-                    'average_referral_response_time_this_month': u'0\xa0minutes',
-                    'last_month': 0,
-                    'this_month': 0,
-                    'total': 0},
-                'cases': {
-                    'average_closed_this_month': u'0\xa0minutes',
-                    'opened_this_month': 0,
-                    'closed_this_month': 0,
-                    'total': 0},
+                "results": [
+                    {"id": self.moh.pk, "name": "MOH", "restricted": True},
+                    {"id": self.who.pk, "name": "WHO", "restricted": True},
+                ]
             },
+        )
+
+        response = self.url_get("unicef", url + "?with_activity=1", HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+        self.assertEqual(
+            response.json,
             {
-                'id': self.who.pk, 'name': "WHO", 'restricted': True,
-                'replies': {
-                    'average_referral_response_time_this_month': u'0\xa0minutes',
-                    'last_month': 0,
-                    'this_month': 0,
-                    'total': 0},
-                'cases': {
-                    'average_closed_this_month': u'0\xa0minutes',
-                    'opened_this_month': 0,
-                    'closed_this_month': 0,
-                    'total': 0},
-            }
-        ]})
+                "results": [
+                    {
+                        "id": self.moh.pk,
+                        "name": "MOH",
+                        "restricted": True,
+                        "replies": {
+                            "average_referral_response_time_this_month": u"0\xa0minutes",
+                            "last_month": 0,
+                            "this_month": 0,
+                            "total": 0,
+                        },
+                        "cases": {
+                            "average_closed_this_month": u"0\xa0minutes",
+                            "opened_this_month": 0,
+                            "closed_this_month": 0,
+                            "total": 0,
+                        },
+                    },
+                    {
+                        "id": self.who.pk,
+                        "name": "WHO",
+                        "restricted": True,
+                        "replies": {
+                            "average_referral_response_time_this_month": u"0\xa0minutes",
+                            "last_month": 0,
+                            "this_month": 0,
+                            "total": 0,
+                        },
+                        "cases": {
+                            "average_closed_this_month": u"0\xa0minutes",
+                            "opened_this_month": 0,
+                            "closed_this_month": 0,
+                            "total": 0,
+                        },
+                    },
+                ]
+            },
+        )
 
 
 class ContextProcessorsTest(BaseCasesTest):
+
     def test_sentry_dsn(self):
-        dsn = 'https://ir78h8v3mhz91lzgd2icxzaiwtmpsx10:58l883tax2o5cae05bj517f9xmq16a2h@app.getsentry.com/44864'
+        dsn = "https://ir78h8v3mhz91lzgd2icxzaiwtmpsx10:58l883tax2o5cae05bj517f9xmq16a2h@app.getsentry.com/44864"
         with self.settings(SENTRY_DSN=dsn):
-            self.assertEqual(sentry_dsn(None),
-                             {'sentry_public_dsn': 'https://ir78h8v3mhz91lzgd2icxzaiwtmpsx10@app.getsentry.com/44864'})
+            self.assertEqual(
+                sentry_dsn(None),
+                {"sentry_public_dsn": "https://ir78h8v3mhz91lzgd2icxzaiwtmpsx10@app.getsentry.com/44864"},
+            )
 
 
 class InternalViewsTest(BaseCasesTest):
+
     def test_status(self):
-        url = reverse('internal.status')
-        response = self.url_get('unicef', url)
+        url = reverse("internal.status")
+        response = self.url_get("unicef", url)
 
-        self.assertEqual(response.json, {'cache': "OK", 'org_tasks': 'OK', 'unhandled': 0})
+        self.assertEqual(response.json, {"cache": "OK", "org_tasks": "OK", "unhandled": 0})
 
-        ann = self.create_contact(self.unicef, 'C-001', "Ann")
+        ann = self.create_contact(self.unicef, "C-001", "Ann")
         dt1 = timezone.now() - timedelta(hours=2)
         dt2 = timezone.now() - timedelta(minutes=5)
 
         self.create_message(self.unicef, 101, ann, "Hmm 1", created_on=dt1)
         self.create_message(self.unicef, 102, ann, "Hmm 2", created_on=dt2)
 
-        response = self.url_get('unicef', url)
+        response = self.url_get("unicef", url)
 
         # check only message older than 1 hour counts
-        self.assertEqual(response.json, {'cache': "OK", 'org_tasks': 'OK', 'unhandled': 1})
+        self.assertEqual(response.json, {"cache": "OK", "org_tasks": "OK", "unhandled": 1})
 
-        with patch('django.core.cache.cache.get') as mock_cache_get:
+        with patch("django.core.cache.cache.get") as mock_cache_get:
             mock_cache_get.side_effect = ValueError("BOOM")
 
-            response = self.url_get('unicef', url)
-            self.assertEqual(response.json, {'cache': "ERROR", 'org_tasks': 'OK', 'unhandled': 1})
+            response = self.url_get("unicef", url)
+            self.assertEqual(response.json, {"cache": "ERROR", "org_tasks": "OK", "unhandled": 1})
 
     def test_ping(self):
-        url = reverse('internal.ping')
+        url = reverse("internal.ping")
 
-        response = self.url_get('unicef', url)
+        response = self.url_get("unicef", url)
         self.assertEqual(response.status_code, 200)
 
-        with patch('dash.orgs.models.Org.objects.first') as mock_org_first:
+        with patch("dash.orgs.models.Org.objects.first") as mock_org_first:
             mock_org_first.side_effect = ValueError("BOOM")
 
-            response = self.url_get('unicef', url)
+            response = self.url_get("unicef", url)
             self.assertEqual(response.status_code, 500)

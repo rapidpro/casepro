@@ -1,17 +1,12 @@
-from __future__ import unicode_literals
-
-import six
-
-from dash.utils import is_dict_equal, chunks
-from dash.utils.sync import BaseSyncer, sync_local_to_set, sync_local_to_changes
+from dash.utils import chunks, is_dict_equal
+from dash.utils.sync import BaseSyncer, sync_local_to_changes, sync_local_to_set
 from django.utils.timezone import now
 
-from casepro.contacts.models import Contact, Group, Field
+from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message, Outgoing
 from casepro.utils.email import send_raw_email
 
 from . import BaseBackend
-
 
 # no concept of flagging in RapidPro so that is modelled with a label
 SYSTEM_LABEL_FLAGGED = "Flagged"
@@ -25,7 +20,7 @@ def remote_message_is_flagged(msg):
 
 
 def remote_message_is_archived(msg):
-    return msg.visibility == 'archived'
+    return msg.visibility == "archived"
 
 
 class ContactSyncer(BaseSyncer):
@@ -33,31 +28,33 @@ class ContactSyncer(BaseSyncer):
     Syncer for contacts
     """
     model = Contact
-    prefetch_related = ('groups',)
+    prefetch_related = ("groups",)
 
     def local_kwargs(self, org, remote):
         # groups and fields are updated via a post save signal handler
         groups = [(g.uuid, g.name) for g in remote.groups]
-        fields = {k: v for k, v in six.iteritems(remote.fields) if v is not None}  # don't include none values
+        fields = {k: v for k, v in remote.fields.items() if v is not None}  # don't include none values
 
         return {
-            'org': org,
-            'uuid': remote.uuid,
-            'name': remote.name,
-            'language': remote.language,
-            'is_blocked': remote.blocked,
-            'is_stopped': remote.stopped,
-            'is_stub': False,
-            'fields': fields,
+            "org": org,
+            "uuid": remote.uuid,
+            "name": remote.name,
+            "language": remote.language,
+            "is_blocked": remote.blocked,
+            "is_stopped": remote.stopped,
+            "is_stub": False,
+            "fields": fields,
             Contact.SAVE_GROUPS_ATTR: groups,
         }
 
     def update_required(self, local, remote, remote_as_kwargs):
-        if local.is_stub \
-                or local.name != remote.name \
-                or local.language != remote.language \
-                or local.is_blocked != remote.blocked \
-                or local.is_stopped != remote.stopped:
+        if (
+            local.is_stub
+            or local.name != remote.name
+            or local.language != remote.language
+            or local.is_blocked != remote.blocked
+            or local.is_stopped != remote.stopped
+        ):
             return True
 
         if {g.uuid for g in local.groups.all()} != {g.uuid for g in remote.groups}:
@@ -74,15 +71,15 @@ class FieldSyncer(BaseSyncer):
     Syncer for contact fields
     """
     model = Field
-    local_id_attr = 'key'
-    remote_id_attr = 'key'
+    local_id_attr = "key"
+    remote_id_attr = "key"
 
     def local_kwargs(self, org, remote):
         return {
-            'org': org,
-            'key': remote.key,
-            'label': remote.label,
-            'value_type': self.model.TEMBA_TYPES.get(remote.value_type, self.model.TYPE_TEXT)
+            "org": org,
+            "key": remote.key,
+            "label": remote.label,
+            "value_type": self.model.TEMBA_TYPES.get(remote.value_type, self.model.TYPE_TEXT),
         }
 
     def update_required(self, local, remote, remote_as_kwargs):
@@ -97,17 +94,19 @@ class GroupSyncer(BaseSyncer):
 
     def local_kwargs(self, org, remote):
         return {
-            'org': org,
-            'uuid': remote.uuid,
-            'name': remote.name,
-            'count': remote.count,
-            'is_dynamic': remote.query is not None
+            "org": org,
+            "uuid": remote.uuid,
+            "name": remote.name,
+            "count": remote.count,
+            "is_dynamic": remote.query is not None,
         }
 
     def update_required(self, local, remote, remote_as_kwargs):
-        return local.name != remote.name \
-               or local.count != remote.count \
-               or local.is_dynamic != remote_as_kwargs['is_dynamic']
+        return (
+            local.name != remote.name
+            or local.count != remote.count
+            or local.is_dynamic != remote_as_kwargs["is_dynamic"]
+        )
 
 
 class LabelSyncer(BaseSyncer):
@@ -126,11 +125,7 @@ class LabelSyncer(BaseSyncer):
             if not l.is_synced and (l.name == remote.name or l.uuid == remote.uuid):
                 return None
 
-        return {
-            'org': org,
-            'uuid': remote.uuid,
-            'name': remote.name,
-        }
+        return {"org": org, "uuid": remote.uuid, "name": remote.name}
 
     def update_required(self, local, remote, remote_as_kwargs):
         return local.name != remote.name
@@ -144,36 +139,37 @@ class MessageSyncer(BaseSyncer):
     Syncer for messages
     """
     model = Message
-    local_id_attr = 'backend_id'
-    remote_id_attr = 'id'
-    select_related = ('contact',)
-    prefetch_related = ('labels',)
+    local_id_attr = "backend_id"
+    remote_id_attr = "id"
+    select_related = ("contact",)
+    prefetch_related = ("labels",)
 
-    def __init__(self, as_handled=False):
+    def __init__(self, backend=None, as_handled=False):
+        super(MessageSyncer, self).__init__(backend)
         self.as_handled = as_handled
 
     def local_kwargs(self, org, remote):
-        if remote.visibility == 'deleted':
+        if remote.visibility == "deleted":
             return None
 
         # labels are updated via a post save signal handler
         labels = [(l.uuid, l.name) for l in remote.labels if l.name != SYSTEM_LABEL_FLAGGED]
 
         kwargs = {
-            'org': org,
-            'backend_id': remote.id,
-            'type': 'I' if remote.type == 'inbox' else 'F',
-            'text': remote.text,
-            'is_flagged': remote_message_is_flagged(remote),
-            'is_archived': remote_message_is_archived(remote),
-            'created_on': remote.created_on,
+            "org": org,
+            "backend_id": remote.id,
+            "type": "I" if remote.type == "inbox" else "F",
+            "text": remote.text,
+            "is_flagged": remote_message_is_flagged(remote),
+            "is_archived": remote_message_is_archived(remote),
+            "created_on": remote.created_on,
             Message.SAVE_CONTACT_ATTR: (remote.contact.uuid, remote.contact.name),
             Message.SAVE_LABELS_ATTR: labels,
         }
 
         # if syncer is set explicitly or message is too old, save as handled already
         if self.as_handled or (now() - remote.created_on).days > MAXIMUM_HANDLE_MESSAGE_AGE:
-            kwargs['is_handled'] = True
+            kwargs["is_handled"] = True
 
         return kwargs
 
@@ -215,34 +211,38 @@ class RapidProBackend(BaseBackend):
         deleted_query = client.get_contacts(deleted=True, after=modified_after, before=modified_before)
         deleted_fetches = deleted_query.iterfetches(retry_on_rate_exceed=True)
 
-        return sync_local_to_changes(org, ContactSyncer(), fetches, deleted_fetches, progress_callback)
+        return sync_local_to_changes(
+            org, ContactSyncer(backend=self.backend), fetches, deleted_fetches, progress_callback
+        )
 
     def pull_fields(self, org):
         client = self._get_client(org)
         incoming_objects = client.get_fields().all(retry_on_rate_exceed=True)
 
-        return sync_local_to_set(org, FieldSyncer(), incoming_objects)
+        return sync_local_to_set(org, FieldSyncer(backend=self.backend), incoming_objects)
 
     def pull_groups(self, org):
         client = self._get_client(org)
         incoming_objects = client.get_groups().all(retry_on_rate_exceed=True)
 
-        return sync_local_to_set(org, GroupSyncer(), incoming_objects)
+        return sync_local_to_set(org, GroupSyncer(backend=self.backend), incoming_objects)
 
     def pull_labels(self, org):
         client = self._get_client(org)
         incoming_objects = client.get_labels().all(retry_on_rate_exceed=True)
 
-        return sync_local_to_set(org, LabelSyncer(), incoming_objects)
+        return sync_local_to_set(org, LabelSyncer(backend=self.backend), incoming_objects)
 
     def pull_messages(self, org, modified_after, modified_before, as_handled=False, progress_callback=None):
         client = self._get_client(org)
 
         # all incoming messages created or modified in RapidPro in the time window
-        query = client.get_messages(folder='incoming', after=modified_after, before=modified_before)
+        query = client.get_messages(folder="incoming", after=modified_after, before=modified_before)
         fetches = query.iterfetches(retry_on_rate_exceed=True)
 
-        return sync_local_to_changes(org, MessageSyncer(as_handled), fetches, [], progress_callback)
+        return sync_local_to_changes(
+            org, MessageSyncer(backend=self.backend, as_handled=as_handled), fetches, [], progress_callback
+        )
 
     def push_label(self, org, label):
         client = self._get_client(org)
@@ -254,7 +254,7 @@ class RapidProBackend(BaseBackend):
             remote = client.create_label(name=label.name)
 
         label.uuid = remote.uuid
-        label.save(update_fields=('uuid',))
+        label.save(update_fields=("uuid",))
 
     def push_outgoing(self, org, outgoing, as_broadcast=False):
         client = self._get_client(org)
@@ -262,8 +262,8 @@ class RapidProBackend(BaseBackend):
         # RapidPro currently doesn't send emails so we use the CasePro email system to send those instead
         for_backend = []
         for msg in outgoing:
-            if msg.urn and msg.urn.startswith('mailto:'):
-                to_address = msg.urn.split(':', 1)[1]
+            if msg.urn and msg.urn.startswith("mailto:"):
+                to_address = msg.urn.split(":", 1)[1]
                 send_raw_email([to_address], "New message", msg.text, None)
             else:
                 for_backend.append(msg)
@@ -296,7 +296,7 @@ class RapidProBackend(BaseBackend):
                 broadcast = client.create_broadcast(text=msg.text, contacts=contact_uuids, urns=urns)
 
                 msg.backend_broadcast_id = broadcast.id
-                msg.save(update_fields=('backend_broadcast_id',))
+                msg.save(update_fields=("backend_broadcast_id",))
 
     def push_contact(self, org, contact):
         return
@@ -356,10 +356,11 @@ class RapidProBackend(BaseBackend):
         remote_messages = client.get_messages(contact=contact.uuid, after=created_after, before=created_before).all()
 
         def remote_as_outgoing(msg):
-            return Outgoing(backend_broadcast_id=msg.broadcast, contact=contact, text=msg.text,
-                            created_on=msg.created_on)
+            return Outgoing(
+                backend_broadcast_id=msg.broadcast, contact=contact, text=msg.text, created_on=msg.created_on
+            )
 
-        return [remote_as_outgoing(m) for m in remote_messages if m.direction == 'out']
+        return [remote_as_outgoing(m) for m in remote_messages if m.direction == "out"]
 
     def get_url_patterns(self):
         """

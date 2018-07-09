@@ -16,13 +16,13 @@ def get_or_create_remote(org, name):
 
 
 def fetch_label_uuids(apps, schema_editor):
-    Label = apps.get_model('cases', 'Label')
+    Label = apps.get_model("cases", "Label")
 
-    labels = list(Label.objects.filter(uuid=None).select_related('org'))
+    labels = list(Label.objects.filter(uuid=None).select_related("org"))
     for label in labels:
         remote = get_or_create_remote(label.org, label.name)
         label.uuid = remote.uuid
-        label.save(update_fields=('uuid',))
+        label.save(update_fields=("uuid",))
 
     if labels:
         print("Fetched missing UUIDs for %d labels" % len(labels))
@@ -30,11 +30,6 @@ def fetch_label_uuids(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('cases', '0012_label_uuid'),
-        ('orgs', '0014_auto_20150722_1419'),
-    ]
+    dependencies = [("cases", "0012_label_uuid"), ("orgs", "0014_auto_20150722_1419")]
 
-    operations = [
-        migrations.RunPython(fetch_label_uuids)
-    ]
+    operations = [migrations.RunPython(fetch_label_uuids)]

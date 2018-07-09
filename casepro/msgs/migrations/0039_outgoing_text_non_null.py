@@ -6,14 +6,6 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('msgs', '0038_no_empty_messages'),
-    ]
+    dependencies = [("msgs", "0038_no_empty_messages")]
 
-    operations = [
-        migrations.AlterField(
-            model_name='outgoing',
-            name='text',
-            field=models.TextField(max_length=640),
-        ),
-    ]
+    operations = [migrations.AlterField(model_name="outgoing", name="text", field=models.TextField(max_length=640))]

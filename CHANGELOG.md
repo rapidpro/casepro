@@ -1,3 +1,14 @@
+v1.0.1
+----------
+ * Import orgbackend CRUDL from dash
+
+v1.0.0
+----------
+ * Code formatting with black+isort
+ * Update to sorl-thumbnail 12.4.1
+ * Drop support for Python 2
+ * Update rapidpro-dash to 1.3.4
+
 v0.0.259
 ----------
  * Update to latest Django

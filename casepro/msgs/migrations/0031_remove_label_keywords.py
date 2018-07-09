@@ -6,13 +6,6 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('msgs', '0030_label_tests'),
-    ]
+    dependencies = [("msgs", "0030_label_tests")]
 
-    operations = [
-        migrations.RemoveField(
-            model_name='label',
-            name='keywords',
-        ),
-    ]
+    operations = [migrations.RemoveField(model_name="label", name="keywords")]

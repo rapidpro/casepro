@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from dash.orgs.models import Org
 from django.db import models
 from django.utils import timezone
@@ -24,17 +22,17 @@ class MessageBoardComment(CommentAbstractModel):
 
     def pin(self):
         self.pinned_on = timezone.now()
-        self.save(update_fields=('pinned_on',))
+        self.save(update_fields=("pinned_on",))
 
     def unpin(self):
         self.pinned_on = None
-        self.save(update_fields=('pinned_on',))
+        self.save(update_fields=("pinned_on",))
 
     def as_json(self):
         return {
-            'id': self.id,
-            'comment': self.comment,
-            'user': {'id': self.user_id, 'name': self.user_name},
-            'submitted_on': self.submit_date,
-            'pinned_on': self.pinned_on,
+            "id": self.id,
+            "comment": self.comment,
+            "user": {"id": self.user_id, "name": self.user_name},
+            "submitted_on": self.submit_date,
+            "pinned_on": self.pinned_on,
         }

@@ -1,12 +1,10 @@
-from __future__ import unicode_literals
-
 import json
-import pytz
+from datetime import date, datetime
 
+import pytz
 from dash.orgs.models import Org
 from dash.orgs.views import OrgObjPermsMixin
 from dash.utils import random_string
-from datetime import datetime, date
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.files import File
@@ -28,7 +26,7 @@ class BaseExport(models.Model):
     """
     Base class for exports
     """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name='%(class)ss')
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="%(class)ss")
 
     filename = models.CharField(max_length=512)
 
@@ -41,10 +39,10 @@ class BaseExport(models.Model):
     download_view = None
 
     DATE_STYLE = XFStyle()
-    DATE_STYLE.num_format_str = 'DD-MM-YYYY'
+    DATE_STYLE.num_format_str = "DD-MM-YYYY"
 
     DATETIME_STYLE = XFStyle()
-    DATETIME_STYLE.num_format_str = 'DD-MM-YYYY HH:MM:SS'
+    DATETIME_STYLE.num_format_str = "DD-MM-YYYY HH:MM:SS"
 
     MAX_SHEET_ROWS = 65535
 
@@ -59,20 +57,21 @@ class BaseExport(models.Model):
         book.save(temp)
         temp.flush()
 
-        org_root = getattr(settings, 'SITE_ORGS_STORAGE_ROOT', 'orgs')
-        filename = '%s/%d/%s/%s.xls' % (org_root, self.org_id, self.directory, random_string(20))
+        org_root = getattr(settings, "SITE_ORGS_STORAGE_ROOT", "orgs")
+        filename = "%s/%d/%s/%s.xls" % (org_root, self.org_id, self.directory, random_string(20))
         default_storage.save(filename, File(temp))
 
         self.filename = filename
-        self.save(update_fields=('filename',))
+        self.save(update_fields=("filename",))
 
         subject = "Your export is ready"
         download_url = self.org.make_absolute_url(reverse(self.download_view, args=[self.pk]))
 
-        send_email([self.created_by], subject, 'utils/email/export', {'download_url': download_url})
+        send_email([self.created_by], subject, "utils/email/export", {"download_url": download_url})
 
         # force a gc
         import gc
+
         gc.collect()
 
     def render_book(self, book):  # pragma: no cover
@@ -104,7 +103,7 @@ class BaseSearchExport(BaseExport):
     """
     Base class for exports based on item searches which may be initiated by partner users
     """
-    partner = models.ForeignKey('cases.Partner', related_name='%(class)ss', null=True)
+    partner = models.ForeignKey("cases.Partner", related_name="%(class)ss", null=True)
 
     search = models.TextField()
 
@@ -122,10 +121,10 @@ class BaseSearchExport(BaseExport):
 
     def get_search(self):
         search = json.loads(self.search)
-        if 'after' in search:
-            search['after'] = parse_iso8601(search['after'])
-        if 'before' in search:
-            search['before'] = parse_iso8601(search['before'])
+        if "after" in search:
+            search["after"] = parse_iso8601(search["after"])
+        if "before" in search:
+            search["before"] = parse_iso8601(search["before"])
         return search
 
     class Meta:
@@ -137,11 +136,11 @@ class BaseDownloadView(OrgObjPermsMixin, SmartReadView):
     Download view for exports
     """
     filename = None
-    template_name = 'download.haml'
+    template_name = "download.haml"
 
     @classmethod
     def derive_url_pattern(cls, path, action):
-        return r'%s/download/(?P<pk>\d+)/' % path
+        return r"%s/download/(?P<pk>\d+)/" % path
 
     def has_permission(self, request, *args, **kwargs):
         if not super(BaseDownloadView, self).has_permission(request, *args, **kwargs):
@@ -157,13 +156,13 @@ class BaseDownloadView(OrgObjPermsMixin, SmartReadView):
         return self.title
 
     def get(self, request, *args, **kwargs):
-        if 'download' in request.GET:
+        if "download" in request.GET:
             export = self.get_object()
 
-            export_file = default_storage.open(export.filename, 'rb')
+            export_file = default_storage.open(export.filename, "rb")
 
-            response = HttpResponse(export_file, content_type='application/vnd.ms-excel')
-            response['Content-Disposition'] = 'attachment; filename=%s' % self.filename
+            response = HttpResponse(export_file, content_type="application/vnd.ms-excel")
+            response["Content-Disposition"] = "attachment; filename=%s" % self.filename
 
             return response
         else:
@@ -173,5 +172,5 @@ class BaseDownloadView(OrgObjPermsMixin, SmartReadView):
         context = super(BaseDownloadView, self).get_context_data(**kwargs)
 
         current_url_name = self.request.resolver_match.url_name
-        context['download_url'] = '%s?download=1' % reverse(current_url_name, args=[self.object.pk])
+        context["download_url"] = "%s?download=1" % reverse(current_url_name, args=[self.object.pk])
         return context

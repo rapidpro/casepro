@@ -2,8 +2,6 @@ language: python
 sudo: false
 
 python:
- - '2.7'
- - '3.5'
  - '3.6'
 
 services:
@@ -37,7 +35,6 @@ script:
  - node_modules/karma/bin/karma start karma.conf.coffee --single-run --browsers PhantomJS
 
 after_success:
- - pip install pyopenssl==17.4.0
  - coveralls
 
 notifications:

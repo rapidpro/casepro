@@ -5,10 +5,10 @@ from django.db import migrations
 
 
 def populate_message_case(apps, schema_editor):
-    Case = apps.get_model('cases', 'Case')
-    Message = apps.get_model('msgs', 'Message')
+    Case = apps.get_model("cases", "Case")
+    Message = apps.get_model("msgs", "Message")
 
-    cases = list(Case.objects.select_related('initial_message').order_by('org', 'opened_on'))
+    cases = list(Case.objects.select_related("initial_message").order_by("org", "opened_on"))
     num_updated = 0
 
     for case in cases:
@@ -22,7 +22,7 @@ def populate_message_case(apps, schema_editor):
 
         if case.initial_message.case != case:
             case.initial_message.case = case
-            case.initial_message.save(update_fields=('case',))
+            case.initial_message.save(update_fields=("case",))
             num_updated += 1
 
     if cases:
@@ -31,10 +31,6 @@ def populate_message_case(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('cases', '0031_remove_caseevent'),
-    ]
+    dependencies = [("cases", "0031_remove_caseevent")]
 
-    operations = [
-        migrations.RunPython(populate_message_case)
-    ]
+    operations = [migrations.RunPython(populate_message_case)]

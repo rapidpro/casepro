@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 
 def populate_partner_users(apps, schema_editor):
-    User = apps.get_model('auth', 'User')
+    User = apps.get_model("auth", "User")
 
     for user in User.objects.exclude(profile__partner=None):
         partner = user.profile.partner
@@ -19,10 +19,6 @@ def populate_partner_users(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('cases', '0040_partner_users'),
-    ]
+    dependencies = [("cases", "0040_partner_users")]
 
-    operations = [
-        migrations.RunPython(populate_partner_users)
-    ]
+    operations = [migrations.RunPython(populate_partner_users)]

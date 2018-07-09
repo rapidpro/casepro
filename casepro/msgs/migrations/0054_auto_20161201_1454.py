@@ -7,14 +7,6 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('msgs', '0053_faq'),
-    ]
+    dependencies = [("msgs", "0053_faq")]
 
-    operations = [
-        migrations.AlterField(
-            model_name='outgoing',
-            name='text',
-            field=models.TextField(max_length=800),
-        ),
-    ]
+    operations = [migrations.AlterField(model_name="outgoing", name="text", field=models.TextField(max_length=800))]

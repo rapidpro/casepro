@@ -1,23 +1,17 @@
-from __future__ import unicode_literals
-
 import phonenumbers
 import regex
-import six
-
 from dash.orgs.models import Org
 from django.conf import settings
-from django.contrib.postgres.fields import HStoreField, ArrayField
+from django.contrib.postgres.fields import ArrayField, HStoreField
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from django_redis import get_redis_connection
 
-from casepro.backend import get_backend
 from casepro.utils import get_language_name
 
-FIELD_LOCK_KEY = 'lock:field:%d:%s'
-GROUP_LOCK_KEY = 'lock:group:%d:%s'
-CONTACT_LOCK_KEY = 'lock:contact:%d:%s'
+FIELD_LOCK_KEY = "lock:field:%d:%s"
+GROUP_LOCK_KEY = "lock:group:%d:%s"
+CONTACT_LOCK_KEY = "lock:contact:%d:%s"
 
 
 class InvalidURN(Exception):
@@ -34,9 +28,9 @@ class URN(object):
         * Path component can be any non-blank unicode string
         * No hex escaping in URN path
     """
-    SCHEME_TEL = 'tel'
-    SCHEME_TWITTER = 'twitter'
-    SCHEME_EMAIL = 'mailto'
+    SCHEME_TEL = "tel"
+    SCHEME_TWITTER = "twitter"
+    SCHEME_EMAIL = "mailto"
 
     VALID_SCHEMES = (SCHEME_TEL, SCHEME_TWITTER, SCHEME_EMAIL)
 
@@ -54,7 +48,7 @@ class URN(object):
         if not path:
             raise ValueError("Invalid path component: '%s'" % path)
 
-        return '%s:%s' % (scheme, path)
+        return "%s:%s" % (scheme, path)
 
     @classmethod
     def to_parts(cls, urn):
@@ -62,7 +56,7 @@ class URN(object):
         Parses a URN string (e.g. tel:+250783835665) into a tuple of scheme and path
         """
         try:
-            scheme, path = urn.split(':', 1)
+            scheme, path = urn.split(":", 1)
         except ValueError:
             raise ValueError("URN strings must contain scheme and path components")
 
@@ -81,13 +75,13 @@ class URN(object):
         """
         scheme, path = cls.to_parts(urn)
 
-        norm_path = six.text_type(path).strip()
+        norm_path = str(path).strip()
 
         if scheme == cls.SCHEME_TEL:
             norm_path = cls.normalize_phone(norm_path)
         elif scheme == cls.SCHEME_TWITTER:
             norm_path = norm_path.lower()
-            if norm_path[0:1] == '@':  # strip @ prefix if provided
+            if norm_path[0:1] == "@":  # strip @ prefix if provided
                 norm_path = norm_path[1:]
             norm_path = norm_path.lower()  # Twitter handles are case-insensitive, so we always store as lowercase
         elif scheme == cls.SCHEME_EMAIL:
@@ -97,7 +91,7 @@ class URN(object):
 
     @classmethod
     def validate(cls, urn):
-        scheme, path = urn.split(':', 1)
+        scheme, path = urn.split(":", 1)
         if scheme == cls.SCHEME_TEL:
             return cls.validate_phone(path)
 
@@ -109,11 +103,11 @@ class URN(object):
         Normalizes the passed in phone number
         """
         # remove any invalid characters
-        number = regex.sub('[^0-9a-z\+]', '', number.lower(), regex.V0)
+        number = regex.sub("[^0-9a-z\+]", "", number.lower(), regex.V0)
 
         # add on a plus if it looks like it could be a fully qualified number
-        if len(number) >= 11 and number[0] not in ['+', '0']:
-            number = '+' + number
+        if len(number) >= 11 and number[0] not in ["+", "0"]:
+            number = "+" + number
 
         try:
             normalized = phonenumbers.parse(number)
@@ -133,7 +127,7 @@ class URN(object):
         try:
             parsed = phonenumbers.parse(number)
         except phonenumbers.NumberParseException as e:
-            raise InvalidURN(six.text_type(e))
+            raise InvalidURN(str(e))
 
         if number != phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164):
             raise InvalidURN("Phone numbers must be in E164 format")
@@ -144,7 +138,6 @@ class URN(object):
         return True
 
 
-@python_2_unicode_compatible
 class Group(models.Model):
     """
     A contact group in RapidPro
@@ -190,35 +183,31 @@ class Group(models.Model):
 
     def as_json(self, full=True):
         if full:
-            return {
-                'id': self.pk,
-                'name': self.name,
-                'count': self.count,
-                'is_dynamic': self.is_dynamic
-            }
+            return {"id": self.pk, "name": self.name, "count": self.count, "is_dynamic": self.is_dynamic}
         else:
-            return {'id': self.pk, 'name': self.name}
+            return {"id": self.pk, "name": self.name}
 
     def __str__(self):
         return self.name
 
 
-@python_2_unicode_compatible
 class Field(models.Model):
     """
     A custom contact field in RapidPro
     """
-    TYPE_TEXT = 'T'
-    TYPE_DECIMAL = 'N'
-    TYPE_DATETIME = 'D'
-    TYPE_STATE = 'S'
-    TYPE_DISTRICT = 'I'
+    TYPE_TEXT = "T"
+    TYPE_DECIMAL = "N"
+    TYPE_DATETIME = "D"
+    TYPE_STATE = "S"
+    TYPE_DISTRICT = "I"
 
-    TEMBA_TYPES = {'text': TYPE_TEXT,
-                   'numeric': TYPE_DECIMAL,
-                   'datetime': TYPE_DATETIME,
-                   'state': TYPE_STATE,
-                   'district': TYPE_DISTRICT}
+    TEMBA_TYPES = {
+        "text": TYPE_TEXT,
+        "numeric": TYPE_DECIMAL,
+        "datetime": TYPE_DATETIME,
+        "state": TYPE_STATE,
+        "district": TYPE_DISTRICT,
+    }
 
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="fields")
 
@@ -250,36 +239,37 @@ class Field(models.Model):
         """
         Prepares a contact for JSON serialization
         """
-        return {'key': self.key, 'label': self.label, 'value_type': self.value_type}
+        return {"key": self.key, "label": self.label, "value_type": self.value_type}
 
     class Meta:
-        unique_together = ('org', 'key')
+        unique_together = ("org", "key")
 
 
-@python_2_unicode_compatible
 class Contact(models.Model):
     """
     A contact in RapidPro
     """
-    DISPLAY_NAME = 'name'
-    DISPLAY_URNS = 'urns'
-    DISPLAY_ANON = 'uuid'
+    DISPLAY_NAME = "name"
+    DISPLAY_URNS = "urns"
+    DISPLAY_ANON = "uuid"
 
-    SAVE_GROUPS_ATTR = '__data__groups'
+    SAVE_GROUPS_ATTR = "__data__groups"
 
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="contacts")
 
     uuid = models.CharField(max_length=36, unique=True, null=True)
 
-    name = models.CharField(verbose_name=_("Full name"), max_length=128, null=True, blank=True,
-                            help_text=_("The name of this contact"))
+    name = models.CharField(
+        verbose_name=_("Full name"), max_length=128, null=True, blank=True, help_text=_("The name of this contact")
+    )
 
     groups = models.ManyToManyField(Group, related_name="contacts")
 
     fields = HStoreField(null=True)
 
-    language = models.CharField(max_length=3, verbose_name=_("Language"), null=True, blank=True,
-                                help_text=_("Language for this contact"))
+    language = models.CharField(
+        max_length=3, verbose_name=_("Language"), null=True, blank=True, help_text=_("Language for this contact")
+    )
 
     is_active = models.BooleanField(default=True, help_text="Whether this contact is active")
 
@@ -293,8 +283,9 @@ class Contact(models.Model):
 
     created_on = models.DateTimeField(auto_now_add=True, help_text=_("When this contact was created"))
 
-    urns = ArrayField(models.CharField(max_length=255), default=list,
-                      help_text=_("List of URNs of the format 'scheme:path'"))
+    urns = ArrayField(
+        models.CharField(max_length=255), default=list, help_text=_("List of URNs of the format 'scheme:path'")
+    )
 
     def __init__(self, *args, **kwargs):
         if self.SAVE_GROUPS_ATTR in kwargs:
@@ -327,7 +318,7 @@ class Contact(models.Model):
             URN.validate(normalized_urn)
 
             contact = cls.objects.create(org=org, name=name, urns=[normalized_urn], is_stub=False)
-            get_backend().push_contact(org, contact)
+            org.get_backend().push_contact(org, contact)
         return contact
 
     @classmethod
@@ -340,7 +331,7 @@ class Contact(models.Model):
         If the display setting is recognised and set then that field is returned, otherwise the name is returned.
         If no name is set an empty string is returned.
         """
-        display_format = getattr(settings, 'SITE_CONTACT_DISPLAY', self.DISPLAY_NAME)
+        display_format = getattr(settings, "SITE_CONTACT_DISPLAY", self.DISPLAY_NAME)
 
         if display_format == self.DISPLAY_ANON and self.uuid:
             return self.uuid[:6].upper()
@@ -356,14 +347,14 @@ class Contact(models.Model):
         fields = self.fields if self.fields else {}
 
         if visible:
-            keys = Field.get_all(self.org, visible=True).values_list('key', flat=True)
+            keys = Field.get_all(self.org, visible=True).values_list("key", flat=True)
             return {k: fields.get(k) for k in keys}
         else:
             return fields
 
     def get_language(self):
         if self.language:
-            return {'code': self.language, 'name': get_language_name(self.language)}
+            return {"code": self.language, "name": get_language_name(self.language)}
         else:
             return None
 
@@ -396,24 +387,24 @@ class Contact(models.Model):
                     self.groups.remove(group)
                     self.suspended_groups.add(group)
 
-                    get_backend().remove_from_group(self.org, self, group)
+                    self.org.get_backend().remove_from_group(self.org, self, group)
 
     def restore_groups(self):
         with self.lock(self.org, self.uuid):
             for group in list(self.suspended_groups.all()):
                 if not group.is_dynamic:
                     self.groups.add(group)
-                    get_backend().add_to_group(self.org, self, group)
+                    self.org.get_backend().add_to_group(self.org, self, group)
 
                 self.suspended_groups.remove(group)
 
     def expire_flows(self):
-        get_backend().stop_runs(self.org, self)
+        self.org.get_backend().stop_runs(self.org, self)
 
     def archive_messages(self):
         self.incoming_messages.update(is_archived=True)
 
-        get_backend().archive_contact_messages(self.org, self)
+        self.org.get_backend().archive_contact_messages(self.org, self)
 
     def release(self):
         """
@@ -425,23 +416,23 @@ class Contact(models.Model):
         self.incoming_messages.update(is_handled=True, is_active=False)
 
         self.is_active = False
-        self.save(update_fields=('is_active',))
+        self.save(update_fields=("is_active",))
 
     def as_json(self, full=True):
         """
         Prepares a contact for JSON serialization
         """
-        result = {'id': self.pk, 'display': self.get_display()}
+        result = {"id": self.pk, "display": self.get_display()}
 
         if full:
-            hidden_fields = getattr(settings, 'SITE_HIDE_CONTACT_FIELDS', [])
-            result['urns'] = self.urns if "urns" not in hidden_fields else []
-            result['name'] = self.name if "name" not in hidden_fields else None
-            result['groups'] = [g.as_json(full=False) for g in self.groups.all()]
-            result['fields'] = self.get_fields(visible=True)
-            result['language'] = self.get_language()
-            result['blocked'] = self.is_blocked
-            result['stopped'] = self.is_stopped
+            hidden_fields = getattr(settings, "SITE_HIDE_CONTACT_FIELDS", [])
+            result["urns"] = self.urns if "urns" not in hidden_fields else []
+            result["name"] = self.name if "name" not in hidden_fields else None
+            result["groups"] = [g.as_json(full=False) for g in self.groups.all()]
+            result["fields"] = self.get_fields(visible=True)
+            result["language"] = self.get_language()
+            result["blocked"] = self.is_blocked
+            result["stopped"] = self.is_stopped
 
         return result
 
