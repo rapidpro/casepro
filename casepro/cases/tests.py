@@ -494,6 +494,7 @@ class CaseCRUDLTest(BaseCasesTest):
     @patch("casepro.test.TestBackend.remove_from_group")
     def test_open(self, mock_remove_contacts, mock_add_contacts, mock_stop_runs, mock_archive_contact_messages):
         CaseAction.objects.all().delete()
+        Message.objects.update(case=None)
         Case.objects.all().delete()
         Message.objects.all().delete()
 
@@ -850,6 +851,7 @@ class CaseCRUDLTest(BaseCasesTest):
     @patch("casepro.test.TestBackend.fetch_contact_messages")
     def test_timeline(self, mock_fetch_contact_messages):
         CaseAction.objects.all().delete()
+        Message.objects.update(case=None)
         Case.objects.all().delete()
         Message.objects.all().delete()
 

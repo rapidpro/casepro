@@ -259,6 +259,11 @@ class FAQ(models.Model):
         else:
             return None
 
+    def release(self):
+        for child in self.translations.all():
+            child.release()
+        self.delete()
+
     def as_json(self, full=True):
         result = {"id": self.pk, "question": self.question}
         if full:

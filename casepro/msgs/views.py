@@ -624,7 +624,7 @@ class FaqCRUDL(SmartCRUDL):
 
         def post(self, request, *args, **kwargs):
             faq = self.get_object()
-            faq.delete()
+            faq.release()
 
             return HttpResponse(status=204)
 
