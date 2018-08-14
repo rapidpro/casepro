@@ -802,19 +802,19 @@ class JunebugBackendTest(BaseCasesTest):
         """
         urls = self.backend.get_url_patterns()
         self.assertEqual(urls[0].callback, received_junebug_message)
-        self.assertEqual(urls[0].regex.pattern, settings.JUNEBUG_INBOUND_URL)
+        self.assertEqual(str(urls[0].pattern), settings.JUNEBUG_INBOUND_URL)
         self.assertEqual(urls[0].name, "inbound_junebug_message")
         self.assertEqual(urls[1].callback, receive_identity_store_optout)
-        self.assertEqual(urls[1].regex.pattern, settings.IDENTITY_STORE_OPTOUT_URL)
+        self.assertEqual(str(urls[1].pattern), settings.IDENTITY_STORE_OPTOUT_URL)
         self.assertEqual(urls[1].name, "identity_store_optout")
 
         with self.settings(JUNEBUG_INBOUND_URL=r"^test/url/$"):
             urls = self.backend.get_url_patterns()
-            self.assertEqual(urls[0].regex.pattern, r"^test/url/$")
+            self.assertEqual(str(urls[0].pattern), r"^test/url/$")
 
         with self.settings(IDENTITY_STORE_OPTOUT_URL=r"^test/url/$"):
             urls = self.backend.get_url_patterns()
-            self.assertEqual(urls[1].regex.pattern, r"^test/url/$")
+            self.assertEqual(str(urls[1].pattern), r"^test/url/$")
 
 
 class JunebugInboundViewTest(BaseCasesTest):

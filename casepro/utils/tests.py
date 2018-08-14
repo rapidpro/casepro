@@ -2,12 +2,10 @@ from datetime import date, datetime
 from enum import Enum
 from uuid import UUID
 
-import hypothesis.strategies as st
 import pytz
 from django.core import mail
 from django.http import HttpRequest
 from django.test import override_settings
-from hypothesis import given
 
 from casepro.test import BaseCasesTest
 
@@ -145,13 +143,8 @@ class UtilsTest(BaseCasesTest):
         self.assertEqual(uuid_to_int(UUID(int=(2147483647)).hex), 2147483647)
         self.assertEqual(uuid_to_int(UUID(int=(2147483648)).hex), 0)
 
-    @given(st.uuids())
-    def test_uuid_to_int_property(self, uuid):
-        """
-        Property based testing to ensure that the output of the function is always within the limits.
-        """
-        self.assertTrue(uuid_to_int(uuid.hex) <= 2147483647)
-        self.assertTrue(uuid_to_int(uuid.hex) >= 0)
+    def test_uuid_to_int_property(self):
+        self.assertEqual(uuid_to_int(UUID("7eaf667b-8798-47bf-9ffd-5280dc063516").hex), 1543910678)
 
     def test_get_language_name(self):
         self.assertEqual(get_language_name("fra"), "French")

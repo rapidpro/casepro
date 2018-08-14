@@ -32,7 +32,6 @@ enum34==1.1.6             # via django-hamlpy
 flake8==3.5.0
 future==0.16.0            # via django-hamlpy
 gunicorn==19.9.0
-hypothesis==3.67.0
 idna==2.7                 # via requests
 iso-639==0.4.5
 iso8601==0.1.12           # via rapidpro-python
