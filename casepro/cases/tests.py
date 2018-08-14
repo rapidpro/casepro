@@ -4,7 +4,7 @@ from importlib import reload
 import pytz
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.test.utils import modify_settings, override_settings
 from django.utils import timezone
 from mock import patch

@@ -3,7 +3,7 @@ from datetime import date, datetime, time
 
 import pytz
 from dash.orgs.models import Org
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch

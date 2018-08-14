@@ -1,6 +1,6 @@
 import pytz
 from dash.orgs.models import TaskState
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from casepro.contacts.models import Field, Group
 from casepro.test import BaseCasesTest

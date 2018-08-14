@@ -4,7 +4,7 @@ from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgObjPermsMixin, OrgPermsMixin
 from django.conf import settings
 from django.core.cache import cache
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.timezone import now

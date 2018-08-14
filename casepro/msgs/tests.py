@@ -3,7 +3,7 @@ from datetime import datetime
 import pytz
 from dash.orgs.models import TaskState
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.test.utils import override_settings
 from django.utils.timezone import now
 from mock import call, patch

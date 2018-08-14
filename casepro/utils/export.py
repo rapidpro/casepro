@@ -10,7 +10,7 @@ from django.contrib.auth.models import User
 from django.core.files import File
 from django.core.files.storage import default_storage
 from django.core.files.temp import NamedTemporaryFile
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db import models
 from django.http import HttpResponse
 from django.utils.translation import ugettext_lazy as _
