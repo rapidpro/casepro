@@ -379,7 +379,7 @@ class Rule(models.Model):
     """
     At some point this will become a first class object, but for now it is always attached to a label.
     """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="rules")
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="rules", on_delete=models.PROTECT)
 
     tests = models.TextField()
 

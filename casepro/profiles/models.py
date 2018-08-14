@@ -28,7 +28,7 @@ class Profile(models.Model):
     """
     Extension for the user class
     """
-    user = models.OneToOneField(User)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     full_name = models.CharField(verbose_name=_("Full name"), max_length=128, null=True)
 
@@ -98,15 +98,15 @@ class Notification(models.Model):
         TYPE_CASE_REPLY: "case_reply",
     }
 
-    org = models.ForeignKey(Org)
+    org = models.ForeignKey(Org, on_delete=models.PROTECT)
 
-    user = models.ForeignKey(User, related_name="notifications")
+    user = models.ForeignKey(User, related_name="notifications", on_delete=models.PROTECT)
 
     type = models.CharField(max_length=1)
 
-    message = models.ForeignKey(Message, null=True)
+    message = models.ForeignKey(Message, null=True, on_delete=models.PROTECT)
 
-    case_action = models.ForeignKey(CaseAction, null=True)
+    case_action = models.ForeignKey(CaseAction, null=True, on_delete=models.PROTECT)
 
     is_sent = models.BooleanField(default=False)
 

@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="caseaction",
             name="label",
-            field=models.ForeignKey(to="cases.Label", null=True),
+            field=models.ForeignKey(to="cases.Label", null=True, on_delete=models.PROTECT),
             preserve_default=True,
         ),
         migrations.AlterField(

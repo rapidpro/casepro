@@ -142,7 +142,7 @@ class Group(models.Model):
     """
     A contact group in RapidPro
     """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="groups")
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="groups", on_delete=models.PROTECT)
 
     uuid = models.CharField(max_length=36, unique=True)
 
@@ -209,7 +209,7 @@ class Field(models.Model):
         "district": TYPE_DISTRICT,
     }
 
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="fields")
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="fields", on_delete=models.PROTECT)
 
     key = models.CharField(verbose_name=_("Key"), max_length=36)
 
@@ -255,7 +255,7 @@ class Contact(models.Model):
 
     SAVE_GROUPS_ATTR = "__data__groups"
 
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="contacts")
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="contacts", on_delete=models.PROTECT)
 
     uuid = models.CharField(max_length=36, unique=True, null=True)
 

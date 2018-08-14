@@ -26,11 +26,11 @@ class BaseExport(models.Model):
     """
     Base class for exports
     """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="%(class)ss")
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="%(class)ss", on_delete=models.PROTECT)
 
     filename = models.CharField(max_length=512)
 
-    created_by = models.ForeignKey(User, related_name="%(class)ss")
+    created_by = models.ForeignKey(User, related_name="%(class)ss", on_delete=models.PROTECT)
 
     created_on = models.DateTimeField(auto_now_add=True)
 
@@ -103,7 +103,7 @@ class BaseSearchExport(BaseExport):
     """
     Base class for exports based on item searches which may be initiated by partner users
     """
-    partner = models.ForeignKey("cases.Partner", related_name="%(class)ss", null=True)
+    partner = models.ForeignKey("cases.Partner", related_name="%(class)ss", null=True, on_delete=models.PROTECT)
 
     search = models.TextField()
 
