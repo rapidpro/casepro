@@ -204,26 +204,26 @@ class EmailTest(BaseCasesTest):
 class MiddlewareTest(BaseCasesTest):
 
     def test_json(self):
-        middleware = JSONMiddleware()
+        middleware = JSONMiddleware(get_response=lambda r: r)
 
         # test with no content type header
         request = HttpRequest()
         request._body = '{"a":["b"]}'
-        middleware.process_request(request)
+        middleware(request)
         self.assertFalse(hasattr(request, "json"))
 
         # test with JSON content type header
         request = HttpRequest()
         request._body = '{"a":["b"]}'
         request.META = {"CONTENT_TYPE": "application/json;charset=UTF-8"}
-        middleware.process_request(request)
+        middleware(request)
         self.assertEqual(request.json, {"a": ["b"]})
 
         # test with non-JSON content type header
         request = HttpRequest()
         request._body = "<b></b>"
         request.META = {"CONTENT_TYPE": "text/html"}
-        middleware.process_request(request)
+        middleware(request)
         self.assertFalse(hasattr(request, "json"))
 
 

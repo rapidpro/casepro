@@ -18,7 +18,7 @@ class OrgExtCRUDLTest(BaseCasesTest):
 
         # not accessible to org users
         self.login(self.admin)
-        self.assertLoginRedirect(self.url_get("unicef", url), "unicef", url)
+        self.assertLoginRedirect(self.url_get("unicef", url), url)
 
         # accessible to superusers
         self.login(self.superuser)
@@ -30,7 +30,7 @@ class OrgExtCRUDLTest(BaseCasesTest):
 
         # not accessible to org users
         self.login(self.admin)
-        self.assertLoginRedirect(self.url_get("unicef", url), "unicef", url)
+        self.assertLoginRedirect(self.url_get("unicef", url), url)
 
         # accessible to superusers
         self.login(self.superuser)
@@ -114,7 +114,7 @@ class TaskExtCRUDLTest(BaseCasesTest):
 
         # not accessible to org users
         self.login(self.admin)
-        self.assertRedirects(self.url_get(None, url), "http://testserver/users/login/?next=%s" % url)
+        self.assertRedirects(self.url_get(None, url), "/users/login/?next=%s" % url)
 
         # accessible to superusers
         self.login(self.superuser)

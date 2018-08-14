@@ -193,7 +193,7 @@ class UserCRUDL(SmartCRUDL):
             return r"^profile/self/$"
 
         def has_permission(self, request, *args, **kwargs):
-            return self.request.user.is_authenticated()
+            return self.request.user.is_authenticated
 
         def get_form_kwargs(self):
             kwargs = super(UserCRUDL.Self, self).get_form_kwargs()

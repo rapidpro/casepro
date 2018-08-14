@@ -279,7 +279,7 @@ class ContactCRUDLTest(BaseCasesTest):
         # users from other orgs get nothing
         self.login(self.user4)
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
     def test_fetch(self):
         url = reverse("contacts.contact_fetch", args=[self.ann.pk])
@@ -341,7 +341,7 @@ class FieldCRUDLTest(BaseCasesTest):
         # partner users can't access this
         self.login(self.user1)
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # org admins can
         self.login(self.admin)
@@ -378,7 +378,7 @@ class GroupCRUDLTest(BaseCasesTest):
         # partner users can't access this
         self.login(self.user1)
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # org admins can
         self.login(self.admin)
@@ -391,7 +391,7 @@ class GroupCRUDLTest(BaseCasesTest):
         # partner users can't access this
         self.login(self.user1)
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # org admins can
         self.login(self.admin)
@@ -402,7 +402,7 @@ class GroupCRUDLTest(BaseCasesTest):
 
         # change the visible groups
         response = self.url_post("unicef", url, {"groups": [self.females.pk, self.reporters.pk]})
-        self.assertRedirects(response, "http://unicef.localhost/group/", fetch_redirect_response=False)
+        self.assertRedirects(response, "/group/", fetch_redirect_response=False)
 
         self.assertEqual(set(Group.get_all(self.unicef, visible=True)), {self.females, self.reporters})
         self.assertEqual(set(Group.get_all(self.unicef, visible=False)), {self.males, self.registered})

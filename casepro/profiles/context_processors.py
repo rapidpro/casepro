@@ -2,7 +2,7 @@ def user(request):
     """
     Context processor that adds boolean of whether current user is an admin for current org
     """
-    if request.user.is_anonymous() or not request.org:
+    if request.user.is_anonymous or not request.org:
         is_admin = False
         partner = None
         is_faq_only = True

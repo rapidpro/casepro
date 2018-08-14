@@ -83,7 +83,7 @@ class LabelCRUDLTest(BaseCasesTest):
         self.login(self.user1)
 
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # log in as an administrator
         self.login(self.admin)
@@ -146,7 +146,7 @@ class LabelCRUDLTest(BaseCasesTest):
         label = Label.objects.get(name="Ebola")
 
         self.assertRedirects(
-            response, "http://unicef.localhost/label/read/%d/" % label.pk, fetch_redirect_response=False
+            response, "/label/read/%d/" % label.pk, fetch_redirect_response=False
         )
 
         self.assertEqual(label.uuid, None)
@@ -171,7 +171,7 @@ class LabelCRUDLTest(BaseCasesTest):
         self.login(self.user1)
 
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # log in as an administrator
         self.login(self.admin)
@@ -348,7 +348,7 @@ class LabelCRUDLTest(BaseCasesTest):
         self.login(self.user1)
 
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # log in as an administrator
         self.login(self.admin)
@@ -384,7 +384,7 @@ class FaqCRUDLTest(BaseCasesTest):
         self.login(self.user1)
 
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # log in as an administrator
         self.login(self.admin)
@@ -501,7 +501,7 @@ class FaqCRUDLTest(BaseCasesTest):
         self.login(self.user1)
 
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # log in as an administrator
         self.login(self.admin)
@@ -575,7 +575,7 @@ class FaqCRUDLTest(BaseCasesTest):
                 "labels": [self.pregnancy.pk, self.tea.pk],
             },
         )
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
     def test_delete(self):
         preg_faq1_eng_pk = self.preg_faq1_eng.pk
@@ -588,7 +588,7 @@ class FaqCRUDLTest(BaseCasesTest):
         self.login(self.user1)
 
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # log in as an administrator
         self.login(self.admin)
@@ -614,7 +614,7 @@ class FaqCRUDLTest(BaseCasesTest):
         self.login(self.user1)
 
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # log in as an administrator
         self.login(self.admin)
@@ -627,7 +627,7 @@ class FaqCRUDLTest(BaseCasesTest):
 
         # try unauthenticated
         response = self.url_get("unicef", url, {})
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # log in as a non-administrator
         self.login(self.user1)
@@ -710,7 +710,7 @@ class FaqCRUDLTest(BaseCasesTest):
 
         # try unauthenticated
         response = self.url_get("unicef", url, {})
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # log in as a non-administrator
         self.login(self.user1)
@@ -1257,7 +1257,7 @@ class MessageCRUDLTest(BaseCasesTest):
 
         # try unauthenticated
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # log in as a non-administrator
         self.login(self.user1)
@@ -1512,7 +1512,7 @@ class MessageCRUDLTest(BaseCasesTest):
 
         # try unauthenticated
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # log in as a non-administrator
         self.login(self.user1)
@@ -1594,7 +1594,7 @@ class MessageExportCRUDLTest(BaseCasesTest):
 
         # partner user from different partner can't
         self.login(self.user3)
-        self.assertLoginRedirect(self.url_get("unicef", read_url), "unicef", read_url)
+        self.assertLoginRedirect(self.url_get("unicef", read_url), read_url)
 
         # admin user from same org can
         self.login(self.admin)
@@ -1602,7 +1602,7 @@ class MessageExportCRUDLTest(BaseCasesTest):
 
         # user from another org can't
         self.login(self.norbert)
-        self.assertLoginRedirect(self.url_get("unicef", read_url), "unicef", read_url)
+        self.assertLoginRedirect(self.url_get("unicef", read_url), read_url)
 
 
 class OutgoingTest(BaseCasesTest):
@@ -1767,7 +1767,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
 
         # try unauthenticated
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # test as org administrator
         self.login(self.admin)
@@ -1835,7 +1835,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
 
         # try unauthenticated
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # test as org administrator
         self.login(self.admin)
