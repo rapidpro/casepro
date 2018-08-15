@@ -23,7 +23,6 @@ from ..rapidpro import ContactSyncer, MessageSyncer, RapidProBackend
 
 
 class ContactSyncerTest(BaseCasesTest):
-
     def setUp(self):
         super(ContactSyncerTest, self).setUp()
 
@@ -185,7 +184,6 @@ class ContactSyncerTest(BaseCasesTest):
 
 
 class MessageSyncerTest(BaseCasesTest):
-
     def setUp(self):
         super(MessageSyncerTest, self).setUp()
 
@@ -346,7 +344,6 @@ class MessageSyncerTest(BaseCasesTest):
 
 
 class RapidProBackendTest(BaseCasesTest):
-
     def setUp(self):
         super(RapidProBackendTest, self).setUp()
 
@@ -1046,7 +1043,6 @@ class RapidProBackendTest(BaseCasesTest):
 
 @skip
 class PerfTest(BaseCasesTest):
-
     def setUp(self):
         super(PerfTest, self).setUp()
 

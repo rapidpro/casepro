@@ -8,6 +8,7 @@ class RuleCRUDL(SmartCRUDL):
     """
     Simple CRUDL for debugging by superusers, i.e. not exposed to regular users for now
     """
+
     model = Rule
     actions = ("list",)
 

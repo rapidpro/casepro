@@ -7,7 +7,6 @@ from casepro.test import BaseCasesTest
 
 
 class CommentCRUDLTest(BaseCasesTest):
-
     def setUp(self):
         super(CommentCRUDLTest, self).setUp()
         self.login(self.user1)

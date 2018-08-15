@@ -24,7 +24,6 @@ from .models import AccessLevel, Case, CaseAction, CaseExport, CaseFolder, Partn
 
 
 class CaseTest(BaseCasesTest):
-
     def setUp(self):
         super(CaseTest, self).setUp()
 
@@ -473,7 +472,6 @@ class CaseTest(BaseCasesTest):
 @modify_settings(INSTALLED_APPS={"append": "casepro.pods.tests.utils.DummyPodPlugin"})
 @override_settings(PODS=[{"label": "dummy_pod", "title": "FooPod"}])
 class CaseCRUDLTest(BaseCasesTest):
-
     def setUp(self):
         super(CaseCRUDLTest, self).setUp()
 
@@ -1115,7 +1113,6 @@ class CaseCRUDLTest(BaseCasesTest):
 
 
 class CaseExportCRUDLTest(BaseCasesTest):
-
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND="memory")
     def test_create_and_read(self):
         ann = self.create_contact(
@@ -1237,7 +1234,6 @@ class CaseExportCRUDLTest(BaseCasesTest):
 
 
 class InboxViewsTest(BaseCasesTest):
-
     def test_inbox(self):
         url = reverse("cases.inbox")
 
@@ -1264,7 +1260,6 @@ class InboxViewsTest(BaseCasesTest):
 
 
 class PartnerTest(BaseCasesTest):
-
     def test_create(self):
         wfp = Partner.create(self.unicef, "WFP", "World Food Program", None, True, [self.aids, self.pregnancy])
         self.assertEqual(wfp.org, self.unicef)
@@ -1303,7 +1298,6 @@ class PartnerTest(BaseCasesTest):
 
 
 class PartnerCRUDLTest(BaseCasesTest):
-
     def test_create(self):
         url = reverse("cases.partner_create")
 
@@ -1335,9 +1329,7 @@ class PartnerCRUDLTest(BaseCasesTest):
 
         helpers = Partner.objects.get(name="Helpers")
 
-        self.assertRedirects(
-            response, "/partner/read/%d/" % helpers.pk, fetch_redirect_response=False
-        )
+        self.assertRedirects(response, "/partner/read/%d/" % helpers.pk, fetch_redirect_response=False)
 
         self.assertTrue(helpers.is_restricted)
         self.assertEqual(set(helpers.get_labels()), {self.tea})
@@ -1423,18 +1415,14 @@ class PartnerCRUDLTest(BaseCasesTest):
 
         # post name change
         response = self.url_post("unicef", url, {"name": "MOH2"})
-        self.assertRedirects(
-            response, "/partner/read/%d/" % self.moh.pk, fetch_redirect_response=False
-        )
+        self.assertRedirects(response, "/partner/read/%d/" % self.moh.pk, fetch_redirect_response=False)
 
         moh = Partner.objects.get(pk=self.moh.pk)
         self.assertEqual(moh.name, "MOH2")
 
         # post primary contact change
         response = self.url_post("unicef", url, {"name": "MOH", "primary_contact": self.user1.pk})
-        self.assertRedirects(
-            response, "/partner/read/%d/" % self.moh.pk, fetch_redirect_response=False
-        )
+        self.assertRedirects(response, "/partner/read/%d/" % self.moh.pk, fetch_redirect_response=False)
 
         moh = Partner.objects.get(pk=self.moh.pk)
         self.assertEqual(moh.primary_contact, self.user1)
@@ -1528,7 +1516,6 @@ class PartnerCRUDLTest(BaseCasesTest):
 
 
 class ContextProcessorsTest(BaseCasesTest):
-
     def test_sentry_dsn(self):
         dsn = "https://ir78h8v3mhz91lzgd2icxzaiwtmpsx10:58l883tax2o5cae05bj517f9xmq16a2h@app.getsentry.com/44864"
         with self.settings(SENTRY_DSN=dsn):
@@ -1539,7 +1526,6 @@ class ContextProcessorsTest(BaseCasesTest):
 
 
 class InternalViewsTest(BaseCasesTest):
-
     def test_status(self):
         url = reverse("internal.status")
         response = self.url_get("unicef", url)

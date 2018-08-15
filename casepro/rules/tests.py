@@ -133,7 +133,6 @@ class TestsTest(BaseCasesTest):
 
 
 class ActionsTest(BaseCasesTest):
-
     def setUp(self):
         super(ActionsTest, self).setUp()
 
@@ -187,7 +186,6 @@ class ActionsTest(BaseCasesTest):
 
 
 class RuleTest(BaseCasesTest):
-
     def setUp(self):
         super(RuleTest, self).setUp()
 
@@ -270,7 +268,6 @@ class RuleTest(BaseCasesTest):
 
 
 class RuleCRUDLTest(BaseCasesTest):
-
     def test_list(self):
         url = reverse("rules.rule_list")
 

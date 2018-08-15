@@ -7,14 +7,17 @@ import django.db.models.deletion
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('msgs', '0059_new_modified_msgs_index'),
-    ]
+    dependencies = [("msgs", "0059_new_modified_msgs_index")]
 
     operations = [
         migrations.AlterField(
-            model_name='message',
-            name='locked_by',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.PROTECT, related_name='actioned_messages', to=settings.AUTH_USER_MODEL),
-        ),
+            model_name="message",
+            name="locked_by",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="actioned_messages",
+                to=settings.AUTH_USER_MODEL,
+            ),
+        )
     ]

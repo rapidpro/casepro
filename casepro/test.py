@@ -21,6 +21,7 @@ class TestBackend(backend.NoopBackend):
     """
     A stub backend which doesn't do anything but can be mocked
     """
+
     pass
 
 

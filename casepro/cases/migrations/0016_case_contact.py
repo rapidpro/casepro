@@ -29,7 +29,9 @@ class Migration(migrations.Migration):
         ),
         migrations.RunPython(populate_case_contacts),
         migrations.AlterField(
-            model_name="case", name="contact", field=models.ForeignKey(related_name="cases", to="cases.Contact", on_delete=models.PROTECT)
+            model_name="case",
+            name="contact",
+            field=models.ForeignKey(related_name="cases", to="cases.Contact", on_delete=models.PROTECT),
         ),
         migrations.RemoveField(model_name="case", name="contact_uuid"),
     ]

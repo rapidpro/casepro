@@ -33,7 +33,6 @@ from .middleware import JSONMiddleware
 
 
 class UtilsTest(BaseCasesTest):
-
     def test_safe_max(self):
         self.assertEqual(safe_max(1, 2, 3), 3)
         self.assertEqual(safe_max(None, 2, None), 2)
@@ -83,12 +82,10 @@ class UtilsTest(BaseCasesTest):
         self.assertEqual(d2, datetime(2015, 10, 9, 14, 48, 30, 123456, tzinfo=pytz.utc))
 
     def test_json_encode(self):
-
         class MyEnum(Enum):
             bar = 1
 
         class MyClass(object):
-
             def to_json(self):
                 return dict(bar="X")
 
@@ -178,7 +175,6 @@ class UtilsTest(BaseCasesTest):
 
 
 class EmailTest(BaseCasesTest):
-
     @override_settings(SEND_EMAILS=True)
     def test_send_email(self):
         send_email(
@@ -195,7 +191,6 @@ class EmailTest(BaseCasesTest):
 
 
 class MiddlewareTest(BaseCasesTest):
-
     def test_json(self):
         middleware = JSONMiddleware(get_response=lambda r: r)
 
@@ -221,7 +216,6 @@ class MiddlewareTest(BaseCasesTest):
 
 
 class ViewsTest(BaseCasesTest):
-
     def test_partials(self):
         response = self.url_get("unicef", "/partials/modal_confirm.html")
         self.assertEqual(response.status_code, 200)

@@ -39,6 +39,7 @@ class CommentCRUDL(SmartCRUDL):
         """
         Endpoint for creating a Pinned Comment
         """
+
         permission = "msg_board.messageboardcomment_pin"
         fields = ["comment", "pinned_on"]
         http_method_names = ["post"]
@@ -55,6 +56,7 @@ class CommentCRUDL(SmartCRUDL):
         """
         Endpoint for deleting a Pinned Comment
         """
+
         permission = "msg_board.messageboardcomment_unpin"
         fields = ["comment", "pinned_on"]
         http_method_names = ["post"]

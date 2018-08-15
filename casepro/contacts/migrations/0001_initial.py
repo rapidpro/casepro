@@ -41,7 +41,12 @@ class Migration(migrations.Migration):
                 ("id", models.AutoField(verbose_name="ID", serialize=False, auto_created=True, primary_key=True)),
                 ("key", models.CharField(max_length=36, verbose_name="Key")),
                 ("label", models.CharField(max_length=36, null=True, verbose_name="Label")),
-                ("org", models.ForeignKey(related_name="fields", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT)),
+                (
+                    "org",
+                    models.ForeignKey(
+                        related_name="fields", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
@@ -52,7 +57,12 @@ class Migration(migrations.Migration):
                 ("name", models.CharField(max_length=64)),
                 ("is_active", models.BooleanField(default=True, help_text="Whether this group is active")),
                 ("created_on", models.DateTimeField(help_text="When this group was created", auto_now_add=True)),
-                ("org", models.ForeignKey(related_name="new_groups", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT)),
+                (
+                    "org",
+                    models.ForeignKey(
+                        related_name="new_groups", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
@@ -77,7 +87,9 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="contact",
             name="org",
-            field=models.ForeignKey(related_name="new_contacts", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT),
+            field=models.ForeignKey(
+                related_name="new_contacts", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT
+            ),
         ),
         migrations.AlterUniqueTogether(name="field", unique_together=set([("org", "key")])),
     ]

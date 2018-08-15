@@ -6,19 +6,22 @@ import django.db.models.deletion
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('msg_board', '0001_initial'),
-    ]
+    dependencies = [("msg_board", "0001_initial")]
 
     operations = [
         migrations.AlterField(
-            model_name='messageboardcomment',
-            name='content_type',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='content_type_set_for_messageboardcomment', to='contenttypes.ContentType', verbose_name='content type'),
+            model_name="messageboardcomment",
+            name="content_type",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="content_type_set_for_messageboardcomment",
+                to="contenttypes.ContentType",
+                verbose_name="content type",
+            ),
         ),
         migrations.AlterField(
-            model_name='messageboardcomment',
-            name='site',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='sites.Site'),
+            model_name="messageboardcomment",
+            name="site",
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="sites.Site"),
         ),
     ]

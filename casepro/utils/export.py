@@ -26,6 +26,7 @@ class BaseExport(models.Model):
     """
     Base class for exports
     """
+
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="%(class)ss", on_delete=models.PROTECT)
 
     filename = models.CharField(max_length=512)
@@ -103,6 +104,7 @@ class BaseSearchExport(BaseExport):
     """
     Base class for exports based on item searches which may be initiated by partner users
     """
+
     partner = models.ForeignKey("cases.Partner", related_name="%(class)ss", null=True, on_delete=models.PROTECT)
 
     search = models.TextField()
@@ -135,6 +137,7 @@ class BaseDownloadView(OrgObjPermsMixin, SmartReadView):
     """
     Download view for exports
     """
+
     filename = None
     template_name = "download.haml"
 

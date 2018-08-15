@@ -77,7 +77,6 @@ class OrgExtCRUDL(SmartCRUDL):
 
 
 class TaskExtCRUDL(TaskCRUDL):
-
     class List(TaskCRUDL.List):
         link_fields = ("org",)
 

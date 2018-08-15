@@ -25,6 +25,7 @@ class UserForm(forms.ModelForm):
     """
     Base form for all user editing and used for user-editing outside of orgs by superusers
     """
+
     PASSWORD_FIELD_HELP = _("Password used to log in (minimum of %d characters).") % MIN_PASSWORD_LENGTH
 
     name = forms.CharField(label=_("Name"), max_length=128)
@@ -87,6 +88,7 @@ class OrgUserForm(UserForm):
     """
     Form for user editing at org-level
     """
+
     role = forms.ChoiceField(label=_("Role"), choices=ROLE_ORG_CHOICES, required=True)
 
     partner = forms.ModelChoiceField(label=_("Partner Organization"), queryset=Partner.objects.none(), required=False)
@@ -107,4 +109,5 @@ class PartnerUserForm(UserForm):
     """
     Form for user editing at partner-level
     """
+
     role = forms.ChoiceField(label=_("Role"), choices=ROLE_PARTNER_CHOICES, required=True)

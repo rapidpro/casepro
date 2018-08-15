@@ -18,7 +18,12 @@ class Migration(migrations.Migration):
                 ("is_archived", models.BooleanField(default=False)),
                 ("created_on", models.DateTimeField()),
                 ("contact", models.ForeignKey(to="contacts.Contact", on_delete=models.PROTECT)),
-                ("org", models.ForeignKey(related_name="messages", verbose_name="Org", to="orgs.Org", on_delete=models.PROTECT)),
+                (
+                    "org",
+                    models.ForeignKey(
+                        related_name="messages", verbose_name="Org", to="orgs.Org", on_delete=models.PROTECT
+                    ),
+                ),
             ],
         )
     ]
