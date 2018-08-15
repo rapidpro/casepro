@@ -1,3 +1,8 @@
+v1.0.2
+----------
+ * Upgrade to Django 2
+ * Fix not saving change_password when updating a user
+
 v1.0.1
 ----------
  * Import orgbackend CRUDL from dash
