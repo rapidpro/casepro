@@ -41,6 +41,8 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AddField(
-            model_name="caseevent", name="case", field=models.ForeignKey(related_name="events", to="cases.Case", on_delete=models.PROTECT)
+            model_name="caseevent",
+            name="case",
+            field=models.ForeignKey(related_name="events", to="cases.Case", on_delete=models.PROTECT),
         ),
     ]

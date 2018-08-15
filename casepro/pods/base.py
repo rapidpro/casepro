@@ -9,6 +9,7 @@ class PodConfig(ConfmodelConfig):
     """
     This is the config that all pods should use as the base for their own config.
     """
+
     index = fields.ConfigInt(
         "A unique identifier for the specific instance of this pod. Automatically determined and set in the pod"
         "registry.",

@@ -28,7 +28,6 @@ from ..junebug import (
 
 
 class JunebugBackendTest(BaseCasesTest):
-
     def setUp(self):
         super(JunebugBackendTest, self).setUp()
         self.backend = JunebugBackend()
@@ -524,7 +523,6 @@ class JunebugBackendTest(BaseCasesTest):
         JUNEBUG_HUB_AUTH_TOKEN="sample-token",
     )
     def test_outgoing_with_hub_push_enabled(self):
-
         def message_send_callback(request):
             data = json_decode(request.body)
             self.assertEqual(data, {"to": "+1234", "from": "+4321", "content": "That's great"})
@@ -597,7 +595,6 @@ class JunebugBackendTest(BaseCasesTest):
         JUNEBUG_HUB_AUTH_TOKEN="sample-token",
     )
     def test_outgoing_with_hub_push_enabled_no_reply_to(self):
-
         def message_send_callback(request):
             data = json_decode(request.body)
             self.assertEqual(data, {"to": "+1234", "from": "+4321", "content": "That's great"})
@@ -821,6 +818,7 @@ class JunebugInboundViewTest(BaseCasesTest):
     """
     Tests related to the inbound junebug messages view.
     """
+
     url = "/junebug/inbound/"
 
     def setUp(self):
@@ -1111,6 +1109,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
     """
     Tests related to the optout identity store view.
     """
+
     url = "/junebug/optout/"
 
     def setUp(self):
@@ -1326,7 +1325,6 @@ class TokenAuthRequiredTest(BaseCasesTest):
 
 
 class IdentityStoreTest(BaseCasesTest):
-
     def get_identities_callback(self, request):
         self.assertEqual(request.headers.get("Content-Type"), "application/json")
         self.assertEqual(request.headers.get("Authorization"), "Token auth-token")
@@ -1645,7 +1643,6 @@ class IdentityStoreTest(BaseCasesTest):
 
 
 class IdentityStoreContactTest(BaseCasesTest):
-
     def test_contact_with_defaults(self):
         identity_data = {
             "id": "test_id",

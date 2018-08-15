@@ -22,7 +22,6 @@ class BasePartnerForm(forms.ModelForm):
 
 
 class PartnerUpdateForm(BasePartnerForm):
-
     def __init__(self, *args, **kwargs):
         super(PartnerUpdateForm, self).__init__(*args, **kwargs)
 
@@ -34,7 +33,6 @@ class PartnerUpdateForm(BasePartnerForm):
 
 
 class PartnerCreateForm(BasePartnerForm):
-
     def __init__(self, *args, **kwargs):
         super(PartnerCreateForm, self).__init__(*args, **kwargs)
 

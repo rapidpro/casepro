@@ -36,7 +36,6 @@ faq_good_import = b"""Parent ID,Parent Language,Parent Question,Parent Answer,La
 
 
 class LabelTest(BaseCasesTest):
-
     @patch("casepro.test.TestBackend.push_label")
     def test_save(self, mock_push_label):
         # create un-synced label
@@ -75,7 +74,6 @@ class LabelTest(BaseCasesTest):
 
 
 class LabelCRUDLTest(BaseCasesTest):
-
     def test_create(self):
         url = reverse("msgs.label_create")
 
@@ -145,9 +143,7 @@ class LabelCRUDLTest(BaseCasesTest):
 
         label = Label.objects.get(name="Ebola")
 
-        self.assertRedirects(
-            response, "/label/read/%d/" % label.pk, fetch_redirect_response=False
-        )
+        self.assertRedirects(response, "/label/read/%d/" % label.pk, fetch_redirect_response=False)
 
         self.assertEqual(label.uuid, None)
         self.assertEqual(label.org, self.unicef)
@@ -361,7 +357,6 @@ class LabelCRUDLTest(BaseCasesTest):
 
 
 class FaqTest(BaseCasesTest):
-
     def test_get_all(self):
         self.assertEqual(
             set(FAQ.get_all(self.unicef)),
@@ -376,7 +371,6 @@ class FaqTest(BaseCasesTest):
 
 
 class FaqCRUDLTest(BaseCasesTest):
-
     def test_create(self):
         url = reverse("msgs.faq_create")
 
@@ -725,7 +719,6 @@ class FaqCRUDLTest(BaseCasesTest):
 
 @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND="memory")
 class FaqImportTest(BaseCasesTest):
-
     def create_importtask(self, user, filename):
         task = ImportTask.objects.create(
             created_by=user,
@@ -820,7 +813,6 @@ class FaqImportTest(BaseCasesTest):
 
 
 class MessageTest(BaseCasesTest):
-
     def setUp(self):
         super(MessageTest, self).setUp()
 
@@ -834,7 +826,6 @@ class MessageTest(BaseCasesTest):
         self.msg5 = self.create_message(self.unicef, 105, self.ann, "Inactive", is_active=False)
 
     def test_triggers(self):
-
         def get_label_counts():
             return {
                 "aids.inbox": self.aids.get_inbox_count(recalculate=True),
@@ -1223,7 +1214,6 @@ class MessageTest(BaseCasesTest):
 
 
 class MessageCRUDLTest(BaseCasesTest):
-
     def setUp(self):
         super(MessageCRUDLTest, self).setUp()
 
@@ -1343,7 +1333,6 @@ class MessageCRUDLTest(BaseCasesTest):
         self.assertNotEqual(msg.get_lock(self.user2), False)
 
     def test_lock_messages(self):
-
         def get_url(action):
             return reverse("msgs.message_lock", kwargs={"action": action})
 
@@ -1390,7 +1379,6 @@ class MessageCRUDLTest(BaseCasesTest):
         mock_unflag_messages,
         mock_flag_messages,
     ):
-
         def get_url(action):
             return reverse("msgs.message_action", kwargs={"action": action})
 
@@ -1532,7 +1520,6 @@ class MessageCRUDLTest(BaseCasesTest):
 
 
 class MessageExportCRUDLTest(BaseCasesTest):
-
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND="memory")
     def test_create_and_read(self):
         ann = self.create_contact(
@@ -1606,7 +1593,6 @@ class MessageExportCRUDLTest(BaseCasesTest):
 
 
 class OutgoingTest(BaseCasesTest):
-
     def setUp(self):
         super(OutgoingTest, self).setUp()
 
@@ -1750,7 +1736,6 @@ class OutgoingTest(BaseCasesTest):
 
 
 class OutgoingCRUDLTest(BaseCasesTest):
-
     def setUp(self):
         super(OutgoingCRUDLTest, self).setUp()
 
@@ -1871,7 +1856,6 @@ class OutgoingCRUDLTest(BaseCasesTest):
 
 
 class ReplyExportCRUDLTest(BaseCasesTest):
-
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND="memory")
     def test_create_and_read(self):
         ann = self.create_contact(
@@ -1988,7 +1972,6 @@ class ReplyExportCRUDLTest(BaseCasesTest):
 
 
 class TasksTest(BaseCasesTest):
-
     @patch("casepro.test.TestBackend.pull_labels")
     @patch("casepro.test.TestBackend.pull_messages")
     def test_pull_messages(self, mock_pull_messages, mock_pull_labels):

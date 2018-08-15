@@ -18,7 +18,6 @@ from .tasks import squash_counts
 
 
 class BaseStatsTest(BaseCasesTest):
-
     def setUp(self):
         super(BaseStatsTest, self).setUp()
 
@@ -64,7 +63,6 @@ class BaseStatsTest(BaseCasesTest):
 
 
 class DailyCountsTest(BaseStatsTest):
-
     def test_reply_counts(self):
         self.new_outgoing(self.admin, date(2015, 1, 1), 2)
         self.new_outgoing(self.user1, date(2015, 1, 1), 1)
@@ -275,7 +273,6 @@ class DailyCountsTest(BaseStatsTest):
 
 
 class DailyCountExportTest(BaseStatsTest):
-
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND="memory")
     def test_label_export(self):
         url = reverse("statistics.dailycountexport_create")
@@ -402,7 +399,6 @@ class DailyCountExportTest(BaseStatsTest):
 
 
 class ChartsTest(BaseStatsTest):
-
     def test_incoming_chart(self):
         url = reverse("statistics.incoming_chart")
 
@@ -560,7 +556,6 @@ class ChartsTest(BaseStatsTest):
 
 
 class SecondTotalCountsTest(BaseStatsTest):
-
     def test_first_reply_counts(self):
         msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
         msg2 = self.create_message(self.unicef, 234, self.ned, "Hello 2", [self.aids, self.pregnancy])

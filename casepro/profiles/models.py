@@ -28,6 +28,7 @@ class Profile(models.Model):
     """
     Extension for the user class
     """
+
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     full_name = models.CharField(verbose_name=_("Full name"), max_length=128, null=True)
@@ -86,6 +87,7 @@ class Notification(models.Model):
     """
     A notification sent to a user
     """
+
     TYPE_MESSAGE_LABELLING = "L"
     TYPE_CASE_ASSIGNMENT = "C"
     TYPE_CASE_ACTION = "A"

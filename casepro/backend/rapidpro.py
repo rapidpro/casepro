@@ -27,6 +27,7 @@ class ContactSyncer(BaseSyncer):
     """
     Syncer for contacts
     """
+
     model = Contact
     prefetch_related = ("groups",)
 
@@ -70,6 +71,7 @@ class FieldSyncer(BaseSyncer):
     """
     Syncer for contact fields
     """
+
     model = Field
     local_id_attr = "key"
     remote_id_attr = "key"
@@ -90,6 +92,7 @@ class GroupSyncer(BaseSyncer):
     """
     Syncer for contact groups
     """
+
     model = Group
 
     def local_kwargs(self, org, remote):
@@ -113,6 +116,7 @@ class LabelSyncer(BaseSyncer):
     """
     Syncer for message labels
     """
+
     model = Label
 
     def local_kwargs(self, org, remote):
@@ -138,6 +142,7 @@ class MessageSyncer(BaseSyncer):
     """
     Syncer for messages
     """
+
     model = Message
     local_id_attr = "backend_id"
     remote_id_attr = "id"
@@ -193,6 +198,7 @@ class RapidProBackend(BaseBackend):
     """
     RapidPro instance as a backend
     """
+
     # TODO reset to 100 when limit is fixed on RapidPro side
     BATCH_SIZE = 99
 

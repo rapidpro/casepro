@@ -181,10 +181,8 @@ INSTALLED_APPS = (
     "smartmin",
     "smartmin.csv_imports",
     "smartmin.users",
-
     "dash.orgs",
     "dash.utils",
-
     "casepro.orgs_ext",
     "casepro.profiles",
     "casepro.contacts",

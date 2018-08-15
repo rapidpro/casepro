@@ -27,6 +27,7 @@ class AccessLevel(IntEnum):
     """
     Case access level
     """
+
     none = 0
     read = 1
     update = 2
@@ -36,6 +37,7 @@ class Partner(models.Model):
     """
     Corresponds to a partner organization
     """
+
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="partners", on_delete=models.PROTECT)
 
     name = models.CharField(verbose_name=_("Name"), max_length=128, help_text=_("Name of this partner organization"))
@@ -43,7 +45,12 @@ class Partner(models.Model):
     description = models.CharField(verbose_name=_("Description"), null=True, blank=True, max_length=255)
 
     primary_contact = models.ForeignKey(
-        User, verbose_name=_("Primary Contact"), related_name="partners_primary", null=True, blank=True, on_delete=models.PROTECT
+        User,
+        verbose_name=_("Primary Contact"),
+        related_name="partners_primary",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
     )
 
     is_restricted = models.BooleanField(
@@ -123,7 +130,6 @@ class case_action(object):
         self.become_watcher = become_watcher
 
     def __call__(self, func):
-
         def wrapped(case, user, *args, **kwargs):
             access = case.access_level(user)
             if (access == AccessLevel.update) or (not self.require_update and access == AccessLevel.read):
@@ -143,6 +149,7 @@ class Case(models.Model):
     """
     A case between a partner organization and a contact
     """
+
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="cases", on_delete=models.PROTECT)
 
     labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this case"))
@@ -489,6 +496,7 @@ class CaseAction(models.Model):
     """
     An action performed on a case
     """
+
     OPEN = "O"
     UPDATE_SUMMARY = "S"
     ADD_NOTE = "N"
@@ -561,6 +569,7 @@ class CaseExport(BaseSearchExport):
     """
     An export of cases
     """
+
     directory = "case_exports"
     download_view = "cases.caseexport_read"
 

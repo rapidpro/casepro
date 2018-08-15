@@ -4,7 +4,6 @@ from .models import ContainsTest, GroupsTest, Quantifier, WordCountTest
 
 
 class RuleFormMixin(object):
-
     def derive_initial(self):
         initial = super(RuleFormMixin, self).derive_initial()
 

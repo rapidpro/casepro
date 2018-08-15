@@ -36,6 +36,7 @@ class Label(models.Model):
     """
     Corresponds to a message label in RapidPro. Used for determining visibility of messages to different partners.
     """
+
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="labels", on_delete=models.PROTECT)
 
     uuid = models.CharField(max_length=36, unique=True, null=True)
@@ -175,6 +176,7 @@ class FAQ(models.Model):
     """
     Pre-approved questions and answers to be used when replying to a message.
     """
+
     org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="faqs", on_delete=models.PROTECT)
 
     question = models.CharField(max_length=255)
@@ -288,6 +290,7 @@ class Labelling(models.Model):
     """
     An application of a label to a message
     """
+
     message = models.ForeignKey("msgs.Message", on_delete=models.CASCADE)
 
     label = models.ForeignKey(Label, on_delete=models.CASCADE)
@@ -301,6 +304,7 @@ class Message(models.Model):
     """
     A incoming message from the backend
     """
+
     TYPE_INBOX = "I"
     TYPE_FLOW = "F"
 
@@ -311,7 +315,9 @@ class Message(models.Model):
 
     TIMELINE_TYPE = "I"
 
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="incoming_messages", on_delete=models.PROTECT)
+    org = models.ForeignKey(
+        Org, verbose_name=_("Organization"), related_name="incoming_messages", on_delete=models.PROTECT
+    )
 
     backend_id = models.IntegerField(unique=True, help_text=_("Backend identifier for this message"))
 
@@ -639,6 +645,7 @@ class MessageAction(models.Model):
     """
     An action performed on a set of messages
     """
+
     FLAG = "F"
     UNFLAG = "N"
     LABEL = "L"
@@ -655,7 +662,9 @@ class MessageAction(models.Model):
         (RESTORE, _("Restore")),
     )
 
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="message_actions", on_delete=models.PROTECT)
+    org = models.ForeignKey(
+        Org, verbose_name=_("Organization"), related_name="message_actions", on_delete=models.PROTECT
+    )
 
     messages = models.ManyToManyField(Message, related_name="actions")
 
@@ -687,6 +696,7 @@ class Outgoing(models.Model):
     """
     An outgoing message (i.e. broadcast) sent by a user
     """
+
     BULK_REPLY = "B"
     CASE_REPLY = "C"
     FORWARD = "F"
@@ -696,7 +706,9 @@ class Outgoing(models.Model):
 
     TIMELINE_TYPE = "O"
 
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="outgoing_messages", on_delete=models.PROTECT)
+    org = models.ForeignKey(
+        Org, verbose_name=_("Organization"), related_name="outgoing_messages", on_delete=models.PROTECT
+    )
 
     partner = models.ForeignKey("cases.Partner", null=True, related_name="outgoing_messages", on_delete=models.PROTECT)
 
@@ -706,7 +718,9 @@ class Outgoing(models.Model):
 
     backend_broadcast_id = models.IntegerField(null=True, help_text=_("Broadcast id from the backend"))
 
-    contact = models.ForeignKey(Contact, null=True, related_name="outgoing_messages", on_delete=models.PROTECT)  # used for case and bulk replies
+    contact = models.ForeignKey(
+        Contact, null=True, related_name="outgoing_messages", on_delete=models.PROTECT
+    )  # used for case and bulk replies
 
     urn = models.CharField(max_length=255, null=True)  # used for forwards
 
@@ -860,6 +874,7 @@ class MessageExport(BaseSearchExport):
     """
     An export of messages
     """
+
     directory = "message_exports"
     download_view = "msgs.messageexport_read"
 
@@ -913,6 +928,7 @@ class ReplyExport(BaseSearchExport):
     """
     An export of replies
     """
+
     directory = "reply_exports"
     download_view = "msgs.replyexport_read"
 

@@ -7,7 +7,6 @@ from casepro.test import BaseCasesTest
 
 
 class OrgExtCRUDLTest(BaseCasesTest):
-
     def setUp(self):
         super(OrgExtCRUDLTest, self).setUp()
 
@@ -46,12 +45,12 @@ class OrgExtCRUDLTest(BaseCasesTest):
         self.assertContains(response, "/label/create/")
         self.assertContains(response, "/partner/create/")
         self.assertContains(response, "/user/create/")
-        self.assertNotContains(response, reverse('orgs.orgbackend_list'))
+        self.assertNotContains(response, reverse("orgs.orgbackend_list"))
 
         self.login(self.superuser)
 
         response = self.url_get("unicef", url)
-        self.assertContains(response, reverse('orgs.orgbackend_list'))
+        self.assertContains(response, reverse("orgs.orgbackend_list"))
 
     def test_edit(self):
         url = reverse("orgs_ext.org_edit")
@@ -105,7 +104,6 @@ class OrgExtCRUDLTest(BaseCasesTest):
 
 
 class TaskExtCRUDLTest(BaseCasesTest):
-
     def test_list(self):
         url = reverse("orgs_ext.task_list")
 

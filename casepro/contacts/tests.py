@@ -10,7 +10,6 @@ from .tasks import pull_contacts
 
 
 class URNTest(BaseCasesTest):
-
     def test_from_parts(self):
         self.assertEqual(URN.from_parts("tel", "12345"), "tel:12345")
         self.assertEqual(URN.from_parts("tel", "+12345"), "tel:+12345")
@@ -64,7 +63,6 @@ class URNTest(BaseCasesTest):
 
 
 class ContactTest(BaseCasesTest):
-
     def setUp(self):
         super(ContactTest, self).setUp()
 
@@ -241,7 +239,6 @@ class ContactTest(BaseCasesTest):
 
 
 class ContactCRUDLTest(BaseCasesTest):
-
     def setUp(self):
         super(ContactCRUDLTest, self).setUp()
 
@@ -334,7 +331,6 @@ class ContactCRUDLTest(BaseCasesTest):
 
 
 class FieldCRUDLTest(BaseCasesTest):
-
     def test_list(self):
         url = reverse("contacts.field_list")
 
@@ -350,7 +346,6 @@ class FieldCRUDLTest(BaseCasesTest):
 
 
 class GroupTest(BaseCasesTest):
-
     def test_model(self):
         invisible = self.create_group(self.unicef, "G-006", "Invisible", count=12, is_visible=False)
 
@@ -371,7 +366,6 @@ class GroupTest(BaseCasesTest):
 
 
 class GroupCRUDLTest(BaseCasesTest):
-
     def test_list(self):
         url = reverse("contacts.group_list")
 
@@ -409,7 +403,6 @@ class GroupCRUDLTest(BaseCasesTest):
 
 
 class TasksTest(BaseCasesTest):
-
     @patch("casepro.test.TestBackend.pull_fields")
     @patch("casepro.test.TestBackend.pull_groups")
     @patch("casepro.test.TestBackend.pull_contacts")

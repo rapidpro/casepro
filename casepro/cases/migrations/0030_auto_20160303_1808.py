@@ -11,7 +11,9 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RemoveField(model_name="case", name="message_id"),
         migrations.AlterField(
-            model_name="case", name="contact", field=models.ForeignKey(related_name="cases", to="contacts.Contact", on_delete=models.PROTECT)
+            model_name="case",
+            name="contact",
+            field=models.ForeignKey(related_name="cases", to="contacts.Contact", on_delete=models.PROTECT),
         ),
         migrations.AlterField(
             model_name="case",

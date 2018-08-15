@@ -35,7 +35,12 @@ class Migration(migrations.Migration):
                 ("case_action", models.ForeignKey(to="cases.CaseAction", null=True, on_delete=models.PROTECT)),
                 ("message", models.ForeignKey(to="msgs.Message", null=True, on_delete=models.PROTECT)),
                 ("org", models.ForeignKey(to="orgs.Org", on_delete=models.PROTECT)),
-                ("user", models.ForeignKey(related_name="notifications", to=settings.AUTH_USER_MODEL, on_delete=models.PROTECT)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        related_name="notifications", to=settings.AUTH_USER_MODEL, on_delete=models.PROTECT
+                    ),
+                ),
             ],
         ),
         migrations.RunSQL(INDEX_SQL),

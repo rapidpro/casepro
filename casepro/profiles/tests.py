@@ -14,7 +14,6 @@ from .tasks import send_notifications
 
 
 class NotificationTest(BaseCasesTest):
-
     def setUp(self):
         super(NotificationTest, self).setUp()
 
@@ -157,7 +156,6 @@ class NotificationTest(BaseCasesTest):
 
 
 class ProfileTest(BaseCasesTest):
-
     def test_create_user(self):
         # create un-attached user
         user1 = Profile.create_user("Tom McTicket", "tom@unicef.org", "Qwerty123")
@@ -190,7 +188,6 @@ class ProfileTest(BaseCasesTest):
 
 
 class UserTest(BaseCasesTest):
-
     def test_has_profile(self):
         self.assertFalse(self.superuser.has_profile())
         self.assertTrue(self.admin.has_profile())
@@ -428,7 +425,6 @@ class UserTest(BaseCasesTest):
 
 
 class UserCRUDLTest(BaseCasesTest):
-
     def test_create(self):
         url = reverse("profiles.user_create")
 
@@ -492,9 +488,7 @@ class UserCRUDLTest(BaseCasesTest):
         )
 
         user = User.objects.get(email="adrian@casely.com")
-        self.assertRedirects(
-            response, "/user/read/%d/" % user.pk, fetch_redirect_response=False
-        )
+        self.assertRedirects(response, "/user/read/%d/" % user.pk, fetch_redirect_response=False)
 
         self.assertEqual(user.get_full_name(), "Adrian Admin")
         self.assertEqual(user.username, "adrian@casely.com")
@@ -561,9 +555,7 @@ class UserCRUDLTest(BaseCasesTest):
         )
 
         user = User.objects.get(email="mo@casely.com")
-        self.assertRedirects(
-            response, "/user/read/%d/" % user.pk, fetch_redirect_response=False
-        )
+        self.assertRedirects(response, "/user/read/%d/" % user.pk, fetch_redirect_response=False)
 
         # check new user and profile
         self.assertEqual(user.profile.full_name, "Mo Cases")
@@ -620,9 +612,7 @@ class UserCRUDLTest(BaseCasesTest):
         )
 
         user = User.objects.get(email="mo@casely.com")
-        self.assertRedirects(
-            response, "/user/read/%d/" % user.pk, fetch_redirect_response=False
-        )
+        self.assertRedirects(response, "/user/read/%d/" % user.pk, fetch_redirect_response=False)
 
         self.assertEqual(user.get_partner(self.unicef), self.moh)
 
@@ -709,7 +699,7 @@ class UserCRUDLTest(BaseCasesTest):
                 "email": "rick@unicef.org",
                 "partner": self.moh.pk,
                 "role": ROLE_ANALYST,
-                "change_password": True
+                "change_password": True,
             },
         )
         self.assertEqual(response.status_code, 302)
@@ -1165,7 +1155,6 @@ class UserCRUDLTest(BaseCasesTest):
 
 
 class ForcePasswordChangeMiddlewareTest(BaseCasesTest):
-
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND="memory")
     def test_process_view(self):
         self.user1.profile.change_password = True

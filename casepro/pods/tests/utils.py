@@ -19,7 +19,6 @@ class DummyPodPlugin(PodPlugin):
 
 
 class SuccessActionPod(Pod):
-
     def perform_action(self, type_, params):
         """
         Returns a successful action result with a message containing the type and params.
