@@ -2,13 +2,13 @@ import json
 import uuid
 from datetime import datetime
 
-import mock
 import pytz
 import responses
 from django.conf import settings
 from django.db import IntegrityError
 from django.http import HttpResponse
 from django.test import RequestFactory, override_settings
+from unittest import mock
 
 from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message

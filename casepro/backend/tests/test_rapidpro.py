@@ -6,7 +6,7 @@ import pytz
 from dash.orgs.models import Org
 from dash.test import MockClientQuery
 from django.utils.timezone import now
-from mock import call, patch
+from unittest.mock import call, patch
 from temba_client.v1.types import Broadcast as TembaBroadcast
 from temba_client.v2.types import Contact as TembaContact
 from temba_client.v2.types import Field as TembaField

@@ -173,16 +173,16 @@ INSTALLED_APPS = (
     "djcelery_email",
     "compressor",
     "sorl.thumbnail",
-    # Haml-like templates
     "hamlpy",
-    # smartmin
+    "rest_framework",
+
     "smartmin",
     "smartmin.csv_imports",
     "smartmin.users",
-    # dash
+
     "dash.orgs",
     "dash.utils",
-    # custom
+
     "casepro.orgs_ext",
     "casepro.profiles",
     "casepro.contacts",

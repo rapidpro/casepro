@@ -7,7 +7,7 @@ from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 from django.test.utils import modify_settings, override_settings
 from django.utils import timezone
-from mock import patch
+from unittest.mock import patch
 from temba_client.utils import format_iso8601
 
 from casepro.contacts.models import Contact

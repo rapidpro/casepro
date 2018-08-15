@@ -6,7 +6,7 @@ from dash.orgs.models import Org
 from django.urls import reverse
 from django.test.utils import override_settings
 from django.utils import timezone
-from mock import patch
+from unittest.mock import patch
 
 from casepro.cases.models import Case
 from casepro.msgs.models import Outgoing

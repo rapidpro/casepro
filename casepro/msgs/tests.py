@@ -6,7 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.test.utils import override_settings
 from django.utils.timezone import now
-from mock import call, patch
+from unittest.mock import call, patch
 from temba_client.utils import format_iso8601
 
 from casepro.contacts.models import Contact

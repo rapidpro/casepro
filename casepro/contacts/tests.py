@@ -1,7 +1,7 @@
 from dash.orgs.models import TaskState
 from django.urls import reverse
 from django.test.utils import override_settings
-from mock import patch
+from unittest.mock import patch
 
 from casepro.test import BaseCasesTest
 

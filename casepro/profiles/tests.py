@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from django.test.utils import override_settings
 from django.utils import timezone
-from mock import call, patch
+from unittest.mock import call, patch
 
 from casepro.test import BaseCasesTest
 

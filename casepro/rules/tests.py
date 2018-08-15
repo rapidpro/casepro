@@ -1,5 +1,5 @@
 from django.urls import reverse
-from mock import call, patch
+from unittest.mock import call, patch
 
 from casepro.msgs.models import Message
 from casepro.test import BaseCasesTest
