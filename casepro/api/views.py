@@ -6,7 +6,7 @@ from .serializers import CaseSerializer
 
 
 class CaseViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Case.objects.order_by('-opened_on')
+    queryset = Case.objects.order_by("-opened_on")
     serializer_class = CaseSerializer
 
     def get_queryset(self):

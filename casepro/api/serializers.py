@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from casepro.cases.models import Case
 
+
 class CaseSerializer(serializers.ModelSerializer):
     labels = serializers.SerializerMethodField()
     assignee = serializers.SerializerMethodField()
@@ -22,4 +23,4 @@ class CaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Case
-        fields = ('id', 'summary', 'labels', 'assignee', 'contact', 'opened_on', 'closed_on')
+        fields = ("id", "summary", "labels", "assignee", "contact", "opened_on", "closed_on")
