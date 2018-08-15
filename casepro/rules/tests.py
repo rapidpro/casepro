@@ -1,4 +1,4 @@
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from mock import call, patch
 
 from casepro.msgs.models import Message

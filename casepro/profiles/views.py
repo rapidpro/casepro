@@ -1,7 +1,7 @@
 from dash.orgs.views import OrgPermsMixin
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import Http404, HttpResponse, JsonResponse
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCreateView, SmartCRUDL, SmartDeleteView, SmartListView, SmartReadView, SmartUpdateView
@@ -193,7 +193,7 @@ class UserCRUDL(SmartCRUDL):
             return r"^profile/self/$"
 
         def has_permission(self, request, *args, **kwargs):
-            return self.request.user.is_authenticated()
+            return self.request.user.is_authenticated
 
         def get_form_kwargs(self):
             kwargs = super(UserCRUDL.Self, self).get_form_kwargs()

@@ -4,7 +4,7 @@ from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgObjPermsMixin, OrgPermsMixin
 from django.conf import settings
 from django.core.cache import cache
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.timezone import now
@@ -545,7 +545,7 @@ class BaseInboxView(OrgPermsMixin, SmartTemplateView):
         context["open_case_count"] = Case.get_open(org, user).count()
         context["closed_case_count"] = Case.get_closed(org, user).count()
         context["allow_case_without_message"] = getattr(settings, "SITE_ALLOW_CASE_WITHOUT_MESSAGE", False)
-        context["user_must_reply_with_faq"] = org and not user.is_anonymous() and user.must_use_faq()
+        context["user_must_reply_with_faq"] = org and not user.is_anonymous and user.must_use_faq()
         context["site_contact_display"] = getattr(settings, "SITE_CONTACT_DISPLAY", "name")
         return context
 

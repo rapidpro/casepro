@@ -15,7 +15,6 @@ django-storages
 dj-database-url
 flake8
 gunicorn
-hypothesis
 iso-639
 mock
 pillow

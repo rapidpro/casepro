@@ -36,14 +36,14 @@ class Partner(models.Model):
     """
     Corresponds to a partner organization
     """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="partners")
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="partners", on_delete=models.PROTECT)
 
     name = models.CharField(verbose_name=_("Name"), max_length=128, help_text=_("Name of this partner organization"))
 
     description = models.CharField(verbose_name=_("Description"), null=True, blank=True, max_length=255)
 
     primary_contact = models.ForeignKey(
-        User, verbose_name=_("Primary Contact"), related_name="partners_primary", null=True, blank=True
+        User, verbose_name=_("Primary Contact"), related_name="partners_primary", null=True, blank=True, on_delete=models.PROTECT
     )
 
     is_restricted = models.BooleanField(
@@ -143,11 +143,11 @@ class Case(models.Model):
     """
     A case between a partner organization and a contact
     """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="cases")
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="cases", on_delete=models.PROTECT)
 
     labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this case"))
 
-    assignee = models.ForeignKey(Partner, related_name="cases")
+    assignee = models.ForeignKey(Partner, related_name="cases", on_delete=models.PROTECT)
 
     user_assignee = models.ForeignKey(
         User,
@@ -157,9 +157,9 @@ class Case(models.Model):
         help_text="The (optional) user that this case is assigned to",
     )
 
-    contact = models.ForeignKey(Contact, related_name="cases")
+    contact = models.ForeignKey(Contact, related_name="cases", on_delete=models.PROTECT)
 
-    initial_message = models.OneToOneField(Message, null=True, related_name="initial_case")
+    initial_message = models.OneToOneField(Message, null=True, related_name="initial_case", on_delete=models.PROTECT)
 
     summary = models.CharField(verbose_name=_("Summary"), max_length=255)
 
@@ -510,15 +510,15 @@ class CaseAction(models.Model):
 
     TIMELINE_TYPE = "A"
 
-    case = models.ForeignKey(Case, related_name="actions")
+    case = models.ForeignKey(Case, related_name="actions", on_delete=models.PROTECT)
 
     action = models.CharField(max_length=1, choices=ACTION_CHOICES)
 
-    created_by = models.ForeignKey(User, related_name="case_actions")
+    created_by = models.ForeignKey(User, related_name="case_actions", on_delete=models.PROTECT)
 
     created_on = models.DateTimeField(db_index=True, auto_now_add=True)
 
-    assignee = models.ForeignKey(Partner, null=True, related_name="case_actions")
+    assignee = models.ForeignKey(Partner, null=True, related_name="case_actions", on_delete=models.PROTECT)
 
     user_assignee = models.ForeignKey(
         User,
@@ -528,7 +528,7 @@ class CaseAction(models.Model):
         help_text="The (optional) user that the case was assigned to.",
     )
 
-    label = models.ForeignKey(Label, null=True)
+    label = models.ForeignKey(Label, null=True, on_delete=models.PROTECT)
 
     note = models.CharField(null=True, max_length=1024)
 

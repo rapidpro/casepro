@@ -2,7 +2,7 @@ from collections import defaultdict
 
 import iso639
 from dash.orgs.views import OrgObjPermsMixin, OrgPermsMixin
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.utils.timesince import timesince
 from django.utils.timezone import now
@@ -624,7 +624,7 @@ class FaqCRUDL(SmartCRUDL):
 
         def post(self, request, *args, **kwargs):
             faq = self.get_object()
-            faq.delete()
+            faq.release()
 
             return HttpResponse(status=204)
 

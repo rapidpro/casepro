@@ -36,7 +36,7 @@ class Label(models.Model):
     """
     Corresponds to a message label in RapidPro. Used for determining visibility of messages to different partners.
     """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="labels")
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="labels", on_delete=models.PROTECT)
 
     uuid = models.CharField(max_length=36, unique=True, null=True)
 
@@ -44,7 +44,7 @@ class Label(models.Model):
 
     description = models.CharField(verbose_name=_("Description"), null=True, max_length=255)
 
-    rule = models.OneToOneField("rules.Rule", null=True)
+    rule = models.OneToOneField("rules.Rule", null=True, on_delete=models.PROTECT)
 
     is_synced = models.BooleanField(default=True, help_text="Whether this label should be synced with the backend")
 
@@ -175,7 +175,7 @@ class FAQ(models.Model):
     """
     Pre-approved questions and answers to be used when replying to a message.
     """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="faqs")
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="faqs", on_delete=models.PROTECT)
 
     question = models.CharField(max_length=255)
 
@@ -185,7 +185,7 @@ class FAQ(models.Model):
         max_length=3, verbose_name=_("Language"), null=True, blank=True, help_text=_("Language for this FAQ")
     )
 
-    parent = models.ForeignKey("self", null=True, blank=True, related_name="translations")
+    parent = models.ForeignKey("self", null=True, blank=True, related_name="translations", on_delete=models.PROTECT)
 
     labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this FAQ"), related_name="faqs")
 
@@ -259,6 +259,11 @@ class FAQ(models.Model):
         else:
             return None
 
+    def release(self):
+        for child in self.translations.all():
+            child.release()
+        self.delete()
+
     def as_json(self, full=True):
         result = {"id": self.pk, "question": self.question}
         if full:
@@ -306,11 +311,11 @@ class Message(models.Model):
 
     TIMELINE_TYPE = "I"
 
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="incoming_messages")
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="incoming_messages", on_delete=models.PROTECT)
 
     backend_id = models.IntegerField(unique=True, help_text=_("Backend identifier for this message"))
 
-    contact = models.ForeignKey(Contact, related_name="incoming_messages")
+    contact = models.ForeignKey(Contact, related_name="incoming_messages", on_delete=models.PROTECT)
 
     type = models.CharField(max_length=1)
 
@@ -334,11 +339,11 @@ class Message(models.Model):
 
     is_active = models.BooleanField(default=True)
 
-    case = models.ForeignKey("cases.Case", null=True, related_name="incoming_messages")
+    case = models.ForeignKey("cases.Case", null=True, related_name="incoming_messages", on_delete=models.PROTECT)
 
     locked_on = models.DateTimeField(null=True, help_text="Last action taken on this message")
 
-    locked_by = models.ForeignKey(User, null=True, related_name="actioned_messages")
+    locked_by = models.ForeignKey(User, null=True, related_name="actioned_messages", on_delete=models.PROTECT)
 
     def __init__(self, *args, **kwargs):
         if self.SAVE_CONTACT_ATTR in kwargs:
@@ -650,17 +655,17 @@ class MessageAction(models.Model):
         (RESTORE, _("Restore")),
     )
 
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="message_actions")
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="message_actions", on_delete=models.PROTECT)
 
     messages = models.ManyToManyField(Message, related_name="actions")
 
     action = models.CharField(max_length=1, choices=ACTION_CHOICES)
 
-    created_by = models.ForeignKey(User, related_name="message_actions")
+    created_by = models.ForeignKey(User, related_name="message_actions", on_delete=models.PROTECT)
 
     created_on = models.DateTimeField(auto_now_add=True)
 
-    label = models.ForeignKey(Label, null=True)
+    label = models.ForeignKey(Label, null=True, on_delete=models.PROTECT)
 
     @classmethod
     def create(cls, org, user, messages, action, label=None):
@@ -691,9 +696,9 @@ class Outgoing(models.Model):
 
     TIMELINE_TYPE = "O"
 
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="outgoing_messages")
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="outgoing_messages", on_delete=models.PROTECT)
 
-    partner = models.ForeignKey("cases.Partner", null=True, related_name="outgoing_messages")
+    partner = models.ForeignKey("cases.Partner", null=True, related_name="outgoing_messages", on_delete=models.PROTECT)
 
     activity = models.CharField(max_length=1, choices=ACTIVITY_CHOICES)
 
@@ -701,15 +706,15 @@ class Outgoing(models.Model):
 
     backend_broadcast_id = models.IntegerField(null=True, help_text=_("Broadcast id from the backend"))
 
-    contact = models.ForeignKey(Contact, null=True, related_name="outgoing_messages")  # used for case and bulk replies
+    contact = models.ForeignKey(Contact, null=True, related_name="outgoing_messages", on_delete=models.PROTECT)  # used for case and bulk replies
 
     urn = models.CharField(max_length=255, null=True)  # used for forwards
 
-    reply_to = models.ForeignKey(Message, null=True, related_name="replies")
+    reply_to = models.ForeignKey(Message, null=True, related_name="replies", on_delete=models.PROTECT)
 
-    case = models.ForeignKey("cases.Case", null=True, related_name="outgoing_messages")
+    case = models.ForeignKey("cases.Case", null=True, related_name="outgoing_messages", on_delete=models.PROTECT)
 
-    created_by = models.ForeignKey(User, related_name="outgoing_messages")
+    created_by = models.ForeignKey(User, related_name="outgoing_messages", on_delete=models.PROTECT)
 
     created_on = models.DateTimeField(default=now)
 

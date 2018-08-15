@@ -3,7 +3,7 @@ from datetime import date, datetime, time
 
 import pytz
 from dash.orgs.models import Org
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.test.utils import override_settings
 from django.utils import timezone
 from mock import patch
@@ -287,9 +287,9 @@ class DailyCountExportTest(BaseStatsTest):
         msgs15[0].label(self.tea)
 
         # only org admins can access
-        self.assertLoginRedirect(self.url_get("unicef", url), "unicef", url)
+        self.assertLoginRedirect(self.url_get("unicef", url), url)
         self.login(self.user3)
-        self.assertLoginRedirect(self.url_get("unicef", url), "unicef", url)
+        self.assertLoginRedirect(self.url_get("unicef", url), url)
 
         self.login(self.admin)
 
@@ -406,7 +406,7 @@ class ChartsTest(BaseStatsTest):
     def test_incoming_chart(self):
         url = reverse("statistics.incoming_chart")
 
-        self.assertLoginRedirect(self.url_get("unicef", url), "unicef", url)
+        self.assertLoginRedirect(self.url_get("unicef", url), url)
 
         self.new_messages(date(2016, 1, 1), 1)  # Jan 1st
         msgs = self.new_messages(date(2016, 1, 15), 1)  # Jan 15th
@@ -438,7 +438,7 @@ class ChartsTest(BaseStatsTest):
     def test_replies_chart(self):
         url = reverse("statistics.replies_chart")
 
-        self.assertLoginRedirect(self.url_get("unicef", url), "unicef", url)
+        self.assertLoginRedirect(self.url_get("unicef", url), url)
 
         self.new_outgoing(self.admin, date(2016, 1, 1), 1)  # Jan 1st
         self.new_outgoing(self.user1, date(2016, 1, 15), 1)  # Jan 15th
@@ -522,7 +522,7 @@ class ChartsTest(BaseStatsTest):
     def test_most_used_labels_chart(self):
         url = reverse("statistics.labels_pie_chart")
 
-        self.assertLoginRedirect(self.url_get("unicef", url), "unicef", url)
+        self.assertLoginRedirect(self.url_get("unicef", url), url)
 
         old_msgs = self.new_messages(date(2016, 2, 1), 2)  # Feb 1st (not included)
         old_msgs[0].label(self.aids)

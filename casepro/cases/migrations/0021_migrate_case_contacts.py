@@ -50,12 +50,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="case",
             name="contact_old",
-            field=models.ForeignKey(related_name="cases_old", to="cases.Contact"),
+            field=models.ForeignKey(related_name="cases_old", to="cases.Contact", on_delete=models.PROTECT),
         ),
         migrations.AddField(
             model_name="case",
             name="contact",
-            field=models.ForeignKey(related_name="cases", to="contacts.Contact", null=True),
+            field=models.ForeignKey(related_name="cases", to="contacts.Contact", null=True, on_delete=models.PROTECT),
         ),
         migrations.RunPython(migrate_case_contacts),
         migrations.RemoveField(model_name="case", name="contact_old"),
