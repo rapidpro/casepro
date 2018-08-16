@@ -1,5 +1,3 @@
-import pytz
-
 from django.urls import reverse
 
 from casepro.test import BaseCasesTest
@@ -58,6 +56,7 @@ class APITest(BaseCasesTest):
         url = reverse("api.case-list")
         self.login(self.admin)
 
+        # try listing all cases
         response = self.url_get("unicef", url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
@@ -67,22 +66,61 @@ class APITest(BaseCasesTest):
                     "id": case2.id,
                     "labels": [],
                     "assignee": {"id": self.who.id, "name": "WHO"},
-                    "contact": {"uuid": str(case2.contact.uuid)},
+                    "contact": {"id": case1.contact.id, "uuid": str(case2.contact.uuid)},
                     "opened_on": self._format_date(case2.opened_on),
                     "closed_on": None,
                     "summary": "Summary 2",
                 },
                 {
                     "id": case1.id,
-                    "labels": [{"uuid": "L-001", "name": "AIDS"}],
+                    "labels": [{"id": self.aids.id, "name": "AIDS"}],
                     "assignee": {"id": self.moh.id, "name": "MOH"},
-                    "contact": {"uuid": str(case1.contact.uuid)},
+                    "contact": {"id": case1.contact.id, "uuid": str(case1.contact.uuid)},
                     "opened_on": self._format_date(case1.opened_on),
                     "closed_on": None,
                     "summary": "Summary 1",
                 },
             ],
         )
+
+        # try fetching a specific case from the detail endpoint
+        url = reverse("api.case-detail", args=[case2.id])
+
+        response = self.url_get("unicef", url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["id"], case2.id)
+
+    def test_partners(self):
+        url = reverse("api.partner-list")
+        self.login(self.admin)
+
+        # try listing all partners
+        response = self.url_get("unicef", url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json()["results"],
+            [
+                {
+                    "id": self.who.id,
+                    "name": "WHO",
+                    "description": "World Health Organisation",
+                    "labels": [{"id": self.aids.id, "name": "AIDS"}],
+                },
+                {
+                    "id": self.moh.id,
+                    "name": "MOH",
+                    "description": "Ministry of Health",
+                    "labels": [{"id": self.aids.id, "name": "AIDS"}, {"id": self.pregnancy.id, "name": "Pregnancy"}],
+                },
+            ],
+        )
+
+        # try fetching a specific partner from the detail endpoint
+        url = reverse("api.partner-detail", args=[self.who.id])
+
+        response = self.url_get("unicef", url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["id"], self.who.id)
 
     def _format_date(self, d):
         """
