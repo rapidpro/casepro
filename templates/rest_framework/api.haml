@@ -1,5 +1,11 @@
 - extends "rest_framework/base.html"
-- load i18n
+- load i18n compress
+
+- block bootstrap_theme
+    - compress css
+        %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/bootstrap.css" }
+        %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/smartmin_styles.css" }
+        %link{ type:"text/less", rel:"stylesheet", href:"{{ STATIC_URL }}less/cases.less" }
 
 - block title
     - trans "CasePro API"
