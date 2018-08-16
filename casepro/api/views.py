@@ -9,6 +9,7 @@ class APIRoot(routers.APIRootView):
     """
     These are the endpoints available in the API.
     """
+
     pass
 
 
@@ -20,6 +21,7 @@ class Cases(viewsets.ReadOnlyModelViewSet):
     list:
     Return a list of all the existing cases ordered by last opened.
     """
+
     queryset = Case.objects.order_by("-opened_on")
     serializer_class = CaseSerializer
 
@@ -35,6 +37,7 @@ class Partners(viewsets.ReadOnlyModelViewSet):
     list:
     Return a list of all the existing partner organizations.
     """
+
     queryset = Partner.objects.filter(is_active=True).order_by("-id")
     serializer_class = PartnerSerializer
 
