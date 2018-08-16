@@ -4,10 +4,10 @@ from importlib import reload
 import pytz
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.test.utils import modify_settings, override_settings
 from django.utils import timezone
-from mock import patch
+from unittest.mock import patch
 from temba_client.utils import format_iso8601
 
 from casepro.contacts.models import Contact
@@ -24,7 +24,6 @@ from .models import AccessLevel, Case, CaseAction, CaseExport, CaseFolder, Partn
 
 
 class CaseTest(BaseCasesTest):
-
     def setUp(self):
         super(CaseTest, self).setUp()
 
@@ -473,7 +472,6 @@ class CaseTest(BaseCasesTest):
 @modify_settings(INSTALLED_APPS={"append": "casepro.pods.tests.utils.DummyPodPlugin"})
 @override_settings(PODS=[{"label": "dummy_pod", "title": "FooPod"}])
 class CaseCRUDLTest(BaseCasesTest):
-
     def setUp(self):
         super(CaseCRUDLTest, self).setUp()
 
@@ -494,6 +492,7 @@ class CaseCRUDLTest(BaseCasesTest):
     @patch("casepro.test.TestBackend.remove_from_group")
     def test_open(self, mock_remove_contacts, mock_add_contacts, mock_stop_runs, mock_archive_contact_messages):
         CaseAction.objects.all().delete()
+        Message.objects.update(case=None)
         Case.objects.all().delete()
         Message.objects.all().delete()
 
@@ -850,6 +849,7 @@ class CaseCRUDLTest(BaseCasesTest):
     @patch("casepro.test.TestBackend.fetch_contact_messages")
     def test_timeline(self, mock_fetch_contact_messages):
         CaseAction.objects.all().delete()
+        Message.objects.update(case=None)
         Case.objects.all().delete()
         Message.objects.all().delete()
 
@@ -1033,7 +1033,7 @@ class CaseCRUDLTest(BaseCasesTest):
 
         # try unauthenticated
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # test as org administrator
         self.login(self.admin)
@@ -1113,7 +1113,6 @@ class CaseCRUDLTest(BaseCasesTest):
 
 
 class CaseExportCRUDLTest(BaseCasesTest):
-
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND="memory")
     def test_create_and_read(self):
         ann = self.create_contact(
@@ -1235,12 +1234,11 @@ class CaseExportCRUDLTest(BaseCasesTest):
 
 
 class InboxViewsTest(BaseCasesTest):
-
     def test_inbox(self):
         url = reverse("cases.inbox")
 
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # log in as administrator
         self.login(self.admin)
@@ -1262,7 +1260,6 @@ class InboxViewsTest(BaseCasesTest):
 
 
 class PartnerTest(BaseCasesTest):
-
     def test_create(self):
         wfp = Partner.create(self.unicef, "WFP", "World Food Program", None, True, [self.aids, self.pregnancy])
         self.assertEqual(wfp.org, self.unicef)
@@ -1301,14 +1298,13 @@ class PartnerTest(BaseCasesTest):
 
 
 class PartnerCRUDLTest(BaseCasesTest):
-
     def test_create(self):
         url = reverse("cases.partner_create")
 
         # can't access as partner user
         self.login(self.user1)
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         self.login(self.admin)
         response = self.url_get("unicef", url)
@@ -1333,9 +1329,7 @@ class PartnerCRUDLTest(BaseCasesTest):
 
         helpers = Partner.objects.get(name="Helpers")
 
-        self.assertRedirects(
-            response, "http://unicef.localhost/partner/read/%d/" % helpers.pk, fetch_redirect_response=False
-        )
+        self.assertRedirects(response, "/partner/read/%d/" % helpers.pk, fetch_redirect_response=False)
 
         self.assertTrue(helpers.is_restricted)
         self.assertEqual(set(helpers.get_labels()), {self.tea})
@@ -1393,7 +1387,7 @@ class PartnerCRUDLTest(BaseCasesTest):
         self.login(self.user4)
 
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
     def test_update(self):
         url = reverse("cases.partner_update", args=[self.moh.pk])
@@ -1402,7 +1396,7 @@ class PartnerCRUDLTest(BaseCasesTest):
         self.login(self.user2)
 
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # login as manager user
         self.login(self.user1)
@@ -1421,18 +1415,14 @@ class PartnerCRUDLTest(BaseCasesTest):
 
         # post name change
         response = self.url_post("unicef", url, {"name": "MOH2"})
-        self.assertRedirects(
-            response, "http://unicef.localhost/partner/read/%d/" % self.moh.pk, fetch_redirect_response=False
-        )
+        self.assertRedirects(response, "/partner/read/%d/" % self.moh.pk, fetch_redirect_response=False)
 
         moh = Partner.objects.get(pk=self.moh.pk)
         self.assertEqual(moh.name, "MOH2")
 
         # post primary contact change
         response = self.url_post("unicef", url, {"name": "MOH", "primary_contact": self.user1.pk})
-        self.assertRedirects(
-            response, "http://unicef.localhost/partner/read/%d/" % self.moh.pk, fetch_redirect_response=False
-        )
+        self.assertRedirects(response, "/partner/read/%d/" % self.moh.pk, fetch_redirect_response=False)
 
         moh = Partner.objects.get(pk=self.moh.pk)
         self.assertEqual(moh.primary_contact, self.user1)
@@ -1444,7 +1434,7 @@ class PartnerCRUDLTest(BaseCasesTest):
         self.login(self.user1)
 
         response = self.url_post("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         self.assertTrue(Partner.objects.get(pk=self.moh.pk).is_active)
 
@@ -1526,7 +1516,6 @@ class PartnerCRUDLTest(BaseCasesTest):
 
 
 class ContextProcessorsTest(BaseCasesTest):
-
     def test_sentry_dsn(self):
         dsn = "https://ir78h8v3mhz91lzgd2icxzaiwtmpsx10:58l883tax2o5cae05bj517f9xmq16a2h@app.getsentry.com/44864"
         with self.settings(SENTRY_DSN=dsn):
@@ -1537,7 +1526,6 @@ class ContextProcessorsTest(BaseCasesTest):
 
 
 class InternalViewsTest(BaseCasesTest):
-
     def test_status(self):
         url = reverse("internal.status")
         response = self.url_get("unicef", url)

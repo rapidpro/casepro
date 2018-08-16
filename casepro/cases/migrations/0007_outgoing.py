@@ -20,9 +20,20 @@ class Migration(migrations.Migration):
                 ("id", models.AutoField(verbose_name="ID", serialize=False, auto_created=True, primary_key=True)),
                 ("broadcast_id", models.IntegerField()),
                 ("created_on", models.DateTimeField(db_index=True)),
-                ("case", models.ForeignKey(related_name="outgoing", to="cases.Case", null=True)),
-                ("created_by", models.ForeignKey(related_name="outgoing", to=settings.AUTH_USER_MODEL)),
-                ("org", models.ForeignKey(related_name="outgoing", verbose_name="Organization", to="orgs.Org")),
+                (
+                    "case",
+                    models.ForeignKey(related_name="outgoing", to="cases.Case", null=True, on_delete=models.PROTECT),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(related_name="outgoing", to=settings.AUTH_USER_MODEL, on_delete=models.PROTECT),
+                ),
+                (
+                    "org",
+                    models.ForeignKey(
+                        related_name="outgoing", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT
+                    ),
+                ),
             ],
         )
     ]

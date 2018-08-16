@@ -206,6 +206,7 @@ class NoopBackend(BaseBackend):  # pragma: no cover
     """
     A stub backend which doesn't do anything
     """
+
     NO_CHANGES = (0, 0, 0, 0)
 
     def pull_contacts(self, org, modified_after, modified_before, progress_callback=None):

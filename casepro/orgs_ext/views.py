@@ -1,6 +1,6 @@
 from dash.orgs.models import Org
 from dash.orgs.views import InferOrgMixin, OrgCRUDL, OrgPermsMixin, TaskCRUDL
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCRUDL, SmartUpdateView
 
@@ -77,7 +77,6 @@ class OrgExtCRUDL(SmartCRUDL):
 
 
 class TaskExtCRUDL(TaskCRUDL):
-
     class List(TaskCRUDL.List):
         link_fields = ("org",)
 

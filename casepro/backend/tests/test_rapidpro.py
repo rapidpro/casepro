@@ -6,7 +6,7 @@ import pytz
 from dash.orgs.models import Org
 from dash.test import MockClientQuery
 from django.utils.timezone import now
-from mock import call, patch
+from unittest.mock import call, patch
 from temba_client.v1.types import Broadcast as TembaBroadcast
 from temba_client.v2.types import Contact as TembaContact
 from temba_client.v2.types import Field as TembaField
@@ -23,7 +23,6 @@ from ..rapidpro import ContactSyncer, MessageSyncer, RapidProBackend
 
 
 class ContactSyncerTest(BaseCasesTest):
-
     def setUp(self):
         super(ContactSyncerTest, self).setUp()
 
@@ -185,7 +184,6 @@ class ContactSyncerTest(BaseCasesTest):
 
 
 class MessageSyncerTest(BaseCasesTest):
-
     def setUp(self):
         super(MessageSyncerTest, self).setUp()
 
@@ -346,7 +344,6 @@ class MessageSyncerTest(BaseCasesTest):
 
 
 class RapidProBackendTest(BaseCasesTest):
-
     def setUp(self):
         super(RapidProBackendTest, self).setUp()
 
@@ -1046,7 +1043,6 @@ class RapidProBackendTest(BaseCasesTest):
 
 @skip
 class PerfTest(BaseCasesTest):
-
     def setUp(self):
         super(PerfTest, self).setUp()
 

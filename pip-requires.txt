@@ -1,9 +1,7 @@
-boto
-celery
-colorama
--e git+https://github.com/nyaruka/confmodel.git@python3#egg=confmodel
-coverage
+############## Django ##############
+
 django
+djangorestframework
 django-celery-email
 django-compressor
 django-contrib-comments
@@ -13,11 +11,16 @@ django-redis
 django-rosetta
 django-storages
 dj-database-url
-flake8
+smartmin
+
+############## Misc ##############
+
+boto
+celery
+colorama
+-e git+https://github.com/nyaruka/confmodel.git@python3#egg=confmodel
 gunicorn
-hypothesis
 iso-639
-mock
 pillow
 pisa
 psycopg2
@@ -28,7 +31,11 @@ rapidpro-python
 raven
 redis
 regex
-responses
-smartmin
 sorl-thumbnail
 xlutils
+
+############## Testing ##############
+
+coverage
+flake8
+responses

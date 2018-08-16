@@ -12,6 +12,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="caseexport",
             name="partner",
-            field=models.ForeignKey(related_name="caseexports", to="cases.Partner", null=True),
+            field=models.ForeignKey(
+                related_name="caseexports", to="cases.Partner", null=True, on_delete=models.PROTECT
+            ),
         )
     ]

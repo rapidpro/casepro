@@ -11,11 +11,13 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RemoveField(model_name="case", name="message_id"),
         migrations.AlterField(
-            model_name="case", name="contact", field=models.ForeignKey(related_name="cases", to="contacts.Contact")
+            model_name="case",
+            name="contact",
+            field=models.ForeignKey(related_name="cases", to="contacts.Contact", on_delete=models.PROTECT),
         ),
         migrations.AlterField(
             model_name="case",
             name="initial_message",
-            field=models.OneToOneField(related_name="initial_case", to="msgs.Message"),
+            field=models.OneToOneField(related_name="initial_case", to="msgs.Message", on_delete=models.PROTECT),
         ),
     ]

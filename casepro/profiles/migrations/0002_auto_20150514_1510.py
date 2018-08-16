@@ -12,6 +12,8 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="profile",
             name="partner",
-            field=models.ForeignKey(related_name="user_profiles", to="cases.Partner", null=True),
+            field=models.ForeignKey(
+                related_name="user_profiles", to="cases.Partner", null=True, on_delete=models.PROTECT
+            ),
         )
     ]

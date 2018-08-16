@@ -25,11 +25,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="case",
             name="contact",
-            field=models.ForeignKey(related_name="cases", to="cases.Contact", null=True),
+            field=models.ForeignKey(related_name="cases", to="cases.Contact", null=True, on_delete=models.PROTECT),
         ),
         migrations.RunPython(populate_case_contacts),
         migrations.AlterField(
-            model_name="case", name="contact", field=models.ForeignKey(related_name="cases", to="cases.Contact")
+            model_name="case",
+            name="contact",
+            field=models.ForeignKey(related_name="cases", to="cases.Contact", on_delete=models.PROTECT),
         ),
         migrations.RemoveField(model_name="case", name="contact_uuid"),
     ]

@@ -3,10 +3,10 @@ from datetime import date, datetime, time
 
 import pytz
 from dash.orgs.models import Org
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.test.utils import override_settings
 from django.utils import timezone
-from mock import patch
+from unittest.mock import patch
 
 from casepro.cases.models import Case
 from casepro.msgs.models import Outgoing
@@ -18,7 +18,6 @@ from .tasks import squash_counts
 
 
 class BaseStatsTest(BaseCasesTest):
-
     def setUp(self):
         super(BaseStatsTest, self).setUp()
 
@@ -64,7 +63,6 @@ class BaseStatsTest(BaseCasesTest):
 
 
 class DailyCountsTest(BaseStatsTest):
-
     def test_reply_counts(self):
         self.new_outgoing(self.admin, date(2015, 1, 1), 2)
         self.new_outgoing(self.user1, date(2015, 1, 1), 1)
@@ -275,7 +273,6 @@ class DailyCountsTest(BaseStatsTest):
 
 
 class DailyCountExportTest(BaseStatsTest):
-
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND="memory")
     def test_label_export(self):
         url = reverse("statistics.dailycountexport_create")
@@ -287,9 +284,9 @@ class DailyCountExportTest(BaseStatsTest):
         msgs15[0].label(self.tea)
 
         # only org admins can access
-        self.assertLoginRedirect(self.url_get("unicef", url), "unicef", url)
+        self.assertLoginRedirect(self.url_get("unicef", url), url)
         self.login(self.user3)
-        self.assertLoginRedirect(self.url_get("unicef", url), "unicef", url)
+        self.assertLoginRedirect(self.url_get("unicef", url), url)
 
         self.login(self.admin)
 
@@ -402,11 +399,10 @@ class DailyCountExportTest(BaseStatsTest):
 
 
 class ChartsTest(BaseStatsTest):
-
     def test_incoming_chart(self):
         url = reverse("statistics.incoming_chart")
 
-        self.assertLoginRedirect(self.url_get("unicef", url), "unicef", url)
+        self.assertLoginRedirect(self.url_get("unicef", url), url)
 
         self.new_messages(date(2016, 1, 1), 1)  # Jan 1st
         msgs = self.new_messages(date(2016, 1, 15), 1)  # Jan 15th
@@ -438,7 +434,7 @@ class ChartsTest(BaseStatsTest):
     def test_replies_chart(self):
         url = reverse("statistics.replies_chart")
 
-        self.assertLoginRedirect(self.url_get("unicef", url), "unicef", url)
+        self.assertLoginRedirect(self.url_get("unicef", url), url)
 
         self.new_outgoing(self.admin, date(2016, 1, 1), 1)  # Jan 1st
         self.new_outgoing(self.user1, date(2016, 1, 15), 1)  # Jan 15th
@@ -522,7 +518,7 @@ class ChartsTest(BaseStatsTest):
     def test_most_used_labels_chart(self):
         url = reverse("statistics.labels_pie_chart")
 
-        self.assertLoginRedirect(self.url_get("unicef", url), "unicef", url)
+        self.assertLoginRedirect(self.url_get("unicef", url), url)
 
         old_msgs = self.new_messages(date(2016, 2, 1), 2)  # Feb 1st (not included)
         old_msgs[0].label(self.aids)
@@ -560,7 +556,6 @@ class ChartsTest(BaseStatsTest):
 
 
 class SecondTotalCountsTest(BaseStatsTest):
-
     def test_first_reply_counts(self):
         msg1 = self.create_message(self.unicef, 123, self.ann, "Hello 1", [self.aids])
         msg2 = self.create_message(self.unicef, 234, self.ned, "Hello 2", [self.aids, self.pregnancy])

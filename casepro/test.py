@@ -21,6 +21,7 @@ class TestBackend(backend.NoopBackend):
     """
     A stub backend which doesn't do anything but can be mocked
     """
+
     pass
 
 
@@ -190,6 +191,9 @@ class BaseCasesTest(DashTest):
 
     def url_post_json(self, subdomain, url, data):
         return self.url_post(subdomain, url, json.dumps(data), content_type="application/json")
+
+    def assertLoginRedirect(self, response, next_url):
+        self.assertRedirects(response, "/users/login/?next=%s" % next_url)
 
     def assertNotCalled(self, mock):
         """

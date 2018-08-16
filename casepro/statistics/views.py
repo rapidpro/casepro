@@ -139,6 +139,7 @@ class MostUsedLabelsChart(BaseChart):
     """
     Pie chart of top 10 labels used in last 30 days
     """
+
     num_items = 10
     num_days = 30
 
@@ -173,7 +174,6 @@ class DailyCountExportCRUDL(SmartCRUDL):
     actions = ("create", "read")
 
     class Create(NonAtomicMixin, OrgPermsMixin, SmartCreateView):
-
         def post(self, request, *args, **kwargs):
             of_type = request.json["type"]
 

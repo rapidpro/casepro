@@ -13,11 +13,15 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="messageexport",
             name="created_by",
-            field=models.ForeignKey(related_name="messageexports", to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(
+                related_name="messageexports", to=settings.AUTH_USER_MODEL, on_delete=models.PROTECT
+            ),
         ),
         migrations.AlterField(
             model_name="messageexport",
             name="org",
-            field=models.ForeignKey(related_name="messageexports", verbose_name="Organization", to="orgs.Org"),
+            field=models.ForeignKey(
+                related_name="messageexports", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT
+            ),
         ),
     ]

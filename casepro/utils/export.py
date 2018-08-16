@@ -10,7 +10,7 @@ from django.contrib.auth.models import User
 from django.core.files import File
 from django.core.files.storage import default_storage
 from django.core.files.temp import NamedTemporaryFile
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db import models
 from django.http import HttpResponse
 from django.utils.translation import ugettext_lazy as _
@@ -26,11 +26,12 @@ class BaseExport(models.Model):
     """
     Base class for exports
     """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="%(class)ss")
+
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="%(class)ss", on_delete=models.PROTECT)
 
     filename = models.CharField(max_length=512)
 
-    created_by = models.ForeignKey(User, related_name="%(class)ss")
+    created_by = models.ForeignKey(User, related_name="%(class)ss", on_delete=models.PROTECT)
 
     created_on = models.DateTimeField(auto_now_add=True)
 
@@ -103,7 +104,8 @@ class BaseSearchExport(BaseExport):
     """
     Base class for exports based on item searches which may be initiated by partner users
     """
-    partner = models.ForeignKey("cases.Partner", related_name="%(class)ss", null=True)
+
+    partner = models.ForeignKey("cases.Partner", related_name="%(class)ss", null=True, on_delete=models.PROTECT)
 
     search = models.TextField()
 
@@ -135,6 +137,7 @@ class BaseDownloadView(OrgObjPermsMixin, SmartReadView):
     """
     Download view for exports
     """
+
     filename = None
     template_name = "download.haml"
 

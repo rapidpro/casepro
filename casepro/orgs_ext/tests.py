@@ -1,13 +1,12 @@
 import pytz
 from dash.orgs.models import TaskState
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from casepro.contacts.models import Field, Group
 from casepro.test import BaseCasesTest
 
 
 class OrgExtCRUDLTest(BaseCasesTest):
-
     def setUp(self):
         super(OrgExtCRUDLTest, self).setUp()
 
@@ -18,7 +17,7 @@ class OrgExtCRUDLTest(BaseCasesTest):
 
         # not accessible to org users
         self.login(self.admin)
-        self.assertLoginRedirect(self.url_get("unicef", url), "unicef", url)
+        self.assertLoginRedirect(self.url_get("unicef", url), url)
 
         # accessible to superusers
         self.login(self.superuser)
@@ -30,7 +29,7 @@ class OrgExtCRUDLTest(BaseCasesTest):
 
         # not accessible to org users
         self.login(self.admin)
-        self.assertLoginRedirect(self.url_get("unicef", url), "unicef", url)
+        self.assertLoginRedirect(self.url_get("unicef", url), url)
 
         # accessible to superusers
         self.login(self.superuser)
@@ -46,12 +45,12 @@ class OrgExtCRUDLTest(BaseCasesTest):
         self.assertContains(response, "/label/create/")
         self.assertContains(response, "/partner/create/")
         self.assertContains(response, "/user/create/")
-        self.assertNotContains(response, reverse('orgs.orgbackend_list'))
+        self.assertNotContains(response, reverse("orgs.orgbackend_list"))
 
         self.login(self.superuser)
 
         response = self.url_get("unicef", url)
-        self.assertContains(response, reverse('orgs.orgbackend_list'))
+        self.assertContains(response, reverse("orgs.orgbackend_list"))
 
     def test_edit(self):
         url = reverse("orgs_ext.org_edit")
@@ -105,7 +104,6 @@ class OrgExtCRUDLTest(BaseCasesTest):
 
 
 class TaskExtCRUDLTest(BaseCasesTest):
-
     def test_list(self):
         url = reverse("orgs_ext.task_list")
 
@@ -114,7 +112,7 @@ class TaskExtCRUDLTest(BaseCasesTest):
 
         # not accessible to org users
         self.login(self.admin)
-        self.assertRedirects(self.url_get(None, url), "http://testserver/users/login/?next=%s" % url)
+        self.assertRedirects(self.url_get(None, url), "/users/login/?next=%s" % url)
 
         # accessible to superusers
         self.login(self.superuser)

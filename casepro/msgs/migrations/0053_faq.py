@@ -27,8 +27,18 @@ class Migration(migrations.Migration):
                         help_text="Labels assigned to this FAQ", related_name="faqs", to="msgs.Label"
                     ),
                 ),
-                ("org", models.ForeignKey(related_name="faqs", verbose_name="Organization", to="orgs.Org")),
-                ("parent", models.ForeignKey(related_name="translations", blank=True, to="msgs.FAQ", null=True)),
+                (
+                    "org",
+                    models.ForeignKey(
+                        related_name="faqs", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT
+                    ),
+                ),
+                (
+                    "parent",
+                    models.ForeignKey(
+                        related_name="translations", blank=True, to="msgs.FAQ", null=True, on_delete=models.PROTECT
+                    ),
+                ),
             ],
         )
     ]

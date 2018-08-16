@@ -12,6 +12,7 @@ class OrgForm(forms.ModelForm):
     """
     Form for superusers to create and update orgs
     """
+
     language = forms.ChoiceField(required=False, choices=[("", "")] + list(settings.LANGUAGES))
 
     timezone = TimeZoneFormField()
@@ -33,6 +34,7 @@ class OrgEditForm(forms.ModelForm):
     """
     Form for org admins to update their own org
     """
+
     name = forms.CharField(label=_("Organization"), help_text=_("The name of this organization"))
 
     timezone = TimeZoneFormField(help_text=_("The timezone your organization is in"))

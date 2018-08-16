@@ -1,4 +1,4 @@
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django_comments.forms import CommentForm
 from temba_client.utils import format_iso8601
 
@@ -7,7 +7,6 @@ from casepro.test import BaseCasesTest
 
 
 class CommentCRUDLTest(BaseCasesTest):
-
     def setUp(self):
         super(CommentCRUDLTest, self).setUp()
         self.login(self.user1)

@@ -18,7 +18,6 @@ class FieldTestWidget(forms.widgets.MultiWidget):
 
 
 class FieldTestField(forms.fields.MultiValueField):
-
     def __init__(self, *args, **kwargs):
         org = kwargs.pop("org")
         org_fields = Field.get_all(org).order_by("label")

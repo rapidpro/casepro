@@ -2,13 +2,13 @@ import json
 import uuid
 from datetime import datetime
 
-import mock
 import pytz
 import responses
 from django.conf import settings
 from django.db import IntegrityError
 from django.http import HttpResponse
 from django.test import RequestFactory, override_settings
+from unittest import mock
 
 from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message
@@ -28,7 +28,6 @@ from ..junebug import (
 
 
 class JunebugBackendTest(BaseCasesTest):
-
     def setUp(self):
         super(JunebugBackendTest, self).setUp()
         self.backend = JunebugBackend()
@@ -524,7 +523,6 @@ class JunebugBackendTest(BaseCasesTest):
         JUNEBUG_HUB_AUTH_TOKEN="sample-token",
     )
     def test_outgoing_with_hub_push_enabled(self):
-
         def message_send_callback(request):
             data = json_decode(request.body)
             self.assertEqual(data, {"to": "+1234", "from": "+4321", "content": "That's great"})
@@ -597,7 +595,6 @@ class JunebugBackendTest(BaseCasesTest):
         JUNEBUG_HUB_AUTH_TOKEN="sample-token",
     )
     def test_outgoing_with_hub_push_enabled_no_reply_to(self):
-
         def message_send_callback(request):
             data = json_decode(request.body)
             self.assertEqual(data, {"to": "+1234", "from": "+4321", "content": "That's great"})
@@ -802,25 +799,26 @@ class JunebugBackendTest(BaseCasesTest):
         """
         urls = self.backend.get_url_patterns()
         self.assertEqual(urls[0].callback, received_junebug_message)
-        self.assertEqual(urls[0].regex.pattern, settings.JUNEBUG_INBOUND_URL)
+        self.assertEqual(str(urls[0].pattern), settings.JUNEBUG_INBOUND_URL)
         self.assertEqual(urls[0].name, "inbound_junebug_message")
         self.assertEqual(urls[1].callback, receive_identity_store_optout)
-        self.assertEqual(urls[1].regex.pattern, settings.IDENTITY_STORE_OPTOUT_URL)
+        self.assertEqual(str(urls[1].pattern), settings.IDENTITY_STORE_OPTOUT_URL)
         self.assertEqual(urls[1].name, "identity_store_optout")
 
         with self.settings(JUNEBUG_INBOUND_URL=r"^test/url/$"):
             urls = self.backend.get_url_patterns()
-            self.assertEqual(urls[0].regex.pattern, r"^test/url/$")
+            self.assertEqual(str(urls[0].pattern), r"^test/url/$")
 
         with self.settings(IDENTITY_STORE_OPTOUT_URL=r"^test/url/$"):
             urls = self.backend.get_url_patterns()
-            self.assertEqual(urls[1].regex.pattern, r"^test/url/$")
+            self.assertEqual(str(urls[1].pattern), r"^test/url/$")
 
 
 class JunebugInboundViewTest(BaseCasesTest):
     """
     Tests related to the inbound junebug messages view.
     """
+
     url = "/junebug/inbound/"
 
     def setUp(self):
@@ -1111,6 +1109,7 @@ class IdentityStoreOptoutViewTest(BaseCasesTest):
     """
     Tests related to the optout identity store view.
     """
+
     url = "/junebug/optout/"
 
     def setUp(self):
@@ -1326,7 +1325,6 @@ class TokenAuthRequiredTest(BaseCasesTest):
 
 
 class IdentityStoreTest(BaseCasesTest):
-
     def get_identities_callback(self, request):
         self.assertEqual(request.headers.get("Content-Type"), "application/json")
         self.assertEqual(request.headers.get("Authorization"), "Token auth-token")
@@ -1645,7 +1643,6 @@ class IdentityStoreTest(BaseCasesTest):
 
 
 class IdentityStoreContactTest(BaseCasesTest):
-
     def test_contact_with_defaults(self):
         identity_data = {
             "id": "test_id",

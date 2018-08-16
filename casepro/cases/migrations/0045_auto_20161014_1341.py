@@ -12,6 +12,8 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="case",
             name="initial_message",
-            field=models.OneToOneField(related_name="initial_case", null=True, to="msgs.Message"),
+            field=models.OneToOneField(
+                related_name="initial_case", null=True, to="msgs.Message", on_delete=models.PROTECT
+            ),
         )
     ]

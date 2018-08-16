@@ -49,9 +49,10 @@ class Migration(migrations.Migration):
                         related_name="content_type_set_for_messageboardcomment",
                         verbose_name="content type",
                         to="contenttypes.ContentType",
+                        on_delete=models.PROTECT,
                     ),
                 ),
-                ("site", models.ForeignKey(to="sites.Site")),
+                ("site", models.ForeignKey(to="sites.Site", on_delete=models.PROTECT)),
                 (
                     "user",
                     models.ForeignKey(

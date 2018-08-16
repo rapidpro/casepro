@@ -21,8 +21,21 @@ class Migration(migrations.Migration):
                 ("search", models.TextField()),
                 ("filename", models.CharField(max_length=512)),
                 ("created_on", models.DateTimeField(auto_now_add=True)),
-                ("created_by", models.ForeignKey(related_name="caseexports", to=settings.AUTH_USER_MODEL)),
-                ("org", models.ForeignKey(related_name="caseexports", verbose_name="Organization", to="orgs.Org")),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        related_name="caseexports", to=settings.AUTH_USER_MODEL, on_delete=models.PROTECT
+                    ),
+                ),
+                (
+                    "org",
+                    models.ForeignKey(
+                        related_name="caseexports",
+                        verbose_name="Organization",
+                        to="orgs.Org",
+                        on_delete=models.PROTECT,
+                    ),
+                ),
             ],
             options={"abstract": False},
         )

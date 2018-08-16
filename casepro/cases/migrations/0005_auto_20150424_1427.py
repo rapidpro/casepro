@@ -27,9 +27,22 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("created_on", models.DateTimeField(auto_now_add=True)),
-                ("created_by", models.ForeignKey(related_name="message_actions", to=settings.AUTH_USER_MODEL)),
-                ("label", models.ForeignKey(to="cases.Label", null=True)),
-                ("org", models.ForeignKey(related_name="message_actions", verbose_name="Organization", to="orgs.Org")),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        related_name="message_actions", to=settings.AUTH_USER_MODEL, on_delete=models.PROTECT
+                    ),
+                ),
+                ("label", models.ForeignKey(to="cases.Label", null=True, on_delete=models.PROTECT)),
+                (
+                    "org",
+                    models.ForeignKey(
+                        related_name="message_actions",
+                        verbose_name="Organization",
+                        to="orgs.Org",
+                        on_delete=models.PROTECT,
+                    ),
+                ),
             ],
         ),
         migrations.RunSQL(

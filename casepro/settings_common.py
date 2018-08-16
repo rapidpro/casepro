@@ -130,7 +130,7 @@ STATICFILES_FINDERS = (
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = "4-rr2sa6c#5*vr^2$m*2*j+5tc9duo2q+5e!xra%n($d5a$yp)"
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -173,16 +173,13 @@ INSTALLED_APPS = (
     "djcelery_email",
     "compressor",
     "sorl.thumbnail",
-    # Haml-like templates
     "hamlpy",
-    # smartmin
+    "rest_framework",
     "smartmin",
     "smartmin.csv_imports",
     "smartmin.users",
-    # dash
     "dash.orgs",
     "dash.utils",
-    # custom
     "casepro.orgs_ext",
     "casepro.profiles",
     "casepro.contacts",

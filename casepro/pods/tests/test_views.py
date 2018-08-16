@@ -1,6 +1,6 @@
 from importlib import reload
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.test import modify_settings
 
 from casepro.cases.models import CaseAction
