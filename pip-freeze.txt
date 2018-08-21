@@ -36,6 +36,7 @@ idna==2.7                 # via requests
 iso-639==0.4.5
 iso8601==0.1.12           # via rapidpro-python
 kombu==4.2.1              # via celery
+markdown==2.6.11
 mccabe==0.6.1             # via flake8
 phonenumbers==8.9.10      # via rapidpro-dash
 pillow==5.2.0

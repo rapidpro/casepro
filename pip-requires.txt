@@ -1,6 +1,6 @@
 ############## Django ##############
 
-django
+django<2.1
 djangorestframework
 django-celery-email
 django-compressor
@@ -21,6 +21,7 @@ colorama
 -e git+https://github.com/nyaruka/confmodel.git@python3#egg=confmodel
 gunicorn
 iso-639
+markdown
 pillow
 pisa
 psycopg2
