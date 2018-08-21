@@ -1,3 +1,9 @@
+v1.1.0
+----------
+ * Add org field to CaseAction
+ * Add basic API
+ * Dpendency update and cleanup
+
 v1.0.2
 ----------
  * Upgrade to Django 2
