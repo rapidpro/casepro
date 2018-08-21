@@ -1,3 +1,5 @@
+from django.utils.translation import ugettext_lazy as _
+
 from rest_framework import viewsets, routers
 
 from casepro.cases.models import Case, CaseAction, Partner
@@ -10,7 +12,7 @@ class APIRoot(routers.APIRootView):
     These are the endpoints available in the API.
     """
 
-    pass
+    title = _("API v1")
 
 
 class Actions(viewsets.ReadOnlyModelViewSet):

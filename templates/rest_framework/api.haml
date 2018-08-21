@@ -6,7 +6,8 @@
       .apitoken
         - if request.user and request.user.is_authenticated
           - trans "Token: "
-          {{ request.user.auth_token }}
+          %strong
+            {{ request.user.auth_token }}
         - else
           - trans "Login to see your access token"
 
