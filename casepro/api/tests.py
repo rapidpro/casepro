@@ -1,3 +1,4 @@
+from django.utils.http import quote
 from django.urls import reverse
 
 from casepro.cases.models import CaseAction
@@ -111,6 +112,18 @@ class APITest(BaseCasesTest):
                 },
             ],
         )
+
+        # try filtering by created_on
+        response = self.url_get("unicef", url + f'?after={quote(action2.created_on.isoformat())}')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([a["id"] for a in response.json()["results"]], [action4.id, action3.id])
+
+        # try fetching a specific action from the detail endpoint
+        url = reverse("api.action-detail", args=[action2.id])
+
+        response = self.url_get("unicef", url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["id"], action2.id)
 
     def test_cases(self):
         msg1 = self.create_message(self.unicef, 101, self.ann, "Hello", [self.aids])

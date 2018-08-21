@@ -1,3 +1,5 @@
+import iso8601
+
 from django.utils.translation import ugettext_lazy as _
 
 from rest_framework import viewsets, routers
@@ -17,29 +19,40 @@ class APIRoot(routers.APIRootView):
 
 class Actions(viewsets.ReadOnlyModelViewSet):
     """
-    retrieve:
-    Return the given case action.
+    # Retrieve an action
 
-    list:
-    Return a list of all the existing case actions ordered by last created.
+    Return the given case action by its id, e.g. /api/v1/actions/123/
+
+    # List actions
+
+    Return a list of all the existing case actions ordered by last created. You can include `after` as a query parameter
+    to only return actions created after that time.
     """
 
     queryset = CaseAction.objects.order_by("-created_on")
     serializer_class = CaseActionSerializer
 
     def get_queryset(self):
-        return (
+        qs = (
             super().get_queryset().filter(case__org=self.request.org)
             .select_related('case', 'label', 'assignee')
         )
 
+        after = self.request.query_params.get('after')
+        if after:
+            qs = qs.filter(created_on__gt=iso8601.parse_date(after))
+
+        return qs
+
 
 class Cases(viewsets.ReadOnlyModelViewSet):
     """
-    retrieve:
-    Return the given case.
+    # Retrieve a case
 
-    list:
+    Return the given case by its id, e.g. /api/v1/cases/123/
+
+    # List cases
+
     Return a list of all the existing cases ordered by last opened.
     """
 
@@ -56,10 +69,12 @@ class Cases(viewsets.ReadOnlyModelViewSet):
 
 class Partners(viewsets.ReadOnlyModelViewSet):
     """
-    retrieve:
-    Return the given partner organization.
+    # Retrieve a partner
 
-    list:
+    Return the given partner organization by its id, e.g. /api/v1/partners/123/
+
+    # List partners
+
     Return a list of all the existing partner organizations.
     """
 
