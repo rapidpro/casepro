@@ -518,6 +518,8 @@ class CaseAction(models.Model):
 
     TIMELINE_TYPE = "A"
 
+    org = models.ForeignKey(Org, related_name="actions", on_delete=models.PROTECT, null=True)
+
     case = models.ForeignKey(Case, related_name="actions", on_delete=models.PROTECT)
 
     action = models.CharField(max_length=1, choices=ACTION_CHOICES)
@@ -543,6 +545,7 @@ class CaseAction(models.Model):
     @classmethod
     def create(cls, case, user, action, assignee=None, label=None, note=None, user_assignee=None):
         return CaseAction.objects.create(
+            org=case.org,
             case=case,
             action=action,
             created_by=user,

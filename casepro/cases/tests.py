@@ -636,6 +636,7 @@ class CaseCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 204)
 
         action = CaseAction.objects.get()
+        self.assertEqual(action.org, self.case.org)
         self.assertEqual(action.case, self.case)
         self.assertEqual(action.action, CaseAction.ADD_NOTE)
         self.assertEqual(action.note, "This is a note")
