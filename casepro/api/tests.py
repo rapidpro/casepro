@@ -1,5 +1,6 @@
 from django.urls import reverse
 
+from casepro.cases.models import CaseAction
 from casepro.test import BaseCasesTest
 
 
@@ -36,6 +37,80 @@ class APITest(BaseCasesTest):
 
         response = self.url_get("unicef", url)
         self.assertEqual(response.status_code, 200)
+
+    def test_actions(self):
+        self.maxDiff = None
+
+        msg1 = self.create_message(self.unicef, 101, self.ann, "Hello", [self.aids])
+        msg2 = self.create_message(self.unicef, 102, self.bob, "Bonjour")
+        case1 = self.create_case(
+            self.unicef, self.ann, self.moh, msg1, [self.aids], summary="Summary 1", user_assignee=self.user1
+        )
+        case2 = self.create_case(
+            self.unicef, self.ann, self.who, msg2, [], summary="Summary 2", user_assignee=self.user1
+        )
+
+        case1.add_note(self.user1, "This is a note")
+        case2.label(self.admin, self.pregnancy)
+        case2.reassign(self.admin, self.moh)
+        case2.close(self.admin)
+
+        # case for another org
+        msg3 = self.create_message(self.nyaruka, 103, self.bob, "Hola")
+        case3 = self.create_case(
+            self.nyaruka, self.ann, self.klab, msg3, [self.code], summary="Summary 3", user_assignee=self.user4
+        )
+        case3.add_note(self.user4, "Note!")
+
+        url = reverse("api.action-list")
+        self.login(self.admin)
+
+        action1, action2, action3, action4 = CaseAction.objects.filter(case__org=self.unicef).order_by('id')
+
+        # try listing all actions
+        response = self.url_get("unicef", url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json()["results"],
+            [
+                {
+                    "id": action4.id,
+                    "case": {"id": case2.id, "summary": case2.summary},
+                    "type": "close",
+                    "assignee": None,
+                    "note": None,
+                    "label": None,
+                    "created_on": self._format_date(action4.created_on),
+                },
+                {
+                    "id": action3.id,
+                    "case": {"id": case2.id, "summary": case2.summary},
+                    "type": "reassign",
+                    "assignee": {"id": self.moh.id, "name": "MOH"},
+                    "note": None,
+                    "label": None,
+                    "created_on": self._format_date(action3.created_on),
+                },
+                {
+                    "id": action2.id,
+                    "case": {"id": case2.id, "summary": case2.summary},
+                    "type": "label",
+                    "assignee": None,
+                    "note": None,
+                    "label": {"id": self.pregnancy.id, "name": "Pregnancy"},
+                    "created_on": self._format_date(action2.created_on),
+                },
+                {
+                    "id": action1.id,
+                    "case": {"id": case1.id, "summary": case1.summary},
+                    "type": "add_note",
+                    "assignee": None,
+                    "note": "This is a note",
+                    "label": None,
+                    "created_on": self._format_date(action1.created_on),
+                },
+            ],
+        )
 
     def test_cases(self):
         msg1 = self.create_message(self.unicef, 101, self.ann, "Hello", [self.aids])
