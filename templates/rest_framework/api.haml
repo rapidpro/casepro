@@ -2,17 +2,22 @@
 - load i18n compress static rest_framework
 
 - block pre-content
-    <ul class="breadcrumb">
-    {% for breadcrumb_name, breadcrumb_url in breadcrumblist %}
-      {% if forloop.last %}
-        <li class="active"><a href="{{ breadcrumb_url }}">{{ breadcrumb_name }}</a></li>
-      {% else %}
-        <li><a href="{{ breadcrumb_url }}">{{ breadcrumb_name }}</a></li>
-      {% endif %}
-    {% empty %}
-      {% block breadcrumbs_empty %}&nbsp;{% endblock breadcrumbs_empty %}
-    {% endfor %}
-    </ul>
+    %ul.breadcrumb
+      .apitoken
+        - if request.user and request.user.is_authenticated
+          - trans "Token: "
+          {{ request.user.auth_token }}
+        - else
+          - trans "Login to see your access token"
+
+      - for breadcrumb_name, breadcrumb_url in breadcrumblist
+        - if forloop.last
+          <li class="active"><a href="{{ breadcrumb_url }}">{{ breadcrumb_name }}</a></li>
+        - else
+          <li><a href="{{ breadcrumb_url }}">{{ breadcrumb_name }}</a></li>
+
+      - empty
+        {% block breadcrumbs_empty %}&nbsp;{% endblock breadcrumbs_empty %}
 
 - block content
     <div class="region"  aria-label="{% trans "request form" %}">
@@ -203,6 +208,10 @@
     :css
       ul.breadcrumb {
         margin-bottom: 1em;
+      }
+      .apitoken {
+        display: block;
+        float: right;
       }
 
 - block extra-script
