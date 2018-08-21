@@ -7,7 +7,7 @@ from casepro.test import BaseCasesTest
 
 class APITest(BaseCasesTest):
     def setUp(self):
-        super(APITest, self).setUp()
+        super().setUp()
 
         self.ann = self.create_contact(
             self.unicef, "C-001", "Ann", fields={"age": "34"}, groups=[self.females, self.reporters]
@@ -39,9 +39,18 @@ class APITest(BaseCasesTest):
         response = self.url_get("unicef", url)
         self.assertEqual(response.status_code, 200)
 
-    def test_actions(self):
-        self.maxDiff = None
+    def test_docs(self):
+        url = reverse("api.root")
 
+        response = self.url_get("unicef", url + "?format=api")
+        self.assertContains(response, "Login to see your access token", status_code=403)
+
+        self.login(self.admin)
+
+        response = self.url_get("unicef", url + "?format=api")
+        self.assertContains(response, self.admin.auth_token)
+
+    def test_actions(self):
         msg1 = self.create_message(self.unicef, 101, self.ann, "Hello", [self.aids])
         msg2 = self.create_message(self.unicef, 102, self.bob, "Bonjour")
         case1 = self.create_case(

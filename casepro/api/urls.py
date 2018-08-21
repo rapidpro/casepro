@@ -5,6 +5,7 @@ from .views import APIRoot, Actions, Cases, Partners
 
 
 class Router(routers.DefaultRouter):
+    root_view_name = 'api.root'
     APIRootView = APIRoot
 
 
