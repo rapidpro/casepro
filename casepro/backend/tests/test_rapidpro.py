@@ -13,10 +13,12 @@ from temba_client.v2.types import Field as TembaField
 from temba_client.v2.types import Group as TembaGroup
 from temba_client.v2.types import Label as TembaLabel
 from temba_client.v2.types import Message as TembaMessage
+from temba_client.v2.types import Flow as TembaFlow
 from temba_client.v2.types import ObjectRef
 
 from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message, Outgoing
+from casepro.orgs_ext.models import Flow
 from casepro.test import BaseCasesTest
 
 from ..rapidpro import ContactSyncer, MessageSyncer, RapidProBackend
@@ -1033,6 +1035,40 @@ class RapidProBackendTest(BaseCasesTest):
         self.assertEqual(messages[0].contact, self.ann)
         self.assertEqual(messages[0].text, "Welcome")
         self.assertEqual(messages[0].created_on, d3)
+
+    @patch("dash.orgs.models.TembaClient.get_flows")
+    def test_fetch_flows(self, mock_get_flows):
+        mock_get_flows.return_value = MockClientQuery(
+            [
+                TembaFlow.create(
+                    uuid="0001-0001",
+                    name="Registration",
+                    archived=False,
+                ),
+                TembaFlow.create(
+                    uuid="0002-0002",
+                    name="Follow Up",
+                    archived=False,
+                ),
+                TembaFlow.create(
+                    uuid="0003-0003",
+                    name="Other Flow",
+                    archived=True,
+                ),
+            ]
+        )
+
+        flows = self.backend.fetch_flows(self.unicef)
+
+        self.assertEqual(flows, [Flow("0002-0002", "Follow Up"), Flow("0001-0001", "Registration")])
+
+        mock_get_flows.assert_called_once_with()
+
+    @patch("dash.orgs.models.TembaClient.create_flow_start")
+    def test_start_flow(self, mock_create_flow_start):
+        self.backend.start_flow(self.unicef, Flow("0002-0002", "Follow Up"), self.ann, extra={"foo": "bar"})
+
+        mock_create_flow_start.assert_called_once_with(flow="0002-0002", contacts=[str(self.ann.uuid)], restart_participants=True, extra={"foo": "bar"})
 
     def test_get_url_patterns(self):
         """
