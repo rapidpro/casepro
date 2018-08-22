@@ -136,6 +136,27 @@ class OrgExtCRUDLTest(BaseCasesTest):
 
         self.assertEqual(form.fields["followup_flow"].initial, "0002-0002")
 
+        # test clearing things
+        response = self.url_post(
+            "unicef",
+            url,
+            {
+                "name": "UNIZEFF",
+                "timezone": "Africa/Kigali",
+                "banner_text": "",
+                "contact_fields": [],
+                "suspend_groups": [],
+                "followup_flow": '',
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        self.unicef.refresh_from_db()
+        self.unicef._config = None
+
+        self.assertIsNone(self.unicef.get_followup_flow())
+
 
 class TaskExtCRUDLTest(BaseCasesTest):
     def test_list(self):

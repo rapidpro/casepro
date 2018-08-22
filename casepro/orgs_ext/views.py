@@ -74,6 +74,8 @@ class OrgExtCRUDL(SmartCRUDL):
                     if flow.uuid == followup_flow_uuid:
                         obj.set_followup_flow(flow)
                         break
+            else:
+                obj.set_followup_flow(None)
 
             return obj
 
