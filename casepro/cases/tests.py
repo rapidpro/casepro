@@ -13,6 +13,7 @@ from temba_client.utils import format_iso8601
 from casepro.contacts.models import Contact
 from casepro.msgs.models import Label, Message, Outgoing
 from casepro.msgs.tasks import handle_messages
+from casepro.orgs_ext.models import Flow
 from casepro.pods import registry as pod_registry
 from casepro.pods.tests.utils import DummyPodPlugin
 from casepro.profiles.models import ROLE_ANALYST, ROLE_MANAGER, Notification
@@ -36,14 +37,21 @@ class CaseTest(BaseCasesTest):
     @patch("casepro.test.TestBackend.stop_runs")
     @patch("casepro.test.TestBackend.add_to_group")
     @patch("casepro.test.TestBackend.remove_from_group")
+    @patch("casepro.test.TestBackend.fetch_flows")
+    @patch("casepro.test.TestBackend.start_flow")
     def test_lifecycle(
         self,
+        mock_start_flow,
+        mock_fetch_flows,
         mock_remove_from_group,
         mock_add_to_group,
         mock_stop_runs,
         mock_archive_messages,
         mock_archive_contact_messages,
     ):
+        mock_fetch_flows.return_value = [Flow("0001-0001", "Registration"), Flow("0002-0002", "Follow-Up")]
+        followup = Flow("0002-0002", "Follow-Up")
+        self.unicef.set_followup_flow(followup)
 
         d0 = datetime(2015, 1, 2, 6, 0, tzinfo=pytz.UTC)
         d1 = datetime(2015, 1, 2, 7, 0, tzinfo=pytz.UTC)
@@ -172,6 +180,10 @@ class CaseTest(BaseCasesTest):
 
         mock_add_to_group.assert_called_once_with(self.unicef, self.ann, self.reporters)
         mock_add_to_group.reset_mock()
+
+        # check our follow-up flow was started
+        mock_start_flow.assert_called_once_with(self.unicef, followup, self.ann, extra={'case': {'id': case.id, 'assignee': {'id': self.moh.id, 'name': 'MOH'}, 'opened_on': '2015-01-02T07:00:00+00:00'}})
+        mock_start_flow.reset_mock()
 
         # contact sends a message after case was closed
         msg4 = self.create_message(self.unicef, 345, self.ann, "No more case", created_on=d4)

@@ -502,6 +502,11 @@ class JunebugBackend(BaseBackend):
         """
         return []
 
+    def start_flow(self, org, flow, contact, extra):
+        """
+        Starts the given contact in the given flow
+        """
+
     def get_url_patterns(self):
         """
         Returns the list of URL patterns that should be registered for this backend.

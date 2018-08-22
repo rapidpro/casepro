@@ -123,8 +123,7 @@ class OrgExtCRUDLTest(BaseCasesTest):
         self.assertEqual(self.unicef.name, "UNIZEFF")
         self.assertEqual(self.unicef.timezone, pytz.timezone("Africa/Kigali"))
         self.assertEqual(self.unicef.get_banner_text(), "Chill")
-        self.assertEqual(self.unicef.get_followup_flow().uuid, "0002-0002")
-        self.assertEqual(self.unicef.get_followup_flow().name, "Follow-Up")
+        self.assertEqual(self.unicef.get_followup_flow(), Flow("0002-0002", "Follow-Up"))
 
         self.assertEqual(set(Group.get_suspend_from(self.unicef)), {self.males})
         self.assertEqual(set(Field.get_all(self.unicef, visible=True)), {self.state})

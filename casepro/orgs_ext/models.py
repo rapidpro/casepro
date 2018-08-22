@@ -18,6 +18,9 @@ class Flow:
         self.uuid = uuid
         self.name = name
 
+    def __eq__(self, other):
+        return self.uuid == other.uuid
+
     def as_json(self):
         return {"uuid": self.uuid, "name": self.name}
 

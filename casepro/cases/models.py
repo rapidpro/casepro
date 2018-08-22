@@ -360,6 +360,17 @@ class Case(models.Model):
 
         self.notify_watchers(action=action)
 
+        followup = self.org.get_followup_flow()
+        if followup:
+            extra = {
+                "case": {
+                    "id": self.id,
+                    "assignee": {"id": self.assignee.id, "name": self.assignee.name},
+                    "opened_on": self.opened_on.isoformat(),
+                }
+            }
+            self.org.get_backend().start_flow(self.org, followup, self.contact, extra=extra)
+
     @case_action(become_watcher=True)
     def reopen(self, user, note=None, update_contact=True):
         self.closed_on = None

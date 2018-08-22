@@ -69,10 +69,11 @@ class OrgExtCRUDL(SmartCRUDL):
 
             followup_flow_uuid = self.form.cleaned_data["followup_flow"]
 
-            for flow in obj.get_backend().fetch_flows(obj):
-                if flow.uuid == followup_flow_uuid:
-                    obj.set_followup_flow(flow)
-                    break
+            if followup_flow_uuid:
+                for flow in obj.get_backend().fetch_flows(obj):
+                    if flow.uuid == followup_flow_uuid:
+                        obj.set_followup_flow(flow)
+                        break
 
             return obj
 

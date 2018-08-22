@@ -202,6 +202,16 @@ class BaseBackend(object):
         """
 
     @abstractmethod
+    def start_flow(self, org, flow, contact, extra):
+        """
+        Starts the given contact in the given flow
+        :param org:
+        :param flow: the flow to start
+        :param contact: the contact to start
+        :param extra: extra parameters
+        """
+
+    @abstractmethod
     def get_url_patterns(self):
         """
         Returns the list of URL patterns that should be registered for this backend.

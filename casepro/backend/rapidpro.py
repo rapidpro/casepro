@@ -380,6 +380,13 @@ class RapidProBackend(BaseBackend):
         flows = [Flow(flow.uuid, flow.name) for flow in flows if not flow.is_archived]
         return sorted(flows, key=lambda f: f.name)
 
+    def start_flow(self, org, flow, contact, extra):
+        """
+        Starts the given contact in the given flow
+        """
+        client = self._get_client(org)
+        client.create_flow_start(flow=flow.uuid, contacts=[str(contact.uuid)], restart_participants=True, extra=extra)
+
     def get_url_patterns(self):
         """
         No urls to register as everything is pulled from RapidPro
