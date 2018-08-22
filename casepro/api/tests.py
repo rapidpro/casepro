@@ -40,14 +40,15 @@ class APITest(BaseCasesTest):
         self.assertEqual(response.status_code, 200)
 
     def test_docs(self):
-        url = reverse("api.root")
-
-        response = self.url_get("unicef", url + "?format=api")
+        response = self.url_get("unicef", reverse("api.root") + "?format=api")
         self.assertContains(response, "Login to see your access token", status_code=403)
 
         self.login(self.admin)
 
-        response = self.url_get("unicef", url + "?format=api")
+        response = self.url_get("unicef", reverse("api.root") + "?format=api")
+        self.assertContains(response, self.admin.auth_token)
+
+        response = self.url_get("unicef", reverse("api.case-list") + "?format=api")
         self.assertContains(response, self.admin.auth_token)
 
     def test_actions(self):
