@@ -98,7 +98,7 @@ class OrgExtCRUDLTest(BaseCasesTest):
             [(self.females.pk, "Females"), (self.males.pk, "Males"), (self.reporters.pk, "Reporters")],
         )
         self.assertEqual(form.fields["suspend_groups"].initial, [self.reporters.pk])
-        self.assertEqual(form.fields["followup_flow"].choices, [('0001-0001', 'Registration'), ('0002-0002', 'Follow-Up')])
+        self.assertEqual(form.fields["followup_flow"].choices, [('', '----'), ('0001-0001', 'Registration'), ('0002-0002', 'Follow-Up')])
         self.assertEqual(form.fields["followup_flow"].initial, None)
 
         # test updating
