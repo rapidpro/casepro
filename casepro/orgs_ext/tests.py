@@ -128,6 +128,14 @@ class OrgExtCRUDLTest(BaseCasesTest):
         self.assertEqual(set(Group.get_suspend_from(self.unicef)), {self.males})
         self.assertEqual(set(Field.get_all(self.unicef, visible=True)), {self.state})
 
+        # open the form again
+        response = self.url_get("unicef", url)
+        self.assertEqual(response.status_code, 200)
+
+        form = response.context["form"]
+
+        self.assertEqual(form.fields["followup_flow"].initial, "0002-0002")
+
 
 class TaskExtCRUDLTest(BaseCasesTest):
     def test_list(self):

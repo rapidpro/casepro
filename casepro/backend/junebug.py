@@ -496,13 +496,13 @@ class JunebugBackend(BaseBackend):
         """
         return []
 
-    def fetch_flows(self, org):
+    def fetch_flows(self, org):  # pragma: no cover
         """
         Fetches flows which can be used as a follow-up flow
         """
         return []
 
-    def start_flow(self, org, flow, contact, extra):
+    def start_flow(self, org, flow, contact, extra):  # pragma: no cover
         """
         Starts the given contact in the given flow
         """

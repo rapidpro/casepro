@@ -377,7 +377,7 @@ class RapidProBackend(BaseBackend):
         Fetches flows which can be used as a follow-up flow
         """
         flows = self._get_client(org).get_flows().all()
-        flows = [Flow(flow.uuid, flow.name) for flow in flows if not flow.is_archived]
+        flows = [Flow(flow.uuid, flow.name) for flow in flows if not flow.archived]
         return sorted(flows, key=lambda f: f.name)
 
     def start_flow(self, org, flow, contact, extra):
