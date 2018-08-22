@@ -264,6 +264,9 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(actions[7].created_by, self.user3)
         self.assertEqual(actions[7].created_on, d7)
 
+        # check our follow-up flow wasn't started since this isn't the first time this case has been closed
+        mock_start_flow.assert_not_called()
+
         # check that calling get_or_open again returns the same case (finds case for same message)
         case3 = Case.get_or_open(self.unicef, self.user1, msg2, "Summary", self.moh)
         self.assertFalse(case3.is_new)
