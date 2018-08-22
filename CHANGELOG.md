@@ -1,3 +1,7 @@
+v1.1.3
+----------
+ * Switch to using cursor pagination in the API
+
 v1.1.2
 ----------
  * Add labels API endpoint, bnew fields to cases endpoint, improve API docs
