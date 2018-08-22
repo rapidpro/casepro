@@ -76,7 +76,7 @@ class APITest(BaseCasesTest):
         url = reverse("api.action-list")
         self.login(self.admin)
 
-        action1, action2, action3, action4 = CaseAction.objects.filter(case__org=self.unicef).order_by('id')
+        action1, action2, action3, action4 = CaseAction.objects.filter(org=self.unicef).order_by('id')
 
         # try listing all actions
         response = self.url_get("unicef", url)
