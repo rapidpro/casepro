@@ -1,3 +1,7 @@
+v1.1.5
+----------
+ * Make followup flow optional
+
 v1.1.4
 ----------
  * Add support for followup flows which can be triggered when a case is closed
