@@ -4,6 +4,7 @@ from django.utils.timezone import now
 
 from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message, Outgoing
+from casepro.orgs_ext.models import Flow
 from casepro.utils.email import send_raw_email
 
 from . import BaseBackend
@@ -366,7 +367,18 @@ class RapidProBackend(BaseBackend):
                 backend_broadcast_id=msg.broadcast, contact=contact, text=msg.text, created_on=msg.created_on
             )
 
+        """
+                Fetches flows which can be used as a follow-up flow
+                """
         return [remote_as_outgoing(m) for m in remote_messages if m.direction == "out"]
+
+    def fetch_flows(self, org):
+        """
+        Fetches flows which can be used as a follow-up flow
+        """
+        flows = self._get_client(org).get_flows().all()
+        flows = [Flow(flow.uuid, flow.name) for flow in flows if not flow.is_archived]
+        return sorted(flows, key=lambda f: f.name)
 
     def get_url_patterns(self):
         """

@@ -194,6 +194,14 @@ class BaseBackend(object):
         """
 
     @abstractmethod
+    def fetch_flows(self, org):
+        """
+        Fetches flows which can be used as a follow-up flow
+
+        :param org: the org
+        """
+
+    @abstractmethod
     def get_url_patterns(self):
         """
         Returns the list of URL patterns that should be registered for this backend.
@@ -225,6 +233,9 @@ class NoopBackend(BaseBackend):  # pragma: no cover
         return self.NO_CHANGES
 
     def fetch_contact_messages(self, org, contact, created_after, created_before):
+        return []
+
+    def fetch_flows(self, org):
         return []
 
     def get_url_patterns(self):

@@ -5,6 +5,23 @@ from django.urls import reverse
 from casepro.contacts.models import Field, Group
 from casepro.test import BaseCasesTest
 
+from .models import Flow
+
+
+class OrgExtTest(BaseCasesTest):
+    def test_config(self):
+        self.assertIsNone(self.unicef.get_followup_flow())
+
+        self.unicef.set_followup_flow(Flow("1234-5678", "Follow Up"))
+
+        flow = self.unicef.get_followup_flow()
+        self.assertEqual(flow.uuid, "1234-5678")
+        self.assertEqual(flow.name, "Follow Up")
+
+        self.unicef.set_followup_flow(None)
+
+        self.assertIsNone(self.unicef.get_followup_flow())
+
 
 class OrgExtCRUDLTest(BaseCasesTest):
     def setUp(self):
