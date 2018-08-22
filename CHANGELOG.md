@@ -1,3 +1,7 @@
+v1.1.6
+----------
+ * Fix not clearing follow-up flows
+
 v1.1.5
 ----------
  * Make followup flow optional
