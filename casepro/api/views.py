@@ -2,7 +2,7 @@ import iso8601
 
 from django.utils.translation import ugettext_lazy as _
 
-from rest_framework import viewsets, routers
+from rest_framework import viewsets, routers, pagination
 
 from casepro.cases.models import Case, CaseAction, Partner
 from casepro.msgs.models import Label
@@ -12,10 +12,32 @@ from .serializers import CaseSerializer, CaseActionSerializer, LabelSerializer, 
 
 class APIRoot(routers.APIRootView):
     """
-    These are the endpoints available in the API.
+    This is a REST API which provides read-access to your organization's data.
+
+    # Authentication
+
+    The API uses standard token authentication. Each user has a token and if you are logged in, you will see your token
+    at the top of this page. That token should be sent as an `Authorization` header in each request,
+    e.g. `Authorization: Token 1234567890`.
+
+    # Pagination
+
+    The API uses cursor pagination for endpoints which can return multiple objects. Each request returns a `next` field
+    which provides the URL which should be used to request the next page of results. If there are no more results, then
+    the URL will be `null`.
+
+    Below are the endpoints available in the API:
     """
 
     title = _("API v1")
+
+
+class CreatedOnCursorPagination(pagination.CursorPagination):
+    ordering = ("-created_on",)
+
+
+class IdCursorPagination(pagination.CursorPagination):
+    ordering = ("-id",)
 
 
 class Actions(viewsets.ReadOnlyModelViewSet):
@@ -30,7 +52,8 @@ class Actions(viewsets.ReadOnlyModelViewSet):
     to only return actions created after that time, e.g. `/api/v1/actions/?after=2017-12-18T00:57:59.217099Z`.
     """
 
-    queryset = CaseAction.objects.order_by("-created_on")
+    queryset = CaseAction.objects.all()
+    pagination_class = CreatedOnCursorPagination
     serializer_class = CaseActionSerializer
 
     def get_queryset(self):
@@ -54,7 +77,11 @@ class Cases(viewsets.ReadOnlyModelViewSet):
     Return a list of all the existing cases ordered by last opened, e.g. `/api/v1/cases/`.
     """
 
-    queryset = Case.objects.order_by("-opened_on")
+    class OpenedOnCursorPagination(pagination.CursorPagination):
+        ordering = ("-opened_on",)
+
+    queryset = Case.objects.all()
+    pagination_class = OpenedOnCursorPagination
     serializer_class = CaseSerializer
 
     def get_queryset(self):
@@ -78,7 +105,8 @@ class Labels(viewsets.ReadOnlyModelViewSet):
     Return a list of all the existing labels, e.g. `/api/v1/labels/`.
     """
 
-    queryset = Label.objects.filter(is_active=True).order_by("-id")
+    queryset = Label.objects.filter(is_active=True)
+    pagination_class = IdCursorPagination
     serializer_class = LabelSerializer
 
     def get_queryset(self):
@@ -96,7 +124,8 @@ class Partners(viewsets.ReadOnlyModelViewSet):
     Return a list of all the existing partner organizations, e.g. `/api/v1/partners/`.
     """
 
-    queryset = Partner.objects.filter(is_active=True).order_by("-id")
+    queryset = Partner.objects.filter(is_active=True)
+    pagination_class = IdCursorPagination
     serializer_class = PartnerSerializer
 
     def get_queryset(self):

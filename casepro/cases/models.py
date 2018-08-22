@@ -491,6 +491,9 @@ class Case(models.Model):
     def __str__(self):
         return "#%d" % self.pk
 
+    class Meta:
+        indexes = [models.Index(fields=["org", "-opened_on"])]
+
 
 class CaseAction(models.Model):
     """
