@@ -34,7 +34,7 @@ class Actions(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         qs = (
-            super().get_queryset().filter(case__org=self.request.org)
+            super().get_queryset().filter(org=self.request.org)
             .select_related('case', 'label', 'assignee')
         )
 

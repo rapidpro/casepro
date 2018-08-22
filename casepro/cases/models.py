@@ -518,7 +518,7 @@ class CaseAction(models.Model):
 
     TIMELINE_TYPE = "A"
 
-    org = models.ForeignKey(Org, related_name="actions", on_delete=models.PROTECT, null=True)
+    org = models.ForeignKey(Org, related_name="actions", on_delete=models.PROTECT)
 
     case = models.ForeignKey(Case, related_name="actions", on_delete=models.PROTECT)
 
@@ -566,6 +566,11 @@ class CaseAction(models.Model):
             "label": self.label.as_json() if self.label else None,
             "note": self.note,
         }
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['org', '-created_on']),
+        ]
 
 
 class CaseExport(BaseSearchExport):
