@@ -12,10 +12,6 @@ def generate_tokens(apps, scheme_editor):
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('profiles', '0008_profile_must_use_faq'),
-    ]
+    dependencies = [("profiles", "0008_profile_must_use_faq")]
 
-    operations = [
-        migrations.RunPython(generate_tokens)
-    ]
+    operations = [migrations.RunPython(generate_tokens)]

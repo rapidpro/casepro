@@ -76,7 +76,7 @@ class APITest(BaseCasesTest):
         url = reverse("api.action-list")
         self.login(self.admin)
 
-        action1, action2, action3, action4 = CaseAction.objects.filter(org=self.unicef).order_by('id')
+        action1, action2, action3, action4 = CaseAction.objects.filter(org=self.unicef).order_by("id")
 
         # try listing all actions
         response = self.url_get("unicef", url)
@@ -124,7 +124,7 @@ class APITest(BaseCasesTest):
         )
 
         # try filtering by created_on
-        response = self.url_get("unicef", url + f'?after={quote(action2.created_on.isoformat())}')
+        response = self.url_get("unicef", url + f"?after={quote(action2.created_on.isoformat())}")
         self.assertEqual(response.status_code, 200)
         self.assertEqual([a["id"] for a in response.json()["results"]], [action4.id, action3.id])
 
@@ -162,21 +162,23 @@ class APITest(BaseCasesTest):
             [
                 {
                     "id": case2.id,
+                    "summary": "Summary 2",
                     "labels": [],
                     "assignee": {"id": self.who.id, "name": "WHO"},
                     "contact": {"id": case1.contact.id, "uuid": str(case2.contact.uuid)},
+                    "initial_message": {"id": msg2.id, "text": "Bonjour"},
                     "opened_on": self._format_date(case2.opened_on),
                     "closed_on": None,
-                    "summary": "Summary 2",
                 },
                 {
                     "id": case1.id,
+                    "summary": "Summary 1",
                     "labels": [{"id": self.aids.id, "name": "AIDS"}],
                     "assignee": {"id": self.moh.id, "name": "MOH"},
                     "contact": {"id": case1.contact.id, "uuid": str(case1.contact.uuid)},
+                    "initial_message": {"id": msg1.id, "text": "Hello"},
                     "opened_on": self._format_date(case1.opened_on),
                     "closed_on": None,
-                    "summary": "Summary 1",
                 },
             ],
         )
@@ -187,6 +189,29 @@ class APITest(BaseCasesTest):
         response = self.url_get("unicef", url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["id"], case2.id)
+
+    def test_labels(self):
+        url = reverse("api.label-list")
+        self.login(self.admin)
+
+        # try listing all labels
+        response = self.url_get("unicef", url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json()["results"],
+            [
+                {"id": self.tea.id, "name": "Tea", "description": "Messages about tea"},
+                {"id": self.pregnancy.id, "name": "Pregnancy", "description": "Messages about pregnancy"},
+                {"id": self.aids.id, "name": "AIDS", "description": "Messages about AIDS"},
+            ],
+        )
+
+        # try fetching a specific label from the detail endpoint
+        url = reverse("api.label-detail", args=[self.pregnancy.id])
+
+        response = self.url_get("unicef", url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["id"], self.pregnancy.id)
 
     def test_partners(self):
         url = reverse("api.partner-list")

@@ -568,9 +568,7 @@ class CaseAction(models.Model):
         }
 
     class Meta:
-        indexes = [
-            models.Index(fields=['org', '-created_on']),
-        ]
+        indexes = [models.Index(fields=["org", "-created_on"])]
 
 
 class CaseExport(BaseSearchExport):

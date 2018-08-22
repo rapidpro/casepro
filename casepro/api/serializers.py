@@ -3,6 +3,15 @@ import pytz
 from rest_framework import serializers
 
 from casepro.cases.models import Case, CaseAction, Partner
+from casepro.msgs.models import Label
+
+
+def case_ref(c):
+    return {"id": c.id, "summary": c.summary}
+
+
+def contact_ref(c):
+    return {"id": c.id, "uuid": str(c.uuid)}
 
 
 def label_ref(l):
@@ -13,18 +22,15 @@ def partner_ref(p):
     return {"id": p.id, "name": p.name}
 
 
-def contact_ref(c):
-    return {"id": c.id, "uuid": str(c.uuid)}
-
-
-def case_ref(c):
-    return {"id": c.id, "summary": c.summary}
+def message_ref(m):
+    return {"id": m.id, "text": m.text}
 
 
 class CaseSerializer(serializers.ModelSerializer):
     labels = serializers.SerializerMethodField()
     assignee = serializers.SerializerMethodField()
     contact = serializers.SerializerMethodField()
+    initial_message = serializers.SerializerMethodField()
     opened_on = serializers.DateTimeField(default_timezone=pytz.UTC)
     closed_on = serializers.DateTimeField(default_timezone=pytz.UTC)
 
@@ -37,9 +43,12 @@ class CaseSerializer(serializers.ModelSerializer):
     def get_contact(self, obj):
         return contact_ref(obj.contact)
 
+    def get_initial_message(self, obj):
+        return message_ref(obj.initial_message) if obj.initial_message else None
+
     class Meta:
         model = Case
-        fields = ("id", "summary", "labels", "assignee", "contact", "opened_on", "closed_on")
+        fields = ("id", "summary", "labels", "assignee", "contact", "initial_message", "opened_on", "closed_on")
 
 
 class CaseActionSerializer(serializers.ModelSerializer):
@@ -74,6 +83,12 @@ class CaseActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = CaseAction
         fields = ("id", "case", "type", "assignee", "note", "label", "created_on")
+
+
+class LabelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Label
+        fields = ("id", "name", "description")
 
 
 class PartnerSerializer(serializers.ModelSerializer):
