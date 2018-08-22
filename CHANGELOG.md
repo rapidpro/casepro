@@ -1,3 +1,9 @@
+v1.1.2
+----------
+ * Add labels API endpoint, bnew fields to cases endpoint, improve API docs
+ * Use new index on CaseAction.org in API requests
+ * Make CaseAction.org non-null and add index
+
 v1.1.1
 ----------
  * Migration to backfill CaseAction.org
