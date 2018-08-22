@@ -10,7 +10,7 @@ class AdministratorPermission(permissions.BasePermission):
 
 
 def get_view_name(view_cls, suffix=None):
-    if hasattr(view_cls, 'title'):
+    if hasattr(view_cls, "title"):
         return view_cls.title
 
     return views.get_view_name(view_cls, suffix)

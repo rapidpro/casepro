@@ -6,18 +6,18 @@ import django.db.models.deletion
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('cases', '0048_backfill_action_org'),
-    ]
+    dependencies = [("cases", "0048_backfill_action_org")]
 
     operations = [
         migrations.AlterField(
-            model_name='caseaction',
-            name='org',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='actions', to='orgs.Org'),
+            model_name="caseaction",
+            name="org",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT, related_name="actions", to="orgs.Org"
+            ),
         ),
         migrations.AddIndex(
-            model_name='caseaction',
-            index=models.Index(fields=['org', '-created_on'], name='cases_casea_org_id_4dee78_idx'),
+            model_name="caseaction",
+            index=models.Index(fields=["org", "-created_on"], name="cases_casea_org_id_4dee78_idx"),
         ),
     ]

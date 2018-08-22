@@ -6,15 +6,14 @@ import django.db.models.deletion
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('orgs', '0026_fix_org_config_rapidpro'),
-        ('cases', '0046_iso639_3'),
-    ]
+    dependencies = [("orgs", "0026_fix_org_config_rapidpro"), ("cases", "0046_iso639_3")]
 
     operations = [
         migrations.AddField(
-            model_name='caseaction',
-            name='org',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.PROTECT, related_name='actions', to='orgs.Org'),
-        ),
+            model_name="caseaction",
+            name="org",
+            field=models.ForeignKey(
+                null=True, on_delete=django.db.models.deletion.PROTECT, related_name="actions", to="orgs.Org"
+            ),
+        )
     ]
