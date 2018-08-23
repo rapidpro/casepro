@@ -1,3 +1,7 @@
+v1.1.7
+----------
+ * Ensure new orgs are created with a backend
+
 v1.1.6
 ----------
  * Fix not clearing follow-up flows
