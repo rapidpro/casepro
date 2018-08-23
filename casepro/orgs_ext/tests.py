@@ -1,16 +1,33 @@
 import pytz
 from unittest.mock import patch
 
-from dash.orgs.models import TaskState
+from dash.orgs.models import Org, TaskState
 from django.urls import reverse
 
 from casepro.contacts.models import Field, Group
-from casepro.test import BaseCasesTest
+from casepro.test import BaseCasesTest, TestBackend
 
 from .models import Flow
 
 
 class OrgExtTest(BaseCasesTest):
+    def test_create(self):
+        acme = Org.objects.create(
+            name="ACME",
+            timezone=pytz.timezone("Africa/Kigali"),
+            subdomain="acme",
+            created_by=self.superuser,
+            modified_by=self.superuser
+        )
+
+        backend_cfg = acme.backends.get()
+        self.assertEqual(backend_cfg.backend_type, "casepro.test.TestBackend")
+        self.assertEqual(backend_cfg.host, "http://localhost:8001/")
+
+        backend = acme.get_backend()
+        self.assertIsInstance(backend, TestBackend)
+        self.assertEqual(backend.backend, backend_cfg)
+
     def test_config(self):
         self.assertIsNone(self.unicef.get_followup_flow())
 

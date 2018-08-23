@@ -28,7 +28,7 @@ class ContactSyncerTest(BaseCasesTest):
     def setUp(self):
         super(ContactSyncerTest, self).setUp()
 
-        self.syncer = ContactSyncer(self.rapidpro_backend)
+        self.syncer = ContactSyncer(self.unicef.backends.get())
 
     def test_local_kwargs(self):
         kwargs = self.syncer.local_kwargs(
@@ -189,7 +189,7 @@ class MessageSyncerTest(BaseCasesTest):
     def setUp(self):
         super(MessageSyncerTest, self).setUp()
 
-        self.syncer = MessageSyncer(backend=self.rapidpro_backend, as_handled=False)
+        self.syncer = MessageSyncer(backend=self.unicef.backends.get(), as_handled=False)
         self.ann = self.create_contact(self.unicef, "C-001", "Ann")
 
     def test_fetch_local(self):
@@ -349,7 +349,7 @@ class RapidProBackendTest(BaseCasesTest):
     def setUp(self):
         super(RapidProBackendTest, self).setUp()
 
-        self.backend = RapidProBackend(backend=self.rapidpro_backend)
+        self.backend = RapidProBackend(backend=self.unicef.backends.get())
         self.ann = self.create_contact(self.unicef, "C-001", "Ann")
         self.bob = self.create_contact(self.unicef, "C-002", "Bob")
 

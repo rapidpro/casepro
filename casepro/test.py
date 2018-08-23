@@ -2,6 +2,7 @@ import json
 from datetime import date, datetime, time
 
 import pytz
+from dash.orgs.models import Org
 from dash.test import DashTest
 from django.conf import settings
 from django.core import mail
@@ -36,19 +37,9 @@ class BaseCasesTest(DashTest):
         settings.SITE_BACKEND = "casepro.test.TestBackend"
         settings.SITE_ORGS_STORAGE_ROOT = "test_orgs"
 
-        backend._ACTIVE_BACKEND = None
-
         # some orgs
         self.unicef = self.create_org("UNICEF", timezone=pytz.timezone("Africa/Kampala"), subdomain="unicef")
         self.nyaruka = self.create_org("Nyaruka", timezone=pytz.timezone("Africa/Kigali"), subdomain="nyaruka")
-
-        self.unicef.backends.all().delete()
-        self.rapidpro_backend = self.unicef.backends.create(
-            backend_type="casepro.test.TestBackend",
-            slug="rapidpro",
-            created_by=self.superuser,
-            modified_by=self.superuser,
-        )
 
         # some admins for those orgs
         self.admin = self.create_admin(self.unicef, "Kidus", "kidus@unicef.org")
@@ -107,6 +98,11 @@ class BaseCasesTest(DashTest):
         self.age = self.create_field(self.unicef, "age", "Age", value_type="N")
         self.state = self.create_field(self.unicef, "state", "State", value_type="S", is_visible=False)
         self.motorbike = self.create_field(self.nyaruka, "motorbike", "Moto", value_type="T")
+
+    def create_org(self, name, timezone, subdomain):
+        return Org.objects.create(
+            name=name, timezone=timezone, subdomain=subdomain, created_by=self.superuser, modified_by=self.superuser
+        )
 
     def create_partner(self, org, name, description, primary_contact, labels=(), restricted=True):
         return Partner.create(org, name, description, primary_contact, restricted, labels, None)
