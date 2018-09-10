@@ -1,6 +1,6 @@
 from dash.orgs.models import Org
 from dash.orgs.views import InferOrgMixin, OrgCRUDL, OrgPermsMixin, TaskCRUDL
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCRUDL, SmartUpdateView
 
@@ -67,6 +67,16 @@ class OrgExtCRUDL(SmartCRUDL):
             Group.get_all(self.request.org).filter(pk__in=group_ids).update(suspend_from=True)
             Group.get_all(self.request.org).exclude(pk__in=group_ids).update(suspend_from=False)
 
+            followup_flow_uuid = self.form.cleaned_data["followup_flow"]
+
+            if followup_flow_uuid:
+                for flow in obj.get_backend().fetch_flows(obj):
+                    if flow.uuid == followup_flow_uuid:
+                        obj.set_followup_flow(flow)
+                        break
+            else:
+                obj.set_followup_flow(None)
+
             return obj
 
     class Chooser(OrgCRUDL.Chooser):
@@ -77,7 +87,6 @@ class OrgExtCRUDL(SmartCRUDL):
 
 
 class TaskExtCRUDL(TaskCRUDL):
-
     class List(TaskCRUDL.List):
         link_fields = ("org",)
 

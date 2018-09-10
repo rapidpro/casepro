@@ -6,28 +6,29 @@ import pytz
 from dash.orgs.models import Org
 from dash.test import MockClientQuery
 from django.utils.timezone import now
-from mock import call, patch
+from unittest.mock import call, patch
 from temba_client.v1.types import Broadcast as TembaBroadcast
 from temba_client.v2.types import Contact as TembaContact
 from temba_client.v2.types import Field as TembaField
 from temba_client.v2.types import Group as TembaGroup
 from temba_client.v2.types import Label as TembaLabel
 from temba_client.v2.types import Message as TembaMessage
+from temba_client.v2.types import Flow as TembaFlow
 from temba_client.v2.types import ObjectRef
 
 from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message, Outgoing
+from casepro.orgs_ext.models import Flow
 from casepro.test import BaseCasesTest
 
 from ..rapidpro import ContactSyncer, MessageSyncer, RapidProBackend
 
 
 class ContactSyncerTest(BaseCasesTest):
-
     def setUp(self):
         super(ContactSyncerTest, self).setUp()
 
-        self.syncer = ContactSyncer(self.rapidpro_backend)
+        self.syncer = ContactSyncer(self.unicef.backends.get())
 
     def test_local_kwargs(self):
         kwargs = self.syncer.local_kwargs(
@@ -185,11 +186,10 @@ class ContactSyncerTest(BaseCasesTest):
 
 
 class MessageSyncerTest(BaseCasesTest):
-
     def setUp(self):
         super(MessageSyncerTest, self).setUp()
 
-        self.syncer = MessageSyncer(backend=self.rapidpro_backend, as_handled=False)
+        self.syncer = MessageSyncer(backend=self.unicef.backends.get(), as_handled=False)
         self.ann = self.create_contact(self.unicef, "C-001", "Ann")
 
     def test_fetch_local(self):
@@ -346,11 +346,10 @@ class MessageSyncerTest(BaseCasesTest):
 
 
 class RapidProBackendTest(BaseCasesTest):
-
     def setUp(self):
         super(RapidProBackendTest, self).setUp()
 
-        self.backend = RapidProBackend(backend=self.rapidpro_backend)
+        self.backend = RapidProBackend(backend=self.unicef.backends.get())
         self.ann = self.create_contact(self.unicef, "C-001", "Ann")
         self.bob = self.create_contact(self.unicef, "C-002", "Bob")
 
@@ -1037,6 +1036,40 @@ class RapidProBackendTest(BaseCasesTest):
         self.assertEqual(messages[0].text, "Welcome")
         self.assertEqual(messages[0].created_on, d3)
 
+    @patch("dash.orgs.models.TembaClient.get_flows")
+    def test_fetch_flows(self, mock_get_flows):
+        mock_get_flows.return_value = MockClientQuery(
+            [
+                TembaFlow.create(
+                    uuid="0001-0001",
+                    name="Registration",
+                    archived=False,
+                ),
+                TembaFlow.create(
+                    uuid="0002-0002",
+                    name="Follow Up",
+                    archived=False,
+                ),
+                TembaFlow.create(
+                    uuid="0003-0003",
+                    name="Other Flow",
+                    archived=True,
+                ),
+            ]
+        )
+
+        flows = self.backend.fetch_flows(self.unicef)
+
+        self.assertEqual(flows, [Flow("0002-0002", "Follow Up"), Flow("0001-0001", "Registration")])
+
+        mock_get_flows.assert_called_once_with()
+
+    @patch("dash.orgs.models.TembaClient.create_flow_start")
+    def test_start_flow(self, mock_create_flow_start):
+        self.backend.start_flow(self.unicef, Flow("0002-0002", "Follow Up"), self.ann, extra={"foo": "bar"})
+
+        mock_create_flow_start.assert_called_once_with(flow="0002-0002", contacts=[str(self.ann.uuid)], restart_participants=True, extra={"foo": "bar"})
+
     def test_get_url_patterns(self):
         """
         Getting the list of url patterns for the rapidpro backend should return an empty list.
@@ -1046,7 +1079,6 @@ class RapidProBackendTest(BaseCasesTest):
 
 @skip
 class PerfTest(BaseCasesTest):
-
     def setUp(self):
         super(PerfTest, self).setUp()
 

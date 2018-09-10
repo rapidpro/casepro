@@ -2,7 +2,7 @@ from collections import defaultdict
 
 import iso639
 from dash.orgs.views import OrgObjPermsMixin, OrgPermsMixin
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.utils.timesince import timesince
 from django.utils.timezone import now
@@ -102,7 +102,6 @@ class LabelCRUDL(SmartCRUDL):
             return obj
 
     class Read(OrgObjPermsMixin, SmartReadView):
-
         def get_queryset(self):
             return Label.get_all(self.request.org, self.request.user)
 
@@ -126,7 +125,6 @@ class LabelCRUDL(SmartCRUDL):
             return HttpResponse(status=204)
 
     class List(OrgPermsMixin, SmartListView):
-
         def get(self, request, *args, **kwargs):
             with_activity = str_to_bool(self.request.GET.get("with_activity", ""))
             labels = list(Label.get_all(self.request.org, self.request.user).order_by("name"))
@@ -149,6 +147,7 @@ class LabelCRUDL(SmartCRUDL):
         """
         Endpoint for watching a label
         """
+
         permission = "msgs.label_read"
 
         def post(self, request, *args, **kwargs):
@@ -159,6 +158,7 @@ class LabelCRUDL(SmartCRUDL):
         """
         Endpoint for unwatching a label
         """
+
         permission = "msgs.label_read"
 
         def post(self, request, *args, **kwargs):
@@ -167,7 +167,6 @@ class LabelCRUDL(SmartCRUDL):
 
 
 class MessageSearchMixin(object):
-
     def derive_search(self):
         """
         Collects and prepares message search parameters into JSON serializable dict
@@ -408,7 +407,6 @@ class MessageExportCRUDL(SmartCRUDL):
     actions = ("create", "read")
 
     class Create(NonAtomicMixin, OrgPermsMixin, MessageSearchMixin, SmartCreateView):
-
         def post(self, request, *args, **kwargs):
             search = self.derive_search()
             export = MessageExport.create(self.request.org, self.request.user, search)
@@ -423,7 +421,6 @@ class MessageExportCRUDL(SmartCRUDL):
 
 
 class ReplySearchMixin(object):
-
     def derive_search(self):
         """
         Collects and prepares reply search parameters into JSON serializable dict
@@ -516,7 +513,6 @@ class ReplyExportCRUDL(SmartCRUDL):
     actions = ("create", "read")
 
     class Create(NonAtomicMixin, OrgPermsMixin, ReplySearchMixin, SmartCreateView):
-
         def post(self, request, *args, **kwargs):
             search = self.derive_search()
             export = self.model.create(self.request.org, self.request.user, search)
@@ -531,7 +527,6 @@ class ReplyExportCRUDL(SmartCRUDL):
 
 
 class FaqSearchMixin(object):
-
     def derive_search(self):
         """
         Collects and prepares FAQ search parameters into JSON serializable dict
@@ -624,7 +619,7 @@ class FaqCRUDL(SmartCRUDL):
 
         def post(self, request, *args, **kwargs):
             faq = self.get_object()
-            faq.delete()
+            faq.release()
 
             return HttpResponse(status=204)
 

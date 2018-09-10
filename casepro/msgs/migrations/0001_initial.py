@@ -17,8 +17,13 @@ class Migration(migrations.Migration):
                 ("text", models.TextField(max_length=640, verbose_name="Text")),
                 ("is_archived", models.BooleanField(default=False)),
                 ("created_on", models.DateTimeField()),
-                ("contact", models.ForeignKey(to="contacts.Contact")),
-                ("org", models.ForeignKey(related_name="messages", verbose_name="Org", to="orgs.Org")),
+                ("contact", models.ForeignKey(to="contacts.Contact", on_delete=models.PROTECT)),
+                (
+                    "org",
+                    models.ForeignKey(
+                        related_name="messages", verbose_name="Org", to="orgs.Org", on_delete=models.PROTECT
+                    ),
+                ),
             ],
         )
     ]

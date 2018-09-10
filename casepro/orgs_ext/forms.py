@@ -12,6 +12,7 @@ class OrgForm(forms.ModelForm):
     """
     Form for superusers to create and update orgs
     """
+
     language = forms.ChoiceField(required=False, choices=[("", "")] + list(settings.LANGUAGES))
 
     timezone = TimeZoneFormField()
@@ -33,6 +34,7 @@ class OrgEditForm(forms.ModelForm):
     """
     Form for org admins to update their own org
     """
+
     name = forms.CharField(label=_("Organization"), help_text=_("The name of this organization"))
 
     timezone = TimeZoneFormField(help_text=_("The timezone your organization is in"))
@@ -52,6 +54,13 @@ class OrgEditForm(forms.ModelForm):
         choices=(),
         label=_("Suspend groups"),
         help_text=_("Groups to remove contacts from when creating cases"),
+        required=False,
+    )
+
+    followup_flow = forms.ChoiceField(
+        choices=(),
+        label=_("Follow-up Flow"),
+        help_text=_("Flow to start after a case is closed"),
         required=False,
     )
 
@@ -75,6 +84,16 @@ class OrgEditForm(forms.ModelForm):
         self.fields["suspend_groups"].choices = group_choices
         self.fields["suspend_groups"].initial = [g.pk for g in Group.get_suspend_from(org)]
 
+        flow_choices = [('', '----')]
+        for flow in org.get_backend().fetch_flows(org):
+            flow_choices.append((flow.uuid, flow.name))
+
+        flow_initial = org.get_followup_flow()
+
+        self.fields["followup_flow"].choices = flow_choices
+        if flow_initial:
+            self.fields["followup_flow"].initial = flow_initial.uuid
+
     class Meta:
         model = Org
-        fields = ("name", "timezone", "banner_text", "contact_fields", "suspend_groups", "logo")
+        fields = ("name", "timezone", "banner_text", "contact_fields", "suspend_groups", "followup_flow", "logo")

@@ -1,7 +1,7 @@
 from dash.orgs.views import OrgPermsMixin
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import Http404, HttpResponse, JsonResponse
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartCreateView, SmartCRUDL, SmartDeleteView, SmartListView, SmartReadView, SmartUpdateView
@@ -60,6 +60,7 @@ class UserCRUDL(SmartCRUDL):
         """
         Form used by org admins to create any kind of user, and used by superusers to create unattached users
         """
+
         permission = "profiles.profile_user_create"
         success_url = "@profiles.user_list"
 
@@ -109,6 +110,7 @@ class UserCRUDL(SmartCRUDL):
         """
         Form for creating partner-level users in a specific partner
         """
+
         permission = "profiles.profile_user_create_in"
         form_class = PartnerUserForm
         fields = ("name", "role", "email", "password", "confirm_password", "change_password", "must_use_faq")
@@ -141,6 +143,7 @@ class UserCRUDL(SmartCRUDL):
         """
         Form for updating any kind of user by another user
         """
+
         permission = "profiles.profile_user_update"
         form_class = UserForm
 
@@ -182,6 +185,7 @@ class UserCRUDL(SmartCRUDL):
         """
         Limited update form for users to edit their own profiles
         """
+
         form_class = UserForm
         fields = ("name", "email", "new_password", "confirm_password")
         success_url = "@cases.inbox"
@@ -193,7 +197,7 @@ class UserCRUDL(SmartCRUDL):
             return r"^profile/self/$"
 
         def has_permission(self, request, *args, **kwargs):
-            return self.request.user.is_authenticated()
+            return self.request.user.is_authenticated
 
         def get_form_kwargs(self):
             kwargs = super(UserCRUDL.Self, self).get_form_kwargs()
@@ -283,6 +287,7 @@ class UserCRUDL(SmartCRUDL):
         """
         JSON endpoint to fetch users with their activity information
         """
+
         permission = "profiles.profile_user_list"
 
         def get(self, request, *args, **kwargs):

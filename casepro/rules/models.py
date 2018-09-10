@@ -20,6 +20,7 @@ class Quantifier(Enum):
     """
     Tests are typically composed of multiple conditions, e.g. contains ANY of X, Y or Z.
     """
+
     NONE = (1, _("none of"))
     ANY = (2, _("any of"))
     ALL = (3, _("all of"))
@@ -69,6 +70,7 @@ class Test(object):
     """
     A test which can be evaluated to true or false on a given message
     """
+
     __metaclass__ = ABCMeta
 
     TYPE = None
@@ -116,6 +118,7 @@ class ContainsTest(Test):
     """
     Test that returns whether the message text contains or doesn't contain the given keywords
     """
+
     TYPE = "contains"
 
     def __init__(self, keywords, quantifier):
@@ -160,6 +163,7 @@ class WordCountTest(Test):
     """
     Test that returns whether the message text contains at least the given number of words
     """
+
     TYPE = "words"
 
     def __init__(self, minimum):
@@ -187,6 +191,7 @@ class GroupsTest(Test):
     """
     Test that returns whether the message was sent from the given contact groups
     """
+
     TYPE = "groups"
 
     def __init__(self, groups, quantifier):
@@ -225,6 +230,7 @@ class FieldTest(Test):
     """
     Test that returns whether the message was sent from a contact with the given field value
     """
+
     TYPE = "field"
 
     def __init__(self, key, values):
@@ -259,6 +265,7 @@ class Action(object):
     """
     An action which can be performed on a message
     """
+
     __metaclass__ = ABCMeta
 
     TYPE = None
@@ -302,6 +309,7 @@ class LabelAction(Action):
     """
     Adds a label to the message
     """
+
     TYPE = "label"
 
     def __init__(self, label):
@@ -335,6 +343,7 @@ class FlagAction(Action):
     """
     Flags the message
     """
+
     TYPE = "flag"
 
     @classmethod
@@ -357,6 +366,7 @@ class ArchiveAction(Action):
     """
     Archives the message
     """
+
     TYPE = "archive"
 
     @classmethod
@@ -379,7 +389,8 @@ class Rule(models.Model):
     """
     At some point this will become a first class object, but for now it is always attached to a label.
     """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="rules")
+
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="rules", on_delete=models.PROTECT)
 
     tests = models.TextField()
 

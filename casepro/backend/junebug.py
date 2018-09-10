@@ -182,6 +182,7 @@ class IdentityStoreContactSyncer(BaseSyncer):
     """
     Syncer for contacts from the Identity Store
     """
+
     model = Contact
     remote_id_attr = "id"
 
@@ -223,7 +224,6 @@ class JunebugMessageSendingError(Exception):
 
 
 class JunebugMessageSender(object):
-
     def __init__(self, base_url, channel_id, from_address, identity_store):
         self.base_url = base_url
         self.channel_id = channel_id
@@ -496,6 +496,17 @@ class JunebugBackend(BaseBackend):
         """
         return []
 
+    def fetch_flows(self, org):  # pragma: no cover
+        """
+        Fetches flows which can be used as a follow-up flow
+        """
+        return []
+
+    def start_flow(self, org, flow, contact, extra):  # pragma: no cover
+        """
+        Starts the given contact in the given flow
+        """
+
     def get_url_patterns(self):
         """
         Returns the list of URL patterns that should be registered for this backend.
@@ -512,7 +523,6 @@ def token_auth_required(auth_token_func):
     """Decorates a function so that token authentication is required to run it"""
 
     def decorator(func):
-
         @functools.wraps(func)
         def wrapper(request, *args, **kwargs):
             auth_header = request.META.get("HTTP_AUTHORIZATION", None)

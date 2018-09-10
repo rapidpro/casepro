@@ -33,7 +33,9 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="case",
             name="initial_message",
-            field=models.OneToOneField(related_name="initial_case", null=True, to="msgs.Message"),
+            field=models.OneToOneField(
+                related_name="initial_case", null=True, to="msgs.Message", on_delete=models.PROTECT
+            ),
         ),
         migrations.RunPython(populate_initial_message),
         migrations.RemoveField(model_name="case", name="message_on"),

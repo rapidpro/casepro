@@ -32,7 +32,9 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="outgoing",
             name="partner",
-            field=models.ForeignKey(related_name="outgoing_messages", to="cases.Partner", null=True),
+            field=models.ForeignKey(
+                related_name="outgoing_messages", to="cases.Partner", null=True, on_delete=models.PROTECT
+            ),
         ),
         migrations.RunPython(populate_outgoing_partner),
     ]

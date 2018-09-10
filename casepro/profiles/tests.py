@@ -2,10 +2,10 @@ from datetime import datetime
 
 import pytz
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.test.utils import override_settings
 from django.utils import timezone
-from mock import call, patch
+from unittest.mock import call, patch
 
 from casepro.test import BaseCasesTest
 
@@ -14,7 +14,6 @@ from .tasks import send_notifications
 
 
 class NotificationTest(BaseCasesTest):
-
     def setUp(self):
         super(NotificationTest, self).setUp()
 
@@ -157,7 +156,6 @@ class NotificationTest(BaseCasesTest):
 
 
 class ProfileTest(BaseCasesTest):
-
     def test_create_user(self):
         # create un-attached user
         user1 = Profile.create_user("Tom McTicket", "tom@unicef.org", "Qwerty123")
@@ -190,7 +188,6 @@ class ProfileTest(BaseCasesTest):
 
 
 class UserTest(BaseCasesTest):
-
     def test_has_profile(self):
         self.assertFalse(self.superuser.has_profile())
         self.assertTrue(self.admin.has_profile())
@@ -428,7 +425,6 @@ class UserTest(BaseCasesTest):
 
 
 class UserCRUDLTest(BaseCasesTest):
-
     def test_create(self):
         url = reverse("profiles.user_create")
 
@@ -455,7 +451,7 @@ class UserCRUDLTest(BaseCasesTest):
         )
 
         user = User.objects.get(email="mcadmin@casely.com")
-        self.assertRedirects(response, "http://testserver/user/read/%d/" % user.pk, fetch_redirect_response=False)
+        self.assertRedirects(response, "/user/read/%d/" % user.pk, fetch_redirect_response=False)
 
         self.assertEqual(user.get_full_name(), "McAdmin")
         self.assertEqual(user.username, "mcadmin@casely.com")
@@ -492,9 +488,7 @@ class UserCRUDLTest(BaseCasesTest):
         )
 
         user = User.objects.get(email="adrian@casely.com")
-        self.assertRedirects(
-            response, "http://unicef.localhost/user/read/%d/" % user.pk, fetch_redirect_response=False
-        )
+        self.assertRedirects(response, "/user/read/%d/" % user.pk, fetch_redirect_response=False)
 
         self.assertEqual(user.get_full_name(), "Adrian Admin")
         self.assertEqual(user.username, "adrian@casely.com")
@@ -561,9 +555,7 @@ class UserCRUDLTest(BaseCasesTest):
         )
 
         user = User.objects.get(email="mo@casely.com")
-        self.assertRedirects(
-            response, "http://unicef.localhost/user/read/%d/" % user.pk, fetch_redirect_response=False
-        )
+        self.assertRedirects(response, "/user/read/%d/" % user.pk, fetch_redirect_response=False)
 
         # check new user and profile
         self.assertEqual(user.profile.full_name, "Mo Cases")
@@ -590,7 +582,7 @@ class UserCRUDLTest(BaseCasesTest):
 
         # can't access this view without a specified partner
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
     def test_create_in(self):
         url = reverse("profiles.user_create_in", args=[self.moh.pk])
@@ -620,9 +612,7 @@ class UserCRUDLTest(BaseCasesTest):
         )
 
         user = User.objects.get(email="mo@casely.com")
-        self.assertRedirects(
-            response, "http://unicef.localhost/user/read/%d/" % user.pk, fetch_redirect_response=False
-        )
+        self.assertRedirects(response, "/user/read/%d/" % user.pk, fetch_redirect_response=False)
 
         self.assertEqual(user.get_partner(self.unicef), self.moh)
 
@@ -679,13 +669,13 @@ class UserCRUDLTest(BaseCasesTest):
         # partner managers can't access page for other partner orgs
         url = reverse("profiles.user_create_in", args=[self.who.pk])
         response = self.url_post("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # partner analysts can't access page at all
         self.login(self.user2)
         url = reverse("profiles.user_create_in", args=[self.moh.pk])
         response = self.url_post("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
     def test_update(self):
         url = reverse("profiles.user_update", args=[self.user2.pk])
@@ -709,7 +699,7 @@ class UserCRUDLTest(BaseCasesTest):
                 "email": "rick@unicef.org",
                 "partner": self.moh.pk,
                 "role": ROLE_ANALYST,
-                "change_password": True
+                "change_password": True,
             },
         )
         self.assertEqual(response.status_code, 302)
@@ -921,7 +911,7 @@ class UserCRUDLTest(BaseCasesTest):
 
         # can't access if not logged in
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # can access all users even as non-administrator
         self.login(self.user1)
@@ -1026,7 +1016,7 @@ class UserCRUDLTest(BaseCasesTest):
 
         # try as unauthenticated
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # try as superuser (doesn't have a chat profile)
         self.login(self.superuser)
@@ -1165,7 +1155,6 @@ class UserCRUDLTest(BaseCasesTest):
 
 
 class ForcePasswordChangeMiddlewareTest(BaseCasesTest):
-
     @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND="memory")
     def test_process_view(self):
         self.user1.profile.change_password = True
@@ -1174,7 +1163,7 @@ class ForcePasswordChangeMiddlewareTest(BaseCasesTest):
         self.login(self.user1)
 
         response = self.url_get("unicef", reverse("cases.inbox"))
-        self.assertRedirects(response, "http://unicef.localhost/profile/self/", fetch_redirect_response=False)
+        self.assertRedirects(response, "/profile/self/", fetch_redirect_response=False)
 
         response = self.url_get("unicef", reverse("profiles.user_self"))
         self.assertEqual(response.status_code, 200)

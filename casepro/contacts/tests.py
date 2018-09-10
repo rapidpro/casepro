@@ -1,7 +1,7 @@
 from dash.orgs.models import TaskState
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.test.utils import override_settings
-from mock import patch
+from unittest.mock import patch
 
 from casepro.test import BaseCasesTest
 
@@ -10,7 +10,6 @@ from .tasks import pull_contacts
 
 
 class URNTest(BaseCasesTest):
-
     def test_from_parts(self):
         self.assertEqual(URN.from_parts("tel", "12345"), "tel:12345")
         self.assertEqual(URN.from_parts("tel", "+12345"), "tel:+12345")
@@ -64,7 +63,6 @@ class URNTest(BaseCasesTest):
 
 
 class ContactTest(BaseCasesTest):
-
     def setUp(self):
         super(ContactTest, self).setUp()
 
@@ -241,7 +239,6 @@ class ContactTest(BaseCasesTest):
 
 
 class ContactCRUDLTest(BaseCasesTest):
-
     def setUp(self):
         super(ContactCRUDLTest, self).setUp()
 
@@ -279,7 +276,7 @@ class ContactCRUDLTest(BaseCasesTest):
         # users from other orgs get nothing
         self.login(self.user4)
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
     def test_fetch(self):
         url = reverse("contacts.contact_fetch", args=[self.ann.pk])
@@ -334,14 +331,13 @@ class ContactCRUDLTest(BaseCasesTest):
 
 
 class FieldCRUDLTest(BaseCasesTest):
-
     def test_list(self):
         url = reverse("contacts.field_list")
 
         # partner users can't access this
         self.login(self.user1)
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # org admins can
         self.login(self.admin)
@@ -350,7 +346,6 @@ class FieldCRUDLTest(BaseCasesTest):
 
 
 class GroupTest(BaseCasesTest):
-
     def test_model(self):
         invisible = self.create_group(self.unicef, "G-006", "Invisible", count=12, is_visible=False)
 
@@ -371,14 +366,13 @@ class GroupTest(BaseCasesTest):
 
 
 class GroupCRUDLTest(BaseCasesTest):
-
     def test_list(self):
         url = reverse("contacts.group_list")
 
         # partner users can't access this
         self.login(self.user1)
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # org admins can
         self.login(self.admin)
@@ -391,7 +385,7 @@ class GroupCRUDLTest(BaseCasesTest):
         # partner users can't access this
         self.login(self.user1)
         response = self.url_get("unicef", url)
-        self.assertLoginRedirect(response, "unicef", url)
+        self.assertLoginRedirect(response, url)
 
         # org admins can
         self.login(self.admin)
@@ -402,14 +396,13 @@ class GroupCRUDLTest(BaseCasesTest):
 
         # change the visible groups
         response = self.url_post("unicef", url, {"groups": [self.females.pk, self.reporters.pk]})
-        self.assertRedirects(response, "http://unicef.localhost/group/", fetch_redirect_response=False)
+        self.assertRedirects(response, "/group/", fetch_redirect_response=False)
 
         self.assertEqual(set(Group.get_all(self.unicef, visible=True)), {self.females, self.reporters})
         self.assertEqual(set(Group.get_all(self.unicef, visible=False)), {self.males, self.registered})
 
 
 class TasksTest(BaseCasesTest):
-
     @patch("casepro.test.TestBackend.pull_fields")
     @patch("casepro.test.TestBackend.pull_groups")
     @patch("casepro.test.TestBackend.pull_contacts")

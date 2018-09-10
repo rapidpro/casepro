@@ -50,7 +50,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="outgoing",
             name="reply_to",
-            field=models.ForeignKey(related_name="replies", to="msgs.Message", null=True),
+            field=models.ForeignKey(related_name="replies", to="msgs.Message", null=True, on_delete=models.PROTECT),
         ),
         migrations.RunPython(populate_reply_to),
     ]

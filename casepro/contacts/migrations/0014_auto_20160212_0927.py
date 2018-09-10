@@ -12,11 +12,15 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="contact",
             name="org",
-            field=models.ForeignKey(related_name="contacts", verbose_name="Organization", to="orgs.Org"),
+            field=models.ForeignKey(
+                related_name="contacts", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT
+            ),
         ),
         migrations.AlterField(
             model_name="group",
             name="org",
-            field=models.ForeignKey(related_name="groups", verbose_name="Organization", to="orgs.Org"),
+            field=models.ForeignKey(
+                related_name="groups", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT
+            ),
         ),
     ]

@@ -12,7 +12,12 @@ class Migration(migrations.Migration):
                 ("id", models.AutoField(verbose_name="ID", serialize=False, auto_created=True, primary_key=True)),
                 ("tests", models.TextField()),
                 ("actions", models.TextField()),
-                ("org", models.ForeignKey(related_name="rules", verbose_name="Organization", to="orgs.Org")),
+                (
+                    "org",
+                    models.ForeignKey(
+                        related_name="rules", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT
+                    ),
+                ),
             ],
         )
     ]

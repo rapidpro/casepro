@@ -3,12 +3,9 @@ from pydoc import locate
 from django.conf import settings
 from django.conf.urls import include, url
 from django.views import static
-from django.views.i18n import javascript_catalog
+from django.views.i18n import JavaScriptCatalog
 
 from casepro.utils.views import PartialTemplate
-
-# javascript translation packages
-js_info_dict = {"packages": ()}  # this is empty due to the fact that all translation are in one folder
 
 urlpatterns = [
     url(r"", include("casepro.cases.urls")),
@@ -18,13 +15,14 @@ urlpatterns = [
     url(r"", include("casepro.rules.urls")),
     url(r"", include("casepro.profiles.urls")),
     url(r"", include("casepro.orgs_ext.urls")),
+    url(r"^api/v1/", include("casepro.api.urls")),
     url(r"^pods/", include("casepro.pods.urls")),
     url(r"^stats/", include("casepro.statistics.urls")),
     url(r"^users/", include("dash.users.urls")),
     url(r"^i18n/", include("django.conf.urls.i18n")),
     url(r"^comments/", include("django_comments.urls")),
     url(r"^partials/(?P<template>[a-z0-9\-_]+)\.html$", PartialTemplate.as_view(), name="utils.partial_template"),
-    url(r"^jsi18n/$", javascript_catalog, js_info_dict, name="django.views.i18n.javascript_catalog"),
+    url(r"^jsi18n/$", JavaScriptCatalog, name="django.views.i18n.javascript_catalog"),
 ]
 
 backend_options = getattr(settings, "DATA_API_BACKEND_TYPES", [])

@@ -42,7 +42,9 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(model_name="case", name="new_labels", field=models.ManyToManyField(to="msgs.Label")),
         migrations.AddField(
-            model_name="caseaction", name="new_label", field=models.ForeignKey(to="msgs.Label", null=True)
+            model_name="caseaction",
+            name="new_label",
+            field=models.ForeignKey(to="msgs.Label", null=True, on_delete=models.PROTECT),
         ),
         migrations.AddField(model_name="partner", name="new_labels", field=models.ManyToManyField(to="msgs.Label")),
         migrations.RunPython(migrate_labels),

@@ -4,6 +4,7 @@ from django.utils.timezone import now
 
 from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message, Outgoing
+from casepro.orgs_ext.models import Flow
 from casepro.utils.email import send_raw_email
 
 from . import BaseBackend
@@ -27,6 +28,7 @@ class ContactSyncer(BaseSyncer):
     """
     Syncer for contacts
     """
+
     model = Contact
     prefetch_related = ("groups",)
 
@@ -70,6 +72,7 @@ class FieldSyncer(BaseSyncer):
     """
     Syncer for contact fields
     """
+
     model = Field
     local_id_attr = "key"
     remote_id_attr = "key"
@@ -90,6 +93,7 @@ class GroupSyncer(BaseSyncer):
     """
     Syncer for contact groups
     """
+
     model = Group
 
     def local_kwargs(self, org, remote):
@@ -113,6 +117,7 @@ class LabelSyncer(BaseSyncer):
     """
     Syncer for message labels
     """
+
     model = Label
 
     def local_kwargs(self, org, remote):
@@ -138,6 +143,7 @@ class MessageSyncer(BaseSyncer):
     """
     Syncer for messages
     """
+
     model = Message
     local_id_attr = "backend_id"
     remote_id_attr = "id"
@@ -193,6 +199,7 @@ class RapidProBackend(BaseBackend):
     """
     RapidPro instance as a backend
     """
+
     # TODO reset to 100 when limit is fixed on RapidPro side
     BATCH_SIZE = 99
 
@@ -360,7 +367,25 @@ class RapidProBackend(BaseBackend):
                 backend_broadcast_id=msg.broadcast, contact=contact, text=msg.text, created_on=msg.created_on
             )
 
+        """
+                Fetches flows which can be used as a follow-up flow
+                """
         return [remote_as_outgoing(m) for m in remote_messages if m.direction == "out"]
+
+    def fetch_flows(self, org):
+        """
+        Fetches flows which can be used as a follow-up flow
+        """
+        flows = self._get_client(org).get_flows().all()
+        flows = [Flow(flow.uuid, flow.name) for flow in flows if not flow.archived]
+        return sorted(flows, key=lambda f: f.name)
+
+    def start_flow(self, org, flow, contact, extra):
+        """
+        Starts the given contact in the given flow
+        """
+        client = self._get_client(org)
+        client.create_flow_start(flow=flow.uuid, contacts=[str(contact.uuid)], restart_participants=True, extra=extra)
 
     def get_url_patterns(self):
         """

@@ -2,12 +2,10 @@ from datetime import date, datetime
 from enum import Enum
 from uuid import UUID
 
-import hypothesis.strategies as st
 import pytz
 from django.core import mail
 from django.http import HttpRequest
 from django.test import override_settings
-from hypothesis import given
 
 from casepro.test import BaseCasesTest
 
@@ -35,7 +33,6 @@ from .middleware import JSONMiddleware
 
 
 class UtilsTest(BaseCasesTest):
-
     def test_safe_max(self):
         self.assertEqual(safe_max(1, 2, 3), 3)
         self.assertEqual(safe_max(None, 2, None), 2)
@@ -85,12 +82,10 @@ class UtilsTest(BaseCasesTest):
         self.assertEqual(d2, datetime(2015, 10, 9, 14, 48, 30, 123456, tzinfo=pytz.utc))
 
     def test_json_encode(self):
-
         class MyEnum(Enum):
             bar = 1
 
         class MyClass(object):
-
             def to_json(self):
                 return dict(bar="X")
 
@@ -145,13 +140,8 @@ class UtilsTest(BaseCasesTest):
         self.assertEqual(uuid_to_int(UUID(int=(2147483647)).hex), 2147483647)
         self.assertEqual(uuid_to_int(UUID(int=(2147483648)).hex), 0)
 
-    @given(st.uuids())
-    def test_uuid_to_int_property(self, uuid):
-        """
-        Property based testing to ensure that the output of the function is always within the limits.
-        """
-        self.assertTrue(uuid_to_int(uuid.hex) <= 2147483647)
-        self.assertTrue(uuid_to_int(uuid.hex) >= 0)
+    def test_uuid_to_int_property(self):
+        self.assertEqual(uuid_to_int(UUID("7eaf667b-8798-47bf-9ffd-5280dc063516").hex), 1543910678)
 
     def test_get_language_name(self):
         self.assertEqual(get_language_name("fra"), "French")
@@ -185,7 +175,6 @@ class UtilsTest(BaseCasesTest):
 
 
 class EmailTest(BaseCasesTest):
-
     @override_settings(SEND_EMAILS=True)
     def test_send_email(self):
         send_email(
@@ -202,33 +191,31 @@ class EmailTest(BaseCasesTest):
 
 
 class MiddlewareTest(BaseCasesTest):
-
     def test_json(self):
-        middleware = JSONMiddleware()
+        middleware = JSONMiddleware(get_response=lambda r: r)
 
         # test with no content type header
         request = HttpRequest()
         request._body = '{"a":["b"]}'
-        middleware.process_request(request)
+        middleware(request)
         self.assertFalse(hasattr(request, "json"))
 
         # test with JSON content type header
         request = HttpRequest()
         request._body = '{"a":["b"]}'
         request.META = {"CONTENT_TYPE": "application/json;charset=UTF-8"}
-        middleware.process_request(request)
+        middleware(request)
         self.assertEqual(request.json, {"a": ["b"]})
 
         # test with non-JSON content type header
         request = HttpRequest()
         request._body = "<b></b>"
         request.META = {"CONTENT_TYPE": "text/html"}
-        middleware.process_request(request)
+        middleware(request)
         self.assertFalse(hasattr(request, "json"))
 
 
 class ViewsTest(BaseCasesTest):
-
     def test_partials(self):
         response = self.url_get("unicef", "/partials/modal_confirm.html")
         self.assertEqual(response.status_code, 200)

@@ -1,5 +1,5 @@
-from django.core.urlresolvers import reverse
-from mock import call, patch
+from django.urls import reverse
+from unittest.mock import call, patch
 
 from casepro.msgs.models import Message
 from casepro.test import BaseCasesTest
@@ -133,7 +133,6 @@ class TestsTest(BaseCasesTest):
 
 
 class ActionsTest(BaseCasesTest):
-
     def setUp(self):
         super(ActionsTest, self).setUp()
 
@@ -187,7 +186,6 @@ class ActionsTest(BaseCasesTest):
 
 
 class RuleTest(BaseCasesTest):
-
     def setUp(self):
         super(RuleTest, self).setUp()
 
@@ -270,7 +268,6 @@ class RuleTest(BaseCasesTest):
 
 
 class RuleCRUDLTest(BaseCasesTest):
-
     def test_list(self):
         url = reverse("rules.rule_list")
 

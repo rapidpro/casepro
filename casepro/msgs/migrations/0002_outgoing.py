@@ -51,11 +51,26 @@ class Migration(migrations.Migration):
                 ("broadcast_id", models.IntegerField()),
                 ("recipient_count", models.PositiveIntegerField()),
                 ("created_on", models.DateTimeField(db_index=True)),
-                ("case", models.ForeignKey(related_name="outgoing_messages", to="cases.Case", null=True)),
-                ("created_by", models.ForeignKey(related_name="outgoing_messages", to=settings.AUTH_USER_MODEL)),
+                (
+                    "case",
+                    models.ForeignKey(
+                        related_name="outgoing_messages", to="cases.Case", null=True, on_delete=models.PROTECT
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        related_name="outgoing_messages", to=settings.AUTH_USER_MODEL, on_delete=models.PROTECT
+                    ),
+                ),
                 (
                     "org",
-                    models.ForeignKey(related_name="outgoing_messages", verbose_name="Organization", to="orgs.Org"),
+                    models.ForeignKey(
+                        related_name="outgoing_messages",
+                        verbose_name="Organization",
+                        to="orgs.Org",
+                        on_delete=models.PROTECT,
+                    ),
                 ),
             ],
         ),
