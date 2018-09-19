@@ -15,6 +15,7 @@ urlpatterns = [
     url(r"", include("casepro.rules.urls")),
     url(r"", include("casepro.profiles.urls")),
     url(r"", include("casepro.orgs_ext.urls")),
+    url(r"^api/v1/", include("casepro.api.urls")),
     url(r"^pods/", include("casepro.pods.urls")),
     url(r"^stats/", include("casepro.statistics.urls")),
     url(r"^users/", include("dash.users.urls")),

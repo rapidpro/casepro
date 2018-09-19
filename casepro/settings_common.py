@@ -175,6 +175,7 @@ INSTALLED_APPS = (
     "sorl.thumbnail",
     "hamlpy",
     "rest_framework",
+    "rest_framework.authtoken",
     "smartmin",
     "smartmin.csv_imports",
     "smartmin.users",
@@ -188,6 +189,7 @@ INSTALLED_APPS = (
     "casepro.rules",
     "casepro.cases",
     "casepro.statistics",
+    "casepro.api",
 )
 
 COMMENTS_APP = "casepro.msg_board"
@@ -448,3 +450,17 @@ else:
 # Pods
 # -----------------------------------------------------------------------------------
 PODS = []
+
+# -----------------------------------------------------------------------------------
+# REST API
+# -----------------------------------------------------------------------------------
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.TokenAuthentication",
+    ),
+    "DEFAULT_PERMISSION_CLASSES": ("casepro.api.support.AdministratorPermission",),
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.CursorPagination",
+    "PAGE_SIZE": 100,
+    "VIEW_NAME_FUNCTION": "casepro.api.support.get_view_name",
+}

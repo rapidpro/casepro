@@ -67,6 +67,16 @@ class OrgExtCRUDL(SmartCRUDL):
             Group.get_all(self.request.org).filter(pk__in=group_ids).update(suspend_from=True)
             Group.get_all(self.request.org).exclude(pk__in=group_ids).update(suspend_from=False)
 
+            followup_flow_uuid = self.form.cleaned_data["followup_flow"]
+
+            if followup_flow_uuid:
+                for flow in obj.get_backend().fetch_flows(obj):
+                    if flow.uuid == followup_flow_uuid:
+                        obj.set_followup_flow(flow)
+                        break
+            else:
+                obj.set_followup_flow(None)
+
             return obj
 
     class Chooser(OrgCRUDL.Chooser):

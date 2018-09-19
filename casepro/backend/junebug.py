@@ -496,6 +496,17 @@ class JunebugBackend(BaseBackend):
         """
         return []
 
+    def fetch_flows(self, org):  # pragma: no cover
+        """
+        Fetches flows which can be used as a follow-up flow
+        """
+        return []
+
+    def start_flow(self, org, flow, contact, extra):  # pragma: no cover
+        """
+        Starts the given contact in the given flow
+        """
+
     def get_url_patterns(self):
         """
         Returns the list of URL patterns that should be registered for this backend.

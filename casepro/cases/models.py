@@ -360,6 +360,19 @@ class Case(models.Model):
 
         self.notify_watchers(action=action)
 
+        # if this is first time this case has been closed, trigger the followup flow
+        if not self.actions.filter(action=CaseAction.REOPEN).exists():
+            followup = self.org.get_followup_flow()
+            if followup and not (self.contact.is_blocked or self.contact.is_stopped):
+                extra = {
+                    "case": {
+                        "id": self.id,
+                        "assignee": {"id": self.assignee.id, "name": self.assignee.name},
+                        "opened_on": self.opened_on.isoformat(),
+                    }
+                }
+                self.org.get_backend().start_flow(self.org, followup, self.contact, extra=extra)
+
     @case_action(become_watcher=True)
     def reopen(self, user, note=None, update_contact=True):
         self.closed_on = None
@@ -491,6 +504,9 @@ class Case(models.Model):
     def __str__(self):
         return "#%d" % self.pk
 
+    class Meta:
+        indexes = [models.Index(fields=["org", "-opened_on"])]
+
 
 class CaseAction(models.Model):
     """
@@ -518,6 +534,8 @@ class CaseAction(models.Model):
 
     TIMELINE_TYPE = "A"
 
+    org = models.ForeignKey(Org, related_name="actions", on_delete=models.PROTECT)
+
     case = models.ForeignKey(Case, related_name="actions", on_delete=models.PROTECT)
 
     action = models.CharField(max_length=1, choices=ACTION_CHOICES)
@@ -543,6 +561,7 @@ class CaseAction(models.Model):
     @classmethod
     def create(cls, case, user, action, assignee=None, label=None, note=None, user_assignee=None):
         return CaseAction.objects.create(
+            org=case.org,
             case=case,
             action=action,
             created_by=user,
@@ -563,6 +582,9 @@ class CaseAction(models.Model):
             "label": self.label.as_json() if self.label else None,
             "note": self.note,
         }
+
+    class Meta:
+        indexes = [models.Index(fields=["org", "-created_on"])]
 
 
 class CaseExport(BaseSearchExport):

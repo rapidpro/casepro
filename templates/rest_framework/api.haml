@@ -1,0 +1,98 @@
+- extends "frame.html"
+- load i18n compress static rest_framework
+
+- block pre-content
+  %ul.breadcrumb
+    .apitoken
+      - if request.user and request.user.is_authenticated
+        - trans "Token: "
+        %strong
+          {{ request.user.auth_token }}
+      - else
+        - trans "Login to see your access token"
+
+    - for breadcrumb_name, breadcrumb_url in breadcrumblist
+      - if forloop.last
+        <li class="active"><a href="{{ breadcrumb_url }}">{{ breadcrumb_name }}</a></li>
+      - else
+        <li><a href="{{ breadcrumb_url }}">{{ breadcrumb_name }}</a></li>
+
+    - empty
+      {% block breadcrumbs_empty %}&nbsp;{% endblock breadcrumbs_empty %}
+
+- block content
+  .region
+    - if 'GET' in allowed_methods
+      %form.pull-right(id="get-form")
+        %fieldset
+          - if api_settings.URL_FORMAT_OVERRIDE
+            .btn-group.format-selection
+              %a.btn.btn-default.js-tooltip(href="{{ request.get_full_path }}" rel="nofollow" title="Make a GET request on the {{ name }} resource")
+                GET
+
+              %button.btn.btn-default.dropdown-toggle.js-tooltip(data-toggle="dropdown" title="Specify a format for the GET request")
+                %span.caret
+
+              %ul.dropdown-menu
+                - for format in available_formats
+                  %li
+                    <a class="js-tooltip format-option" href="{% add_query_param request api_settings.URL_FORMAT_OVERRIDE format %}" rel="nofollow" title="Make a GET request on the {{ name }} resource with the format set to `{{ format }}`">{{ format }}</a>
+          - else
+            <a class="btn btn-default js-tooltip" href="{{ request.get_full_path }}" rel="nofollow" title="Make a GET request on the {{ name }} resource">GET</a>
+
+    - if options_form
+      %form.button-form(action="{{ request.get_full_path }}" data-method="OPTIONS")
+        %button.btn.btn-default.js-tooltip(title="Make an OPTIONS request on the {{ name }} resource")
+          OPTIONS
+
+    .content-main.api-docs(role="main")
+      .page-header
+        %h1=name
+
+      .(style="float:left")
+        - block description
+          {{ description }}
+
+      - if paginator
+        %nav(style="float: right")
+          - get_pagination_html paginator
+
+      .request-info(style="clear: both")
+        <pre class="prettyprint"><b>{{ request.method }}</b> {{ request.get_full_path }}</pre>
+
+      .response-info
+        <pre class="prettyprint"><span class="meta nocode"><b>HTTP {{ response.status_code }} {{ response.status_text }}</b>{% autoescape off %}{% for key, val in response_headers|items %}<br/><b>{{ key }}:</b> <span class="lit">{{ val|break_long_headers|urlize_quoted_links }}</span>{% endfor %}</span><br/>{{ content|urlize_quoted_links }}</pre>{% endautoescape %}
+
+- block extra-style
+  {{ block.super }}
+
+  :css
+    .api-docs h2 {
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+    ul.breadcrumb {
+      margin-bottom: 1em;
+    }
+    .apitoken {
+      display: block;
+      float: right;
+    }
+
+- block extra-script
+  {{ block.super }}
+  <script>
+    window.drf = {
+      csrfHeaderName: "{{ csrf_header_name|default:'X-CSRFToken' }}",
+      csrfCookieName: "{{ csrf_cookie_name|default:'csrftoken' }}"
+    };
+  </script>
+  <script src="{% static "rest_framework/js/ajax-form.js" %}"></script>
+  <script src="{% static "rest_framework/js/csrf.js" %}"></script>
+  <script src="{% static "rest_framework/js/prettify-min.js" %}"></script>
+  <script src="{% static "rest_framework/js/default.js" %}"></script>
+  <script>
+    $(document).ready(function() {
+      $('form').ajaxForm();
+    });
+  </script>
