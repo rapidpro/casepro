@@ -12,11 +12,15 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="message",
             name="case",
-            field=models.ForeignKey(related_name="incoming_messages", to="cases.Case", null=True),
+            field=models.ForeignKey(
+                related_name="incoming_messages", to="cases.Case", null=True, on_delete=models.PROTECT
+            ),
         ),
         migrations.AlterField(
             model_name="message",
             name="org",
-            field=models.ForeignKey(related_name="incoming_messages", verbose_name="Organization", to="orgs.Org"),
+            field=models.ForeignKey(
+                related_name="incoming_messages", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT
+            ),
         ),
     ]

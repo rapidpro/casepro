@@ -12,6 +12,8 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="label",
             name="org",
-            field=models.ForeignKey(related_name="labels", verbose_name="Organization", to="orgs.Org"),
+            field=models.ForeignKey(
+                related_name="labels", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT
+            ),
         )
     ]

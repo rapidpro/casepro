@@ -27,6 +27,10 @@ class Migration(migrations.Migration):
     dependencies = [("rules", "0001_initial"), ("msgs", "0047_outgoing_urn")]
 
     operations = [
-        migrations.AddField(model_name="label", name="rule", field=models.OneToOneField(null=True, to="rules.Rule")),
+        migrations.AddField(
+            model_name="label",
+            name="rule",
+            field=models.OneToOneField(null=True, to="rules.Rule", on_delete=models.PROTECT),
+        ),
         migrations.RunPython(create_label_rules),
     ]

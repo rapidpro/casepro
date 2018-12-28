@@ -18,10 +18,17 @@ class Migration(migrations.Migration):
                 ("description", models.CharField(max_length=255, verbose_name="Description")),
                 ("keywords", models.CharField(max_length=1024, verbose_name="Keywords", blank=True)),
                 ("is_active", models.BooleanField(default=True, help_text="Whether this label is active")),
-                ("org", models.ForeignKey(related_name="new_labels", verbose_name="Organization", to="orgs.Org")),
+                (
+                    "org",
+                    models.ForeignKey(
+                        related_name="new_labels", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
-            model_name="messageaction", name="new_label", field=models.ForeignKey(to="msgs.Label", null=True)
+            model_name="messageaction",
+            name="new_label",
+            field=models.ForeignKey(to="msgs.Label", null=True, on_delete=models.PROTECT),
         ),
     ]

@@ -49,7 +49,12 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("is_active", models.BooleanField(default=True, help_text="Whether this filter group is active")),
-                ("org", models.ForeignKey(related_name="groups", verbose_name="Organization", to="orgs.Org")),
+                (
+                    "org",
+                    models.ForeignKey(
+                        related_name="groups", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT
+                    ),
+                ),
             ],
             options={},
             bases=(models.Model,),
@@ -63,7 +68,12 @@ class Migration(migrations.Migration):
                 ("description", models.CharField(max_length=255, verbose_name="Description")),
                 ("keywords", models.CharField(max_length=1024, verbose_name="Keywords", blank=True)),
                 ("is_active", models.BooleanField(default=True, help_text="Whether this label is active")),
-                ("org", models.ForeignKey(related_name="labels", verbose_name="Organization", to="orgs.Org")),
+                (
+                    "org",
+                    models.ForeignKey(
+                        related_name="labels", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT
+                    ),
+                ),
             ],
             options={},
             bases=(models.Model,),
@@ -75,8 +85,16 @@ class Migration(migrations.Migration):
                 ("search", models.TextField()),
                 ("filename", models.CharField(max_length=512)),
                 ("created_on", models.DateTimeField(auto_now_add=True)),
-                ("created_by", models.ForeignKey(related_name="exports", to=settings.AUTH_USER_MODEL)),
-                ("org", models.ForeignKey(related_name="exports", verbose_name="Organization", to="orgs.Org")),
+                (
+                    "created_by",
+                    models.ForeignKey(related_name="exports", to=settings.AUTH_USER_MODEL, on_delete=models.PROTECT),
+                ),
+                (
+                    "org",
+                    models.ForeignKey(
+                        related_name="exports", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT
+                    ),
+                ),
             ],
             options={},
             bases=(models.Model,),
@@ -92,7 +110,12 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("is_active", models.BooleanField(default=True, help_text="Whether this partner is active")),
-                ("org", models.ForeignKey(related_name="partners", verbose_name="Organization", to="orgs.Org")),
+                (
+                    "org",
+                    models.ForeignKey(
+                        related_name="partners", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT
+                    ),
+                ),
             ],
             options={},
             bases=(models.Model,),
@@ -110,25 +133,29 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="caseaction",
             name="assignee",
-            field=models.ForeignKey(related_name="case_actions", to="cases.Partner", null=True),
+            field=models.ForeignKey(
+                related_name="case_actions", to="cases.Partner", null=True, on_delete=models.PROTECT
+            ),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name="caseaction",
             name="case",
-            field=models.ForeignKey(related_name="actions", to="cases.Case"),
+            field=models.ForeignKey(related_name="actions", to="cases.Case", on_delete=models.PROTECT),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name="caseaction",
             name="created_by",
-            field=models.ForeignKey(related_name="case_actions", to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(
+                related_name="case_actions", to=settings.AUTH_USER_MODEL, on_delete=models.PROTECT
+            ),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name="case",
             name="assignee",
-            field=models.ForeignKey(related_name="cases", to="cases.Partner"),
+            field=models.ForeignKey(related_name="cases", to="cases.Partner", on_delete=models.PROTECT),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -140,7 +167,9 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="case",
             name="org",
-            field=models.ForeignKey(related_name="cases", verbose_name="Organization", to="orgs.Org"),
+            field=models.ForeignKey(
+                related_name="cases", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT
+            ),
             preserve_default=True,
         ),
     ]

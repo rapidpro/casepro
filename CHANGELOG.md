@@ -1,3 +1,44 @@
+v1.1.7
+----------
+ * Ensure new orgs are created with a backend
+
+v1.1.6
+----------
+ * Fix not clearing follow-up flows
+
+v1.1.5
+----------
+ * Make followup flow optional
+
+v1.1.4
+----------
+ * Add support for followup flows which can be triggered when a case is closed
+
+v1.1.3
+----------
+ * Switch to using cursor pagination in the API
+
+v1.1.2
+----------
+ * Add labels API endpoint, bnew fields to cases endpoint, improve API docs
+ * Use new index on CaseAction.org in API requests
+ * Make CaseAction.org non-null and add index
+
+v1.1.1
+----------
+ * Migration to backfill CaseAction.org
+
+v1.1.0
+----------
+ * Add org field to CaseAction
+ * Add basic API
+ * Dpendency update and cleanup
+
+v1.0.2
+----------
+ * Upgrade to Django 2
+ * Fix not saving change_password when updating a user
+
 v1.0.1
 ----------
  * Import orgbackend CRUDL from dash

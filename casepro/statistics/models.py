@@ -25,6 +25,7 @@ class BaseCount(models.Model):
     """
     Tracks total counts of different items (e.g. replies, messages) in different scopes (e.g. org, user)
     """
+
     TYPE_INCOMING = "I"
     TYPE_INBOX = "N"
     TYPE_ARCHIVED = "A"
@@ -130,6 +131,7 @@ class BaseSecondTotal(BaseCount):
     """
     Tracks total seconds and counts of different items (e.g. time since assigned ) in different scopes (e.g. org, user)
     """
+
     TYPE_TILL_REPLIED = "A"
     TYPE_TILL_CLOSED = "C"
 
@@ -208,6 +210,7 @@ class TotalCount(BaseCount):
     """
     Tracks total counts of different items (e.g. replies, messages) in different scopes (e.g. org, user)
     """
+
     squash_over = ("item_type", "scope")
     last_squash_key = "total_count:last_squash"
 
@@ -230,6 +233,7 @@ class DailyCount(BaseCount):
     """
     Tracks per-day counts of different items (e.g. replies, messages) in different scopes (e.g. org, user)
     """
+
     day = models.DateField(help_text=_("The day this count is for"))
 
     squash_over = ("day", "item_type", "scope")
@@ -296,6 +300,7 @@ class DailyCountExport(BaseExport):
     """
     Exports based on daily counts. Each row is date and columns are different scopes.
     """
+
     TYPE_LABEL = "L"
     TYPE_PARTNER = "P"
     TYPE_USER = "U"

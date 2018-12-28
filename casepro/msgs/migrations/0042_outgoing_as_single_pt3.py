@@ -13,6 +13,8 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="outgoing",
             name="contact",
-            field=models.ForeignKey(related_name="outgoing_messages", to="contacts.Contact", null=True),
+            field=models.ForeignKey(
+                related_name="outgoing_messages", to="contacts.Contact", null=True, on_delete=models.PROTECT
+            ),
         ),
     ]

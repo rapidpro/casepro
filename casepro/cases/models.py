@@ -27,6 +27,7 @@ class AccessLevel(IntEnum):
     """
     Case access level
     """
+
     none = 0
     read = 1
     update = 2
@@ -36,14 +37,20 @@ class Partner(models.Model):
     """
     Corresponds to a partner organization
     """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="partners")
+
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="partners", on_delete=models.PROTECT)
 
     name = models.CharField(verbose_name=_("Name"), max_length=128, help_text=_("Name of this partner organization"))
 
     description = models.CharField(verbose_name=_("Description"), null=True, blank=True, max_length=255)
 
     primary_contact = models.ForeignKey(
-        User, verbose_name=_("Primary Contact"), related_name="partners_primary", null=True, blank=True
+        User,
+        verbose_name=_("Primary Contact"),
+        related_name="partners_primary",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
     )
 
     is_restricted = models.BooleanField(
@@ -123,7 +130,6 @@ class case_action(object):
         self.become_watcher = become_watcher
 
     def __call__(self, func):
-
         def wrapped(case, user, *args, **kwargs):
             access = case.access_level(user)
             if (access == AccessLevel.update) or (not self.require_update and access == AccessLevel.read):
@@ -143,11 +149,12 @@ class Case(models.Model):
     """
     A case between a partner organization and a contact
     """
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="cases")
+
+    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="cases", on_delete=models.PROTECT)
 
     labels = models.ManyToManyField(Label, help_text=_("Labels assigned to this case"))
 
-    assignee = models.ForeignKey(Partner, related_name="cases")
+    assignee = models.ForeignKey(Partner, related_name="cases", on_delete=models.PROTECT)
 
     user_assignee = models.ForeignKey(
         User,
@@ -157,9 +164,9 @@ class Case(models.Model):
         help_text="The (optional) user that this case is assigned to",
     )
 
-    contact = models.ForeignKey(Contact, related_name="cases")
+    contact = models.ForeignKey(Contact, related_name="cases", on_delete=models.PROTECT)
 
-    initial_message = models.OneToOneField(Message, null=True, related_name="initial_case")
+    initial_message = models.OneToOneField(Message, null=True, related_name="initial_case", on_delete=models.PROTECT)
 
     summary = models.CharField(verbose_name=_("Summary"), max_length=255)
 
@@ -353,6 +360,19 @@ class Case(models.Model):
 
         self.notify_watchers(action=action)
 
+        # if this is first time this case has been closed, trigger the followup flow
+        if not self.actions.filter(action=CaseAction.REOPEN).exists():
+            followup = self.org.get_followup_flow()
+            if followup and not (self.contact.is_blocked or self.contact.is_stopped):
+                extra = {
+                    "case": {
+                        "id": self.id,
+                        "assignee": {"id": self.assignee.id, "name": self.assignee.name},
+                        "opened_on": self.opened_on.isoformat(),
+                    }
+                }
+                self.org.get_backend().start_flow(self.org, followup, self.contact, extra=extra)
+
     @case_action(become_watcher=True)
     def reopen(self, user, note=None, update_contact=True):
         self.closed_on = None
@@ -484,11 +504,15 @@ class Case(models.Model):
     def __str__(self):
         return "#%d" % self.pk
 
+    class Meta:
+        indexes = [models.Index(fields=["org", "-opened_on"])]
+
 
 class CaseAction(models.Model):
     """
     An action performed on a case
     """
+
     OPEN = "O"
     UPDATE_SUMMARY = "S"
     ADD_NOTE = "N"
@@ -510,15 +534,17 @@ class CaseAction(models.Model):
 
     TIMELINE_TYPE = "A"
 
-    case = models.ForeignKey(Case, related_name="actions")
+    org = models.ForeignKey(Org, related_name="actions", on_delete=models.PROTECT)
+
+    case = models.ForeignKey(Case, related_name="actions", on_delete=models.PROTECT)
 
     action = models.CharField(max_length=1, choices=ACTION_CHOICES)
 
-    created_by = models.ForeignKey(User, related_name="case_actions")
+    created_by = models.ForeignKey(User, related_name="case_actions", on_delete=models.PROTECT)
 
     created_on = models.DateTimeField(db_index=True, auto_now_add=True)
 
-    assignee = models.ForeignKey(Partner, null=True, related_name="case_actions")
+    assignee = models.ForeignKey(Partner, null=True, related_name="case_actions", on_delete=models.PROTECT)
 
     user_assignee = models.ForeignKey(
         User,
@@ -528,13 +554,14 @@ class CaseAction(models.Model):
         help_text="The (optional) user that the case was assigned to.",
     )
 
-    label = models.ForeignKey(Label, null=True)
+    label = models.ForeignKey(Label, null=True, on_delete=models.PROTECT)
 
     note = models.CharField(null=True, max_length=1024)
 
     @classmethod
     def create(cls, case, user, action, assignee=None, label=None, note=None, user_assignee=None):
         return CaseAction.objects.create(
+            org=case.org,
             case=case,
             action=action,
             created_by=user,
@@ -556,11 +583,15 @@ class CaseAction(models.Model):
             "note": self.note,
         }
 
+    class Meta:
+        indexes = [models.Index(fields=["org", "-created_on"])]
+
 
 class CaseExport(BaseSearchExport):
     """
     An export of cases
     """
+
     directory = "case_exports"
     download_view = "cases.caseexport_read"
 

@@ -23,10 +23,20 @@ class Migration(migrations.Migration):
                 ("type", models.CharField(max_length=1)),
                 ("since", models.DateField()),
                 ("until", models.DateField()),
-                ("created_by", models.ForeignKey(related_name="dailycountexports", to=settings.AUTH_USER_MODEL)),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        related_name="dailycountexports", to=settings.AUTH_USER_MODEL, on_delete=models.PROTECT
+                    ),
+                ),
                 (
                     "org",
-                    models.ForeignKey(related_name="dailycountexports", verbose_name="Organization", to="orgs.Org"),
+                    models.ForeignKey(
+                        related_name="dailycountexports",
+                        verbose_name="Organization",
+                        to="orgs.Org",
+                        on_delete=models.PROTECT,
+                    ),
                 ),
             ],
             options={"abstract": False},

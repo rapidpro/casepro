@@ -15,6 +15,7 @@ class ContactCRUDL(SmartCRUDL):
     """
     Simple contact CRUDL for debugging by superusers, i.e. not exposed to regular users for now
     """
+
     model = Contact
     actions = ("list", "read", "fetch", "cases")
 
@@ -25,7 +26,6 @@ class ContactCRUDL(SmartCRUDL):
             return self.model.objects.filter(org=self.request.org)
 
     class Read(OrgObjPermsMixin, SmartReadView):
-
         def get_context_data(self, **kwargs):
             context = super(ContactCRUDL.Read, self).get_context_data(**kwargs)
 
@@ -41,6 +41,7 @@ class ContactCRUDL(SmartCRUDL):
         """
         JSON endpoint for fetching a single contact
         """
+
         permission = "contacts.contact_read"
 
         def render_to_response(self, context, **response_kwargs):
@@ -50,6 +51,7 @@ class ContactCRUDL(SmartCRUDL):
         """
         JSON endpoint for fetching a contact's cases
         """
+
         permission = "contacts.contact_read"
 
         def get_context_data(self, **kwargs):
@@ -83,7 +85,6 @@ class GroupCRUDL(SmartCRUDL):
             return obj.count if obj.count is not None else "..."
 
     class Select(OrgPermsMixin, SmartFormView):
-
         class GroupsForm(forms.Form):
             groups = forms.MultipleChoiceField(
                 choices=(), label=_("Groups"), help_text=_("Contact groups visible to partner users.")
@@ -128,6 +129,7 @@ class FieldCRUDL(SmartCRUDL):
         """
         Basic list view mostly for debugging
         """
+
         fields = ("key", "label", "value_type", "is_visible")
         default_order = "key"
 

@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="message",
             name="contact",
-            field=models.ForeignKey(related_name="incoming_messages", to="contacts.Contact"),
+            field=models.ForeignKey(related_name="incoming_messages", to="contacts.Contact", on_delete=models.PROTECT),
         ),
         migrations.RunPython(fix_deleted_contact_messages),
     ]

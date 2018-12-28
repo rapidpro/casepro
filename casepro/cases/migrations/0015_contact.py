@@ -23,7 +23,12 @@ class Migration(migrations.Migration):
                         size=None,
                     ),
                 ),
-                ("org", models.ForeignKey(related_name="contacts", verbose_name="Organization", to="orgs.Org")),
+                (
+                    "org",
+                    models.ForeignKey(
+                        related_name="contacts", verbose_name="Organization", to="orgs.Org", on_delete=models.PROTECT
+                    ),
+                ),
             ],
         )
     ]

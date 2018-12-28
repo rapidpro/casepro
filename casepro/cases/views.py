@@ -4,7 +4,7 @@ from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgObjPermsMixin, OrgPermsMixin
 from django.conf import settings
 from django.core.cache import cache
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.timezone import now
@@ -44,7 +44,6 @@ from .tasks import case_export
 
 
 class CaseSearchMixin(object):
-
     def derive_search(self):
         """
         Collects and prepares case search parameters into JSON serializable dict
@@ -112,6 +111,7 @@ class CaseCRUDL(SmartCRUDL):
         """
         JSON endpoint for opening a new case. Takes a message backend id, or a URN.
         """
+
         permission = "cases.case_create"
 
         def post(self, request, *args, **kwargs):
@@ -150,6 +150,7 @@ class CaseCRUDL(SmartCRUDL):
         """
         JSON endpoint for adding a note to a case
         """
+
         permission = "cases.case_update"
 
         def post(self, request, *args, **kwargs):
@@ -163,6 +164,7 @@ class CaseCRUDL(SmartCRUDL):
         """
         JSON endpoint for re-assigning a case
         """
+
         permission = "cases.case_update"
 
         def post(self, request, *args, **kwargs):
@@ -178,6 +180,7 @@ class CaseCRUDL(SmartCRUDL):
         """
         JSON endpoint for closing a case
         """
+
         permission = "cases.case_update"
 
         def post(self, request, *args, **kwargs):
@@ -191,6 +194,7 @@ class CaseCRUDL(SmartCRUDL):
         """
         JSON endpoint for re-opening a case
         """
+
         permission = "cases.case_update"
 
         def post(self, request, *args, **kwargs):
@@ -204,6 +208,7 @@ class CaseCRUDL(SmartCRUDL):
         """
         JSON endpoint for labelling a case
         """
+
         permission = "cases.case_update"
 
         def post(self, request, *args, **kwargs):
@@ -224,6 +229,7 @@ class CaseCRUDL(SmartCRUDL):
         """
         JSON endpoint for updating a case summary
         """
+
         permission = "cases.case_update"
 
         def post(self, request, *args, **kwargs):
@@ -236,6 +242,7 @@ class CaseCRUDL(SmartCRUDL):
         """
         JSON endpoint for replying in a case
         """
+
         permission = "cases.case_update"
 
         def post(self, request, *args, **kwargs):
@@ -247,6 +254,7 @@ class CaseCRUDL(SmartCRUDL):
         """
         JSON endpoint for fetching a single case
         """
+
         permission = "cases.case_read"
 
         def render_to_response(self, context, **response_kwargs):
@@ -261,6 +269,7 @@ class CaseCRUDL(SmartCRUDL):
         """
         JSON endpoint for searching for cases
         """
+
         permission = "cases.case_list"
 
         def get_context_data(self, **kwargs):
@@ -288,6 +297,7 @@ class CaseCRUDL(SmartCRUDL):
         """
         JSON endpoint for fetching case actions and messages
         """
+
         permission = "cases.case_read"
 
         def get_context_data(self, **kwargs):
@@ -329,6 +339,7 @@ class CaseCRUDL(SmartCRUDL):
         """
         Endpoint for watching a case
         """
+
         permission = "cases.case_read"
 
         def post(self, request, *args, **kwargs):
@@ -339,6 +350,7 @@ class CaseCRUDL(SmartCRUDL):
         """
         Endpoint for unwatching a case
         """
+
         permission = "cases.case_read"
 
         def post(self, request, *args, **kwargs):
@@ -351,7 +363,6 @@ class CaseExportCRUDL(SmartCRUDL):
     actions = ("create", "read")
 
     class Create(NonAtomicMixin, OrgPermsMixin, CaseSearchMixin, SmartCreateView):
-
         def post(self, request, *args, **kwargs):
             search = self.derive_search()
             export = self.model.create(self.request.org, self.request.user, search)
@@ -366,7 +377,6 @@ class CaseExportCRUDL(SmartCRUDL):
 
 
 class PartnerFormMixin(object):
-
     def get_form_kwargs(self):
         kwargs = super(PartnerFormMixin, self).get_form_kwargs()
         kwargs["org"] = self.request.user.get_org()
@@ -401,7 +411,6 @@ class PartnerCRUDL(SmartCRUDL):
             return request.user.can_manage(self.get_object())
 
     class Read(OrgObjPermsMixin, SmartReadView):
-
         def get_queryset(self):
             return Partner.get_all(self.request.org)
 
@@ -513,6 +522,7 @@ class BaseInboxView(OrgPermsMixin, SmartTemplateView):
     """
     Mixin to add site metadata to the context in JSON format which can then used
     """
+
     title = None
     folder = None
     folder_icon = None
@@ -545,7 +555,7 @@ class BaseInboxView(OrgPermsMixin, SmartTemplateView):
         context["open_case_count"] = Case.get_open(org, user).count()
         context["closed_case_count"] = Case.get_closed(org, user).count()
         context["allow_case_without_message"] = getattr(settings, "SITE_ALLOW_CASE_WITHOUT_MESSAGE", False)
-        context["user_must_reply_with_faq"] = org and not user.is_anonymous() and user.must_use_faq()
+        context["user_must_reply_with_faq"] = org and not user.is_anonymous and user.must_use_faq()
         context["site_contact_display"] = getattr(settings, "SITE_CONTACT_DISPLAY", "name")
         return context
 
@@ -554,6 +564,7 @@ class InboxView(BaseInboxView):
     """
     Inbox view
     """
+
     title = _("Inbox")
     folder = MessageFolder.inbox
     folder_icon = "glyphicon-inbox"
@@ -564,6 +575,7 @@ class FlaggedView(BaseInboxView):
     """
     Inbox view
     """
+
     title = _("Flagged")
     folder = MessageFolder.flagged
     folder_icon = "glyphicon-flag"
@@ -574,6 +586,7 @@ class ArchivedView(BaseInboxView):
     """
     Archived messages view
     """
+
     title = _("Archived")
     folder = MessageFolder.archived
     folder_icon = "glyphicon-trash"
@@ -584,6 +597,7 @@ class UnlabelledView(BaseInboxView):
     """
     Unlabelled messages view
     """
+
     title = _("Unlabelled")
     folder = MessageFolder.unlabelled
     folder_icon = "glyphicon-bullhorn"
@@ -594,6 +608,7 @@ class SentView(BaseInboxView):
     """
     Outgoing messages view
     """
+
     title = _("Sent")
     folder = OutgoingFolder.sent
     folder_icon = "glyphicon-send"
@@ -604,6 +619,7 @@ class OpenCasesView(BaseInboxView):
     """
     Open cases view
     """
+
     title = _("Open Cases")
     folder = CaseFolder.open
     folder_icon = "glyphicon-folder-open"
@@ -614,6 +630,7 @@ class ClosedCasesView(BaseInboxView):
     """
     Closed cases view
     """
+
     title = _("Closed Cases")
     folder = CaseFolder.closed
     folder_icon = "glyphicon-folder-close"
@@ -626,7 +643,6 @@ class StatusView(View):
     """
 
     def get(self, request, *args, **kwargs):
-
         def status_check(callback):
             try:
                 callback()

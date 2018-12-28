@@ -26,6 +26,7 @@ class Migration(migrations.Migration):
                 verbose_name="Primary Contact",
                 blank=True,
                 to=settings.AUTH_USER_MODEL,
+                on_delete=models.PROTECT,
                 null=True,
             ),
         ),

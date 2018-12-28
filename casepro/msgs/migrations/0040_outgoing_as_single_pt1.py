@@ -17,6 +17,8 @@ class Migration(migrations.Migration):
         migrations.RenameField(model_name="outgoing", old_name="backend_id", new_name="backend_broadcast_id"),
         migrations.RemoveField(model_name="outgoing", name="recipient_count"),
         migrations.AddField(
-            model_name="outgoing", name="contact", field=models.ForeignKey(to="contacts.Contact", null=True)
+            model_name="outgoing",
+            name="contact",
+            field=models.ForeignKey(to="contacts.Contact", null=True, on_delete=models.PROTECT),
         ),
     ]
