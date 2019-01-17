@@ -104,7 +104,7 @@ class URN(object):
         Normalizes the passed in phone number
         """
         # remove any invalid characters
-        number = regex.sub("[^0-9a-z\+]", "", number.lower(), regex.V0)
+        number = regex.sub(r"[^0-9a-z\+]", "", number.lower(), regex.V0)
 
         # add on a plus if it looks like it could be a fully qualified number
         if len(number) >= 11 and number[0] not in ["+", "0"]:

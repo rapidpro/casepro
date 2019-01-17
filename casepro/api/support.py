@@ -1,4 +1,4 @@
-from rest_framework import permissions, views
+from rest_framework import permissions
 
 
 class AdministratorPermission(permissions.BasePermission):
