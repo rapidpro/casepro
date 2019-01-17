@@ -462,5 +462,4 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ("casepro.api.support.AdministratorPermission",),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.CursorPagination",
     "PAGE_SIZE": 100,
-    "VIEW_NAME_FUNCTION": "casepro.api.support.get_view_name",
 }

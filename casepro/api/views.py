@@ -29,7 +29,7 @@ class APIRoot(routers.APIRootView):
     Below are the endpoints available in the API:
     """
 
-    title = _("API v1")
+    name = _("API v1")
 
 
 class CreatedOnCursorPagination(pagination.CursorPagination):
