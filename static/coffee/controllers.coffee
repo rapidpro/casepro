@@ -47,6 +47,11 @@ controllers.controller('InboxController', ['$scope', '$window', '$location', 'La
         $scope.activateLabel(initialLabel)
     )
 
+  $scope.loadLabels = () ->
+    LabelService.fetchAll(true).then((labels) ->
+      $scope.labels = labels
+    )
+
   $scope.activateLabel = (label) ->
     $scope.activeLabel = label
     $scope.activeContact = null
@@ -258,6 +263,7 @@ controllers.controller('BaseItemsController', ['$scope', '$timeout', '$filter', 
       $scope.items = (item for item in $scope.items when filter(item))
       
       $scope.updateItems()
+      $scope.loadLabels()
       
     ).catch((error) ->
       $scope.pollBusy = false
@@ -464,6 +470,7 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$uibModal'
     UtilsService.labelModal("Labels", "Update the labels for this message. This determines which other partner organizations can view this message.", $scope.labels, message.labels).then((selectedLabels) ->
       MessageService.relabel(message, selectedLabels).then(() ->
         $scope.updateItems()
+        $scope.loadLabels()
       )
     )
 
