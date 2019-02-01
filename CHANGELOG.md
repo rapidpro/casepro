@@ -1,3 +1,7 @@
+v1.1.8
+----------
+ * Update all dependencies
+
 v1.1.7
 ----------
  * Ensure new orgs are created with a backend
