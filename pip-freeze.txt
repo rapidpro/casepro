@@ -47,7 +47,7 @@ pyflakes==2.0.0           # via flake8
 python-dateutil==2.7.5
 pytz==2018.9              # via celery, django, django-timezone-field, rapidpro-python, smartmin
 rapidpro-dash==1.4.4
-rapidpro-python==2.4
+rapidpro-python==2.5
 raven==6.10.0
 rcssmin==1.0.6            # via django-compressor
 redis==3.0.1
