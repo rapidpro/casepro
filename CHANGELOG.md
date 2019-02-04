@@ -1,3 +1,7 @@
+v1.1.9
+----------
+ * Extra logging in contact sync task
+
 v1.1.8
 ----------
  * Update all dependencies
