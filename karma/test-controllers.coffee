@@ -249,19 +249,21 @@ describe('controllers:', () ->
     PartnerService = null
     UserService = null
     ModalService = null
+    LabelService = null
 
     $inboxScope = null
     $scope = null
     serverTime = 1464775597109  # ~ Jun 1st 2016 10:06:37 UTC
 
     beforeEach(() ->
-      inject((_MessageService_, _OutgoingService_, _CaseService_, _PartnerService_, _UserService_, _ModalService_) ->
+      inject((_MessageService_, _OutgoingService_, _CaseService_, _PartnerService_, _UserService_, _ModalService_, _LabelService_) ->
         MessageService = _MessageService_
         OutgoingService = _OutgoingService_
         CaseService = _CaseService_
         PartnerService = _PartnerService_
         UserService = _UserService_
         ModalService = _ModalService_
+        LabelService = _LabelService_
       )
 
       $window.contextData = {user: test.user1, partners: [], labels: [test.tea, test.coffee], groups: []}
@@ -534,11 +536,13 @@ describe('controllers:', () ->
       it('onLabelMessage', () ->
         labelModal = spyOnPromise($q, $scope, UtilsService, 'labelModal')
         relabel = spyOnPromise($q, $scope, MessageService, 'relabel')
+        label = spyOnPromise($q, $scope, LabelService, 'fetchAll')
 
         $scope.onLabelMessage(test.msg1)
 
         labelModal.resolve([test.coffee])
         relabel.resolve()
+        label.resolve()
 
         expect(MessageService.relabel).toHaveBeenCalledWith(test.msg1, [test.coffee])
       )
