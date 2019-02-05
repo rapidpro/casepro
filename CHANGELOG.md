@@ -1,3 +1,7 @@
+v1.1.10
+----------
+ * Upgrade to last rapidpro client
+
 v1.1.9
 ----------
  * Extra logging in contact sync task
