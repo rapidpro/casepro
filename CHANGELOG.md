@@ -1,3 +1,7 @@
+v1.1.11
+----------
+ * Refresh label counts after applying labels to messages
+
 v1.1.10
 ----------
  * Upgrade to last rapidpro client
