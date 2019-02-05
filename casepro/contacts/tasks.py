@@ -18,7 +18,7 @@ def pull_contacts(org, since, until):
 
     groups_created, groups_updated, groups_deleted, ignored = backend.pull_groups(org)
 
-    def progress(num):
+    def progress(num):  # pragma: no cover
         logger.debug(f" > Synced {num} contacts for org #{org.id}")
 
     contacts_created, contacts_updated, contacts_deleted, ignored = backend.pull_contacts(org, since, until, progress)
