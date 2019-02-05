@@ -1,3 +1,15 @@
+v1.1.10
+----------
+ * Upgrade to last rapidpro client
+
+v1.1.9
+----------
+ * Extra logging in contact sync task
+
+v1.1.8
+----------
+ * Update all dependencies
+
 v1.1.7
 ----------
  * Ensure new orgs are created with a backend

@@ -11,7 +11,7 @@ def sentry_dsn(request):
     dsn = getattr(settings, "SENTRY_DSN", None)
     public_dsn = None
     if dsn:
-        match = regex.match("^https:\/\/(\w+):\w+@([\w\.\/]+)$", dsn)
+        match = regex.match(r"^https:\/\/(\w+):\w+@([\w\.\/]+)$", dsn)
         if match:
             public_key = match.group(1)
             path = match.group(2)

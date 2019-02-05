@@ -69,7 +69,7 @@ class LabelForm(forms.ModelForm):
             raise forms.ValidationError(_("Label name must be %d characters or less") % Label.MAX_NAME_LEN)
 
         # first character must be a word char
-        elif not regex.match("\w", name[0], flags=regex.UNICODE):
+        elif not regex.match(r"\w", name[0], flags=regex.UNICODE):
             raise forms.ValidationError(_("Label name must start with a letter or digit"))
         return name
 

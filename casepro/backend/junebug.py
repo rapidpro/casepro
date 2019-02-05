@@ -631,7 +631,7 @@ def receive_identity_store_optout(request):
     try:
         identity_id = data["identity"]
         optout_type = data["optout_type"]
-    except KeyError as e:
+    except KeyError:
         return JsonResponse({"reason": 'Both "identity" and "optout_type" must be specified.'}, status=400)
 
     # The identity store currently doesn't specify the response format or do
