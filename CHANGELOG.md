@@ -1,3 +1,7 @@
+v1.1.12
+----------
+ * Latest dash
+
 v1.1.11
 ----------
  * Refresh label counts after applying labels to messages
