@@ -193,7 +193,7 @@ def get_language_name(iso_code):
 
         if lang:
             # we only show up to the first semi or paren
-            lang = re.split(";|\(", lang.name)[0].strip()
+            lang = re.split(r";|\(", lang.name)[0].strip()
 
         LANGUAGES_BY_CODE[iso_code] = lang
 
