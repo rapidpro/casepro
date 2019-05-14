@@ -1,3 +1,8 @@
+v1.1.13
+----------
+ * Actions should still succeed even if their backend operations fail (log that to sentry)
+ * Fix load label permissions
+
 v1.1.12
 ----------
  * Latest dash
