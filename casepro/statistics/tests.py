@@ -562,7 +562,6 @@ class SecondTotalCountsTest(BaseStatsTest):
         msg3 = self.create_message(self.unicef, 345, self.ann, "Hello 3", [self.pregnancy])
         msg4 = self.create_message(self.nyaruka, 456, self.ned, "Hello 4", [self.code])
         msg5 = self.create_message(self.unicef, 789, self.ann, "Hello 5", [self.code])
-        msg6 = self.create_message(self.unicef, 678, self.ann, "Hello 6", [self.pregnancy])
 
         case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [self.aids])
         case2 = self.create_case(self.unicef, self.ned, self.moh, msg2, [self.aids, self.pregnancy])
@@ -571,7 +570,9 @@ class SecondTotalCountsTest(BaseStatsTest):
 
         # create a case by "WHO" user and assign it to "WHO" partner
         case5 = Case.get_or_open(self.unicef, self.user3, msg5, "Hello", self.who)
+
         # create a case by "MOH" user and assign it to "WHO" partner
+        msg6 = self.create_message(self.unicef, 678, self.ann, "Hello 6", [self.pregnancy])
         case6 = Case.get_or_open(self.unicef, self.user1, msg6, "Hello", self.who)
 
         self.create_outgoing(self.unicef, self.user1, 201, Outgoing.CASE_REPLY, "Good question", self.ann, case=case1)
