@@ -154,6 +154,15 @@ class ActionsTest(BaseCasesTest):
 
         self.assertEqual(set(msg.labels.all()), {self.aids})
 
+        # check that action completes even if backend errors
+        with patch("casepro.test.TestBackend.label_messages") as mock_label:
+            mock_label.side_effect = ValueError("DOH")
+
+            msg = self.create_message(self.unicef, 103, self.ann, "green")
+            action.apply_to(self.unicef, [msg])
+
+            self.assertEqual(set(msg.labels.all()), {self.aids})
+
     def test_flag(self):
         action = Action.from_json({"type": "flag"}, self.context)
         self.assertEqual(action.TYPE, "flag")
@@ -169,6 +178,16 @@ class ActionsTest(BaseCasesTest):
         msg.refresh_from_db()
         self.assertTrue(msg.is_flagged)
 
+        # check that action completes even if backend errors
+        with patch("casepro.test.TestBackend.flag_messages") as mock_flag:
+            mock_flag.side_effect = ValueError("DOH")
+
+            msg = self.create_message(self.unicef, 103, self.ann, "green")
+            action.apply_to(self.unicef, [msg])
+
+            msg.refresh_from_db()
+            self.assertTrue(msg.is_flagged)
+
     def test_archive(self):
         action = Action.from_json({"type": "archive"}, self.context)
         self.assertEqual(action.TYPE, "archive")
@@ -183,6 +202,16 @@ class ActionsTest(BaseCasesTest):
 
         msg.refresh_from_db()
         self.assertTrue(msg.is_archived)
+
+        # check that action completes even if backend errors
+        with patch("casepro.test.TestBackend.archive_messages") as mock_archive:
+            mock_archive.side_effect = ValueError("DOH")
+
+            msg = self.create_message(self.unicef, 103, self.ann, "green")
+            action.apply_to(self.unicef, [msg])
+
+            msg.refresh_from_db()
+            self.assertTrue(msg.is_archived)
 
 
 class RuleTest(BaseCasesTest):
