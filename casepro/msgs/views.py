@@ -1,6 +1,8 @@
 from collections import defaultdict
 
 import iso639
+import logging
+import time
 from dash.orgs.views import OrgObjPermsMixin, OrgPermsMixin
 from django.urls import reverse
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
@@ -32,6 +34,8 @@ from .models import FAQ, Label, Message, MessageExport, MessageFolder, Outgoing,
 from .tasks import message_export, reply_export
 
 RESPONSE_DELAY_WARN_SECONDS = 24 * 60 * 60  # show response delays > 1 day as warning
+
+logger = logging.getLogger(__name__)
 
 
 # Override the ImportTask start method so we can use our self-defined task
@@ -213,7 +217,17 @@ class MessageCRUDL(SmartCRUDL):
             if last_refresh:
                 search["last_refresh"] = last_refresh
 
+                start = time.time()
+
                 messages = Message.search(org, user, search)
+
+                time_taken = time.time() - start
+                if time_taken > 10 and 'text' not in search:  # pragma: no cover
+                    logger.error("long message query", extra={
+                        "org": org.id,
+                        "uri": self.request.build_absolute_uri(),
+                        "time_taken": int(time_taken),
+                    })
 
                 # don't use paging for these messages
                 context["object_list"] = list(messages)
