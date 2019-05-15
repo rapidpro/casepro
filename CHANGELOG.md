@@ -1,3 +1,7 @@
+v1.1.15
+----------
+ * Log long message queries
+
 v1.1.14
 ----------
  * Include messages received after initial msg in case
