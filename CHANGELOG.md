@@ -1,3 +1,8 @@
+v1.1.16
+----------
+ * Don't create a rule for a label if there are no keywords set
+ * Bump some dependencies
+
 v1.1.15
 ----------
  * Log long message queries
