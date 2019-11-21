@@ -1,3 +1,41 @@
+v1.1.16
+----------
+ * Don't create a rule for a label if there are no keywords set
+ * Bump some dependencies
+
+v1.1.15
+----------
+ * Log long message queries
+
+v1.1.14
+----------
+ * Include messages received after initial msg in case
+
+v1.1.13
+----------
+ * Actions should still succeed even if their backend operations fail (log that to sentry)
+ * Fix load label permissions
+
+v1.1.12
+----------
+ * Latest dash
+
+v1.1.11
+----------
+ * Refresh label counts after applying labels to messages
+
+v1.1.10
+----------
+ * Upgrade to last rapidpro client
+
+v1.1.9
+----------
+ * Extra logging in contact sync task
+
+v1.1.8
+----------
+ * Update all dependencies
+
 v1.1.7
 ----------
  * Ensure new orgs are created with a backend

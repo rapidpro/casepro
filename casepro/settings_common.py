@@ -322,6 +322,7 @@ GROUP_PERMISSIONS = {
         "orgs.org_inbox",
         "orgs.org_charts",
         "msgs.label_read",
+        "msgs.label_list",
         "msgs.faq_search",
         "msgs.faq_languages",
         "msgs.message_action",
@@ -359,6 +360,7 @@ GROUP_PERMISSIONS = {
         "msgs.faq_search",
         "msgs.faq_languages",
         "msgs.label_read",
+        "msgs.label_list",
         "msgs.message_action",
         "msgs.message_bulk_reply",
         "msgs.message_forward",
@@ -462,5 +464,4 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ("casepro.api.support.AdministratorPermission",),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.CursorPagination",
     "PAGE_SIZE": 100,
-    "VIEW_NAME_FUNCTION": "casepro.api.support.get_view_name",
 }

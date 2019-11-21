@@ -39,11 +39,12 @@ class RuleFormMixin(object):
         tests = []
         if keywords:
             tests.append(ContainsTest(keywords, Quantifier.ANY))
-        if groups:
-            tests.append(GroupsTest(groups, Quantifier.ANY))
-        if field_test:
-            tests.append(field_test)
-        if ignore_single_words:
-            tests.append(WordCountTest(2))
+
+            if groups:
+                tests.append(GroupsTest(groups, Quantifier.ANY))
+            if field_test:
+                tests.append(field_test)
+            if ignore_single_words:
+                tests.append(WordCountTest(2))
 
         return tests

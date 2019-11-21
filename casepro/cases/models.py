@@ -283,9 +283,8 @@ class Case(models.Model):
             if message:
                 case.labels.add(*list(message.labels.all()))  # copy labels from message to new case
 
-                # attach message to this case
-                message.case = case
-                message.save(update_fields=("case",))
+                # attach message and subsequent messages to this case
+                contact.incoming_messages.filter(case=None, created_on__gte=message.created_on).update(case=case)
 
             case.is_new = True
             case.watchers.add(user)
