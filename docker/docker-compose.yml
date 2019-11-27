@@ -1,0 +1,54 @@
+ 
+version: '3.6'
+
+services:
+  redis:
+    image: redis
+    ports:
+      - 6379:6379
+  database:
+    image: postgres
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-casepro}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-casepro}
+      - POSTGRES_DB=${POSTGRES_DB:-casepro}
+  casepro:
+    image: ${DOCKER_IMAGE_NAME:-ilhasoft/casepro}:${DOCKER_IMAGE_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: ./docker/Dockerfile
+    ports:
+      - 8000:8000
+      - 8080:8080
+    environment:
+      - DEBUG=${DEBUG:-false}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
+      - SEND_EMAILS=${SEND_EMAILS:-true}
+      - DATABASE_URL=${DATABASE_URL:-postgres://casepro:casepro@database:5432/casepro}
+      - EMAIL_HOST=${EMAIL_HOST}
+      - EMAIL_HOST_USER=${EMAIL_HOST_USER}
+      - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL}
+      - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
+      - EMAIL_PORT=${EMAIL_PORT}
+      - EMAIL_USE_TLS=${EMAIL_USE_TLS}
+      - SITE_API_HOST=${SITE_API_HOST:-rapidpro.ilhasoft.mobi}
+      - HOSTNAME=${HOSTNAME:-upartners.ilhasoft.mobi}
+      - SESSION_COOKIE_DOMAIN=${SESSION_COOKIE_DOMAIN:-upartners.ilhasoft.mobi}
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-false}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_STORAGE_BUCKET_NAME=${AWS_STORAGE_BUCKET_NAME}
+      - AWS_BUCKET_DOMAIN=${AWS_BUCKET_DOMAIN}
+      - SENTRY_DSN=${SENTRY_DSN}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_DB=${REDIS_DB}
+      - REDIS_PORT=${REDIS_PORT}
+      - COMPRESS_ENABLED=${COMPRESS_ENABLED:-true}
+      - COMPRESS_CSS_HASHING_METHOD=${COMPRESS_CSS_HASHING_METHOD:-content}
+      - COMPRESS_OFFLINE=${COMPRESS_OFFLINE:-true}
+
+    depends_on:
+      - database
+      - redis
