@@ -29,7 +29,7 @@ RUN npm install
 
 COPY . .
 
-RUN ln -s $WORKDIR/casepro/settings.py.prod $WORKDIR/casepro/settings.py
+RUN ln -s $WORKDIR/casepro/settings.py_prod $WORKDIR/casepro/settings.py
 
 EXPOSE 8000
 EXPOSE 8080

@@ -1,0 +1,106 @@
+from __future__ import unicode_literals
+
+import sentry_sdk
+
+from decouple import config
+from sentry_sdk.integrations.django import DjangoIntegration
+from dj_database_url import parse as db_url
+from casepro.settings_common import *  # noqa
+
+
+INSTALLED_APPS = INSTALLED_APPS + ('gunicorn', 'raven.contrib.django.raven_compat',)
+
+DEBUG = config('DEBUG', cast=bool)
+ALLOWED_HOSTS = config('ALLOWED_HOSTS',
+                       default='127.0.0.1, localhost',
+                       cast=lambda x: [n.strip() for n in x.split(',')])
+
+
+# Configuration for Email Server
+SEND_EMAILS = config('SEND_EMAILS', cast=bool, default=True)
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.sendgrid.net')
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+EMAIL_PORT = config('EMAIL_PORT', default=587)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool, default=True)
+EMAIL_ALIAS = DEFAULT_FROM_EMAIL
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+ADMINS = (
+    ('Ilhasoft', 'contato@ilhasoft.com.br'),
+)
+MANAGERS = ADMINS
+
+# Configurations for Domain and Session details
+SITE_API_HOST = config('SITE_API_HOST', default='rapidpro.ilhasoft.mobi')
+SITE_HOST_PATTERN = 'http://%s.upartners.ilhasoft.mobi'
+SITE_EXTERNAL_CONTACT_URL = 'https://rapidpro.ilhasoft.mobi/contact/read/%s/'
+ANONYMOUS_USER_NAME = 'AnonymousUser'
+
+HOSTNAME = config('HOSTNAME', default='upartners.ilhasoft.mobi')
+SESSION_COOKIE_DOMAIN = config('HOSTNAME', default='upartners.ilhasoft.mobi')
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', cast=bool, default=False)
+SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+SESSION_CACHE_ALIAS = "default"
+
+SITE_BACKEND = 'casepro.backend.rapidpro.RapidProBackend'
+
+DATABASES = {
+    'default': config(
+        'DATABASE_URL',
+        default='postgres://casepro:casepro@database/casepro',
+        cast=db_url
+    )
+}
+DATABASES["default"]["ATOMIC_REQUESTS"] = config('ATOMIC_REQUESTS', cast=bool, default=True)
+
+
+# Configuration for AWS
+AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default='')
+AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY', default='')
+AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME', default='')
+AWS_BUCKET_DOMAIN = AWS_STORAGE_BUCKET_NAME + config('AWS_BUCKET_DOMAIN', default='.s3.amazonaws.com')
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
+
+
+# Configuration for Sentry
+SENTRY_DSN = config('SENTRY_DSN', default=None)
+sentry_sdk.init(
+    dsn=SENTRY_DSN,
+    integrations=[DjangoIntegration()]
+)
+RAVEN_CONFIG = {'dsn': SENTRY_DSN}
+
+
+# Configuration for Redis Server
+REDIS_HOST = config('REDIS_HOST', default='127.0.0.1')
+REDIS_DB = config('REDIS_DB')
+REDIS_PORT = config('REDIS_PORT')
+CELERY_ALWAYS_EAGER = False
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://{}:{}/{}'.format(REDIS_HOST, REDIS_PORT, REDIS_DB),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
+
+BROKER_URL = 'redis://{}:{}/{}'.format(REDIS_HOST, REDIS_PORT, REDIS_DB)
+CELERY_RESULT_BACKEND = BROKER_URL
+CELERY_TASK_SERIALIZER = 'pickle'
+CELERY_ACCEPT_CONTENT = ['pickle']
+
+# static dir is different for prod
+STATIC_URL = '/sitestatic/'
+COMPRESS_URL = '/sitestatic/'
+
+# compress arguments
+COMPRESS_ENABLED = config('COMPRESS_ENABLED', cast=bool, default=True)
+COMPRESS_CSS_HASHING_METHOD = config('COMPRESS_CSS_HASHING_METHOD', default='content')
+COMPRESS_OFFLINE = config('COMPRESS_OFFLINE', cast=bool, default=True)
+COMPRESS_OFFLINE_CONTEXT = dict(STATIC_URL=STATIC_URL, base_template='frame.html', debug=False, testing=False)
