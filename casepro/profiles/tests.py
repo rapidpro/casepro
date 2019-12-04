@@ -502,7 +502,7 @@ class UserCRUDLTest(BaseCasesTest):
             {
                 "name": "Mo Cases",
                 "email": "mo@casely.com",
-                "partner": None,
+                "partner": "",
                 "role": ROLE_ANALYST,
                 "password": "Qwerty12345",
                 "confirm_password": "Qwerty12345",

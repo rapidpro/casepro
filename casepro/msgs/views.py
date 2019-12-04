@@ -43,13 +43,13 @@ def override_start(self, org):  # pragma: no cover
     from .tasks import faq_csv_import
 
     self.log("Queued import at %s" % now())
-    self.save(update_fields=["import_log"])
+    self.save(update_fields=("import_log",))
 
     # trigger task
-    result = faq_csv_import.delay(org, self.pk)
+    result = faq_csv_import.delay(org.id, self.id)
 
     self.task_id = result.task_id
-    self.save(update_fields=["task_id"])
+    self.save(update_fields=("task_id",))
 
 
 ImportTask.start = override_start

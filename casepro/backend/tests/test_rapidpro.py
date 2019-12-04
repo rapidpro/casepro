@@ -866,6 +866,7 @@ class RapidProBackendTest(BaseCasesTest):
         """
         Pushing a new contact should be a noop.
         """
+        self.bob.refresh_from_db()
         old_bob = self.bob.__dict__.copy()
         self.backend.push_contact(self.unicef, self.bob)
         self.bob.refresh_from_db()

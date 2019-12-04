@@ -1,6 +1,6 @@
 ############## Django ##############
 
-django<2.2
+django<3
 djangorestframework
 django-celery-email
 django-compressor
