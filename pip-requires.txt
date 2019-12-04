@@ -1,6 +1,6 @@
 ############## Django ##############
 
-django<2.2
+django<3
 djangorestframework
 django-celery-email
 django-compressor
@@ -24,7 +24,6 @@ iso-639
 markdown
 pillow
 pisa
-psycopg2
 pycountry
 python-dateutil
 rapidpro-dash

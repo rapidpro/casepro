@@ -320,6 +320,7 @@ class JunebugBackendTest(BaseCasesTest):
         """
         Pushing a new label should be a noop.
         """
+        self.tea.refresh_from_db()
         old_tea = self.tea.__dict__.copy()
         self.backend.push_label(self.unicef, "new label")
         self.tea.refresh_from_db()
@@ -700,6 +701,8 @@ class JunebugBackendTest(BaseCasesTest):
         Stopping messages for a contact should be a noop.
         """
         bob = self.create_contact(self.unicef, "C-002", "Bob")
+
+        bob.refresh_from_db()
         old_bob = bob.__dict__.copy()
         self.backend.stop_runs(self.unicef, bob)
 

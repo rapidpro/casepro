@@ -821,7 +821,7 @@ class FaqImportTest(BaseCasesTest):
         importtask = self.create_importtask(self.admin, "faq_bad_import_labels.csv")
         # run the import, expect an exception
         with self.assertRaises(Label.DoesNotExist):
-            faq_csv_import(self.unicef, importtask.pk).get()
+            faq_csv_import(self.unicef.id, importtask.id).get()
 
         # check situation after import - nothing should have changed
         self.assertEqual(FAQ.objects.all().count(), num_faqs)
