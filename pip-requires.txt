@@ -24,7 +24,6 @@ iso-639
 markdown
 pillow
 pisa
-psycopg2
 pycountry
 python-dateutil
 rapidpro-dash
