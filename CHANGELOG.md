@@ -1,3 +1,9 @@
+v1.1.17
+----------
+ * Add is_squashed field to squashable models
+ * Bump dependencies
+ * Switch CI tests to PG 10/11 and use github actions and codecov for coverage
+
 v1.1.16
 ----------
  * Don't create a rule for a label if there are no keywords set
