@@ -1,3 +1,7 @@
+v1.1.18
+----------
+ * Add migration to backfill is_squashed on squashable models
+
 v1.1.17
 ----------
  * Add is_squashed field to squashable models
