@@ -4,7 +4,7 @@ from dash.orgs.models import Org
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.db import connection, models
-from django.db.models import Sum
+from django.db.models import Sum, Index, Q
 from django.utils.functional import SimpleLazyObject
 from django.utils.translation import ugettext_lazy as _
 
@@ -48,7 +48,7 @@ class BaseCount(models.Model):
 
     count = models.IntegerField()
 
-    is_squashed = models.BooleanField(null=True, default=False)
+    is_squashed = models.BooleanField(default=False)
 
     @staticmethod
     def encode_scope(*args):
@@ -230,6 +230,9 @@ class TotalCount(BaseCount):
 
     class Meta:
         index_together = ("item_type", "scope")
+        indexes = [
+            Index(name="stats_totalcount_unsquashed", fields=("item_type", "scope"), condition=Q(is_squashed=False))
+        ]
 
 
 class DailyCount(BaseCount):
@@ -297,6 +300,9 @@ class DailyCount(BaseCount):
 
     class Meta:
         index_together = ("item_type", "scope", "day")
+        indexes = [
+            Index(name="stats_dailycount_unsquashed", fields=("item_type", "scope", "day"), condition=Q(is_squashed=False))
+        ]
 
 
 class DailyCountExport(BaseExport):
