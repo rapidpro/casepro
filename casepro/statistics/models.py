@@ -33,20 +33,22 @@ class BaseCount(models.Model):
     TYPE_CASE_OPENED = "C"
     TYPE_CASE_CLOSED = "D"
 
-    id = models.BigAutoField(auto_created=True, primary_key=True, verbose_name="ID")
+    id = models.BigAutoField(auto_created=True, primary_key=True)
 
     squash_sql = """
         WITH removed as (
             DELETE FROM %(table_name)s WHERE %(delete_cond)s RETURNING "count"
         )
-        INSERT INTO %(table_name)s(%(insert_cols)s, "count")
-        VALUES (%(insert_vals)s, GREATEST(0, (SELECT SUM("count") FROM removed)));"""
+        INSERT INTO %(table_name)s(%(insert_cols)s, "count", "is_squashed")
+        VALUES (%(insert_vals)s, GREATEST(0, (SELECT SUM("count") FROM removed)), TRUE);"""
 
-    item_type = models.CharField(max_length=1, help_text=_("The thing being counted"))
+    item_type = models.CharField(max_length=1)
 
-    scope = models.CharField(max_length=32, help_text=_("The scope in which it is being counted"))
+    scope = models.CharField(max_length=32)
 
     count = models.IntegerField()
+
+    is_squashed = models.BooleanField(null=True, default=False)
 
     @staticmethod
     def encode_scope(*args):
@@ -139,11 +141,12 @@ class BaseSecondTotal(BaseCount):
         WITH removed as (
             DELETE FROM %(table_name)s WHERE %(delete_cond)s RETURNING "count", "seconds"
         )
-        INSERT INTO %(table_name)s(%(insert_cols)s, "count", "seconds")
+        INSERT INTO %(table_name)s(%(insert_cols)s, "count", "seconds", "is_squashed")
         VALUES (
             %(insert_vals)s,
             GREATEST(0, (SELECT SUM("count") FROM removed)),
-            COALESCE((SELECT SUM("seconds") FROM removed), 0)
+            COALESCE((SELECT SUM("seconds") FROM removed), 0),
+            TRUE
         );"""
 
     seconds = models.BigIntegerField()
