@@ -26,7 +26,7 @@ def populate_for_model(model):
         model.objects.filter(id__in=id_batch).update(is_squashed=True)
         max_id = id_batch[-1]
         num_updated += len(id_batch)
-        
+
         print(f" > Updated {num_updated} instances of {model.name}")
 
 
