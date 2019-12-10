@@ -1,3 +1,8 @@
+v1.1.20
+----------
+ * Switch squashing to use is_squashed instead of redis key
+ * Add new partial indexes on squashable models
+
 v1.1.19
 ----------
  * Update database triggers for counts
