@@ -2,7 +2,6 @@ from math import ceil
 
 from dash.orgs.models import Org
 from django.contrib.auth.models import User
-from django.core.cache import cache
 from django.db import connection, models
 from django.db.models import Sum, Index, Q
 from django.utils.functional import SimpleLazyObject
@@ -76,8 +75,7 @@ class BaseCount(models.Model):
         """
         Squashes counts so that there is a single count per item_type + scope combination
         """
-        last_squash_id = cache.get(cls.last_squash_key, 0)
-        unsquashed_values = cls.objects.filter(pk__gt=last_squash_id)
+        unsquashed_values = cls.objects.filter(is_squashed=False)
         unsquashed_values = unsquashed_values.values(*cls.squash_over).distinct(*cls.squash_over)
 
         for unsquashed in unsquashed_values:
@@ -91,10 +89,6 @@ class BaseCount(models.Model):
 
                 params = [unsquashed[f] for f in cls.squash_over]
                 cursor.execute(sql, params + params)
-
-        max_id = cls.objects.order_by("-pk").values_list("pk", flat=True).first()
-        if max_id:
-            cache.set(cls.last_squash_key, max_id)
 
     class CountSet(object):
         """
@@ -215,7 +209,6 @@ class TotalCount(BaseCount):
     """
 
     squash_over = ("item_type", "scope")
-    last_squash_key = "total_count:last_squash"
 
     @classmethod
     def get_by_label(cls, labels, item_type):
@@ -243,7 +236,6 @@ class DailyCount(BaseCount):
     day = models.DateField(help_text=_("The day this count is for"))
 
     squash_over = ("day", "item_type", "scope")
-    last_squash_key = "daily_count:last_squash"
 
     @classmethod
     def record_item(cls, day, item_type, *scope_args):
@@ -453,7 +445,6 @@ class DailySecondTotalCount(BaseSecondTotal):
     day = models.DateField(help_text=_("The day this count is for"))
 
     squash_over = ("day", "item_type", "scope")
-    last_squash_key = "daily_second_total_count:last_squash"
 
     @classmethod
     def record_item(cls, day, seconds, item_type, *scope_args):
