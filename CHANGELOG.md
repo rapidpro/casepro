@@ -1,3 +1,7 @@
+v1.1.19
+----------
+ * Update database triggers for counts
+
 v1.1.18
 ----------
  * Add migration to backfill is_squashed on squashable models
