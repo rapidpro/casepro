@@ -442,7 +442,7 @@ class Message(models.Model):
             "-created_on"
         )
 
-        print(str(queryset.query))
+        # print(str(queryset.query))
 
         return queryset
 
