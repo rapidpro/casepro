@@ -1,7 +1,7 @@
 from importlib import reload
 
-from django.urls import reverse
 from django.test import modify_settings
+from django.urls import reverse
 
 from casepro.cases.models import CaseAction
 from casepro.test import BaseCasesTest

@@ -2,15 +2,17 @@ import csv
 import traceback
 from datetime import timedelta
 
-from celery import shared_task
-from celery.task import task
-from celery.utils.log import get_task_logger
 from dash.orgs.models import Org
 from dash.orgs.tasks import org_task
+from smartmin.csv_imports.models import ImportTask
+
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
-from smartmin.csv_imports.models import ImportTask
+
+from celery import shared_task
+from celery.task import task
+from celery.utils.log import get_task_logger
 
 from casepro.utils import parse_csv
 

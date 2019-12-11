@@ -1,13 +1,14 @@
 from datetime import datetime
+from unittest.mock import call, patch
 
 import pytz
 from dash.orgs.models import TaskState
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.urls import reverse
-from django.test.utils import override_settings
-from django.utils.timezone import now
-from unittest.mock import call, patch
 from temba_client.utils import format_iso8601
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test.utils import override_settings
+from django.urls import reverse
+from django.utils.timezone import now
 
 from casepro.contacts.models import Contact
 from casepro.msgs.views import ImportTask

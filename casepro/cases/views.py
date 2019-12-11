@@ -2,14 +2,6 @@ from datetime import timedelta
 
 from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgObjPermsMixin, OrgPermsMixin
-from django.conf import settings
-from django.core.cache import cache
-from django.urls import reverse
-from django.http import HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404
-from django.utils.timezone import now
-from django.utils.translation import ugettext_lazy as _
-from django.views.generic import View
 from el_pagination.paginators import LazyPaginator
 from smartmin.mixins import NonAtomicMixin
 from smartmin.views import (
@@ -22,6 +14,15 @@ from smartmin.views import (
     SmartUpdateView,
 )
 from temba_client.utils import parse_iso8601
+
+from django.conf import settings
+from django.core.cache import cache
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
+from django.urls import reverse
+from django.utils.timezone import now
+from django.utils.translation import ugettext_lazy as _
+from django.views.generic import View
 
 from casepro.contacts.models import Contact, Field
 from casepro.msgs.models import Label, Message, MessageFolder, OutgoingFolder

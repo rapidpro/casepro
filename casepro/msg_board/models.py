@@ -1,7 +1,8 @@
 from dash.orgs.models import Org
+from django_comments.models import CommentAbstractModel
+
 from django.db import models
 from django.utils import timezone
-from django_comments.models import CommentAbstractModel
 
 
 class MessageBoardComment(CommentAbstractModel):

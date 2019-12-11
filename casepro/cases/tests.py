@@ -1,14 +1,15 @@
 from datetime import datetime, timedelta
 from importlib import reload
+from unittest.mock import patch
 
 import pytz
+from temba_client.utils import format_iso8601
+
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
-from django.urls import reverse
 from django.test.utils import modify_settings, override_settings
+from django.urls import reverse
 from django.utils import timezone
-from unittest.mock import patch
-from temba_client.utils import format_iso8601
 
 from casepro.contacts.models import Contact
 from casepro.msgs.models import Label, Message, Outgoing

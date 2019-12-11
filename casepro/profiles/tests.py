@@ -1,11 +1,12 @@
 from datetime import datetime
+from unittest.mock import call, patch
 
 import pytz
+
 from django.contrib.auth.models import User
-from django.urls import reverse
 from django.test.utils import override_settings
+from django.urls import reverse
 from django.utils import timezone
-from unittest.mock import call, patch
 
 from casepro.test import BaseCasesTest
 

@@ -3,6 +3,7 @@ from enum import Enum
 from uuid import UUID
 
 import pytz
+
 from django.core import mail
 from django.http import HttpRequest
 from django.test import override_settings

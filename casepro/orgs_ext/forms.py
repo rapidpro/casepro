@@ -1,9 +1,10 @@
 from dash.orgs.models import Org
+from timezone_field import TimeZoneFormField
+
 from django import forms
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
-from timezone_field import TimeZoneFormField
 
 from casepro.contacts.models import Field, Group
 

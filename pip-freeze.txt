@@ -38,6 +38,7 @@ idna==2.8                 # via requests
 importlib-metadata==1.1.0  # via kombu
 iso-639==0.4.5
 iso8601==0.1.12           # via rapidpro-python
+isort==4.3.21
 kombu==4.6.6              # via celery
 markdown==3.1.1
 mccabe==0.6.1             # via flake8

@@ -4,11 +4,12 @@ from datetime import date, datetime, time
 import pytz
 from dash.orgs.models import Org
 from dash.test import DashTest
+from xlrd import open_workbook, xldate_as_tuple
+from xlrd.sheet import XL_CELL_DATE
+
 from django.conf import settings
 from django.core import mail
 from django.utils.timezone import now
-from xlrd import open_workbook, xldate_as_tuple
-from xlrd.sheet import XL_CELL_DATE
 
 from casepro import backend
 from casepro.cases.models import Case, Partner

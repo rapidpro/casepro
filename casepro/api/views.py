@@ -1,13 +1,12 @@
 import iso8601
+from rest_framework import pagination, routers, viewsets
 
 from django.utils.translation import ugettext_lazy as _
-
-from rest_framework import viewsets, routers, pagination
 
 from casepro.cases.models import Case, CaseAction, Partner
 from casepro.msgs.models import Label
 
-from .serializers import CaseSerializer, CaseActionSerializer, LabelSerializer, PartnerSerializer
+from .serializers import CaseActionSerializer, CaseSerializer, LabelSerializer, PartnerSerializer
 
 
 class APIRoot(routers.APIRootView):

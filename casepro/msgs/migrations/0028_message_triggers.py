@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 
 from django.db import migrations
 
-
 SQL = """
 ----------------------------------------------------------------------
 -- Trigger procedure to maintain message.has_labels

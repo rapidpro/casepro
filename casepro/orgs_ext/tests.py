@@ -1,7 +1,8 @@
-import pytz
 from unittest.mock import patch
 
+import pytz
 from dash.orgs.models import Org, TaskState
+
 from django.urls import reverse
 
 from casepro.contacts.models import Field, Group

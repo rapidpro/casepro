@@ -1,20 +1,23 @@
 import time
 from datetime import datetime, timedelta
 from unittest import skip
+from unittest.mock import call, patch
 
 import pytz
 from dash.orgs.models import Org
 from dash.test import MockClientQuery
-from django.utils.timezone import now
-from unittest.mock import call, patch
 from temba_client.v1.types import Broadcast as TembaBroadcast
-from temba_client.v2.types import Contact as TembaContact
-from temba_client.v2.types import Field as TembaField
-from temba_client.v2.types import Group as TembaGroup
-from temba_client.v2.types import Label as TembaLabel
-from temba_client.v2.types import Message as TembaMessage
-from temba_client.v2.types import Flow as TembaFlow
-from temba_client.v2.types import ObjectRef
+from temba_client.v2.types import (
+    Contact as TembaContact,
+    Field as TembaField,
+    Flow as TembaFlow,
+    Group as TembaGroup,
+    Label as TembaLabel,
+    Message as TembaMessage,
+    ObjectRef,
+)
+
+from django.utils.timezone import now
 
 from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message, Outgoing

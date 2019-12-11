@@ -1,9 +1,10 @@
 from math import ceil
 
 from dash.orgs.models import Org
+
 from django.contrib.auth.models import User
 from django.db import connection, models
-from django.db.models import Sum, Index, Q
+from django.db.models import Index, Q, Sum
 from django.utils.functional import SimpleLazyObject
 from django.utils.translation import ugettext_lazy as _
 

@@ -39,4 +39,5 @@ xlutils
 black
 coverage
 flake8
+isort
 responses
