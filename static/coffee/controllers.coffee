@@ -50,6 +50,13 @@ controllers.controller('InboxController', ['$scope', '$window', '$location', 'La
   $scope.loadLabels = () ->
     LabelService.fetchAll(true).then((labels) ->
       $scope.labels = labels
+
+      # find the current active label if there is one
+      if $scope.activeLabel
+        for l in labels
+          if $scope.activeLabel.id == l.id
+            $scope.activeLabel = l
+            break
     )
 
   $scope.activateLabel = (label) ->
