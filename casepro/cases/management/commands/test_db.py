@@ -213,6 +213,14 @@ class Command(BaseCommand):
 
                         for label in msg._labels:
                             labelling_batch.append(Labelling(message=msg, label=label))
+                            count_batch.append(
+                                DailyCount(
+                                    day=datetime_to_date(msg.created_on, org),
+                                    item_type=DailyCount.TYPE_INCOMING,
+                                    scope=DailyCount.encode_scope(label),
+                                    count=1,
+                                )
+                            )
 
                     Labelling.objects.bulk_create(labelling_batch)
                     DailyCount.objects.bulk_create(count_batch)
@@ -258,13 +266,16 @@ class Command(BaseCommand):
         )
         return msg, labels
 
-    def probability(self, prob):
+    @staticmethod
+    def probability(prob):
         return random.random() < prob
 
-    def random_choice(self, seq, bias=1.0):
+    @staticmethod
+    def random_choice(seq, bias=1.0):
         if not seq:
             raise ValueError("Can't select random item from empty sequence")
         return seq[min(int(math.pow(random.random(), bias) * len(seq)), len(seq) - 1)]
 
-    def _log(self, text):
+    @staticmethod
+    def _log(text):
         print(text, flush=True, end="")
