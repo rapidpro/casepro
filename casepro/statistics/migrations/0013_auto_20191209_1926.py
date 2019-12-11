@@ -6,68 +6,38 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('statistics', '0012_auto_20170904_1408'),
+        ("statistics", "0012_auto_20170904_1408"),
     ]
 
     operations = [
+        migrations.AddField(model_name="dailycount", name="is_squashed", field=models.BooleanField(null=True),),
         migrations.AddField(
-            model_name='dailycount',
-            name='is_squashed',
-            field=models.BooleanField(null=True),
+            model_name="dailysecondtotalcount", name="is_squashed", field=models.BooleanField(null=True),
         ),
-        migrations.AddField(
-            model_name='dailysecondtotalcount',
-            name='is_squashed',
-            field=models.BooleanField(null=True),
-        ),
-        migrations.AddField(
-            model_name='totalcount',
-            name='is_squashed',
-            field=models.BooleanField(null=True),
-        ),
+        migrations.AddField(model_name="totalcount", name="is_squashed", field=models.BooleanField(null=True),),
         migrations.AlterField(
-            model_name='dailycount',
-            name='id',
+            model_name="dailycount",
+            name="id",
+            field=models.BigAutoField(auto_created=True, primary_key=True, serialize=False),
+        ),
+        migrations.AlterField(model_name="dailycount", name="item_type", field=models.CharField(max_length=1),),
+        migrations.AlterField(model_name="dailycount", name="scope", field=models.CharField(max_length=32),),
+        migrations.AlterField(
+            model_name="dailysecondtotalcount",
+            name="id",
             field=models.BigAutoField(auto_created=True, primary_key=True, serialize=False),
         ),
         migrations.AlterField(
-            model_name='dailycount',
-            name='item_type',
-            field=models.CharField(max_length=1),
+            model_name="dailysecondtotalcount", name="item_type", field=models.CharField(max_length=1),
         ),
         migrations.AlterField(
-            model_name='dailycount',
-            name='scope',
-            field=models.CharField(max_length=32),
+            model_name="dailysecondtotalcount", name="scope", field=models.CharField(max_length=32),
         ),
         migrations.AlterField(
-            model_name='dailysecondtotalcount',
-            name='id',
+            model_name="totalcount",
+            name="id",
             field=models.BigAutoField(auto_created=True, primary_key=True, serialize=False),
         ),
-        migrations.AlterField(
-            model_name='dailysecondtotalcount',
-            name='item_type',
-            field=models.CharField(max_length=1),
-        ),
-        migrations.AlterField(
-            model_name='dailysecondtotalcount',
-            name='scope',
-            field=models.CharField(max_length=32),
-        ),
-        migrations.AlterField(
-            model_name='totalcount',
-            name='id',
-            field=models.BigAutoField(auto_created=True, primary_key=True, serialize=False),
-        ),
-        migrations.AlterField(
-            model_name='totalcount',
-            name='item_type',
-            field=models.CharField(max_length=1),
-        ),
-        migrations.AlterField(
-            model_name='totalcount',
-            name='scope',
-            field=models.CharField(max_length=32),
-        ),
+        migrations.AlterField(model_name="totalcount", name="item_type", field=models.CharField(max_length=1),),
+        migrations.AlterField(model_name="totalcount", name="scope", field=models.CharField(max_length=32),),
     ]

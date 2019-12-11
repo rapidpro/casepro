@@ -293,7 +293,11 @@ class DailyCount(BaseCount):
     class Meta:
         index_together = ("item_type", "scope", "day")
         indexes = [
-            Index(name="stats_dailycount_unsquashed", fields=("item_type", "scope", "day"), condition=Q(is_squashed=False))
+            Index(
+                name="stats_dailycount_unsquashed",
+                fields=("item_type", "scope", "day"),
+                condition=Q(is_squashed=False),
+            )
         ]
 
 

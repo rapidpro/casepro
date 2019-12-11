@@ -222,12 +222,15 @@ class MessageCRUDL(SmartCRUDL):
                 messages = Message.search(org, user, search)
 
                 time_taken = time.time() - start
-                if time_taken > 10 and 'text' not in search:  # pragma: no cover
-                    logger.error("long message query", extra={
-                        "org": org.id,
-                        "uri": self.request.build_absolute_uri(),
-                        "time_taken": int(time_taken),
-                    })
+                if time_taken > 10 and "text" not in search:  # pragma: no cover
+                    logger.error(
+                        "long message query",
+                        extra={
+                            "org": org.id,
+                            "uri": self.request.build_absolute_uri(),
+                            "time_taken": int(time_taken),
+                        },
+                    )
 
                 # don't use paging for these messages
                 context["object_list"] = list(messages)

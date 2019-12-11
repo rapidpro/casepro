@@ -1041,21 +1041,9 @@ class RapidProBackendTest(BaseCasesTest):
     def test_fetch_flows(self, mock_get_flows):
         mock_get_flows.return_value = MockClientQuery(
             [
-                TembaFlow.create(
-                    uuid="0001-0001",
-                    name="Registration",
-                    archived=False,
-                ),
-                TembaFlow.create(
-                    uuid="0002-0002",
-                    name="Follow Up",
-                    archived=False,
-                ),
-                TembaFlow.create(
-                    uuid="0003-0003",
-                    name="Other Flow",
-                    archived=True,
-                ),
+                TembaFlow.create(uuid="0001-0001", name="Registration", archived=False,),
+                TembaFlow.create(uuid="0002-0002", name="Follow Up", archived=False,),
+                TembaFlow.create(uuid="0003-0003", name="Other Flow", archived=True,),
             ]
         )
 
@@ -1069,7 +1057,9 @@ class RapidProBackendTest(BaseCasesTest):
     def test_start_flow(self, mock_create_flow_start):
         self.backend.start_flow(self.unicef, Flow("0002-0002", "Follow Up"), self.ann, extra={"foo": "bar"})
 
-        mock_create_flow_start.assert_called_once_with(flow="0002-0002", contacts=[str(self.ann.uuid)], restart_participants=True, extra={"foo": "bar"})
+        mock_create_flow_start.assert_called_once_with(
+            flow="0002-0002", contacts=[str(self.ann.uuid)], restart_participants=True, extra={"foo": "bar"}
+        )
 
     def test_get_url_patterns(self):
         """

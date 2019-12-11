@@ -19,7 +19,11 @@ def populate_for_model(model):
     max_id = 0
     num_updated = 0
     while True:
-        id_batch = list(model.objects.filter(id__gt=max_id, is_squashed=None).values_list("id", flat=True).order_by("id")[:BATCH_SIZE])
+        id_batch = list(
+            model.objects.filter(id__gt=max_id, is_squashed=None)
+            .values_list("id", flat=True)
+            .order_by("id")[:BATCH_SIZE]
+        )
         if not id_batch:
             break
 
@@ -33,9 +37,7 @@ def populate_for_model(model):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('statistics', '0014_auto_20191209_1933'),
+        ("statistics", "0014_auto_20191209_1933"),
     ]
 
-    operations = [
-        migrations.RunPython(populate_is_squashed)
-    ]
+    operations = [migrations.RunPython(populate_is_squashed)]

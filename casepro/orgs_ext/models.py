@@ -14,6 +14,7 @@ class Flow:
     """
     Represents a flow which can be configured as a follow-up flow
     """
+
     def __init__(self, uuid, name):
         self.uuid = uuid
         self.name = name

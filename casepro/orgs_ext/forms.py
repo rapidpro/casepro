@@ -58,10 +58,7 @@ class OrgEditForm(forms.ModelForm):
     )
 
     followup_flow = forms.ChoiceField(
-        choices=(),
-        label=_("Follow-up Flow"),
-        help_text=_("Flow to start after a case is closed"),
-        required=False,
+        choices=(), label=_("Follow-up Flow"), help_text=_("Flow to start after a case is closed"), required=False,
     )
 
     def __init__(self, *args, **kwargs):
@@ -84,7 +81,7 @@ class OrgEditForm(forms.ModelForm):
         self.fields["suspend_groups"].choices = group_choices
         self.fields["suspend_groups"].initial = [g.pk for g in Group.get_suspend_from(org)]
 
-        flow_choices = [('', '----')]
+        flow_choices = [("", "----")]
         for flow in org.get_backend().fetch_flows(org):
             flow_choices.append((flow.uuid, flow.name))
 

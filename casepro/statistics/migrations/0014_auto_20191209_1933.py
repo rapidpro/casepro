@@ -6,23 +6,19 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('statistics', '0013_auto_20191209_1926'),
+        ("statistics", "0013_auto_20191209_1926"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='dailycount',
-            name='is_squashed',
+            model_name="dailycount", name="is_squashed", field=models.BooleanField(default=False, null=True),
+        ),
+        migrations.AlterField(
+            model_name="dailysecondtotalcount",
+            name="is_squashed",
             field=models.BooleanField(default=False, null=True),
         ),
         migrations.AlterField(
-            model_name='dailysecondtotalcount',
-            name='is_squashed',
-            field=models.BooleanField(default=False, null=True),
-        ),
-        migrations.AlterField(
-            model_name='totalcount',
-            name='is_squashed',
-            field=models.BooleanField(default=False, null=True),
+            model_name="totalcount", name="is_squashed", field=models.BooleanField(default=False, null=True),
         ),
     ]

@@ -6,11 +6,15 @@
 #
 -e git+https://github.com/nyaruka/confmodel.git@python3#egg=confmodel
 amqp==2.5.2               # via kombu
+appdirs==1.4.3            # via black
+attrs==19.3.0             # via black
 billiard==3.6.1.0         # via celery
+black==19.10b0
 boto==2.49.0
 celery==4.3.0
 certifi==2019.11.28       # via requests
 chardet==3.0.4            # via requests
+click==7.0                # via black
 colorama==0.4.1
 coverage==4.5.4
 dj-database-url==0.5.0
@@ -38,6 +42,7 @@ kombu==4.6.6              # via celery
 markdown==3.1.1
 mccabe==0.6.1             # via flake8
 more-itertools==8.0.0     # via zipp
+pathspec==0.6.0           # via black
 phonenumbers==8.11.0      # via rapidpro-dash
 pillow==6.2.1
 pisa==3.0.33
@@ -61,6 +66,8 @@ six==1.13.0               # via django-appconf, django-contrib-comments, django-
 smartmin==2.2.0
 sorl-thumbnail==12.5.0
 sqlparse==0.3.0           # via django, smartmin
+toml==0.10.0              # via black
+typed-ast==1.4.0          # via black
 urllib3==1.25.7           # via requests
 vine==1.3.0               # via amqp, celery
 xlrd==1.2.0               # via rapidpro-dash, smartmin, xlutils
@@ -68,3 +75,6 @@ xlutils==2.0.0
 xlwt==1.3.0               # via rapidpro-dash, smartmin, xlutils
 zipp==0.6.0               # via importlib-metadata
 zope.interface==4.7.1
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools

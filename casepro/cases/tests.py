@@ -182,7 +182,18 @@ class CaseTest(BaseCasesTest):
         mock_add_to_group.reset_mock()
 
         # check our follow-up flow was started
-        mock_start_flow.assert_called_once_with(self.unicef, followup, self.ann, extra={'case': {'id': case.id, 'assignee': {'id': self.moh.id, 'name': 'MOH'}, 'opened_on': '2015-01-02T07:00:00+00:00'}})
+        mock_start_flow.assert_called_once_with(
+            self.unicef,
+            followup,
+            self.ann,
+            extra={
+                "case": {
+                    "id": case.id,
+                    "assignee": {"id": self.moh.id, "name": "MOH"},
+                    "opened_on": "2015-01-02T07:00:00+00:00",
+                }
+            },
+        )
         mock_start_flow.reset_mock()
 
         # contact sends a message after case was closed

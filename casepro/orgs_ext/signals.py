@@ -15,5 +15,5 @@ def create_org_backend(sender, instance=None, created=False, **kwargs):
             slug="rapidpro",
             host=settings.SITE_API_HOST,
             created_by=instance.created_by,
-            modified_by=instance.created_by
+            modified_by=instance.created_by,
         )
