@@ -1,7 +1,5 @@
 import math
 import random
-import resource
-import sys
 import time
 
 from casepro.cases.models import Partner
@@ -71,7 +69,7 @@ class Command(BaseCommand):
         self.create_msgs(orgs)
 
         time_taken = time.time() - start
-        self._log("Completed in %d secs, peak memory usage: %d MiB\n" % (int(time_taken), int(self.peak_memory())))
+        self._log("Completed in %d secs\n" % (int(time_taken)))
 
     def create_clean(self):
         """
@@ -216,11 +214,3 @@ class Command(BaseCommand):
 
     def _log(self, text):
         print(text, flush=True, end="")
-
-    @staticmethod
-    def peak_memory():
-        rusage_denom = 1024
-        if sys.platform == "darwin":
-            # OSX gives value in bytes, other OSes in kilobytes
-            rusage_denom *= rusage_denom
-        return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / rusage_denom
