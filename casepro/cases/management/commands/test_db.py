@@ -2,20 +2,21 @@ import math
 import random
 import time
 
-from casepro.cases.models import Partner
-from casepro.contacts.models import Contact
-from casepro.rules.models import ContainsTest, Quantifier
-from casepro.msgs.models import Label, Message
-from casepro.profiles.models import Profile, ROLE_MANAGER, ROLE_ANALYST
-
 import pytz
+from dash.orgs.models import Org
 from django_redis import get_redis_connection
 
 from django.contrib.auth.models import User
 from django.core.management import BaseCommand, CommandError
 from django.utils import timezone
 
-from dash.orgs.models import Org
+from casepro.cases.models import Partner
+from casepro.contacts.models import Contact
+from casepro.msgs.models import Label, Labelling, Message
+from casepro.profiles.models import ROLE_ANALYST, ROLE_MANAGER, Profile
+from casepro.rules.models import ContainsTest, Quantifier
+from casepro.statistics.models import DailyCount, datetime_to_date
+from casepro.statistics.tasks import squash_counts
 
 # by default every user will have this password including the superuser
 USER_PASSWORD = "Qwerty123"
@@ -23,24 +24,25 @@ USER_PASSWORD = "Qwerty123"
 # create 10 orgs with these names
 ORG_NAMES = ("Ecuador", "Rwanda", "Croatia", "USA", "Mexico", "Zambia", "India", "Brazil", "Sudan", "Mozambique")
 
-LABEL_NAMES = ("Flu", "HIV", "Tea", "Coffee", "Code", "Pizza", "Beer")
-
 # each org will have these partner orgs
 PARTNERS = (
     {
         "name": "MOH",
         "description": "The Ministry of Health",
-        "labels": ["Flu", "HIV"]
+        "labels": ["Flu", "Sneezes", "Chills", "Cough"],
+        "users": [{"name": "Bob", "role": ROLE_MANAGER}, {"name": "Carol", "role": ROLE_ANALYST}],
     },
     {
         "name": "WFP",
         "description": "The World Food Program",
-        "labels": ["Tea", "Coffee"]
+        "labels": ["Tea", "Coffee", "Beer", "Pizza"],
+        "users": [{"name": "Dave", "role": ROLE_MANAGER}, {"name": "Evan", "role": ROLE_ANALYST}],
     },
     {
         "name": "Nyaruka",
         "description": "They write code",
-        "labels": ["Code", "Pizza"]
+        "labels": ["Code", "Pizza", "Dogs"],
+        "users": [{"name": "Norbert", "role": ROLE_MANAGER}, {"name": "Leah", "role": ROLE_ANALYST}],
     },
 )
 
@@ -49,7 +51,12 @@ CONTACT_NAMES = (
     ("Jameson", "Kardashian", "Lopez", "Mooney", "Newman", "O'Shea", "Poots", "Quincy", "Roberts"),
 )
 
-MESSAGE_WORDS = ('lorem', 'ipsum', 'dolor', 'sit' , 'amet', 'consectetur', 'adipiscing', 'elit')
+MESSAGE_WORDS = ("lorem", "ipsum", "dolor", "sit", "amet", "consectetur", "adipiscing", "elit")
+
+# We want a variety of large and small orgs so when allocating messages, we apply a bias toward the beginning
+# orgs. if there are N orgs, then the amount of content the first org will be allocated is (1/N) ^ (1/bias).
+# This sets the bias so that the first org will get ~50% of the content:
+BIASED = math.log(1.0 / len(ORG_NAMES), 0.5)
 
 
 class Command(BaseCommand):
@@ -61,7 +68,7 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         start = time.time()
 
-        if kwargs['resume']:
+        if kwargs["resume"]:
             orgs = self.resume()
         else:
             orgs = self.create_clean()
@@ -92,12 +99,12 @@ class Command(BaseCommand):
 
         superuser = User.objects.create_superuser("root", "root@nyaruka.com", USER_PASSWORD)
 
-        orgs = self.create_orgs(superuser, ORG_NAMES, LABEL_NAMES, PARTNERS, USER_PASSWORD)
+        orgs = self.create_orgs(superuser, ORG_NAMES, PARTNERS, USER_PASSWORD)
         self.create_contacts(orgs, 100)
 
         return orgs
 
-    def create_orgs(self, superuser, org_names, label_names, partner_specs, password):
+    def create_orgs(self, superuser, org_names, partner_specs, password):
         """
         Creates the orgs
         """
@@ -116,21 +123,32 @@ class Command(BaseCommand):
             orgs.append(org)
 
             # create administrator user for this org
-            Profile.create_org_user(org, "Adam", f"admin{o+1}@unicef.com", password, change_password=False, must_use_faq=False)
+            Profile.create_org_user(
+                org, "Adam", f"admin{o+1}@unicef.org", password, change_password=False, must_use_faq=False
+            )
 
-            for label_name in label_names:
+            label_names = set()
+            for partner_spec in partner_specs:
+                label_names.update(partner_spec["labels"])
+
+            for label_name in sorted(label_names):
                 tests = [ContainsTest([label_name.lower()], Quantifier.ANY)]
                 Label.create(org, label_name, f"Messages about {label_name}", tests, is_synced=False)
 
-            for partner_spec in partner_specs:
+            for p, partner_spec in enumerate(partner_specs):
                 labels = Label.objects.filter(org=org, name__in=partner_spec["labels"])
-                partner = Partner.create(org, partner_spec["name"], partner_spec["description"], primary_contact=None, restricted=True, labels=labels)
+                partner = Partner.create(
+                    org,
+                    partner_spec["name"],
+                    partner_spec["description"],
+                    primary_contact=None,
+                    restricted=True,
+                    labels=labels,
+                )
 
-                # every partner org has a manager and an analyst user
-                Profile.create_partner_user(org, partner, ROLE_MANAGER, "Mary",
-                                            f"manager{o + 1}@{partner_spec['name'].lower()}.com", password)
-                Profile.create_partner_user(org, partner, ROLE_ANALYST, "Alan",
-                                            f"analyst{o + 1}@{partner_spec['name'].lower()}.com", password)
+                for user_spec in partner_spec["users"]:
+                    email = f"{user_spec['name'].lower()}{o + 1}@{partner_spec['name'].lower()}.com"
+                    Profile.create_partner_user(org, partner, user_spec["role"], user_spec["name"], email, password)
 
         self._log(self.style.SUCCESS("OK") + "\n")
         return orgs
@@ -153,56 +171,92 @@ class Command(BaseCommand):
     def create_msgs(self, orgs):
         self._log("Creating messages. Press Ctrl+C to stop...\n")
 
-        # We want a variety of large and small orgs so when allocating messages, we apply a bias toward the beginning
-        # orgs. if there are N orgs, then the amount of content the first org will be allocated is (1/N) ^ (1/bias).
-        # This sets the bias so that the first org will get ~50% of the content:
-        bias = math.log(1.0 / len(orgs), 0.5)
-
         # cache labels and contacts for each org
         for org in orgs:
-            org._contacts = list(org.contacts.all())
-            org._labels = list(org.labels.all())
+            org._contacts = list(org.contacts.order_by("id"))
+            org._labels = list(org.labels.order_by("id"))
 
         last_backend_id = Message.objects.order_by("backend_id").values_list("backend_id", flat=True).last()
         backend_id_start = last_backend_id + 1 if last_backend_id else 1
 
+        BATCH_SIZE = 100
+
         num_created = 0
         try:
+            msg_batch = []
+
             while True:
-                org = self.random_choice(orgs, bias=bias)
+                org = self.random_choice(orgs, bias=BIASED)
+                backend_id = backend_id_start + num_created
 
-                # mesage has 50% chance of a label, 25% chance of 2 labels
-                labels = set()
-                if self.probability(0.5):
-                    labels.add(self.random_choice(org._labels, bias=bias))
-                if self.probability(0.5):
-                    labels.add(self.random_choice(org._labels, bias=bias))
+                msg, labels = self.generate_msg(org, backend_id)
+                msg._labels = labels
 
-                # make message text by shuffling the label names into some random words
-                msg_words = [l.name.lower() for l in labels] + list(MESSAGE_WORDS)
-                random.shuffle(msg_words)
-                msg_text = " ".join(msg_words)
-                msg_type = Message.TYPE_FLOW if self.probability(0.75) else Message.TYPE_INBOX
-                msg = Message.objects.create(
-                    org=org,
-                    backend_id=backend_id_start + num_created,
-                    contact=self.random_choice(org._contacts),
-                    text=msg_text,
-                    type=msg_type,
-                    is_flagged=self.probability(0.05),  # 5% chance of being flagged
-                    is_archived=self.probability(0.5),  # 50% chance of being archived
-                    is_handled=True,
-                    created_on=timezone.now()
-                )
-                msg.label(*labels)
+                msg_batch.append(msg)
+
                 num_created += 1
 
-                if num_created % 100 == 0:
+                if len(msg_batch) == BATCH_SIZE:
+                    Message.objects.bulk_create(msg_batch)
+
+                    labelling_batch = []
+                    count_batch = []
+                    for msg in msg_batch:
+                        count_batch.append(
+                            DailyCount(
+                                day=datetime_to_date(msg.created_on, org),
+                                item_type=DailyCount.TYPE_INCOMING,
+                                scope=DailyCount.encode_scope(org),
+                                count=1,
+                            )
+                        )
+
+                        for label in msg._labels:
+                            labelling_batch.append(Labelling(message=msg, label=label))
+
+                    Labelling.objects.bulk_create(labelling_batch)
+                    DailyCount.objects.bulk_create(count_batch)
+
+                    msg_batch = []
+
                     self._log(f" > Created {num_created} messages\n")
         except KeyboardInterrupt:
             pass
 
+        self._log(f" > Squashing counts...\n")
+
+        squash_counts()
+
         self._log(self.style.SUCCESS("OK") + "\n")
+
+    def generate_msg(self, org, backend_id):
+        """
+        Generate a random message for the given org
+        """
+        # message has 50% chance of a label, 25% of two labels..
+        labels = set()
+        if self.probability(0.5):
+            labels.add(self.random_choice(org._labels, bias=BIASED))
+            if self.probability(0.5):
+                labels.add(self.random_choice(org._labels, bias=BIASED))
+
+        # make message text by shuffling the label names into some random words
+        msg_words = [l.name.lower() for l in labels] + list(MESSAGE_WORDS)
+        random.shuffle(msg_words)
+        msg_text = " ".join(msg_words)
+        msg_type = Message.TYPE_FLOW if self.probability(0.75) else Message.TYPE_INBOX
+        msg = Message(
+            org=org,
+            backend_id=backend_id,
+            contact=self.random_choice(org._contacts),
+            text=msg_text,
+            type=msg_type,
+            is_flagged=self.probability(0.05),  # 5% chance of being flagged
+            is_archived=self.probability(0.5),  # 50% chance of being archived
+            is_handled=True,
+            created_on=timezone.now(),
+        )
+        return msg, labels
 
     def probability(self, prob):
         return random.random() < prob
