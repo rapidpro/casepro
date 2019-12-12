@@ -1,40 +1,37 @@
-FROM python:3.6
+FROM python:3.6-alpine
 
-ENV WORKDIR /casepro
-WORKDIR ${WORKDIR}
+ENV PYTHONUNBUFFERED 1
+WORKDIR /app
 
-RUN apt update
-RUN apt upgrade -y
-RUN apt install -y \ 
-    varnish \ 
-    gettext \ 
-    supervisor \
-    curl \
-    software-properties-common
+RUN apk update \
+  && apk add --virtual build-deps gcc python3-dev musl-dev \
+  && apk add postgresql-client postgresql-dev libxml2-dev libxslt-dev gettext-dev \
+  && apk add jpeg-dev zlib-dev freetype-dev lcms2-dev openjpeg-dev tiff-dev tk-dev tcl-dev \
+  && apk add libffi-dev py-cffi gettext nodejs npm git build-base
 
-RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
-RUN apt update
-RUN apt install -y nodejs \
-    && rm -rf /var/lib/apt/lists/*
+RUN addgroup -S django \
+  && adduser -S -G django django
 
-COPY pip-requires.txt .
-COPY pip-freeze.txt .
-COPY app-entrypoint.sh .
+RUN npm install --global --unsafe-perm \
+  coffeescript \
+  less
 
-RUN ls -lash
+COPY ./pip-freeze.txt /app
+COPY ./package.json /app
 
-RUN pip install -r pip-requires.txt
-RUN pip install -r pip-freeze.txt
+RUN pip install --no-cache-dir -r pip-freeze.txt
 RUN npm install
 
 COPY . .
 
-RUN ln -s $WORKDIR/casepro/settings.py_prod $WORKDIR/casepro/settings.py
+RUN ln -s /app/casepro/settings.py_prod /app/casepro/settings.py
+
+RUN chmod +x app-entrypoint.sh
+
+RUN chown -R django /app
+USER django
 
 EXPOSE 8000
-EXPOSE 8080
-
-RUN chmod +x ./app-entrypoint.sh
 ENTRYPOINT ["sh", "app-entrypoint.sh"]
 
 # RUN chmod +x ./docker-entrypoint.sh

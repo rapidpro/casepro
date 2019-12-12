@@ -1,5 +1,4 @@
- 
-version: '3.6'
+version: '3'
 
 services:
   redis:
@@ -21,7 +20,6 @@ services:
       dockerfile: ./docker/Dockerfile
     ports:
       - 8000:8000
-      - 8080:8080
     environment:
       - DEBUG=${DEBUG:-false}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
@@ -48,7 +46,6 @@ services:
       - COMPRESS_ENABLED=${COMPRESS_ENABLED:-true}
       - COMPRESS_CSS_HASHING_METHOD=${COMPRESS_CSS_HASHING_METHOD:-content}
       - COMPRESS_OFFLINE=${COMPRESS_OFFLINE:-true}
-
-    depends_on:
-      - database
+    links:
       - redis
+      - database

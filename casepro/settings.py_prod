@@ -104,3 +104,6 @@ COMPRESS_ENABLED = config('COMPRESS_ENABLED', cast=bool, default=True)
 COMPRESS_CSS_HASHING_METHOD = config('COMPRESS_CSS_HASHING_METHOD', default='content')
 COMPRESS_OFFLINE = config('COMPRESS_OFFLINE', cast=bool, default=True)
 COMPRESS_OFFLINE_CONTEXT = dict(STATIC_URL=STATIC_URL, base_template='frame.html', debug=False, testing=False)
+
+MIDDLEWARE = MIDDLEWARE + ("whitenoise.middleware.WhiteNoiseMiddleware",)
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
