@@ -1,6 +1,7 @@
 import json
 
 from dash.orgs.models import Org
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db.models import Q
@@ -14,6 +15,7 @@ class Flow:
     """
     Represents a flow which can be configured as a follow-up flow
     """
+
     def __init__(self, uuid, name):
         self.uuid = uuid
         self.name = name

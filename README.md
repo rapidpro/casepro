@@ -1,7 +1,4 @@
-# CasePro
-
-![Build Status](https://travis-ci.org/rapidpro/casepro.svg?branch=master)
-[![Coverage Status](https://coveralls.io/repos/github/rapidpro/casepro/badge.svg?branch=master)](https://coveralls.io/github/rapidpro/casepro?branch=master)
+# CasePro [![Build Status](https://github.com/rapidpro/casepro/workflows/CI/badge.svg)](https://github.com/rapidpro/casepro/actions?query=workflow%3ACI) [![codecov](https://codecov.io/gh/rapidpro/casepro/branch/master/graph/badge.svg)](https://codecov.io/gh/rapidpro/casepro)
 
 Case management dashboard for UNICEF and partner organizations. Supports use of both [RapidPro](http://rapidpro.io) and [Junebug](https://github.com/praekelt/junebug) as messaging backends.
 

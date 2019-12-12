@@ -2,12 +2,13 @@ from datetime import timedelta
 
 from dash.orgs.views import OrgPermsMixin
 from dateutil.relativedelta import relativedelta
-from django.http import JsonResponse
-from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _
 from smartmin.mixins import NonAtomicMixin
 from smartmin.views import SmartCreateView, SmartCRUDL, SmartTemplateView
 from temba_client.utils import parse_iso8601
+
+from django.http import JsonResponse
+from django.utils import timezone
+from django.utils.translation import ugettext_lazy as _
 
 from casepro.cases.models import Partner
 from casepro.msgs.models import Label

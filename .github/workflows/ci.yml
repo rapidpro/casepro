@@ -1,0 +1,59 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    name: Test
+    strategy:
+      matrix:
+        pg-version: ['10', '11']
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v1
+
+    - name: Install PostgreSQL
+      uses: harmon758/postgresql-action@v1
+      with:
+        postgresql version: ${{ matrix.pg-version }}
+        postgresql db: casepro
+        postgresql user: casepro
+        postgresql password: nyaruka
+
+    - name: Install Redis
+      uses: zhulik/redis-action@v1.0.0
+      with:
+        redis version: '5'
+
+    - name: Install Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: '3.6.x'
+
+    - name: Initialize environment
+      run: |
+        pip install --upgrade pip
+        pip install -r pip-freeze.txt
+        pip install codecov
+        npm install
+        sudo npm install -g coffee-script less
+        ln -s ${{ github.workspace }}/casepro/settings.py.dev ${{ github.workspace }}/casepro/settings.py
+
+    - name: Run pre-test checks
+      run: |
+        python manage.py makemigrations --dry-run | grep 'No changes detected' || (echo 'There are changes which require migrations.' && exit 1)
+        python manage.py collectstatic --noinput
+        (! python manage.py compress --extension=".haml" --settings=casepro.settings_travis | grep 'Error') || exit 1
+        flake8
+
+    - name: Run tests
+      run: |
+        coverage run manage.py test --verbosity=2 --noinput
+        coverage xml
+        node_modules/karma/bin/karma start karma.conf.coffee --single-run --browsers PhantomJS
+
+    - name: Upload coverage
+      if: success()
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: true

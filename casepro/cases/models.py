@@ -3,12 +3,13 @@ from itertools import chain
 
 from dash.orgs.models import Org
 from dash.utils import intersection
+from django_redis import get_redis_connection
+
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.db.models import Count, Prefetch, Q
 from django.utils.translation import ugettext_lazy as _
-from django_redis import get_redis_connection
 
 from casepro.contacts.models import Contact
 from casepro.msgs.models import Label, Message, Outgoing

@@ -1,10 +1,10 @@
 from math import ceil
 
 from dash.orgs.models import Org
+
 from django.contrib.auth.models import User
-from django.core.cache import cache
 from django.db import connection, models
-from django.db.models import Sum
+from django.db.models import Index, Q, Sum
 from django.utils.functional import SimpleLazyObject
 from django.utils.translation import ugettext_lazy as _
 
@@ -33,20 +33,22 @@ class BaseCount(models.Model):
     TYPE_CASE_OPENED = "C"
     TYPE_CASE_CLOSED = "D"
 
-    id = models.BigAutoField(auto_created=True, primary_key=True, verbose_name="ID")
+    id = models.BigAutoField(auto_created=True, primary_key=True)
 
     squash_sql = """
         WITH removed as (
             DELETE FROM %(table_name)s WHERE %(delete_cond)s RETURNING "count"
         )
-        INSERT INTO %(table_name)s(%(insert_cols)s, "count")
-        VALUES (%(insert_vals)s, GREATEST(0, (SELECT SUM("count") FROM removed)));"""
+        INSERT INTO %(table_name)s(%(insert_cols)s, "count", "is_squashed")
+        VALUES (%(insert_vals)s, GREATEST(0, (SELECT SUM("count") FROM removed)), TRUE);"""
 
-    item_type = models.CharField(max_length=1, help_text=_("The thing being counted"))
+    item_type = models.CharField(max_length=1)
 
-    scope = models.CharField(max_length=32, help_text=_("The scope in which it is being counted"))
+    scope = models.CharField(max_length=32)
 
     count = models.IntegerField()
+
+    is_squashed = models.BooleanField(default=False)
 
     @staticmethod
     def encode_scope(*args):
@@ -74,8 +76,7 @@ class BaseCount(models.Model):
         """
         Squashes counts so that there is a single count per item_type + scope combination
         """
-        last_squash_id = cache.get(cls.last_squash_key, 0)
-        unsquashed_values = cls.objects.filter(pk__gt=last_squash_id)
+        unsquashed_values = cls.objects.filter(is_squashed=False)
         unsquashed_values = unsquashed_values.values(*cls.squash_over).distinct(*cls.squash_over)
 
         for unsquashed in unsquashed_values:
@@ -89,10 +90,6 @@ class BaseCount(models.Model):
 
                 params = [unsquashed[f] for f in cls.squash_over]
                 cursor.execute(sql, params + params)
-
-        max_id = cls.objects.order_by("-pk").values_list("pk", flat=True).first()
-        if max_id:
-            cache.set(cls.last_squash_key, max_id)
 
     class CountSet(object):
         """
@@ -139,11 +136,12 @@ class BaseSecondTotal(BaseCount):
         WITH removed as (
             DELETE FROM %(table_name)s WHERE %(delete_cond)s RETURNING "count", "seconds"
         )
-        INSERT INTO %(table_name)s(%(insert_cols)s, "count", "seconds")
+        INSERT INTO %(table_name)s(%(insert_cols)s, "count", "seconds", "is_squashed")
         VALUES (
             %(insert_vals)s,
             GREATEST(0, (SELECT SUM("count") FROM removed)),
-            COALESCE((SELECT SUM("seconds") FROM removed), 0)
+            COALESCE((SELECT SUM("seconds") FROM removed), 0),
+            TRUE
         );"""
 
     seconds = models.BigIntegerField()
@@ -212,7 +210,6 @@ class TotalCount(BaseCount):
     """
 
     squash_over = ("item_type", "scope")
-    last_squash_key = "total_count:last_squash"
 
     @classmethod
     def get_by_label(cls, labels, item_type):
@@ -227,6 +224,9 @@ class TotalCount(BaseCount):
 
     class Meta:
         index_together = ("item_type", "scope")
+        indexes = [
+            Index(name="stats_totalcount_unsquashed", fields=("item_type", "scope"), condition=Q(is_squashed=False))
+        ]
 
 
 class DailyCount(BaseCount):
@@ -237,7 +237,6 @@ class DailyCount(BaseCount):
     day = models.DateField(help_text=_("The day this count is for"))
 
     squash_over = ("day", "item_type", "scope")
-    last_squash_key = "daily_count:last_squash"
 
     @classmethod
     def record_item(cls, day, item_type, *scope_args):
@@ -294,6 +293,13 @@ class DailyCount(BaseCount):
 
     class Meta:
         index_together = ("item_type", "scope", "day")
+        indexes = [
+            Index(
+                name="stats_dailycount_unsquashed",
+                fields=("item_type", "scope", "day"),
+                condition=Q(is_squashed=False),
+            )
+        ]
 
 
 class DailyCountExport(BaseExport):
@@ -444,7 +450,6 @@ class DailySecondTotalCount(BaseSecondTotal):
     day = models.DateField(help_text=_("The day this count is for"))
 
     squash_over = ("day", "item_type", "scope")
-    last_squash_key = "daily_second_total_count:last_squash"
 
     @classmethod
     def record_item(cls, day, seconds, item_type, *scope_args):

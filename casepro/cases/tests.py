@@ -1,14 +1,15 @@
 from datetime import datetime, timedelta
 from importlib import reload
+from unittest.mock import patch
 
 import pytz
+from temba_client.utils import format_iso8601
+
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
-from django.urls import reverse
 from django.test.utils import modify_settings, override_settings
+from django.urls import reverse
 from django.utils import timezone
-from unittest.mock import patch
-from temba_client.utils import format_iso8601
 
 from casepro.contacts.models import Contact
 from casepro.msgs.models import Label, Message, Outgoing
@@ -182,7 +183,18 @@ class CaseTest(BaseCasesTest):
         mock_add_to_group.reset_mock()
 
         # check our follow-up flow was started
-        mock_start_flow.assert_called_once_with(self.unicef, followup, self.ann, extra={'case': {'id': case.id, 'assignee': {'id': self.moh.id, 'name': 'MOH'}, 'opened_on': '2015-01-02T07:00:00+00:00'}})
+        mock_start_flow.assert_called_once_with(
+            self.unicef,
+            followup,
+            self.ann,
+            extra={
+                "case": {
+                    "id": case.id,
+                    "assignee": {"id": self.moh.id, "name": "MOH"},
+                    "opened_on": "2015-01-02T07:00:00+00:00",
+                }
+            },
+        )
         mock_start_flow.reset_mock()
 
         # contact sends a message after case was closed
@@ -1337,7 +1349,7 @@ class PartnerCRUDLTest(BaseCasesTest):
             {
                 "name": "Helpers",
                 "description": "Helpers Description",
-                "logo": None,
+                "logo": "",
                 "is_restricted": True,
                 "labels": [self.tea.pk],
             },
@@ -1354,7 +1366,7 @@ class PartnerCRUDLTest(BaseCasesTest):
 
         # create unrestricted partner
         response = self.url_post(
-            "unicef", url, {"name": "Internal", "logo": None, "is_restricted": False, "labels": [self.tea.pk]}
+            "unicef", url, {"name": "Internal", "logo": "", "is_restricted": False, "labels": [self.tea.pk]}
         )
         self.assertEqual(response.status_code, 302)
 
@@ -1370,7 +1382,7 @@ class PartnerCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 200)
 
         response = self.url_post(
-            "unicef", url, {"name": "Labelless", "description": "No labels", "logo": None, "is_restricted": True}
+            "unicef", url, {"name": "Labelless", "description": "No labels", "logo": "", "is_restricted": True}
         )
         self.assertEqual(response.status_code, 302)
         Partner.objects.get(name="Labelless")

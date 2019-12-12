@@ -1,11 +1,12 @@
 from datetime import datetime
+from unittest.mock import call, patch
 
 import pytz
+
 from django.contrib.auth.models import User
-from django.urls import reverse
 from django.test.utils import override_settings
+from django.urls import reverse
 from django.utils import timezone
-from unittest.mock import call, patch
 
 from casepro.test import BaseCasesTest
 
@@ -502,7 +503,7 @@ class UserCRUDLTest(BaseCasesTest):
             {
                 "name": "Mo Cases",
                 "email": "mo@casely.com",
-                "partner": None,
+                "partner": "",
                 "role": ROLE_ANALYST,
                 "password": "Qwerty12345",
                 "confirm_password": "Qwerty12345",

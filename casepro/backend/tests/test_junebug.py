@@ -1,14 +1,15 @@
 import json
 import uuid
 from datetime import datetime
+from unittest import mock
 
 import pytz
 import responses
+
 from django.conf import settings
 from django.db import IntegrityError
 from django.http import HttpResponse
 from django.test import RequestFactory, override_settings
-from unittest import mock
 
 from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message
@@ -320,6 +321,7 @@ class JunebugBackendTest(BaseCasesTest):
         """
         Pushing a new label should be a noop.
         """
+        self.tea.refresh_from_db()
         old_tea = self.tea.__dict__.copy()
         self.backend.push_label(self.unicef, "new label")
         self.tea.refresh_from_db()
@@ -700,6 +702,8 @@ class JunebugBackendTest(BaseCasesTest):
         Stopping messages for a contact should be a noop.
         """
         bob = self.create_contact(self.unicef, "C-002", "Bob")
+
+        bob.refresh_from_db()
         old_bob = bob.__dict__.copy()
         self.backend.stop_runs(self.unicef, bob)
 

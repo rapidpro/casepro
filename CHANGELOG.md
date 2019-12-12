@@ -1,3 +1,22 @@
+v1.1.20
+----------
+ * Switch squashing to use is_squashed instead of redis key
+ * Add new partial indexes on squashable models
+
+v1.1.19
+----------
+ * Update database triggers for counts
+
+v1.1.18
+----------
+ * Add migration to backfill is_squashed on squashable models
+
+v1.1.17
+----------
+ * Add is_squashed field to squashable models
+ * Bump dependencies
+ * Switch CI tests to PG 10/11 and use github actions and codecov for coverage
+
 v1.1.16
 ----------
  * Don't create a rule for a label if there are no keywords set

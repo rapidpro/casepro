@@ -1,7 +1,7 @@
 import json
 
-from confmodel import Config as ConfmodelConfig
-from confmodel import fields
+from confmodel import Config as ConfmodelConfig, fields
+
 from django.apps import AppConfig
 
 

@@ -1,14 +1,9 @@
+import logging
+import time
 from collections import defaultdict
 
 import iso639
-import logging
-import time
 from dash.orgs.views import OrgObjPermsMixin, OrgPermsMixin
-from django.urls import reverse
-from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
-from django.utils.timesince import timesince
-from django.utils.timezone import now
-from django.utils.translation import ugettext_lazy as _
 from el_pagination.paginators import LazyPaginator
 from smartmin.csv_imports.models import ImportTask
 from smartmin.mixins import NonAtomicMixin
@@ -23,6 +18,12 @@ from smartmin.views import (
     SmartUpdateView,
 )
 from temba_client.utils import parse_iso8601
+
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
+from django.urls import reverse
+from django.utils.timesince import timesince
+from django.utils.timezone import now
+from django.utils.translation import ugettext_lazy as _
 
 from casepro.rules.mixins import RuleFormMixin
 from casepro.statistics.models import DailyCount
@@ -43,13 +44,13 @@ def override_start(self, org):  # pragma: no cover
     from .tasks import faq_csv_import
 
     self.log("Queued import at %s" % now())
-    self.save(update_fields=["import_log"])
+    self.save(update_fields=("import_log",))
 
     # trigger task
-    result = faq_csv_import.delay(org, self.pk)
+    result = faq_csv_import.delay(org.id, self.id)
 
     self.task_id = result.task_id
-    self.save(update_fields=["task_id"])
+    self.save(update_fields=("task_id",))
 
 
 ImportTask.start = override_start
@@ -222,12 +223,15 @@ class MessageCRUDL(SmartCRUDL):
                 messages = Message.search(org, user, search)
 
                 time_taken = time.time() - start
-                if time_taken > 10 and 'text' not in search:  # pragma: no cover
-                    logger.error("long message query", extra={
-                        "org": org.id,
-                        "uri": self.request.build_absolute_uri(),
-                        "time_taken": int(time_taken),
-                    })
+                if time_taken > 10 and "text" not in search:  # pragma: no cover
+                    logger.error(
+                        "long message query",
+                        extra={
+                            "org": org.id,
+                            "uri": self.request.build_absolute_uri(),
+                            "time_taken": int(time_taken),
+                        },
+                    )
 
                 # don't use paging for these messages
                 context["object_list"] = list(messages)

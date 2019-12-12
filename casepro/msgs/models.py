@@ -3,6 +3,8 @@ from enum import Enum
 
 from dash.orgs.models import Org
 from dash.utils import get_obj_cacheable
+from django_redis import get_redis_connection
+
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import models
@@ -10,7 +12,6 @@ from django.db.models import Q
 from django.utils.timesince import timesince
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
-from django_redis import get_redis_connection
 
 from casepro.contacts.models import Contact, Field
 from casepro.utils import get_language_name, json_encode
@@ -437,9 +438,13 @@ class Message(models.Model):
         if before:
             queryset = queryset.filter(created_on__lt=before)
 
-        queryset = queryset.prefetch_related("contact", "labels", "case__assignee", "case__user_assignee")
+        queryset = queryset.prefetch_related("contact", "labels", "case__assignee", "case__user_assignee").order_by(
+            "-created_on"
+        )
 
-        return queryset.order_by("-created_on")
+        # print(str(queryset.query))
+
+        return queryset
 
     def get_history(self):
         """

@@ -1,20 +1,23 @@
 import time
 from datetime import datetime, timedelta
 from unittest import skip
+from unittest.mock import call, patch
 
 import pytz
 from dash.orgs.models import Org
 from dash.test import MockClientQuery
-from django.utils.timezone import now
-from unittest.mock import call, patch
 from temba_client.v1.types import Broadcast as TembaBroadcast
-from temba_client.v2.types import Contact as TembaContact
-from temba_client.v2.types import Field as TembaField
-from temba_client.v2.types import Group as TembaGroup
-from temba_client.v2.types import Label as TembaLabel
-from temba_client.v2.types import Message as TembaMessage
-from temba_client.v2.types import Flow as TembaFlow
-from temba_client.v2.types import ObjectRef
+from temba_client.v2.types import (
+    Contact as TembaContact,
+    Field as TembaField,
+    Flow as TembaFlow,
+    Group as TembaGroup,
+    Label as TembaLabel,
+    Message as TembaMessage,
+    ObjectRef,
+)
+
+from django.utils.timezone import now
 
 from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Message, Outgoing
@@ -866,6 +869,7 @@ class RapidProBackendTest(BaseCasesTest):
         """
         Pushing a new contact should be a noop.
         """
+        self.bob.refresh_from_db()
         old_bob = self.bob.__dict__.copy()
         self.backend.push_contact(self.unicef, self.bob)
         self.bob.refresh_from_db()
@@ -1040,21 +1044,9 @@ class RapidProBackendTest(BaseCasesTest):
     def test_fetch_flows(self, mock_get_flows):
         mock_get_flows.return_value = MockClientQuery(
             [
-                TembaFlow.create(
-                    uuid="0001-0001",
-                    name="Registration",
-                    archived=False,
-                ),
-                TembaFlow.create(
-                    uuid="0002-0002",
-                    name="Follow Up",
-                    archived=False,
-                ),
-                TembaFlow.create(
-                    uuid="0003-0003",
-                    name="Other Flow",
-                    archived=True,
-                ),
+                TembaFlow.create(uuid="0001-0001", name="Registration", archived=False,),
+                TembaFlow.create(uuid="0002-0002", name="Follow Up", archived=False,),
+                TembaFlow.create(uuid="0003-0003", name="Other Flow", archived=True,),
             ]
         )
 
@@ -1068,7 +1060,9 @@ class RapidProBackendTest(BaseCasesTest):
     def test_start_flow(self, mock_create_flow_start):
         self.backend.start_flow(self.unicef, Flow("0002-0002", "Follow Up"), self.ann, extra={"foo": "bar"})
 
-        mock_create_flow_start.assert_called_once_with(flow="0002-0002", contacts=[str(self.ann.uuid)], restart_participants=True, extra={"foo": "bar"})
+        mock_create_flow_start.assert_called_once_with(
+            flow="0002-0002", contacts=[str(self.ann.uuid)], restart_participants=True, extra={"foo": "bar"}
+        )
 
     def test_get_url_patterns(self):
         """
