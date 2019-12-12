@@ -3,8 +3,10 @@
 echo "Collect static files"
 python /app/manage.py collectstatic --noinput
 
-echo "Compress static files"
-python /app/manage.py compress --extension=.haml,.html
+if [ "${COMPRESS_ENABLED}" = true ]; then
+    echo "Compress static files"
+    python /app/manage.py compress --extension=.haml,.html
+fi
 
 echo "Compile messages"
 python /app/manage.py compilemessages
