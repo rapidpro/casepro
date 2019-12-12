@@ -33,7 +33,3 @@ USER django
 
 EXPOSE 8000
 ENTRYPOINT ["sh", "app-entrypoint.sh"]
-
-# RUN chmod +x ./docker-entrypoint.sh
-
-#CMD ["supervisor"]
