@@ -413,39 +413,29 @@ class Message(models.Model):
         if before:
             msg_filtering["created_on__lt"] = before
 
-        queryset = org.incoming_messages.all()
+        msgs = org.incoming_messages.order_by("-created_on")
 
-        if all_label_access:
-            if folder == MessageFolder.inbox or (folder == MessageFolder.archived and label_id):
-                msg_filtering["has_labels"] = True
-                if label_id:
-                    label = Label.get_all(org, user).filter(id=label_id).first()
-                    queryset = queryset.filter(labels=label)
-
-            elif folder == MessageFolder.unlabelled:
-                # only show inbox messages in unlabelled
-                queryset = queryset.filter(type=Message.TYPE_INBOX, has_labels=False)
-        else:
-            labels = Label.get_all(org, user)
-
-            if label_id:
-                labels = labels.filter(id=label_id)
+        # handle views that don't require filtering by any labels
+        if folder == MessageFolder.unlabelled:
+            return msgs.filter(type=Message.TYPE_INBOX, has_labels=False).filter(**msg_filtering)
+        if all_label_access and not label_id:
+            if folder == MessageFolder.inbox:
+                return msgs.filter(has_labels=True).filter(**msg_filtering)
             else:
-                # if not filtering by a single label, need distinct to avoid duplicates
-                queryset = queryset.distinct()
+                return msgs.filter(**msg_filtering)
 
-            msg_filtering["has_labels"] = True
-            queryset = queryset.filter(labels__in=list(labels))
+        labels = Label.get_all(org, user)
 
-        queryset = queryset.filter(**msg_filtering)
+        if label_id:
+            labels = labels.filter(id=label_id)
+        else:
+            # if not filtering by a single label, need distinct to avoid duplicates
+            msgs = msgs.distinct()
 
-        queryset = queryset.prefetch_related("contact", "labels", "case__assignee", "case__user_assignee").order_by(
-            "-created_on"
-        )
+        msg_filtering["has_labels"] = True
+        msgs = msgs.filter(labels__in=list(labels))
 
-        # print(str(queryset.query))
-
-        return queryset
+        return msgs.filter(**msg_filtering)
 
     def get_history(self):
         """
@@ -897,7 +887,9 @@ class MessageExport(BaseSearchExport):
         all_fields = base_fields + [f.label for f in contact_fields]
 
         # load all messages to be exported
-        items = Message.search(self.org, self.created_by, search)
+        items = Message.search(self.org, self.created_by, search).prefetch_related(
+            "contact", "labels", "case__assignee", "case__user_assignee"
+        )
 
         def add_sheet(num):
             sheet = book.add_sheet(str(_("Messages %d" % num)))

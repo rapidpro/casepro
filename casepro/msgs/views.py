@@ -204,11 +204,15 @@ class MessageCRUDL(SmartCRUDL):
         JSON endpoint for fetching incoming messages
         """
 
+        def get_messages(self, search, last_refresh=None):
+            org = self.request.org
+            user = self.request.user
+            queryset = Message.search(org, user, search, modified_after=last_refresh)
+            return queryset.prefetch_related("contact", "labels", "case__assignee", "case__user_assignee")
+
         def get_context_data(self, **kwargs):
             context = super(MessageCRUDL.Search, self).get_context_data(**kwargs)
 
-            org = self.request.org
-            user = self.request.user
             page = int(self.request.GET.get("page", 1))
             last_refresh = self.request.GET.get("last_refresh")
 
@@ -216,18 +220,18 @@ class MessageCRUDL(SmartCRUDL):
 
             # this is a refresh of new and modified messages
             if last_refresh:
-                messages = Message.search(org, user, search, modified_after=last_refresh)
+                messages = self.get_messages(search, last_refresh)
 
                 # don't use paging for these messages
                 context["object_list"] = list(messages)
                 context["has_more"] = False
-                return context
+            else:
+                messages = self.get_messages(search)
+                paginator = LazyPaginator(messages, per_page=50)
 
-            messages = Message.search(org, user, search)
-            paginator = LazyPaginator(messages, per_page=50)
+                context["object_list"] = paginator.page(page)
+                context["has_more"] = paginator.num_pages > page
 
-            context["object_list"] = paginator.page(page)
-            context["has_more"] = paginator.num_pages > page
             return context
 
         def render_to_response(self, context, **response_kwargs):
