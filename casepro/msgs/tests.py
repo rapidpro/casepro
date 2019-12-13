@@ -1044,9 +1044,7 @@ class MessageTest(BaseCasesTest):
         assert_search(self.admin, {"folder": MessageFolder.flagged}, [msg8, msg7, msg3])
 
         # flagged as admin shows all non-archived flagged
-        assert_search(
-            self.admin, {"folder": MessageFolder.flagged, "include_archived": True}, [msg11, msg8, msg7, msg3]
-        )
+        assert_search(self.admin, {"folder": MessageFolder.flagged_with_archived}, [msg11, msg8, msg7, msg3])
 
         # archived as admin shows all archived
         assert_search(self.admin, {"folder": MessageFolder.archived}, [msg11, msg10, msg9, msg4])
@@ -1079,7 +1077,9 @@ class MessageTest(BaseCasesTest):
         assert_search(self.user3, {"folder": MessageFolder.archived, "label": self.pregnancy.pk}, [])
 
         # unlabelled as user throws exception
-        self.assertRaises(ValueError, Message.search, self.unicef, self.user1, {"folder": MessageFolder.unlabelled})
+        self.assertRaises(
+            AssertionError, Message.search, self.unicef, self.user1, {"folder": MessageFolder.unlabelled}
+        )
 
         # by contact in the inbox
         assert_search(self.admin, {"folder": MessageFolder.inbox, "contact": bob.pk}, [msg8, msg6])

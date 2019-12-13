@@ -1,5 +1,4 @@
 import logging
-import time
 from collections import defaultdict
 
 import iso639
@@ -177,8 +176,10 @@ class MessageSearchMixin(object):
         Collects and prepares message search parameters into JSON serializable dict
         """
         folder = MessageFolder[self.request.GET["folder"]]
+        if folder == MessageFolder.flagged and str_to_bool(self.request.GET.get("archived", "")):
+            folder = MessageFolder.flagged_with_archived
+
         label_id = self.request.GET.get("label", None)
-        include_archived = str_to_bool(self.request.GET.get("archived", ""))
         text = self.request.GET.get("text", None)
         contact_id = self.request.GET.get("contact", None)
         after = parse_iso8601(self.request.GET.get("after", None))
@@ -187,7 +188,6 @@ class MessageSearchMixin(object):
         return {
             "folder": folder,
             "label": label_id,
-            "include_archived": include_archived,  # only applies to flagged folder
             "text": text,
             "contact": contact_id,
             "after": after,
@@ -216,22 +216,7 @@ class MessageCRUDL(SmartCRUDL):
 
             # this is a refresh of new and modified messages
             if last_refresh:
-                search["last_refresh"] = last_refresh
-
-                start = time.time()
-
-                messages = Message.search(org, user, search)
-
-                time_taken = time.time() - start
-                if time_taken > 10 and "text" not in search:  # pragma: no cover
-                    logger.error(
-                        "long message query",
-                        extra={
-                            "org": org.id,
-                            "uri": self.request.build_absolute_uri(),
-                            "time_taken": int(time_taken),
-                        },
-                    )
+                messages = Message.search(org, user, search, modified_after=last_refresh)
 
                 # don't use paging for these messages
                 context["object_list"] = list(messages)

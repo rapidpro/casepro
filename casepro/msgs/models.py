@@ -25,8 +25,9 @@ MESSAGE_LOCK_SECONDS = 300
 class MessageFolder(Enum):
     inbox = 1
     flagged = 2
-    archived = 3
-    unlabelled = 4
+    flagged_with_archived = 3
+    archived = 4
+    unlabelled = 5
 
 
 class OutgoingFolder(Enum):
@@ -369,28 +370,56 @@ class Message(models.Model):
         return get_redis_connection().lock(MESSAGE_LOCK_KEY % (org.pk, backend_id), timeout=60)
 
     @classmethod
-    def search(cls, org, user, search):
+    def search(cls, org, user, search, modified_after=None):
         """
         Search for messages
         """
         folder = search.get("folder")
         label_id = search.get("label")
-        include_archived = search.get("include_archived")
         text = search.get("text")
         contact_id = search.get("contact")
         after = search.get("after")
         before = search.get("before")
-        last_refresh = search.get("last_refresh")
+
+        is_admin = user.can_administer(org)
+        partner = user.get_partner(org)
+        all_label_access = is_admin or (partner and not partner.is_restricted)
+
+        assert folder != MessageFolder.unlabelled or is_admin, "non-admin access to unlabelled messages"
 
         # only show non-deleted handled messages
-        queryset = org.incoming_messages.filter(is_active=True, is_handled=True)
-        all_label_access = user.can_administer(org)
+        msg_filtering = {"is_active": True, "is_handled": True}
+
+        # if this is a refresh we want everything with new actions and locks
+        if modified_after:
+            msg_filtering["modified_on__gt"] = modified_after
+        else:
+            if folder == MessageFolder.inbox or folder == MessageFolder.unlabelled:
+                msg_filtering["is_archived"] = False
+            elif folder == MessageFolder.flagged:
+                msg_filtering["is_flagged"] = True
+                msg_filtering["is_archived"] = False
+            elif folder == MessageFolder.flagged_with_archived:
+                msg_filtering["is_flagged"] = True
+            elif folder == MessageFolder.archived:
+                msg_filtering["is_archived"] = True
+
+        if text:
+            msg_filtering["text__icontains"] = text
+        if contact_id:
+            msg_filtering["contact__id"] = contact_id
+        if after and not modified_after:
+            msg_filtering["created_on__gt"] = after
+        if before:
+            msg_filtering["created_on__lt"] = before
+
+        queryset = org.incoming_messages.all()
 
         if all_label_access:
             if folder == MessageFolder.inbox or (folder == MessageFolder.archived and label_id):
-                queryset = queryset.filter(has_labels=True)
+                msg_filtering["has_labels"] = True
                 if label_id:
-                    label = Label.get_all(org, user).filter(pk=label_id).first()
+                    label = Label.get_all(org, user).filter(id=label_id).first()
                     queryset = queryset.filter(labels=label)
 
             elif folder == MessageFolder.unlabelled:
@@ -400,43 +429,15 @@ class Message(models.Model):
             labels = Label.get_all(org, user)
 
             if label_id:
-                labels = labels.filter(pk=label_id)
+                labels = labels.filter(id=label_id)
             else:
                 # if not filtering by a single label, need distinct to avoid duplicates
                 queryset = queryset.distinct()
 
-            queryset = queryset.filter(has_labels=True, labels__in=list(labels))
+            msg_filtering["has_labels"] = True
+            queryset = queryset.filter(labels__in=list(labels))
 
-            if folder == MessageFolder.unlabelled:
-                raise ValueError("Unlabelled folder is only accessible to administrators")
-
-        # if this is a refresh we want everything with new actions and locks
-        if last_refresh:
-            queryset = queryset.filter(modified_on__gt=last_refresh)
-        else:
-            # only show flagged messages in flagged folder
-            if folder == MessageFolder.flagged:
-                queryset = queryset.filter(is_flagged=True)
-
-            # archived messages can be implicitly or explicitly included depending on folder
-            if folder == MessageFolder.archived:
-                queryset = queryset.filter(is_archived=True)
-            elif folder == MessageFolder.flagged:
-                if not include_archived:
-                    queryset = queryset.filter(is_archived=False)
-            else:
-                queryset = queryset.filter(is_archived=False)
-
-        if text:
-            queryset = queryset.filter(text__icontains=text)
-
-        if contact_id:
-            queryset = queryset.filter(contact__pk=contact_id)
-
-        if after and not last_refresh:
-            queryset = queryset.filter(created_on__gt=after)
-        if before:
-            queryset = queryset.filter(created_on__lt=before)
+        queryset = queryset.filter(**msg_filtering)
 
         queryset = queryset.prefetch_related("contact", "labels", "case__assignee", "case__user_assignee").order_by(
             "-created_on"
