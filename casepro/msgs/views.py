@@ -204,10 +204,12 @@ class MessageCRUDL(SmartCRUDL):
         JSON endpoint for fetching incoming messages
         """
 
+        page_size = 50
+
         def get_messages(self, search, last_refresh=None):
             org = self.request.org
             user = self.request.user
-            queryset = Message.search(org, user, search, modified_after=last_refresh)
+            queryset = Message.search(org, user, search, modified_after=last_refresh, all=False)
             return queryset.prefetch_related("contact", "labels", "case__assignee", "case__user_assignee")
 
         def get_context_data(self, **kwargs):
@@ -227,7 +229,7 @@ class MessageCRUDL(SmartCRUDL):
                 context["has_more"] = False
             else:
                 messages = self.get_messages(search)
-                paginator = LazyPaginator(messages, per_page=50)
+                paginator = LazyPaginator(messages, per_page=self.page_size)
 
                 context["object_list"] = paginator.page(page)
                 context["has_more"] = paginator.num_pages > page
