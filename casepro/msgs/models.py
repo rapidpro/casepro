@@ -297,11 +297,11 @@ class Labelling(models.Model):
 
     message = models.ForeignKey("msgs.Message", on_delete=models.CASCADE)
 
-    message_is_archived = models.BooleanField()
+    message_is_archived = models.BooleanField(null=True)
 
-    message_is_flagged = models.BooleanField()
+    message_is_flagged = models.BooleanField(null=True)
 
-    message_created_on = models.DateTimeField()
+    message_created_on = models.DateTimeField(null=True)
 
     @classmethod
     def create(cls, label, message):
