@@ -39,7 +39,7 @@ class Label(models.Model):
     Corresponds to a message label in RapidPro. Used for determining visibility of messages to different partners.
     """
 
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="labels", on_delete=models.PROTECT)
+    org = models.ForeignKey(Org, related_name="labels", on_delete=models.PROTECT)
 
     uuid = models.CharField(max_length=36, unique=True, null=True)
 
@@ -55,7 +55,7 @@ class Label(models.Model):
         User, related_name="watched_labels", help_text="Users to be notified when label is applied to a message"
     )
 
-    is_active = models.BooleanField(default=True, help_text="Whether this label is active")
+    is_active = models.BooleanField(default=True)
 
     INBOX_COUNT_CACHE_ATTR = "_inbox_count"
     ARCHIVED_COUNT_CACHE_ATTR = "_archived_count"
@@ -310,28 +310,25 @@ class Message(models.Model):
     TYPE_INBOX = "I"
     TYPE_FLOW = "F"
 
-    TYPE_CHOICES = ((TYPE_INBOX, _("Inbox")), (TYPE_FLOW, _("Flow")))
+    TYPE_CHOICES = ((TYPE_INBOX, "Inbox"), (TYPE_FLOW, "Flow"))
 
     SAVE_CONTACT_ATTR = "__data__contact"
     SAVE_LABELS_ATTR = "__data__labels"
 
     TIMELINE_TYPE = "I"
 
-    org = models.ForeignKey(
-        Org, verbose_name=_("Organization"), related_name="incoming_messages", on_delete=models.PROTECT
-    )
+    org = models.ForeignKey(Org, related_name="incoming_messages", on_delete=models.PROTECT)
 
-    backend_id = models.IntegerField(unique=True, help_text=_("Backend identifier for this message"))
+    # identifier of the message on the backend
+    backend_id = models.IntegerField(unique=True)
 
     contact = models.ForeignKey(Contact, related_name="incoming_messages", on_delete=models.PROTECT)
 
     type = models.CharField(max_length=1)
 
-    text = models.TextField(max_length=640, verbose_name=_("Text"))
+    text = models.TextField(max_length=640)
 
-    labels = models.ManyToManyField(
-        Label, through=Labelling, help_text=_("Labels assigned to this message"), related_name="messages"
-    )
+    labels = models.ManyToManyField(Label, through=Labelling, related_name="messages")
 
     has_labels = models.BooleanField(default=False)  # maintained via db triggers
 
@@ -341,7 +338,7 @@ class Message(models.Model):
 
     created_on = models.DateTimeField()
 
-    modified_on = models.DateTimeField(null=True, help_text="When message was last modified", default=now)
+    modified_on = models.DateTimeField(null=True, default=now)
 
     is_handled = models.BooleanField(default=False)
 
@@ -349,8 +346,10 @@ class Message(models.Model):
 
     case = models.ForeignKey("cases.Case", null=True, related_name="incoming_messages", on_delete=models.PROTECT)
 
-    locked_on = models.DateTimeField(null=True, help_text="Last action taken on this message")
+    # when this message was last locked by a user
+    locked_on = models.DateTimeField(null=True)
 
+    # which user locked it
     locked_by = models.ForeignKey(User, null=True, related_name="actioned_messages", on_delete=models.PROTECT)
 
     def __init__(self, *args, **kwargs):
@@ -697,14 +696,12 @@ class Outgoing(models.Model):
     CASE_REPLY = "C"
     FORWARD = "F"
 
-    ACTIVITY_CHOICES = ((BULK_REPLY, _("Bulk Reply")), (CASE_REPLY, "Case Reply"), (FORWARD, _("Forward")))
+    ACTIVITY_CHOICES = ((BULK_REPLY, "Bulk Reply"), (CASE_REPLY, "Case Reply"), (FORWARD, "Forward"))
     REPLY_ACTIVITIES = (BULK_REPLY, CASE_REPLY)
 
     TIMELINE_TYPE = "O"
 
-    org = models.ForeignKey(
-        Org, verbose_name=_("Organization"), related_name="outgoing_messages", on_delete=models.PROTECT
-    )
+    org = models.ForeignKey(Org, related_name="outgoing_messages", on_delete=models.PROTECT)
 
     partner = models.ForeignKey("cases.Partner", null=True, related_name="outgoing_messages", on_delete=models.PROTECT)
 
@@ -712,7 +709,7 @@ class Outgoing(models.Model):
 
     text = models.TextField(max_length=800)
 
-    backend_broadcast_id = models.IntegerField(null=True, help_text=_("Broadcast id from the backend"))
+    backend_broadcast_id = models.IntegerField(null=True)
 
     contact = models.ForeignKey(
         Contact, null=True, related_name="outgoing_messages", on_delete=models.PROTECT

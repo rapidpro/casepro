@@ -17,7 +17,6 @@ from django.core.files.temp import NamedTemporaryFile
 from django.db import models
 from django.http import HttpResponse
 from django.urls import reverse
-from django.utils.translation import ugettext_lazy as _
 
 from . import json_encode
 from .email import send_email
@@ -28,7 +27,7 @@ class BaseExport(models.Model):
     Base class for exports
     """
 
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="%(class)ss", on_delete=models.PROTECT)
+    org = models.ForeignKey(Org, related_name="%(class)ss", on_delete=models.PROTECT)
 
     filename = models.CharField(max_length=512)
 
