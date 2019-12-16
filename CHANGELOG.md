@@ -1,3 +1,7 @@
+v1.1.23
+----------
+ * Migration to backfill new fields on msgs_message_labels
+
 v1.1.22
 ----------
  * Add message fields to labelling m2m
