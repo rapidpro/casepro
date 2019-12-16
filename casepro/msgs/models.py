@@ -8,7 +8,7 @@ from django_redis import get_redis_connection
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import models
-from django.db.models import Q
+from django.db.models import Index, Q
 from django.utils.timesince import timesince
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
@@ -297,11 +297,11 @@ class Labelling(models.Model):
 
     message = models.ForeignKey("msgs.Message", on_delete=models.CASCADE)
 
-    message_is_archived = models.BooleanField(null=True)
+    message_is_archived = models.BooleanField()
 
-    message_is_flagged = models.BooleanField(null=True)
+    message_is_flagged = models.BooleanField()
 
-    message_created_on = models.DateTimeField(null=True)
+    message_created_on = models.DateTimeField()
 
     @classmethod
     def create(cls, label, message):
@@ -316,6 +316,26 @@ class Labelling(models.Model):
     class Meta:
         db_table = "msgs_message_labels"
         unique_together = ("message", "label")
+        indexes = (
+            Index(
+                name="labelling_inbox", fields=("label", "-message_created_on"), condition=Q(message_is_archived=False)
+            ),
+            Index(
+                name="labelling_archived",
+                fields=("label", "-message_created_on"),
+                condition=Q(message_is_archived=True),
+            ),
+            Index(
+                name="labelling_flagged",
+                fields=("label", "-message_created_on"),
+                condition=Q(message_is_archived=False, message_is_flagged=True),
+            ),
+            Index(
+                name="labelling_flagged_w_archived",
+                fields=("label", "-message_created_on"),
+                condition=Q(message_is_flagged=True),
+            ),
+        )
 
 
 class Message(models.Model):
