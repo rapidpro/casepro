@@ -1372,6 +1372,42 @@ class MessageCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json["results"][0]["id"], 105)
         self.assertEqual(response.json["results"][1]["id"], 103)
 
+    def test_search_paging(self):
+        url = reverse("msgs.message_search")
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        for m in range(101):
+            self.create_message(self.unicef, 101 + m, self.bob, f"Message #{m}", [self.aids], is_handled=True)
+
+        # request first page of inbox (i.e. labelled) messages
+        t0 = now()
+        response = self.url_get(
+            "unicef", url, {"folder": "inbox", "text": "", "page": 1, "after": "", "before": format_iso8601(t0)}
+        )
+        self.assertEqual(len(response.json["results"]), 50)
+        self.assertEqual(response.json["results"][0]["id"], 201)
+        self.assertEqual(response.json["results"][49]["id"], 152)
+        self.assertTrue(response.json["has_more"])
+
+        # and second page...
+        response = self.url_get(
+            "unicef", url, {"folder": "inbox", "text": "", "page": 2, "after": "", "before": format_iso8601(t0)}
+        )
+        self.assertEqual(len(response.json["results"]), 50)
+        self.assertEqual(response.json["results"][0]["id"], 151)
+        self.assertEqual(response.json["results"][49]["id"], 102)
+        self.assertTrue(response.json["has_more"])
+
+        # and last page...
+        response = self.url_get(
+            "unicef", url, {"folder": "inbox", "text": "", "page": 3, "after": "", "before": format_iso8601(t0)}
+        )
+        self.assertEqual(len(response.json["results"]), 1)
+        self.assertEqual(response.json["results"][0]["id"], 101)
+        self.assertFalse(response.json["has_more"])
+
     def test_get_lock(self):
         msg = self.create_message(self.unicef, 101, self.ann, "Normal", [self.aids, self.pregnancy])
 

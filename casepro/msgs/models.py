@@ -405,7 +405,7 @@ class Message(models.Model):
         return get_redis_connection().lock(MESSAGE_LOCK_KEY % (org.pk, backend_id), timeout=60)
 
     @classmethod
-    def search(cls, org, user, search, modified_after=None):
+    def search(cls, org, user, search, modified_after=None, all=False):
         """
         Search for messages
         """
@@ -422,55 +422,68 @@ class Message(models.Model):
 
         assert folder != MessageFolder.unlabelled or is_admin, "non-admin access to unlabelled messages"
 
-        # only show non-deleted handled messages
-        msg_filtering = {"is_active": True, "is_handled": True}
+        # track what we need to filter on by where is can be found in the database
+        msg_filtering = {}
+        lbl_filtering = {}
 
         # if this is a refresh we want everything with new actions and locks
         if modified_after:
             msg_filtering["modified_on__gt"] = modified_after
         else:
             if folder == MessageFolder.inbox or folder == MessageFolder.unlabelled:
-                msg_filtering["is_archived"] = False
+                lbl_filtering["is_archived"] = False
             elif folder == MessageFolder.flagged:
-                msg_filtering["is_flagged"] = True
-                msg_filtering["is_archived"] = False
+                lbl_filtering["is_flagged"] = True
+                lbl_filtering["is_archived"] = False
             elif folder == MessageFolder.flagged_with_archived:
-                msg_filtering["is_flagged"] = True
+                lbl_filtering["is_flagged"] = True
             elif folder == MessageFolder.archived:
-                msg_filtering["is_archived"] = True
+                lbl_filtering["is_archived"] = True
 
         if text:
             msg_filtering["text__icontains"] = text
         if contact_id:
             msg_filtering["contact__id"] = contact_id
         if after and not modified_after:
-            msg_filtering["created_on__gt"] = after
+            lbl_filtering["created_on__gt"] = after
         if before:
-            msg_filtering["created_on__lt"] = before
+            lbl_filtering["created_on__lt"] = before
 
-        msgs = org.incoming_messages.order_by("-created_on")
+        # only show non-deleted handled messages
+        msgs = org.incoming_messages.filter(is_active=True, is_handled=True).order_by("-created_on")
 
         # handle views that don't require filtering by any labels
         if folder == MessageFolder.unlabelled:
-            return msgs.filter(type=Message.TYPE_INBOX, has_labels=False).filter(**msg_filtering)
+            return msgs.filter(type=Message.TYPE_INBOX, has_labels=False).filter(**msg_filtering, **lbl_filtering)
         if all_label_access and not label_id:
             if folder == MessageFolder.inbox:
-                return msgs.filter(has_labels=True).filter(**msg_filtering)
+                return msgs.filter(has_labels=True).filter(**msg_filtering, **lbl_filtering)
             else:
-                return msgs.filter(**msg_filtering)
+                return msgs.filter(**msg_filtering, **lbl_filtering)
 
+        # we either want messages with a specific label or any of the labels this user has access to
         labels = Label.get_all(org, user)
-
         if label_id:
             labels = labels.filter(id=label_id)
-        else:
-            # if not filtering by a single label, need distinct to avoid duplicates
-            msgs = msgs.distinct()
+
+        # if we're only filtering on things on the labelling table..
+        if not msg_filtering and not all:
+            lbl_filtering = {f"message_{k}": v for k, v in lbl_filtering.items()}
+            message_ids = set()
+
+            for label in labels:
+                message_ids.update(
+                    Labelling.objects.filter(label=label, **lbl_filtering)
+                    .order_by("-message_created_on")
+                    .values_list("message_id", flat=True)[:1000]
+                )
+
+            return Message.objects.filter(id__in=message_ids, is_handled=True).order_by("-created_on")
 
         msg_filtering["has_labels"] = True
         msgs = msgs.filter(labels__in=list(labels))
 
-        return msgs.filter(**msg_filtering)
+        return msgs.filter(**msg_filtering, **lbl_filtering)
 
     def get_history(self):
         """
@@ -920,7 +933,7 @@ class MessageExport(BaseSearchExport):
         all_fields = base_fields + [f.label for f in contact_fields]
 
         # load all messages to be exported
-        items = Message.search(self.org, self.created_by, search).prefetch_related(
+        items = Message.search(self.org, self.created_by, search, all=True).prefetch_related(
             "contact", "labels", "case__assignee", "case__user_assignee"
         )
 
