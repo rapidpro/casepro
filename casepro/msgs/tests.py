@@ -19,6 +19,7 @@ from casepro.test import BaseCasesTest
 from .models import (
     FAQ,
     Label,
+    Labelling,
     Message,
     MessageAction,
     MessageExport,
@@ -870,6 +871,12 @@ class MessageTest(BaseCasesTest):
         msg1.refresh_from_db()
         msg2.refresh_from_db()
 
+        # check message fields have been coped to labelling m2m
+        lbl1 = Labelling.objects.get(message=msg1, label=self.aids)
+        self.assertFalse(lbl1.message_is_archived)
+        self.assertFalse(lbl1.message_is_flagged)
+        self.assertEqual(msg1.created_on, lbl1.message_created_on)
+
         self.assertTrue(msg1.has_labels)
         self.assertEqual(get_label_counts(), {"aids.inbox": 2, "aids.archived": 0, "tea.inbox": 0, "tea.archived": 0})
 
@@ -884,6 +891,13 @@ class MessageTest(BaseCasesTest):
 
         self.assertTrue(msg1.has_labels)
         self.assertEqual(get_label_counts(), {"aids.inbox": 1, "aids.archived": 1, "tea.inbox": 0, "tea.archived": 1})
+
+        lbl1 = Labelling.objects.get(message=msg1, label=self.aids)
+        lbl2 = Labelling.objects.get(message=msg1, label=self.tea)
+        self.assertTrue(lbl1.message_is_archived)
+        self.assertTrue(lbl2.message_is_archived)
+        self.assertFalse(lbl1.message_is_flagged)
+        self.assertFalse(lbl2.message_is_flagged)
 
         msg1.unlabel(self.aids)
         msg1.refresh_from_db()
@@ -906,6 +920,16 @@ class MessageTest(BaseCasesTest):
         squash_counts()
 
         self.assertEqual(get_label_counts(), {"aids.inbox": 1, "aids.archived": 1, "tea.inbox": 0, "tea.archived": 1})
+
+        msg1.is_flagged = True
+        msg1.save()
+
+        lbl1 = Labelling.objects.get(message=msg1, label=self.aids)
+        lbl2 = Labelling.objects.get(message=msg1, label=self.tea)
+        self.assertTrue(lbl1.message_is_archived)
+        self.assertTrue(lbl2.message_is_archived)
+        self.assertTrue(lbl1.message_is_flagged)
+        self.assertTrue(lbl2.message_is_flagged)
 
     def test_save(self):
         # start with no labels or contacts
