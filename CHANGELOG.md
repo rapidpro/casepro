@@ -1,3 +1,7 @@
+v1.1.25
+----------
+ * Rework message searching to use new fields on labelling
+
 v1.1.24
 ----------
  * Make message fields on labelling m2m no-null and add indexes
