@@ -1362,6 +1362,16 @@ class MessageCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json["results"][1]["id"], 105)
         self.assertEqual(response.json["results"][1]["flagged"], True)
 
+        # the message we just flagged is archived but is included if archived is true
+        response = self.url_get(
+            "unicef",
+            url,
+            {"folder": "flagged", "archived": True, "text": "", "page": 1, "after": "", "before": format_iso8601(t2)},
+        )
+        self.assertEqual(len(response.json["results"]), 2)
+        self.assertEqual(response.json["results"][0]["id"], 105)
+        self.assertEqual(response.json["results"][1]["id"], 103)
+
     def test_get_lock(self):
         msg = self.create_message(self.unicef, 101, self.ann, "Normal", [self.aids, self.pregnancy])
 
