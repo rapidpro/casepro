@@ -1,3 +1,9 @@
+v1.1.21
+----------
+ * Simplify Message.search
+ * Add pre/post commit hooks
+ * Add management command to create test database
+
 v1.1.20
 ----------
  * Switch squashing to use is_squashed instead of redis key
