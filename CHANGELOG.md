@@ -1,3 +1,7 @@
+v1.1.24
+----------
+ * Make message fields on labelling m2m no-null and add indexes
+
 v1.1.23
 ----------
  * Migration to backfill new fields on msgs_message_labels
