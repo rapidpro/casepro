@@ -1,3 +1,7 @@
+v1.1.22
+----------
+ * Add message fields to labelling m2m
+
 v1.1.21
 ----------
  * Simplify Message.search
