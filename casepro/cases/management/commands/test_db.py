@@ -212,7 +212,7 @@ class Command(BaseCommand):
                         )
 
                         for label in msg._labels:
-                            labelling_batch.append(Labelling(message=msg, label=label))
+                            labelling_batch.append(Labelling.create(label, msg))
                             count_batch.append(
                                 DailyCount(
                                     day=datetime_to_date(msg.created_on, org),
