@@ -155,9 +155,9 @@ class LabelCRUDLTest(BaseCasesTest):
             label.get_tests(),
             [
                 ContainsTest(["ebola", "fever"], Quantifier.ANY),
+                WordCountTest(2),
                 GroupsTest([self.reporters], Quantifier.ANY),
                 FieldTest("state", ["Kigali", "Lusaka"]),
-                WordCountTest(2),
             ],
         )
         self.assertEqual(label.is_synced, False)
@@ -211,9 +211,9 @@ class LabelCRUDLTest(BaseCasesTest):
             self.pregnancy.get_tests(),
             [
                 ContainsTest(["pregnancy", "maternity"], Quantifier.ANY),
+                WordCountTest(2),
                 GroupsTest([self.males], Quantifier.ANY),
                 FieldTest("age", ["18", "19", "20"]),
-                WordCountTest(2),
             ],
         )
         self.assertEqual(self.pregnancy.is_synced, True)
@@ -245,7 +245,7 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(self.unicef.labels.count(), 3)
         self.assertEqual(self.unicef.rules.count(), 2)
 
-        # submitting with no keywords means should mean no rule even if other fields are set
+        # can have rules even when no keywords specified
         response = self.url_post(
             "unicef",
             url,
@@ -264,11 +264,15 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 302)
 
         self.pregnancy.refresh_from_db()
-        self.assertEqual(self.pregnancy.rule, None)
-        self.assertEqual(self.pregnancy.get_tests(), [])
+        self.pregnancy.rule.refresh_from_db()
+        self.assertEqual(
+            self.pregnancy.get_tests(),
+            [GroupsTest([self.males], Quantifier.ANY), FieldTest("age", ["18", "19", "20"])],
+        )
+        self.assertEqual(self.pregnancy.is_synced, True)
 
         self.assertEqual(self.unicef.labels.count(), 3)
-        self.assertEqual(self.unicef.rules.count(), 2)
+        self.assertEqual(self.unicef.rules.count(), 3)
 
     def test_read(self):
         url = reverse("msgs.label_read", args=[self.pregnancy.pk])
