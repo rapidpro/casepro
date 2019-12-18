@@ -1,3 +1,7 @@
+v1.1.26
+----------
+ * Allow rules without keywords
+
 v1.1.25
 ----------
  * Rework message searching to use new fields on labelling
