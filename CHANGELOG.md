@@ -1,3 +1,7 @@
+v1.1.27
+----------
+ * Render label rule tests on read page
+
 v1.1.26
 ----------
  * Allow rules without keywords
