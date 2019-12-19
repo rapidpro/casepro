@@ -118,6 +118,9 @@ class LabelCRUDL(SmartCRUDL):
 
             # angular app requires context data in JSON format
             context["context_data_json"] = json_encode({"label": label_json})
+
+            context["rule_tests"] = self.object.rule.get_tests_description() if self.object.rule else ""
+
             return context
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
