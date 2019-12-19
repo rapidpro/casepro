@@ -19,6 +19,7 @@ from .models import (
     Test,
     WordCountTest,
 )
+from .templatetags.rules import render_tests
 
 
 class TestsTest(BaseCasesTest):
@@ -131,6 +132,47 @@ class TestsTest(BaseCasesTest):
         self.assertFalse(ContainsTest.is_valid_keyword("-kit"))  # can't start with a dash
         self.assertFalse(ContainsTest.is_valid_keyword("kat "))  # can't end with a space
         self.assertFalse(ContainsTest.is_valid_keyword("kat-"))  # can't end with a dash
+
+
+class RulesTemplateTagsTest(BaseCasesTest):
+    def setUp(self):
+        super(RulesTemplateTagsTest, self).setUp()
+
+        self.context = DeserializationContext(self.unicef)
+
+    def test_render_contains(self):
+        # single keyword
+        test = Test.from_json({"type": "contains", "keywords": ["blue"], "quantifier": "all"}, self.context)
+        rule = Rule.create(self.unicef, [test], [])
+        self.assertEqual('message contains <i>"blue"</i>', render_tests(rule))
+
+        # multiple keywords
+        test = Test.from_json({"type": "contains", "keywords": ["RED", "Blue"], "quantifier": "any"}, self.context)
+        rule = Rule.create(self.unicef, [test], [])
+        self.assertEqual('message contains any of <i>"red"</i>, <i>"blue"</i>', render_tests(rule))
+
+    def test_render_word_count(self):
+        test = Test.from_json({"type": "words", "minimum": 2}, self.context)
+        rule = Rule.create(self.unicef, [test], [])
+        self.assertEqual("message has at least 2 words", render_tests(rule))
+
+    def test_render_group(self):
+        # single group
+        test = Test.from_json({"type": "groups", "groups": [self.reporters.pk], "quantifier": "any"}, self.context)
+        rule = Rule.create(self.unicef, [test], [])
+        self.assertEqual("contact belongs to <i>Reporters</i>", render_tests(rule))
+
+        # multiple groups
+        test = Test.from_json(
+            {"type": "groups", "groups": [self.females.pk, self.reporters.pk], "quantifier": "any"}, self.context
+        )
+        rule = Rule.create(self.unicef, [test], [])
+        self.assertEqual("contact belongs to any of <i>Females</i>, <i>Reporters</i>", render_tests(rule))
+
+    def test_render_field(self):
+        test = Test.from_json({"type": "field", "key": "city", "values": ["Kigali"]}, self.context)
+        rule = Rule.create(self.unicef, [test], [])
+        self.assertEqual("contact <i>city</i> is equal to <i>kigali</i>", render_tests(rule))
 
 
 class ActionsTest(BaseCasesTest):
