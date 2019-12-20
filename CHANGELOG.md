@@ -1,3 +1,8 @@
+v1.1.28
+----------
+ * Add link to rules list page on org summary
+ * Improve rules list page
+
 v1.1.27
 ----------
  * Render label rule tests on read page
