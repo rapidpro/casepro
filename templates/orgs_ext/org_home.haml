@@ -41,7 +41,9 @@
               %li
                 Number of closed cases: <strong>{{ summary.cases_closed | intcomma }}</strong>
               %li
-                Labelling rules: <strong>{{ summary.rules | intcomma }}</strong> (<a href="{% url 'rules.rule_list' %}">view</a>)
+                Labelling rules: <strong>{{ summary.rules | intcomma }}</strong>
+                - if request.user.is_superuser or org_perms.rules.rule_list
+                  (<a href="{% url 'rules.rule_list' %}">view</a>)
           .col-md-8
             #chart-replies-by-month.chart
         %hr
