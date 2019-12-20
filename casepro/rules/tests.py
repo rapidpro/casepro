@@ -19,7 +19,7 @@ from .models import (
     Test,
     WordCountTest,
 )
-from .templatetags.rules import render_tests
+from .templatetags.rules import render_actions, render_tests
 
 
 class TestsTest(BaseCasesTest):
@@ -140,7 +140,7 @@ class RulesTemplateTagsTest(BaseCasesTest):
 
         self.context = DeserializationContext(self.unicef)
 
-    def test_render_contains(self):
+    def test_render_contains_test(self):
         # single keyword
         test = Test.from_json({"type": "contains", "keywords": ["blue"], "quantifier": "all"}, self.context)
         rule = Rule.create(self.unicef, [test], [])
@@ -151,12 +151,12 @@ class RulesTemplateTagsTest(BaseCasesTest):
         rule = Rule.create(self.unicef, [test], [])
         self.assertEqual('message contains any of <i>"red"</i>, <i>"blue"</i>', render_tests(rule))
 
-    def test_render_word_count(self):
+    def test_render_word_count_test(self):
         test = Test.from_json({"type": "words", "minimum": 2}, self.context)
         rule = Rule.create(self.unicef, [test], [])
         self.assertEqual("message has at least 2 words", render_tests(rule))
 
-    def test_render_group(self):
+    def test_render_group_test(self):
         # single group
         test = Test.from_json({"type": "groups", "groups": [self.reporters.pk], "quantifier": "any"}, self.context)
         rule = Rule.create(self.unicef, [test], [])
@@ -169,10 +169,25 @@ class RulesTemplateTagsTest(BaseCasesTest):
         rule = Rule.create(self.unicef, [test], [])
         self.assertEqual("contact belongs to any of <i>Females</i>, <i>Reporters</i>", render_tests(rule))
 
-    def test_render_field(self):
+    def test_render_field_test(self):
         test = Test.from_json({"type": "field", "key": "city", "values": ["Kigali"]}, self.context)
         rule = Rule.create(self.unicef, [test], [])
         self.assertEqual("contact <i>city</i> is equal to <i>kigali</i>", render_tests(rule))
+
+    def test_render_label_action(self):
+        action = Action.from_json({"type": "label", "label": self.aids.pk}, self.context)
+        rule = Rule.create(self.unicef, [], [action])
+        self.assertEqual('apply label <span class="label label-success">AIDS</span>', render_actions(rule))
+
+    def test_render_flag_action(self):
+        action = Action.from_json({"type": "flag"}, self.context)
+        rule = Rule.create(self.unicef, [], [action])
+        self.assertEqual("flag message", render_actions(rule))
+
+    def test_render_archive_action(self):
+        action = Action.from_json({"type": "archive"}, self.context)
+        rule = Rule.create(self.unicef, [], [action])
+        self.assertEqual("archive message", render_actions(rule))
 
 
 class ActionsTest(BaseCasesTest):

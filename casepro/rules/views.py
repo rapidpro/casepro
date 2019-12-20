@@ -16,10 +16,4 @@ class RuleCRUDL(SmartCRUDL):
         fields = ("tests", "actions")
 
         def get_queryset(self, **kwargs):
-            return self.model.objects.filter(org=self.request.org).order_by("pk")
-
-        def get_tests(self, obj):
-            return obj.get_tests_description()
-
-        def get_actions(self, obj):
-            return obj.get_actions_description()
+            return self.model.objects.filter(org=self.request.org).order_by("id")
