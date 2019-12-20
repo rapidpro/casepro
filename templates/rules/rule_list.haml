@@ -1,0 +1,20 @@
+- extends "smartmin/list.html"
+- load smartmin i18n rules
+
+- block table
+  %table.list-table.table.table-bordered.table-striped(cellspacing="0")
+    %thead
+      %tr
+        <th class="header">Tests</th>
+        <th class="header">Actions</th>
+    %tbody
+      - for obj in object_list
+        <tr class="{% cycle 'row2' 'row1' %}">
+          <td>{{ obj|render_tests }}</td>
+          <td>{{ obj|render_actions }}</td>
+        </tr>
+        {% empty %}
+        <tr class="empty_list">
+          <td></td>
+          <td></td>
+        </tr>
