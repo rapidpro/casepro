@@ -40,6 +40,8 @@
                 Number of open cases: <strong>{{ summary.cases_open | intcomma }}</strong>
               %li
                 Number of closed cases: <strong>{{ summary.cases_closed | intcomma }}</strong>
+              %li
+                Labelling rules: <strong>{{ summary.rules | intcomma }}</strong> (<a href="{% url 'rules.rule_list' %}">view</a>)
           .col-md-8
             #chart-replies-by-month.chart
         %hr
