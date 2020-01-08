@@ -516,6 +516,78 @@ class ChartsTest(BaseStatsTest):
                 },
             )
 
+    def test_cases_charts(self):
+        opened_url = reverse("statistics.cases_opened_chart")
+        closed_url = reverse("statistics.cases_closed_chart")
+
+        self.assertLoginRedirect(self.url_get("unicef", opened_url), opened_url)
+        self.assertLoginRedirect(self.url_get("unicef", closed_url), closed_url)
+
+        tz = pytz.timezone("Africa/Kampala")
+        d1 = date(2020, 1, 1)
+        d2 = date(2020, 3, 15)
+
+        # Jan 1st
+        with patch.object(timezone, "now", return_value=self.anytime_on_day(d1, tz)):
+            [msg] = self.new_messages(d1, 1)
+            c = Case.get_or_open(self.unicef, self.user1, msg, "summary", self.moh)
+            c.close(self.user1)
+
+        # Mar 15th
+        with patch.object(timezone, "now", return_value=self.anytime_on_day(d2, tz)):
+            [msg] = self.new_messages(d2, 1)
+            Case.get_or_open(self.unicef, self.user1, msg, "summary", self.moh)
+
+        self.login(self.user3)
+
+        # simulate making requests in April
+        with patch.object(timezone, "now", return_value=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC)):
+            response = self.url_get("unicef", opened_url)
+
+            self.assertEqual(
+                response.json,
+                {
+                    "categories": [
+                        "May",
+                        "June",
+                        "July",
+                        "August",
+                        "September",
+                        "October",
+                        "November",
+                        "December",
+                        "January",
+                        "February",
+                        "March",
+                        "April",
+                    ],
+                    "series": [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0],
+                },
+            )
+
+            response = self.url_get("unicef", closed_url)
+
+            self.assertEqual(
+                response.json,
+                {
+                    "categories": [
+                        "May",
+                        "June",
+                        "July",
+                        "August",
+                        "September",
+                        "October",
+                        "November",
+                        "December",
+                        "January",
+                        "February",
+                        "March",
+                        "April",
+                    ],
+                    "series": [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                },
+            )
+
     def test_most_used_labels_chart(self):
         url = reverse("statistics.labels_pie_chart")
 
