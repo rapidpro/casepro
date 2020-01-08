@@ -18,7 +18,6 @@ smartmin
 boto
 celery
 colorama
--e git+https://github.com/nyaruka/confmodel.git@python3#egg=confmodel
 gunicorn
 iso-639
 markdown

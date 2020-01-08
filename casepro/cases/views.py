@@ -26,7 +26,6 @@ from django.views.generic import View
 
 from casepro.contacts.models import Contact, Field
 from casepro.msgs.models import Label, Message, MessageFolder, OutgoingFolder
-from casepro.pods import registry as pod_registry
 from casepro.statistics.models import DailyCount, DailySecondTotalCount
 from casepro.utils import (
     JSONEncoder,
@@ -103,8 +102,6 @@ class CaseCRUDL(SmartCRUDL):
             context["can_update"] = can_update
             context["alert"] = self.request.GET.get("alert", None)
             context["case_id"] = case.id
-            context["pods"] = pod_registry.pods
-            context["pod_types"] = pod_registry.pod_types
 
             return context
 
