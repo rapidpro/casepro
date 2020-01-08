@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from importlib import reload
 from unittest.mock import patch
 
 import pytz
@@ -7,7 +6,7 @@ from temba_client.utils import format_iso8601
 
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
-from django.test.utils import modify_settings, override_settings
+from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -15,8 +14,6 @@ from casepro.contacts.models import Contact
 from casepro.msgs.models import Label, Message, Outgoing
 from casepro.msgs.tasks import handle_messages
 from casepro.orgs_ext.models import Flow
-from casepro.pods import registry as pod_registry
-from casepro.pods.tests.utils import DummyPodPlugin
 from casepro.profiles.models import ROLE_ANALYST, ROLE_MANAGER, Notification
 from casepro.test import BaseCasesTest
 from casepro.utils import datetime_to_microseconds, microseconds_to_datetime
@@ -496,13 +493,9 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(case.access_level(self.user4), AccessLevel.none)  # user from different org
 
 
-@modify_settings(INSTALLED_APPS={"append": "casepro.pods.tests.utils.DummyPodPlugin"})
-@override_settings(PODS=[{"label": "dummy_pod", "title": "FooPod"}])
 class CaseCRUDLTest(BaseCasesTest):
     def setUp(self):
         super(CaseCRUDLTest, self).setUp()
-
-        reload(pod_registry)
 
         self.ann = self.create_contact(
             self.unicef, "C-001", "Ann", fields={"age": "34"}, groups=[self.females, self.reporters]
@@ -640,18 +633,6 @@ class CaseCRUDLTest(BaseCasesTest):
 
         response = self.url_get("unicef", url)
         self.assertEqual(response.status_code, 200)
-
-        # check testing pod has been included
-        self.assertContains(response, "FooPod")
-        self.assertContains(response, DummyPodPlugin.controller)
-        self.assertContains(response, DummyPodPlugin.directive)
-
-        # along with its resources
-        for script in DummyPodPlugin.scripts:
-            self.assertContains(response, script)
-
-        for script in DummyPodPlugin.styles:
-            self.assertContains(response, script)
 
     def test_note(self):
         url = reverse("cases.case_note", args=[self.case.pk])
@@ -1509,13 +1490,13 @@ class PartnerCRUDLTest(BaseCasesTest):
                         "name": "MOH",
                         "restricted": True,
                         "replies": {
-                            "average_referral_response_time_this_month": u"0\xa0minutes",
+                            "average_referral_response_time_this_month": "0\xa0minutes",
                             "last_month": 0,
                             "this_month": 0,
                             "total": 0,
                         },
                         "cases": {
-                            "average_closed_this_month": u"0\xa0minutes",
+                            "average_closed_this_month": "0\xa0minutes",
                             "opened_this_month": 0,
                             "closed_this_month": 0,
                             "total": 0,
@@ -1526,13 +1507,13 @@ class PartnerCRUDLTest(BaseCasesTest):
                         "name": "WHO",
                         "restricted": True,
                         "replies": {
-                            "average_referral_response_time_this_month": u"0\xa0minutes",
+                            "average_referral_response_time_this_month": "0\xa0minutes",
                             "last_month": 0,
                             "this_month": 0,
                             "total": 0,
                         },
                         "cases": {
-                            "average_closed_this_month": u"0\xa0minutes",
+                            "average_closed_this_month": "0\xa0minutes",
                             "opened_this_month": 0,
                             "closed_this_month": 0,
                             "total": 0,
