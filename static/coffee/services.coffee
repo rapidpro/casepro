@@ -569,6 +569,18 @@ services.factory('StatisticsService', ['$http', '$httpParamSerializer', ($http, 
       return $http.get('/stats/labels_pie_chart/').then((response) -> response.data)
 
     #----------------------------------------------------------------------------
+    # Fetches data for cases opened by month chart
+    #----------------------------------------------------------------------------
+    casesOpenedChart: () ->
+      return $http.get('/stats/cases_opened_chart/').then((response) -> response.data)
+
+    #----------------------------------------------------------------------------
+    # Fetches data for cases opened by month chart
+    #----------------------------------------------------------------------------
+    casesClosedChart: () ->
+      return $http.get('/stats/cases_closed_chart/').then((response) -> response.data)
+
+    #----------------------------------------------------------------------------
     # Initiates a daily count export
     #----------------------------------------------------------------------------
     dailyCountExport: (type, after, before) ->

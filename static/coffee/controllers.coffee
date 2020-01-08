@@ -619,6 +619,26 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
           series: [{name: "Messages", data: chart.series}],
         })
       )
+      StatisticsService.casesOpenedChart().then((chart) ->
+        Highcharts.chart('chart-cases-opened-by-month', {
+          chart: {type: 'column'},
+          title: {text: null},
+          xAxis: {categories: chart.categories},
+          yAxis: {min: 0, title: {text: 'Cases Opened'}},
+          legend: {enabled: false},
+          series: [{name: 'Cases', data: chart.series}],
+        })
+      )
+      StatisticsService.casesClosedChart().then((chart) ->
+        Highcharts.chart('chart-cases-closed-by-month', {
+          chart: {type: 'column'},
+          title: {text: null},
+          xAxis: {categories: chart.categories},
+          yAxis: {min: 0, title: {text: 'Cases Closed'}},
+          legend: {enabled: false},
+          series: [{name: 'Cases', data: chart.series}],
+        })
+      )
     else if tab == 'partners'
       PartnerService.fetchAll(true).then((partners) ->
         $scope.partners = partners

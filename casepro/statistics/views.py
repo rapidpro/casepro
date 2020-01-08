@@ -136,6 +136,24 @@ class RepliesPerMonthChart(BasePerMonthChart):
             return DailyCount.get_by_org([self.request.org], DailyCount.TYPE_REPLIES, since).month_totals()
 
 
+class CasesOpenedPerMonthChart(BasePerMonthChart):
+    """
+    Chart of cases opened per month for the current org
+    """
+
+    def get_month_totals(self, request, since):
+        return DailyCount.get_by_org([self.request.org], DailyCount.TYPE_CASE_OPENED, since).month_totals()
+
+
+class CasesClosedPerMonthChart(BasePerMonthChart):
+    """
+    Chart of cases closed per month for the current org
+    """
+
+    def get_month_totals(self, request, since):
+        return DailyCount.get_by_org([self.request.org], DailyCount.TYPE_CASE_CLOSED, since).month_totals()
+
+
 class MostUsedLabelsChart(BaseChart):
     """
     Pie chart of top 10 labels used in last 30 days
