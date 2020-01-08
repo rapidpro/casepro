@@ -1,3 +1,8 @@
+v1.2.0
+----------
+ * Add charts for cases opened and closed
+ * Drop pod support
+
 v1.1.28
 ----------
  * Add link to rules list page on org summary
