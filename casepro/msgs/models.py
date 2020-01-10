@@ -3,6 +3,7 @@ from enum import Enum
 
 from dash.orgs.models import Org
 from dash.utils import get_obj_cacheable
+from dateutil.relativedelta import relativedelta
 from django_redis import get_redis_connection
 
 from django.contrib.auth.models import User
@@ -353,6 +354,8 @@ class Message(models.Model):
 
     TIMELINE_TYPE = "I"
 
+    SEARCH_BY_TEXT_DAYS = 90
+
     org = models.ForeignKey(Org, related_name="incoming_messages", on_delete=models.PROTECT)
 
     # identifier of the message on the backend
@@ -442,6 +445,7 @@ class Message(models.Model):
 
         if text:
             msg_filtering["text__icontains"] = text
+            msg_filtering["created_on__gt"] = now() - relativedelta(days=cls.SEARCH_BY_TEXT_DAYS)
         if contact_id:
             msg_filtering["contact__id"] = contact_id
         if after and not modified_after:

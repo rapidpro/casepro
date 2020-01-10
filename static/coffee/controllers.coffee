@@ -304,6 +304,7 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$uibModal'
 
   $scope.advancedSearch = false
   $scope.expandedMessageId = null
+  $scope.showSearchByTextWarning = false
 
   $scope.init = () ->
     $scope.searchFields = $scope.searchFieldDefaults()
@@ -360,6 +361,8 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$uibModal'
     return MessageService.fetchNew(activeSearchRefresh, startTime, endTime, oldItemsPage)
 
   $scope.fetchOldItems = (search, startTime, page) ->
+    $scope.showSearchByTextWarning = (search.text != null and search.text != "")
+
     return MessageService.fetchOld(search, startTime, page)
 
   $scope.onExpandMessage = (message) ->
