@@ -3,6 +3,7 @@ from unittest.mock import call, patch
 
 import pytz
 from dash.orgs.models import TaskState
+from dateutil.relativedelta import relativedelta
 from temba_client.utils import format_iso8601
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -1053,6 +1054,11 @@ class MessageTest(BaseCasesTest):
             self.unicef, 111, self.ann, "Hello 11", [self.aids], is_handled=True, is_flagged=True, is_archived=True
         )
 
+        # older than 90 days
+        msg12 = self.create_message(
+            self.unicef, 112, bob, "Hello Old", is_handled=True, created_on=now() - relativedelta(days=91)
+        )
+
         # unhandled or inactive or other org
         self.create_message(self.unicef, 201, self.ann, "Unhandled", is_handled=False)
         self.create_message(self.unicef, 202, self.ann, "Deleted", is_active=False)
@@ -1082,7 +1088,7 @@ class MessageTest(BaseCasesTest):
         assert_search(self.admin, {"folder": MessageFolder.archived, "label": self.pregnancy.pk}, [msg10])
 
         # unlabelled as admin shows all non-archived unlabelled
-        assert_search(self.admin, {"folder": MessageFolder.unlabelled}, [msg3, msg2, msg1])
+        assert_search(self.admin, {"folder": MessageFolder.unlabelled}, [msg3, msg2, msg1, msg12])
 
         # inbox as user shows all non-archived with their labels
         assert_search(self.user1, {"folder": MessageFolder.inbox}, [msg8, msg7, msg6, msg5])
@@ -1112,7 +1118,8 @@ class MessageTest(BaseCasesTest):
         # by contact in the inbox
         assert_search(self.admin, {"folder": MessageFolder.inbox, "contact": bob.pk}, [msg8, msg6])
 
-        # by text
+        # by text (won't include really old message)
+        assert_search(self.admin, {"folder": MessageFolder.inbox, "text": "hello"}, [msg8, msg7, msg6, msg5])
         assert_search(self.admin, {"folder": MessageFolder.inbox, "text": "LO 5"}, [msg5])
 
     @patch("casepro.test.TestBackend.label_messages")
