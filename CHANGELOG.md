@@ -1,3 +1,7 @@
+v1.2.1
+----------
+ * Limit searching by text to the last 90 days
+
 v1.2.0
 ----------
  * Add charts for cases opened and closed
