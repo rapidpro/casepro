@@ -1,3 +1,7 @@
+v1.2.2
+----------
+ * Fix searching by text and date
+
 v1.2.1
 ----------
  * Limit searching by text to the last 90 days
