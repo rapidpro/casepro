@@ -1121,6 +1121,11 @@ class MessageTest(BaseCasesTest):
         # by text (won't include really old message)
         assert_search(self.admin, {"folder": MessageFolder.inbox, "text": "hello"}, [msg8, msg7, msg6, msg5])
         assert_search(self.admin, {"folder": MessageFolder.inbox, "text": "LO 5"}, [msg5])
+        assert_search(self.admin, {
+            "folder": MessageFolder.inbox,
+            "after": msg6.created_on,
+            "text": "hello"
+        }, [msg8, msg7])
 
     @patch("casepro.test.TestBackend.label_messages")
     @patch("casepro.test.TestBackend.unlabel_messages")
