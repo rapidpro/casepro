@@ -1,3 +1,7 @@
+v1.2.3
+----------
+ * Fix another case of filter getting duplicate keyword arguments
+
 v1.2.2
 ----------
  * Fix searching by text and date
