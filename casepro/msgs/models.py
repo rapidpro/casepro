@@ -487,7 +487,7 @@ class Message(models.Model):
         msg_filtering["has_labels"] = True
         msgs = msgs.filter(labels__in=list(labels))
 
-        return msgs.filter(**msg_filtering, **lbl_filtering)
+        return msgs.filter(**msg_filtering).filter(**lbl_filtering)
 
     def get_history(self):
         """
