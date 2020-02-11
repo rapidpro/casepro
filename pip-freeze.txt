@@ -28,7 +28,7 @@ django-redis==4.10.0
 django-rosetta==0.9.3
 django-storages==1.8
 django-timezone-field==4.0  # via rapidpro-dash
-django==2.2.8
+django==2.2.10
 djangorestframework==3.10.3
 entrypoints==0.3          # via flake8
 flake8==3.7.9
