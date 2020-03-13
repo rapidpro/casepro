@@ -1,3 +1,7 @@
+v1.2.4
+----------
+ * Bump django from 2.2.8 to 2.2.10
+
 v1.2.3
 ----------
  * Fix another case of filter getting duplicate keyword arguments
