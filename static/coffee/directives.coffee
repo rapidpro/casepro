@@ -83,28 +83,6 @@ directives.directive('phoneurn', () ->
   }
 )
 
-
-directives.directive('cpAlert', -> {
-  restrict: 'E',
-  transclude: true,
-  scope: {type: '@'},
-  templateUrl: '/sitestatic/templates/alert.html'
-})
-
-
-directives.directive('cpAlerts', -> {
-  templateUrl: '/sitestatic/templates/alerts.html',
-  scope: {alerts: '='}
-})
-
-
-#----------------------------------------------------------------------------
-# Pod directive
-#----------------------------------------------------------------------------
-directives.directive('cpPod', -> {
-  templateUrl: -> '/sitestatic/templates/pod.html'
-})
-
 #----------------------------------------------------------------------------
 # Date formatter
 #----------------------------------------------------------------------------

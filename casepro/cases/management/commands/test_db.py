@@ -1,6 +1,7 @@
 import math
 import random
 import time
+from uuid import uuid4
 
 import pytz
 from dash.orgs.models import Org
@@ -11,7 +12,7 @@ from django.core.management import BaseCommand, CommandError
 from django.utils import timezone
 
 from casepro.cases.models import Partner
-from casepro.contacts.models import Contact
+from casepro.contacts.models import Contact, Field, Group
 from casepro.msgs.models import Label, Labelling, Message
 from casepro.profiles.models import ROLE_ANALYST, ROLE_MANAGER, Profile
 from casepro.rules.models import ContainsTest, Quantifier
@@ -22,7 +23,11 @@ from casepro.statistics.tasks import squash_counts
 USER_PASSWORD = "Qwerty123"
 
 # create 10 orgs with these names
-ORG_NAMES = ("Ecuador", "Rwanda", "Croatia", "USA", "Mexico", "Zambia", "India", "Brazil", "Sudan", "Mozambique")
+ORGS = ("Ecuador", "Rwanda", "Croatia", "USA", "Mexico", "Zambia", "India", "Brazil", "Sudan", "Mozambique")
+
+GROUPS = ("U-Reporters", "Youth", "Male", "Female")
+
+FIELDS = ({"label": "Gender", "key": "gender", "value_type": "T"}, {"label": "Age", "key": "age", "value_type": "N"})
 
 # each org will have these partner orgs
 PARTNERS = (
@@ -56,7 +61,7 @@ MESSAGE_WORDS = ("lorem", "ipsum", "dolor", "sit", "amet", "consectetur", "adipi
 # We want a variety of large and small orgs so when allocating messages, we apply a bias toward the beginning
 # orgs. if there are N orgs, then the amount of content the first org will be allocated is (1/N) ^ (1/bias).
 # This sets the bias so that the first org will get ~50% of the content:
-BIASED = math.log(1.0 / len(ORG_NAMES), 0.5)
+BIASED = math.log(1.0 / len(ORGS), 0.5)
 
 
 class Command(BaseCommand):
@@ -99,12 +104,12 @@ class Command(BaseCommand):
 
         superuser = User.objects.create_superuser("root", "root@nyaruka.com", USER_PASSWORD)
 
-        orgs = self.create_orgs(superuser, ORG_NAMES, PARTNERS, USER_PASSWORD)
+        orgs = self.create_orgs(superuser, ORGS, GROUPS, FIELDS, PARTNERS, USER_PASSWORD)
         self.create_contacts(orgs, 100)
 
         return orgs
 
-    def create_orgs(self, superuser, org_names, partner_specs, password):
+    def create_orgs(self, superuser, org_names, group_names, field_specs, partner_specs, password):
         """
         Creates the orgs
         """
@@ -126,6 +131,14 @@ class Command(BaseCommand):
             Profile.create_org_user(
                 org, "Adam", f"admin{o+1}@unicef.org", password, change_password=False, must_use_faq=False
             )
+
+            for group_name in group_names:
+                Group.objects.create(org=org, uuid=str(uuid4()), name=group_name)
+
+            for field_spec in field_specs:
+                Field.objects.create(
+                    org=org, label=field_spec["label"], key=field_spec["key"], value_type=field_spec["value_type"]
+                )
 
             label_names = set()
             for partner_spec in partner_specs:
@@ -212,7 +225,7 @@ class Command(BaseCommand):
                         )
 
                         for label in msg._labels:
-                            labelling_batch.append(Labelling(message=msg, label=label))
+                            labelling_batch.append(Labelling.create(label, msg))
                             count_batch.append(
                                 DailyCount(
                                     day=datetime_to_date(msg.created_on, org),

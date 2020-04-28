@@ -1,5 +1,4 @@
 import logging
-import time
 from collections import defaultdict
 
 import iso639
@@ -119,6 +118,9 @@ class LabelCRUDL(SmartCRUDL):
 
             # angular app requires context data in JSON format
             context["context_data_json"] = json_encode({"label": label_json})
+
+            context["rule_tests"] = self.object.rule.get_tests_description() if self.object.rule else ""
+
             return context
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
@@ -177,8 +179,10 @@ class MessageSearchMixin(object):
         Collects and prepares message search parameters into JSON serializable dict
         """
         folder = MessageFolder[self.request.GET["folder"]]
+        if folder == MessageFolder.flagged and str_to_bool(self.request.GET.get("archived", "")):
+            folder = MessageFolder.flagged_with_archived
+
         label_id = self.request.GET.get("label", None)
-        include_archived = str_to_bool(self.request.GET.get("archived", ""))
         text = self.request.GET.get("text", None)
         contact_id = self.request.GET.get("contact", None)
         after = parse_iso8601(self.request.GET.get("after", None))
@@ -187,7 +191,6 @@ class MessageSearchMixin(object):
         return {
             "folder": folder,
             "label": label_id,
-            "include_archived": include_archived,  # only applies to flagged folder
             "text": text,
             "contact": contact_id,
             "after": after,
@@ -204,11 +207,17 @@ class MessageCRUDL(SmartCRUDL):
         JSON endpoint for fetching incoming messages
         """
 
+        page_size = 50
+
+        def get_messages(self, search, last_refresh=None):
+            org = self.request.org
+            user = self.request.user
+            queryset = Message.search(org, user, search, modified_after=last_refresh, all=False)
+            return queryset.prefetch_related("contact", "labels", "case__assignee", "case__user_assignee")
+
         def get_context_data(self, **kwargs):
             context = super(MessageCRUDL.Search, self).get_context_data(**kwargs)
 
-            org = self.request.org
-            user = self.request.user
             page = int(self.request.GET.get("page", 1))
             last_refresh = self.request.GET.get("last_refresh")
 
@@ -216,33 +225,18 @@ class MessageCRUDL(SmartCRUDL):
 
             # this is a refresh of new and modified messages
             if last_refresh:
-                search["last_refresh"] = last_refresh
-
-                start = time.time()
-
-                messages = Message.search(org, user, search)
-
-                time_taken = time.time() - start
-                if time_taken > 10 and "text" not in search:  # pragma: no cover
-                    logger.error(
-                        "long message query",
-                        extra={
-                            "org": org.id,
-                            "uri": self.request.build_absolute_uri(),
-                            "time_taken": int(time_taken),
-                        },
-                    )
+                messages = self.get_messages(search, last_refresh)
 
                 # don't use paging for these messages
                 context["object_list"] = list(messages)
                 context["has_more"] = False
-                return context
+            else:
+                messages = self.get_messages(search)
+                paginator = LazyPaginator(messages, per_page=self.page_size)
 
-            messages = Message.search(org, user, search)
-            paginator = LazyPaginator(messages, per_page=50)
+                context["object_list"] = paginator.page(page)
+                context["has_more"] = paginator.num_pages > page
 
-            context["object_list"] = paginator.page(page)
-            context["has_more"] = paginator.num_pages > page
             return context
 
         def render_to_response(self, context, **response_kwargs):

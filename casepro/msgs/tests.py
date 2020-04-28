@@ -3,6 +3,7 @@ from unittest.mock import call, patch
 
 import pytz
 from dash.orgs.models import TaskState
+from dateutil.relativedelta import relativedelta
 from temba_client.utils import format_iso8601
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -19,6 +20,7 @@ from casepro.test import BaseCasesTest
 from .models import (
     FAQ,
     Label,
+    Labelling,
     Message,
     MessageAction,
     MessageExport,
@@ -154,9 +156,9 @@ class LabelCRUDLTest(BaseCasesTest):
             label.get_tests(),
             [
                 ContainsTest(["ebola", "fever"], Quantifier.ANY),
+                WordCountTest(2),
                 GroupsTest([self.reporters], Quantifier.ANY),
                 FieldTest("state", ["Kigali", "Lusaka"]),
-                WordCountTest(2),
             ],
         )
         self.assertEqual(label.is_synced, False)
@@ -210,9 +212,9 @@ class LabelCRUDLTest(BaseCasesTest):
             self.pregnancy.get_tests(),
             [
                 ContainsTest(["pregnancy", "maternity"], Quantifier.ANY),
+                WordCountTest(2),
                 GroupsTest([self.males], Quantifier.ANY),
                 FieldTest("age", ["18", "19", "20"]),
-                WordCountTest(2),
             ],
         )
         self.assertEqual(self.pregnancy.is_synced, True)
@@ -244,7 +246,7 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(self.unicef.labels.count(), 3)
         self.assertEqual(self.unicef.rules.count(), 2)
 
-        # submitting with no keywords means should mean no rule even if other fields are set
+        # can have rules even when no keywords specified
         response = self.url_post(
             "unicef",
             url,
@@ -263,11 +265,15 @@ class LabelCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 302)
 
         self.pregnancy.refresh_from_db()
-        self.assertEqual(self.pregnancy.rule, None)
-        self.assertEqual(self.pregnancy.get_tests(), [])
+        self.pregnancy.rule.refresh_from_db()
+        self.assertEqual(
+            self.pregnancy.get_tests(),
+            [GroupsTest([self.males], Quantifier.ANY), FieldTest("age", ["18", "19", "20"])],
+        )
+        self.assertEqual(self.pregnancy.is_synced, True)
 
         self.assertEqual(self.unicef.labels.count(), 3)
-        self.assertEqual(self.unicef.rules.count(), 2)
+        self.assertEqual(self.unicef.rules.count(), 3)
 
     def test_read(self):
         url = reverse("msgs.label_read", args=[self.pregnancy.pk])
@@ -870,6 +876,12 @@ class MessageTest(BaseCasesTest):
         msg1.refresh_from_db()
         msg2.refresh_from_db()
 
+        # check message fields have been coped to labelling m2m
+        lbl1 = Labelling.objects.get(message=msg1, label=self.aids)
+        self.assertFalse(lbl1.message_is_archived)
+        self.assertFalse(lbl1.message_is_flagged)
+        self.assertEqual(msg1.created_on, lbl1.message_created_on)
+
         self.assertTrue(msg1.has_labels)
         self.assertEqual(get_label_counts(), {"aids.inbox": 2, "aids.archived": 0, "tea.inbox": 0, "tea.archived": 0})
 
@@ -884,6 +896,13 @@ class MessageTest(BaseCasesTest):
 
         self.assertTrue(msg1.has_labels)
         self.assertEqual(get_label_counts(), {"aids.inbox": 1, "aids.archived": 1, "tea.inbox": 0, "tea.archived": 1})
+
+        lbl1 = Labelling.objects.get(message=msg1, label=self.aids)
+        lbl2 = Labelling.objects.get(message=msg1, label=self.tea)
+        self.assertTrue(lbl1.message_is_archived)
+        self.assertTrue(lbl2.message_is_archived)
+        self.assertFalse(lbl1.message_is_flagged)
+        self.assertFalse(lbl2.message_is_flagged)
 
         msg1.unlabel(self.aids)
         msg1.refresh_from_db()
@@ -906,6 +925,16 @@ class MessageTest(BaseCasesTest):
         squash_counts()
 
         self.assertEqual(get_label_counts(), {"aids.inbox": 1, "aids.archived": 1, "tea.inbox": 0, "tea.archived": 1})
+
+        msg1.is_flagged = True
+        msg1.save()
+
+        lbl1 = Labelling.objects.get(message=msg1, label=self.aids)
+        lbl2 = Labelling.objects.get(message=msg1, label=self.tea)
+        self.assertTrue(lbl1.message_is_archived)
+        self.assertTrue(lbl2.message_is_archived)
+        self.assertTrue(lbl1.message_is_flagged)
+        self.assertTrue(lbl2.message_is_flagged)
 
     def test_save(self):
         # start with no labels or contacts
@@ -1025,6 +1054,11 @@ class MessageTest(BaseCasesTest):
             self.unicef, 111, self.ann, "Hello 11", [self.aids], is_handled=True, is_flagged=True, is_archived=True
         )
 
+        # older than 90 days
+        msg12 = self.create_message(
+            self.unicef, 112, bob, "Hello Old", is_handled=True, created_on=now() - relativedelta(days=91)
+        )
+
         # unhandled or inactive or other org
         self.create_message(self.unicef, 201, self.ann, "Unhandled", is_handled=False)
         self.create_message(self.unicef, 202, self.ann, "Deleted", is_active=False)
@@ -1044,9 +1078,7 @@ class MessageTest(BaseCasesTest):
         assert_search(self.admin, {"folder": MessageFolder.flagged}, [msg8, msg7, msg3])
 
         # flagged as admin shows all non-archived flagged
-        assert_search(
-            self.admin, {"folder": MessageFolder.flagged, "include_archived": True}, [msg11, msg8, msg7, msg3]
-        )
+        assert_search(self.admin, {"folder": MessageFolder.flagged_with_archived}, [msg11, msg8, msg7, msg3])
 
         # archived as admin shows all archived
         assert_search(self.admin, {"folder": MessageFolder.archived}, [msg11, msg10, msg9, msg4])
@@ -1056,7 +1088,7 @@ class MessageTest(BaseCasesTest):
         assert_search(self.admin, {"folder": MessageFolder.archived, "label": self.pregnancy.pk}, [msg10])
 
         # unlabelled as admin shows all non-archived unlabelled
-        assert_search(self.admin, {"folder": MessageFolder.unlabelled}, [msg3, msg2, msg1])
+        assert_search(self.admin, {"folder": MessageFolder.unlabelled}, [msg3, msg2, msg1, msg12])
 
         # inbox as user shows all non-archived with their labels
         assert_search(self.user1, {"folder": MessageFolder.inbox}, [msg8, msg7, msg6, msg5])
@@ -1079,13 +1111,28 @@ class MessageTest(BaseCasesTest):
         assert_search(self.user3, {"folder": MessageFolder.archived, "label": self.pregnancy.pk}, [])
 
         # unlabelled as user throws exception
-        self.assertRaises(ValueError, Message.search, self.unicef, self.user1, {"folder": MessageFolder.unlabelled})
+        self.assertRaises(
+            AssertionError, Message.search, self.unicef, self.user1, {"folder": MessageFolder.unlabelled}
+        )
 
         # by contact in the inbox
         assert_search(self.admin, {"folder": MessageFolder.inbox, "contact": bob.pk}, [msg8, msg6])
 
-        # by text
+        # by text (won't include really old message)
+        assert_search(self.admin, {"folder": MessageFolder.inbox, "text": "hello"}, [msg8, msg7, msg6, msg5])
         assert_search(self.admin, {"folder": MessageFolder.inbox, "text": "LO 5"}, [msg5])
+
+        # check combining text searches with other date based searching
+        assert_search(self.admin, {
+            "folder": MessageFolder.inbox,
+            "after": msg6.created_on,
+            "text": "hello"
+        }, [msg8, msg7])
+        assert_search(self.user1, {
+            "folder": MessageFolder.inbox,
+            "after": msg6.created_on,
+            "text": "hello"
+        }, [msg8, msg7])
 
     @patch("casepro.test.TestBackend.label_messages")
     @patch("casepro.test.TestBackend.unlabel_messages")
@@ -1337,6 +1384,52 @@ class MessageCRUDLTest(BaseCasesTest):
         self.assertEqual(response.json["results"][0]["id"], 210)
         self.assertEqual(response.json["results"][1]["id"], 105)
         self.assertEqual(response.json["results"][1]["flagged"], True)
+
+        # the message we just flagged is archived but is included if archived is true
+        response = self.url_get(
+            "unicef",
+            url,
+            {"folder": "flagged", "archived": True, "text": "", "page": 1, "after": "", "before": format_iso8601(t2)},
+        )
+        self.assertEqual(len(response.json["results"]), 2)
+        self.assertEqual(response.json["results"][0]["id"], 105)
+        self.assertEqual(response.json["results"][1]["id"], 103)
+
+    def test_search_paging(self):
+        url = reverse("msgs.message_search")
+
+        # log in as a non-administrator
+        self.login(self.user1)
+
+        for m in range(101):
+            self.create_message(self.unicef, 101 + m, self.bob, f"Message #{m}", [self.aids], is_handled=True)
+
+        # request first page of inbox (i.e. labelled) messages
+        t0 = now()
+        response = self.url_get(
+            "unicef", url, {"folder": "inbox", "text": "", "page": 1, "after": "", "before": format_iso8601(t0)}
+        )
+        self.assertEqual(len(response.json["results"]), 50)
+        self.assertEqual(response.json["results"][0]["id"], 201)
+        self.assertEqual(response.json["results"][49]["id"], 152)
+        self.assertTrue(response.json["has_more"])
+
+        # and second page...
+        response = self.url_get(
+            "unicef", url, {"folder": "inbox", "text": "", "page": 2, "after": "", "before": format_iso8601(t0)}
+        )
+        self.assertEqual(len(response.json["results"]), 50)
+        self.assertEqual(response.json["results"][0]["id"], 151)
+        self.assertEqual(response.json["results"][49]["id"], 102)
+        self.assertTrue(response.json["has_more"])
+
+        # and last page...
+        response = self.url_get(
+            "unicef", url, {"folder": "inbox", "text": "", "page": 3, "after": "", "before": format_iso8601(t0)}
+        )
+        self.assertEqual(len(response.json["results"]), 1)
+        self.assertEqual(response.json["results"][0]["id"], 101)
+        self.assertFalse(response.json["has_more"])
 
     def test_get_lock(self):
         msg = self.create_message(self.unicef, 101, self.ann, "Normal", [self.aids, self.pregnancy])

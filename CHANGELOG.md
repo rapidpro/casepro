@@ -1,3 +1,59 @@
+v1.2.4
+----------
+ * Bump django from 2.2.8 to 2.2.10
+
+v1.2.3
+----------
+ * Fix another case of filter getting duplicate keyword arguments
+
+v1.2.2
+----------
+ * Fix searching by text and date
+
+v1.2.1
+----------
+ * Limit searching by text to the last 90 days
+
+v1.2.0
+----------
+ * Add charts for cases opened and closed
+ * Drop pod support
+
+v1.1.28
+----------
+ * Add link to rules list page on org summary
+ * Improve rules list page
+
+v1.1.27
+----------
+ * Render label rule tests on read page
+
+v1.1.26
+----------
+ * Allow rules without keywords
+
+v1.1.25
+----------
+ * Rework message searching to use new fields on labelling
+
+v1.1.24
+----------
+ * Make message fields on labelling m2m no-null and add indexes
+
+v1.1.23
+----------
+ * Migration to backfill new fields on msgs_message_labels
+
+v1.1.22
+----------
+ * Add message fields to labelling m2m
+
+v1.1.21
+----------
+ * Simplify Message.search
+ * Add pre/post commit hooks
+ * Add management command to create test database
+
 v1.1.20
 ----------
  * Switch squashing to use is_squashed instead of redis key

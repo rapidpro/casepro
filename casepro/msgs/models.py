@@ -3,12 +3,13 @@ from enum import Enum
 
 from dash.orgs.models import Org
 from dash.utils import get_obj_cacheable
+from dateutil.relativedelta import relativedelta
 from django_redis import get_redis_connection
 
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import models
-from django.db.models import Q
+from django.db.models import Index, Q
 from django.utils.timesince import timesince
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
@@ -25,8 +26,9 @@ MESSAGE_LOCK_SECONDS = 300
 class MessageFolder(Enum):
     inbox = 1
     flagged = 2
-    archived = 3
-    unlabelled = 4
+    flagged_with_archived = 3
+    archived = 4
+    unlabelled = 5
 
 
 class OutgoingFolder(Enum):
@@ -38,7 +40,7 @@ class Label(models.Model):
     Corresponds to a message label in RapidPro. Used for determining visibility of messages to different partners.
     """
 
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="labels", on_delete=models.PROTECT)
+    org = models.ForeignKey(Org, related_name="labels", on_delete=models.PROTECT)
 
     uuid = models.CharField(max_length=36, unique=True, null=True)
 
@@ -54,7 +56,7 @@ class Label(models.Model):
         User, related_name="watched_labels", help_text="Users to be notified when label is applied to a message"
     )
 
-    is_active = models.BooleanField(default=True, help_text="Whether this label is active")
+    is_active = models.BooleanField(default=True)
 
     INBOX_COUNT_CACHE_ATTR = "_inbox_count"
     ARCHIVED_COUNT_CACHE_ATTR = "_archived_count"
@@ -292,13 +294,49 @@ class Labelling(models.Model):
     An application of a label to a message
     """
 
+    label = models.ForeignKey(Label, on_delete=models.CASCADE)
+
     message = models.ForeignKey("msgs.Message", on_delete=models.CASCADE)
 
-    label = models.ForeignKey(Label, on_delete=models.CASCADE)
+    message_is_archived = models.BooleanField()
+
+    message_is_flagged = models.BooleanField()
+
+    message_created_on = models.DateTimeField()
+
+    @classmethod
+    def create(cls, label, message):
+        return cls(
+            label=label,
+            message=message,
+            message_created_on=message.created_on,
+            message_is_flagged=message.is_flagged,
+            message_is_archived=message.is_archived,
+        )
 
     class Meta:
         db_table = "msgs_message_labels"
         unique_together = ("message", "label")
+        indexes = (
+            Index(
+                name="labelling_inbox", fields=("label", "-message_created_on"), condition=Q(message_is_archived=False)
+            ),
+            Index(
+                name="labelling_archived",
+                fields=("label", "-message_created_on"),
+                condition=Q(message_is_archived=True),
+            ),
+            Index(
+                name="labelling_flagged",
+                fields=("label", "-message_created_on"),
+                condition=Q(message_is_archived=False, message_is_flagged=True),
+            ),
+            Index(
+                name="labelling_flagged_w_archived",
+                fields=("label", "-message_created_on"),
+                condition=Q(message_is_flagged=True),
+            ),
+        )
 
 
 class Message(models.Model):
@@ -309,28 +347,27 @@ class Message(models.Model):
     TYPE_INBOX = "I"
     TYPE_FLOW = "F"
 
-    TYPE_CHOICES = ((TYPE_INBOX, _("Inbox")), (TYPE_FLOW, _("Flow")))
+    TYPE_CHOICES = ((TYPE_INBOX, "Inbox"), (TYPE_FLOW, "Flow"))
 
     SAVE_CONTACT_ATTR = "__data__contact"
     SAVE_LABELS_ATTR = "__data__labels"
 
     TIMELINE_TYPE = "I"
 
-    org = models.ForeignKey(
-        Org, verbose_name=_("Organization"), related_name="incoming_messages", on_delete=models.PROTECT
-    )
+    SEARCH_BY_TEXT_DAYS = 90
 
-    backend_id = models.IntegerField(unique=True, help_text=_("Backend identifier for this message"))
+    org = models.ForeignKey(Org, related_name="incoming_messages", on_delete=models.PROTECT)
+
+    # identifier of the message on the backend
+    backend_id = models.IntegerField(unique=True)
 
     contact = models.ForeignKey(Contact, related_name="incoming_messages", on_delete=models.PROTECT)
 
     type = models.CharField(max_length=1)
 
-    text = models.TextField(max_length=640, verbose_name=_("Text"))
+    text = models.TextField(max_length=640)
 
-    labels = models.ManyToManyField(
-        Label, through=Labelling, help_text=_("Labels assigned to this message"), related_name="messages"
-    )
+    labels = models.ManyToManyField(Label, through=Labelling, related_name="messages")
 
     has_labels = models.BooleanField(default=False)  # maintained via db triggers
 
@@ -340,7 +377,7 @@ class Message(models.Model):
 
     created_on = models.DateTimeField()
 
-    modified_on = models.DateTimeField(null=True, help_text="When message was last modified", default=now)
+    modified_on = models.DateTimeField(null=True, default=now)
 
     is_handled = models.BooleanField(default=False)
 
@@ -348,8 +385,10 @@ class Message(models.Model):
 
     case = models.ForeignKey("cases.Case", null=True, related_name="incoming_messages", on_delete=models.PROTECT)
 
-    locked_on = models.DateTimeField(null=True, help_text="Last action taken on this message")
+    # when this message was last locked by a user
+    locked_on = models.DateTimeField(null=True)
 
+    # which user locked it
     locked_by = models.ForeignKey(User, null=True, related_name="actioned_messages", on_delete=models.PROTECT)
 
     def __init__(self, *args, **kwargs):
@@ -369,82 +408,86 @@ class Message(models.Model):
         return get_redis_connection().lock(MESSAGE_LOCK_KEY % (org.pk, backend_id), timeout=60)
 
     @classmethod
-    def search(cls, org, user, search):
+    def search(cls, org, user, search, modified_after=None, all=False):
         """
         Search for messages
         """
         folder = search.get("folder")
         label_id = search.get("label")
-        include_archived = search.get("include_archived")
         text = search.get("text")
         contact_id = search.get("contact")
         after = search.get("after")
         before = search.get("before")
-        last_refresh = search.get("last_refresh")
 
-        # only show non-deleted handled messages
-        queryset = org.incoming_messages.filter(is_active=True, is_handled=True)
-        all_label_access = user.can_administer(org)
+        is_admin = user.can_administer(org)
+        partner = user.get_partner(org)
+        all_label_access = is_admin or (partner and not partner.is_restricted)
 
-        if all_label_access:
-            if folder == MessageFolder.inbox or (folder == MessageFolder.archived and label_id):
-                queryset = queryset.filter(has_labels=True)
-                if label_id:
-                    label = Label.get_all(org, user).filter(pk=label_id).first()
-                    queryset = queryset.filter(labels=label)
+        assert folder != MessageFolder.unlabelled or is_admin, "non-admin access to unlabelled messages"
 
-            elif folder == MessageFolder.unlabelled:
-                # only show inbox messages in unlabelled
-                queryset = queryset.filter(type=Message.TYPE_INBOX, has_labels=False)
-        else:
-            labels = Label.get_all(org, user)
-
-            if label_id:
-                labels = labels.filter(pk=label_id)
-            else:
-                # if not filtering by a single label, need distinct to avoid duplicates
-                queryset = queryset.distinct()
-
-            queryset = queryset.filter(has_labels=True, labels__in=list(labels))
-
-            if folder == MessageFolder.unlabelled:
-                raise ValueError("Unlabelled folder is only accessible to administrators")
+        # track what we need to filter on by where is can be found in the database
+        msg_filtering = {}
+        lbl_filtering = {}
 
         # if this is a refresh we want everything with new actions and locks
-        if last_refresh:
-            queryset = queryset.filter(modified_on__gt=last_refresh)
+        if modified_after:
+            msg_filtering["modified_on__gt"] = modified_after
         else:
-            # only show flagged messages in flagged folder
-            if folder == MessageFolder.flagged:
-                queryset = queryset.filter(is_flagged=True)
-
-            # archived messages can be implicitly or explicitly included depending on folder
-            if folder == MessageFolder.archived:
-                queryset = queryset.filter(is_archived=True)
+            if folder == MessageFolder.inbox or folder == MessageFolder.unlabelled:
+                lbl_filtering["is_archived"] = False
             elif folder == MessageFolder.flagged:
-                if not include_archived:
-                    queryset = queryset.filter(is_archived=False)
-            else:
-                queryset = queryset.filter(is_archived=False)
+                lbl_filtering["is_flagged"] = True
+                lbl_filtering["is_archived"] = False
+            elif folder == MessageFolder.flagged_with_archived:
+                lbl_filtering["is_flagged"] = True
+            elif folder == MessageFolder.archived:
+                lbl_filtering["is_archived"] = True
 
         if text:
-            queryset = queryset.filter(text__icontains=text)
-
+            msg_filtering["text__icontains"] = text
+            msg_filtering["created_on__gt"] = now() - relativedelta(days=cls.SEARCH_BY_TEXT_DAYS)
         if contact_id:
-            queryset = queryset.filter(contact__pk=contact_id)
-
-        if after and not last_refresh:
-            queryset = queryset.filter(created_on__gt=after)
+            msg_filtering["contact__id"] = contact_id
+        if after and not modified_after:
+            lbl_filtering["created_on__gt"] = after
         if before:
-            queryset = queryset.filter(created_on__lt=before)
+            lbl_filtering["created_on__lt"] = before
 
-        queryset = queryset.prefetch_related("contact", "labels", "case__assignee", "case__user_assignee").order_by(
-            "-created_on"
-        )
+        # only show non-deleted handled messages
+        msgs = org.incoming_messages.filter(is_active=True, is_handled=True).order_by("-created_on")
 
-        # print(str(queryset.query))
+        # handle views that don't require filtering by any labels
+        if folder == MessageFolder.unlabelled:
+            return msgs.filter(type=Message.TYPE_INBOX, has_labels=False).filter(**msg_filtering).filter(**lbl_filtering)
+        if all_label_access and not label_id:
+            if folder == MessageFolder.inbox:
+                return msgs.filter(has_labels=True).filter(**msg_filtering).filter(**lbl_filtering)
+            else:
+                return msgs.filter(**msg_filtering).filter(**lbl_filtering)
 
-        return queryset
+        # we either want messages with a specific label or any of the labels this user has access to
+        labels = Label.get_all(org, user)
+        if label_id:
+            labels = labels.filter(id=label_id)
+
+        # if we're only filtering on things on the labelling table..
+        if not msg_filtering and not all:
+            lbl_filtering = {f"message_{k}": v for k, v in lbl_filtering.items()}
+            message_ids = set()
+
+            for label in labels:
+                message_ids.update(
+                    Labelling.objects.filter(label=label, **lbl_filtering)
+                    .order_by("-message_created_on")
+                    .values_list("message_id", flat=True)[:1000]
+                )
+
+            return Message.objects.filter(id__in=message_ids, is_handled=True).order_by("-created_on")
+
+        msg_filtering["has_labels"] = True
+        msgs = msgs.filter(labels__in=list(labels))
+
+        return msgs.filter(**msg_filtering).filter(**lbl_filtering)
 
     def get_history(self):
         """
@@ -480,7 +523,7 @@ class Message(models.Model):
 
         existing_label_ids = Labelling.objects.filter(message=self, label__in=labels).values_list("label", flat=True)
         add_labels = [l for l in labels if l.id not in existing_label_ids]
-        new_labellings = [Labelling(message=self, label=l) for l in add_labels]
+        new_labellings = [Labelling.create(l, self) for l in add_labels]
         Labelling.objects.bulk_create(new_labellings)
 
         day = datetime_to_date(self.created_on, self.org)
@@ -706,14 +749,12 @@ class Outgoing(models.Model):
     CASE_REPLY = "C"
     FORWARD = "F"
 
-    ACTIVITY_CHOICES = ((BULK_REPLY, _("Bulk Reply")), (CASE_REPLY, "Case Reply"), (FORWARD, _("Forward")))
+    ACTIVITY_CHOICES = ((BULK_REPLY, "Bulk Reply"), (CASE_REPLY, "Case Reply"), (FORWARD, "Forward"))
     REPLY_ACTIVITIES = (BULK_REPLY, CASE_REPLY)
 
     TIMELINE_TYPE = "O"
 
-    org = models.ForeignKey(
-        Org, verbose_name=_("Organization"), related_name="outgoing_messages", on_delete=models.PROTECT
-    )
+    org = models.ForeignKey(Org, related_name="outgoing_messages", on_delete=models.PROTECT)
 
     partner = models.ForeignKey("cases.Partner", null=True, related_name="outgoing_messages", on_delete=models.PROTECT)
 
@@ -721,7 +762,7 @@ class Outgoing(models.Model):
 
     text = models.TextField(max_length=800)
 
-    backend_broadcast_id = models.IntegerField(null=True, help_text=_("Broadcast id from the backend"))
+    backend_broadcast_id = models.IntegerField(null=True)
 
     contact = models.ForeignKey(
         Contact, null=True, related_name="outgoing_messages", on_delete=models.PROTECT
@@ -896,7 +937,9 @@ class MessageExport(BaseSearchExport):
         all_fields = base_fields + [f.label for f in contact_fields]
 
         # load all messages to be exported
-        items = Message.search(self.org, self.created_by, search)
+        items = Message.search(self.org, self.created_by, search, all=True).prefetch_related(
+            "contact", "labels", "case__assignee", "case__user_assignee"
+        )
 
         def add_sheet(num):
             sheet = book.add_sheet(str(_("Messages %d" % num)))

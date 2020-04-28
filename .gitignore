@@ -16,6 +16,7 @@ node_modules/
 casepro/settings.py
 casepro/settings.py.prod
 casepro/settings.py.staging
+fabric
 fabfile.py
 fabconfig.py
 
