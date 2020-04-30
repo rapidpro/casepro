@@ -2,14 +2,6 @@ from datetime import timedelta
 
 from dash.orgs.models import Org, TaskState
 from dash.orgs.views import OrgObjPermsMixin, OrgPermsMixin
-from django.conf import settings
-from django.core.cache import cache
-from django.urls import reverse
-from django.http import HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404
-from django.utils.timezone import now
-from django.utils.translation import ugettext_lazy as _
-from django.views.generic import View
 from el_pagination.paginators import LazyPaginator
 from smartmin.mixins import NonAtomicMixin
 from smartmin.views import (
@@ -23,9 +15,17 @@ from smartmin.views import (
 )
 from temba_client.utils import parse_iso8601
 
+from django.conf import settings
+from django.core.cache import cache
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
+from django.urls import reverse
+from django.utils.timezone import now
+from django.utils.translation import ugettext_lazy as _
+from django.views.generic import View
+
 from casepro.contacts.models import Contact, Field
 from casepro.msgs.models import Label, Message, MessageFolder, OutgoingFolder
-from casepro.pods import registry as pod_registry
 from casepro.statistics.models import DailyCount, DailySecondTotalCount
 from casepro.utils import (
     JSONEncoder,
@@ -102,8 +102,6 @@ class CaseCRUDL(SmartCRUDL):
             context["can_update"] = can_update
             context["alert"] = self.request.GET.get("alert", None)
             context["case_id"] = case.id
-            context["pods"] = pod_registry.pods
-            context["pod_types"] = pod_registry.pod_types
 
             return context
 
@@ -557,6 +555,7 @@ class BaseInboxView(OrgPermsMixin, SmartTemplateView):
         context["allow_case_without_message"] = getattr(settings, "SITE_ALLOW_CASE_WITHOUT_MESSAGE", False)
         context["user_must_reply_with_faq"] = org and not user.is_anonymous and user.must_use_faq()
         context["site_contact_display"] = getattr(settings, "SITE_CONTACT_DISPLAY", "name")
+        context["search_text_days"] = Message.SEARCH_BY_TEXT_DAYS
         return context
 
 

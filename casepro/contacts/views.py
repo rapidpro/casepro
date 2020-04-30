@@ -1,9 +1,10 @@
 from dash.orgs.views import OrgObjPermsMixin, OrgPermsMixin
+from smartmin.views import SmartCRUDL, SmartFormView, SmartListView, SmartReadView
+
 from django import forms
 from django.conf import settings
 from django.http import HttpResponseRedirect, JsonResponse
 from django.utils.translation import ugettext_lazy as _
-from smartmin.views import SmartCRUDL, SmartFormView, SmartListView, SmartReadView
 
 from casepro.cases.models import Case
 from casepro.utils import JSONEncoder, json_encode

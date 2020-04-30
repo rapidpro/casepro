@@ -1,10 +1,11 @@
 from dash.orgs.views import OrgPermsMixin
+from smartmin.views import SmartCreateView, SmartCRUDL, SmartDeleteView, SmartListView, SmartReadView, SmartUpdateView
+
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.models import User
-from django.urls import reverse
 from django.http import Http404, HttpResponse, JsonResponse
+from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
-from smartmin.views import SmartCreateView, SmartCRUDL, SmartDeleteView, SmartListView, SmartReadView, SmartUpdateView
 
 from casepro.cases.mixins import PartnerPermsMixin
 from casepro.cases.models import Partner

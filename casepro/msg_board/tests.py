@@ -1,6 +1,7 @@
-from django.urls import reverse
 from django_comments.forms import CommentForm
 from temba_client.utils import format_iso8601
+
+from django.urls import reverse
 
 from casepro.msg_board.models import MessageBoardComment
 from casepro.test import BaseCasesTest

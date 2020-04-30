@@ -1,12 +1,8 @@
+import logging
 from collections import defaultdict
 
 import iso639
 from dash.orgs.views import OrgObjPermsMixin, OrgPermsMixin
-from django.urls import reverse
-from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
-from django.utils.timesince import timesince
-from django.utils.timezone import now
-from django.utils.translation import ugettext_lazy as _
 from el_pagination.paginators import LazyPaginator
 from smartmin.csv_imports.models import ImportTask
 from smartmin.mixins import NonAtomicMixin
@@ -22,6 +18,12 @@ from smartmin.views import (
 )
 from temba_client.utils import parse_iso8601
 
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
+from django.urls import reverse
+from django.utils.timesince import timesince
+from django.utils.timezone import now
+from django.utils.translation import ugettext_lazy as _
+
 from casepro.rules.mixins import RuleFormMixin
 from casepro.statistics.models import DailyCount
 from casepro.utils import JSONEncoder, json_encode, month_range, str_to_bool
@@ -33,19 +35,21 @@ from .tasks import message_export, reply_export
 
 RESPONSE_DELAY_WARN_SECONDS = 24 * 60 * 60  # show response delays > 1 day as warning
 
+logger = logging.getLogger(__name__)
+
 
 # Override the ImportTask start method so we can use our self-defined task
 def override_start(self, org):  # pragma: no cover
     from .tasks import faq_csv_import
 
     self.log("Queued import at %s" % now())
-    self.save(update_fields=["import_log"])
+    self.save(update_fields=("import_log",))
 
     # trigger task
-    result = faq_csv_import.delay(org, self.pk)
+    result = faq_csv_import.delay(org.id, self.id)
 
     self.task_id = result.task_id
-    self.save(update_fields=["task_id"])
+    self.save(update_fields=("task_id",))
 
 
 ImportTask.start = override_start
@@ -114,6 +118,9 @@ class LabelCRUDL(SmartCRUDL):
 
             # angular app requires context data in JSON format
             context["context_data_json"] = json_encode({"label": label_json})
+
+            context["rule_tests"] = self.object.rule.get_tests_description() if self.object.rule else ""
+
             return context
 
     class Delete(OrgObjPermsMixin, SmartDeleteView):
@@ -172,8 +179,10 @@ class MessageSearchMixin(object):
         Collects and prepares message search parameters into JSON serializable dict
         """
         folder = MessageFolder[self.request.GET["folder"]]
+        if folder == MessageFolder.flagged and str_to_bool(self.request.GET.get("archived", "")):
+            folder = MessageFolder.flagged_with_archived
+
         label_id = self.request.GET.get("label", None)
-        include_archived = str_to_bool(self.request.GET.get("archived", ""))
         text = self.request.GET.get("text", None)
         contact_id = self.request.GET.get("contact", None)
         after = parse_iso8601(self.request.GET.get("after", None))
@@ -182,7 +191,6 @@ class MessageSearchMixin(object):
         return {
             "folder": folder,
             "label": label_id,
-            "include_archived": include_archived,  # only applies to flagged folder
             "text": text,
             "contact": contact_id,
             "after": after,
@@ -199,11 +207,17 @@ class MessageCRUDL(SmartCRUDL):
         JSON endpoint for fetching incoming messages
         """
 
+        page_size = 50
+
+        def get_messages(self, search, last_refresh=None):
+            org = self.request.org
+            user = self.request.user
+            queryset = Message.search(org, user, search, modified_after=last_refresh, all=False)
+            return queryset.prefetch_related("contact", "labels", "case__assignee", "case__user_assignee")
+
         def get_context_data(self, **kwargs):
             context = super(MessageCRUDL.Search, self).get_context_data(**kwargs)
 
-            org = self.request.org
-            user = self.request.user
             page = int(self.request.GET.get("page", 1))
             last_refresh = self.request.GET.get("last_refresh")
 
@@ -211,20 +225,18 @@ class MessageCRUDL(SmartCRUDL):
 
             # this is a refresh of new and modified messages
             if last_refresh:
-                search["last_refresh"] = last_refresh
-
-                messages = Message.search(org, user, search)
+                messages = self.get_messages(search, last_refresh)
 
                 # don't use paging for these messages
                 context["object_list"] = list(messages)
                 context["has_more"] = False
-                return context
+            else:
+                messages = self.get_messages(search)
+                paginator = LazyPaginator(messages, per_page=self.page_size)
 
-            messages = Message.search(org, user, search)
-            paginator = LazyPaginator(messages, per_page=50)
+                context["object_list"] = paginator.page(page)
+                context["has_more"] = paginator.num_pages > page
 
-            context["object_list"] = paginator.page(page)
-            context["has_more"] = paginator.num_pages > page
             return context
 
         def render_to_response(self, context, **response_kwargs):

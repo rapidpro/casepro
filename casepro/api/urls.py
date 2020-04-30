@@ -1,7 +1,8 @@
-from django.conf.urls import url, include
 from rest_framework import routers
 
-from .views import APIRoot, Actions, Cases, Labels, Partners
+from django.conf.urls import include, url
+
+from .views import Actions, APIRoot, Cases, Labels, Partners
 
 
 class Router(routers.DefaultRouter):

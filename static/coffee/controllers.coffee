@@ -16,8 +16,6 @@ INFINITE_SCROLL_MAX_ITEMS = 2000
 CASE_SUMMARY_MAX_LEN = 255
 CASE_NOTE_MAX_LEN = 1024
 
-SINGLETON_ALERTS = ['pod_load_api_failure']
-
 #============================================================================
 # Inbox controller (DOM parent of messages and cases)
 #============================================================================
@@ -50,6 +48,13 @@ controllers.controller('InboxController', ['$scope', '$window', '$location', 'La
   $scope.loadLabels = () ->
     LabelService.fetchAll(true).then((labels) ->
       $scope.labels = labels
+
+      # find the current active label if there is one
+      if $scope.activeLabel
+        for l in labels
+          if $scope.activeLabel.id == l.id
+            $scope.activeLabel = l
+            break
     )
 
   $scope.activateLabel = (label) ->
@@ -299,6 +304,7 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$uibModal'
 
   $scope.advancedSearch = false
   $scope.expandedMessageId = null
+  $scope.showSearchByTextWarning = false
 
   $scope.init = () ->
     $scope.searchFields = $scope.searchFieldDefaults()
@@ -355,6 +361,8 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$uibModal'
     return MessageService.fetchNew(activeSearchRefresh, startTime, endTime, oldItemsPage)
 
   $scope.fetchOldItems = (search, startTime, page) ->
+    $scope.showSearchByTextWarning = (search.text != null and search.text != "")
+
     return MessageService.fetchOld(search, startTime, page)
 
   $scope.onExpandMessage = (message) ->
@@ -612,6 +620,26 @@ controllers.controller('HomeController', ['$scope', '$controller', 'LabelService
           series: [{name: "Messages", data: chart.series}],
         })
       )
+      StatisticsService.casesOpenedChart().then((chart) ->
+        Highcharts.chart('chart-cases-opened-by-month', {
+          chart: {type: 'column'},
+          title: {text: null},
+          xAxis: {categories: chart.categories},
+          yAxis: {min: 0, title: {text: 'Cases Opened'}},
+          legend: {enabled: false},
+          series: [{name: 'Cases', data: chart.series}],
+        })
+      )
+      StatisticsService.casesClosedChart().then((chart) ->
+        Highcharts.chart('chart-cases-closed-by-month', {
+          chart: {type: 'column'},
+          title: {text: null},
+          xAxis: {categories: chart.categories},
+          yAxis: {min: 0, title: {text: 'Cases Closed'}},
+          legend: {enabled: false},
+          series: [{name: 'Cases', data: chart.series}],
+        })
+      )
     else if tab == 'partners'
       PartnerService.fetchAll(true).then((partners) ->
         $scope.partners = partners
@@ -671,26 +699,11 @@ controllers.controller('CaseController', ['$scope', '$window', '$timeout', 'Case
   $scope.newMessage = ''
   $scope.sending = false
 
-  $scope.alerts = []
-
   $scope.init = (caseId, maxMsgChars) ->
     $scope.caseId = caseId
     $scope.msgCharsRemaining = $scope.maxMsgChars = maxMsgChars
 
     $scope.refresh()
-
-  $scope.$on('alert', (e, alert) ->
-    $scope.addAlert(alert))
-
-  $scope.$on('timelineChanged', (e) ->
-    $scope.$broadcast('timelineChanged') if e.targetScope != $scope)
-
-  $scope.addAlert = (alert) ->
-    $scope.alerts.push(alert) if (not shouldIgnoreAlert(alert))
-
-  shouldIgnoreAlert = ({type}) ->
-    type in SINGLETON_ALERTS and
-    $scope.alerts.some((d) -> type == d.type)
 
   $scope.refresh = () ->
     CaseService.fetchSingle($scope.caseId).then((caseObj) ->
@@ -1091,81 +1104,6 @@ controllers.controller('DateRangeController', ['$scope', ($scope) ->
     $scope.beforeOpen = true
 ])
 
-
-#============================================================================
-# Pod controller
-#============================================================================
-controllers.controller('PodController', ['$q', '$scope', 'PodApiService', 'PodUIService', ($q, $scope, PodApiService, PodUIService) ->
-  {PodApiServiceError} = PodApiService
-
-  $scope.init = (podId, caseId, podConfig) ->
-    $scope.podId = podId
-    $scope.caseId = caseId
-    $scope.podConfig = podConfig
-    $scope.status = 'loading'
-
-    $scope.update()
-      .then(-> $scope.status = 'idle')
-      .catch(utils.trap(PodApiServiceError, onLoadApiFailure, $q.reject))
-
-  $scope.update = ->
-    PodApiService.get($scope.podId, $scope.caseId)
-      .then(parsePodData)
-      .then((d) -> $scope.podData = d)
-
-  $scope.trigger = ({type, name, payload, confirm}) ->
-    $q.resolve()
-      .then(-> PodUIService.confirmAction(name) if confirm)
-      .then(-> $scope.podData.actions = updateAction(type, {isBusy: true}))
-      .then(-> PodApiService.trigger($scope.podId, $scope.caseId, type, payload))
-      .then((res) -> onTriggerDone(type, res))
-      .catch(utils.trap(PodApiServiceError, onTriggerApiFailure, $q.reject))
-      .then(-> $scope.podData.actions = updateAction(type, {isBusy: false}))
-
-  onTriggerDone = (type, {success, payload}) ->
-    if success
-      onTriggerSuccess()
-    else
-      onTriggerFailure(payload)
-
-  onLoadApiFailure = ->
-    $scope.status = 'loading_failed'
-    $scope.$emit('alert', PodUIService.alertLoadApiFailure())
-
-  onTriggerApiFailure = ->
-    $scope.$emit('alert', PodUIService.alertActionApiFailure())
-
-  onTriggerFailure = ({message}) ->
-    $scope.$emit('alert', PodUIService.alertActionFailure(message))
-
-  onTriggerSuccess = () ->
-    $scope.$emit('timelineChanged')
-    $scope.update()
-
-  updateAction = (type, props) ->
-    $scope.podData.actions
-      .map((d) -> if d.type == type then angular.extend({}, d, props) else d)
-
-  parsePodData = (d) ->
-    d = angular.extend({
-      items: [],
-      actions: []
-    }, d)
-
-    d.actions = d.actions
-      .map(parsePodAction)
-
-    d
-
-  parsePodAction = ({type, name, busy_text, confirm, payload}) -> {
-    type,
-    name,
-    payload,
-    confirm: confirm ? false,
-    busyText: busy_text ? name,
-    isBusy: false
-  }
-])
 
 #============================================================================
 # Message board controller

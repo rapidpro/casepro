@@ -569,6 +569,18 @@ services.factory('StatisticsService', ['$http', '$httpParamSerializer', ($http, 
       return $http.get('/stats/labels_pie_chart/').then((response) -> response.data)
 
     #----------------------------------------------------------------------------
+    # Fetches data for cases opened by month chart
+    #----------------------------------------------------------------------------
+    casesOpenedChart: () ->
+      return $http.get('/stats/cases_opened_chart/').then((response) -> response.data)
+
+    #----------------------------------------------------------------------------
+    # Fetches data for cases opened by month chart
+    #----------------------------------------------------------------------------
+    casesClosedChart: () ->
+      return $http.get('/stats/cases_closed_chart/').then((response) -> response.data)
+
+    #----------------------------------------------------------------------------
     # Initiates a daily count export
     #----------------------------------------------------------------------------
     dailyCountExport: (type, after, before) ->
@@ -748,73 +760,6 @@ services.factory('ModalService', ['$rootScope', '$uibModal', ($rootScope, $uibMo
       .result
 ])
 
-
-#=====================================================================
-# PodUIService service
-#=====================================================================
-services.factory('PodUIService', ['ModalService', (ModalService) ->
-  new class PodUIService
-    confirmAction: (name) ->
-      ModalService.confirm({
-        templateUrl: '/sitestatic/templates/modals/pod-action-confirm.html',
-        context: {name}
-      })
-
-    alertActionFailure: (message) -> {
-      templateUrl: '/sitestatic/templates/alerts/pod-action-failure.html',
-      context: {message}
-    }
-
-    alertActionApiFailure: () -> {
-      templateUrl: '/sitestatic/templates/alerts/pod-action-api-failure.html'
-    }
-
-    alertLoadApiFailure: () -> {
-      templateUrl: '/sitestatic/templates/alerts/pod-load-api-failure.html'
-    }
-])
-
-
-#=====================================================================
-# Pod API service
-#=====================================================================
-services.factory('PodApiService', ['$q', '$window', '$http', ($q, $window, $http) ->
-  class PodApiServiceError extends Error
-    constructor: (error) ->
-      this.error = error
-
-  method = (fn) ->
-    res = (args...) ->
-      $http(fn(args...))
-        .catch((e) -> $q.reject(new PodApiServiceError(e)))
-        .then((d) -> d.data)
-
-    res.fn = fn
-    res
-
-  new class PodApiService
-    PodApiServiceError: PodApiServiceError,
-
-    method: method,
-
-    get: method((podId, caseId) -> {
-      method: 'GET',
-      url: "/pods/read/#{podId}/",
-      params: {case_id: caseId}
-    })
-
-    trigger: method((podId, caseId, type, payload = {}) -> {
-      method: 'POST',
-      url: "/pods/action/#{podId}/",
-      data: {
-        case_id: caseId
-        action: {
-          type,
-          payload
-        }
-      }
-    })
-])
 
 #=====================================================================
 # Message Board service

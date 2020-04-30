@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 import iso639
 from dash.utils import chunks
+
 from django.db import migrations, transaction
 from django.db.models import Q
 

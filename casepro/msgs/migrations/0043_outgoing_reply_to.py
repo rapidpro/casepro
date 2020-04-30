@@ -2,6 +2,7 @@
 from __future__ import print_function, unicode_literals
 
 from dash.utils import chunks
+
 from django.db import migrations, models
 
 

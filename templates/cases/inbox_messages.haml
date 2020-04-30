@@ -118,6 +118,10 @@
               %button.btn.btn-default{ ng-disabled:"selection.length == 0", ng-click:"onRestoreSelection()", type:"button" }
                 - trans "Restore"
 
+    .search-by-text-warning(ng-if='showSearchByTextWarning')
+      - blocktrans trimmed with days=search_text_days
+        Searching by text is limited to the last {{days}} days.
+
     .messages{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"!isInfiniteScrollEnabled()" }
       .stackitem.clearfix.hoverable{ ng-repeat:"item in items | filter: getItemFilter()", ng-click:"onExpandMessage(item)", ng-class:"{ flagged: item.flagged, selected: item.selected, archived: item.archived, lock: item.lock }" }
         .message-actions

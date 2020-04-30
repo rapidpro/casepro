@@ -1,7 +1,8 @@
 from dash.orgs.views import OrgObjPermsMixin, OrgPermsMixin
+from smartmin.views import SmartCRUDL, SmartListView, SmartReadView, SmartTemplateView
+
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
-from smartmin.views import SmartCRUDL, SmartListView, SmartReadView, SmartTemplateView
 
 from casepro.msg_board.models import MessageBoardComment
 from casepro.utils import JSONEncoder

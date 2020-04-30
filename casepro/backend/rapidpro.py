@@ -1,5 +1,6 @@
 from dash.utils import chunks, is_dict_equal
 from dash.utils.sync import BaseSyncer, sync_local_to_changes, sync_local_to_set
+
 from django.utils.timezone import now
 
 from casepro.contacts.models import Contact, Field, Group

@@ -1,6 +1,6 @@
 ############## Django ##############
 
-django<2.2
+django<3
 djangorestframework
 django-celery-email
 django-compressor
@@ -18,13 +18,11 @@ smartmin
 boto
 celery
 colorama
--e git+https://github.com/nyaruka/confmodel.git@python3#egg=confmodel
 gunicorn
 iso-639
 markdown
 pillow
 pisa
-psycopg2
 pycountry
 python-dateutil
 rapidpro-dash
@@ -37,6 +35,8 @@ xlutils
 
 ############## Testing ##############
 
+black
 coverage
 flake8
+isort
 responses

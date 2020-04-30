@@ -1,12 +1,13 @@
 import random
 from datetime import date, datetime, time
+from unittest.mock import patch
 
 import pytz
 from dash.orgs.models import Org
-from django.urls import reverse
+
 from django.test.utils import override_settings
+from django.urls import reverse
 from django.utils import timezone
-from unittest.mock import patch
 
 from casepro.cases.models import Case
 from casepro.msgs.models import Outgoing
@@ -515,6 +516,78 @@ class ChartsTest(BaseStatsTest):
                 },
             )
 
+    def test_cases_charts(self):
+        opened_url = reverse("statistics.cases_opened_chart")
+        closed_url = reverse("statistics.cases_closed_chart")
+
+        self.assertLoginRedirect(self.url_get("unicef", opened_url), opened_url)
+        self.assertLoginRedirect(self.url_get("unicef", closed_url), closed_url)
+
+        tz = pytz.timezone("Africa/Kampala")
+        d1 = date(2020, 1, 1)
+        d2 = date(2020, 3, 15)
+
+        # Jan 1st
+        with patch.object(timezone, "now", return_value=self.anytime_on_day(d1, tz)):
+            [msg] = self.new_messages(d1, 1)
+            c = Case.get_or_open(self.unicef, self.user1, msg, "summary", self.moh)
+            c.close(self.user1)
+
+        # Mar 15th
+        with patch.object(timezone, "now", return_value=self.anytime_on_day(d2, tz)):
+            [msg] = self.new_messages(d2, 1)
+            Case.get_or_open(self.unicef, self.user1, msg, "summary", self.moh)
+
+        self.login(self.user3)
+
+        # simulate making requests in April
+        with patch.object(timezone, "now", return_value=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC)):
+            response = self.url_get("unicef", opened_url)
+
+            self.assertEqual(
+                response.json,
+                {
+                    "categories": [
+                        "May",
+                        "June",
+                        "July",
+                        "August",
+                        "September",
+                        "October",
+                        "November",
+                        "December",
+                        "January",
+                        "February",
+                        "March",
+                        "April",
+                    ],
+                    "series": [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0],
+                },
+            )
+
+            response = self.url_get("unicef", closed_url)
+
+            self.assertEqual(
+                response.json,
+                {
+                    "categories": [
+                        "May",
+                        "June",
+                        "July",
+                        "August",
+                        "September",
+                        "October",
+                        "November",
+                        "December",
+                        "January",
+                        "February",
+                        "March",
+                        "April",
+                    ],
+                    "series": [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                },
+            )
+
     def test_most_used_labels_chart(self):
         url = reverse("statistics.labels_pie_chart")
 
@@ -562,7 +635,6 @@ class SecondTotalCountsTest(BaseStatsTest):
         msg3 = self.create_message(self.unicef, 345, self.ann, "Hello 3", [self.pregnancy])
         msg4 = self.create_message(self.nyaruka, 456, self.ned, "Hello 4", [self.code])
         msg5 = self.create_message(self.unicef, 789, self.ann, "Hello 5", [self.code])
-        msg6 = self.create_message(self.unicef, 678, self.ann, "Hello 6", [self.pregnancy])
 
         case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, [self.aids])
         case2 = self.create_case(self.unicef, self.ned, self.moh, msg2, [self.aids, self.pregnancy])
@@ -571,7 +643,9 @@ class SecondTotalCountsTest(BaseStatsTest):
 
         # create a case by "WHO" user and assign it to "WHO" partner
         case5 = Case.get_or_open(self.unicef, self.user3, msg5, "Hello", self.who)
+
         # create a case by "MOH" user and assign it to "WHO" partner
+        msg6 = self.create_message(self.unicef, 678, self.ann, "Hello 6", [self.pregnancy])
         case6 = Case.get_or_open(self.unicef, self.user1, msg6, "Hello", self.who)
 
         self.create_outgoing(self.unicef, self.user1, 201, Outgoing.CASE_REPLY, "Good question", self.ann, case=case1)

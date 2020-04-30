@@ -1,7 +1,8 @@
-import pytz
 from unittest.mock import patch
 
+import pytz
 from dash.orgs.models import Org, TaskState
+
 from django.urls import reverse
 
 from casepro.contacts.models import Field, Group
@@ -17,7 +18,7 @@ class OrgExtTest(BaseCasesTest):
             timezone=pytz.timezone("Africa/Kigali"),
             subdomain="acme",
             created_by=self.superuser,
-            modified_by=self.superuser
+            modified_by=self.superuser,
         )
 
         backend_cfg = acme.backends.get()
@@ -115,7 +116,10 @@ class OrgExtCRUDLTest(BaseCasesTest):
             [(self.females.pk, "Females"), (self.males.pk, "Males"), (self.reporters.pk, "Reporters")],
         )
         self.assertEqual(form.fields["suspend_groups"].initial, [self.reporters.pk])
-        self.assertEqual(form.fields["followup_flow"].choices, [('', '----'), ('0001-0001', 'Registration'), ('0002-0002', 'Follow-Up')])
+        self.assertEqual(
+            form.fields["followup_flow"].choices,
+            [("", "----"), ("0001-0001", "Registration"), ("0002-0002", "Follow-Up")],
+        )
         self.assertEqual(form.fields["followup_flow"].initial, None)
 
         # test updating
@@ -128,7 +132,7 @@ class OrgExtCRUDLTest(BaseCasesTest):
                 "banner_text": "Chill",
                 "contact_fields": [self.state.pk],
                 "suspend_groups": [self.males.pk],
-                "followup_flow": '0002-0002',
+                "followup_flow": "0002-0002",
             },
         )
 
@@ -163,7 +167,7 @@ class OrgExtCRUDLTest(BaseCasesTest):
                 "banner_text": "",
                 "contact_fields": [],
                 "suspend_groups": [],
-                "followup_flow": '',
+                "followup_flow": "",
             },
         )
 

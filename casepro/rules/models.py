@@ -6,14 +6,19 @@ from enum import Enum
 import regex
 from dash.orgs.models import Org
 from dash.utils import get_obj_cacheable
+
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+
+from celery.utils.log import get_task_logger
 
 from casepro.contacts.models import Group
 from casepro.msgs.models import Label, Message
 from casepro.utils import json_encode, normalize
 
 KEYWORD_REGEX = regex.compile(r"^\w[\w\- ]*\w$", flags=regex.UNICODE | regex.V0)
+
+logger = get_task_logger(__name__)
 
 
 class Quantifier(Enum):
@@ -330,7 +335,10 @@ class LabelAction(Action):
             msg.label(self.label)
 
         if self.label.is_synced:
-            org.get_backend().label_messages(org, messages, self.label)
+            try:
+                org.get_backend().label_messages(org, messages, self.label)
+            except Exception as e:
+                logger.exception(e)
 
     def __eq__(self, other):
         return self.TYPE == other.TYPE and self.label == other.label
@@ -359,7 +367,10 @@ class FlagAction(Action):
     def apply_to(self, org, messages):
         Message.objects.filter(pk__in=[m.pk for m in messages]).update(is_flagged=True)
 
-        org.get_backend().flag_messages(org, messages)
+        try:
+            org.get_backend().flag_messages(org, messages)
+        except Exception as e:
+            logger.exception(e)
 
 
 class ArchiveAction(Action):
@@ -382,7 +393,10 @@ class ArchiveAction(Action):
     def apply_to(self, org, messages):
         Message.objects.filter(pk__in=[m.pk for m in messages]).update(is_archived=True)
 
-        org.get_backend().archive_messages(org, messages)
+        try:
+            org.get_backend().archive_messages(org, messages)
+        except Exception as e:
+            logger.exception(e)
 
 
 class Rule(models.Model):

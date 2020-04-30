@@ -1,6 +1,7 @@
 from collections import defaultdict
 
 from dash.utils import chunks
+
 from django.db import migrations
 
 

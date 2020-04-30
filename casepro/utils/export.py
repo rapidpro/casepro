@@ -5,18 +5,18 @@ import pytz
 from dash.orgs.models import Org
 from dash.orgs.views import OrgObjPermsMixin
 from dash.utils import random_string
+from smartmin.views import SmartReadView
+from temba_client.utils import parse_iso8601
+from xlwt import Workbook, XFStyle
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.files import File
 from django.core.files.storage import default_storage
 from django.core.files.temp import NamedTemporaryFile
-from django.urls import reverse
 from django.db import models
 from django.http import HttpResponse
-from django.utils.translation import ugettext_lazy as _
-from smartmin.views import SmartReadView
-from temba_client.utils import parse_iso8601
-from xlwt import Workbook, XFStyle
+from django.urls import reverse
 
 from . import json_encode
 from .email import send_email
@@ -27,7 +27,7 @@ class BaseExport(models.Model):
     Base class for exports
     """
 
-    org = models.ForeignKey(Org, verbose_name=_("Organization"), related_name="%(class)ss", on_delete=models.PROTECT)
+    org = models.ForeignKey(Org, related_name="%(class)ss", on_delete=models.PROTECT)
 
     filename = models.CharField(max_length=512)
 

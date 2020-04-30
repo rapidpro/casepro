@@ -8,16 +8,17 @@ import pytz
 import requests
 from dash.utils import is_dict_equal
 from dash.utils.sync import BaseSyncer, sync_local_to_changes
+
 from django.conf import settings
 from django.conf.urls import url
 from django.db import IntegrityError, transaction
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from . import BaseBackend
 from ..contacts.models import URN, Contact
 from ..msgs.models import Message
 from ..utils import json_decode, uuid_to_int
+from . import BaseBackend
 
 
 class HubMessageSender(object):

@@ -1,5 +1,4 @@
 import pytz
-
 from rest_framework import serializers
 
 from casepro.cases.models import Case, CaseAction, Partner

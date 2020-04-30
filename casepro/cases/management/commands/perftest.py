@@ -2,16 +2,16 @@ import time
 from collections import namedtuple
 from importlib import import_module
 
-from colorama import Fore, Style
-from colorama import init as colorama_init
+from colorama import Fore, Style, init as colorama_init
 from dash.orgs.models import Org
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
-from django.urls import reverse
 from django.db import connection, reset_queries
 from django.http import HttpRequest
 from django.test.client import Client
+from django.urls import reverse
 
 Problem = namedtuple("Problem", ["test", "org", "partner", "user", "time"])
 
