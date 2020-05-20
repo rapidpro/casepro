@@ -1123,16 +1123,12 @@ class MessageTest(BaseCasesTest):
         assert_search(self.admin, {"folder": MessageFolder.inbox, "text": "LO 5"}, [msg5])
 
         # check combining text searches with other date based searching
-        assert_search(self.admin, {
-            "folder": MessageFolder.inbox,
-            "after": msg6.created_on,
-            "text": "hello"
-        }, [msg8, msg7])
-        assert_search(self.user1, {
-            "folder": MessageFolder.inbox,
-            "after": msg6.created_on,
-            "text": "hello"
-        }, [msg8, msg7])
+        assert_search(
+            self.admin, {"folder": MessageFolder.inbox, "after": msg6.created_on, "text": "hello"}, [msg8, msg7]
+        )
+        assert_search(
+            self.user1, {"folder": MessageFolder.inbox, "after": msg6.created_on, "text": "hello"}, [msg8, msg7]
+        )
 
     @patch("casepro.test.TestBackend.label_messages")
     @patch("casepro.test.TestBackend.unlabel_messages")

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-16 14:48+0000\n"
+"POT-Creation-Date: 2020-05-20 19:02+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Ilhasoft <contato@ilhasoft.com.br>, 2017\n"
 "Language-Team: Portuguese (Brazil) (https://www.transifex.com/ilhasoft/teams/56822/pt_BR/)\n"
@@ -426,6 +426,11 @@ msgstr "todos de"
 msgid " and "
 msgstr "e"
 
+#, fuzzy
+#| msgid " and "
+msgid ", and "
+msgstr "e"
+
 msgid "English"
 msgstr "Inglês"
 
@@ -434,6 +439,9 @@ msgstr "Francês "
 
 msgid "Portuguese"
 msgstr "Português"
+
+msgid "Spanish"
+msgstr ""
 
 msgid "The day this count is for"
 msgstr "O dia em que esta conta é para"
@@ -605,6 +613,10 @@ msgstr "Nenhum"
 
 msgid "Reply"
 msgstr "Responder"
+
+#, python-format
+msgid "Searching by text is limited to the last %(days)s days."
+msgstr ""
 
 msgid "Flow"
 msgstr "Fluxo"

@@ -169,7 +169,7 @@ class BaseCasesTest(DashTest):
             text=text,
             contact=contact,
             created_by=user,
-            **kwargs
+            **kwargs,
         )
 
     def create_case(self, org, contact, assignee, message, labels=(), **kwargs):

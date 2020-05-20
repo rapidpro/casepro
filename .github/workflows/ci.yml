@@ -39,11 +39,7 @@ jobs:
         ln -s ${{ github.workspace }}/casepro/settings.py.dev ${{ github.workspace }}/casepro/settings.py
 
     - name: Run pre-test checks
-      run: |
-        python manage.py makemigrations --dry-run | grep 'No changes detected' || (echo 'There are changes which require migrations.' && exit 1)
-        python manage.py collectstatic --noinput
-        (! python manage.py compress --extension=".haml" --settings=casepro.settings_travis | grep 'Error') || exit 1
-        flake8
+      run: ./code_check.py --debug
 
     - name: Run tests
       run: |

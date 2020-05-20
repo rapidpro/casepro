@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-16 14:48+0000\n"
+"POT-Creation-Date: 2020-05-20 19:02+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -420,6 +420,9 @@ msgstr ""
 msgid " and "
 msgstr ""
 
+msgid ", and "
+msgstr ""
+
 msgid "English"
 msgstr ""
 
@@ -427,6 +430,9 @@ msgid "French"
 msgstr ""
 
 msgid "Portuguese"
+msgstr ""
+
+msgid "Spanish"
 msgstr ""
 
 msgid "The day this count is for"
@@ -598,6 +604,10 @@ msgid "None"
 msgstr ""
 
 msgid "Reply"
+msgstr ""
+
+#, python-format
+msgid "Searching by text is limited to the last %(days)s days."
 msgstr ""
 
 msgid "Flow"

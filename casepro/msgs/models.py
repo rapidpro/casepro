@@ -458,7 +458,9 @@ class Message(models.Model):
 
         # handle views that don't require filtering by any labels
         if folder == MessageFolder.unlabelled:
-            return msgs.filter(type=Message.TYPE_INBOX, has_labels=False).filter(**msg_filtering).filter(**lbl_filtering)
+            return (
+                msgs.filter(type=Message.TYPE_INBOX, has_labels=False).filter(**msg_filtering).filter(**lbl_filtering)
+            )
         if all_label_access and not label_id:
             if folder == MessageFolder.inbox:
                 return msgs.filter(has_labels=True).filter(**msg_filtering).filter(**lbl_filtering)
