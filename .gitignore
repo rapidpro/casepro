@@ -67,10 +67,6 @@ htmlcov/
 .cache
 js-coverage/
 
-# Translations
-*.mo
-*.pot
-
 # Django stuff:
 *.log
 
