@@ -119,7 +119,7 @@
                 - trans "Restore"
 
     .search-by-text-warning(ng-if='showSearchByTextWarning')
-      - blocktrans trimmed with days=search_text_days
+      -blocktrans trimmed with days=search_text_days
         Searching by text is limited to the last {{days}} days.
 
     .messages{ infinite-scroll:"loadOldItems(false)", infinite-scroll-disabled:"!isInfiniteScrollEnabled()" }

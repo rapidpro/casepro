@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-05-20 19:02+0000\n"
+"POT-Creation-Date: 2020-05-20 19:29+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -675,9 +675,7 @@ msgid "Replies (total)"
 msgstr ""
 
 msgid "Please correct the error below"
-msgid_plural ""
-"Please correct the\n"
-"        errors below"
+msgid_plural "Please correct the errors below"
 msgstr[0] ""
 msgstr[1] ""
 
@@ -687,20 +685,13 @@ msgstr ""
 msgid "Details"
 msgstr ""
 
-msgid ""
-"\n"
-"        These are the groups visible to partner organizations.\n"
-"\n"
-"      "
+msgid "These are the groups visible to partner organizations."
 msgstr ""
 
 msgid "Select Groups"
 msgstr ""
 
-msgid ""
-"\n"
-"        Your download should start automatically. If it doesn't start in a few seconds, use the button below to download.\n"
-"      "
+msgid "Your download should start automatically. If it doesn't start in a few seconds, use the button below to download."
 msgstr ""
 
 msgid "Download Now"
@@ -751,10 +742,7 @@ msgstr ""
 msgid "No translations available"
 msgstr ""
 
-msgid ""
-"\n"
-"    No site selected, please contact your administrator to find valid organization sites.\n"
-"  "
+msgid "No site selected, please contact your administrator to find valid organization sites."
 msgstr ""
 
 msgid "My Organization"
@@ -903,9 +891,7 @@ msgid "User %(user)s reopened the case with the following note:"
 msgstr ""
 
 #, python-format
-msgid ""
-"Click <a href=\"%(case_url)s\">here</a> to view the case. You are receiving\n"
-"this email because you are watching this case. You can unwatch from the case page."
+msgid "Click <a href=\"%(case_url)s\">here</a> to view the case. You are receiving this email because you are watching this case. You can unwatch from the case page."
 msgstr ""
 
 #, python-format
@@ -915,10 +901,7 @@ msgid ""
 msgstr ""
 
 #, python-format
-msgid ""
-"\n"
-"Go to <a href=\"%(inbox_url)s\">here</a> to view the message. You are receiving this email because you are watching\n"
-"those labels. You can unwatch from the label pages.\n"
+msgid "Go to <a href=\"%(inbox_url)s\">here</a> to view the message. You are receiving this email because you are watching those labels. You can unwatch from the label pages."
 msgstr ""
 
 #, python-format
@@ -943,9 +926,7 @@ msgid "Forgot Password?"
 msgstr ""
 
 #, python-format
-msgid ""
-"\n"
-"Your export is ready and can be downloaded by clicking <a href=\"%(download_url)s\">here</a>.\n"
+msgid "Your export is ready and can be downloaded by clicking <a href=\"%(download_url)s\">here</a>."
 msgstr ""
 
 #, python-format

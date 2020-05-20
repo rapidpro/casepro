@@ -1,5 +1,5 @@
 {% load i18n %}
-{% blocktrans with user=user.email assignee=assignee.name %}User {{ user }} reassigned the case to {{ assignee }}.{% endblocktrans %}<br/>
+{% blocktrans trimmed with user=user.email assignee=assignee.name %}User {{ user }} reassigned the case to {{ assignee }}.{% endblocktrans %}<br/>
 <br/>
 <br/>
 {% include "profiles/email/common/case_notification_footer.html" with case_url=case_url only %}
