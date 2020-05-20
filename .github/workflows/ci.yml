@@ -39,7 +39,9 @@ jobs:
         ln -s ${{ github.workspace }}/casepro/settings.py.dev ${{ github.workspace }}/casepro/settings.py
 
     - name: Run pre-test checks
-      run: ./code_check.py --debug
+      run: |
+        sudo apt-get install gettext
+        ./code_check.py --debug
 
     - name: Run tests
       run: |
