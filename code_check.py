@@ -58,7 +58,7 @@ def update_po_files():
 
     # if there are no actual changes to msgids, revert
     if not added_msgids and not removed_msgids:
-        cmd(f"git checkout -- locale")
+        cmd("git checkout -- locale")
 
 
 if __name__ == "__main__":

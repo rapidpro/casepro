@@ -244,7 +244,7 @@ class Command(BaseCommand):
         except KeyboardInterrupt:
             pass
 
-        self._log(f" > Squashing counts...\n")
+        self._log(" > Squashing counts...\n")
 
         squash_counts()
 
