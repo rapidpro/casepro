@@ -6,8 +6,8 @@ from unittest.mock import call, patch
 import pytz
 from dash.orgs.models import Org
 from dash.test import MockClientQuery
-from temba_client.v1.types import Broadcast as TembaBroadcast
 from temba_client.v2.types import (
+    Broadcast as TembaBroadcast,
     Contact as TembaContact,
     Field as TembaField,
     Flow as TembaFlow,
