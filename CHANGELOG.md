@@ -1,3 +1,9 @@
+v1.2.5
+----------
+ * Minor dependency updates
+ * Tidy up translatable strings with trimmed
+ * Add code_check script and generate locale files for Spanish
+
 v1.2.4
 ----------
  * Bump django from 2.2.8 to 2.2.10
