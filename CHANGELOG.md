@@ -1,3 +1,7 @@
+v1.2.6
+----------
+ * Add spanish translations from transifex
+
 v1.2.5
 ----------
  * Minor dependency updates
