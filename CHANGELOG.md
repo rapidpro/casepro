@@ -1,3 +1,7 @@
+v1.2.7
+----------
+ * Fix translation
+
 v1.2.6
 ----------
  * Add spanish translations from transifex
