@@ -34,7 +34,7 @@ MANAGERS = ADMINS
 
 # Configurations for Domain and Session details
 SITE_API_HOST = config('SITE_API_HOST', default='rapidpro.ilhasoft.mobi')
-SITE_HOST_PATTERN = 'http://%s.upartners.ilhasoft.mobi'
+SITE_HOST_PATTERN = 'http://%s.casepro.ilhasoft.mobi'
 SITE_EXTERNAL_CONTACT_URL = 'https://rapidpro.ilhasoft.mobi/contact/read/%s/'
 ANONYMOUS_USER_NAME = 'AnonymousUser'
 
