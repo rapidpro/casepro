@@ -46,6 +46,7 @@ def pull_messages(org, since, until):
 def handle_messages(org):
     from casepro.cases.models import Case
     from casepro.rules.models import Rule
+
     from .models import Message
 
     backend = org.get_backend()
