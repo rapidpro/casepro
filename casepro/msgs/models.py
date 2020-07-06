@@ -79,7 +79,7 @@ class Label(models.Model):
         return org.labels.filter(is_active=True)
 
     def update_tests(self, tests):
-        from casepro.rules.models import Rule, LabelAction
+        from casepro.rules.models import LabelAction, Rule
 
         if tests:
             if self.rule:

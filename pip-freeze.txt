@@ -4,50 +4,50 @@
 #
 #    pip-compile --output-file=pip-freeze.txt pip-requires.txt
 #
-amqp==2.5.2               # via kombu
+amqp==2.6.0               # via kombu
 appdirs==1.4.4            # via black
 attrs==19.3.0             # via black
 billiard==3.6.3.0         # via celery
 black==19.10b0
 boto==2.49.0
-celery==4.3.0
-certifi==2020.4.5.1       # via requests
+celery==4.4.6
+certifi==2020.6.20        # via requests
 chardet==3.0.4            # via requests
 click==7.1.2              # via black
 colorama==0.4.3
-coverage==4.5.4
+coverage==5.2
 dj-database-url==0.5.0
 django-appconf==1.0.4     # via django-celery-email, django-compressor
 django-celery-email==2.0.2
-django-compressor==2.3
+django-compressor==2.4
 django-contrib-comments==1.9.2
 django-digest==1.13
-django-el-pagination==3.2.4
+django-el-pagination==3.3.0
 django-hamlpy==1.2        # via rapidpro-dash
-django-redis==4.10.0
-django-rosetta==0.9.3
-django-storages==1.8
+django-redis==4.12.1
+django-rosetta==0.9.4
+django-storages==1.9.1
 django-timezone-field==4.0  # via rapidpro-dash
-django==2.2.10
-djangorestframework==3.10.3
+django==2.2.14
+djangorestframework==3.11.0
 entrypoints==0.3          # via flake8
-flake8==3.8.1
+flake8==3.8.3
 gunicorn==20.0.4
-idna==2.8                 # via requests
+idna==2.10                 # via requests
 importlib-metadata==1.1.0  # via kombu
 iso-639==0.4.5
 iso8601==0.1.12           # via rapidpro-python
-isort==4.3.21
-kombu==4.6.6              # via celery
+isort==5.0.4
+kombu==4.6.11              # via celery
 markdown==3.2.2
 mccabe==0.6.1             # via flake8
-more-itertools==8.0.0     # via zipp
+more-itertools==8.4.0     # via zipp
 pathspec==0.6.0           # via black
-phonenumbers==8.12.3      # via rapidpro-dash
+phonenumbers==8.12.6      # via rapidpro-dash
 pillow==6.2.1
 pisa==3.0.33
 polib==1.1.0              # via django-rosetta
-psycopg2-binary==2.8.4    # via rapidpro-dash
+psycopg2-binary==2.8.5    # via rapidpro-dash
 pycodestyle==2.6.0        # via flake8
 pycountry==19.8.18
 pyflakes==2.2.0           # via flake8
@@ -57,13 +57,13 @@ rapidpro-dash==1.4.5
 rapidpro-python==2.7.0
 raven==6.10.0
 rcssmin==1.0.6            # via django-compressor
-redis==3.3.11
-regex==2019.11.1
-requests==2.22.0          # via django-rosetta, rapidpro-dash, rapidpro-python, responses
-responses==0.10.7
+redis==3.5.3
+regex==2020.6.8
+requests==2.24.0          # via django-rosetta, rapidpro-dash, rapidpro-python, responses
+responses==0.10.15
 rjsmin==1.1.0             # via django-compressor
-six==1.14.0               # via django-appconf, django-contrib-comments, django-rosetta, python-dateutil, responses
-smartmin==2.2.0
+six==1.15.0               # via django-appconf, django-contrib-comments, django-rosetta, python-dateutil, responses
+smartmin==2.2.2
 sorl-thumbnail==12.6.3
 sqlparse==0.3.1           # via django, smartmin
 toml==0.10.1              # via black
