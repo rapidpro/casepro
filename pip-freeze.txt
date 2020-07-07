@@ -26,7 +26,7 @@ django-el-pagination==3.3.0
 django-hamlpy==1.2        # via rapidpro-dash
 django-redis==4.12.1
 django-rosetta==0.9.4
-django-storages==1.9.1
+django-storages==1.8
 django-timezone-field==4.0  # via rapidpro-dash
 django==2.2.14
 djangorestframework==3.11.0
