@@ -281,10 +281,10 @@ class Case(models.Model):
             case = cls.objects.create(
                 org=org,
                 assignee=assignee,
+                user_assignee=user_assignee,
                 initial_message=message,
                 contact=contact,
                 summary=summary,
-                user_assignee=user_assignee,
             )
 
             if message:
@@ -297,9 +297,11 @@ class Case(models.Model):
             case.watchers.add(user)
             action = CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee, user_assignee=user_assignee)
 
-            for assignee_user in assignee.get_users():
-                if assignee_user != user:
-                    Notification.new_case_assignment(org, assignee_user, action)
+            notify_users = [user_assignee] if user_assignee else assignee.get_users()
+            for notify_user in notify_users:
+                if notify_user != user:
+                    Notification.new_case_assignment(org, notify_user, action)
+
         return case
 
     def get_timeline(self, after, before, merge_from_backend):
