@@ -1,3 +1,7 @@
+v1.3.1
+----------
+ * Update to latest angular 1.4.x
+
 v1.3.0
 ----------
  * Fix editing of must_use_faq
