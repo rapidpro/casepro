@@ -492,7 +492,7 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$uibModal'
       if results.items.length > 0
         $scope.locked(results, [message])
       else
-        UtilsService.newCaseModal(message.text, CASE_SUMMARY_MAX_LEN, possibleAssignees).then((data) ->
+        UtilsService.newCaseModal(message.text, CASE_SUMMARY_MAX_LEN, message.contact, possibleAssignees).then((data) ->
           CaseService.open(message, data.summary, data.assignee, data.user).then((caseObj) ->
               caseUrl = '/case/read/' + caseObj.id + '/'
               if !caseObj.is_new
