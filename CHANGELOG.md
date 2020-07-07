@@ -1,3 +1,7 @@
+v1.3.2
+----------
+ * Revert upgrade to django-storages
+
 v1.3.1
 ----------
  * Update to latest angular 1.4.x
