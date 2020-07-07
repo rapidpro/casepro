@@ -2,24 +2,24 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-# 
+#
 # Translators:
 # Nyaruka <info@textit.in>, 2020
 # Janina <jcuevas@unicef.org>, 2020
-# 
+#
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-05-20 19:29+0000\n"
+"POT-Creation-Date: 2020-07-07 17:04+0000\n"
 "PO-Revision-Date: 2020-05-20 19:31+0000\n"
 "Last-Translator: Janina <jcuevas@unicef.org>, 2020\n"
 "Language-Team: Spanish (https://www.transifex.com/rapidpro/teams/110172/es/)\n"
+"Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: es\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 msgid "API v1"
@@ -186,14 +186,10 @@ msgid "Keywords"
 msgstr "Palabras clave"
 
 msgid "Match messages containing any of these words (comma separated)"
-msgstr ""
-"Coincide con mensajes que contienen cualquiera de estas palabras (separado "
-"por comas)"
+msgstr "Coincide con mensajes que contienen cualquiera de estas palabras (separado por comas)"
 
 msgid "Match messages from these groups (select none to include all groups)"
-msgstr ""
-"Coincide con mensajes de estos grupos (seleccione ninguno para incluir todos"
-" los grupos)"
+msgstr "Coincide con mensajes de estos grupos (seleccione ninguno para incluir todos los grupos)"
 
 msgid "Ignore single words"
 msgstr "Ignorar palabras solas"
@@ -204,12 +200,8 @@ msgstr "Si debe ignorar mensajes que contengan solo una palabra"
 msgid "Field criteria"
 msgstr "Criterio"
 
-msgid ""
-"Match messages where contact field value is equal to any of these values "
-"(comma separated)"
-msgstr ""
-"Coincide con mensajes en donde el valor es igual a cualquiera de estos "
-"valores (separado por coma)"
+msgid "Match messages where contact field value is equal to any of these values (comma separated)"
+msgstr "Coincide con mensajes en donde el valor es igual a cualquiera de estos valores (separado por coma)"
 
 msgid "Reserved label name"
 msgstr "Nombre de etiqueta reservada"
@@ -232,9 +224,7 @@ msgid "Answer"
 msgstr "Respuesta"
 
 msgid "If a Parent is selected, the labels will be copied from the Parent FAQ"
-msgstr ""
-"Si un padre o madre es seleccionado, las etiquetas serán copiadas del FAQ de"
-" padres y madres"
+msgstr "Si un padre o madre es seleccionado, las etiquetas serán copiadas del FAQ de padres y madres"
 
 msgid "Language must be valid a ISO-639-3 code"
 msgstr "El idioma debe ser válido al código ISO-639-3"
@@ -337,18 +327,13 @@ msgid "Require change"
 msgstr "Requiere cambio"
 
 msgid "Whether user must change password on next login."
-msgstr ""
-"Si el usuario debe cambiar su contraseña al ingresar la próxima vez a su "
-"cuenta"
+msgstr "Si el usuario debe cambiar su contraseña al ingresar la próxima vez a su cuenta"
 
 msgid "Pre-approved responses only"
 msgstr "Solo respuestas pre aprobadas"
 
-msgid ""
-"Whether user will only be able to reply using pre-approved replies (FAQs)"
-msgstr ""
-"Si el usiario aprueba solo con respuestas pre aprobadas (preguntas "
-"frecuentes)"
+msgid "Whether user will only be able to reply using pre-approved replies (FAQs)"
+msgstr "Si el usiario aprueba solo con respuestas pre aprobadas (preguntas frecuentes)"
 
 msgid "Passwords don't match."
 msgstr "Contraseña incorrecta"
@@ -381,8 +366,7 @@ msgid "Data Analyst"
 msgstr "Analista de datos"
 
 msgid "User must change password on next login"
-msgstr ""
-"Usuario debe cambiar su contraseña la próxima vez que ingrese a su sesión"
+msgstr "Usuario debe cambiar su contraseña la próxima vez que ingrese a su sesión"
 
 msgid "User is only allowed to reply with pre-approved responses"
 msgstr "Usuario está permitido responder solo con respuestas pre aprobadas"
@@ -520,12 +504,10 @@ msgid "Download Export"
 msgstr "Descargar y exportar"
 
 msgid "Could not open new case as message was already handled by this case"
-msgstr ""
-"No se puede abrir el mensaje dado ya está siendo manejdo por este caso"
+msgstr "No se puede abrir el mensaje dado ya está siendo manejdo por este caso"
 
 msgid "Could not open new case as contact already has this open case"
-msgstr ""
-"No se puede abrir el mensaje dado que el contacto ya tiene un caso abierto"
+msgstr "No se puede abrir el mensaje dado que el contacto ya tiene un caso abierto"
 
 msgid "Watch"
 msgstr "Revisado"
@@ -713,12 +695,8 @@ msgstr "Estos son grupos visibles para las organizaciones aliadas"
 msgid "Select Groups"
 msgstr "Selecciona los grupos"
 
-msgid ""
-"Your download should start automatically. If it doesn't start in a few "
-"seconds, use the button below to download."
-msgstr ""
-"Tu descarga empezará automáticamente. Si no se desacarga después de algunos "
-"segundos, usa el botón debajo para descargar."
+msgid "Your download should start automatically. If it doesn't start in a few seconds, use the button below to download."
+msgstr "Tu descarga empezará automáticamente. Si no se desacarga después de algunos segundos, usa el botón debajo para descargar."
 
 msgid "Download Now"
 msgstr "Descarga ahora"
@@ -768,12 +746,8 @@ msgstr "Agregar traducción"
 msgid "No translations available"
 msgstr "Traducciones no disponibles"
 
-msgid ""
-"No site selected, please contact your administrator to find valid "
-"organization sites."
-msgstr ""
-"No existe el sitio seleccionado, por favor contacte al administrador de su "
-"organización para encontrar un sitio válido."
+msgid "No site selected, please contact your administrator to find valid organization sites."
+msgstr "No existe el sitio seleccionado, por favor contacte al administrador de su organización para encontrar un sitio válido."
 
 msgid "My Organization"
 msgstr "Mi organización"
@@ -868,29 +842,22 @@ msgstr "Histórico de mensajes"
 msgid "No events"
 msgstr "No hay eventos"
 
-msgid ""
-"Open a new case for this contact? This will archive all messages from the "
-"contact."
+msgid "Open a new case for <b>[[ contact.display ]]</b>?"
 msgstr ""
-"¿Abrir un nuevo caso para este contacto? Este paso archivará todos los "
-"mensajes del contacto."
+
+#, fuzzy
+#| msgid "Open a new case for this contact? This will archive all messages from the contact."
+msgid "This will archive all messages from the contact."
+msgstr "¿Abrir un nuevo caso para este contacto? Este paso archivará todos los mensajes del contacto."
 
 msgid "Note"
 msgstr "Nota"
 
-msgid ""
-"Send the following reply to the selected message(s). This will remove the "
-"message(s) from your inbox to Archived."
-msgstr ""
-"Envíe la siguiente respuesta a mensaje(s) seleccionado(s). Esto eliminará el"
-" mensaje de tu bandeja de entrada y lo archivará."
+msgid "Send the following reply to the selected message(s). This will remove the message(s) from your inbox to Archived."
+msgstr "Envíe la siguiente respuesta a mensaje(s) seleccionado(s). Esto eliminará el mensaje de tu bandeja de entrada y lo archivará."
 
-msgid ""
-"Send the following reply. This will archive this message removing it from "
-"your Inbox."
-msgstr ""
-"Enviar la siguiente respuesta. Esto hará que el mensaje se archive y ya no "
-"aparezca en su bandeja de entrada."
+msgid "Send the following reply. This will archive this message removing it from your Inbox."
+msgstr "Enviar la siguiente respuesta. Esto hará que el mensaje se archive y ya no aparezca en su bandeja de entrada."
 
 msgid "Please select one of the following pre-approved replies."
 msgstr "Por favor, seleccione una de las siguientes respuestas preaprobadas."
@@ -898,12 +865,8 @@ msgstr "Por favor, seleccione una de las siguientes respuestas preaprobadas."
 msgid "There are no pre-approved replies. Please contact your administrator."
 msgstr "No hay respuestas preaprobadas. Por favor, contacte a su gerente."
 
-msgid ""
-"You may select one of the following pre-approved replies or enter a custom "
-"message below."
-msgstr ""
-"Puedes seleccionar una de las siguientes respuestas preaprobadas o ingresar "
-"un mensaje adecuado debajo"
+msgid "You may select one of the following pre-approved replies or enter a custom message below."
+msgstr "Puedes seleccionar una de las siguientes respuestas preaprobadas o ingresar un mensaje adecuado debajo"
 
 msgid "Send & Archive"
 msgstr "Enviar y archivar"
@@ -937,42 +900,24 @@ msgid "User %(user)s reopened the case with the following note:"
 msgstr "Usuario %(user)s reabrió el caso con la siguiente nota:"
 
 #, python-format
-msgid ""
-"Click <a href=\"%(case_url)s\">here</a> to view the case. You are receiving "
-"this email because you are watching this case. You can unwatch from the case"
-" page."
-msgstr ""
-"Haga click <a href=\"%(case_url)s\">aquí </a> para revisar el caso. Estás "
-"recibiendo este mail porque tú estás atendiendo este caso. Puedes "
-"consultarlo desde la página del caso."
+msgid "Click <a href=\"%(case_url)s\">here</a> to view the case. You are receiving this email because you are watching this case. You can unwatch from the case page."
+msgstr "Haga click <a href=\"%(case_url)s\">aquí </a> para revisar el caso. Estás recibiendo este mail porque tú estás atendiendo este caso. Puedes consultarlo desde la página del caso."
 
 #, python-format
 msgid ""
 "Go to %(case_url)s to view the case. You are receiving this email because\n"
 "you are watching this case. You can unwatch from the case page."
-msgstr ""
-"Ir a %(case_url)s para ver el caso. Estás recibiendo este mensaje porque "
-"estás revisando este caso. Puedes terminar de revisarlo desde la página del "
-"caso."
+msgstr "Ir a %(case_url)s para ver el caso. Estás recibiendo este mensaje porque estás revisando este caso. Puedes terminar de revisarlo desde la página del caso."
 
 #, python-format
-msgid ""
-"Go to <a href=\"%(inbox_url)s\">here</a> to view the message. You are "
-"receiving this email because you are watching those labels. You can unwatch "
-"from the label pages."
-msgstr ""
-"Vaya <a href=\"%(inbox_url)s\"> aquí </a> para ver le mensaje. Estás "
-"recibiendo este mail porque estás atendiendo estas etiquetas. Puedes "
-"consultarlo desde la página de las etiquetas."
+msgid "Go to <a href=\"%(inbox_url)s\">here</a> to view the message. You are receiving this email because you are watching those labels. You can unwatch from the label pages."
+msgstr "Vaya <a href=\"%(inbox_url)s\"> aquí </a> para ver le mensaje. Estás recibiendo este mail porque estás atendiendo estas etiquetas. Puedes consultarlo desde la página de las etiquetas."
 
 #, python-format
 msgid ""
 "Go to %(inbox_url)s to view the message. You are receiving this email because you are watching those labels. You can\n"
 "unwatch from the label pages."
-msgstr ""
-"Ir a %(inbox_url)s para ver el mensaje. Estas recibiendo este mensaje por "
-"que estás revisando esas etiquetas. Puedes dejar de revisarlas desde las "
-"páginas de la etiqueta."
+msgstr "Ir a %(inbox_url)s para ver el mensaje. Estas recibiendo este mensaje por que estás revisando esas etiquetas. Puedes dejar de revisarlas desde las páginas de la etiqueta."
 
 msgid "Become"
 msgstr "Convertirse"
@@ -990,12 +935,8 @@ msgid "Forgot Password?"
 msgstr "¿Olvidó la contraseña?"
 
 #, python-format
-msgid ""
-"Your export is ready and can be downloaded by clicking <a "
-"href=\"%(download_url)s\">here</a>."
-msgstr ""
-"Tu archivo está listo y puede ser descargado dando click <a "
-"href=\"%(download_url)s\">aquí</a>."
+msgid "Your export is ready and can be downloaded by clicking <a href=\"%(download_url)s\">here</a>."
+msgstr "Tu archivo está listo y puede ser descargado dando click <a href=\"%(download_url)s\">aquí</a>."
 
 #, python-format
 msgid ""
