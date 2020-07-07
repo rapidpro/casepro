@@ -366,7 +366,7 @@ class CaseTest(BaseCasesTest):
         open_case = Case.get_open_for_contact_on(self.unicef, self.ann, datetime(2014, 1, 16, 0, 0, tzinfo=pytz.UTC))
         self.assertEqual(open_case, case2)
 
-    def test_get_open_with_user_assignee(self):
+    def test_get_or_open_with_user_assignee(self):
         """
         If a case is opened with the user_assignee field set, the created case should have the assigned user, and
         the created case action should also have the assigned user.
@@ -380,6 +380,10 @@ class CaseTest(BaseCasesTest):
 
         case_action = CaseAction.objects.get(case=case)
         self.assertEqual(case_action.user_assignee, self.user1)
+
+        # only assigned user should be notified
+        self.assertEqual(Notification.objects.count(), 1)
+        Notification.objects.get(user=self.user1, type=Notification.TYPE_CASE_ASSIGNMENT)
 
     def test_get_open_no_initial_message_new_case(self):
         """
