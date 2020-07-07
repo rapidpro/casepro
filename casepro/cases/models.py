@@ -22,6 +22,7 @@ CASE_LOCK_KEY = "org:%d:case_lock:%s"
 class CaseFolder(Enum):
     open = 1
     closed = 2
+    all = 3
 
 
 class AccessLevel(IntEnum):
@@ -218,6 +219,7 @@ class Case(models.Model):
         """
         folder = search.get("folder")
         assignee_id = search.get("assignee")
+        user_assignee_id = search.get("user_assignee")
         after = search.get("after")
         before = search.get("before")
 
@@ -225,11 +227,15 @@ class Case(models.Model):
             queryset = Case.get_open(org, user)
         elif folder == CaseFolder.closed:
             queryset = Case.get_closed(org, user)
+        elif folder == CaseFolder.all:
+            queryset = Case.get_all(org, user)
         else:  # pragma: no cover
             raise ValueError("Invalid folder for cases")
 
         if assignee_id:
             queryset = queryset.filter(assignee__pk=assignee_id)
+        if user_assignee_id:
+            queryset = queryset.filter(user_assignee__pk=user_assignee_id)
 
         if after:
             queryset = queryset.filter(opened_on__gte=after)

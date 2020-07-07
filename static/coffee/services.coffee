@@ -468,6 +468,7 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
       return {
         folder: search.folder,
         assignee: if search.assignee then search.assignee.id else null,
+        user_assignee: if search.user_assignee then search.user_assignee.id else null,
         label: if search.label then search.label.id else null
       }
 ])

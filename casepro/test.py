@@ -172,8 +172,15 @@ class BaseCasesTest(DashTest):
             **kwargs,
         )
 
-    def create_case(self, org, contact, assignee, message, labels=(), **kwargs):
-        case = Case.objects.create(org=org, contact=contact, assignee=assignee, initial_message=message, **kwargs)
+    def create_case(self, org, contact, assignee, message, labels=(), user_assignee=None, **kwargs):
+        case = Case.objects.create(
+            org=org,
+            contact=contact,
+            assignee=assignee,
+            user_assignee=user_assignee,
+            initial_message=message,
+            **kwargs,
+        )
         case.labels.add(*labels)
 
         if "opened_on" in kwargs:  # uses auto_now_add
