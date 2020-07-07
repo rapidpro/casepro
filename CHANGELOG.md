@@ -1,3 +1,11 @@
+v1.3.0
+----------
+ * Fix editing of must_use_faq
+ * If case is assigned to specific user, only notify that user
+ * Show contact name on open case modal
+ * Add tab to user page which lists cases assigned to them
+ * Bump to latest minor release for all deps
+
 v1.2.7
 ----------
  * Fix translation
