@@ -701,6 +701,7 @@ class UserCRUDLTest(BaseCasesTest):
                 "partner": self.moh.pk,
                 "role": ROLE_ANALYST,
                 "change_password": True,
+                "must_use_faq": True,
             },
         )
         self.assertEqual(response.status_code, 302)
@@ -709,6 +710,7 @@ class UserCRUDLTest(BaseCasesTest):
         self.user2.profile.refresh_from_db()
         self.assertEqual(self.user2.profile.full_name, "Richard")
         self.assertEqual(self.user2.profile.change_password, True)
+        self.assertEqual(self.user2.profile.must_use_faq, True)
         self.assertEqual(self.user2.email, "rick@unicef.org")
         self.assertEqual(self.user2.username, "rick@unicef.org")
         self.assertIn(self.user2, self.unicef.viewers.all())
