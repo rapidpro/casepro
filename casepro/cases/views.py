@@ -51,10 +51,17 @@ class CaseSearchMixin(object):
         params = self.request.GET
         folder = CaseFolder[params["folder"]]
         assignee = params.get("assignee")
+        user_assignee = params.get("user_assignee")
         after = parse_iso8601(params.get("after"))
         before = parse_iso8601(params.get("before"))
 
-        return {"folder": folder, "assignee": assignee, "after": after, "before": before}
+        return {
+            "folder": folder,
+            "assignee": assignee,
+            "user_assignee": user_assignee,
+            "after": after,
+            "before": before,
+        }
 
 
 class CaseCRUDL(SmartCRUDL):
