@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-05-20 19:29+0000\n"
+"POT-Creation-Date: 2020-07-07 17:04+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Ilhasoft <contato@ilhasoft.com.br>, 2017\n"
 "Language-Team: Portuguese (Brazil) (https://www.transifex.com/ilhasoft/teams/56822/pt_BR/)\n"
@@ -876,7 +876,12 @@ msgstr "Histórico de mensagens"
 msgid "No events"
 msgstr "Sem eventos"
 
-msgid "Open a new case for this contact? This will archive all messages from the contact."
+msgid "Open a new case for <b>[[ contact.display ]]</b>?"
+msgstr ""
+
+#, fuzzy
+#| msgid "Open a new case for this contact? This will archive all messages from the contact."
+msgid "This will archive all messages from the contact."
 msgstr "Abra um novo caso para este contato? Isso arquivará todas as mensagens do contato."
 
 msgid "Note"

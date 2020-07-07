@@ -204,7 +204,7 @@ describe('modals:', () ->
   )
 
   it('NewCaseModalController', () ->
-    $controller('NewCaseModalController', {$scope: $scope, $uibModalInstance: modalInstance, summaryInitial: "Hello", summaryMaxLength: 10, partners: [test.moh, test.who]})
+    $controller('NewCaseModalController', {$scope: $scope, $uibModalInstance: modalInstance, summaryInitial: "Hello", summaryMaxLength: 10, contact: test.ann, partners: [test.moh, test.who]})
 
     expect($scope.fields.summary).toEqual({val: "Hello", maxLength: 10})
     expect($scope.fields.assignee).toEqual({val: test.moh})
@@ -228,7 +228,7 @@ describe('modals:', () ->
   it('NewCaseModalController.refreshUserList', () ->
     usersForPartner = spyOnPromise($q, $scope, UserService, 'fetchInPartner')
 
-    $controller('NewCaseModalController', {$scope: $scope, $uibModalInstance: modalInstance, summaryInitial: "Hello", summaryMaxLength: 10, partners: [test.moh, test.who]})
+    $controller('NewCaseModalController', {$scope: $scope, $uibModalInstance: modalInstance, summaryInitial: "Hello", summaryMaxLength: 10, contact: test.ann, partners: [test.moh, test.who]})
 
     expect($scope.users).toEqual([{id: null, name: "-- Anyone --"}])
 
