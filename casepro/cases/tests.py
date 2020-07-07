@@ -488,6 +488,7 @@ class CaseTest(BaseCasesTest):
         assert_search(self.user1, {"folder": CaseFolder.open, "user_assignee": self.user1.id}, [])
         assert_search(self.user1, {"folder": CaseFolder.open, "user_assignee": self.user3.id}, [])
         assert_search(self.user3, {"folder": CaseFolder.open, "user_assignee": self.user3.id}, [case5])
+        assert_search(self.user3, {"folder": CaseFolder.all, "user_assignee": self.user3.id}, [case5])
 
         # by before/after
         assert_search(self.admin, {"folder": CaseFolder.open, "before": d2}, [case2])
