@@ -1083,6 +1083,33 @@ class UserCRUDLTest(BaseCasesTest):
             response, "form", "new_password", "This password is too short. It must contain at least 10 characters."
         )
 
+        # submit with new password but not current password
+        response = self.url_post(
+            "unicef",
+            url,
+            {
+                "name": "Morris",
+                "email": "mo2@trac.com",
+                "new_password": "Qwerty12345!",
+                "confirm_password": "Qwerty12345!",
+            },
+        )
+        self.assertFormError(response, "form", "current_password", "Please enter your current password.")
+
+        # submit with new password but wrong current password
+        response = self.url_post(
+            "unicef",
+            url,
+            {
+                "name": "Morris",
+                "email": "mo2@trac.com",
+                "current_password": "kittens",
+                "new_password": "Qwerty12345!",
+                "confirm_password": "Qwerty12345!",
+            },
+        )
+        self.assertFormError(response, "form", "current_password", "Please enter your current password.")
+
         # submit with all required fields entered and valid password fields
         old_password_hash = user.password
         response = self.url_post(
@@ -1091,6 +1118,7 @@ class UserCRUDLTest(BaseCasesTest):
             {
                 "name": "Morris",
                 "email": "mo2@trac.com",
+                "current_password": "evan@unicef.org",  # test users use original email as password
                 "new_password": "Qwerty12345!",
                 "confirm_password": "Qwerty12345!",
             },
@@ -1125,6 +1153,7 @@ class UserCRUDLTest(BaseCasesTest):
             {
                 "name": "Morris",
                 "email": "mo2@trac.com",
+                "current_password": "Qwerty12345!",
                 "new_password": "Qwerty12345!",
                 "confirm_password": "Qwerty12345!",
             },

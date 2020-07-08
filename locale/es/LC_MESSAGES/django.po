@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-07-08 19:13+0000\n"
+"POT-Creation-Date: 2020-07-08 21:01+0000\n"
 "PO-Revision-Date: 2020-05-20 19:31+0000\n"
 "Last-Translator: Janina <jcuevas@unicef.org>, 2020\n"
 "Language-Team: Spanish (https://www.transifex.com/rapidpro/teams/110172/es/)\n"
@@ -306,6 +306,11 @@ msgstr "Correo electrónico"
 msgid "Email address and login."
 msgstr "Correo electrónico e ingreso"
 
+#, fuzzy
+#| msgid "Forgot Password?"
+msgid "Current Password"
+msgstr "¿Olvidó la contraseña?"
+
 msgid "Password"
 msgstr "Contraseña"
 
@@ -331,6 +336,9 @@ msgstr "Solo respuestas pre aprobadas"
 
 msgid "Whether user will only be able to reply using pre-approved replies (FAQs)"
 msgstr "Si el usiario aprueba solo con respuestas pre aprobadas (preguntas frecuentes)"
+
+msgid "Please enter your current password."
+msgstr ""
 
 msgid "Passwords don't match."
 msgstr "Contraseña incorrecta"

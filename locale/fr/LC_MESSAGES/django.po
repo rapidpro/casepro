@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-07-08 19:13+0000\n"
+"POT-Creation-Date: 2020-07-08 21:01+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -302,6 +302,9 @@ msgstr ""
 msgid "Email address and login."
 msgstr ""
 
+msgid "Current Password"
+msgstr ""
+
 msgid "Password"
 msgstr ""
 
@@ -324,6 +327,9 @@ msgid "Pre-approved responses only"
 msgstr ""
 
 msgid "Whether user will only be able to reply using pre-approved replies (FAQs)"
+msgstr ""
+
+msgid "Please enter your current password."
 msgstr ""
 
 msgid "Passwords don't match."
