@@ -17,6 +17,8 @@ class UserForm(forms.ModelForm):
 
     email = forms.CharField(label=_("Email"), max_length=254, help_text=_("Email address and login."))
 
+    current_password = forms.CharField(label=_("Current Password"), widget=forms.PasswordInput, required=False)
+
     password = forms.CharField(
         label=_("Password"),
         widget=forms.PasswordInput,
@@ -44,8 +46,10 @@ class UserForm(forms.ModelForm):
         help_text=_("Whether user will only be able to reply using pre-approved replies (FAQs)"),
     )
 
-    def __init__(self, *args, **kwargs):
-        self.org = kwargs.pop("org")
+    def __init__(self, org, user, *args, **kwargs):
+        self.org = org
+        self.user = user
+
         require_password_change = kwargs.pop("require_password_change", False)
 
         super(UserForm, self).__init__(*args, **kwargs)
@@ -55,9 +59,16 @@ class UserForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super(UserForm, self).clean()
 
+        # if a user is updating their own password, need to provide current password
+        new_password = cleaned_data.get("new_password")
+        if new_password and self.instance == self.user:
+            current_password = cleaned_data.get("current_password", "")
+            if not self.instance.check_password(current_password):
+                self.add_error("current_password", _("Please enter your current password."))
+
+        # if creating new user with password or updating password of existing user, confirmation must match
         password = cleaned_data.get("password") or cleaned_data.get("new_password")
         if password:
-            # check that provided password matches confirmation
             confirm_password = cleaned_data.get("confirm_password", "")
             if password != confirm_password:
                 self.add_error("confirm_password", _("Passwords don't match."))
