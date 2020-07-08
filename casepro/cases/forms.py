@@ -14,7 +14,7 @@ class BasePartnerForm(forms.ModelForm):
         label=_("Can Access"), queryset=Label.objects.none(), widget=forms.CheckboxSelectMultiple(), required=False
     )
 
-    # logo = forms.ImageField(label=_("Logo"), required=False, validators=[validate_image_file_extension])
+    logo = forms.ImageField(label=_("Logo"), required=False, validators=[validate_image_file_extension])
 
     def __init__(self, *args, **kwargs):
         org = kwargs.pop("org")
