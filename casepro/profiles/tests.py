@@ -1094,7 +1094,7 @@ class UserCRUDLTest(BaseCasesTest):
                 "confirm_password": "Qwerty12345!",
             },
         )
-        self.assertFormError(response, "form", "current_password", 'Please enter your current password.')
+        self.assertFormError(response, "form", "current_password", "Please enter your current password.")
 
         # submit with new password but wrong current password
         response = self.url_post(
@@ -1108,7 +1108,7 @@ class UserCRUDLTest(BaseCasesTest):
                 "confirm_password": "Qwerty12345!",
             },
         )
-        self.assertFormError(response, "form", "current_password", 'Please enter your current password.')
+        self.assertFormError(response, "form", "current_password", "Please enter your current password.")
 
         # submit with all required fields entered and valid password fields
         old_password_hash = user.password
