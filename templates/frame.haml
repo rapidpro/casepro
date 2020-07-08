@@ -164,27 +164,27 @@
           //{% include 'lang_switcher.haml' %}
 
     <!-- JavaScript at the bottom for fast page loading -->
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/libs/jquery.1.11.1.min.js" }
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/bootstrap.min.js" }
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.11.3.min.js")
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/bootstrap.min.js")
 
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/angular-1.4.14/angular.min.js" }
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/angular-1.4.14/angular-sanitize.min.js" }
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/angular-1.4.14/angular-animate.min.js" }
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/ui-bootstrap-tpls-1.3.3.min.js" }
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/ng-infinite-scroll.min.js" }
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/select.min.js" }
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/raven.min.js" }
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/highcharts.js" }
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/libphonenumber.min.js" }
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/angular-1.4.14/angular.min.js")
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/angular-1.4.14/angular-sanitize.min.js")
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/angular-1.4.14/angular-animate.min.js")
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/ui-bootstrap-tpls-1.3.3.min.js")
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/ng-infinite-scroll.min.js")
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/select.min.js")
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/raven.min.js")
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/highcharts.js")
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/libphonenumber.min.js")
 
     {% compress js %}
-    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/utils.coffee" }
-    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/app.coffee" }
-    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/services.coffee" }
-    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/controllers.coffee" }
-    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/modals.coffee" }
-    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/filters.coffee" }
-    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/directives.coffee" }
+    %script(type="text/coffeescript" src="{{ STATIC_URL }}coffee/utils.coffee")
+    %script(type="text/coffeescript" src="{{ STATIC_URL }}coffee/app.coffee")
+    %script(type="text/coffeescript" src="{{ STATIC_URL }}coffee/services.coffee")
+    %script(type="text/coffeescript" src="{{ STATIC_URL }}coffee/controllers.coffee")
+    %script(type="text/coffeescript" src="{{ STATIC_URL }}coffee/modals.coffee")
+    %script(type="text/coffeescript" src="{{ STATIC_URL }}coffee/filters.coffee")
+    %script(type="text/coffeescript" src="{{ STATIC_URL }}coffee/directives.coffee")
     {% endcompress %}
 
     <script type="text/javascript">
