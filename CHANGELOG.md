@@ -1,3 +1,8 @@
+v1.3.3
+----------
+ * Add XFrameOptionsMiddleware
+ * Tweak notifications for re-assigned cases so if assignee is specific user, only they get notified
+
 v1.3.2
 ----------
  * Revert upgrade to django-storages
