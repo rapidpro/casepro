@@ -1,3 +1,9 @@
+v1.3.4
+----------
+ * Fix unrelated failing test due to ordering of labels
+ * Fix styling on partner update/create forms and add validator for image file extensions
+ * Update to jQuery 1.11.3
+
 v1.3.3
 ----------
  * Add XFrameOptionsMiddleware
