@@ -446,8 +446,8 @@ class UserCRUDLTest(BaseCasesTest):
             {
                 "name": "McAdmin",
                 "email": "mcadmin@casely.com",
-                "password": "Qwerty12345",
-                "confirm_password": "Qwerty12345",
+                "password": "Qwerty12345!",
+                "confirm_password": "Qwerty12345!",
             },
         )
 
@@ -483,8 +483,8 @@ class UserCRUDLTest(BaseCasesTest):
                 "name": "Adrian Admin",
                 "email": "adrian@casely.com",
                 "role": ROLE_ADMIN,
-                "password": "Qwerty12345",
-                "confirm_password": "Qwerty12345",
+                "password": "Qwerty12345!",
+                "confirm_password": "Qwerty12345!",
             },
         )
 
@@ -505,13 +505,13 @@ class UserCRUDLTest(BaseCasesTest):
                 "email": "mo@casely.com",
                 "partner": "",
                 "role": ROLE_ANALYST,
-                "password": "Qwerty12345",
-                "confirm_password": "Qwerty12345",
+                "password": "Qwerty12345!",
+                "confirm_password": "Qwerty12345!",
             },
         )
         self.assertFormError(response, "form", "partner", "Required for role.")
 
-        # submit again with all required fields but invalid password
+        # submit again with all required fields but password that is too short
         response = self.url_post(
             "unicef",
             url,
@@ -520,11 +520,28 @@ class UserCRUDLTest(BaseCasesTest):
                 "email": "mo@casely.com",
                 "partner": self.moh.pk,
                 "role": ROLE_ANALYST,
-                "password": "123",
-                "confirm_password": "123",
+                "password": "Ax1",
+                "confirm_password": "Ax1",
             },
         )
-        self.assertFormError(response, "form", "password", "Must be at least 10 characters long")
+        self.assertFormError(
+            response, "form", "password", "This password is too short. It must contain at least 10 characters."
+        )
+
+        # submit again with all required fields but password that is too common
+        response = self.url_post(
+            "unicef",
+            url,
+            {
+                "name": "Mo Cases",
+                "email": "mo@casely.com",
+                "partner": self.moh.pk,
+                "role": ROLE_ANALYST,
+                "password": "password123",
+                "confirm_password": "password123",
+            },
+        )
+        self.assertFormError(response, "form", "password", "This password is too common.")
 
         # submit again with valid password but mismatched confirmation
         response = self.url_post(
@@ -535,8 +552,8 @@ class UserCRUDLTest(BaseCasesTest):
                 "email": "mo@casely.com",
                 "partner": self.moh.pk,
                 "role": ROLE_ANALYST,
-                "password": "Qwerty12345",
-                "confirm_password": "Azerty23456",
+                "password": "Qwerty12345!",
+                "confirm_password": "Azerty23456!",
             },
         )
         self.assertFormError(response, "form", "confirm_password", "Passwords don't match.")
@@ -550,8 +567,8 @@ class UserCRUDLTest(BaseCasesTest):
                 "email": "mo@casely.com",
                 "partner": self.moh.pk,
                 "role": ROLE_ANALYST,
-                "password": "Qwerty12345",
-                "confirm_password": "Qwerty12345",
+                "password": "Qwerty12345!",
+                "confirm_password": "Qwerty12345!",
             },
         )
 
@@ -572,8 +589,8 @@ class UserCRUDLTest(BaseCasesTest):
             {
                 "name": "Mo Cases II",
                 "email": "mo@casely.com",
-                "password": "Qwerty12345",
-                "confirm_password": "Qwerty12345",
+                "password": "Qwerty12345!",
+                "confirm_password": "Qwerty12345!",
             },
         )
         self.assertFormError(response, "form", None, "Email address already taken.")
@@ -607,8 +624,8 @@ class UserCRUDLTest(BaseCasesTest):
                 "name": "Mo Cases",
                 "email": "mo@casely.com",
                 "role": ROLE_ANALYST,
-                "password": "Qwerty12345",
-                "confirm_password": "Qwerty12345",
+                "password": "Qwerty12345!",
+                "confirm_password": "Qwerty12345!",
             },
         )
 
@@ -636,8 +653,8 @@ class UserCRUDLTest(BaseCasesTest):
                 "name": "McManage",
                 "email": "manager@moh.com",
                 "role": ROLE_MANAGER,
-                "password": "Qwerty12345",
-                "confirm_password": "Qwerty12345",
+                "password": "Qwerty12345!",
+                "confirm_password": "Qwerty12345!",
             },
         )
         self.assertEqual(response.status_code, 302)
@@ -658,8 +675,8 @@ class UserCRUDLTest(BaseCasesTest):
                 "email": "bob@moh.com",
                 "partner": self.who,
                 "role": ROLE_MANAGER,
-                "password": "Qwerty12345",
-                "confirm_password": "Qwerty12345",
+                "password": "Qwerty12345!",
+                "confirm_password": "Qwerty12345!",
             },
         )
         self.assertEqual(response.status_code, 302)
@@ -772,7 +789,9 @@ class UserCRUDLTest(BaseCasesTest):
                 "confirm_password": "123",
             },
         )
-        self.assertFormError(response, "form", "new_password", "Must be at least 10 characters long")
+        self.assertFormError(
+            response, "form", "new_password", "This password is too short. It must contain at least 10 characters."
+        )
 
         # submit with old email, valid password, and switch back to being analyst for MOH
         response = self.url_post(
@@ -783,8 +802,8 @@ class UserCRUDLTest(BaseCasesTest):
                 "email": "bill@unicef.org",
                 "partner": self.moh.pk,
                 "role": ROLE_ANALYST,
-                "new_password": "Qwerty12345",
-                "confirm_password": "Qwerty12345",
+                "new_password": "Qwerty12345!",
+                "confirm_password": "Qwerty12345!",
             },
         )
         self.assertEqual(response.status_code, 302)
@@ -822,8 +841,8 @@ class UserCRUDLTest(BaseCasesTest):
                 "name": "Bob",
                 "email": "bob@unicef.org",
                 "role": ROLE_MANAGER,
-                "new_password": "Qwerty12345",
-                "confirm_password": "Qwerty12345",
+                "new_password": "Qwerty12345!",
+                "confirm_password": "Qwerty12345!",
             },
         )
         self.assertEqual(response.status_code, 302)
@@ -841,7 +860,7 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(self.url_get("unicef", url).status_code, 302)
 
         # partner analyst users can't access page
-        self.client.login(username="bill@unicef.org", password="Qwerty12345")
+        self.client.login(username="bill@unicef.org", password="Qwerty12345!")
         self.assertEqual(self.url_get("unicef", url).status_code, 302)
 
     def test_read(self):
@@ -1060,7 +1079,9 @@ class UserCRUDLTest(BaseCasesTest):
             url,
             {"name": "Morris", "email": "mo2@trac.com", "new_password": "123", "confirm_password": "123"},
         )
-        self.assertFormError(response, "form", "new_password", "Must be at least 10 characters long")
+        self.assertFormError(
+            response, "form", "new_password", "This password is too short. It must contain at least 10 characters."
+        )
 
         # submit with all required fields entered and valid password fields
         old_password_hash = user.password
@@ -1070,8 +1091,8 @@ class UserCRUDLTest(BaseCasesTest):
             {
                 "name": "Morris",
                 "email": "mo2@trac.com",
-                "new_password": "Qwerty12345",
-                "confirm_password": "Qwerty12345",
+                "new_password": "Qwerty12345!",
+                "confirm_password": "Qwerty12345!",
             },
         )
         self.assertEqual(response.status_code, 302)
@@ -1092,7 +1113,7 @@ class UserCRUDLTest(BaseCasesTest):
 
         # submit again with new password but no confirmation
         response = self.url_post(
-            "unicef", url, {"name": "Morris", "email": "mo2@trac.com", "new_password": "Qwerty12345"}
+            "unicef", url, {"name": "Morris", "email": "mo2@trac.com", "new_password": "Qwerty12345!"}
         )
         self.assertEqual(response.status_code, 200)
         self.assertFormError(response, "form", "confirm_password", "Passwords don't match.")
@@ -1104,8 +1125,8 @@ class UserCRUDLTest(BaseCasesTest):
             {
                 "name": "Morris",
                 "email": "mo2@trac.com",
-                "new_password": "Qwerty12345",
-                "confirm_password": "Qwerty12345",
+                "new_password": "Qwerty12345!",
+                "confirm_password": "Qwerty12345!",
             },
         )
         self.assertEqual(response.status_code, 302)

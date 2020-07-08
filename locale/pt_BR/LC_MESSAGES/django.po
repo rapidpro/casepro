@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-07-07 17:04+0000\n"
+"POT-Creation-Date: 2020-07-08 19:13+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Ilhasoft <contato@ilhasoft.com.br>, 2017\n"
 "Language-Team: Portuguese (Brazil) (https://www.transifex.com/ilhasoft/teams/56822/pt_BR/)\n"
@@ -26,6 +26,9 @@ msgstr "Descrição "
 
 msgid "Can Access"
 msgstr "Pode Acessar"
+
+msgid "Logo"
+msgstr "Logo"
 
 msgid "Organization"
 msgstr "Organização"
@@ -53,9 +56,6 @@ msgstr "Etiquetas que este parceiro pode acessar"
 
 msgid "Users that belong to this partner"
 msgstr "Usuários que pertencem a este parceiro"
-
-msgid "Logo"
-msgstr "Logo"
 
 msgid "Labels assigned to this case"
 msgstr "Etiquetas atribuídas a este caso"
@@ -301,14 +301,6 @@ msgstr ""
 msgid "Edit My Organization"
 msgstr "Editar minha organização"
 
-#, python-format
-msgid "Must be at least %d characters long"
-msgstr "Deve ter pelo menos %d caractere"
-
-#, python-format
-msgid "Password used to log in (minimum of %d characters)."
-msgstr "Senha usada para fazer login (minimo de %d caracteres)."
-
 msgid "Email"
 msgstr "Email"
 
@@ -317,6 +309,11 @@ msgstr "Email e login"
 
 msgid "Password"
 msgstr "Senha"
+
+#, fuzzy
+#| msgid "Password used to log in (minimum of %d characters)."
+msgid "Password used to log in."
+msgstr "Senha usada para fazer login (minimo de %d caracteres)."
 
 msgid "New password"
 msgstr "Nova senha"
@@ -1000,6 +997,10 @@ msgid ""
 msgstr ""
 "\n"
 "Sua exportação está pronta e pode ser baixada clicando %(download_url)s.\n"
+
+#, python-format
+#~ msgid "Must be at least %d characters long"
+#~ msgstr "Deve ter pelo menos %d caractere"
 
 #~ msgid "Bulk Reply"
 #~ msgstr "Resposta em massa"

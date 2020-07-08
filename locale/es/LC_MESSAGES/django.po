@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-07-07 17:04+0000\n"
+"POT-Creation-Date: 2020-07-08 19:13+0000\n"
 "PO-Revision-Date: 2020-05-20 19:31+0000\n"
 "Last-Translator: Janina <jcuevas@unicef.org>, 2020\n"
 "Language-Team: Spanish (https://www.transifex.com/rapidpro/teams/110172/es/)\n"
@@ -30,6 +30,9 @@ msgstr "Descripción"
 
 msgid "Can Access"
 msgstr "Acceso"
+
+msgid "Logo"
+msgstr "Logo"
 
 msgid "Organization"
 msgstr "Organización"
@@ -57,9 +60,6 @@ msgstr "Etiquetas a las que este aliado puede acceder"
 
 msgid "Users that belong to this partner"
 msgstr "Usuarios que pertenecen a este aliado"
-
-msgid "Logo"
-msgstr "Logo"
 
 msgid "Labels assigned to this case"
 msgstr "Etiquetas asignadas a este caso"
@@ -300,14 +300,6 @@ msgstr "Flujo para iniciar después de que cerró el caso"
 msgid "Edit My Organization"
 msgstr "Editar Mi Organización"
 
-#, python-format
-msgid "Must be at least %d characters long"
-msgstr "Debe tener al menos %d caracteres"
-
-#, python-format
-msgid "Password used to log in (minimum of %d characters)."
-msgstr "Contraseña para ingresar (mínimo %d de caracteres)"
-
 msgid "Email"
 msgstr "Correo electrónico"
 
@@ -316,6 +308,11 @@ msgstr "Correo electrónico e ingreso"
 
 msgid "Password"
 msgstr "Contraseña"
+
+#, fuzzy
+#| msgid "Password used to log in (minimum of %d characters)."
+msgid "Password used to log in."
+msgstr "Contraseña para ingresar (mínimo %d de caracteres)"
 
 msgid "New password"
 msgstr "Nueva contraseña"
@@ -945,3 +942,7 @@ msgid ""
 msgstr ""
 "\n"
 "Tu archivo está listo y puede ser descargado dando click %(download_url)s.\n"
+
+#, python-format
+#~ msgid "Must be at least %d characters long"
+#~ msgstr "Debe tener al menos %d caracteres"

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-07-07 17:04+0000\n"
+"POT-Creation-Date: 2020-07-08 19:13+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -25,6 +25,9 @@ msgid "Description"
 msgstr ""
 
 msgid "Can Access"
+msgstr ""
+
+msgid "Logo"
 msgstr ""
 
 msgid "Organization"
@@ -52,9 +55,6 @@ msgid "Labels that this partner can access"
 msgstr ""
 
 msgid "Users that belong to this partner"
-msgstr ""
-
-msgid "Logo"
 msgstr ""
 
 msgid "Labels assigned to this case"
@@ -296,14 +296,6 @@ msgstr ""
 msgid "Edit My Organization"
 msgstr ""
 
-#, python-format
-msgid "Must be at least %d characters long"
-msgstr ""
-
-#, python-format
-msgid "Password used to log in (minimum of %d characters)."
-msgstr ""
-
 msgid "Email"
 msgstr ""
 
@@ -311,6 +303,9 @@ msgid "Email address and login."
 msgstr ""
 
 msgid "Password"
+msgstr ""
+
+msgid "Password used to log in."
 msgstr ""
 
 msgid "New password"
