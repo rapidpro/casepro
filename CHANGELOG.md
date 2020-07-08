@@ -1,3 +1,7 @@
+v1.3.5
+----------
+ * Make password requirements stricter
+
 v1.3.4
 ----------
  * Fix unrelated failing test due to ordering of labels
