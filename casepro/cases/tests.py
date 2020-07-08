@@ -711,6 +711,10 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_post_json("unicef", url, {"assignee": self.who.pk, "user_assignee": self.user2.pk})
         self.assertEqual(response.status_code, 404)
 
+        # only the assigned user should get a notification
+        self.assertEqual(Notification.objects.count(), 1)
+        self.assertEqual(Notification.objects.get().user, self.user3)
+
     def test_reassign_no_user(self):
         """The user field should be optional, and reassignment should still work without it."""
         url = reverse("cases.case_reassign", args=[self.case.pk])
@@ -720,6 +724,10 @@ class CaseCRUDLTest(BaseCasesTest):
 
         response = self.url_post_json("unicef", url, {"assignee": self.who.pk, "user_assignee": None})
         self.assertEqual(response.status_code, 204)
+
+        # notifies users in that partner org
+        self.assertEqual(Notification.objects.count(), 1)
+        self.assertEqual(Notification.objects.get().user, self.user3)
 
     def test_close(self):
         url = reverse("cases.case_close", args=[self.case.pk])

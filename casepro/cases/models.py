@@ -409,8 +409,10 @@ class Case(models.Model):
         self.notify_watchers(action=action)
 
         # also notify users in the assigned partner that this case has been assigned to them
-        for user in partner.get_users():
-            Notification.new_case_assignment(self.org, user, action)
+        notify_users = [user_assignee] if user_assignee else partner.get_users()
+        for notify_user in notify_users:
+            if notify_user != user:
+                Notification.new_case_assignment(self.org, notify_user, action)
 
     @case_action()
     def label(self, user, label):
