@@ -4,9 +4,10 @@
 - block pre-content
 
 - block content
+  {{ context_data_json|json_script:"contextData" }}
 
-  %script{ type:"text/javascript" }
-    var contextData = {{ context_data_json|safe }};
+  %script(type="text/javascript")
+    var contextData = JSON.parse(document.getElementById('contextData').textContent);
 
   .ng-cloak{ ng-controller:"PartnerController", ng-init:"init()", ng-cloak:"" }
     .page-header.clearfix{ style:"border-bottom: none" }

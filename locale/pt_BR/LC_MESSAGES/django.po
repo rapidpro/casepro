@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-07-08 19:13+0000\n"
+"POT-Creation-Date: 2020-07-08 21:01+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Ilhasoft <contato@ilhasoft.com.br>, 2017\n"
 "Language-Team: Portuguese (Brazil) (https://www.transifex.com/ilhasoft/teams/56822/pt_BR/)\n"
@@ -307,6 +307,11 @@ msgstr "Email"
 msgid "Email address and login."
 msgstr "Email e login"
 
+#, fuzzy
+#| msgid "Forgot Password?"
+msgid "Current Password"
+msgstr "Esqueceu a senha?"
+
 msgid "Password"
 msgstr "Senha"
 
@@ -332,6 +337,9 @@ msgstr "Apenas respostas pré-aprovadas"
 
 msgid "Whether user will only be able to reply using pre-approved replies (FAQs)"
 msgstr "Se o usuário só poderá responder usando respostas pré-aprovadas (FAQs)"
+
+msgid "Please enter your current password."
+msgstr ""
 
 msgid "Passwords don't match."
 msgstr "Senhas não correspondem."

@@ -10,9 +10,10 @@
         {{ banner_text }}
 
 - block content
+  {{ context_data_json|json_script:"contextData" }}
 
-  %script{ type:"text/javascript" }
-    var contextData = {{ context_data_json|safe }};
+  %script(type="text/javascript")
+    var contextData = JSON.parse(document.getElementById('contextData').textContent);
 
   .ng-cloak{ ng-controller:"InboxController", ng-init:'init("{{ folder }}", {{ server_time }})', ng-cloak:"" }
     .page-header.clearfix

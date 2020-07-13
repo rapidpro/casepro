@@ -907,11 +907,9 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(response.context["edit_button_url"], reverse("profiles.user_update", args=[self.user2.pk]))
         self.assertTrue(response.context["can_delete"])
 
-        # view another user in different partner org (can't edit)
+        # can't view user in different partner org
         response = self.url_get("unicef", reverse("profiles.user_read", args=[self.user3.pk]))
-        self.assertEqual(response.status_code, 200)
-        self.assertIsNone(response.context["edit_button_url"])
-        self.assertFalse(response.context["can_delete"])
+        self.assertEqual(response.status_code, 404)
 
         # log in as an analyst user
         self.login(self.user2)
@@ -927,6 +925,10 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 200)
         self.assertIsNone(response.context["edit_button_url"])
         self.assertFalse(response.context["can_delete"])
+
+        # can't view user in different partner org
+        response = self.url_get("unicef", reverse("profiles.user_read", args=[self.user3.pk]))
+        self.assertEqual(response.status_code, 404)
 
     def test_list(self):
         url = reverse("profiles.user_list")
@@ -1083,6 +1085,33 @@ class UserCRUDLTest(BaseCasesTest):
             response, "form", "new_password", "This password is too short. It must contain at least 10 characters."
         )
 
+        # submit with new password but not current password
+        response = self.url_post(
+            "unicef",
+            url,
+            {
+                "name": "Morris",
+                "email": "mo2@trac.com",
+                "new_password": "Qwerty12345!",
+                "confirm_password": "Qwerty12345!",
+            },
+        )
+        self.assertFormError(response, "form", "current_password", "Please enter your current password.")
+
+        # submit with new password but wrong current password
+        response = self.url_post(
+            "unicef",
+            url,
+            {
+                "name": "Morris",
+                "email": "mo2@trac.com",
+                "current_password": "kittens",
+                "new_password": "Qwerty12345!",
+                "confirm_password": "Qwerty12345!",
+            },
+        )
+        self.assertFormError(response, "form", "current_password", "Please enter your current password.")
+
         # submit with all required fields entered and valid password fields
         old_password_hash = user.password
         response = self.url_post(
@@ -1091,6 +1120,7 @@ class UserCRUDLTest(BaseCasesTest):
             {
                 "name": "Morris",
                 "email": "mo2@trac.com",
+                "current_password": "evan@unicef.org",  # test users use original email as password
                 "new_password": "Qwerty12345!",
                 "confirm_password": "Qwerty12345!",
             },
@@ -1125,6 +1155,7 @@ class UserCRUDLTest(BaseCasesTest):
             {
                 "name": "Morris",
                 "email": "mo2@trac.com",
+                "current_password": "Qwerty12345!",
                 "new_password": "Qwerty12345!",
                 "confirm_password": "Qwerty12345!",
             },
