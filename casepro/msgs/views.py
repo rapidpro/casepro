@@ -18,6 +18,8 @@ from smartmin.views import (
 )
 from temba_client.utils import parse_iso8601
 
+from django import forms
+from django.core.validators import FileExtensionValidator
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.urls import reverse
 from django.utils.timesince import timesince
@@ -655,10 +657,19 @@ class FaqCRUDL(SmartCRUDL):
             return JsonResponse({"results": [m.as_json() for m in context["object_list"]]}, encoder=JSONEncoder)
 
     class Import(OrgPermsMixin, SmartCSVImportView):
+        class Form(forms.ModelForm):
+            csv_file = forms.FileField(label=_("Import file"), validators=[FileExtensionValidator(["csv"])])
+
+            class Meta:
+                model = ImportTask
+                fields = ("csv_file",)
+
         model = ImportTask
-        fields = ("csv_file",)
         success_message = "File uploaded successfully. If your FAQs don't appear here soon, something went wrong."
         success_url = "@msgs.faq_list"
+
+        def get_form_class(self):
+            return FaqCRUDL.Import.Form
 
         def post_save(self, task):
             task.start(self.org)
