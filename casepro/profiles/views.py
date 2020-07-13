@@ -11,7 +11,7 @@ from casepro.cases.mixins import PartnerPermsMixin
 from casepro.cases.models import Partner
 from casepro.orgs_ext.mixins import OrgFormMixin
 from casepro.statistics.models import DailyCount
-from casepro.utils import json_encode, month_range, str_to_bool
+from casepro.utils import month_range, str_to_bool
 
 from .forms import OrgUserForm, PartnerUserForm, UserForm
 from .models import Profile
@@ -279,7 +279,7 @@ class UserCRUDL(SmartCRUDL):
                 edit_button_url = None
                 can_delete = False
 
-            context["context_data_json"] = json_encode({"user": self.object.as_json(full=True, org=org)})
+            context["context_data_json"] = {"user": self.object.as_json(full=True, org=org)}
             context["edit_button_url"] = edit_button_url
             context["can_delete"] = can_delete
             context["summary"] = self.get_summary(org, self.object) if org else {}
