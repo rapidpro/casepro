@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-07-08 21:01+0000\n"
+"POT-Creation-Date: 2020-07-13 21:04+0000\n"
 "PO-Revision-Date: 2020-05-20 19:31+0000\n"
 "Last-Translator: Janina <jcuevas@unicef.org>, 2020\n"
 "Language-Team: Spanish (https://www.transifex.com/rapidpro/teams/110172/es/)\n"
@@ -266,6 +266,11 @@ msgstr "Descargar mensajes"
 
 msgid "Download Replies"
 msgstr "Descargar respuestas"
+
+#, fuzzy
+#| msgid "Import"
+msgid "Import file"
+msgstr "Importar"
 
 msgid "The name of this organization"
 msgstr "Nombre de esta organización"

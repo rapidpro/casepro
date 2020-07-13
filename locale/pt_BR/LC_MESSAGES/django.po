@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-07-08 21:01+0000\n"
+"POT-Creation-Date: 2020-07-13 21:04+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Ilhasoft <contato@ilhasoft.com.br>, 2017\n"
 "Language-Team: Portuguese (Brazil) (https://www.transifex.com/ilhasoft/teams/56822/pt_BR/)\n"
@@ -267,6 +267,11 @@ msgstr "Baixar Menssagens"
 
 msgid "Download Replies"
 msgstr "Baixar Respostas"
+
+#, fuzzy
+#| msgid "Import"
+msgid "Import file"
+msgstr "Importar"
 
 msgid "The name of this organization"
 msgstr "Nome desta organização"
