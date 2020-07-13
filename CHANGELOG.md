@@ -1,3 +1,11 @@
+v1.3.7
+----------
+ * Upgrade to latest bootstrap 3.3.x
+ * Only allow CSV file extensions for FAQ imports
+ * Fix embedding of JSON in templates
+ * Only allow partners users to view users in same partner org
+ * Require current password when user changes their password
+
 v1.3.5
 ----------
  * Make password requirements stricter
