@@ -117,7 +117,7 @@ class LabelCRUDL(SmartCRUDL):
             label_json["watching"] = self.object.is_watched_by(self.request.user)
 
             # angular app requires context data in JSON format
-            context["context_data_json"] = json_encode({"label": label_json})
+            context["context_data_json"] = {"label": label_json}
 
             context["rule_tests"] = self.object.rule.get_tests_description() if self.object.rule else ""
 
@@ -593,7 +593,7 @@ class FaqCRUDL(SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super(FaqCRUDL.Read, self).get_context_data(**kwargs)
             edit_button_url = reverse("msgs.faq_update", args=[self.object.pk])
-            context["context_data_json"] = json_encode({"faq": self.object.as_json()})
+            context["context_data_json"] = {"faq": self.object.as_json()}
             context["edit_button_url"] = edit_button_url
             context["can_delete"] = True
 

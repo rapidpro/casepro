@@ -260,7 +260,7 @@ class UserCRUDL(SmartCRUDL):
                 edit_button_url = None
                 can_delete = False
 
-            context["context_data_json"] = json_encode({"user": self.object.as_json(full=True, org=org)})
+            context["context_data_json"] = {"user": self.object.as_json(full=True, org=org)}
             context["edit_button_url"] = edit_button_url
             context["can_delete"] = can_delete
             context["summary"] = self.get_summary(org, self.object) if org else {}

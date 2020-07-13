@@ -32,9 +32,7 @@ class ContactCRUDL(SmartCRUDL):
 
             fields = Field.get_all(self.object.org, visible=True).order_by("label")
 
-            context["context_data_json"] = json_encode(
-                {"contact": self.object.as_json(full=True), "fields": [f.as_json() for f in fields]}
-            )
+            context["context_data_json"] = {"contact": self.object.as_json(full=True), "fields": [f.as_json() for f in fields]}
             context["backend_url"] = settings.SITE_EXTERNAL_CONTACT_URL % self.object.uuid
             return context
 
