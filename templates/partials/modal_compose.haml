@@ -4,7 +4,7 @@
   %h3.modal-title
     [[ title ]]
   .modal-body
-    %form{ name:"form", novalidate:"" }
+    %form{ name:"form" }
       .form-group{ ng-class:'{"has-error": form.path.$invalid && (form.path.$dirty || form.submitted)}' }
         %label.control-label
           - trans "Recipient"

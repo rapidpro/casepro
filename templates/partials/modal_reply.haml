@@ -17,7 +17,7 @@
   %p{ ng-if:'!faqOnly && replies.length > 0' }
     - trans "You may select one of the following pre-approved replies or enter a custom message below."
 
-  %form{ name:"form", novalidate:"" }
+  %form{ name:"form" }
     .form-group{ ng-if:"replies.length > 0" }
       .search-toolbar.clearfix
         .pull-back

@@ -8,7 +8,7 @@
       -trans "Open a new case for <b>[[ contact.display ]]</b>?"
       -trans "This will archive all messages from the contact."
 
-    %form(name="form" novalidate="")
+    %form(name="form")
       .form-group(ng-class='{"has-error": form.summary.$invalid}')
         %label.control-label
           -trans "Summary"
