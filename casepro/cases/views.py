@@ -31,7 +31,6 @@ from casepro.utils import (
     JSONEncoder,
     datetime_to_microseconds,
     humanize_seconds,
-    json_encode,
     microseconds_to_datetime,
     month_range,
     str_to_bool,
@@ -102,7 +101,10 @@ class CaseCRUDL(SmartCRUDL):
             fields = Field.get_all(self.object.org, visible=True).order_by("label")
 
             # angular app requires context data in JSON format
-            context["context_data_json"] = {"all_labels": [l.as_json() for l in labels], "fields": [f.as_json() for f in fields]}
+            context["context_data_json"] = {
+                "all_labels": [l.as_json() for l in labels],
+                "fields": [f.as_json() for f in fields],
+            }
 
             context["can_update"] = can_update
             context["alert"] = self.request.GET.get("alert", None)

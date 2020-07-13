@@ -11,7 +11,7 @@ from casepro.cases.mixins import PartnerPermsMixin
 from casepro.cases.models import Partner
 from casepro.orgs_ext.mixins import OrgFormMixin
 from casepro.statistics.models import DailyCount
-from casepro.utils import json_encode, month_range, str_to_bool
+from casepro.utils import month_range, str_to_bool
 
 from .forms import OrgUserForm, PartnerUserForm, UserForm
 from .models import Profile

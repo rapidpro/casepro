@@ -26,7 +26,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from casepro.rules.mixins import RuleFormMixin
 from casepro.statistics.models import DailyCount
-from casepro.utils import JSONEncoder, json_encode, month_range, str_to_bool
+from casepro.utils import JSONEncoder, month_range, str_to_bool
 from casepro.utils.export import BaseDownloadView
 
 from .forms import FaqForm, LabelForm
