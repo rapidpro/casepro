@@ -241,6 +241,9 @@ class UserCRUDL(SmartCRUDL):
 
         def get_queryset(self):
             if self.request.org:
+                user_partner = self.request.user.get_partner(self.request.org)
+                if user_partner:
+                    return user_partner.get_users()
                 return self.request.org.get_users()
             else:
                 return super(UserCRUDL.Read, self).get_queryset()
