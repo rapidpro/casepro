@@ -907,11 +907,9 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(response.context["edit_button_url"], reverse("profiles.user_update", args=[self.user2.pk]))
         self.assertTrue(response.context["can_delete"])
 
-        # view another user in different partner org (can't edit)
+        # can't view user in different partner org
         response = self.url_get("unicef", reverse("profiles.user_read", args=[self.user3.pk]))
-        self.assertEqual(response.status_code, 200)
-        self.assertIsNone(response.context["edit_button_url"])
-        self.assertFalse(response.context["can_delete"])
+        self.assertEqual(response.status_code, 404)
 
         # log in as an analyst user
         self.login(self.user2)
@@ -927,6 +925,10 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 200)
         self.assertIsNone(response.context["edit_button_url"])
         self.assertFalse(response.context["can_delete"])
+
+        # can't view user in different partner org
+        response = self.url_get("unicef", reverse("profiles.user_read", args=[self.user3.pk]))
+        self.assertEqual(response.status_code, 404)
 
     def test_list(self):
         url = reverse("profiles.user_list")
