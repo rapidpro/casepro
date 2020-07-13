@@ -14,7 +14,7 @@
         %p
           [[ faq.answer ]]
           
-    %form{ name:"form", novalidate:"" }
+    %form{ name:"form" }
       .form-group
       .form-group.form-horizontal
         .form-group{ ng-class:'{"has-error": form.question.$invalid && (form.question.$dirty || form.submitted)}' }

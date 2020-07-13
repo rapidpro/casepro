@@ -6,7 +6,7 @@
   .modal-body
     %p{ style:"margin-bottom: 1em" }
       %span{ ng-bind-html:"prompt" }
-    %form.form-inline{ name:"form", novalidate:"" }
+    %form.form-inline{ name:"form" }
       .date-range{ ng-controller:"DateRangeController", ng-init:'init("fields.after", "fields.before")' }
         .form-group{ ng-class:'{"has-error": form.after.$invalid}' }
           %label.control-label{ style:"margin-right: 1em" }
