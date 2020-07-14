@@ -1,3 +1,8 @@
+v1.3.8
+----------
+ * Add autocomplete=off to login page
+ * Remove novalidate on forms
+
 v1.3.7
 ----------
  * Upgrade to latest bootstrap 3.3.x
