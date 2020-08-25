@@ -495,7 +495,7 @@ class OutgoingCRUDL(SmartCRUDL):
             page = int(self.request.GET.get("page", 1))
 
             search = self.derive_search()
-            items = Outgoing.search_replies(org, user, search)
+            items = Outgoing.search_replies(org, user, search).exclude(reply_to=None)
 
             paginator = LazyPaginator(items, 50)
             outgoing = paginator.page(page)
