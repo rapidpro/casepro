@@ -1,3 +1,7 @@
+v1.3.9
+----------
+ * Fix reply view when org has replies without reply_to set
+
 v1.3.8
 ----------
  * Add autocomplete=off to login page
