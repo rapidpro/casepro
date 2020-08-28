@@ -1,3 +1,7 @@
+v1.3.10
+----------
+ * Update to latest rapidpro-python
+
 v1.3.9
 ----------
  * Fix reply view when org has replies without reply_to set
