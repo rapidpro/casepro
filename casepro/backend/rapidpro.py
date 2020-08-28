@@ -338,7 +338,7 @@ class RapidProBackend(BaseBackend):
 
     def archive_contact_messages(self, org, contact):
         client = self._get_client(org)
-        client.bulk_archive_contacts(contacts=[contact.uuid])
+        client.bulk_archive_contact_messages(contacts=[contact.uuid])
 
     def restore_messages(self, org, messages):
         client = self._get_client(org)
