@@ -1061,7 +1061,7 @@ class RapidProBackendTest(BaseCasesTest):
         self.backend.start_flow(self.unicef, Flow("0002-0002", "Follow Up"), self.ann, extra={"foo": "bar"})
 
         mock_create_flow_start.assert_called_once_with(
-            flow="0002-0002", contacts=[str(self.ann.uuid)], restart_participants=True, extra={"foo": "bar"}
+            flow="0002-0002", contacts=[str(self.ann.uuid)], restart_participants=True, params={"foo": "bar"}
         )
 
     def test_get_url_patterns(self):
