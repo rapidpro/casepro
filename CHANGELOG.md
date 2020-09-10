@@ -1,3 +1,7 @@
+v1.3.11
+----------
+ * Fix wrong arg name for latest rapidpro client
+
 v1.3.10
 ----------
  * Update to latest rapidpro-python
