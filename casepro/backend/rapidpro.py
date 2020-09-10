@@ -386,7 +386,7 @@ class RapidProBackend(BaseBackend):
         Starts the given contact in the given flow
         """
         client = self._get_client(org)
-        client.create_flow_start(flow=flow.uuid, contacts=[str(contact.uuid)], restart_participants=True, extra=extra)
+        client.create_flow_start(flow=flow.uuid, contacts=[str(contact.uuid)], restart_participants=True, params=extra)
 
     def get_url_patterns(self):
         """
