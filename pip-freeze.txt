@@ -44,7 +44,7 @@ mccabe==0.6.1             # via flake8
 more-itertools==8.4.0     # via zipp
 pathspec==0.6.0           # via black
 phonenumbers==8.12.6      # via rapidpro-dash
-pillow==6.2.1
+pillow==8.0.1
 pisa==3.0.33
 polib==1.1.0              # via django-rosetta
 psycopg2-binary==2.8.5    # via rapidpro-dash
