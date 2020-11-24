@@ -1,3 +1,9 @@
+v1.3.12
+----------
+ * Fix XSS vulnerablilities in rules template tags
+ * Add management command for summarizing usage stats across orgs
+ * Bump pillow version
+
 v1.3.11
 ----------
  * Fix wrong arg name for latest rapidpro client
