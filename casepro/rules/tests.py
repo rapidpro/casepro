@@ -151,6 +151,14 @@ class RulesTemplateTagsTest(BaseCasesTest):
         rule = Rule.create(self.unicef, [test], [])
         self.assertEqual('message contains any of <i>"red"</i>, <i>"blue"</i>', render_tests(rule))
 
+        # check that keywords are correctly escaped to prevent XSS attacks
+        test.keywords = ["<script>alert('Hi')</script>"]
+        rule = Rule.create(self.unicef, [test], [])
+
+        self.assertEqual(
+            'message contains <i>"&lt;script&gt;alert(&#39;hi&#39;)&lt;/script&gt;"</i>', render_tests(rule)
+        )
+
     def test_render_word_count_test(self):
         test = Test.from_json({"type": "words", "minimum": 2}, self.context)
         rule = Rule.create(self.unicef, [test], [])
@@ -169,15 +177,45 @@ class RulesTemplateTagsTest(BaseCasesTest):
         rule = Rule.create(self.unicef, [test], [])
         self.assertEqual("contact belongs to any of <i>Females</i>, <i>Reporters</i>", render_tests(rule))
 
+        # check that group names are correctly escaped to prevent XSS attacks
+        self.reporters.name = "<script>alert('Hi')</script>"
+        self.reporters.save(update_fields=("name",))
+        test = Test.from_json({"type": "groups", "groups": [self.reporters.pk], "quantifier": "any"}, self.context)
+        rule = Rule.create(self.unicef, [test], [])
+
+        self.assertEqual(
+            "contact belongs to <i>&lt;script&gt;alert(&#39;Hi&#39;)&lt;/script&gt;</i>", render_tests(rule)
+        )
+
     def test_render_field_test(self):
         test = Test.from_json({"type": "field", "key": "city", "values": ["Kigali"]}, self.context)
         rule = Rule.create(self.unicef, [test], [])
+
         self.assertEqual("contact <i>city</i> is equal to <i>kigali</i>", render_tests(rule))
+
+        # check that values are correctly escaped to prevent XSS attacks
+        test.values = ["<script>alert('Hi')</script>"]
+        rule = Rule.create(self.unicef, [test], [])
+
+        self.assertEqual(
+            "contact <i>city</i> is equal to <i>&lt;script&gt;alert(&#39;hi&#39;)&lt;/script&gt;</i>",
+            render_tests(rule),
+        )
 
     def test_render_label_action(self):
         action = Action.from_json({"type": "label", "label": self.aids.pk}, self.context)
         rule = Rule.create(self.unicef, [], [action])
         self.assertEqual('apply label <span class="label label-success">AIDS</span>', render_actions(rule))
+
+        # check that label names are correctly escaped to prevent XSS attacks
+        self.aids.name = "<script>alert('Hi')</script>"
+        self.aids.save(update_fields=("name",))
+        rule = Rule.create(self.unicef, [], [action])
+
+        self.assertEqual(
+            'apply label <span class="label label-success">&lt;script&gt;alert(&#39;Hi&#39;)&lt;/script&gt;</span>',
+            render_actions(rule),
+        )
 
     def test_render_flag_action(self):
         action = Action.from_json({"type": "flag"}, self.context)
