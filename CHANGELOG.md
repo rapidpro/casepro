@@ -1,3 +1,7 @@
+v1.3.13
+----------
+ * Add SecurityMiddleware to common settings
+
 v1.3.12
 ----------
  * Fix XSS vulnerablilities in rules template tags
