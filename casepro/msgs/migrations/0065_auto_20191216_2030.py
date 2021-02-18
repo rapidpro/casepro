@@ -42,7 +42,19 @@ class Migration(migrations.Migration):
                 name="labelling_flagged_w_archived",
             ),
         ),
-        migrations.AlterField(model_name="labelling", name="message_created_on", field=models.DateTimeField(),),
-        migrations.AlterField(model_name="labelling", name="message_is_archived", field=models.BooleanField(),),
-        migrations.AlterField(model_name="labelling", name="message_is_flagged", field=models.BooleanField(),),
+        migrations.AlterField(
+            model_name="labelling",
+            name="message_created_on",
+            field=models.DateTimeField(),
+        ),
+        migrations.AlterField(
+            model_name="labelling",
+            name="message_is_archived",
+            field=models.BooleanField(),
+        ),
+        migrations.AlterField(
+            model_name="labelling",
+            name="message_is_flagged",
+            field=models.BooleanField(),
+        ),
     ]
