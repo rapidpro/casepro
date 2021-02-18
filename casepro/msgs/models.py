@@ -105,7 +105,7 @@ class Label(models.Model):
         """
         return get_obj_cacheable(self, self.INBOX_COUNT_CACHE_ATTR, lambda: self._get_inbox_count(), recalculate)
 
-    def _get_inbox_count(self,):
+    def _get_inbox_count(self):
         from casepro.statistics.models import TotalCount
 
         return TotalCount.get_by_label([self], TotalCount.TYPE_INBOX).scope_totals()[self]

@@ -57,8 +57,20 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(model_name="labelling", name="message_created_on", field=models.DateTimeField(null=True),),
-        migrations.AddField(model_name="labelling", name="message_is_archived", field=models.BooleanField(null=True),),
-        migrations.AddField(model_name="labelling", name="message_is_flagged", field=models.BooleanField(null=True),),
+        migrations.AddField(
+            model_name="labelling",
+            name="message_created_on",
+            field=models.DateTimeField(null=True),
+        ),
+        migrations.AddField(
+            model_name="labelling",
+            name="message_is_archived",
+            field=models.BooleanField(null=True),
+        ),
+        migrations.AddField(
+            model_name="labelling",
+            name="message_is_flagged",
+            field=models.BooleanField(null=True),
+        ),
         migrations.RunSQL(SQL),
     ]

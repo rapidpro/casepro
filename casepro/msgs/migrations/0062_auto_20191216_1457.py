@@ -12,19 +12,31 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(model_name="label", name="is_active", field=models.BooleanField(default=True),),
+        migrations.AlterField(
+            model_name="label",
+            name="is_active",
+            field=models.BooleanField(default=True),
+        ),
         migrations.AlterField(
             model_name="label",
             name="org",
             field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name="labels", to="orgs.Org"),
         ),
-        migrations.AlterField(model_name="message", name="backend_id", field=models.IntegerField(unique=True),),
+        migrations.AlterField(
+            model_name="message",
+            name="backend_id",
+            field=models.IntegerField(unique=True),
+        ),
         migrations.AlterField(
             model_name="message",
             name="labels",
             field=models.ManyToManyField(related_name="messages", through="msgs.Labelling", to="msgs.Label"),
         ),
-        migrations.AlterField(model_name="message", name="locked_on", field=models.DateTimeField(null=True),),
+        migrations.AlterField(
+            model_name="message",
+            name="locked_on",
+            field=models.DateTimeField(null=True),
+        ),
         migrations.AlterField(
             model_name="message",
             name="modified_on",
@@ -37,7 +49,11 @@ class Migration(migrations.Migration):
                 on_delete=django.db.models.deletion.PROTECT, related_name="incoming_messages", to="orgs.Org"
             ),
         ),
-        migrations.AlterField(model_name="message", name="text", field=models.TextField(max_length=640),),
+        migrations.AlterField(
+            model_name="message",
+            name="text",
+            field=models.TextField(max_length=640),
+        ),
         migrations.AlterField(
             model_name="messageexport",
             name="org",
@@ -46,7 +62,9 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AlterField(
-            model_name="outgoing", name="backend_broadcast_id", field=models.IntegerField(null=True),
+            model_name="outgoing",
+            name="backend_broadcast_id",
+            field=models.IntegerField(null=True),
         ),
         migrations.AlterField(
             model_name="outgoing",
