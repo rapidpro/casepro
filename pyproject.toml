@@ -24,6 +24,7 @@ django-compressor = "^2.4"
 django-storages = "^1.11.1"
 iso-639 = "^0.4.5"
 colorama = "^0.4.4"
+dj-database-url = "^0.5.0"
 
 [tool.poetry.dev-dependencies]
 black = "^20.8b1"

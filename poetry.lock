@@ -168,6 +168,14 @@ optional = false
 python-versions = ">=3.6, <3.7"
 
 [[package]]
+name = "dj-database-url"
+version = "0.5.0"
+description = "Use Database URLs in your Django Application."
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "django"
 version = "2.2.18"
 description = "A high-level Python Web framework that encourages rapid development and clean, pragmatic design."
@@ -735,7 +743,7 @@ testing = ["pytest (>=3.5,!=3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.6"
-content-hash = "a6566552a4d4e49f23e6a24bce87d91e9ddec9ef7c9048d9be44df3feba892f0"
+content-hash = "72b3dffcaba85f575a2262fea35deca6fab5fb8ce2a97ddd6c09b39e060d0122"
 
 [metadata.files]
 amqp = [
@@ -836,6 +844,10 @@ coverage = [
 dataclasses = [
     {file = "dataclasses-0.8-py3-none-any.whl", hash = "sha256:0201d89fa866f68c8ebd9d08ee6ff50c0b255f8ec63a71c16fda7af82bb887bf"},
     {file = "dataclasses-0.8.tar.gz", hash = "sha256:8479067f342acf957dc82ec415d355ab5edb7e7646b90dc6e2fd1d96ad084c97"},
+]
+dj-database-url = [
+    {file = "dj-database-url-0.5.0.tar.gz", hash = "sha256:4aeaeb1f573c74835b0686a2b46b85990571159ffc21aa57ecd4d1e1cb334163"},
+    {file = "dj_database_url-0.5.0-py2.py3-none-any.whl", hash = "sha256:851785365761ebe4994a921b433062309eb882fedd318e1b0fcecc607ed02da9"},
 ]
 django = [
     {file = "Django-2.2.18-py3-none-any.whl", hash = "sha256:0eaca08f236bf502a9773e53623f766cc3ceee6453cc41e6de1c8b80f07d2364"},
