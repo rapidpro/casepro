@@ -1,3 +1,7 @@
+v1.3.18
+----------
+ * Update project version
+
 v1.3.17
 ----------
  * Merge pull request #331 from rapidpro/poetry
