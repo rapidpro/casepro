@@ -1,3 +1,7 @@
+v1.3.17
+----------
+ * Merge pull request #331 from rapidpro/poetry
+
 v1.3.13
 ----------
  * Add SecurityMiddleware to common settings
