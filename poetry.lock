@@ -49,12 +49,30 @@ colorama = ["colorama (>=0.4.3)"]
 d = ["aiohttp (>=3.3.2)", "aiohttp-cors"]
 
 [[package]]
-name = "boto"
-version = "2.49.0"
-description = "Amazon Web Services Library"
+name = "boto3"
+version = "1.17.11"
+description = "The AWS SDK for Python"
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">= 2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
+
+[package.dependencies]
+botocore = ">=1.20.11,<1.21.0"
+jmespath = ">=0.7.1,<1.0.0"
+s3transfer = ">=0.3.0,<0.4.0"
+
+[[package]]
+name = "botocore"
+version = "1.20.11"
+description = "Low-level, data-driven core of boto 3."
+category = "main"
+optional = false
+python-versions = ">= 2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
+
+[package.dependencies]
+jmespath = ">=0.7.1,<1.0.0"
+python-dateutil = ">=2.1,<3.0.0"
+urllib3 = ">=1.25.4,<1.27"
 
 [[package]]
 name = "celery"
@@ -402,6 +420,14 @@ requirements_deprecated_finder = ["pipreqs", "pip-api"]
 colors = ["colorama (>=0.4.3,<0.5.0)"]
 
 [[package]]
+name = "jmespath"
+version = "0.10.0"
+description = "JSON Matching Expressions"
+category = "main"
+optional = false
+python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
+
+[[package]]
 name = "kombu"
 version = "4.6.11"
 description = "Messaging library for Python."
@@ -622,6 +648,17 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "s3transfer"
+version = "0.3.4"
+description = "An Amazon S3 Transfer Manager"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+botocore = ">=1.12.36,<2.0a.0"
+
+[[package]]
 name = "six"
 version = "1.15.0"
 description = "Python 2 and 3 compatibility utilities"
@@ -743,7 +780,7 @@ testing = ["pytest (>=3.5,!=3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.6"
-content-hash = "72b3dffcaba85f575a2262fea35deca6fab5fb8ce2a97ddd6c09b39e060d0122"
+content-hash = "770b52807dc4ae58b642641bc50efc8f9bf6f3c50556632e6a2c2af0d6ebc739"
 
 [metadata.files]
 amqp = [
@@ -761,9 +798,13 @@ billiard = [
 black = [
     {file = "black-20.8b1.tar.gz", hash = "sha256:1c02557aa099101b9d21496f8a914e9ed2222ef70336404eeeac8edba836fbea"},
 ]
-boto = [
-    {file = "boto-2.49.0-py2.py3-none-any.whl", hash = "sha256:147758d41ae7240dc989f0039f27da8ca0d53734be0eb869ef16e3adcfa462e8"},
-    {file = "boto-2.49.0.tar.gz", hash = "sha256:ea0d3b40a2d852767be77ca343b58a9e3a4b00d9db440efb8da74b4e58025e5a"},
+boto3 = [
+    {file = "boto3-1.17.11-py2.py3-none-any.whl", hash = "sha256:b6131751e3cf2f8d4c027518373b6b82264c3897de65d3519e2d782927e8bf1e"},
+    {file = "boto3-1.17.11.tar.gz", hash = "sha256:7d44cbd931c653cc68e8ccbf39f3ad8b304cb50d4e964d8c8d0936de33ff8c8b"},
+]
+botocore = [
+    {file = "botocore-1.20.11-py2.py3-none-any.whl", hash = "sha256:dd7c528c6c936d941b2c267339f0b01cce377b640856240b588d0e0d82fd29e3"},
+    {file = "botocore-1.20.11.tar.gz", hash = "sha256:8efd206b78269eb115279ca2d23f50eead1307dbe0bf9bcc2bba3ab2ff7bfd87"},
 ]
 celery = [
     {file = "celery-4.4.7-py2.py3-none-any.whl", hash = "sha256:a92e1d56e650781fb747032a3997d16236d037c8199eacd5217d1a72893bca45"},
@@ -918,6 +959,10 @@ iso8601 = [
 isort = [
     {file = "isort-5.7.0-py3-none-any.whl", hash = "sha256:fff4f0c04e1825522ce6949973e83110a6e907750cd92d128b0d14aaaadbffdc"},
     {file = "isort-5.7.0.tar.gz", hash = "sha256:c729845434366216d320e936b8ad6f9d681aab72dc7cbc2d51bedc3582f3ad1e"},
+]
+jmespath = [
+    {file = "jmespath-0.10.0-py2.py3-none-any.whl", hash = "sha256:cdf6525904cc597730141d61b36f2e4b8ecc257c420fa2f4549bac2c2d0cb72f"},
+    {file = "jmespath-0.10.0.tar.gz", hash = "sha256:b85d0567b8666149a93172712e68920734333c0ce7e89b78b3e987f71e5ed4f9"},
 ]
 kombu = [
     {file = "kombu-4.6.11-py2.py3-none-any.whl", hash = "sha256:be48cdffb54a2194d93ad6533d73f69408486483d189fe9f5990ee24255b0e0a"},
@@ -1110,6 +1155,10 @@ rjsmin = [
     {file = "rjsmin-1.1.0-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:714329db774a90947e0e2086cdddb80d5e8c4ac1c70c9f92436378dedb8ae345"},
     {file = "rjsmin-1.1.0-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:dd0f4819df4243ffe4c964995794c79ca43943b5b756de84be92b445a652fb86"},
     {file = "rjsmin-1.1.0.tar.gz", hash = "sha256:b15dc75c71f65d9493a8c7fa233fdcec823e3f1b88ad84a843ffef49b338ac32"},
+]
+s3transfer = [
+    {file = "s3transfer-0.3.4-py2.py3-none-any.whl", hash = "sha256:1e28620e5b444652ed752cf87c7e0cb15b0e578972568c6609f0f18212f259ed"},
+    {file = "s3transfer-0.3.4.tar.gz", hash = "sha256:7fdddb4f22275cf1d32129e21f056337fd2a80b6ccef1664528145b72c49e6d2"},
 ]
 six = [
     {file = "six-1.15.0-py2.py3-none-any.whl", hash = "sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced"},
