@@ -1,3 +1,7 @@
+v1.3.19
+----------
+ * Replace boto with boto3
+
 v1.3.18
 ----------
  * Update project version
