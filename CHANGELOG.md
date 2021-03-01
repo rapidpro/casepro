@@ -1,3 +1,7 @@
+v1.3.20
+----------
+ * Update to latest Sentry SDK
+
 v1.3.19
 ----------
  * Replace boto with boto3
