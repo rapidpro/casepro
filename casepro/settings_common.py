@@ -1,7 +1,8 @@
 import os
-import sentry_sdk
 import sys
 from datetime import timedelta
+
+import sentry_sdk
 from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
@@ -477,7 +478,7 @@ REST_FRAMEWORK = {
 # -----------------------------------------------------------------------------------
 # Sentry
 # -----------------------------------------------------------------------------------
-SENTRY_DSN = os.environ.get('SENTRY_DSN', os.environ.get('RAVEN_DSN'))
+SENTRY_DSN = os.environ.get("SENTRY_DSN", os.environ.get("RAVEN_DSN"))
 
 
 def traces_sampler(sampling_context):

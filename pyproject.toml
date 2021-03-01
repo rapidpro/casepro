@@ -33,6 +33,7 @@ flake8 = "^3.8.4"
 coverage = "^5.4"
 polib = "^1.1.0"
 codecov = "^2.1.11"
+colorama = "^0.4.4"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
