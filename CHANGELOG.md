@@ -1,3 +1,7 @@
+v1.3.21
+----------
+ * Ignore invalid host errors
+
 v1.3.20
 ----------
  * Update to latest Sentry SDK
