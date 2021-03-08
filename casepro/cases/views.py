@@ -466,7 +466,12 @@ class PartnerCRUDL(SmartCRUDL):
         def render_as_json(self, partners, with_activity):
             if with_activity:
                 # get reply statistics
-                replies_total = DailyCount.get_by_partner(partners, DailyCount.TYPE_REPLIES, None, None).scope_totals()
+
+                # disabled temporarily for performance reasons
+                # replies_total = DailyCount.get_by_partner(
+                #    partners, DailyCount.TYPE_REPLIES, None, None
+                # ).scope_totals()
+
                 replies_this_month = DailyCount.get_by_partner(
                     partners, DailyCount.TYPE_REPLIES, *month_range(0)
                 ).scope_totals()
@@ -483,9 +488,12 @@ class PartnerCRUDL(SmartCRUDL):
                 average_closed_this_month = average_closed_this_month.scope_averages()
 
                 # get cases statistics
-                cases_total = DailyCount.get_by_partner(
-                    partners, DailyCount.TYPE_CASE_OPENED, None, None
-                ).scope_totals()
+
+                # disabled temporarily for performance reasons
+                # cases_total = DailyCount.get_by_partner(
+                #     partners, DailyCount.TYPE_CASE_OPENED, None, None
+                # ).scope_totals()
+
                 cases_opened_this_month = DailyCount.get_by_partner(
                     partners, DailyCount.TYPE_CASE_OPENED, *month_range(0)
                 ).scope_totals()
@@ -501,7 +509,7 @@ class PartnerCRUDL(SmartCRUDL):
                             "replies": {
                                 "this_month": replies_this_month.get(partner, 0),
                                 "last_month": replies_last_month.get(partner, 0),
-                                "total": replies_total.get(partner, 0),
+                                # "total": replies_total.get(partner, 0),
                                 "average_referral_response_time_this_month": humanize_seconds(
                                     average_referral_response_time_this_month.get(partner, 0)
                                 ),
@@ -512,7 +520,7 @@ class PartnerCRUDL(SmartCRUDL):
                                 ),
                                 "opened_this_month": cases_opened_this_month.get(partner, 0),
                                 "closed_this_month": cases_closed_this_month.get(partner, 0),
-                                "total": cases_total.get(partner, 0),
+                                # "total": cases_total.get(partner, 0),
                             },
                         }
                     )
