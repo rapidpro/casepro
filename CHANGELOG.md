@@ -1,3 +1,7 @@
+v1.3.24
+----------
+ * Re-enable partner stats for all time, disable the equivalent user stats
+
 v1.3.23
 ----------
  * Fix problem with comments in templates
