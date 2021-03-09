@@ -1,3 +1,7 @@
+v1.3.22
+----------
+ * Temporarily disable total counts for user stats until we can add a more performant way to calculate these
+
 v1.3.21
 ----------
  * Ignore invalid host errors
