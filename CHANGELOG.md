@@ -1,3 +1,7 @@
+v1.3.25
+----------
+ * Start recording totals for replies and cases opened/closed
+
 v1.3.24
 ----------
  * Re-enable partner stats for all time, disable the equivalent user stats
