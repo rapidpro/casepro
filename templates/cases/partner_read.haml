@@ -174,8 +174,7 @@
               - trans "Replies (this month)"
             %th
               - trans "Replies (last month)"
-            // %th
-              // - trans "Replies (total)"
+            // %th - trans "Replies (total)"
           %tbody
             %tr{ ng-repeat:"user in users" }
               %td
@@ -190,8 +189,7 @@
                 [[ user.replies.this_month ]]
               %td
                 [[ user.replies.last_month ]]
-              // %td
-                // [[ user.replies.total ]]
+              // %td [[ user.replies.total ]]
         .none{ ng-if:"!users" }
           - trans "None"
 
