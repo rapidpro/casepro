@@ -328,8 +328,8 @@ class UserCRUDL(SmartCRUDL):
 
             # get reply statistics
             if with_activity:
-                # disabled temporarily for performance reasons
-                # replies_total = DailyCount.get_by_user(org, users, DailyCount.TYPE_REPLIES, None, None).scope_totals()
+                # TODO enable when back-filled
+                # replies_total = TotalCount.get_by_user(org, users, DailyCount.TYPE_REPLIES).scope_totals()
 
                 replies_this_month = DailyCount.get_by_user(
                     org, users, DailyCount.TYPE_REPLIES, *month_range(0)
@@ -338,10 +338,8 @@ class UserCRUDL(SmartCRUDL):
                     org, users, DailyCount.TYPE_REPLIES, *month_range(-1)
                 ).scope_totals()
 
-                # disabled temporarily for performance reasons
-                # cases_total = DailyCount.get_by_user(
-                #    org, users, DailyCount.TYPE_CASE_OPENED, None, None
-                # ).scope_totals()
+                # TODO enable when back-filled
+                # cases_total = TotalCount.get_by_user(org, users, DailyCount.TYPE_CASE_OPENED).scope_totals()
 
                 cases_opened_this_month = DailyCount.get_by_user(
                     org, users, DailyCount.TYPE_CASE_OPENED, *month_range(0)

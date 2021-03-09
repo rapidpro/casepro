@@ -6,7 +6,12 @@ from django.dispatch import receiver
 from casepro.cases.models import CaseAction
 from casepro.msgs.models import Message, Outgoing
 
-from .models import DailyCount, DailySecondTotalCount, datetime_to_date, record_case_closed_time
+from .models import DailyCount, DailySecondTotalCount, TotalCount, datetime_to_date, record_case_closed_time
+
+
+def record_daily_and_total(day, item_type: str, *scope_args):
+    DailyCount.record_item(day, item_type, *scope_args)
+    TotalCount.record_item(item_type, *scope_args)
 
 
 @receiver(post_save, sender=Message)
@@ -34,11 +39,11 @@ def record_new_outgoing(sender, instance, created, **kwargs):
         # get day in org timezone
         day = datetime_to_date(instance.created_on, org)
 
-        DailyCount.record_item(day, DailyCount.TYPE_REPLIES, org)
-        DailyCount.record_item(day, DailyCount.TYPE_REPLIES, org, user)
+        record_daily_and_total(day, DailyCount.TYPE_REPLIES, org)
+        record_daily_and_total(day, DailyCount.TYPE_REPLIES, org, user)
 
         if instance.partner:
-            DailyCount.record_item(day, DailyCount.TYPE_REPLIES, partner)
+            record_daily_and_total(day, DailyCount.TYPE_REPLIES, partner)
 
         if case:
             # count the very first response on an org level
@@ -86,16 +91,16 @@ def record_new_case_action(sender, instance, created, **kwargs):
 
     day = datetime_to_date(instance.created_on, instance.case.org)
     if instance.action == CaseAction.OPEN:
-        DailyCount.record_item(day, DailyCount.TYPE_CASE_OPENED, org)
-        DailyCount.record_item(day, DailyCount.TYPE_CASE_OPENED, org, user)
-        DailyCount.record_item(day, DailyCount.TYPE_CASE_OPENED, partner)
+        record_daily_and_total(day, DailyCount.TYPE_CASE_OPENED, org)
+        record_daily_and_total(day, DailyCount.TYPE_CASE_OPENED, org, user)
+        record_daily_and_total(day, DailyCount.TYPE_CASE_OPENED, partner)
 
     elif instance.action == CaseAction.CLOSE:
         if case.actions.filter(action=CaseAction.REOPEN).exists():
             # dont count any stats for reopened cases.
             return
 
-        DailyCount.record_item(day, DailyCount.TYPE_CASE_CLOSED, org)
-        DailyCount.record_item(day, DailyCount.TYPE_CASE_CLOSED, org, user)
-        DailyCount.record_item(day, DailyCount.TYPE_CASE_CLOSED, partner)
+        record_daily_and_total(day, DailyCount.TYPE_CASE_CLOSED, org)
+        record_daily_and_total(day, DailyCount.TYPE_CASE_CLOSED, org, user)
+        record_daily_and_total(day, DailyCount.TYPE_CASE_CLOSED, partner)
         record_case_closed_time(instance)

@@ -466,7 +466,10 @@ class PartnerCRUDL(SmartCRUDL):
         def render_as_json(self, partners, with_activity):
             if with_activity:
                 # get reply statistics
-                replies_total = DailyCount.get_by_partner(partners, DailyCount.TYPE_REPLIES, None, None).scope_totals()
+
+                # TODO switch to TotalCount when back-filled
+                replies_total = DailyCount.get_by_partner(partners, DailyCount.TYPE_REPLIES).scope_totals()
+
                 replies_this_month = DailyCount.get_by_partner(
                     partners, DailyCount.TYPE_REPLIES, *month_range(0)
                 ).scope_totals()
@@ -483,9 +486,10 @@ class PartnerCRUDL(SmartCRUDL):
                 average_closed_this_month = average_closed_this_month.scope_averages()
 
                 # get cases statistics
-                cases_total = DailyCount.get_by_partner(
-                    partners, DailyCount.TYPE_CASE_OPENED, None, None
-                ).scope_totals()
+
+                # TODO switch to TotalCount when back-filled
+                cases_total = DailyCount.get_by_partner(partners, DailyCount.TYPE_CASE_OPENED).scope_totals()
+
                 cases_opened_this_month = DailyCount.get_by_partner(
                     partners, DailyCount.TYPE_CASE_OPENED, *month_range(0)
                 ).scope_totals()
