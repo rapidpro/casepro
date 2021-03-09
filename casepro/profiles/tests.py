@@ -1020,8 +1020,16 @@ class UserCRUDLTest(BaseCasesTest):
                     "email": "evan@unicef.org",
                     "role": "M",
                     "partner": {"id": self.moh.pk, "name": "MOH"},
-                    "replies": {"last_month": 1, "this_month": 0, "total": 2},
-                    "cases": {"opened_this_month": 0, "closed_this_month": 0, "total": 0},
+                    "replies": {
+                        "last_month": 1,
+                        "this_month": 0,
+                        # "total": 2,
+                    },
+                    "cases": {
+                        "opened_this_month": 0,
+                        "closed_this_month": 0,
+                        # "total": 0,
+                    },
                 },
                 {
                     "id": self.user2.pk,
@@ -1029,8 +1037,16 @@ class UserCRUDLTest(BaseCasesTest):
                     "email": "rick@unicef.org",
                     "role": "Y",
                     "partner": {"id": self.moh.pk, "name": "MOH"},
-                    "replies": {"last_month": 0, "this_month": 0, "total": 0},
-                    "cases": {"opened_this_month": 0, "closed_this_month": 0, "total": 0},
+                    "replies": {
+                        "last_month": 0,
+                        "this_month": 0,
+                        # "total": 0,
+                    },
+                    "cases": {
+                        "opened_this_month": 0,
+                        "closed_this_month": 0,
+                        # "total": 0,
+                    },
                 },
             ],
         )

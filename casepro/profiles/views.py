@@ -328,7 +328,9 @@ class UserCRUDL(SmartCRUDL):
 
             # get reply statistics
             if with_activity:
-                replies_total = DailyCount.get_by_user(org, users, DailyCount.TYPE_REPLIES, None, None).scope_totals()
+                # disabled temporarily for performance reasons
+                # replies_total = DailyCount.get_by_user(org, users, DailyCount.TYPE_REPLIES, None, None).scope_totals()
+
                 replies_this_month = DailyCount.get_by_user(
                     org, users, DailyCount.TYPE_REPLIES, *month_range(0)
                 ).scope_totals()
@@ -336,9 +338,11 @@ class UserCRUDL(SmartCRUDL):
                     org, users, DailyCount.TYPE_REPLIES, *month_range(-1)
                 ).scope_totals()
 
-                cases_total = DailyCount.get_by_user(
-                    org, users, DailyCount.TYPE_CASE_OPENED, None, None
-                ).scope_totals()
+                # disabled temporarily for performance reasons
+                # cases_total = DailyCount.get_by_user(
+                #    org, users, DailyCount.TYPE_CASE_OPENED, None, None
+                # ).scope_totals()
+
                 cases_opened_this_month = DailyCount.get_by_user(
                     org, users, DailyCount.TYPE_CASE_OPENED, *month_range(0)
                 ).scope_totals()
@@ -354,12 +358,12 @@ class UserCRUDL(SmartCRUDL):
                             "replies": {
                                 "this_month": replies_this_month.get(user, 0),
                                 "last_month": replies_last_month.get(user, 0),
-                                "total": replies_total.get(user, 0),
+                                # "total": replies_total.get(user, 0),
                             },
                             "cases": {
                                 "opened_this_month": cases_opened_this_month.get(user, 0),
                                 "closed_this_month": cases_closed_this_month.get(user, 0),
-                                "total": cases_total.get(user, 0),
+                                # "total": cases_total.get(user, 0),
                             },
                         }
                     )

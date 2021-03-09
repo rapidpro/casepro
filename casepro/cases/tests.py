@@ -1517,13 +1517,13 @@ class PartnerCRUDLTest(BaseCasesTest):
                             "average_referral_response_time_this_month": "0\xa0minutes",
                             "last_month": 0,
                             "this_month": 0,
-                            # "total": 0,
+                            "total": 0,
                         },
                         "cases": {
                             "average_closed_this_month": "0\xa0minutes",
                             "opened_this_month": 0,
                             "closed_this_month": 0,
-                            # "total": 0,
+                            "total": 0,
                         },
                     },
                     {
@@ -1534,13 +1534,13 @@ class PartnerCRUDLTest(BaseCasesTest):
                             "average_referral_response_time_this_month": "0\xa0minutes",
                             "last_month": 0,
                             "this_month": 0,
-                            # "total": 0,
+                            "total": 0,
                         },
                         "cases": {
                             "average_closed_this_month": "0\xa0minutes",
                             "opened_this_month": 0,
                             "closed_this_month": 0,
-                            # "total": 0,
+                            "total": 0,
                         },
                     },
                 ]
