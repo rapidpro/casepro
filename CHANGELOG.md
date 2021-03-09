@@ -1,3 +1,7 @@
+v1.3.23
+----------
+ * Fix problem with comments in templates
+
 v1.3.22
 ----------
  * Temporarily disable total counts for user stats until we can add a more performant way to calculate these
