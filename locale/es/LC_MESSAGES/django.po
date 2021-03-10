@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-03-08 20:23+0000\n"
+"POT-Creation-Date: 2021-03-10 19:36+0000\n"
 "PO-Revision-Date: 2020-05-20 19:31+0000\n"
 "Last-Translator: Janina <jcuevas@unicef.org>, 2020\n"
 "Language-Team: Spanish (https://www.transifex.com/rapidpro/teams/110172/es/)\n"
@@ -685,6 +685,9 @@ msgstr "Respuestas (este mes)"
 msgid "Replies (last month)"
 msgstr "Respuestas (mes pasado)"
 
+msgid "Replies (total)"
+msgstr "Respuestas (total)"
+
 msgid "Please correct the error below"
 msgid_plural "Please correct the errors below"
 msgstr[0] "Por favor corrija el siguiente error"
@@ -952,9 +955,6 @@ msgid ""
 msgstr ""
 "\n"
 "Tu archivo está listo y puede ser descargado dando click %(download_url)s.\n"
-
-#~ msgid "Replies (total)"
-#~ msgstr "Respuestas (total)"
 
 #, python-format
 #~ msgid "Must be at least %d characters long"
