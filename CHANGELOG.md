@@ -1,3 +1,8 @@
+v1.3.26
+----------
+ * Re-enable total counts but this time from TotalCount and not summing DailyCount
+ * Migration to back-fill total counts for replies and cases opened/closed
+
 v1.3.25
 ----------
  * Start recording totals for replies and cases opened/closed
