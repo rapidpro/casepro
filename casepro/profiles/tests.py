@@ -1023,12 +1023,12 @@ class UserCRUDLTest(BaseCasesTest):
                     "replies": {
                         "last_month": 1,
                         "this_month": 0,
-                        # "total": 2,
+                        "total": 2,
                     },
                     "cases": {
                         "opened_this_month": 0,
                         "closed_this_month": 0,
-                        # "total": 0,
+                        "total": 0,
                     },
                 },
                 {
@@ -1040,12 +1040,12 @@ class UserCRUDLTest(BaseCasesTest):
                     "replies": {
                         "last_month": 0,
                         "this_month": 0,
-                        # "total": 0,
+                        "total": 0,
                     },
                     "cases": {
                         "opened_this_month": 0,
                         "closed_this_month": 0,
-                        # "total": 0,
+                        "total": 0,
                     },
                 },
             ],

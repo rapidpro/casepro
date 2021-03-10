@@ -10,7 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 from casepro.cases.mixins import PartnerPermsMixin
 from casepro.cases.models import Partner
 from casepro.orgs_ext.mixins import OrgFormMixin
-from casepro.statistics.models import DailyCount
+from casepro.statistics.models import DailyCount, TotalCount
 from casepro.utils import month_range, str_to_bool
 
 from .forms import OrgUserForm, PartnerUserForm, UserForm
@@ -328,9 +328,7 @@ class UserCRUDL(SmartCRUDL):
 
             # get reply statistics
             if with_activity:
-                # TODO enable when back-filled
-                # replies_total = TotalCount.get_by_user(org, users, DailyCount.TYPE_REPLIES).scope_totals()
-
+                replies_total = TotalCount.get_by_user(org, users, DailyCount.TYPE_REPLIES).scope_totals()
                 replies_this_month = DailyCount.get_by_user(
                     org, users, DailyCount.TYPE_REPLIES, *month_range(0)
                 ).scope_totals()
@@ -338,9 +336,7 @@ class UserCRUDL(SmartCRUDL):
                     org, users, DailyCount.TYPE_REPLIES, *month_range(-1)
                 ).scope_totals()
 
-                # TODO enable when back-filled
-                # cases_total = TotalCount.get_by_user(org, users, DailyCount.TYPE_CASE_OPENED).scope_totals()
-
+                cases_total = TotalCount.get_by_user(org, users, DailyCount.TYPE_CASE_OPENED).scope_totals()
                 cases_opened_this_month = DailyCount.get_by_user(
                     org, users, DailyCount.TYPE_CASE_OPENED, *month_range(0)
                 ).scope_totals()
@@ -356,12 +352,12 @@ class UserCRUDL(SmartCRUDL):
                             "replies": {
                                 "this_month": replies_this_month.get(user, 0),
                                 "last_month": replies_last_month.get(user, 0),
-                                # "total": replies_total.get(user, 0),
+                                "total": replies_total.get(user, 0),
                             },
                             "cases": {
                                 "opened_this_month": cases_opened_this_month.get(user, 0),
                                 "closed_this_month": cases_closed_this_month.get(user, 0),
-                                # "total": cases_total.get(user, 0),
+                                "total": cases_total.get(user, 0),
                             },
                         }
                     )
