@@ -26,7 +26,7 @@ from django.views.generic import View
 
 from casepro.contacts.models import Contact, Field
 from casepro.msgs.models import Label, Message, MessageFolder, OutgoingFolder
-from casepro.statistics.models import DailyCount, DailySecondTotalCount
+from casepro.statistics.models import DailyCount, DailySecondTotalCount, TotalCount
 from casepro.utils import (
     JSONEncoder,
     datetime_to_microseconds,
@@ -466,10 +466,7 @@ class PartnerCRUDL(SmartCRUDL):
         def render_as_json(self, partners, with_activity):
             if with_activity:
                 # get reply statistics
-
-                # TODO switch to TotalCount when back-filled
-                replies_total = DailyCount.get_by_partner(partners, DailyCount.TYPE_REPLIES).scope_totals()
-
+                replies_total = TotalCount.get_by_partner(partners, DailyCount.TYPE_REPLIES).scope_totals()
                 replies_this_month = DailyCount.get_by_partner(
                     partners, DailyCount.TYPE_REPLIES, *month_range(0)
                 ).scope_totals()
@@ -486,10 +483,7 @@ class PartnerCRUDL(SmartCRUDL):
                 average_closed_this_month = average_closed_this_month.scope_averages()
 
                 # get cases statistics
-
-                # TODO switch to TotalCount when back-filled
-                cases_total = DailyCount.get_by_partner(partners, DailyCount.TYPE_CASE_OPENED).scope_totals()
-
+                cases_total = TotalCount.get_by_partner(partners, DailyCount.TYPE_CASE_OPENED).scope_totals()
                 cases_opened_this_month = DailyCount.get_by_partner(
                     partners, DailyCount.TYPE_CASE_OPENED, *month_range(0)
                 ).scope_totals()
