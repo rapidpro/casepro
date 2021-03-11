@@ -1,3 +1,7 @@
+v1.3.27
+----------
+ * Also switch partner scoped totals to use TotalCount
+
 v1.3.26
 ----------
  * Re-enable total counts but this time from TotalCount and not summing DailyCount
