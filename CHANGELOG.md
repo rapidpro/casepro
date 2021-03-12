@@ -1,3 +1,8 @@
+v1.3.28
+----------
+ * Update dependencies
+ * Fix permission check in update view
+
 v1.3.27
 ----------
  * Also switch partner scoped totals to use TotalCount
