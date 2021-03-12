@@ -413,7 +413,7 @@ class PartnerCRUDL(SmartCRUDL):
         success_url = "id@cases.partner_read"
 
         def has_permission(self, request, *args, **kwargs):
-            return request.user.can_manage(self.get_object())
+            return request.user.is_authenticated and request.user.can_manage(self.get_object())
 
     class Read(OrgObjPermsMixin, SmartReadView):
         def get_queryset(self):
