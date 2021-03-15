@@ -1,3 +1,7 @@
+v1.3.29
+----------
+ * Update dependencies
+
 v1.3.28
 ----------
  * Update dependencies
