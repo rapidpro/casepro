@@ -31,6 +31,7 @@ fabconfig.py
 # Distribution / packaging
 .Python
 env/
+.venv/
 build/
 develop-eggs/
 dist/
@@ -66,10 +67,6 @@ htmlcov/
 .coverage
 .cache
 js-coverage/
-
-# Translations
-*.mo
-*.pot
 
 # Django stuff:
 *.log

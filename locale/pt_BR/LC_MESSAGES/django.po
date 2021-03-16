@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-16 14:48+0000\n"
+"POT-Creation-Date: 2021-03-10 19:36+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Ilhasoft <contato@ilhasoft.com.br>, 2017\n"
 "Language-Team: Portuguese (Brazil) (https://www.transifex.com/ilhasoft/teams/56822/pt_BR/)\n"
@@ -26,6 +26,9 @@ msgstr "Descrição "
 
 msgid "Can Access"
 msgstr "Pode Acessar"
+
+msgid "Logo"
+msgstr "Logo"
 
 msgid "Organization"
 msgstr "Organização"
@@ -53,9 +56,6 @@ msgstr "Etiquetas que este parceiro pode acessar"
 
 msgid "Users that belong to this partner"
 msgstr "Usuários que pertencem a este parceiro"
-
-msgid "Logo"
-msgstr "Logo"
 
 msgid "Labels assigned to this case"
 msgstr "Etiquetas atribuídas a este caso"
@@ -268,6 +268,11 @@ msgstr "Baixar Menssagens"
 msgid "Download Replies"
 msgstr "Baixar Respostas"
 
+#, fuzzy
+#| msgid "Import"
+msgid "Import file"
+msgstr "Importar"
+
 msgid "The name of this organization"
 msgstr "Nome desta organização"
 
@@ -301,22 +306,24 @@ msgstr ""
 msgid "Edit My Organization"
 msgstr "Editar minha organização"
 
-#, python-format
-msgid "Must be at least %d characters long"
-msgstr "Deve ter pelo menos %d caractere"
-
-#, python-format
-msgid "Password used to log in (minimum of %d characters)."
-msgstr "Senha usada para fazer login (minimo de %d caracteres)."
-
 msgid "Email"
 msgstr "Email"
 
 msgid "Email address and login."
 msgstr "Email e login"
 
+#, fuzzy
+#| msgid "Forgot Password?"
+msgid "Current Password"
+msgstr "Esqueceu a senha?"
+
 msgid "Password"
 msgstr "Senha"
+
+#, fuzzy
+#| msgid "Password used to log in (minimum of %d characters)."
+msgid "Password used to log in."
+msgstr "Senha usada para fazer login (minimo de %d caracteres)."
 
 msgid "New password"
 msgstr "Nova senha"
@@ -335,6 +342,9 @@ msgstr "Apenas respostas pré-aprovadas"
 
 msgid "Whether user will only be able to reply using pre-approved replies (FAQs)"
 msgstr "Se o usuário só poderá responder usando respostas pré-aprovadas (FAQs)"
+
+msgid "Please enter your current password."
+msgstr ""
 
 msgid "Passwords don't match."
 msgstr "Senhas não correspondem."
@@ -426,6 +436,11 @@ msgstr "todos de"
 msgid " and "
 msgstr "e"
 
+#, fuzzy
+#| msgid " and "
+msgid ", and "
+msgstr "e"
+
 msgid "English"
 msgstr "Inglês"
 
@@ -434,6 +449,9 @@ msgstr "Francês "
 
 msgid "Portuguese"
 msgstr "Português"
+
+msgid "Spanish"
+msgstr ""
 
 msgid "The day this count is for"
 msgstr "O dia em que esta conta é para"
@@ -606,6 +624,10 @@ msgstr "Nenhum"
 msgid "Reply"
 msgstr "Responder"
 
+#, python-format
+msgid "Searching by text is limited to the last %(days)s days."
+msgstr ""
+
 msgid "Flow"
 msgstr "Fluxo"
 
@@ -669,10 +691,13 @@ msgstr "Respostas (mês passado)"
 msgid "Replies (total)"
 msgstr "Respostas (total)"
 
+#, fuzzy
+#| msgid "Please correct the error below"
+#| msgid_plural ""
+#| "Please correct the\n"
+#| "        errors below"
 msgid "Please correct the error below"
-msgid_plural ""
-"Please correct the\n"
-"        errors below"
+msgid_plural "Please correct the errors below"
 msgstr[0] ""
 "Corrija o\n"
 "         Erros abaixo"
@@ -686,11 +711,13 @@ msgstr "Visão externa"
 msgid "Details"
 msgstr "Detalhes"
 
-msgid ""
-"\n"
-"        These are the groups visible to partner organizations.\n"
-"\n"
-"      "
+#, fuzzy
+#| msgid ""
+#| "\n"
+#| "        These are the groups visible to partner organizations.\n"
+#| "\n"
+#| "      "
+msgid "These are the groups visible to partner organizations."
 msgstr ""
 "\n"
 "          Estes são os grupos visíveis para as organizações parceiras."
@@ -698,10 +725,12 @@ msgstr ""
 msgid "Select Groups"
 msgstr "Selecionar Grupos"
 
-msgid ""
-"\n"
-"        Your download should start automatically. If it doesn't start in a few seconds, use the button below to download.\n"
-"      "
+#, fuzzy
+#| msgid ""
+#| "\n"
+#| "        Your download should start automatically. If it doesn't start in a few seconds, use the button below to download.\n"
+#| "      "
+msgid "Your download should start automatically. If it doesn't start in a few seconds, use the button below to download."
 msgstr ""
 "\n"
 "Seu download deve começar automaticamente. Se não iniciar em alguns segundos, use o botão abaixo para fazer o download."
@@ -754,10 +783,12 @@ msgstr "Adicionar Tradução"
 msgid "No translations available"
 msgstr "Nenhuma tradução disponível"
 
-msgid ""
-"\n"
-"    No site selected, please contact your administrator to find valid organization sites.\n"
-"  "
+#, fuzzy
+#| msgid ""
+#| "\n"
+#| "    No site selected, please contact your administrator to find valid organization sites.\n"
+#| "  "
+msgid "No site selected, please contact your administrator to find valid organization sites."
 msgstr ""
 "\n"
 "Nenhum site selecionado, entre em contato com o administrador para encontrar sites de organização válidos."
@@ -855,7 +886,12 @@ msgstr "Histórico de mensagens"
 msgid "No events"
 msgstr "Sem eventos"
 
-msgid "Open a new case for this contact? This will archive all messages from the contact."
+msgid "Open a new case for <b>[[ contact.display ]]</b>?"
+msgstr ""
+
+#, fuzzy
+#| msgid "Open a new case for this contact? This will archive all messages from the contact."
+msgid "This will archive all messages from the contact."
 msgstr "Abra um novo caso para este contato? Isso arquivará todas as mensagens do contato."
 
 msgid "Note"
@@ -907,10 +943,11 @@ msgstr "Usuário %(user)s reatribuí o caso a %(assignee)s."
 msgid "User %(user)s reopened the case with the following note:"
 msgstr "Usuário %(user)s reabriu o caso com a seguinte nota:"
 
-#, python-format
-msgid ""
-"Click <a href=\"%(case_url)s\">here</a> to view the case. You are receiving\n"
-"this email because you are watching this case. You can unwatch from the case page."
+#, fuzzy, python-format
+#| msgid ""
+#| "Click <a href=\"%(case_url)s\">here</a> to view the case. You are receiving\n"
+#| "this email because you are watching this case. You can unwatch from the case page."
+msgid "Click <a href=\"%(case_url)s\">here</a> to view the case. You are receiving this email because you are watching this case. You can unwatch from the case page."
 msgstr ""
 "Click <a href=\"%(case_url)s\">aqui</a> para ver o caso. Você está recebendo\n"
 "Este e-mail porque você está seguindo este caso. Você pode parar de seguir na página do caso."
@@ -923,11 +960,12 @@ msgstr ""
 "Vá para %(case_url)s para ver o caso. Você está recebendo este e-mail porque\n"
 "Você está acompanhando este caso. Você pode para de acompanhar na página do caso."
 
-#, python-format
-msgid ""
-"\n"
-"Go to <a href=\"%(inbox_url)s\">here</a> to view the message. You are receiving this email because you are watching\n"
-"those labels. You can unwatch from the label pages.\n"
+#, fuzzy, python-format
+#| msgid ""
+#| "\n"
+#| "Go to <a href=\"%(inbox_url)s\">here</a> to view the message. You are receiving this email because you are watching\n"
+#| "those labels. You can unwatch from the label pages.\n"
+msgid "Go to <a href=\"%(inbox_url)s\">here</a> to view the message. You are receiving this email because you are watching those labels. You can unwatch from the label pages."
 msgstr ""
 "\n"
 "Entre <a href=\"%(inbox_url)s\">aqui</a> para ver a mensagem. Você está recebendo este e-mail porque está acompanhando\n"
@@ -956,10 +994,11 @@ msgstr ""
 msgid "Forgot Password?"
 msgstr "Esqueceu a senha?"
 
-#, python-format
-msgid ""
-"\n"
-"Your export is ready and can be downloaded by clicking <a href=\"%(download_url)s\">here</a>.\n"
+#, fuzzy, python-format
+#| msgid ""
+#| "\n"
+#| "Your export is ready and can be downloaded by clicking <a href=\"%(download_url)s\">here</a>.\n"
+msgid "Your export is ready and can be downloaded by clicking <a href=\"%(download_url)s\">here</a>."
 msgstr ""
 "\n"
 "Sua exportação está pronta e pode ser baixada clicando <a href=\"%(download_url)s\">aqui</a>.\n"
@@ -971,6 +1010,10 @@ msgid ""
 msgstr ""
 "\n"
 "Sua exportação está pronta e pode ser baixada clicando %(download_url)s.\n"
+
+#, python-format
+#~ msgid "Must be at least %d characters long"
+#~ msgstr "Deve ter pelo menos %d caractere"
 
 #~ msgid "Bulk Reply"
 #~ msgstr "Resposta em massa"

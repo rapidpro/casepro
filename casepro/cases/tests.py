@@ -366,7 +366,7 @@ class CaseTest(BaseCasesTest):
         open_case = Case.get_open_for_contact_on(self.unicef, self.ann, datetime(2014, 1, 16, 0, 0, tzinfo=pytz.UTC))
         self.assertEqual(open_case, case2)
 
-    def test_get_open_with_user_assignee(self):
+    def test_get_or_open_with_user_assignee(self):
         """
         If a case is opened with the user_assignee field set, the created case should have the assigned user, and
         the created case action should also have the assigned user.
@@ -380,6 +380,10 @@ class CaseTest(BaseCasesTest):
 
         case_action = CaseAction.objects.get(case=case)
         self.assertEqual(case_action.user_assignee, self.user1)
+
+        # only assigned user should be notified
+        self.assertEqual(Notification.objects.count(), 1)
+        Notification.objects.get(user=self.user1, type=Notification.TYPE_CASE_ASSIGNMENT)
 
     def test_get_open_no_initial_message_new_case(self):
         """
@@ -445,42 +449,54 @@ class CaseTest(BaseCasesTest):
         d2 = datetime(2014, 1, 10, 0, 0, tzinfo=pytz.UTC)
         d3 = datetime(2014, 1, 11, 0, 0, tzinfo=pytz.UTC)
         d4 = datetime(2014, 1, 12, 0, 0, tzinfo=pytz.UTC)
+        d5 = datetime(2014, 1, 13, 0, 0, tzinfo=pytz.UTC)
 
         bob = self.create_contact(self.unicef, "C-002", "Bob")
         cat = self.create_contact(self.unicef, "C-003", "Cat")
+        don = self.create_contact(self.unicef, "C-004", "Don")
         nic = self.create_contact(self.nyaruka, "C-005", "Nic")
 
         msg1 = self.create_message(self.unicef, 101, self.ann, "Hello 1")
         msg2 = self.create_message(self.unicef, 102, self.ann, "Hello 2")
         msg3 = self.create_message(self.unicef, 103, bob, "Hello 3")
         msg4 = self.create_message(self.unicef, 104, cat, "Hello 4")
+        msg5 = self.create_message(self.unicef, 105, cat, "Hello 5")
 
         case1 = self.create_case(self.unicef, self.ann, self.moh, msg1, opened_on=d1, closed_on=d2)
         case2 = self.create_case(self.unicef, self.ann, self.moh, msg2, opened_on=d2)
         case3 = self.create_case(self.unicef, bob, self.who, msg3, opened_on=d3)
         case4 = self.create_case(self.unicef, cat, self.who, msg4, opened_on=d4)
+        case5 = self.create_case(self.unicef, don, self.who, msg5, opened_on=d5, user_assignee=self.user3)
 
         # other org
-        msg5 = self.create_message(self.nyaruka, 105, nic, "Hello")
+        msg5 = self.create_message(self.nyaruka, 106, nic, "Hello")
         self.create_case(self.nyaruka, nic, self.klab, msg5)
 
         def assert_search(user, params, results):
             self.assertEqual(list(Case.search(self.unicef, user, params)), results)
 
         # by org admin (sees all cases)
-        assert_search(self.admin, {"folder": CaseFolder.open}, [case4, case3, case2])
+        assert_search(self.admin, {"folder": CaseFolder.open}, [case5, case4, case3, case2])
         assert_search(self.admin, {"folder": CaseFolder.closed}, [case1])
 
         # by partner user (sees only cases assigned to them)
         assert_search(self.user1, {"folder": CaseFolder.open}, [case2])
         assert_search(self.user1, {"folder": CaseFolder.closed}, [case1])
 
-        # by assignee
-        assert_search(self.user1, {"folder": CaseFolder.open, "assignee": self.moh.pk}, [case2])
+        # by assignee (partner)
+        assert_search(self.user1, {"folder": CaseFolder.open, "assignee": self.moh.id}, [case2])
+        assert_search(self.user1, {"folder": CaseFolder.open, "assignee": self.who.id}, [])  # user not in that partner
+        assert_search(self.user3, {"folder": CaseFolder.open, "assignee": self.who.id}, [case5, case4, case3])
+
+        # by assignee (user)
+        assert_search(self.user1, {"folder": CaseFolder.open, "user_assignee": self.user1.id}, [])
+        assert_search(self.user1, {"folder": CaseFolder.open, "user_assignee": self.user3.id}, [])
+        assert_search(self.user3, {"folder": CaseFolder.open, "user_assignee": self.user3.id}, [case5])
+        assert_search(self.user3, {"folder": CaseFolder.all, "user_assignee": self.user3.id}, [case5])
 
         # by before/after
         assert_search(self.admin, {"folder": CaseFolder.open, "before": d2}, [case2])
-        assert_search(self.admin, {"folder": CaseFolder.open, "after": d3}, [case4, case3])
+        assert_search(self.admin, {"folder": CaseFolder.open, "after": d3}, [case5, case4, case3])
 
     def test_access_level(self):
         msg = self.create_message(self.unicef, 234, self.ann, "Hello")
@@ -695,6 +711,10 @@ class CaseCRUDLTest(BaseCasesTest):
         response = self.url_post_json("unicef", url, {"assignee": self.who.pk, "user_assignee": self.user2.pk})
         self.assertEqual(response.status_code, 404)
 
+        # only the assigned user should get a notification
+        self.assertEqual(Notification.objects.count(), 1)
+        self.assertEqual(Notification.objects.get().user, self.user3)
+
     def test_reassign_no_user(self):
         """The user field should be optional, and reassignment should still work without it."""
         url = reverse("cases.case_reassign", args=[self.case.pk])
@@ -704,6 +724,10 @@ class CaseCRUDLTest(BaseCasesTest):
 
         response = self.url_post_json("unicef", url, {"assignee": self.who.pk, "user_assignee": None})
         self.assertEqual(response.status_code, 204)
+
+        # notifies users in that partner org
+        self.assertEqual(Notification.objects.count(), 1)
+        self.assertEqual(Notification.objects.get().user, self.user3)
 
     def test_close(self):
         url = reverse("cases.case_close", args=[self.case.pk])

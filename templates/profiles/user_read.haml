@@ -4,9 +4,10 @@
 - block pre-content
 
 - block content
+  {{ context_data_json|json_script:"contextData" }}
 
-  %script{ type:"text/javascript" }
-    var contextData = {{ context_data_json|safe }};
+  %script(type="text/javascript")
+    var contextData = JSON.parse(document.getElementById('contextData').textContent);
 
   .ng-cloak{ ng-controller:"UserController", ng-cloak:"" }
     .page-header.clearfix{ style:"border-bottom: none" }
@@ -43,15 +44,15 @@
         &nbsp;
         &nbsp;
         %i.glyphicon.glyphicon-envelope
-        %a{ ng-href:"mailto:[[ user.email ]]" }
+        %a(ng-href="mailto:[[ user.email ]]")
           [[ user.email ]]
 
-    %uib-tabset{ active:"active" }
+    %uib-tabset(active="active")
 
-      %uib-tab{ index:"0", select:"onTabSelect(0)" }
+      %uib-tab(index="0" select="onTabSelect(0)")
         %uib-tab-heading
           %span.glyphicon.glyphicon-dashboard
-          - trans "Summary"
+          -trans "Summary"
         %br
         .row
           .col-md-4
@@ -60,6 +61,34 @@
                 Total replies: <strong>{{ summary.total_replies | intcomma }}</strong>
           .col-md-8
             #chart-replies-by-month
+
+      %uib-tab(index="1" select="onTabSelect(1)")
+        %uib-tab-heading
+          %span.glyphicon.glyphicon-briefcase
+          &nbsp;
+          -trans "Cases"
+        %br
+        .ng-cloak(ng-controller="UserCasesController" ng-cloak="")
+          .row
+            .col-md-12
+              .cases(infinite-scroll="loadOldItems(false)" infinite-scroll-disabled="!isInfiniteScrollEnabled()")
+                .stackitem.clearfix.hoverable(ng-repeat="item in items | filter: getItemFilter()" ng-click="onClickCase(item)")
+                  .case-time
+                    %cp-date(time="item.opened_on")
+                  .case-icon
+                    %span.glyphicon(ng-class='{ "glyphicon-folder-open": !item.is_closed, "glyphicon-folder-close": item.is_closed }')
+                  .case-text
+                    %span.label-container(ng-repeat="label in filterDisplayLabels(item.labels)")
+                      %span.label.label-success
+                        [[ label.name ]]
+                      &nbsp;
+                    [[ item.summary ]]
+
+                .loading(ng-if="oldItemsLoading")
+                .none(ng-hide="oldItemsLoading || items.length > 0")
+                  -trans "No cases"
+                .none(ng-hide="oldItemsLoading || !hasTooManyItemsToDisplay()")
+                  -trans "Search returned more items than can be displayed"
 
 
 - block extra-style
@@ -71,4 +100,20 @@
     #chart-replies-by-month {
       width: 100%;
       height: 250px;
+    }
+    .case-icon {
+      float: left;
+      width: 50px;
+    }
+    .case-icon .glyphicon-folder-open {
+      color: #5cb85c;
+    }
+    .case-icon .glyphicon-folder-close {
+      color: #d9534f;
+    }
+    .case-time {
+      float: right;
+      font-size: 0.7em;
+      margin-left: 3px;
+      margin-bottom: 3px;
     }

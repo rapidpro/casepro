@@ -2,7 +2,7 @@
 A new message was given labels that you watch: {% for label in labels %}{{ label.name }}{% if not forloop.last %}, {% endif %}{% endfor %}.
 <br/>
 <br/>
-{% blocktrans with inbox_url=inbox_url %}
+{% blocktrans trimmed with inbox_url=inbox_url %}
 Go to <a href="{{ inbox_url }}">here</a> to view the message. You are receiving this email because you are watching
 those labels. You can unwatch from the label pages.
 {% endblocktrans %}

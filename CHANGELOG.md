@@ -1,3 +1,137 @@
+v1.3.29
+----------
+ * Update dependencies
+
+v1.3.28
+----------
+ * Update dependencies
+ * Fix permission check in update view
+
+v1.3.27
+----------
+ * Also switch partner scoped totals to use TotalCount
+
+v1.3.26
+----------
+ * Re-enable total counts but this time from TotalCount and not summing DailyCount
+ * Migration to back-fill total counts for replies and cases opened/closed
+
+v1.3.25
+----------
+ * Start recording totals for replies and cases opened/closed
+
+v1.3.24
+----------
+ * Re-enable partner stats for all time, disable the equivalent user stats
+
+v1.3.23
+----------
+ * Fix problem with comments in templates
+
+v1.3.22
+----------
+ * Temporarily disable total counts for user stats until we can add a more performant way to calculate these
+
+v1.3.21
+----------
+ * Ignore invalid host errors
+
+v1.3.20
+----------
+ * Update to latest Sentry SDK
+
+v1.3.19
+----------
+ * Replace boto with boto3
+
+v1.3.18
+----------
+ * Update project version
+
+v1.3.17
+----------
+ * Merge pull request #331 from rapidpro/poetry
+
+v1.3.13
+----------
+ * Add SecurityMiddleware to common settings
+
+v1.3.12
+----------
+ * Fix XSS vulnerablilities in rules template tags
+ * Add management command for summarizing usage stats across orgs
+ * Bump pillow version
+
+v1.3.11
+----------
+ * Fix wrong arg name for latest rapidpro client
+
+v1.3.10
+----------
+ * Update to latest rapidpro-python
+
+v1.3.9
+----------
+ * Fix reply view when org has replies without reply_to set
+
+v1.3.8
+----------
+ * Add autocomplete=off to login page
+ * Remove novalidate on forms
+
+v1.3.7
+----------
+ * Upgrade to latest bootstrap 3.3.x
+ * Only allow CSV file extensions for FAQ imports
+ * Fix embedding of JSON in templates
+ * Only allow partners users to view users in same partner org
+ * Require current password when user changes their password
+
+v1.3.5
+----------
+ * Make password requirements stricter
+
+v1.3.4
+----------
+ * Fix unrelated failing test due to ordering of labels
+ * Fix styling on partner update/create forms and add validator for image file extensions
+ * Update to jQuery 1.11.3
+
+v1.3.3
+----------
+ * Add XFrameOptionsMiddleware
+ * Tweak notifications for re-assigned cases so if assignee is specific user, only they get notified
+
+v1.3.2
+----------
+ * Revert upgrade to django-storages
+
+v1.3.1
+----------
+ * Update to latest angular 1.4.x
+
+v1.3.0
+----------
+ * Fix editing of must_use_faq
+ * If case is assigned to specific user, only notify that user
+ * Show contact name on open case modal
+ * Add tab to user page which lists cases assigned to them
+ * Bump to latest minor release for all deps
+
+v1.2.7
+----------
+ * Fix translation
+
+v1.2.6
+----------
+ * Add spanish translations from transifex
+
+v1.2.5
+----------
+ * Minor dependency updates
+ * Tidy up translatable strings with trimmed
+ * Add code_check script and generate locale files for Spanish
+
 v1.2.4
 ----------
  * Bump django from 2.2.8 to 2.2.10

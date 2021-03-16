@@ -10,11 +10,21 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(model_name="dailycount", name="is_squashed", field=models.BooleanField(default=False),),
         migrations.AlterField(
-            model_name="dailysecondtotalcount", name="is_squashed", field=models.BooleanField(default=False),
+            model_name="dailycount",
+            name="is_squashed",
+            field=models.BooleanField(default=False),
         ),
-        migrations.AlterField(model_name="totalcount", name="is_squashed", field=models.BooleanField(default=False),),
+        migrations.AlterField(
+            model_name="dailysecondtotalcount",
+            name="is_squashed",
+            field=models.BooleanField(default=False),
+        ),
+        migrations.AlterField(
+            model_name="totalcount",
+            name="is_squashed",
+            field=models.BooleanField(default=False),
+        ),
         migrations.AddIndex(
             model_name="dailycount",
             index=models.Index(

@@ -1,6 +1,6 @@
 {% load i18n %}
-{% blocktrans with user=user.email %}User {{ user }} assigned this case to your organization.{% endblocktrans %}<br/>
+{% blocktrans trimmed with user=user.email %}User {{ user }} assigned this case to your organization.{% endblocktrans %}<br/>
 <br/>
 <br/>
-{% blocktrans with case_url as case_url %}Click <a href="{{ case_url }}">here</a> to view the case.{% endblocktrans %}
+{% blocktrans trimmed with case_url as case_url %}Click <a href="{{ case_url }}">here</a> to view the case.{% endblocktrans %}
 <br/>

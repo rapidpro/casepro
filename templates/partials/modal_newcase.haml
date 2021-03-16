@@ -2,30 +2,31 @@
 
 .modal-header
   %h3.modal-title
-    - trans "Open Case"
+    -trans "Open Case"
   .modal-body
     %p
-      - trans "Open a new case for this contact? This will archive all messages from the contact."
+      -trans "Open a new case for <b>[[ contact.display ]]</b>?"
+      -trans "This will archive all messages from the contact."
 
-    %form{ name:"form", novalidate:"" }
-      .form-group{ ng-class:'{"has-error": form.summary.$invalid}' }
+    %form(name="form")
+      .form-group(ng-class='{"has-error": form.summary.$invalid}')
         %label.control-label
-          - trans "Summary"
-        %textarea.form-control{ ng-model:"fields.summary.val", ng-maxlength:"fields.summary.maxLength", name:"summary", required:"" }
-        .help-block{ ng-show:"form.summary.$error.required" }
-          - trans "Required"
-        .help-block{ ng-show:"form.summary.$error.maxlength" }
-          - trans "Too long"
-      .form-group{ ng-if:"partners != null" }
+          -trans "Summary"
+        %textarea.form-control(ng-model="fields.summary.val" ng-maxlength="fields.summary.maxLength" name="summary" required="")
+        .help-block(ng-show="form.summary.$error.required")
+          -trans "Required"
+        .help-block(ng-show="form.summary.$error.maxlength")
+          -trans "Too long"
+      .form-group(ng-if="partners != null")
         %label.control-label
-          - trans "Assign to Partner"
-        %select.form-control{ ng-model:"fields.assignee.val", ng-options:"p.name for p in partners track by p.id", ng-change:"refreshUserList()" }
-      .form-group{ ng-if:"partners != null" }
+          -trans "Assign to Partner"
+        %select.form-control(ng-model="fields.assignee.val" ng-options="p.name for p in partners track by p.id" ng-change="refreshUserList()")
+      .form-group(ng-if="partners != null")
         %label.control-label
-          - trans "Specific User (Optional)"
-        %select.form-control{ ng-model:"fields.user.val", ng-options:"u.name for u in users track by u.id" }
+          -trans "Specific User (Optional)"
+        %select.form-control(ng-model="fields.user.val" ng-options="u.name for u in users track by u.id")
   .modal-footer
-    %button.btn.btn-primary{ ng-click:"ok()" }
-      - trans "Open"
-    %button.btn.btn-default{ ng-click:"cancel()" }
-      - trans "Cancel"
+    %button.btn.btn-primary(ng-click="ok()")
+      -trans "Open"
+    %button.btn.btn-default(ng-click="cancel()")
+      -trans "Cancel"

@@ -1,45 +1,44 @@
-- extends "base.html"
+-extends "base.html"
+-load smartmin i18n
 
-- load smartmin i18n
+-block login
 
-- block login
-
-- block content
+-block content
   .login-form.center-block
     .page-header
       %h2
-        - trans "Login"
+        -trans "Login"
 
-    %form.form-stacked{method:"post"}
-      - csrf_token
+    %form.form-stacked(method="post")
+      -csrf_token
 
-      - for field, errors in form.errors.items
-        - if field == '__all__'
+      -for field, errors in form.errors.items
+        -if field == '__all__'
           .alert.alert-danger.form-errors
             %h3
               Error
             {{ errors }}
 
       .form-group
-        %label.control-label{ for:"username" }
-          - trans "Email"
+        %label.control-label(for="username")
+          -trans "Email"
         .input
-          %input.form-control{ maxlength:"254", name:"username", type:"text" }
+          %input.form-control(maxlength="254" name="username" type="text")
 
       .form-group
-        %label.control-label{ for:"password" }
-          - trans "Password"
+        %label.control-label(for="password")
+          -trans "Password"
         .input
-          %input.form-control{ name:"password", type:"password" }
+          %input.form-control(name="password" type="password" autocomplete="off")
 
-      .{ style:"padding-top: 10px" }
-        %button.btn.btn-primary{ type:"submit" }
-          - trans "Login"
+      .(style="padding-top: 10px")
+        %button.btn.btn-primary(type="submit")
+          -trans "Login"
 
-        - if allow_email_recovery
-          %span.pull-away{ style:"padding-top:7px" }
-            %a{ href:"{% url 'users.user_forget' %}"}
-              - trans "Forgot Password?"
+        -if allow_email_recovery
+          %span.pull-away(style="padding-top:7px")
+            %a(href="{% url 'users.user_forget' %}")
+              -trans "Forgot Password?"
 
 - block extra-style
   {{ block.super }}

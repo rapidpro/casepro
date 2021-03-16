@@ -2,6 +2,11 @@ import os
 import sys
 from datetime import timedelta
 
+import sentry_sdk
+from sentry_sdk.integrations.celery import CeleryIntegration
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration, ignore_logger
+
 from django.utils.translation import ugettext_lazy as _
 
 # -----------------------------------------------------------------------------------
@@ -95,7 +100,7 @@ MODELTRANSLATION_TRANSLATION_REGISTRY = "translation"
 LANGUAGE_CODE = "en"
 
 # Available languages for translation
-LANGUAGES = (("en", _("English")), ("fr", _("French")), ("pt-br", _("Portuguese")))
+LANGUAGES = (("en", _("English")), ("fr", _("French")), ("pt-br", _("Portuguese")), ("es", _("Spanish")))
 RTL_LANGUAGES = {}
 DEFAULT_LANGUAGE = "en"
 
@@ -131,10 +136,12 @@ STATICFILES_FINDERS = (
 SECRET_KEY = "4-rr2sa6c#5*vr^2$m*2*j+5tc9duo2q+5e!xra%n($d5a$yp)"
 
 MIDDLEWARE = (
+    "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "dash.orgs.middleware.SetOrgMiddleware",
@@ -400,6 +407,13 @@ LOGOUT_REDIRECT_URL = "/"
 
 AUTHENTICATION_BACKENDS = ("smartmin.backends.CaseInsensitiveBackend",)
 
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 10}},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+
 # -----------------------------------------------------------------------------------
 # Debug Toolbar
 # -----------------------------------------------------------------------------------
@@ -460,3 +474,22 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.CursorPagination",
     "PAGE_SIZE": 100,
 }
+
+# -----------------------------------------------------------------------------------
+# Sentry
+# -----------------------------------------------------------------------------------
+SENTRY_DSN = os.environ.get("SENTRY_DSN", os.environ.get("RAVEN_DSN"))
+
+
+def traces_sampler(sampling_context):
+    return 0 if ("shell" in sys.argv) else 1.0
+
+
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration(), CeleryIntegration(), LoggingIntegration()],
+        send_default_pii=True,
+        traces_sampler=traces_sampler,
+    )
+    ignore_logger("django.security.DisallowedHost")

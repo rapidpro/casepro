@@ -468,6 +468,7 @@ services.factory('CaseService', ['$http', '$httpParamSerializer', '$window', ($h
       return {
         folder: search.folder,
         assignee: if search.assignee then search.assignee.id else null,
+        user_assignee: if search.user_assignee then search.user_assignee.id else null,
         label: if search.label then search.label.id else null
       }
 ])
@@ -670,8 +671,8 @@ services.factory('UtilsService', ['$window', '$uibModal', ($window, $uibModal) -
       resolve = {title: (() -> title), prompt: (() -> prompt), labels: (() -> labels), initial: (() -> initial)}
       return $uibModal.open({templateUrl: '/partials/modal_label.html', controller: 'LabelModalController', resolve: resolve}).result
 
-    newCaseModal: (summaryInitial, summaryMaxLength, partners, users) ->
-      resolve = {summaryInitial: (() -> summaryInitial), summaryMaxLength: (() -> summaryMaxLength), partners: (() -> partners), users: (() -> users)}
+    newCaseModal: (summaryInitial, summaryMaxLength, contact, partners, users) ->
+      resolve = {summaryInitial: (() -> summaryInitial), summaryMaxLength: (() -> summaryMaxLength), contact: (() -> contact), partners: (() -> partners), users: (() -> users)}
       return $uibModal.open({templateUrl: '/partials/modal_newcase.html', controller: 'NewCaseModalController', resolve: resolve}).result
 
     dateRangeModal: (title, prompt) ->

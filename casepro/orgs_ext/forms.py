@@ -59,7 +59,10 @@ class OrgEditForm(forms.ModelForm):
     )
 
     followup_flow = forms.ChoiceField(
-        choices=(), label=_("Follow-up Flow"), help_text=_("Flow to start after a case is closed"), required=False,
+        choices=(),
+        label=_("Follow-up Flow"),
+        help_text=_("Flow to start after a case is closed"),
+        required=False,
     )
 
     def __init__(self, *args, **kwargs):

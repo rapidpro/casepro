@@ -1,0 +1,961 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+# Translators:
+# Nyaruka <info@textit.in>, 2020
+# Janina <jcuevas@unicef.org>, 2020
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-03-10 19:36+0000\n"
+"PO-Revision-Date: 2020-05-20 19:31+0000\n"
+"Last-Translator: Janina <jcuevas@unicef.org>, 2020\n"
+"Language-Team: Spanish (https://www.transifex.com/rapidpro/teams/110172/es/)\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "API v1"
+msgstr "API v1"
+
+msgid "Description"
+msgstr "Descripción"
+
+msgid "Can Access"
+msgstr "Acceso"
+
+msgid "Logo"
+msgstr "Logo"
+
+msgid "Organization"
+msgstr "Organización"
+
+msgid "Name"
+msgstr "Nombre"
+
+msgid "Name of this partner organization"
+msgstr "Nombre de la organización aliada"
+
+msgid "Primary Contact"
+msgstr "Contacto principal"
+
+msgid "Restricted Access"
+msgstr "Acceso restringido"
+
+msgid "Whether this partner's access is restricted by labels"
+msgstr "Si el acceso de este aliado está restringido por etiquetas"
+
+msgid "Labels"
+msgstr "Etiquetas"
+
+msgid "Labels that this partner can access"
+msgstr "Etiquetas a las que este aliado puede acceder"
+
+msgid "Users that belong to this partner"
+msgstr "Usuarios que pertenecen a este aliado"
+
+msgid "Labels assigned to this case"
+msgstr "Etiquetas asignadas a este caso"
+
+msgid "Summary"
+msgstr "Resumen"
+
+msgid "Open"
+msgstr "Abierto"
+
+msgid "Add Note"
+msgstr "Agregar una nota"
+
+msgid "Reassign"
+msgstr "Reasignar"
+
+msgid "Label"
+msgstr "Etiqueta"
+
+msgid "Remove Label"
+msgstr "Eliminar etiqueta"
+
+msgid "Close"
+msgstr "Cerrar"
+
+msgid "Reopen"
+msgstr "Reabrir"
+
+#, python-format
+msgid "Cases %d"
+msgstr "Casos %d"
+
+msgid "Download Cases"
+msgstr "Descargar casos"
+
+msgid "Inbox"
+msgstr "Bandeja de entrada"
+
+msgid "Flagged"
+msgstr "Marcado"
+
+msgid "Archived"
+msgstr "Archivado"
+
+msgid "Unlabelled"
+msgstr "Sin etiqueta"
+
+msgid "Sent"
+msgstr "Enviado"
+
+msgid "Open Cases"
+msgstr "Casos abiertos"
+
+msgid "Closed Cases"
+msgstr "Casos cerrados"
+
+msgid "Whether this group is dynamic"
+msgstr "Si el grupo es dinámico"
+
+msgid "When this group was created"
+msgstr "Cuándo fue creado el grupo"
+
+msgid "Whether this group is active"
+msgstr "Si el grupo está activo"
+
+msgid "Whether this group is visible to partner users"
+msgstr "Si el grupo es visible para los usuarios del aliado"
+
+msgid "Whether contacts should be suspended from this group during a case"
+msgstr "Si los contactos deben suspenderse de este grupo durante un caso"
+
+msgid "Key"
+msgstr "Llave"
+
+msgid "Value data type"
+msgstr "Tipo de datos de valor"
+
+msgid "Whether this field is visible to partner users"
+msgstr "Si este campo es visible para el aliado"
+
+msgid "Full name"
+msgstr "Nombre completo"
+
+msgid "The name of this contact"
+msgstr "Nombre de este contacto"
+
+msgid "Language"
+msgstr "Idioma"
+
+msgid "Language for this contact"
+msgstr "Idioma para este contacto"
+
+msgid "Groups this contact has been suspended from"
+msgstr "De qué grupos fue suspendido este contacto"
+
+msgid "When this contact was created"
+msgstr "Cuándo fue creado este contacto"
+
+msgid "List of URNs of the format 'scheme:path'"
+msgstr "Lista de URNs del formato 'scheme:path'"
+
+msgid "Groups"
+msgstr "Grupos"
+
+msgid "Contact groups visible to partner users."
+msgstr "Grupos de contactos visibles para aliados"
+
+msgid "Contact Groups"
+msgstr "Grupos de contatco"
+
+msgid "Update"
+msgstr "Actualización"
+
+msgid "Updated contact groups visible to partner users"
+msgstr "Grupos de contacto actualizados visible para los aliados"
+
+msgid "Is synced"
+msgstr "Está sincronizado"
+
+msgid "Whether label should be kept synced with backend"
+msgstr "Si la etiqueda debe conservarse sincronizado con backend"
+
+msgid "Keywords"
+msgstr "Palabras clave"
+
+msgid "Match messages containing any of these words (comma separated)"
+msgstr "Coincide con mensajes que contienen cualquiera de estas palabras (separado por comas)"
+
+msgid "Match messages from these groups (select none to include all groups)"
+msgstr "Coincide con mensajes de estos grupos (seleccione ninguno para incluir todos los grupos)"
+
+msgid "Ignore single words"
+msgstr "Ignorar palabras solas"
+
+msgid "Whether to ignore messages consisting of a single word"
+msgstr "Si debe ignorar mensajes que contengan solo una palabra"
+
+msgid "Field criteria"
+msgstr "Criterio"
+
+msgid "Match messages where contact field value is equal to any of these values (comma separated)"
+msgstr "Coincide con mensajes en donde el valor es igual a cualquiera de estos valores (separado por coma)"
+
+msgid "Reserved label name"
+msgstr "Nombre de etiqueta reservada"
+
+#, python-format
+msgid "Label name must be %d characters or less"
+msgstr "La etiqueta debe tener %d caracteres o menos"
+
+msgid "Label name must start with a letter or digit"
+msgstr "La etiqueta debe empezar con una letra o número"
+
+#, python-format
+msgid "Invalid keyword: %s"
+msgstr "Palabra clave inválida %s"
+
+msgid "Question"
+msgstr "Pregunta"
+
+msgid "Answer"
+msgstr "Respuesta"
+
+msgid "If a Parent is selected, the labels will be copied from the Parent FAQ"
+msgstr "Si un padre o madre es seleccionado, las etiquetas serán copiadas del FAQ de padres y madres"
+
+msgid "Language must be valid a ISO-639-3 code"
+msgstr "El idioma debe ser válido al código ISO-639-3"
+
+msgid "Labels are required if no Parent is selected"
+msgstr "Se requiere una etiqueta si ningún padre o madre es selccionado"
+
+msgid "Name of this label"
+msgstr "Nombre de la etiqueta"
+
+msgid "Language for this FAQ"
+msgstr "Idioma para estas preguntas frecuentes"
+
+msgid "Labels assigned to this FAQ"
+msgstr "Etiquetas asignadas a estas preguntas frecuentes"
+
+msgid "Flag"
+msgstr "Marca"
+
+msgid "Un-flag"
+msgstr "Un-marca"
+
+msgid "Archive"
+msgstr "Archivo"
+
+msgid "Restore"
+msgstr "Restaurar"
+
+#, python-format
+msgid "Messages %d"
+msgstr "Mensajes %d"
+
+#, python-format
+msgid "Replies %d"
+msgstr "Respuestas %d"
+
+msgid "Download Messages"
+msgstr "Descargar mensajes"
+
+msgid "Download Replies"
+msgstr "Descargar respuestas"
+
+#, fuzzy
+#| msgid "Import"
+msgid "Import file"
+msgstr "Importar"
+
+msgid "The name of this organization"
+msgstr "Nombre de esta organización"
+
+msgid "The timezone your organization is in"
+msgstr "Zona horaria de su organización"
+
+msgid "Banner text"
+msgstr "Texto del banner"
+
+msgid "Banner text displayed to all users"
+msgstr "Texto del banner que se muestra a todos los usuarios"
+
+msgid "Contact fields"
+msgstr "Información de contacto"
+
+msgid "Contact fields to display"
+msgstr "Información de contacto visibles"
+
+msgid "Suspend groups"
+msgstr "Grupos inactivos"
+
+msgid "Groups to remove contacts from when creating cases"
+msgstr "Grupos para eliminar contactos al crear casos"
+
+msgid "Follow-up Flow"
+msgstr "Flujo para dar seguimiento"
+
+msgid "Flow to start after a case is closed"
+msgstr "Flujo para iniciar después de que cerró el caso"
+
+msgid "Edit My Organization"
+msgstr "Editar Mi Organización"
+
+msgid "Email"
+msgstr "Correo electrónico"
+
+msgid "Email address and login."
+msgstr "Correo electrónico e ingreso"
+
+#, fuzzy
+#| msgid "Forgot Password?"
+msgid "Current Password"
+msgstr "¿Olvidó la contraseña?"
+
+msgid "Password"
+msgstr "Contraseña"
+
+#, fuzzy
+#| msgid "Password used to log in (minimum of %d characters)."
+msgid "Password used to log in."
+msgstr "Contraseña para ingresar (mínimo %d de caracteres)"
+
+msgid "New password"
+msgstr "Nueva contraseña"
+
+msgid "Confirm password"
+msgstr "Confirmar contraseña"
+
+msgid "Require change"
+msgstr "Requiere cambio"
+
+msgid "Whether user must change password on next login."
+msgstr "Si el usuario debe cambiar su contraseña al ingresar la próxima vez a su cuenta"
+
+msgid "Pre-approved responses only"
+msgstr "Solo respuestas pre aprobadas"
+
+msgid "Whether user will only be able to reply using pre-approved replies (FAQs)"
+msgstr "Si el usiario aprueba solo con respuestas pre aprobadas (preguntas frecuentes)"
+
+msgid "Please enter your current password."
+msgstr ""
+
+msgid "Passwords don't match."
+msgstr "Contraseña incorrecta"
+
+msgid "Role"
+msgstr "Rol"
+
+msgid "Partner Organization"
+msgstr "Organización aliada"
+
+msgid "Required for role."
+msgstr "Rol requerido"
+
+msgid "You are required to change your password"
+msgstr "Es necesario que cambies tu contraseña"
+
+msgid "Administrator"
+msgstr "Administrador"
+
+msgid "Partner Manager"
+msgstr "Aliado gerente"
+
+msgid "Partner Data Analyst"
+msgstr "Analista de datos aliado"
+
+msgid "Manager"
+msgstr "Gerente"
+
+msgid "Data Analyst"
+msgstr "Analista de datos"
+
+msgid "User must change password on next login"
+msgstr "Usuario debe cambiar su contraseña la próxima vez que ingrese a su sesión"
+
+msgid "User is only allowed to reply with pre-approved responses"
+msgstr "Usuario está permitido responder solo con respuestas pre aprobadas"
+
+msgid "New labelled message"
+msgstr "Mensaje con nueva etiqueta"
+
+#, python-format
+msgid "New case assignment #%d"
+msgstr "Nuevo caso reasignado # %d"
+
+#, python-format
+msgid "New note in case #%d"
+msgstr "Nueva nota en caso # %d"
+
+#, python-format
+msgid "Case #%d was closed"
+msgstr "Caso #%d fue cerrado"
+
+#, python-format
+msgid "Case #%d was reopened"
+msgstr "Caso #%d fue reabierto"
+
+#, python-format
+msgid "Case #%d was reassigned"
+msgstr "Caso #%d fue reasignado"
+
+#, python-format
+msgid "New reply in case #%d"
+msgstr "Nueva respuesta en caso # %d"
+
+msgid "Email address already taken."
+msgstr "Correo electrónico ya ingresado"
+
+msgid "Profile updated"
+msgstr "Perfil actualizado"
+
+msgid "Edit My Profile"
+msgstr "Editar mi perfil"
+
+msgid "User doesn't have a profile"
+msgstr "El usuario no tiene un perfil"
+
+msgid "My Profile"
+msgstr "Mi perfil"
+
+msgid "none of"
+msgstr "Ninguno de "
+
+msgid "any of"
+msgstr "Cualquiera de"
+
+msgid "all of"
+msgstr "Todos los de"
+
+msgid " and "
+msgstr "y"
+
+msgid ", and "
+msgstr ", y"
+
+msgid "English"
+msgstr "Inglés"
+
+msgid "French"
+msgstr "Francés"
+
+msgid "Portuguese"
+msgstr "Portugués"
+
+msgid "Spanish"
+msgstr "Español"
+
+msgid "The day this count is for"
+msgstr "El día que esto cuenta"
+
+msgid "Incoming Messages"
+msgstr "Mensaje de entrada"
+
+msgid "Replies Sent"
+msgstr "Respuestas enviadas"
+
+msgid "Cases Opened"
+msgstr "Casos abiertos"
+
+msgid "Cases Closed"
+msgstr "Casos cerrados"
+
+msgid "Average Reply Time"
+msgstr "Tiempo promedio de respuesta"
+
+msgid "Average Closed Time"
+msgstr "Tiempo promedio de inactividad"
+
+msgid "January"
+msgstr "Enero"
+
+msgid "February"
+msgstr "Febrero"
+
+msgid "March"
+msgstr "Marzo"
+
+msgid "April"
+msgstr "Abril"
+
+msgid "May"
+msgstr "Mayo"
+
+msgid "June"
+msgstr "Junio"
+
+msgid "July"
+msgstr "Julio"
+
+msgid "August"
+msgstr "Agosto"
+
+msgid "September"
+msgstr "Septiembre"
+
+msgid "October"
+msgstr "Octubre"
+
+msgid "November"
+msgstr "Noviembre"
+
+msgid "December"
+msgstr "Diciembre"
+
+msgid "Other"
+msgstr "Otra"
+
+msgid "Download Export"
+msgstr "Descargar y exportar"
+
+msgid "Could not open new case as message was already handled by this case"
+msgstr "No se puede abrir el mensaje dado ya está siendo manejdo por este caso"
+
+msgid "Could not open new case as contact already has this open case"
+msgstr "No se puede abrir el mensaje dado que el contacto ya tiene un caso abierto"
+
+msgid "Watch"
+msgstr "Revisado"
+
+msgid "Unwatch"
+msgstr "Sin revisar"
+
+msgid "Re-assign"
+msgstr "Reasignar"
+
+msgid "Re-open"
+msgstr "Reabrir"
+
+msgid "Assignee"
+msgstr "Asignado"
+
+msgid "Status"
+msgstr "Estatus"
+
+msgid "Send"
+msgstr "Enviado"
+
+msgid "Contact"
+msgstr "Contacto"
+
+msgid "Blocked"
+msgstr "Bloqueado"
+
+msgid "Stopped"
+msgstr "Detenido"
+
+msgid "View"
+msgstr "Vista"
+
+msgid "View Label"
+msgstr "Etiqueta vista"
+
+msgid "Open Case"
+msgstr "Abrir un caso"
+
+msgid "Messages"
+msgstr "Mensajes"
+
+msgid "Cases"
+msgstr "Casos"
+
+msgid "Closed"
+msgstr "Cerrado"
+
+msgid "Assigned to"
+msgstr "Asigando a"
+
+msgid "Anyone"
+msgstr "Cualquier persona"
+
+msgid "Search"
+msgstr "Buscar"
+
+msgid "No cases"
+msgstr "No hay casos"
+
+msgid "Search returned more items than can be displayed"
+msgstr "La búsqueda encontró más casos de los que se pueden mostrar"
+
+msgid "View Contact"
+msgstr "Ver el contacto"
+
+msgid "Back"
+msgstr "Regresar"
+
+msgid "Advanced..."
+msgstr "Avanzado..."
+
+msgid "include archived"
+msgstr "Incluir archivos"
+
+msgid "Clear"
+msgstr "Limpiar"
+
+msgid "Containing"
+msgstr "Incluir"
+
+msgid "When"
+msgstr "Cuando"
+
+msgid "Until"
+msgstr "Hasta"
+
+msgid "Include archived"
+msgstr "Incluye archivo"
+
+msgid "Select"
+msgstr "Seleccionar"
+
+msgid "All"
+msgstr "Todo"
+
+msgid "None"
+msgstr "Ninguno"
+
+msgid "Reply"
+msgstr "Respuesta"
+
+#, python-format
+msgid "Searching by text is limited to the last %(days)s days."
+msgstr "Buscar por texto está limitado a los últimos %(days)s días"
+
+msgid "Flow"
+msgstr "Flujo"
+
+msgid "Forward"
+msgstr "Responder"
+
+msgid "No messages"
+msgstr "No hay mensajes"
+
+msgid "Add"
+msgstr "Agregar"
+
+msgid "Partners"
+msgstr "Aliados"
+
+msgid "No primary contact"
+msgstr "No hay contacto principal"
+
+msgid "No labels"
+msgstr "Sin etiquetas"
+
+msgid "Replies"
+msgstr "Respuestas"
+
+msgid "Export..."
+msgstr "Exportar"
+
+msgid "From"
+msgstr "De"
+
+msgid "On"
+msgstr "Activo"
+
+msgid "User"
+msgstr "Usuario"
+
+msgid "Message"
+msgstr "Mensaje"
+
+msgid "Delay"
+msgstr "Retraso"
+
+msgid "Reply to"
+msgstr "Responer a"
+
+msgid "More items than can be displayed"
+msgstr "Más de los elementos que puede ser mostrados"
+
+msgid "Users"
+msgstr "Usuarios"
+
+msgid "New..."
+msgstr "Nuevo..."
+
+msgid "Replies (this month)"
+msgstr "Respuestas (este mes)"
+
+msgid "Replies (last month)"
+msgstr "Respuestas (mes pasado)"
+
+msgid "Replies (total)"
+msgstr "Respuestas (total)"
+
+msgid "Please correct the error below"
+msgid_plural "Please correct the errors below"
+msgstr[0] "Por favor corrija el siguiente error"
+msgstr[1] "Por favor corrija los siguientes errores"
+
+msgid "View External"
+msgstr "Vista externa"
+
+msgid "Details"
+msgstr "Detalles"
+
+msgid "These are the groups visible to partner organizations."
+msgstr "Estos son grupos visibles para las organizaciones aliadas"
+
+msgid "Select Groups"
+msgstr "Selecciona los grupos"
+
+msgid "Your download should start automatically. If it doesn't start in a few seconds, use the button below to download."
+msgstr "Tu descarga empezará automáticamente. Si no se desacarga después de algunos segundos, usa el botón debajo para descargar."
+
+msgid "Download Now"
+msgstr "Descarga ahora"
+
+msgid "CasePro"
+msgstr "CasePro"
+
+msgid "Toggle navigation"
+msgstr "Navegación Toggle"
+
+msgid "Site Manage"
+msgstr "Manejo del sitio"
+
+msgid "Orgs"
+msgstr "Orgs"
+
+msgid "Tasks"
+msgstr "Tareas"
+
+msgid "Administration"
+msgstr "Administración"
+
+msgid "FAQs"
+msgstr "Preguntas frecuentes FAQs"
+
+msgid "Message Board"
+msgstr "Panel de mensajes"
+
+msgid "Profile"
+msgstr "Perfil"
+
+msgid "Logout"
+msgstr "Salir"
+
+msgid "Login"
+msgstr "Ingresar"
+
+msgid "Import"
+msgstr "Importar"
+
+msgid "Translations"
+msgstr "Traducciones"
+
+msgid "Add Translation"
+msgstr "Agregar traducción"
+
+msgid "No translations available"
+msgstr "Traducciones no disponibles"
+
+msgid "No site selected, please contact your administrator to find valid organization sites."
+msgstr "No existe el sitio seleccionado, por favor contacte al administrador de su organización para encontrar un sitio válido."
+
+msgid "My Organization"
+msgstr "Mi organización"
+
+msgid "New"
+msgstr "Nueva"
+
+msgid "Export Stats..."
+msgstr "Exportar estadísticas"
+
+msgid "Replies this month"
+msgstr "Respuestas este mes"
+
+msgid "Replies last month"
+msgstr "Respuestas del mes pasado"
+
+msgid "Total replies"
+msgstr "Respuestas totales"
+
+msgid "Cases opened this month"
+msgstr "Casos abiertos este mes"
+
+msgid "Cases closed this month"
+msgstr "Casos cerrados este mes"
+
+msgid "Total cases opened"
+msgstr "Total de casos abiertos"
+
+msgid "Average referral response time this month"
+msgstr "Tiempo promedio de respuesta este mes"
+
+msgid "Average time to close this month"
+msgstr "Tiempo promedio de cierre este mes"
+
+msgid "Messages this month"
+msgstr "Mensajes este mes"
+
+msgid "Messages last month"
+msgstr "Mensajes del mes pasado"
+
+msgid "Total messages"
+msgstr "Total de mensajes"
+
+msgid "Export Users..."
+msgstr "Exportar usuarios..."
+
+msgid "include partner users"
+msgstr "incluir usarios aliados"
+
+msgid "Assign to Partner"
+msgstr "Asignar a un aliado"
+
+msgid "Specific User (Optional)"
+msgstr "Especificar usuario (opcional)"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "Recipient"
+msgstr "Receptor"
+
+msgid "Phone"
+msgstr "Teléfono"
+
+msgid "Twitter"
+msgstr "Twitter"
+
+msgid "Required"
+msgstr "Requerido"
+
+msgid "Too long"
+msgstr "Muy largo"
+
+msgid "OK"
+msgstr "OK"
+
+msgid "Save"
+msgstr "Guardar"
+
+msgid "Original FAQ"
+msgstr "Pregunta frecuente original "
+
+msgid "Valid language required"
+msgstr "Lenguage requerido válido"
+
+msgid "Submit"
+msgstr "Enviar"
+
+msgid "Message History"
+msgstr "Histórico de mensajes"
+
+msgid "No events"
+msgstr "No hay eventos"
+
+msgid "Open a new case for <b>[[ contact.display ]]</b>?"
+msgstr ""
+
+#, fuzzy
+#| msgid "Open a new case for this contact? This will archive all messages from the contact."
+msgid "This will archive all messages from the contact."
+msgstr "¿Abrir un nuevo caso para este contacto? Este paso archivará todos los mensajes del contacto."
+
+msgid "Note"
+msgstr "Nota"
+
+msgid "Send the following reply to the selected message(s). This will remove the message(s) from your inbox to Archived."
+msgstr "Envíe la siguiente respuesta a mensaje(s) seleccionado(s). Esto eliminará el mensaje de tu bandeja de entrada y lo archivará."
+
+msgid "Send the following reply. This will archive this message removing it from your Inbox."
+msgstr "Enviar la siguiente respuesta. Esto hará que el mensaje se archive y ya no aparezca en su bandeja de entrada."
+
+msgid "Please select one of the following pre-approved replies."
+msgstr "Por favor, seleccione una de las siguientes respuestas preaprobadas."
+
+msgid "There are no pre-approved replies. Please contact your administrator."
+msgstr "No hay respuestas preaprobadas. Por favor, contacte a su gerente."
+
+msgid "You may select one of the following pre-approved replies or enter a custom message below."
+msgstr "Puedes seleccionar una de las siguientes respuestas preaprobadas o ingresar un mensaje adecuado debajo"
+
+msgid "Send & Archive"
+msgstr "Enviar y archivar"
+
+#, python-format
+msgid "User %(user)s assigned this case to your organization."
+msgstr "Usuario %(user)s asignó este caso a tu organización"
+
+#, python-format
+msgid "Click <a href=\"%(case_url)s\">here</a> to view the case."
+msgstr "Dé click <a href=\"%(case_url)s\">aquí </a> para ver el caso."
+
+#, python-format
+msgid "Go to %(case_url)s to view the case."
+msgstr "Ir a %(case_url)s para ver el caso"
+
+#, python-format
+msgid "User %(user)s closed the case with the following note:"
+msgstr "Usuario %(user)s cerró el caso con la siguiente nota:"
+
+#, python-format
+msgid "User %(user)s added a new note:"
+msgstr "Usuario %(user)s agregó una nota nueva:"
+
+#, python-format
+msgid "User %(user)s reassigned the case to %(assignee)s."
+msgstr "Usuario %(user)s reasignó el caso a %(assignee)s"
+
+#, python-format
+msgid "User %(user)s reopened the case with the following note:"
+msgstr "Usuario %(user)s reabrió el caso con la siguiente nota:"
+
+#, python-format
+msgid "Click <a href=\"%(case_url)s\">here</a> to view the case. You are receiving this email because you are watching this case. You can unwatch from the case page."
+msgstr "Haga click <a href=\"%(case_url)s\">aquí </a> para revisar el caso. Estás recibiendo este mail porque tú estás atendiendo este caso. Puedes consultarlo desde la página del caso."
+
+#, python-format
+msgid ""
+"Go to %(case_url)s to view the case. You are receiving this email because\n"
+"you are watching this case. You can unwatch from the case page."
+msgstr "Ir a %(case_url)s para ver el caso. Estás recibiendo este mensaje porque estás revisando este caso. Puedes terminar de revisarlo desde la página del caso."
+
+#, python-format
+msgid "Go to <a href=\"%(inbox_url)s\">here</a> to view the message. You are receiving this email because you are watching those labels. You can unwatch from the label pages."
+msgstr "Vaya <a href=\"%(inbox_url)s\"> aquí </a> para ver le mensaje. Estás recibiendo este mail porque estás atendiendo estas etiquetas. Puedes consultarlo desde la página de las etiquetas."
+
+#, python-format
+msgid ""
+"Go to %(inbox_url)s to view the message. You are receiving this email because you are watching those labels. You can\n"
+"unwatch from the label pages."
+msgstr "Ir a %(inbox_url)s para ver el mensaje. Estas recibiendo este mensaje por que estás revisando esas etiquetas. Puedes dejar de revisarlas desde las páginas de la etiqueta."
+
+msgid "Become"
+msgstr "Convertirse"
+
+msgid "Analyst"
+msgstr "Analista"
+
+msgid "Token: "
+msgstr "Acceso"
+
+msgid "Login to see your access token"
+msgstr "Ingresa para ver tu acceso"
+
+msgid "Forgot Password?"
+msgstr "¿Olvidó la contraseña?"
+
+#, python-format
+msgid "Your export is ready and can be downloaded by clicking <a href=\"%(download_url)s\">here</a>."
+msgstr "Tu archivo está listo y puede ser descargado dando click <a href=\"%(download_url)s\">aquí</a>."
+
+#, python-format
+msgid ""
+"\n"
+"Your export is ready and can be downloaded by clicking %(download_url)s.\n"
+msgstr ""
+"\n"
+"Tu archivo está listo y puede ser descargado dando click %(download_url)s.\n"
+
+#, python-format
+#~ msgid "Must be at least %d characters long"
+#~ msgstr "Debe tener al menos %d caracteres"

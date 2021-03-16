@@ -11,7 +11,9 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterField(
-            model_name="dailycount", name="is_squashed", field=models.BooleanField(default=False, null=True),
+            model_name="dailycount",
+            name="is_squashed",
+            field=models.BooleanField(default=False, null=True),
         ),
         migrations.AlterField(
             model_name="dailysecondtotalcount",
@@ -19,6 +21,8 @@ class Migration(migrations.Migration):
             field=models.BooleanField(default=False, null=True),
         ),
         migrations.AlterField(
-            model_name="totalcount", name="is_squashed", field=models.BooleanField(default=False, null=True),
+            model_name="totalcount",
+            name="is_squashed",
+            field=models.BooleanField(default=False, null=True),
         ),
     ]

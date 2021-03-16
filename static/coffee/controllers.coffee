@@ -492,7 +492,7 @@ controllers.controller('MessagesController', ['$scope', '$interval', '$uibModal'
       if results.items.length > 0
         $scope.locked(results, [message])
       else
-        UtilsService.newCaseModal(message.text, CASE_SUMMARY_MAX_LEN, possibleAssignees).then((data) ->
+        UtilsService.newCaseModal(message.text, CASE_SUMMARY_MAX_LEN, message.contact, possibleAssignees).then((data) ->
           CaseService.open(message, data.summary, data.assignee, data.user).then((caseObj) ->
               caseUrl = '/case/read/' + caseObj.id + '/'
               if !caseObj.is_new
@@ -579,6 +579,20 @@ controllers.controller('CasesController', ['$scope', '$timeout', '$controller', 
     UtilsService.navigate('/case/read/' + caseObj.id + '/')
 ])
 
+#============================================================================
+# User Cases listing controller
+#============================================================================
+controllers.controller('UserCasesController', ['$scope', '$timeout', '$controller', 'CaseService', 'PartnerService', 'UtilsService', ($scope, $timeout, $controller, CaseService, PartnerService, UtilsService) ->
+  $controller('BaseItemsController', {$scope: $scope})
+
+  $scope.activeSearch = { folder: "all", user_assignee: $scope.user }
+
+  $scope.fetchOldItems = (search, startTime, page) ->
+    return CaseService.fetchOld(search, startTime, page)
+
+  $scope.onClickCase = (caseObj) ->
+    UtilsService.navigate('/case/read/' + caseObj.id + '/')
+])
 
 #============================================================================
 # Org home controller
@@ -961,12 +975,13 @@ controllers.controller('PartnerRepliesController', ['$scope', '$window', '$contr
 #============================================================================
 # User view controller
 #============================================================================
-controllers.controller('UserController', ['$scope', '$controller', '$window', 'StatisticsService', 'UserService', 'UtilsService', ($scope, $controller, $window, StatisticsService, UserService, UtilsService) ->
-  $scope.tabSlugs = ['summary']
+controllers.controller('UserController', ['$scope', '$controller', '$window', 'StatisticsService', 'CaseService', 'UserService', 'UtilsService', ($scope, $controller, $window, StatisticsService, CaseService, UserService, UtilsService) ->
+  $scope.tabSlugs = ['summary', 'cases']
 
   $controller('BaseTabsController', {$scope: $scope})
 
   $scope.user = $window.contextData.user
+  $scope.cases = []
 
   $scope.onTabInit = (tab) ->
     if tab == 'summary'
@@ -979,6 +994,10 @@ controllers.controller('UserController', ['$scope', '$controller', '$window', 'S
           legend: {enabled: false},
           series: [{name: "Replies", data: chart.series}]
         })
+      )
+    else if tab == 'open'
+      CaseService.fetchOld(true).then((cases) ->
+        $scope.cases = cases
       )
 
   $scope.onDeleteUser = () ->

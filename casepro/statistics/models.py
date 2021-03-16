@@ -212,6 +212,22 @@ class TotalCount(BaseCount):
     squash_over = ("item_type", "scope")
 
     @classmethod
+    def record_item(cls, item_type, *scope_args):
+        cls.objects.create(item_type=item_type, scope=cls.encode_scope(*scope_args), count=1)
+
+    @classmethod
+    def get_by_org(cls, orgs, item_type):
+        return cls._get_count_set(item_type, {cls.encode_scope(o): o for o in orgs})
+
+    @classmethod
+    def get_by_partner(cls, partners, item_type):
+        return cls._get_count_set(item_type, {cls.encode_scope(p): p for p in partners})
+
+    @classmethod
+    def get_by_user(cls, org, users, item_type):
+        return cls._get_count_set(item_type, {cls.encode_scope(org, u): u for u in users})
+
+    @classmethod
     def get_by_label(cls, labels, item_type):
         return cls._get_count_set(item_type, {cls.encode_scope(l): l for l in labels})
 

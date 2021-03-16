@@ -14,7 +14,7 @@ from casepro.msgs.models import Outgoing
 from casepro.test import BaseCasesTest
 from casepro.utils import date_to_milliseconds
 
-from .models import DailyCount, DailyCountExport, DailySecondTotalCount
+from .models import DailyCount, DailyCountExport, DailySecondTotalCount, TotalCount
 from .tasks import squash_counts
 
 
@@ -105,6 +105,15 @@ class DailyCountsTest(BaseStatsTest):
             self.assertEqual(DailyCount.get_by_user(self.unicef, [self.user3], "R").total(), 6)
             self.assertEqual(DailyCount.get_by_user(self.nyaruka, [self.user4], "R").total(), 1)
 
+            self.assertEqual(TotalCount.get_by_org([self.unicef], "R").total(), 12)
+            self.assertEqual(TotalCount.get_by_partner([self.moh], "R").total(), 4)
+            self.assertEqual(TotalCount.get_by_partner([self.who], "R").total(), 6)
+            self.assertEqual(TotalCount.get_by_user(self.unicef, [self.admin], "R").total(), 2)
+            self.assertEqual(TotalCount.get_by_user(self.unicef, [self.user1], "R").total(), 3)
+            self.assertEqual(TotalCount.get_by_user(self.unicef, [self.user2], "R").total(), 1)
+            self.assertEqual(TotalCount.get_by_user(self.unicef, [self.user3], "R").total(), 6)
+            self.assertEqual(TotalCount.get_by_user(self.nyaruka, [self.user4], "R").total(), 1)
+
             # check daily totals
             self.assertEqual(
                 DailyCount.get_by_org([self.unicef], "R").day_totals(),
@@ -135,15 +144,25 @@ class DailyCountsTest(BaseStatsTest):
             self.assertEqual(
                 DailyCount.get_by_org(Org.objects.all(), "R").scope_totals(), {self.unicef: 12, self.nyaruka: 1}
             )
+            self.assertEqual(
+                TotalCount.get_by_org(Org.objects.all(), "R").scope_totals(), {self.unicef: 12, self.nyaruka: 1}
+            )
 
             # check partner totals
             self.assertEqual(
                 DailyCount.get_by_partner(self.unicef.partners.all(), "R").scope_totals(), {self.moh: 4, self.who: 6}
             )
+            self.assertEqual(
+                TotalCount.get_by_partner(self.unicef.partners.all(), "R").scope_totals(), {self.moh: 4, self.who: 6}
+            )
 
             # check user totals
             self.assertEqual(
                 DailyCount.get_by_user(self.unicef, self.unicef.get_users(), "R").scope_totals(),
+                {self.admin: 2, self.user1: 3, self.user2: 1, self.user3: 6},
+            )
+            self.assertEqual(
+                TotalCount.get_by_user(self.unicef, self.unicef.get_users(), "R").scope_totals(),
                 {self.admin: 2, self.user1: 3, self.user2: 1, self.user3: 6},
             )
 
@@ -202,21 +221,29 @@ class DailyCountsTest(BaseStatsTest):
             DailyCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_OPENED).day_totals(),
             [(date(2015, 1, 1), 1)],
         )
+        self.assertEqual(TotalCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_OPENED).total(), 1)
 
         self.assertEqual(
             DailyCount.get_by_org([self.unicef], DailyCount.TYPE_CASE_OPENED).day_totals(), [(date(2015, 1, 1), 1)]
         )
+        self.assertEqual(TotalCount.get_by_org([self.unicef], DailyCount.TYPE_CASE_OPENED).total(), 1)
 
         self.assertEqual(DailyCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_CLOSED).day_totals(), [])
+        self.assertEqual(TotalCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_CLOSED).total(), 0)
+
         self.assertEqual(DailyCount.get_by_org([self.unicef], DailyCount.TYPE_CASE_CLOSED).day_totals(), [])
+        self.assertEqual(TotalCount.get_by_org([self.unicef], DailyCount.TYPE_CASE_CLOSED).total(), 0)
 
         self.assertEqual(
             DailyCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_OPENED).day_totals(),
             [(date(2015, 1, 1), 1)],
         )
+        self.assertEqual(TotalCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_OPENED).total(), 1)
+
         self.assertEqual(
             DailyCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_CLOSED).day_totals(), []
         )
+        self.assertEqual(TotalCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_CLOSED).total(), 0)
 
     def test_case_counts_closed(self):
         d1 = self.anytime_on_day(date(2015, 1, 1), pytz.timezone("Africa/Kampala"))
@@ -234,6 +261,7 @@ class DailyCountsTest(BaseStatsTest):
                 DailyCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_CLOSED).day_totals(),
                 [(date(2015, 1, 1), 1)],
             )
+            self.assertEqual(TotalCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_CLOSED).total(), 1)
 
             self.assertEqual(
                 DailyCount.get_by_org([self.unicef], DailyCount.TYPE_CASE_OPENED).day_totals(), [(date(2015, 1, 1), 1)]
@@ -241,6 +269,7 @@ class DailyCountsTest(BaseStatsTest):
             self.assertEqual(
                 DailyCount.get_by_org([self.unicef], DailyCount.TYPE_CASE_CLOSED).day_totals(), [(date(2015, 1, 1), 1)]
             )
+            self.assertEqual(TotalCount.get_by_org([self.unicef], DailyCount.TYPE_CASE_CLOSED).total(), 1)
 
             self.assertEqual(
                 DailyCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_OPENED).day_totals(),
@@ -250,6 +279,7 @@ class DailyCountsTest(BaseStatsTest):
                 DailyCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_CLOSED).day_totals(),
                 [(date(2015, 1, 1), 1)],
             )
+            self.assertEqual(TotalCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_CLOSED).total(), 1)
 
             case.reopen(self.user1, "Re-opened")
             case.close(self.user1, "Re-closed")
@@ -262,6 +292,7 @@ class DailyCountsTest(BaseStatsTest):
                 DailyCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_CLOSED).day_totals(),
                 [(date(2015, 1, 1), 1)],
             )
+            self.assertEqual(TotalCount.get_by_partner([case.assignee], DailyCount.TYPE_CASE_CLOSED).total(), 1)
 
             self.assertEqual(
                 DailyCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_OPENED).day_totals(),
@@ -271,6 +302,7 @@ class DailyCountsTest(BaseStatsTest):
                 DailyCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_CLOSED).day_totals(),
                 [(date(2015, 1, 1), 1)],
             )
+            self.assertEqual(TotalCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_CLOSED).total(), 1)
 
 
 class DailyCountExportTest(BaseStatsTest):

@@ -10,8 +10,8 @@ from django.utils.translation import ugettext_lazy as _
 from casepro.cases.mixins import PartnerPermsMixin
 from casepro.cases.models import Partner
 from casepro.orgs_ext.mixins import OrgFormMixin
-from casepro.statistics.models import DailyCount
-from casepro.utils import json_encode, month_range, str_to_bool
+from casepro.statistics.models import DailyCount, TotalCount
+from casepro.utils import month_range, str_to_bool
 
 from .forms import OrgUserForm, PartnerUserForm, UserForm
 from .models import Profile
@@ -22,8 +22,13 @@ class UserUpdateMixin(OrgFormMixin):
     Mixin for views that update user
     """
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.get_user()
+        return kwargs
+
     def derive_initial(self):
-        initial = super(UserUpdateMixin, self).derive_initial()
+        initial = super().derive_initial()
         initial["name"] = self.object.profile.full_name
         if self.request.org:
             initial["role"] = self.object.get_role(self.request.org)
@@ -31,12 +36,13 @@ class UserUpdateMixin(OrgFormMixin):
         return initial
 
     def post_save(self, obj):
-        obj = super(UserUpdateMixin, self).post_save(obj)
+        obj = super().post_save(obj)
         data = self.form.cleaned_data
 
         obj.profile.full_name = data["name"]
         obj.profile.change_password = data.get("change_password", False)
-        obj.profile.save(update_fields=("full_name", "change_password"))
+        obj.profile.must_use_faq = data.get("must_use_faq", False)
+        obj.profile.save(update_fields=("full_name", "change_password", "must_use_faq"))
 
         if "role" in data:
             role = data["role"]
@@ -67,6 +73,11 @@ class UserCRUDL(SmartCRUDL):
 
         def get_form_class(self):
             return OrgUserForm if self.request.org else UserForm
+
+        def get_form_kwargs(self):
+            kwargs = super().get_form_kwargs()
+            kwargs["user"] = self.get_user()
+            return kwargs
 
         def derive_fields(self):
             if self.request.org:
@@ -120,6 +131,11 @@ class UserCRUDL(SmartCRUDL):
         def derive_url_pattern(cls, path, action):
             return r"^user/create_in/(?P<partner_id>\d+)/$"
 
+        def get_form_kwargs(self):
+            kwargs = super().get_form_kwargs()
+            kwargs["user"] = self.get_user()
+            return kwargs
+
         def get_partner(self):
             return Partner.get_all(self.request.org).get(pk=self.kwargs["partner_id"])
 
@@ -161,7 +177,7 @@ class UserCRUDL(SmartCRUDL):
             if self.request.org:
                 return self.request.org.get_users()
             else:
-                return super(UserCRUDL.Update, self).get_queryset()
+                return super().get_queryset()
 
         def get_partner(self):
             return self.get_object().get_partner(self.request.org)
@@ -188,7 +204,7 @@ class UserCRUDL(SmartCRUDL):
         """
 
         form_class = UserForm
-        fields = ("name", "email", "new_password", "confirm_password")
+        fields = ("name", "email", "current_password", "new_password", "confirm_password")
         success_url = "@cases.inbox"
         success_message = _("Profile updated")
         title = _("Edit My Profile")
@@ -201,7 +217,8 @@ class UserCRUDL(SmartCRUDL):
             return self.request.user.is_authenticated
 
         def get_form_kwargs(self):
-            kwargs = super(UserCRUDL.Self, self).get_form_kwargs()
+            kwargs = super().get_form_kwargs()
+            kwargs["user"] = self.get_user()
             kwargs["require_password_change"] = self.object.profile.change_password
             return kwargs
 
@@ -212,7 +229,7 @@ class UserCRUDL(SmartCRUDL):
             return self.request.user
 
         def post_save(self, obj):
-            obj = super(UserCRUDL.Self, self).post_save(obj)
+            obj = super().post_save(obj)
             obj.profile.change_password = False
             obj.profile.save(update_fields=("change_password",))
             return obj
@@ -224,7 +241,7 @@ class UserCRUDL(SmartCRUDL):
             if self.object == self.request.user:
                 return _("My Profile")
             else:
-                return super(UserCRUDL.Read, self).derive_title()
+                return super().derive_title()
 
         def derive_fields(self):
             profile_fields = ["name"]
@@ -240,12 +257,15 @@ class UserCRUDL(SmartCRUDL):
 
         def get_queryset(self):
             if self.request.org:
+                user_partner = self.request.user.get_partner(self.request.org)
+                if user_partner:
+                    return user_partner.get_users()
                 return self.request.org.get_users()
             else:
-                return super(UserCRUDL.Read, self).get_queryset()
+                return super().get_queryset()
 
         def get_context_data(self, **kwargs):
-            context = super(UserCRUDL.Read, self).get_context_data(**kwargs)
+            context = super().get_context_data(**kwargs)
             org = self.request.org
             user = self.request.user
 
@@ -259,7 +279,7 @@ class UserCRUDL(SmartCRUDL):
                 edit_button_url = None
                 can_delete = False
 
-            context["context_data_json"] = json_encode({"user": self.object.as_json(full=True, org=org)})
+            context["context_data_json"] = {"user": self.object.as_json(full=True, org=org)}
             context["edit_button_url"] = edit_button_url
             context["can_delete"] = can_delete
             context["summary"] = self.get_summary(org, self.object) if org else {}
@@ -308,7 +328,7 @@ class UserCRUDL(SmartCRUDL):
 
             # get reply statistics
             if with_activity:
-                replies_total = DailyCount.get_by_user(org, users, DailyCount.TYPE_REPLIES, None, None).scope_totals()
+                replies_total = TotalCount.get_by_user(org, users, DailyCount.TYPE_REPLIES).scope_totals()
                 replies_this_month = DailyCount.get_by_user(
                     org, users, DailyCount.TYPE_REPLIES, *month_range(0)
                 ).scope_totals()
@@ -316,9 +336,7 @@ class UserCRUDL(SmartCRUDL):
                     org, users, DailyCount.TYPE_REPLIES, *month_range(-1)
                 ).scope_totals()
 
-                cases_total = DailyCount.get_by_user(
-                    org, users, DailyCount.TYPE_CASE_OPENED, None, None
-                ).scope_totals()
+                cases_total = TotalCount.get_by_user(org, users, DailyCount.TYPE_CASE_OPENED).scope_totals()
                 cases_opened_this_month = DailyCount.get_by_user(
                     org, users, DailyCount.TYPE_CASE_OPENED, *month_range(0)
                 ).scope_totals()

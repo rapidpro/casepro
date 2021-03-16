@@ -11,9 +11,9 @@ class Router(routers.DefaultRouter):
 
 
 router = Router()
-router.register("actions", Actions, base_name="api.action")
-router.register("cases", Cases, base_name="api.case")
-router.register("labels", Labels, base_name="api.label")
-router.register("partners", Partners, base_name="api.partner")
+router.register("actions", Actions, basename="api.action")
+router.register("cases", Cases, basename="api.case")
+router.register("labels", Labels, basename="api.label")
+router.register("partners", Partners, basename="api.partner")
 
 urlpatterns = [url(r"^", include(router.urls))]

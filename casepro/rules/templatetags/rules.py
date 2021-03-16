@@ -1,4 +1,5 @@
 from django import template
+from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
@@ -17,23 +18,23 @@ register = template.Library()
 
 def _render_contains_test(test):
     if len(test.keywords) > 1:
-        contains = f"{str(test.quantifier)} " + ", ".join([f'<i>"{w}"</i>' for w in test.keywords])
+        contains = f"{str(test.quantifier)} " + ", ".join([f'<i>"{escape(w)}"</i>' for w in test.keywords])
     else:
-        contains = f'<i>"{test.keywords[0]}"</i>'
+        contains = f'<i>"{escape(test.keywords[0])}"</i>'
     return f"message contains {contains}"
 
 
 def _render_groups_test(test):
     if len(test.groups) > 1:
-        membership = f"{str(test.quantifier)} " + ", ".join([f"<i>{g}</i>" for g in test.groups])
+        membership = f"{str(test.quantifier)} " + ", ".join([f"<i>{escape(g)}</i>" for g in test.groups])
     else:
-        membership = f"<i>{test.groups[0]}</i>"
+        membership = f"<i>{escape(test.groups[0])}</i>"
 
     return f"contact belongs to {membership}"
 
 
 def _render_field_test(test):
-    return f"contact <i>{test.key}</i> is equal to <i>{test.values[0]}</i>"
+    return f"contact <i>{escape(test.key)}</i> is equal to <i>{escape(test.values[0])}</i>"
 
 
 def _render_word_count_test(test):
@@ -41,7 +42,7 @@ def _render_word_count_test(test):
 
 
 def _render_label_action(action):
-    return f'apply label <span class="label label-success">{action.label}</span>'
+    return f'apply label <span class="label label-success">{escape(action.label)}</span>'
 
 
 def _render_flag_action(action):

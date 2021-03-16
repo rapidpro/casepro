@@ -22,6 +22,7 @@ CASE_LOCK_KEY = "org:%d:case_lock:%s"
 class CaseFolder(Enum):
     open = 1
     closed = 2
+    all = 3
 
 
 class AccessLevel(IntEnum):
@@ -218,6 +219,7 @@ class Case(models.Model):
         """
         folder = search.get("folder")
         assignee_id = search.get("assignee")
+        user_assignee_id = search.get("user_assignee")
         after = search.get("after")
         before = search.get("before")
 
@@ -225,11 +227,15 @@ class Case(models.Model):
             queryset = Case.get_open(org, user)
         elif folder == CaseFolder.closed:
             queryset = Case.get_closed(org, user)
+        elif folder == CaseFolder.all:
+            queryset = Case.get_all(org, user)
         else:  # pragma: no cover
             raise ValueError("Invalid folder for cases")
 
         if assignee_id:
             queryset = queryset.filter(assignee__pk=assignee_id)
+        if user_assignee_id:
+            queryset = queryset.filter(user_assignee__pk=user_assignee_id)
 
         if after:
             queryset = queryset.filter(opened_on__gte=after)
@@ -275,10 +281,10 @@ class Case(models.Model):
             case = cls.objects.create(
                 org=org,
                 assignee=assignee,
+                user_assignee=user_assignee,
                 initial_message=message,
                 contact=contact,
                 summary=summary,
-                user_assignee=user_assignee,
             )
 
             if message:
@@ -291,9 +297,11 @@ class Case(models.Model):
             case.watchers.add(user)
             action = CaseAction.create(case, user, CaseAction.OPEN, assignee=assignee, user_assignee=user_assignee)
 
-            for assignee_user in assignee.get_users():
-                if assignee_user != user:
-                    Notification.new_case_assignment(org, assignee_user, action)
+            notify_users = [user_assignee] if user_assignee else assignee.get_users()
+            for notify_user in notify_users:
+                if notify_user != user:
+                    Notification.new_case_assignment(org, notify_user, action)
+
         return case
 
     def get_timeline(self, after, before, merge_from_backend):
@@ -401,8 +409,10 @@ class Case(models.Model):
         self.notify_watchers(action=action)
 
         # also notify users in the assigned partner that this case has been assigned to them
-        for user in partner.get_users():
-            Notification.new_case_assignment(self.org, user, action)
+        notify_users = [user_assignee] if user_assignee else partner.get_users()
+        for notify_user in notify_users:
+            if notify_user != user:
+                Notification.new_case_assignment(self.org, notify_user, action)
 
     @case_action()
     def label(self, user, label):

@@ -7,7 +7,7 @@
     %p
       %span{ ng-bind-html:"prompt" }
 
-    %form{ name:"form", novalidate:"" }
+    %form{ name:"form" }
       .form-group{ ng-class:'{"has-error": form.note.$invalid && (form.note.$dirty || form.submitted)}' }
         %label.control-label
           - trans "Note"

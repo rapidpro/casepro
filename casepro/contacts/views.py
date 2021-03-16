@@ -7,7 +7,7 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.utils.translation import ugettext_lazy as _
 
 from casepro.cases.models import Case
-from casepro.utils import JSONEncoder, json_encode
+from casepro.utils import JSONEncoder
 
 from .models import Contact, Field, Group
 
@@ -32,9 +32,10 @@ class ContactCRUDL(SmartCRUDL):
 
             fields = Field.get_all(self.object.org, visible=True).order_by("label")
 
-            context["context_data_json"] = json_encode(
-                {"contact": self.object.as_json(full=True), "fields": [f.as_json() for f in fields]}
-            )
+            context["context_data_json"] = {
+                "contact": self.object.as_json(full=True),
+                "fields": [f.as_json() for f in fields],
+            }
             context["backend_url"] = settings.SITE_EXTERNAL_CONTACT_URL % self.object.uuid
             return context
 

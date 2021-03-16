@@ -1,5 +1,14 @@
 - extends "smartmin/update.html"
 
+- block extra-style
+  {{ block.super }}
+  :css
+    #id_labels {
+      height: auto;
+      box-shadow: none;
+      border: none;
+    }
+
 - block extra-script
   {{ block.super }}
   :javascript

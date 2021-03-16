@@ -4,8 +4,10 @@
 - block pre-content
 
 - block content
-  %script{ type:"text/javascript" }
-    var contextData = {{ context_data_json|safe }};
+  {{ context_data_json|json_script:"contextData" }}
+
+  %script(type="text/javascript")
+    var contextData = JSON.parse(document.getElementById('contextData').textContent);
 
   .ng-cloak{ ng-controller:"ContactController", ng-init:"init()", ng-cloak:"" }
     .page-header.clearfix

@@ -1,46 +1,46 @@
 <!doctype html>
-- load compress thumbnail smartmin i18n
-%html{ dir:"{{ lang_direction }}", ng-app:"cases"}
+-load compress thumbnail smartmin i18n
+%html(dir="{{ lang_direction }}" ng-app="cases")
 
   %head
-    %meta{ charset:"utf-8"}
+    %meta(charset="utf-8")
     %title
-      - block title
-        - if not org
-          - trans "CasePro"
-        - else
+      -block title
+        -if not org
+          -trans "CasePro"
+        -else
           {{ org.name }}
-      - block subtitle
+      -block subtitle
         &nbsp;
-    %meta{ name:"description", content:""}
-    %meta{ name:"author", content:""}
+    %meta(name="description" content="")
+    %meta(name="author" content="")
 
     <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
     <!--[if lt IE 9]>
-      %script{ src:"http://html5shim.googlecode.com/svn/trunk/html5.js" }
+      %script(src="http://html5shim.googlecode.com/svn/trunk/html5.js")
     <![endif]-->
 
     <!-- Mobile viewport optimized: j.mp/bplateviewport -->
-    %meta{ name:"viewport", content:"width=device-width, initial-scale=1.0"}
+    %meta(name="viewport" content="width=device-width, initial-scale=1.0")
 
     <!-- Place favicon.ico & apple-touch-icon.png in the root of your domain and delete these references -->
-    %link{ rel:"icon", type:"image/x-icon", href:"{{ STATIC_URL }}img/favicon.png"}
+    %link(rel="icon" type="image/x-icon" href="{{ STATIC_URL }}img/favicon.png")
 
     :css
-    - compress css
-      - block styles
-        %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/bootstrap.css" }
-        %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/smartmin_styles.css" }
-        %link{ type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/select.min.css" }
-        %link{ type:"text/less", rel:"stylesheet", href:"{{ STATIC_URL }}less/cases.less" }
+    -compress css
+      -block styles
+        %link(type="text/css" rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap.css")
+        %link(type="text/css" rel="stylesheet" href="{{ STATIC_URL }}css/smartmin_styles.css")
+        %link(type="text/css" rel="stylesheet" href="{{ STATIC_URL }}css/select.min.css")
+        %link(type="text/less" rel="stylesheet" href="{{ STATIC_URL }}less/cases.less")
 
-    - block extra-less
-    - block extra-style
+    -block extra-less
+    -block extra-style
 
 
   %body.pattern-bg
-    - block navbar
-      %header#admin-navbar.navbar.navbar-static-top{ role:"banner"}
+    -block navbar
+      %header#admin-navbar.navbar.navbar-static-top(role="banner")
         .container
           .navbar-header
             %button.navbar-toggle{ type:"button", data-toggle:"collapse", data-target:"#admin-top-navbar-collapse"}
@@ -164,27 +164,27 @@
           //{% include 'lang_switcher.haml' %}
 
     <!-- JavaScript at the bottom for fast page loading -->
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/libs/jquery.1.11.1.min.js" }
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/bootstrap.min.js" }
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.11.3.min.js")
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/bootstrap.min.js")
 
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/angular-1.4.10/angular.min.js" }
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/angular-1.4.10/angular-sanitize.min.js" }
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/angular-1.4.10/angular-animate.min.js" }
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/ui-bootstrap-tpls-1.3.3.min.js" }
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/ng-infinite-scroll.min.js" }
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/select.min.js" }
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/raven.min.js" }
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/highcharts.js" }
-    %script{ type:"text/javascript", src:"{{ STATIC_URL }}js/libphonenumber.min.js" }
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/angular-1.4.14/angular.min.js")
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/angular-1.4.14/angular-sanitize.min.js")
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/angular-1.4.14/angular-animate.min.js")
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/ui-bootstrap-tpls-1.3.3.min.js")
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/ng-infinite-scroll.min.js")
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/select.min.js")
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/raven.min.js")
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/highcharts.js")
+    %script(type="text/javascript" src="{{ STATIC_URL }}js/libphonenumber.min.js")
 
     {% compress js %}
-    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/utils.coffee" }
-    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/app.coffee" }
-    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/services.coffee" }
-    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/controllers.coffee" }
-    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/modals.coffee" }
-    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/filters.coffee" }
-    %script{ type:"text/coffeescript", src:"{{ STATIC_URL }}coffee/directives.coffee" }
+    %script(type="text/coffeescript" src="{{ STATIC_URL }}coffee/utils.coffee")
+    %script(type="text/coffeescript" src="{{ STATIC_URL }}coffee/app.coffee")
+    %script(type="text/coffeescript" src="{{ STATIC_URL }}coffee/services.coffee")
+    %script(type="text/coffeescript" src="{{ STATIC_URL }}coffee/controllers.coffee")
+    %script(type="text/coffeescript" src="{{ STATIC_URL }}coffee/modals.coffee")
+    %script(type="text/coffeescript" src="{{ STATIC_URL }}coffee/filters.coffee")
+    %script(type="text/coffeescript" src="{{ STATIC_URL }}coffee/directives.coffee")
     {% endcompress %}
 
     <script type="text/javascript">

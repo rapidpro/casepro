@@ -338,7 +338,7 @@ class RapidProBackend(BaseBackend):
 
     def archive_contact_messages(self, org, contact):
         client = self._get_client(org)
-        client.bulk_archive_contacts(contacts=[contact.uuid])
+        client.bulk_archive_contact_messages(contacts=[contact.uuid])
 
     def restore_messages(self, org, messages):
         client = self._get_client(org)
@@ -386,7 +386,7 @@ class RapidProBackend(BaseBackend):
         Starts the given contact in the given flow
         """
         client = self._get_client(org)
-        client.create_flow_start(flow=flow.uuid, contacts=[str(contact.uuid)], restart_participants=True, extra=extra)
+        client.create_flow_start(flow=flow.uuid, contacts=[str(contact.uuid)], restart_participants=True, params=extra)
 
     def get_url_patterns(self):
         """

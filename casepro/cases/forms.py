@@ -1,4 +1,5 @@
 from django import forms
+from django.core.validators import validate_image_file_extension
 from django.utils.translation import ugettext_lazy as _
 
 from casepro.msgs.models import Label
@@ -12,6 +13,8 @@ class BasePartnerForm(forms.ModelForm):
     labels = forms.ModelMultipleChoiceField(
         label=_("Can Access"), queryset=Label.objects.none(), widget=forms.CheckboxSelectMultiple(), required=False
     )
+
+    logo = forms.ImageField(label=_("Logo"), required=False, validators=[validate_image_file_extension])
 
     def __init__(self, *args, **kwargs):
         org = kwargs.pop("org")
