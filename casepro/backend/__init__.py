@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+from typing import Tuple
 
 
 class BaseBackend(object):
@@ -8,7 +9,9 @@ class BaseBackend(object):
         self.backend = backend
 
     @abstractmethod
-    def pull_contacts(self, org, modified_after, modified_before, progress_callback=None):
+    def pull_contacts(
+        self, org, modified_after, modified_before, progress_callback=None
+    ) -> Tuple[int, int, int, int, str]:
         """
         Pulls contacts modified in the given time window
 
@@ -20,7 +23,7 @@ class BaseBackend(object):
         """
 
     @abstractmethod
-    def pull_fields(self, org):
+    def pull_fields(self, org) -> Tuple[int, int, int, int]:
         """
         Pulls all contact fields
 
@@ -29,7 +32,7 @@ class BaseBackend(object):
         """
 
     @abstractmethod
-    def pull_groups(self, org):
+    def pull_groups(self, org) -> Tuple[int, int, int, int]:
         """
         Pulls all contact groups
 
@@ -38,7 +41,7 @@ class BaseBackend(object):
         """
 
     @abstractmethod
-    def pull_labels(self, org):
+    def pull_labels(self, org) -> Tuple[int, int, int, int]:
         """
         Pulls all message labels
 
@@ -47,7 +50,9 @@ class BaseBackend(object):
         """
 
     @abstractmethod
-    def pull_messages(self, org, modified_after, modified_before, as_handled=False, progress_callback=None):
+    def pull_messages(
+        self, org, modified_after, modified_before, as_handled=False, progress_callback=None
+    ) -> Tuple[int, int, int, int]:
         """
         Pulls messages modified in the given time window
 
@@ -228,7 +233,7 @@ class NoopBackend(BaseBackend):  # pragma: no cover
     NO_CHANGES = (0, 0, 0, 0)
 
     def pull_contacts(self, org, modified_after, modified_before, progress_callback=None):
-        return self.NO_CHANGES
+        return *self.NO_CHANGES, None
 
     def pull_fields(self, org):
         return self.NO_CHANGES

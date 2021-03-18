@@ -1,5 +1,7 @@
+from typing import Tuple
+
 from dash.utils import chunks, is_dict_equal
-from dash.utils.sync import BaseSyncer, sync_local_to_changes, sync_local_to_set
+from dash.utils.sync import BaseSyncer, SyncOutcome, sync_local_to_changes, sync_local_to_set
 
 from django.utils.timezone import now
 
@@ -208,6 +210,10 @@ class RapidProBackend(BaseBackend):
     def _get_client(org):
         return org.get_temba_client(api_version=2)
 
+    @staticmethod
+    def _counts(d: dict) -> Tuple[int, int, int, int]:
+        return (d[SyncOutcome.created], d[SyncOutcome.updated], d[SyncOutcome.deleted], d[SyncOutcome.ignored])
+
     def pull_contacts(self, org, modified_after, modified_before, progress_callback=None):
         client = self._get_client(org)
 
@@ -219,27 +225,29 @@ class RapidProBackend(BaseBackend):
         deleted_query = client.get_contacts(deleted=True, after=modified_after, before=modified_before)
         deleted_fetches = deleted_query.iterfetches(retry_on_rate_exceed=True)
 
-        return sync_local_to_changes(
+        counts, resume_cursor = sync_local_to_changes(
             org, ContactSyncer(backend=self.backend), fetches, deleted_fetches, progress_callback
         )
+
+        return *self._counts(counts), resume_cursor
 
     def pull_fields(self, org):
         client = self._get_client(org)
         incoming_objects = client.get_fields().all(retry_on_rate_exceed=True)
 
-        return sync_local_to_set(org, FieldSyncer(backend=self.backend), incoming_objects)
+        return self._counts(sync_local_to_set(org, FieldSyncer(backend=self.backend), incoming_objects))
 
     def pull_groups(self, org):
         client = self._get_client(org)
         incoming_objects = client.get_groups().all(retry_on_rate_exceed=True)
 
-        return sync_local_to_set(org, GroupSyncer(backend=self.backend), incoming_objects)
+        return self._counts(sync_local_to_set(org, GroupSyncer(backend=self.backend), incoming_objects))
 
     def pull_labels(self, org):
         client = self._get_client(org)
         incoming_objects = client.get_labels().all(retry_on_rate_exceed=True)
 
-        return sync_local_to_set(org, LabelSyncer(backend=self.backend), incoming_objects)
+        return self._counts(sync_local_to_set(org, LabelSyncer(backend=self.backend), incoming_objects))
 
     def pull_messages(self, org, modified_after, modified_before, as_handled=False, progress_callback=None):
         client = self._get_client(org)
@@ -248,9 +256,11 @@ class RapidProBackend(BaseBackend):
         query = client.get_messages(folder="incoming", after=modified_after, before=modified_before)
         fetches = query.iterfetches(retry_on_rate_exceed=True)
 
-        return sync_local_to_changes(
+        counts, _ = sync_local_to_changes(
             org, MessageSyncer(backend=self.backend, as_handled=as_handled), fetches, [], progress_callback
         )
+
+        return self._counts(counts)
 
     def push_label(self, org, label):
         client = self._get_client(org)
