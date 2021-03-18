@@ -1,3 +1,7 @@
+v1.4.0
+----------
+ * Add support for partial syncing of contacts
+
 v1.3.29
 ----------
  * Update dependencies
