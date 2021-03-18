@@ -212,7 +212,7 @@ class RapidProBackend(BaseBackend):
 
     @staticmethod
     def _counts(d: dict) -> Tuple[int, int, int, int]:
-        return (d[SyncOutcome.created], d[SyncOutcome.updated], d[SyncOutcome.deleted], d[SyncOutcome.ignored])
+        return d[SyncOutcome.created], d[SyncOutcome.updated], d[SyncOutcome.deleted], d[SyncOutcome.ignored]
 
     def pull_contacts(self, org, modified_after, modified_before, progress_callback=None):
         client = self._get_client(org)
@@ -229,7 +229,7 @@ class RapidProBackend(BaseBackend):
             org, ContactSyncer(backend=self.backend), fetches, deleted_fetches, progress_callback
         )
 
-        return *self._counts(counts), resume_cursor
+        return self._counts(counts) + (resume_cursor,)
 
     def pull_fields(self, org):
         client = self._get_client(org)

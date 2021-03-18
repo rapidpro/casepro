@@ -233,7 +233,7 @@ class NoopBackend(BaseBackend):  # pragma: no cover
     NO_CHANGES = (0, 0, 0, 0)
 
     def pull_contacts(self, org, modified_after, modified_before, progress_callback=None):
-        return *self.NO_CHANGES, None
+        return self.NO_CHANGES + (None,)
 
     def pull_fields(self, org):
         return self.NO_CHANGES
