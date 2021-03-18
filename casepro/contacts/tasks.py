@@ -6,14 +6,14 @@ logger = get_task_logger(__name__)
 
 
 @org_task("contact-pull", lock_timeout=12 * 60 * 60)
-def pull_contacts(org, since, until):
+def pull_contacts(org, since, until, prev_results):
     """
     Fetches updated contacts from RapidPro and updates local contacts accordingly
     """
     backend = org.get_backend()
 
     if not since:
-        logger.warn("First time run for org #%d. Will sync all contacts" % org.pk)
+        logger.warn(f"First time run for org #{org.id}. Will sync all contacts")
 
     fields_created, fields_updated, fields_deleted, ignored = backend.pull_fields(org)
 
@@ -22,7 +22,7 @@ def pull_contacts(org, since, until):
     def progress(num):  # pragma: no cover
         logger.debug(f" > Synced {num} contacts for org #{org.id}")
 
-    contacts_created, contacts_updated, contacts_deleted, ignored = backend.pull_contacts(org, since, until, progress)
+    contacts_created, contacts_updated, contacts_deleted, _, _ = backend.pull_contacts(org, since, until, progress)
 
     return {
         "fields": {"created": fields_created, "updated": fields_updated, "deleted": fields_deleted},

@@ -419,7 +419,7 @@ class RapidProBackendTest(BaseCasesTest):
         ]
 
         with self.assertNumQueries(16):
-            num_created, num_updated, num_deleted, num_ignored = self.backend.pull_contacts(self.unicef, None, None)
+            num_created, num_updated, num_deleted, num_ignored, _ = self.backend.pull_contacts(self.unicef, None, None)
 
         self.assertEqual((num_created, num_updated, num_deleted, num_ignored), (3, 0, 0, 0))
 
@@ -473,7 +473,7 @@ class RapidProBackendTest(BaseCasesTest):
         ]
 
         with self.assertNumQueries(13):
-            self.assertEqual(self.backend.pull_contacts(self.unicef, None, None), (0, 1, 1, 0))
+            self.assertEqual(self.backend.pull_contacts(self.unicef, None, None), (0, 1, 1, 0, None))
 
         self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, ann})
         self.assertEqual(set(Contact.objects.filter(is_active=False)), {jim})
@@ -506,7 +506,7 @@ class RapidProBackendTest(BaseCasesTest):
         ]
 
         with self.assertNumQueries(3):
-            self.assertEqual(self.backend.pull_contacts(self.unicef, None, None), (0, 0, 0, 1))
+            self.assertEqual(self.backend.pull_contacts(self.unicef, None, None), (0, 0, 0, 1, None))
 
         self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, ann})
         self.assertEqual(set(Contact.objects.filter(is_active=False)), {jim})

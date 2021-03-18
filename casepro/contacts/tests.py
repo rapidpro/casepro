@@ -411,7 +411,7 @@ class TasksTest(BaseCasesTest):
     def test_pull_contacts(self, mock_pull_contacts, mock_pull_groups, mock_pull_fields):
         mock_pull_fields.return_value = (1, 2, 3, 4)
         mock_pull_groups.return_value = (5, 6, 7, 8)
-        mock_pull_contacts.return_value = (9, 10, 11, 12)
+        mock_pull_contacts.return_value = (9, 10, 11, 12, None)
 
         pull_contacts(self.unicef.pk)
 
