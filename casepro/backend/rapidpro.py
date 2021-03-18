@@ -206,6 +206,8 @@ class RapidProBackend(BaseBackend):
     # TODO reset to 100 when limit is fixed on RapidPro side
     BATCH_SIZE = 99
 
+    FETCH_TIME_LIMIT = 30 * 60  # 30 minutes
+
     @staticmethod
     def _get_client(org):
         return org.get_temba_client(api_version=2)
@@ -214,19 +216,24 @@ class RapidProBackend(BaseBackend):
     def _counts(d: dict) -> Tuple[int, int, int, int]:
         return d[SyncOutcome.created], d[SyncOutcome.updated], d[SyncOutcome.deleted], d[SyncOutcome.ignored]
 
-    def pull_contacts(self, org, modified_after, modified_before, progress_callback=None):
+    def pull_contacts(self, org, modified_after, modified_before, progress_callback=None, resume_cursor: str = None):
         client = self._get_client(org)
 
         # all contacts created or modified in RapidPro in the time window
         active_query = client.get_contacts(after=modified_after, before=modified_before)
-        fetches = active_query.iterfetches(retry_on_rate_exceed=True)
+        fetches = active_query.iterfetches(retry_on_rate_exceed=True, resume_cursor=resume_cursor)
 
         # all contacts deleted in RapidPro in the same time window
         deleted_query = client.get_contacts(deleted=True, after=modified_after, before=modified_before)
         deleted_fetches = deleted_query.iterfetches(retry_on_rate_exceed=True)
 
         counts, resume_cursor = sync_local_to_changes(
-            org, ContactSyncer(backend=self.backend), fetches, deleted_fetches, progress_callback
+            org,
+            ContactSyncer(backend=self.backend),
+            fetches,
+            deleted_fetches,
+            progress_callback,
+            time_limit=self.FETCH_TIME_LIMIT,
         )
 
         return self._counts(counts) + (resume_cursor,)

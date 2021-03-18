@@ -10,7 +10,12 @@ class BaseBackend(object):
 
     @abstractmethod
     def pull_contacts(
-        self, org, modified_after, modified_before, progress_callback=None
+        self,
+        org,
+        modified_after,
+        modified_before,
+        progress_callback=None,
+        resume_cursor: str = None,
     ) -> Tuple[int, int, int, int, str]:
         """
         Pulls contacts modified in the given time window
@@ -19,6 +24,7 @@ class BaseBackend(object):
         :param datetime modified_after: pull contacts modified after this
         :param datetime modified_before: pull contacts modified before this
         :param progress_callback: callable that will be called from time to time with number of contacts pulled
+        :param str resume_cursor: optional cursor to resume from
         :return: tuple of the number of contacts created, updated, deleted and ignored
         """
 
@@ -232,7 +238,7 @@ class NoopBackend(BaseBackend):  # pragma: no cover
 
     NO_CHANGES = (0, 0, 0, 0)
 
-    def pull_contacts(self, org, modified_after, modified_before, progress_callback=None):
+    def pull_contacts(self, org, modified_after, modified_before, progress_callback=None, resume_cursor: str = None):
         return self.NO_CHANGES + (None,)
 
     def pull_fields(self, org):

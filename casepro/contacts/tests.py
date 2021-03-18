@@ -1,5 +1,7 @@
-from unittest.mock import patch
+from datetime import datetime
+from unittest.mock import ANY, patch
 
+import pytz
 from dash.orgs.models import TaskState
 
 from django.test.utils import override_settings
@@ -409,18 +411,116 @@ class TasksTest(BaseCasesTest):
     @patch("casepro.test.TestBackend.pull_groups")
     @patch("casepro.test.TestBackend.pull_contacts")
     def test_pull_contacts(self, mock_pull_contacts, mock_pull_groups, mock_pull_fields):
+        def override_now(t):
+            return patch("django.utils.timezone.now", return_value=t)
+
         mock_pull_fields.return_value = (1, 2, 3, 4)
         mock_pull_groups.return_value = (5, 6, 7, 8)
         mock_pull_contacts.return_value = (9, 10, 11, 12, None)
 
-        pull_contacts(self.unicef.pk)
+        t1 = datetime(2021, 3, 18, 15, 26, 30, 123456, tzinfo=pytz.UTC)
+        t2 = datetime(2021, 3, 18, 15, 27, 30, 123456, tzinfo=pytz.UTC)
+        t3 = datetime(2021, 3, 18, 15, 28, 30, 123456, tzinfo=pytz.UTC)
+        t4 = datetime(2021, 3, 18, 15, 29, 30, 123456, tzinfo=pytz.UTC)
+        t5 = datetime(2021, 3, 18, 15, 30, 30, 123456, tzinfo=pytz.UTC)
+
+        with override_now(t1):
+            pull_contacts(self.unicef.id)
+
+        # synced everything up until t1
+        mock_pull_contacts.assert_called_once_with(self.unicef, None, t1, ANY, resume_cursor=None)
+        mock_pull_contacts.reset_mock()
 
         task_state = TaskState.objects.get(org=self.unicef, task_key="contact-pull")
         self.assertEqual(
-            task_state.get_last_results(),
             {
                 "fields": {"created": 1, "updated": 2, "deleted": 3},
                 "groups": {"created": 5, "updated": 6, "deleted": 7},
-                "contacts": {"created": 9, "updated": 10, "deleted": 11},
+                "contacts": {"created": 9, "updated": 10, "deleted": 11, "until": t1.isoformat()},
             },
+            task_state.get_last_results(),
+        )
+
+        # this time pulling contacts can't complete in time and returns a cursor
+        mock_pull_fields.return_value = (0, 0, 0, 0)
+        mock_pull_groups.return_value = (0, 0, 0, 0)
+        mock_pull_contacts.return_value = (100, 0, 0, 0, "cur123456")
+
+        with override_now(t2):
+            pull_contacts(self.unicef.id)
+
+        # synced everything up since t1 until t2
+        mock_pull_contacts.assert_called_once_with(self.unicef, t1, t2, ANY, resume_cursor=None)
+        mock_pull_contacts.reset_mock()
+
+        task_state = TaskState.objects.get(org=self.unicef, task_key="contact-pull")
+        self.assertEqual(
+            {
+                "fields": {"created": 0, "updated": 0, "deleted": 0},
+                "groups": {"created": 0, "updated": 0, "deleted": 0},
+                "contacts": {
+                    "created": 100,
+                    "updated": 0,
+                    "deleted": 0,
+                    "resume": {"cursor": "cur123456", "since": t1.isoformat(), "until": t2.isoformat()},
+                },
+            },
+            task_state.get_last_results(),
+        )
+
+        # this time we get a new cursor
+        mock_pull_contacts.return_value = (90, 0, 0, 0, "cur234567")
+
+        with override_now(t3):
+            pull_contacts(self.unicef.id)
+
+        # resumed syncing since t1 until t2 with the cursor we were given last time
+        mock_pull_contacts.assert_called_once_with(self.unicef, t1, t2, ANY, resume_cursor="cur123456")
+        mock_pull_contacts.reset_mock()
+
+        task_state = TaskState.objects.get(org=self.unicef, task_key="contact-pull")
+        self.assertEqual(
+            {
+                "fields": {"created": 0, "updated": 0, "deleted": 0},
+                "groups": {"created": 0, "updated": 0, "deleted": 0},
+                "contacts": {
+                    "created": 90,
+                    "updated": 0,
+                    "deleted": 0,
+                    "resume": {"cursor": "cur234567", "since": t1.isoformat(), "until": t2.isoformat()},
+                },
+            },
+            task_state.get_last_results(),
+        )
+
+        # this time we finish syncing since t1 to t2
+        mock_pull_contacts.return_value = (50, 0, 0, 0, None)
+
+        with override_now(t4):
+            pull_contacts(self.unicef.id)
+
+        # resumed syncing since t1 until t2 with the cursor we were given last time
+        mock_pull_contacts.assert_called_once_with(self.unicef, t1, t2, ANY, resume_cursor="cur234567")
+        mock_pull_contacts.reset_mock()
+
+        task_state = TaskState.objects.get(org=self.unicef, task_key="contact-pull")
+        self.assertEqual(
+            {"created": 50, "updated": 0, "deleted": 0, "until": t2.isoformat()},
+            task_state.get_last_results()["contacts"],
+        )
+
+        # this time we need to catch up
+        mock_pull_contacts.return_value = (50, 0, 0, 0, None)
+
+        with override_now(t5):
+            pull_contacts(self.unicef.id)
+
+        # tried to sync from t2 to t5
+        mock_pull_contacts.assert_called_once_with(self.unicef, t2, t5, ANY, resume_cursor=None)
+        mock_pull_contacts.reset_mock()
+
+        task_state = TaskState.objects.get(org=self.unicef, task_key="contact-pull")
+        self.assertEqual(
+            {"created": 50, "updated": 0, "deleted": 0, "until": t5.isoformat()},
+            task_state.get_last_results()["contacts"],
         )
