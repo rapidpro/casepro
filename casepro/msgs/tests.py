@@ -1,5 +1,5 @@
 from datetime import datetime
-from unittest.mock import call, patch
+from unittest.mock import ANY, call, patch
 
 import pytz
 from dash.orgs.models import TaskState
@@ -2090,18 +2090,111 @@ class TasksTest(BaseCasesTest):
     @patch("casepro.test.TestBackend.pull_labels")
     @patch("casepro.test.TestBackend.pull_messages")
     def test_pull_messages(self, mock_pull_messages, mock_pull_labels):
-        mock_pull_labels.return_value = (1, 2, 3, 4)
-        mock_pull_messages.return_value = (5, 6, 7, 8)
+        def override_now(t):
+            return patch("django.utils.timezone.now", return_value=t)
 
-        pull_messages(self.unicef.pk)
+        mock_pull_labels.return_value = (1, 2, 3, 4)
+        mock_pull_messages.return_value = (5, 6, 7, 8, None)
+
+        t0 = datetime(2021, 3, 18, 14, 26, 30, 123456, tzinfo=pytz.UTC)
+        t1 = datetime(2021, 3, 18, 15, 26, 30, 123456, tzinfo=pytz.UTC)
+        t2 = datetime(2021, 3, 18, 15, 27, 30, 123456, tzinfo=pytz.UTC)
+        t3 = datetime(2021, 3, 18, 15, 28, 30, 123456, tzinfo=pytz.UTC)
+        t4 = datetime(2021, 3, 18, 15, 29, 30, 123456, tzinfo=pytz.UTC)
+        t5 = datetime(2021, 3, 18, 15, 30, 30, 123456, tzinfo=pytz.UTC)
+
+        with override_now(t1):
+            pull_messages(self.unicef.id)
+
+        # synced everything from one hour ago up until t1
+        mock_pull_messages.assert_called_once_with(self.unicef, t0, t1, ANY, resume_cursor=None)
+        mock_pull_messages.reset_mock()
 
         task_state = TaskState.objects.get(org=self.unicef, task_key="message-pull")
         self.assertEqual(
-            task_state.get_last_results(),
             {
                 "labels": {"created": 1, "updated": 2, "deleted": 3},
-                "messages": {"created": 5, "updated": 6, "deleted": 7},
+                "messages": {"created": 5, "updated": 6, "deleted": 7, "until": t1.isoformat()},
             },
+            task_state.get_last_results(),
+        )
+
+        # this time pulling contacts can't complete in time and returns a cursor
+        mock_pull_labels.return_value = (0, 0, 0, 0)
+        mock_pull_messages.return_value = (100, 0, 0, 0, "cur123456")
+
+        with override_now(t2):
+            pull_messages(self.unicef.id)
+
+        # tried to sync everything up since t1 until t2
+        mock_pull_messages.assert_called_once_with(self.unicef, t1, t2, ANY, resume_cursor=None)
+        mock_pull_messages.reset_mock()
+
+        task_state = TaskState.objects.get(org=self.unicef, task_key="message-pull")
+        self.assertEqual(
+            {
+                "labels": {"created": 0, "updated": 0, "deleted": 0},
+                "messages": {
+                    "created": 100,
+                    "updated": 0,
+                    "deleted": 0,
+                    "resume": {"cursor": "cur123456", "since": t1.isoformat(), "until": t2.isoformat()},
+                },
+            },
+            task_state.get_last_results(),
+        )
+
+        # this time we get a new cursor
+        mock_pull_messages.return_value = (90, 0, 0, 0, "cur234567")
+
+        with override_now(t3):
+            pull_messages(self.unicef.id)
+
+        # resumed syncing since t1 until t2 with the cursor we were given last time
+        mock_pull_messages.assert_called_once_with(self.unicef, t1, t2, ANY, resume_cursor="cur123456")
+        mock_pull_messages.reset_mock()
+
+        task_state = TaskState.objects.get(org=self.unicef, task_key="message-pull")
+        self.assertEqual(
+            {
+                "created": 90,
+                "updated": 0,
+                "deleted": 0,
+                "resume": {"cursor": "cur234567", "since": t1.isoformat(), "until": t2.isoformat()},
+            },
+            task_state.get_last_results()["messages"],
+        )
+
+        # this time we finish syncing since t1 to t2
+        mock_pull_messages.return_value = (50, 0, 0, 0, None)
+
+        with override_now(t4):
+            pull_messages(self.unicef.id)
+
+        # resumed syncing since t1 until t2 with the cursor we were given last time
+        mock_pull_messages.assert_called_once_with(self.unicef, t1, t2, ANY, resume_cursor="cur234567")
+        mock_pull_messages.reset_mock()
+
+        task_state = TaskState.objects.get(org=self.unicef, task_key="message-pull")
+        self.assertEqual(
+            {"created": 50, "updated": 0, "deleted": 0, "until": t2.isoformat()},
+            task_state.get_last_results()["messages"],
+        )
+
+        # this time we need to catch up
+        mock_pull_messages.return_value = (50, 0, 0, 0, None)
+
+        with override_now(t5):
+            pull_messages(self.unicef.id)
+
+        # tried to sync from t2 to t5
+        mock_pull_messages.assert_called_once_with(self.unicef, t2, t5, ANY, resume_cursor=None)
+        mock_pull_messages.reset_mock()
+
+        task_state = TaskState.objects.get(org=self.unicef, task_key="message-pull")
+        self.assertEqual(
+            {"created": 50, "updated": 0, "deleted": 0, "until": t5.isoformat()},
+            task_state.get_last_results()["messages"],
         )
 
     @patch("casepro.test.TestBackend.label_messages")

@@ -2,6 +2,7 @@ import csv
 import traceback
 from datetime import timedelta
 
+import iso8601
 from dash.orgs.models import Org
 from dash.orgs.tasks import org_task
 from smartmin.csv_imports.models import ImportTask
@@ -21,8 +22,8 @@ from .models import FAQ, Label
 logger = get_task_logger(__name__)
 
 
-@org_task("message-pull", lock_timeout=12 * 60 * 60)
-def pull_messages(org, since, until):
+@org_task("message-pull", lock_timeout=2 * 60 * 60)
+def pull_messages(org, since, until, prev_results):
     """
     Pulls new unsolicited messages for an org
     """
@@ -34,11 +35,38 @@ def pull_messages(org, since, until):
 
     labels_created, labels_updated, labels_deleted, ignored = backend.pull_labels(org)
 
-    msgs_created, msgs_updated, msgs_deleted, ignored = backend.pull_messages(org, since, until)
+    def progress(num):  # pragma: no cover
+        logger.debug(f" > Synced {num} messages for org #{org.id}")
+
+    cursor = None
+
+    if prev_results:
+        prev_resume = prev_results["messages"].get("resume")
+        prev_until = prev_results["messages"].get("until")
+
+        if prev_resume:
+            cursor = prev_resume["cursor"]
+            since = iso8601.parse_date(prev_resume["since"])
+            until = iso8601.parse_date(prev_resume["until"])
+
+            logger.warn(f"Resuming previous incomplete sync for #{org.id}")
+        elif prev_until:
+            since = iso8601.parse_date(prev_until)
+
+    msgs_created, msgs_updated, msgs_deleted, _, new_cursor = backend.pull_messages(
+        org, since, until, progress, resume_cursor=cursor
+    )
+
+    msgs_results = {"created": msgs_created, "updated": msgs_updated, "deleted": msgs_deleted}
+
+    if new_cursor:
+        msgs_results["resume"] = {"cursor": new_cursor, "since": since.isoformat(), "until": until.isoformat()}
+    else:
+        msgs_results["until"] = until.isoformat()
 
     return {
         "labels": {"created": labels_created, "updated": labels_updated, "deleted": labels_deleted},
-        "messages": {"created": msgs_created, "updated": msgs_updated, "deleted": msgs_deleted},
+        "messages": msgs_results,
     }
 
 

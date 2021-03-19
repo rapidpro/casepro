@@ -449,7 +449,7 @@ class TasksTest(BaseCasesTest):
         with override_now(t2):
             pull_contacts(self.unicef.id)
 
-        # synced everything up since t1 until t2
+        # tried to sync everything up since t1 until t2
         mock_pull_contacts.assert_called_once_with(self.unicef, t1, t2, ANY, resume_cursor=None)
         mock_pull_contacts.reset_mock()
 
@@ -481,16 +481,12 @@ class TasksTest(BaseCasesTest):
         task_state = TaskState.objects.get(org=self.unicef, task_key="contact-pull")
         self.assertEqual(
             {
-                "fields": {"created": 0, "updated": 0, "deleted": 0},
-                "groups": {"created": 0, "updated": 0, "deleted": 0},
-                "contacts": {
-                    "created": 90,
-                    "updated": 0,
-                    "deleted": 0,
-                    "resume": {"cursor": "cur234567", "since": t1.isoformat(), "until": t2.isoformat()},
-                },
+                "created": 90,
+                "updated": 0,
+                "deleted": 0,
+                "resume": {"cursor": "cur234567", "since": t1.isoformat(), "until": t2.isoformat()},
             },
-            task_state.get_last_results(),
+            task_state.get_last_results()["contacts"],
         )
 
         # this time we finish syncing since t1 to t2
