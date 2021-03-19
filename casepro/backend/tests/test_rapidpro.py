@@ -709,7 +709,7 @@ class RapidProBackendTest(BaseCasesTest):
             )
         ]
 
-        self.assertEqual(self.backend.pull_messages(self.unicef, d1, d5), (5, 0, 0, 0))
+        self.assertEqual((5, 0, 0, 0, None), self.backend.pull_messages(self.unicef, d1, d5))
 
         self.assertEqual(Contact.objects.filter(is_stub=False).count(), 2)
         self.assertEqual(Contact.objects.filter(is_stub=True).count(), 3)
@@ -740,7 +740,7 @@ class RapidProBackendTest(BaseCasesTest):
             )
         ]
 
-        self.assertEqual(self.backend.pull_messages(self.unicef, d1, d5), (0, 1, 0, 0))
+        self.assertEqual((0, 1, 0, 0, None), self.backend.pull_messages(self.unicef, d1, d5))
 
         msg1 = Message.objects.get(backend_id=101, type="I", text="What is aids?", is_archived=True, is_flagged=False)
 

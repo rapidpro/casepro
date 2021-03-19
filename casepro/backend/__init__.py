@@ -57,8 +57,14 @@ class BaseBackend(object):
 
     @abstractmethod
     def pull_messages(
-        self, org, modified_after, modified_before, as_handled=False, progress_callback=None
-    ) -> Tuple[int, int, int, int]:
+        self,
+        org,
+        modified_after,
+        modified_before,
+        as_handled=False,
+        progress_callback=None,
+        resume_cursor: str = None,
+    ) -> Tuple[int, int, int, int, str]:
         """
         Pulls messages modified in the given time window
 
@@ -67,6 +73,7 @@ class BaseBackend(object):
         :param datetime modified_before: pull messages modified before this
         :param bool as_handled: whether messages should be saved as already handled
         :param progress_callback: callable that will be called from time to time with number of messages pulled
+        :param str resume_cursor: optional cursor to resume from
         :return: tuple of the number of messages created, updated, deleted and ignored
         """
 
@@ -250,8 +257,10 @@ class NoopBackend(BaseBackend):  # pragma: no cover
     def pull_labels(self, org):
         return self.NO_CHANGES
 
-    def pull_messages(self, org, modified_after, modified_before, as_handled=False, progress_callback=None):
-        return self.NO_CHANGES
+    def pull_messages(
+        self, org, modified_after, modified_before, as_handled=False, progress_callback=None, resume_cursor: str = None
+    ):
+        return self.NO_CHANGES + (None,)
 
     def fetch_contact_messages(self, org, contact, created_after, created_before):
         return []

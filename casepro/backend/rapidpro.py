@@ -256,18 +256,25 @@ class RapidProBackend(BaseBackend):
 
         return self._counts(sync_local_to_set(org, LabelSyncer(backend=self.backend), incoming_objects))
 
-    def pull_messages(self, org, modified_after, modified_before, as_handled=False, progress_callback=None):
+    def pull_messages(
+        self, org, modified_after, modified_before, as_handled=False, progress_callback=None, resume_cursor: str = None
+    ):
         client = self._get_client(org)
 
         # all incoming messages created or modified in RapidPro in the time window
         query = client.get_messages(folder="incoming", after=modified_after, before=modified_before)
-        fetches = query.iterfetches(retry_on_rate_exceed=True)
+        fetches = query.iterfetches(retry_on_rate_exceed=True, resume_cursor=resume_cursor)
 
-        counts, _ = sync_local_to_changes(
-            org, MessageSyncer(backend=self.backend, as_handled=as_handled), fetches, [], progress_callback
+        counts, resume_cursor = sync_local_to_changes(
+            org,
+            MessageSyncer(backend=self.backend, as_handled=as_handled),
+            fetches,
+            [],
+            progress_callback,
+            time_limit=self.FETCH_TIME_LIMIT,
         )
 
-        return self._counts(counts)
+        return self._counts(counts) + (resume_cursor,)
 
     def push_label(self, org, label):
         client = self._get_client(org)
