@@ -2151,7 +2151,9 @@ class TasksTest(BaseCasesTest):
             pull_messages(self.unicef.id)
 
         # resumed syncing since t1 until t2 with the cursor we were given last time
-        mock_pull_messages.assert_called_once_with(self.unicef, t1, t2, progress_callback=ANY, resume_cursor="cur12345")
+        mock_pull_messages.assert_called_once_with(
+            self.unicef, t1, t2, progress_callback=ANY, resume_cursor="cur12345"
+        )
         mock_pull_messages.reset_mock()
 
         task_state = TaskState.objects.get(org=self.unicef, task_key="message-pull")
@@ -2172,7 +2174,9 @@ class TasksTest(BaseCasesTest):
             pull_messages(self.unicef.id)
 
         # resumed syncing since t1 until t2 with the cursor we were given last time
-        mock_pull_messages.assert_called_once_with(self.unicef, t1, t2, progress_callback=ANY, resume_cursor="cur23456")
+        mock_pull_messages.assert_called_once_with(
+            self.unicef, t1, t2, progress_callback=ANY, resume_cursor="cur23456"
+        )
         mock_pull_messages.reset_mock()
 
         task_state = TaskState.objects.get(org=self.unicef, task_key="message-pull")
