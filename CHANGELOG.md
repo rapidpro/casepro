@@ -1,3 +1,7 @@
+v1.4.1
+----------
+ * Extend partial syncing support to message pulling
+
 v1.4.0
 ----------
  * Add support for partial syncing of contacts
