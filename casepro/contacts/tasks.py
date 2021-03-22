@@ -39,7 +39,7 @@ def pull_contacts(org, since, until, prev_results):
             since = iso8601.parse_date(prev_until)
 
     contacts_created, contacts_updated, contacts_deleted, _, new_cursor = backend.pull_contacts(
-        org, since, until, progress, resume_cursor=cursor
+        org, since, until, progress_callback=progress, resume_cursor=cursor
     )
 
     contacts_results = {"created": contacts_created, "updated": contacts_updated, "deleted": contacts_deleted}

@@ -54,7 +54,7 @@ def pull_messages(org, since, until, prev_results):
             since = iso8601.parse_date(prev_until)
 
     msgs_created, msgs_updated, msgs_deleted, _, new_cursor = backend.pull_messages(
-        org, since, until, progress, resume_cursor=cursor
+        org, since, until, progress_callback=progress, resume_cursor=cursor
     )
 
     msgs_results = {"created": msgs_created, "updated": msgs_updated, "deleted": msgs_deleted}

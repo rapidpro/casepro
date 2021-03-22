@@ -2107,7 +2107,7 @@ class TasksTest(BaseCasesTest):
             pull_messages(self.unicef.id)
 
         # synced everything from one hour ago up until t1
-        mock_pull_messages.assert_called_once_with(self.unicef, t0, t1, ANY, resume_cursor=None)
+        mock_pull_messages.assert_called_once_with(self.unicef, t0, t1, progress_callback=ANY, resume_cursor=None)
         mock_pull_messages.reset_mock()
 
         task_state = TaskState.objects.get(org=self.unicef, task_key="message-pull")
@@ -2121,13 +2121,13 @@ class TasksTest(BaseCasesTest):
 
         # this time pulling contacts can't complete in time and returns a cursor
         mock_pull_labels.return_value = (0, 0, 0, 0)
-        mock_pull_messages.return_value = (100, 0, 0, 0, "cur123456")
+        mock_pull_messages.return_value = (100, 0, 0, 0, "cur12345")
 
         with override_now(t2):
             pull_messages(self.unicef.id)
 
         # tried to sync everything up since t1 until t2
-        mock_pull_messages.assert_called_once_with(self.unicef, t1, t2, ANY, resume_cursor=None)
+        mock_pull_messages.assert_called_once_with(self.unicef, t1, t2, progress_callback=ANY, resume_cursor=None)
         mock_pull_messages.reset_mock()
 
         task_state = TaskState.objects.get(org=self.unicef, task_key="message-pull")
@@ -2138,20 +2138,20 @@ class TasksTest(BaseCasesTest):
                     "created": 100,
                     "updated": 0,
                     "deleted": 0,
-                    "resume": {"cursor": "cur123456", "since": t1.isoformat(), "until": t2.isoformat()},
+                    "resume": {"cursor": "cur12345", "since": t1.isoformat(), "until": t2.isoformat()},
                 },
             },
             task_state.get_last_results(),
         )
 
         # this time we get a new cursor
-        mock_pull_messages.return_value = (90, 0, 0, 0, "cur234567")
+        mock_pull_messages.return_value = (90, 0, 0, 0, "cur23456")
 
         with override_now(t3):
             pull_messages(self.unicef.id)
 
         # resumed syncing since t1 until t2 with the cursor we were given last time
-        mock_pull_messages.assert_called_once_with(self.unicef, t1, t2, ANY, resume_cursor="cur123456")
+        mock_pull_messages.assert_called_once_with(self.unicef, t1, t2, progress_callback=ANY, resume_cursor="cur12345")
         mock_pull_messages.reset_mock()
 
         task_state = TaskState.objects.get(org=self.unicef, task_key="message-pull")
@@ -2160,7 +2160,7 @@ class TasksTest(BaseCasesTest):
                 "created": 90,
                 "updated": 0,
                 "deleted": 0,
-                "resume": {"cursor": "cur234567", "since": t1.isoformat(), "until": t2.isoformat()},
+                "resume": {"cursor": "cur23456", "since": t1.isoformat(), "until": t2.isoformat()},
             },
             task_state.get_last_results()["messages"],
         )
@@ -2172,7 +2172,7 @@ class TasksTest(BaseCasesTest):
             pull_messages(self.unicef.id)
 
         # resumed syncing since t1 until t2 with the cursor we were given last time
-        mock_pull_messages.assert_called_once_with(self.unicef, t1, t2, ANY, resume_cursor="cur234567")
+        mock_pull_messages.assert_called_once_with(self.unicef, t1, t2, progress_callback=ANY, resume_cursor="cur23456")
         mock_pull_messages.reset_mock()
 
         task_state = TaskState.objects.get(org=self.unicef, task_key="message-pull")
@@ -2188,7 +2188,7 @@ class TasksTest(BaseCasesTest):
             pull_messages(self.unicef.id)
 
         # tried to sync from t2 to t5
-        mock_pull_messages.assert_called_once_with(self.unicef, t2, t5, ANY, resume_cursor=None)
+        mock_pull_messages.assert_called_once_with(self.unicef, t2, t5, progress_callback=ANY, resume_cursor=None)
         mock_pull_messages.reset_mock()
 
         task_state = TaskState.objects.get(org=self.unicef, task_key="message-pull")
