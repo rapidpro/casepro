@@ -1,3 +1,7 @@
+v1.4.2
+----------
+ * Fix message syncing
+
 v1.4.1
 ----------
  * Extend partial syncing support to message pulling
