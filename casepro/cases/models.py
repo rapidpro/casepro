@@ -263,7 +263,7 @@ class Case(models.Model):
         r = get_redis_connection()
         contact = message.contact if message else contact
 
-        with r.lock(CASE_LOCK_KEY % (org.pk, contact.uuid)):
+        with r.lock(CASE_LOCK_KEY % (org.pk, contact.uuid), timeout=60):
             if message:
                 message.refresh_from_db()
                 case = message.case
