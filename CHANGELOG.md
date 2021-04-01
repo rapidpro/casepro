@@ -1,3 +1,8 @@
+v1.4.3
+----------
+ * Add case id to case list views
+ * Add timeout on contact case open lock
+
 v1.4.2
 ----------
  * Fix message syncing
