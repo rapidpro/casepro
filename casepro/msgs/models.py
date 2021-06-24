@@ -964,7 +964,7 @@ class MessageExport(BaseSearchExport):
                 item.backend_id,
                 item.is_flagged,
                 ", ".join([l.name for l in item.labels.all()]),
-                item.text,
+                item.text[:32767],  # can't save cell content longer than this limit
                 item.contact.uuid,
             ]
 

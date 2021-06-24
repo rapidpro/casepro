@@ -1646,12 +1646,16 @@ class MessageExportCRUDLTest(BaseCasesTest):
 
         d1 = datetime(2015, 12, 25, 13, 0, 0, 0, pytz.UTC)
         d2 = datetime(2015, 12, 25, 14, 0, 0, 0, pytz.UTC)
+        d3 = datetime(2015, 12, 25, 15, 0, 0, 0, pytz.UTC)
 
         self.create_message(self.unicef, 101, ann, "What is HIV?", [self.aids], created_on=d1, is_handled=True)
         self.create_message(
             self.unicef, 102, bob, "I ♡ RapidPro", [self.pregnancy], created_on=d2, is_flagged=True, is_handled=True
         )
-        self.create_message(self.unicef, 103, bob, "Hello", [], created_on=d2, is_handled=True)  # no labels
+        self.create_message(self.unicef, 103, bob, "Hello", [], created_on=d3, is_handled=True)  # no labels
+        self.create_message(
+            self.unicef, 104, bob, "A" * 50000, [self.aids], created_on=d3, is_handled=True
+        )  # too long
 
         # log in as a non-administrator
         self.login(self.user1)
@@ -1671,12 +1675,13 @@ class MessageExportCRUDLTest(BaseCasesTest):
         workbook = self.openWorkbook(export.filename)
         sheet = workbook.sheets()[0]
 
-        self.assertEqual(sheet.nrows, 3)
+        self.assertEqual(sheet.nrows, 4)
         self.assertExcelRow(
             sheet, 0, ["Time", "Message ID", "Flagged", "Labels", "Text", "Contact", "Nickname", "Age"]
         )
-        self.assertExcelRow(sheet, 1, [d2, 102, "Yes", "Pregnancy", "I ♡ RapidPro", "C-002", "Bobby", "32"], pytz.UTC)
-        self.assertExcelRow(sheet, 2, [d1, 101, "No", "AIDS", "What is HIV?", "C-001", "Annie", "28"], pytz.UTC)
+        self.assertExcelRow(sheet, 1, [d3, 104, "No", "AIDS", "A" * 32767, "C-002", "Bobby", "32"], pytz.UTC)
+        self.assertExcelRow(sheet, 2, [d2, 102, "Yes", "Pregnancy", "I ♡ RapidPro", "C-002", "Bobby", "32"], pytz.UTC)
+        self.assertExcelRow(sheet, 3, [d1, 101, "No", "AIDS", "What is HIV?", "C-001", "Annie", "28"], pytz.UTC)
 
         read_url = reverse("msgs.messageexport_read", args=[export.pk])
 
