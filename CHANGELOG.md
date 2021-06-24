@@ -1,3 +1,9 @@
+v1.4.4
+----------
+ * Fix exports when a message text is longer than 32767 chars
+ * Bump django from 2.2.19 to 2.2.24
+ * Lock celery to v4.4.6
+
 v1.4.3
 ----------
  * Add case id to case list views
