@@ -1,3 +1,7 @@
+v1.4.5
+----------
+ * Tweak polling of new messages
+
 v1.4.4
 ----------
  * Fix exports when a message text is longer than 32767 chars
