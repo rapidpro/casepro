@@ -235,7 +235,7 @@ controllers.controller('BaseItemsController', ['$scope', '$timeout', '$filter', 
     $scope.activeSearchRefresh = $scope.buildSearch()
     $scope.activeSearchRefresh.last_refresh = lastPollTime
 
-    $scope.fetchNewItems($scope.activeSearchRefresh, lastPollTime, thisPollTime, $scope.oldItemsPage).then((data) ->
+    $scope.fetchNewItems($scope.activeSearchRefresh, lastPollTime, thisPollTime, 1).then((data) ->
       $scope.lastPollTime = thisPollTime
       $scope.pollBusy = false
 
