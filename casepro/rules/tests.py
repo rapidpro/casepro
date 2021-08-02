@@ -156,7 +156,7 @@ class RulesTemplateTagsTest(BaseCasesTest):
         rule = Rule.create(self.unicef, [test], [])
 
         self.assertEqual(
-            'message contains <i>"&lt;script&gt;alert(&#39;hi&#39;)&lt;/script&gt;"</i>', render_tests(rule)
+            'message contains <i>"&lt;script&gt;alert(&#x27;hi&#x27;)&lt;/script&gt;"</i>', render_tests(rule)
         )
 
     def test_render_word_count_test(self):
@@ -184,7 +184,7 @@ class RulesTemplateTagsTest(BaseCasesTest):
         rule = Rule.create(self.unicef, [test], [])
 
         self.assertEqual(
-            "contact belongs to <i>&lt;script&gt;alert(&#39;Hi&#39;)&lt;/script&gt;</i>", render_tests(rule)
+            "contact belongs to <i>&lt;script&gt;alert(&#x27;Hi&#x27;)&lt;/script&gt;</i>", render_tests(rule)
         )
 
     def test_render_field_test(self):
@@ -198,7 +198,7 @@ class RulesTemplateTagsTest(BaseCasesTest):
         rule = Rule.create(self.unicef, [test], [])
 
         self.assertEqual(
-            "contact <i>city</i> is equal to <i>&lt;script&gt;alert(&#39;hi&#39;)&lt;/script&gt;</i>",
+            "contact <i>city</i> is equal to <i>&lt;script&gt;alert(&#x27;hi&#x27;)&lt;/script&gt;</i>",
             render_tests(rule),
         )
 
@@ -213,7 +213,7 @@ class RulesTemplateTagsTest(BaseCasesTest):
         rule = Rule.create(self.unicef, [], [action])
 
         self.assertEqual(
-            'apply label <span class="label label-success">&lt;script&gt;alert(&#39;Hi&#39;)&lt;/script&gt;</span>',
+            'apply label <span class="label label-success">&lt;script&gt;alert(&#x27;Hi&#x27;)&lt;/script&gt;</span>',
             render_actions(rule),
         )
 

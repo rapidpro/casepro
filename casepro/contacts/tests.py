@@ -109,7 +109,7 @@ class ContactTest(BaseCasesTest):
             contact.save()
 
         # check removing a group and adding new ones
-        with self.assertNumQueries(7):
+        with self.assertNumQueries(6):
             setattr(contact, "__data__groups", [("G-002", "Spammers"), ("G-003", "Boffins")])
             contact.save()
 
