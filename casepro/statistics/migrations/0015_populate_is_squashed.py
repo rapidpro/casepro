@@ -31,7 +31,7 @@ def populate_for_model(model):
         max_id = id_batch[-1]
         num_updated += len(id_batch)
 
-        print(f" > Updated {num_updated} instances of {model.name}")
+        print(f" > Updated {num_updated} instances of {model._meta.object_name}")
 
 
 class Migration(migrations.Migration):

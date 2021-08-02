@@ -35,6 +35,8 @@ DATABASES = {
     }
 }
 
+DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+
 EMAIL_BACKEND = "djcelery_email.backends.CeleryEmailBackend"
 SEND_EMAILS = TESTING  # safe to send emails during tests as these use a fake backend
 
