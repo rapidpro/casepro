@@ -1,3 +1,8 @@
+v1.5.0
+----------
+ * Update to Django 3.2
+ * Fix 0015_populate_is_squashed migration in statistics app
+
 v1.4.5
 ----------
  * Tweak polling of new messages
