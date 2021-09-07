@@ -2,9 +2,9 @@
 
 from django.db import migrations
 
-SQL = """CREATE INDEX msgs_message_archived_modified_on
-ON msgs_message(org_id, modified_on, created_on DESC)
-WHERE is_active = TRUE AND is_handled = TRUE AND is_archived = TRUE;"""
+SQL = """CREATE INDEX msgs_message_org_modified_on_desc
+ON msgs_message(org_id, modified_on DESC, created_on DESC)
+WHERE is_active = TRUE AND is_handled = TRUE;"""
 
 
 class Migration(migrations.Migration):

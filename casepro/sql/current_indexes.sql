@@ -28,12 +28,12 @@ CREATE INDEX msgs_inbox
 ON msgs_message(org_id, created_on DESC)
 WHERE is_active = TRUE AND is_handled = TRUE AND is_archived = FALSE AND has_labels = TRUE;
 
-CREATE INDEX CONCURRENTLY msgs_message_archived_modified_on
-ON msgs_message(org_id, modified_on, created_on DESC)
-WHERE is_active = TRUE AND is_handled = TRUE AND is_archived = TRUE;
-
-CREATE INDEX CONCURRENTLY msgs_message_org_modified_on
+CREATE INDEX msgs_message_org_modified_on
 ON msgs_message(org_id, has_labels, modified_on, created_on DESC)
+WHERE is_active = TRUE AND is_handled = TRUE;
+
+CREATE INDEX msgs_message_org_modified_on_desc
+ON msgs_message(org_id, modified_on DESC, created_on DESC)
 WHERE is_active = TRUE AND is_handled = TRUE;
 
 CREATE INDEX msgs_message_org_unhandled ON msgs_message(org_id) WHERE is_handled = FALSE;
