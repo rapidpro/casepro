@@ -9,6 +9,8 @@ from sentry_sdk.integrations.logging import LoggingIntegration, ignore_logger
 
 from django.utils.translation import ugettext_lazy as _
 
+from celery.schedules import crontab
+
 # -----------------------------------------------------------------------------------
 # Sets TESTING to True if this configuration is read during a unit test
 # -----------------------------------------------------------------------------------
@@ -168,6 +170,9 @@ ORG_CONFIG_FIELDS = [
     dict(name="contact_fields", field=dict(help_text=_("Contact fields to display"), required=False)),
     dict(name="banner_text", field=dict(help_text=_("Banner text displayed to all users"), required=False)),
 ]
+
+# number of days after which incoming messages which don't belong to a case and haven't been labelled, can be deleted
+TRIM_OLD_MESSAGES_DAYS = None
 
 INSTALLED_APPS = (
     "django.contrib.auth",
@@ -446,6 +451,7 @@ CELERYBEAT_SCHEDULE = {
     },
     "squash-counts": {"task": "casepro.statistics.tasks.squash_counts", "schedule": timedelta(minutes=5)},
     "send-notifications": {"task": "casepro.profiles.tasks.send_notifications", "schedule": timedelta(minutes=1)},
+    "trim-old-messages": {"task": "casepro.msgs.tasks.trim_old_messages", "schedule": crontab(hour=0, minute=0)},
 }
 
 CELERY_TIMEZONE = "UTC"

@@ -214,3 +214,43 @@ def faq_csv_import(org_id, task_id):  # pragma: no cover
         raise e
 
     return task
+
+
+@shared_task
+def trim_old_messages():
+    """
+    Task to delete old messages which haven't been used in a case or labelled
+    """
+
+    from .models import Message, MessageAction
+
+    # if setting has been configured, don't delete anything
+    if not settings.TRIM_OLD_MESSAGES_DAYS:
+        return
+
+    trim_older = timezone.now() - timedelta(days=settings.TRIM_OLD_MESSAGES_DAYS)
+    start = timezone.now()
+    num_deleted = 0
+
+    while True:
+        msg_ids = list(
+            Message.objects.filter(has_labels=False, is_flagged=False, case=None, created_on__lt=trim_older).order_by(
+                "id"
+            )[:1000]
+        )
+
+        # delete any references to these messages in message actions,
+        # and then any message actions which no longer have any messages
+        MessageAction.messages.through.objects(message_id__in=msg_ids).delete()
+        MessageAction.objects.filter(messages=None).delete()
+
+        # finally delete the actual messages
+        Message.objects.filter(id__in=msg_ids).delete()
+
+        num_deleted += len(msg_ids)
+
+        # run task for an hour at most
+        if (timezone.now() - start).total_seconds() > 60 * 60:
+            break
+
+    logger.info(f"Trimmed {num_deleted} messages older than {trim_older.isoformat()}")
