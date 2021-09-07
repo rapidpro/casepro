@@ -1,3 +1,8 @@
+v1.5.1
+----------
+ * Bump djangorestframework from 3.11.0 to 3.11.2
+ * Add new index for fetching messages by modified_on to fix slow fetches of new/modified messages
+
 v1.5.0
 ----------
  * Update to Django 3.2
