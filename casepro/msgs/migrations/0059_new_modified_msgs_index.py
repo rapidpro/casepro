@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 from django.db import migrations
 
 SQL = """
-CREATE INDEX CONCURRENTLY msgs_message_org_modified_on
+CREATE INDEX msgs_message_org_modified_on
 ON msgs_message(org_id, has_labels, modified_on, created_on DESC)
 WHERE is_active = TRUE AND is_handled = TRUE;
 """

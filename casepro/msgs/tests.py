@@ -1377,9 +1377,9 @@ class MessageCRUDLTest(BaseCasesTest):
         )
 
         self.assertEqual(len(response.json["results"]), 2)
-        self.assertEqual(response.json["results"][0]["id"], 210)
-        self.assertEqual(response.json["results"][1]["id"], 105)
-        self.assertEqual(response.json["results"][1]["flagged"], True)
+        self.assertEqual(response.json["results"][0]["id"], 105)
+        self.assertEqual(response.json["results"][0]["flagged"], True)
+        self.assertEqual(response.json["results"][1]["id"], 210)
 
         # the message we just flagged is archived but is included if archived is true
         response = self.url_get(

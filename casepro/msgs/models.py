@@ -430,10 +430,14 @@ class Message(models.Model):
         # track what we need to filter on by where is can be found in the database
         msg_filtering = {}
         lbl_filtering = {}
+        ordering = ("-created_on",)
 
         # if this is a refresh we want everything with new actions and locks
         if modified_after:
             msg_filtering["modified_on__gt"] = modified_after
+
+            # these are sorted by the UI again so we use the optimal ordering for the index here
+            ordering = ("-modified_on", "-created_on")
         else:
             if folder == MessageFolder.inbox or folder == MessageFolder.unlabelled:
                 lbl_filtering["is_archived"] = False
@@ -456,7 +460,7 @@ class Message(models.Model):
             lbl_filtering["created_on__lt"] = before
 
         # only show non-deleted handled messages
-        msgs = org.incoming_messages.filter(is_active=True, is_handled=True).order_by("-created_on")
+        msgs = org.incoming_messages.filter(is_active=True, is_handled=True).order_by(*ordering)
 
         # handle views that don't require filtering by any labels
         if folder == MessageFolder.unlabelled:
