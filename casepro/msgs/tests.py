@@ -2270,27 +2270,40 @@ class TasksTest(BaseCasesTest):
         ann = self.create_contact(self.unicef, "C-001", "Ann")
         nic = self.create_contact(self.nyaruka, "C-002", "Nic")
 
+        # will be deleted
         msg1 = self.create_message(self.unicef, 101, ann, "Hi", created_on=now() - timedelta(days=90))
-        msg2 = self.create_message(self.unicef, 102, ann, "Hi", created_on=now() - timedelta(days=31))
-        msg3 = self.create_message(self.unicef, 103, ann, "Hi", created_on=now() - timedelta(days=29))
-        self.create_message(self.unicef, 104, ann, "Hi", created_on=now() - timedelta(days=7))
+
+        # won't be deleted as is flagged
+        self.create_message(self.unicef, 102, ann, "Hi", created_on=now() - timedelta(days=90), is_flagged=True)
+
+        # won't be deleted as will be used in case (below)
+        msg3 = self.create_message(self.unicef, 103, ann, "Hi", created_on=now() - timedelta(days=90))
+        self.create_case(self.unicef, ann, self.moh, msg3)
+
+        # won't be deleted as has labels
+        self.create_message(self.unicef, 104, ann, "Hi ", created_on=now() - timedelta(days=90), labels=(self.aids,))
+
+        msg5 = self.create_message(self.unicef, 105, ann, "Hi", created_on=now() - timedelta(days=31))
+        msg6 = self.create_message(self.unicef, 106, ann, "Hi", created_on=now() - timedelta(days=29))
+        self.create_message(self.unicef, 107, ann, "Hi 6", created_on=now() - timedelta(days=7))
         self.create_message(self.nyaruka, 201, nic, "Hi", created_on=now() - timedelta(days=90))
         self.create_message(self.nyaruka, 202, nic, "Hi", created_on=now() - timedelta(days=7))
 
         # create action which includes a msg which will be deleted and one that won't
-        action1 = MessageAction.create(self.unicef, self.admin, [msg1, msg3], MessageAction.ARCHIVE)
+        action1 = MessageAction.create(self.unicef, self.admin, [msg1, msg6], MessageAction.ARCHIVE)
 
         # and an action only containing messages that will be deleted
-        action2 = MessageAction.create(self.unicef, self.admin, [msg2], MessageAction.ARCHIVE)
+        action2 = MessageAction.create(self.unicef, self.admin, [msg5], MessageAction.ARCHIVE)
 
         # by default no trimming occurs
         trim_old_messages()
 
-        self.assertEqual(6, Message.objects.count())
+        self.assertEqual(9, Message.objects.count())
 
         with override_settings(TRIM_OLD_MESSAGES_DAYS=30):
             trim_old_messages()
 
-        self.assertEqual({103, 104, 202}, set(Message.objects.values_list("backend_id", flat=True)))
-        self.assertEqual({msg3}, set(action1.messages.all()))  # action should still exist but without the trimmed msg
+        # flagged, cased, and newer messags should still exist
+        self.assertEqual({102, 103, 104, 106, 107, 202}, set(Message.objects.values_list("backend_id", flat=True)))
+        self.assertEqual({msg6}, set(action1.messages.all()))  # action should still exist but without the trimmed msg
         self.assertFalse(MessageAction.objects.filter(id=action2.id).exists())  # action should have been deleted
