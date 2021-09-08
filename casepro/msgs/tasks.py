@@ -234,14 +234,17 @@ def trim_old_messages():
 
     while True:
         msg_ids = list(
-            Message.objects.filter(has_labels=False, is_flagged=False, case=None, created_on__lt=trim_older).order_by(
-                "id"
-            )[:1000]
+            Message.objects.filter(has_labels=False, is_flagged=False, case=None, created_on__lt=trim_older)
+            .values_list("id", flat=True)
+            .order_by("id")[:1000]
         )
+
+        if not msg_ids:  # nothing left to trim
+            break
 
         # delete any references to these messages in message actions,
         # and then any message actions which no longer have any messages
-        MessageAction.messages.through.objects(message_id__in=msg_ids).delete()
+        MessageAction.messages.through.objects.filter(message_id__in=msg_ids).delete()
         MessageAction.objects.filter(messages=None).delete()
 
         # finally delete the actual messages
@@ -250,7 +253,7 @@ def trim_old_messages():
         num_deleted += len(msg_ids)
 
         # run task for an hour at most
-        if (timezone.now() - start).total_seconds() > 60 * 60:
+        if (timezone.now() - start).total_seconds() > 60 * 60:  # pragma: no cover
             break
 
     logger.info(f"Trimmed {num_deleted} messages older than {trim_older.isoformat()}")

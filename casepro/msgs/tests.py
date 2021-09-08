@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import ANY, call, patch
 
 import pytz
@@ -29,7 +29,7 @@ from .models import (
     OutgoingFolder,
     ReplyExport,
 )
-from .tasks import faq_csv_import, handle_messages, pull_messages
+from .tasks import faq_csv_import, handle_messages, pull_messages, trim_old_messages
 
 faq_good_import = b"""Parent ID,Parent Language,Parent Question,Parent Answer,Labels,afr ID,afr Question,afr Answer,bla ID,bla Question,bla Answer
 ,eng,Can I drink tea while pregnant?,"Yes, but avoid too much caffeine","Tea, Pregnancy",,Kan ek tee drink tydens swangerskap?,"Ja, maar beperk jou kaffein inname",,Xtea Xpregnant?,Xyes
@@ -2265,3 +2265,32 @@ class TasksTest(BaseCasesTest):
         handle_messages(self.unicef.pk)
         task_state = self.unicef.get_task_state("message-handle")
         self.assertEqual(task_state.get_last_results(), {"handled": 0, "case_replies": 0, "rules_matched": 0})
+
+    def test_trim_old_messages(self):
+        ann = self.create_contact(self.unicef, "C-001", "Ann")
+        nic = self.create_contact(self.nyaruka, "C-002", "Nic")
+
+        msg1 = self.create_message(self.unicef, 101, ann, "Hi", created_on=now() - timedelta(days=90))
+        msg2 = self.create_message(self.unicef, 102, ann, "Hi", created_on=now() - timedelta(days=31))
+        msg3 = self.create_message(self.unicef, 103, ann, "Hi", created_on=now() - timedelta(days=29))
+        self.create_message(self.unicef, 104, ann, "Hi", created_on=now() - timedelta(days=7))
+        self.create_message(self.nyaruka, 201, nic, "Hi", created_on=now() - timedelta(days=90))
+        self.create_message(self.nyaruka, 202, nic, "Hi", created_on=now() - timedelta(days=7))
+
+        # create action which includes a msg which will be deleted and one that won't
+        action1 = MessageAction.create(self.unicef, self.admin, [msg1, msg3], MessageAction.ARCHIVE)
+
+        # and an action only containing messages that will be deleted
+        action2 = MessageAction.create(self.unicef, self.admin, [msg2], MessageAction.ARCHIVE)
+
+        # by default no trimming occurs
+        trim_old_messages()
+
+        self.assertEqual(6, Message.objects.count())
+
+        with override_settings(TRIM_OLD_MESSAGES_DAYS=30):
+            trim_old_messages()
+
+        self.assertEqual({103, 104, 202}, set(Message.objects.values_list("backend_id", flat=True)))
+        self.assertEqual({msg3}, set(action1.messages.all()))  # action should still exist but without the trimmed msg
+        self.assertFalse(MessageAction.objects.filter(id=action2.id).exists())  # action should have been deleted
