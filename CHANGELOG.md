@@ -1,3 +1,8 @@
+v1.6.0
+----------
+ * Update dependencies
+ * Add task to delete old messages no used in cases
+
 v1.5.1
 ----------
  * Bump djangorestframework from 3.11.0 to 3.11.2
