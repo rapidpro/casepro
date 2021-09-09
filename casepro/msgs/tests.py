@@ -13,6 +13,7 @@ from django.utils.timezone import now
 
 from casepro.contacts.models import Contact
 from casepro.msgs.views import ImportTask
+from casepro.profiles.models import Notification
 from casepro.rules.models import ContainsTest, FieldTest, GroupsTest, Quantifier, WordCountTest
 from casepro.statistics.tasks import squash_counts
 from casepro.test import BaseCasesTest
@@ -2270,8 +2271,10 @@ class TasksTest(BaseCasesTest):
         ann = self.create_contact(self.unicef, "C-001", "Ann")
         nic = self.create_contact(self.nyaruka, "C-002", "Nic")
 
-        # will be deleted
+        # will be deleted along with it's associated notification
         msg1 = self.create_message(self.unicef, 101, ann, "Hi", created_on=now() - timedelta(days=90))
+        Notification.new_message_labelling(self.unicef, self.admin, msg1)
+        Outgoing.create_bulk_replies(self.unicef, self.user1, "Oh", [msg1])
 
         # won't be deleted as is flagged
         self.create_message(self.unicef, 102, ann, "Hi", created_on=now() - timedelta(days=90), is_flagged=True)

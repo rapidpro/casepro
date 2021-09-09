@@ -15,9 +15,12 @@ from celery import shared_task
 from celery.task import task
 from celery.utils.log import get_task_logger
 
+from casepro.cases.models import Case
+from casepro.profiles.models import Notification
+from casepro.rules.models import Rule
 from casepro.utils import parse_csv
 
-from .models import FAQ, Label
+from .models import FAQ, Label, Outgoing, Message, MessageAction, MessageExport, ReplyExport
 
 logger = get_task_logger(__name__)
 
@@ -72,11 +75,6 @@ def pull_messages(org, since, until, prev_results):
 
 @org_task("message-handle", lock_timeout=12 * 60 * 60)
 def handle_messages(org):
-    from casepro.cases.models import Case
-    from casepro.rules.models import Rule
-
-    from .models import Message
-
     backend = org.get_backend()
 
     case_replies = []
@@ -116,8 +114,6 @@ def handle_messages(org):
 
 @shared_task
 def message_export(export_id):
-    from .models import MessageExport
-
     logger.info("Starting message export #%d..." % export_id)
 
     MessageExport.objects.get(pk=export_id).do_export()
@@ -125,8 +121,6 @@ def message_export(export_id):
 
 @shared_task
 def reply_export(export_id):
-    from .models import ReplyExport
-
     logger.info("Starting replies export #%d..." % export_id)
 
     ReplyExport.objects.get(pk=export_id).do_export()
@@ -222,8 +216,6 @@ def trim_old_messages():
     Task to delete old messages which haven't been used in a case or labelled
     """
 
-    from .models import Message, MessageAction
-
     # if setting has been configured, don't delete anything
     if not settings.TRIM_OLD_MESSAGES_DAYS:
         return
@@ -241,6 +233,12 @@ def trim_old_messages():
 
         if not msg_ids:  # nothing left to trim
             break
+
+        # clear any reply-to foreign keys on outgoing messages
+        Outgoing.objects.filter(reply_to_id__in=msg_ids).update(reply_to=None)
+
+        # delete any notifications for these messages
+        Notification.objects.filter(message_id__in=msg_ids).delete()
 
         # delete any references to these messages in message actions,
         # and then any message actions which no longer have any messages
