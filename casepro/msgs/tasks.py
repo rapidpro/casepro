@@ -20,7 +20,7 @@ from casepro.profiles.models import Notification
 from casepro.rules.models import Rule
 from casepro.utils import parse_csv
 
-from .models import FAQ, Label, Outgoing, Message, MessageAction, MessageExport, ReplyExport
+from .models import FAQ, Label, Message, MessageAction, MessageExport, Outgoing, ReplyExport
 
 logger = get_task_logger(__name__)
 
