@@ -2296,7 +2296,7 @@ class TasksTest(BaseCasesTest):
         action1 = MessageAction.create(self.unicef, self.admin, [msg1, msg6], MessageAction.ARCHIVE)
 
         # and an action only containing messages that will be deleted
-        action2 = MessageAction.create(self.unicef, self.admin, [msg5], MessageAction.ARCHIVE)
+        MessageAction.create(self.unicef, self.admin, [msg5], MessageAction.ARCHIVE)
 
         # by default no trimming occurs
         trim_old_messages()
