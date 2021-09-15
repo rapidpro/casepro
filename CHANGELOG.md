@@ -1,3 +1,7 @@
+v1.6.3
+----------
+ * Fix flake
+
 v1.6.2
 ----------
  * Trim messages task shouldn't worry about deleting message actions
