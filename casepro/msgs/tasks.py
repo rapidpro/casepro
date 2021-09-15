@@ -240,10 +240,8 @@ def trim_old_messages():
         # delete any notifications for these messages
         Notification.objects.filter(message_id__in=msg_ids).delete()
 
-        # delete any references to these messages in message actions,
-        # and then any message actions which no longer have any messages
+        # delete any references to these messages in message actions
         MessageAction.messages.through.objects.filter(message_id__in=msg_ids).delete()
-        MessageAction.objects.filter(messages=None).delete()
 
         # finally delete the actual messages
         Message.objects.filter(id__in=msg_ids).delete()

@@ -2309,4 +2309,3 @@ class TasksTest(BaseCasesTest):
         # flagged, cased, and newer messags should still exist
         self.assertEqual({102, 103, 104, 106, 107, 202}, set(Message.objects.values_list("backend_id", flat=True)))
         self.assertEqual({msg6}, set(action1.messages.all()))  # action should still exist but without the trimmed msg
-        self.assertFalse(MessageAction.objects.filter(id=action2.id).exists())  # action should have been deleted
