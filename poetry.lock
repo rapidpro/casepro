@@ -586,7 +586,7 @@ python-versions = "*"
 
 [[package]]
 name = "rapidpro-dash"
-version = "1.7.3"
+version = "1.7.4"
 description = "Support library for RapidPro dashboards"
 category = "main"
 optional = false
@@ -1159,8 +1159,8 @@ pytz = [
     {file = "pytz-2021.1.tar.gz", hash = "sha256:83a4a90894bf38e243cf052c8b58f381bfe9a7a483f6a9cab140bc7f702ac4da"},
 ]
 rapidpro-dash = [
-    {file = "rapidpro-dash-1.7.3.tar.gz", hash = "sha256:67ddc3b3797b922cb4f39314bb22d502b458a373a4b3bc1d5cc512e17ea47a63"},
-    {file = "rapidpro_dash-1.7.3-py3-none-any.whl", hash = "sha256:0d6d117f2fcd8d4962fa58f70dc7c63015e556ebc5eb3fe6b05052a5dc53290a"},
+    {file = "rapidpro-dash-1.7.4.tar.gz", hash = "sha256:3c4917879c91e28f70b2590a228ff10715f27d3c588cfcbeb1a9d328fcd6a457"},
+    {file = "rapidpro_dash-1.7.4-py3-none-any.whl", hash = "sha256:ad7d6d417351081c47facc1a8845e1c362b52236ce6d6059e84ae81d0a130d58"},
 ]
 rapidpro-python = [
     {file = "rapidpro-python-2.8.3.tar.gz", hash = "sha256:6f41f1a34bc2e8df7bcc54f29b5f1db8e50b1e95221ecf7ec040952e845b1b1e"},
