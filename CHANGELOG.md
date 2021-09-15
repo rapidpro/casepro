@@ -1,3 +1,8 @@
+v1.6.2
+----------
+ * Trim messages task shouldn't worry about deleting message actions
+ * Update to new dash library to get rid of deprecation warning
+
 v1.6.1
 ----------
  * Fix trim_old_messages task to unset Outgoing.reply_to references and remove notifications for messages being deleted
