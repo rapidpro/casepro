@@ -24,6 +24,8 @@ from .models import FAQ, Label, Message, MessageAction, MessageExport, Outgoing,
 
 logger = get_task_logger(__name__)
 
+TRIM_TASK_MAX_SECONDS = 6 * 60 * 60  # 6 hours
+
 
 @org_task("message-pull", lock_timeout=2 * 60 * 60)
 def pull_messages(org, since, until, prev_results):
@@ -234,22 +236,23 @@ def trim_old_messages():
         if not msg_ids:  # nothing left to trim
             break
 
-        # clear any reply-to foreign keys on outgoing messages
-        Outgoing.objects.filter(reply_to_id__in=msg_ids).update(reply_to=None)
+        with transaction.atomic():
+            # clear any reply-to foreign keys on outgoing messages
+            Outgoing.objects.filter(reply_to_id__in=msg_ids).update(reply_to=None)
 
-        # delete any notifications for these messages
-        Notification.objects.filter(message_id__in=msg_ids).delete()
+            # delete any notifications for these messages
+            Notification.objects.filter(message_id__in=msg_ids).delete()
 
-        # delete any references to these messages in message actions
-        MessageAction.messages.through.objects.filter(message_id__in=msg_ids).delete()
+            # delete any references to these messages in message actions
+            MessageAction.messages.through.objects.filter(message_id__in=msg_ids).delete()
 
-        # finally delete the actual messages
-        Message.objects.filter(id__in=msg_ids).delete()
+            # finally delete the actual messages
+            Message.objects.filter(id__in=msg_ids).delete()
 
         num_deleted += len(msg_ids)
 
-        # run task for an hour at most
-        if (timezone.now() - start).total_seconds() > 60 * 60:  # pragma: no cover
+        # task is only allowed to run for a certain amount of time
+        if (timezone.now() - start).total_seconds() > TRIM_TASK_MAX_SECONDS:  # pragma: no cover
             break
 
     logger.info(f"Trimmed {num_deleted} messages older than {trim_older.isoformat()}")
