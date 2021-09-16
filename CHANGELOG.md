@@ -1,3 +1,7 @@
+v1.6.4
+----------
+ * Allow message trimming task to run for 6 hours
+
 v1.6.3
 ----------
  * Fix flake
