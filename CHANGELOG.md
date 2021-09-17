@@ -1,3 +1,7 @@
+v1.6.5
+----------
+ * Tweak trim task to run for 8 hours
+
 v1.6.4
 ----------
  * Allow message trimming task to run for 6 hours
