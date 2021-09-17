@@ -451,7 +451,7 @@ CELERYBEAT_SCHEDULE = {
     },
     "squash-counts": {"task": "casepro.statistics.tasks.squash_counts", "schedule": timedelta(minutes=5)},
     "send-notifications": {"task": "casepro.profiles.tasks.send_notifications", "schedule": timedelta(minutes=1)},
-    "trim-old-messages": {"task": "casepro.msgs.tasks.trim_old_messages", "schedule": crontab(hour=23, minute=0)},
+    "trim-old-messages": {"task": "casepro.msgs.tasks.trim_old_messages", "schedule": crontab(hour=22, minute=0)},
 }
 
 CELERY_TIMEZONE = "UTC"

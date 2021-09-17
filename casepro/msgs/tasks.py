@@ -24,7 +24,7 @@ from .models import FAQ, Label, Message, MessageAction, MessageExport, Outgoing,
 
 logger = get_task_logger(__name__)
 
-TRIM_TASK_MAX_SECONDS = 6 * 60 * 60  # 6 hours
+TRIM_TASK_MAX_SECONDS = 8 * 60 * 60  # 8 hours
 
 
 @org_task("message-pull", lock_timeout=2 * 60 * 60)
