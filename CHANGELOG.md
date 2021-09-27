@@ -1,3 +1,7 @@
+v1.6.6
+----------
+ * Limit searching outgoing messages by text to last 90 days
+
 v1.6.5
 ----------
  * Tweak trim task to run for 8 hours
