@@ -3,7 +3,6 @@ from enum import Enum
 
 from dash.orgs.models import Org
 from dash.utils import get_obj_cacheable
-from dateutil.relativedelta import relativedelta
 from django_redis import get_redis_connection
 
 from django.contrib.auth.models import User
@@ -862,8 +861,7 @@ class Outgoing(models.Model):
 
         if text:
             queryset = queryset.filter(
-                text__icontains=text,
-                created_on__gt=now() - timedelta(days=cls.SEARCH_BY_TEXT_DAYS)
+                text__icontains=text, created_on__gt=now() - timedelta(days=cls.SEARCH_BY_TEXT_DAYS)
             )
 
         if contact_id:
