@@ -451,7 +451,7 @@ class Message(models.Model):
 
         if text:
             msg_filtering["text__icontains"] = text
-            msg_filtering["created_on__gt"] = now() - relativedelta(days=cls.SEARCH_BY_TEXT_DAYS)
+            msg_filtering["created_on__gt"] = now() - timedelta(days=cls.SEARCH_BY_TEXT_DAYS)
         if contact_id:
             msg_filtering["contact__id"] = contact_id
         if after and not modified_after:
@@ -762,6 +762,8 @@ class Outgoing(models.Model):
 
     TIMELINE_TYPE = "O"
 
+    SEARCH_BY_TEXT_DAYS = 90
+
     org = models.ForeignKey(Org, related_name="outgoing_messages", on_delete=models.PROTECT)
 
     partner = models.ForeignKey("cases.Partner", null=True, related_name="outgoing_messages", on_delete=models.PROTECT)
@@ -859,7 +861,10 @@ class Outgoing(models.Model):
             queryset = queryset.filter(partner=partner)
 
         if text:
-            queryset = queryset.filter(text__icontains=text)
+            queryset = queryset.filter(
+                text__icontains=text,
+                created_on__gt=now() - timedelta(days=cls.SEARCH_BY_TEXT_DAYS)
+            )
 
         if contact_id:
             queryset = queryset.filter(contact__pk=contact_id)
