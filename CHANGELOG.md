@@ -1,3 +1,8 @@
+v1.7.0
+----------
+ * Update celery to 5.x
+ * Update deps and test on Python 3.9.x
+
 v1.6.6
 ----------
  * Limit searching outgoing messages by text to last 90 days
