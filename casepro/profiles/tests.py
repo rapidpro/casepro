@@ -1226,7 +1226,7 @@ class UserCRUDLTest(BaseCasesTest):
 
 
 class ForcePasswordChangeMiddlewareTest(BaseCasesTest):
-    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND="memory")
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=True, CELERY_TASK_EAGER_PROPAGATES=True)
     def test_process_view(self):
         self.user1.profile.change_password = True
         self.user1.profile.save()

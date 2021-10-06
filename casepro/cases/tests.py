@@ -1146,7 +1146,7 @@ class CaseCRUDLTest(BaseCasesTest):
 
 
 class CaseExportCRUDLTest(BaseCasesTest):
-    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND="memory")
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=True, CELERY_TASK_EAGER_PROPAGATES=True)
     def test_create_and_read(self):
         ann = self.create_contact(
             self.unicef, "C-001", "Ann", fields={"nickname": "Annie", "age": "28", "state": "WA"}
@@ -1228,7 +1228,7 @@ class CaseExportCRUDLTest(BaseCasesTest):
         response = self.url_get("unicef", read_url)
         self.assertEqual(response.status_code, 302)
 
-    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND="memory")
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=True, CELERY_TASK_EAGER_PROPAGATES=True)
     def test_create_with_no_initial_message(self):
         """When a case is exported with initial_message=None, the field should be a blank string."""
         ann = self.create_contact(self.unicef, "C-001", "Ann")

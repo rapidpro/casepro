@@ -306,7 +306,7 @@ class DailyCountsTest(BaseStatsTest):
 
 
 class DailyCountExportTest(BaseStatsTest):
-    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND="memory")
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=True, CELERY_TASK_EAGER_PROPAGATES=True)
     def test_label_export(self):
         url = reverse("statistics.dailycountexport_create")
 
@@ -336,7 +336,7 @@ class DailyCountExportTest(BaseStatsTest):
         self.assertExcelRow(sheet, 15, [date(2016, 1, 15), 0, 0, 1])
         self.assertExcelRow(sheet, 31, [date(2016, 1, 31), 0, 0, 0])
 
-    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND="memory")
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=True, CELERY_TASK_EAGER_PROPAGATES=True)
     def test_partner_export(self):
         url = reverse("statistics.dailycountexport_create")
 
@@ -387,7 +387,7 @@ class DailyCountExportTest(BaseStatsTest):
         self.assertExcelRow(cases_closed_sheet, 1, [d1, 0, 0], tz=tz)
         self.assertExcelRow(cases_closed_sheet, 15, [d2, 0, 0], tz=tz)
 
-    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND="memory")
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=True, CELERY_TASK_EAGER_PROPAGATES=True)
     def test_user_export(self):
         url = reverse("statistics.dailycountexport_create")
 

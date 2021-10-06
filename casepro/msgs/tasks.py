@@ -12,7 +12,6 @@ from django.db import transaction
 from django.utils import timezone
 
 from celery import shared_task
-from celery.task import task
 from celery.utils.log import get_task_logger
 
 from casepro.cases.models import Case
@@ -146,7 +145,7 @@ def get_labels(task, org, labelstring):
     return list(labels)
 
 
-@task(track_started=True)
+@shared_task
 def faq_csv_import(org_id, task_id):  # pragma: no cover
     task = ImportTask.objects.get(id=task_id)
 
