@@ -430,10 +430,10 @@ INTERNAL_IPS = ("127.0.0.1",)
 # -----------------------------------------------------------------------------------
 # Django-celery
 # -----------------------------------------------------------------------------------
-BROKER_URL = "redis://localhost:6379/%d" % (10 if TESTING else 15)
+CELERY_BROKER_URL = f"redis://localhost:6379/{(10 if TESTING else 15)}"
 CELERY_RESULT_BACKEND = None  # task results are stored internally
-
-CELERYBEAT_SCHEDULE = {
+CELERY_TIMEZONE = "UTC"
+CELERY_BEAT_SCHEDULE = {
     "message-pull": {
         "task": "dash.orgs.tasks.trigger_org_task",
         "schedule": timedelta(minutes=1),
@@ -453,8 +453,6 @@ CELERYBEAT_SCHEDULE = {
     "send-notifications": {"task": "casepro.profiles.tasks.send_notifications", "schedule": timedelta(minutes=1)},
     "trim-old-messages": {"task": "casepro.msgs.tasks.trim_old_messages", "schedule": crontab(hour=22, minute=0)},
 }
-
-CELERY_TIMEZONE = "UTC"
 
 # -----------------------------------------------------------------------------------
 # Django Compressor configuration

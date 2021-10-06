@@ -750,7 +750,7 @@ class FaqCRUDLTest(BaseCasesTest):
         )
 
 
-@override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND="memory")
+@override_settings(CELERY_TASK_ALWAYS_EAGER=True, CELERY_TASK_EAGER_PROPAGATES=True)
 class FaqImportTest(BaseCasesTest):
     def create_importtask(self, user, filename):
         task = ImportTask.objects.create(
@@ -1636,7 +1636,7 @@ class MessageCRUDLTest(BaseCasesTest):
 
 
 class MessageExportCRUDLTest(BaseCasesTest):
-    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND="memory")
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=True, CELERY_TASK_EAGER_PROPAGATES=True)
     def test_create_and_read(self):
         ann = self.create_contact(
             self.unicef, "C-001", "Ann", fields={"nickname": "Annie", "age": "28", "state": "WA"}
@@ -1977,7 +1977,7 @@ class OutgoingCRUDLTest(BaseCasesTest):
 
 
 class ReplyExportCRUDLTest(BaseCasesTest):
-    @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True, BROKER_BACKEND="memory")
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=True, CELERY_TASK_EAGER_PROPAGATES=True)
     def test_create_and_read(self):
         ann = self.create_contact(
             self.unicef, "C-001", "Ann", fields={"nickname": "Annie", "age": "28", "state": "WA"}
