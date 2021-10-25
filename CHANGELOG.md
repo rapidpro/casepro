@@ -1,3 +1,7 @@
+v1.8.1
+----------
+ * Disable transaction sampling in sentry
+
 v1.8.0
 ----------
  * Python 3.9
