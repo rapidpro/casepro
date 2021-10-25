@@ -486,16 +486,11 @@ REST_FRAMEWORK = {
 # -----------------------------------------------------------------------------------
 SENTRY_DSN = os.environ.get("SENTRY_DSN", os.environ.get("RAVEN_DSN"))
 
-
-def traces_sampler(sampling_context):
-    return 0 if ("shell" in sys.argv) else 1.0
-
-
 if SENTRY_DSN:
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration(), CeleryIntegration(), LoggingIntegration()],
         send_default_pii=True,
-        traces_sampler=traces_sampler,
+        traces_sample_rate=0.0,
     )
     ignore_logger("django.security.DisallowedHost")
