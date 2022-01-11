@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from unittest import skip
 from unittest.mock import call, patch
 
-import pytz
 from dash.orgs.models import Org
 from dash.test import MockClientQuery
 from temba_client.v2.types import (
@@ -17,6 +16,7 @@ from temba_client.v2.types import (
     ObjectRef,
 )
 
+from django.utils import timezone
 from django.utils.timezone import now
 
 from casepro.contacts.models import Contact, Field, Group
@@ -997,9 +997,9 @@ class RapidProBackendTest(BaseCasesTest):
 
     @patch("dash.orgs.models.TembaClient.get_messages")
     def test_fetch_contact_messages(self, mock_get_messages):
-        d1 = datetime(2015, 1, 2, 13, 0, tzinfo=pytz.UTC)
-        d2 = datetime(2015, 1, 2, 14, 0, tzinfo=pytz.UTC)
-        d3 = datetime(2015, 1, 2, 15, 0, tzinfo=pytz.UTC)
+        d1 = datetime(2015, 1, 2, 13, 0, tzinfo=timezone.utc)
+        d2 = datetime(2015, 1, 2, 14, 0, tzinfo=timezone.utc)
+        d3 = datetime(2015, 1, 2, 15, 0, tzinfo=timezone.utc)
 
         mock_get_messages.return_value = MockClientQuery(
             [

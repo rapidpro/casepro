@@ -1,5 +1,6 @@
-import pytz
 from rest_framework import serializers
+
+from django.utils import timezone
 
 from casepro.cases.models import Case, CaseAction, Partner
 from casepro.msgs.models import Label
@@ -30,8 +31,8 @@ class CaseSerializer(serializers.ModelSerializer):
     assignee = serializers.SerializerMethodField()
     contact = serializers.SerializerMethodField()
     initial_message = serializers.SerializerMethodField()
-    opened_on = serializers.DateTimeField(default_timezone=pytz.UTC)
-    closed_on = serializers.DateTimeField(default_timezone=pytz.UTC)
+    opened_on = serializers.DateTimeField(default_timezone=timezone.utc)
+    closed_on = serializers.DateTimeField(default_timezone=timezone.utc)
 
     def get_labels(self, obj):
         return [label_ref(l) for l in obj.labels.all()]
@@ -65,7 +66,7 @@ class CaseActionSerializer(serializers.ModelSerializer):
     type = serializers.SerializerMethodField()
     assignee = serializers.SerializerMethodField()
     label = serializers.SerializerMethodField()
-    created_on = serializers.DateTimeField(default_timezone=pytz.UTC)
+    created_on = serializers.DateTimeField(default_timezone=timezone.utc)
 
     def get_case(self, obj):
         return case_ref(obj.case)

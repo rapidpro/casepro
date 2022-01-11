@@ -1,27 +1,28 @@
 from pydoc import locate
 
 from django.conf import settings
-from django.conf.urls import include, url
+from django.conf.urls import include
+from django.urls import re_path
 from django.views import static
 from django.views.i18n import JavaScriptCatalog
 
 from casepro.utils.views import PartialTemplate
 
 urlpatterns = [
-    url(r"", include("casepro.cases.urls")),
-    url(r"", include("casepro.contacts.urls")),
-    url(r"", include("casepro.msg_board.urls")),
-    url(r"", include("casepro.msgs.urls")),
-    url(r"", include("casepro.rules.urls")),
-    url(r"", include("casepro.profiles.urls")),
-    url(r"", include("casepro.orgs_ext.urls")),
-    url(r"^api/v1/", include("casepro.api.urls")),
-    url(r"^stats/", include("casepro.statistics.urls")),
-    url(r"^users/", include("dash.users.urls")),
-    url(r"^i18n/", include("django.conf.urls.i18n")),
-    url(r"^comments/", include("django_comments.urls")),
-    url(r"^partials/(?P<template>[a-z0-9\-_]+)\.html$", PartialTemplate.as_view(), name="utils.partial_template"),
-    url(r"^jsi18n/$", JavaScriptCatalog, name="django.views.i18n.javascript_catalog"),
+    re_path(r"", include("casepro.cases.urls")),
+    re_path(r"", include("casepro.contacts.urls")),
+    re_path(r"", include("casepro.msg_board.urls")),
+    re_path(r"", include("casepro.msgs.urls")),
+    re_path(r"", include("casepro.rules.urls")),
+    re_path(r"", include("casepro.profiles.urls")),
+    re_path(r"", include("casepro.orgs_ext.urls")),
+    re_path(r"^api/v1/", include("casepro.api.urls")),
+    re_path(r"^stats/", include("casepro.statistics.urls")),
+    re_path(r"^users/", include("dash.users.urls")),
+    re_path(r"^i18n/", include("django.conf.urls.i18n")),
+    re_path(r"^comments/", include("django_comments.urls")),
+    re_path(r"^partials/(?P<template>[a-z0-9\-_]+)\.html$", PartialTemplate.as_view(), name="utils.partial_template"),
+    re_path(r"^jsi18n/$", JavaScriptCatalog, name="django.views.i18n.javascript_catalog"),
 ]
 
 backend_options = getattr(settings, "DATA_API_BACKEND_TYPES", [])
@@ -33,11 +34,11 @@ if settings.DEBUG:  # pragma: no cover
     try:
         import debug_toolbar
 
-        urlpatterns.append(url(r"^__debug__/", include(debug_toolbar.urls)))
+        urlpatterns.append(re_path(r"^__debug__/", include(debug_toolbar.urls)))
     except ImportError:
         pass
 
     urlpatterns = [
-        url(r"^media/(?P<path>.*)$", static.serve, {"document_root": settings.MEDIA_ROOT, "show_indexes": True}),
-        url(r"", include("django.contrib.staticfiles.urls")),
+        re_path(r"^media/(?P<path>.*)$", static.serve, {"document_root": settings.MEDIA_ROOT, "show_indexes": True}),
+        re_path(r"", include("django.contrib.staticfiles.urls")),
     ] + urlpatterns

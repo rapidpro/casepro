@@ -1,8 +1,6 @@
 from datetime import datetime
 from unittest.mock import call, patch
 
-import pytz
-
 from django.contrib.auth.models import User
 from django.test.utils import override_settings
 from django.urls import reverse
@@ -1001,14 +999,26 @@ class UserCRUDLTest(BaseCasesTest):
         # add some reply activity
         ann = self.create_contact(self.unicef, "C-001", "Ann")
         self.create_outgoing(
-            self.unicef, self.user1, 202, "B", "Hello 2", ann, created_on=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC)
+            self.unicef,
+            self.user1,
+            202,
+            "B",
+            "Hello 2",
+            ann,
+            created_on=datetime(2016, 4, 20, 9, 0, tzinfo=timezone.utc),
         )  # April 20th
         self.create_outgoing(
-            self.unicef, self.user1, 203, "C", "Hello 3", ann, created_on=datetime(2016, 3, 20, 9, 0, tzinfo=pytz.UTC)
+            self.unicef,
+            self.user1,
+            203,
+            "C",
+            "Hello 3",
+            ann,
+            created_on=datetime(2016, 3, 20, 9, 0, tzinfo=timezone.utc),
         )  # Mar 20th
 
         # simulate making request in May
-        with patch.object(timezone, "now", return_value=datetime(2016, 5, 20, 9, 0, tzinfo=pytz.UTC)):
+        with patch.object(timezone, "now", return_value=datetime(2016, 5, 20, 9, 0, tzinfo=timezone.utc)):
             response = self.url_get("unicef", url + "?partner=%d&with_activity=true" % self.moh.pk)
 
         self.assertEqual(

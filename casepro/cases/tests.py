@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
-import pytz
 from temba_client.utils import format_iso8601
 
 from django.contrib.auth.models import User
@@ -51,14 +50,14 @@ class CaseTest(BaseCasesTest):
         followup = Flow("0002-0002", "Follow-Up")
         self.unicef.set_followup_flow(followup)
 
-        d0 = datetime(2015, 1, 2, 6, 0, tzinfo=pytz.UTC)
-        d1 = datetime(2015, 1, 2, 7, 0, tzinfo=pytz.UTC)
-        d2 = datetime(2015, 1, 2, 8, 0, tzinfo=pytz.UTC)
-        d3 = datetime(2015, 1, 2, 9, 0, tzinfo=pytz.UTC)
-        d4 = datetime(2015, 1, 2, 10, 0, tzinfo=pytz.UTC)
-        d5 = datetime(2015, 1, 2, 11, 0, tzinfo=pytz.UTC)
-        d6 = datetime(2015, 1, 2, 12, 0, tzinfo=pytz.UTC)
-        d7 = datetime(2015, 1, 2, 13, 0, tzinfo=pytz.UTC)
+        d0 = datetime(2015, 1, 2, 6, 0, tzinfo=timezone.utc)
+        d1 = datetime(2015, 1, 2, 7, 0, tzinfo=timezone.utc)
+        d2 = datetime(2015, 1, 2, 8, 0, tzinfo=timezone.utc)
+        d3 = datetime(2015, 1, 2, 9, 0, tzinfo=timezone.utc)
+        d4 = datetime(2015, 1, 2, 10, 0, tzinfo=timezone.utc)
+        d5 = datetime(2015, 1, 2, 11, 0, tzinfo=timezone.utc)
+        d6 = datetime(2015, 1, 2, 12, 0, tzinfo=timezone.utc)
+        d7 = datetime(2015, 1, 2, 13, 0, tzinfo=timezone.utc)
 
         self.create_message(self.unicef, 123, self.ann, "Hello", created_on=d0)
         msg2 = self.create_message(self.unicef, 234, self.ann, "Hello again", [self.aids], created_on=d1)
@@ -338,9 +337,9 @@ class CaseTest(BaseCasesTest):
         self.assertEqual(set(Case.get_closed(self.unicef, user=self.user1, label=self.pregnancy)), {case2})
 
     def test_get_open_for_contact_on(self):
-        d0 = datetime(2014, 1, 5, 0, 0, tzinfo=pytz.UTC)
-        d1 = datetime(2014, 1, 10, 0, 0, tzinfo=pytz.UTC)
-        d2 = datetime(2014, 1, 15, 0, 0, tzinfo=pytz.UTC)
+        d0 = datetime(2014, 1, 5, 0, 0, tzinfo=timezone.utc)
+        d1 = datetime(2014, 1, 10, 0, 0, tzinfo=timezone.utc)
+        d2 = datetime(2014, 1, 15, 0, 0, tzinfo=timezone.utc)
 
         # case Jan 5th -> Jan 10th
         msg1 = self.create_message(self.unicef, 123, self.ann, "Hello", created_on=d0)
@@ -351,19 +350,27 @@ class CaseTest(BaseCasesTest):
         case2 = self.create_case(self.unicef, self.ann, self.moh, msg2, opened_on=d2)
 
         # check no cases open on Jan 4th
-        open_case = Case.get_open_for_contact_on(self.unicef, self.ann, datetime(2014, 1, 4, 0, 0, tzinfo=pytz.UTC))
+        open_case = Case.get_open_for_contact_on(
+            self.unicef, self.ann, datetime(2014, 1, 4, 0, 0, tzinfo=timezone.utc)
+        )
         self.assertIsNone(open_case)
 
         # check case open on Jan 7th
-        open_case = Case.get_open_for_contact_on(self.unicef, self.ann, datetime(2014, 1, 7, 0, 0, tzinfo=pytz.UTC))
+        open_case = Case.get_open_for_contact_on(
+            self.unicef, self.ann, datetime(2014, 1, 7, 0, 0, tzinfo=timezone.utc)
+        )
         self.assertEqual(open_case, case1)
 
         # check no cases open on Jan 13th
-        open_case = Case.get_open_for_contact_on(self.unicef, self.ann, datetime(2014, 1, 13, 0, 0, tzinfo=pytz.UTC))
+        open_case = Case.get_open_for_contact_on(
+            self.unicef, self.ann, datetime(2014, 1, 13, 0, 0, tzinfo=timezone.utc)
+        )
         self.assertIsNone(open_case)
 
         # check case open on 20th
-        open_case = Case.get_open_for_contact_on(self.unicef, self.ann, datetime(2014, 1, 16, 0, 0, tzinfo=pytz.UTC))
+        open_case = Case.get_open_for_contact_on(
+            self.unicef, self.ann, datetime(2014, 1, 16, 0, 0, tzinfo=timezone.utc)
+        )
         self.assertEqual(open_case, case2)
 
     def test_get_or_open_with_user_assignee(self):
@@ -372,7 +379,7 @@ class CaseTest(BaseCasesTest):
         the created case action should also have the assigned user.
         """
         msg = self.create_message(
-            self.unicef, 123, self.ann, "Hello", created_on=datetime(2014, 1, 5, 0, 0, tzinfo=pytz.UTC)
+            self.unicef, 123, self.ann, "Hello", created_on=datetime(2014, 1, 5, 0, 0, tzinfo=timezone.utc)
         )
         case = Case.get_or_open(self.unicef, self.user2, msg, "Hello", self.moh, user_assignee=self.user1)
 
@@ -445,11 +452,11 @@ class CaseTest(BaseCasesTest):
         )
 
     def test_search(self):
-        d1 = datetime(2014, 1, 9, 0, 0, tzinfo=pytz.UTC)
-        d2 = datetime(2014, 1, 10, 0, 0, tzinfo=pytz.UTC)
-        d3 = datetime(2014, 1, 11, 0, 0, tzinfo=pytz.UTC)
-        d4 = datetime(2014, 1, 12, 0, 0, tzinfo=pytz.UTC)
-        d5 = datetime(2014, 1, 13, 0, 0, tzinfo=pytz.UTC)
+        d1 = datetime(2014, 1, 9, 0, 0, tzinfo=timezone.utc)
+        d2 = datetime(2014, 1, 10, 0, 0, tzinfo=timezone.utc)
+        d3 = datetime(2014, 1, 11, 0, 0, tzinfo=timezone.utc)
+        d4 = datetime(2014, 1, 12, 0, 0, tzinfo=timezone.utc)
+        d5 = datetime(2014, 1, 13, 0, 0, tzinfo=timezone.utc)
 
         bob = self.create_contact(self.unicef, "C-002", "Bob")
         cat = self.create_contact(self.unicef, "C-003", "Cat")
@@ -886,9 +893,9 @@ class CaseCRUDLTest(BaseCasesTest):
         Case.objects.all().delete()
         Message.objects.all().delete()
 
-        d0 = datetime(2014, 1, 2, 12, 0, tzinfo=pytz.UTC)
-        d1 = datetime(2014, 1, 2, 13, 0, tzinfo=pytz.UTC)
-        d2 = datetime(2014, 1, 2, 14, 0, tzinfo=pytz.UTC)
+        d0 = datetime(2014, 1, 2, 12, 0, tzinfo=timezone.utc)
+        d1 = datetime(2014, 1, 2, 13, 0, tzinfo=timezone.utc)
+        d2 = datetime(2014, 1, 2, 14, 0, tzinfo=timezone.utc)
 
         # local message before case time window
         self.create_message(self.unicef, 100, self.ann, "Unrelated", [], created_on=d0)
@@ -1207,13 +1214,13 @@ class CaseExportCRUDLTest(BaseCasesTest):
             sheet,
             1,
             [msg2.created_on, case2.opened_on, "", "WHO", "Pregnancy", "I ♡ RapidPro", 0, 0, "C-002", "", "32"],
-            pytz.UTC,
+            timezone.utc,
         )
         self.assertExcelRow(
             sheet,
             2,
             [msg1.created_on, case1.opened_on, "", "MOH", "AIDS", "What is HIV?", 2, 3, "C-001", "Annie", "28"],
-            pytz.UTC,
+            timezone.utc,
         )
 
         read_url = reverse("cases.caseexport_read", args=[export.pk])
@@ -1262,7 +1269,7 @@ class CaseExportCRUDLTest(BaseCasesTest):
             sheet,
             1,
             ["", case.opened_on, "", self.moh.name, self.aids.name, "What is HIV?", 0, 0, ann.uuid, "", ""],
-            pytz.UTC,
+            timezone.utc,
         )
 
 

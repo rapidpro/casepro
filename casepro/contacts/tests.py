@@ -1,11 +1,11 @@
 from datetime import datetime
 from unittest.mock import ANY, patch
 
-import pytz
 from dash.orgs.models import TaskState
 
 from django.test.utils import override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 from casepro.test import BaseCasesTest
 
@@ -418,11 +418,11 @@ class TasksTest(BaseCasesTest):
         mock_pull_groups.return_value = (5, 6, 7, 8)
         mock_pull_contacts.return_value = (9, 10, 11, 12, None)
 
-        t1 = datetime(2021, 3, 18, 15, 26, 30, 123456, tzinfo=pytz.UTC)
-        t2 = datetime(2021, 3, 18, 15, 27, 30, 123456, tzinfo=pytz.UTC)
-        t3 = datetime(2021, 3, 18, 15, 28, 30, 123456, tzinfo=pytz.UTC)
-        t4 = datetime(2021, 3, 18, 15, 29, 30, 123456, tzinfo=pytz.UTC)
-        t5 = datetime(2021, 3, 18, 15, 30, 30, 123456, tzinfo=pytz.UTC)
+        t1 = datetime(2021, 3, 18, 15, 26, 30, 123456, tzinfo=timezone.utc)
+        t2 = datetime(2021, 3, 18, 15, 27, 30, 123456, tzinfo=timezone.utc)
+        t3 = datetime(2021, 3, 18, 15, 28, 30, 123456, tzinfo=timezone.utc)
+        t4 = datetime(2021, 3, 18, 15, 29, 30, 123456, tzinfo=timezone.utc)
+        t5 = datetime(2021, 3, 18, 15, 30, 30, 123456, tzinfo=timezone.utc)
 
         with override_now(t1):
             pull_contacts(self.unicef.id)

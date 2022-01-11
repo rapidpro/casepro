@@ -1,9 +1,9 @@
 from datetime import timedelta
 
-import pytz
 from dash.orgs.models import Org
 
 from django.core.management.base import BaseCommand, CommandError
+from django.utils import timezone
 from django.utils.timezone import now
 
 
@@ -111,4 +111,4 @@ def row_width(row):
 
 
 def format_date(dt):
-    return dt.astimezone(pytz.UTC).strftime("%b %d, %Y %H:%M") if dt else ""
+    return dt.astimezone(timezone.utc).strftime("%b %d, %Y %H:%M") if dt else ""
