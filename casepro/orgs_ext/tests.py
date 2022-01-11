@@ -1,3 +1,4 @@
+import zoneinfo
 from unittest.mock import patch
 
 import pytz
@@ -15,7 +16,7 @@ class OrgExtTest(BaseCasesTest):
     def test_create(self):
         acme = Org.objects.create(
             name="ACME",
-            timezone=pytz.timezone("Africa/Kigali"),
+            timezone=zoneinfo.ZoneInfo("Africa/Kigali"),
             subdomain="acme",
             created_by=self.superuser,
             modified_by=self.superuser,

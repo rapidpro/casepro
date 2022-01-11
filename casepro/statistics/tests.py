@@ -1,8 +1,8 @@
 import random
+import zoneinfo
 from datetime import date, datetime, time
 from unittest.mock import patch
 
-import pytz
 from dash.orgs.models import Org
 
 from django.test.utils import override_settings
@@ -36,13 +36,13 @@ class BaseStatsTest(BaseCasesTest):
         hour = random.randrange(0, 24)
         minute = random.randrange(0, 60)
         second = random.randrange(0, 60)
-        return tz.localize(datetime.combine(day, time(hour, minute, second, 0)))
+        return datetime.combine(day, time(hour, minute, second, 0), tz)
 
     def new_messages(self, day, count):
         created = []
         for m in range(count):
             self._incoming_backend_id += 1
-            created_on = self.anytime_on_day(day, pytz.timezone("Africa/Kampala"))
+            created_on = self.anytime_on_day(day, zoneinfo.ZoneInfo("Africa/Kampala"))
 
             created.append(
                 self.create_message(self.unicef, self._incoming_backend_id, self.ann, "Hello", created_on=created_on)
@@ -53,7 +53,7 @@ class BaseStatsTest(BaseCasesTest):
         created = []
         for m in range(count):
             self._outgoing_backend_id += 1
-            created_on = self.anytime_on_day(day, pytz.timezone("Africa/Kampala"))
+            created_on = self.anytime_on_day(day, zoneinfo.ZoneInfo("Africa/Kampala"))
 
             created.append(
                 self.create_outgoing(
@@ -82,7 +82,7 @@ class DailyCountsTest(BaseStatsTest):
             "F",
             "Hello",
             self.ann,
-            created_on=datetime(2015, 1, 1, 11, 0, tzinfo=pytz.UTC),
+            created_on=datetime(2015, 1, 1, 11, 0, tzinfo=timezone.utc),
         )  # admin on Jan 1st (not a reply)
         self.create_outgoing(
             self.nyaruka,
@@ -91,7 +91,7 @@ class DailyCountsTest(BaseStatsTest):
             "C",
             "Hello",
             self.ned,
-            created_on=datetime(2015, 1, 3, 9, 0, tzinfo=pytz.UTC),
+            created_on=datetime(2015, 1, 3, 9, 0, tzinfo=timezone.utc),
         )  # user #4 on Jan 3rd (other org)
 
         def check_counts():
@@ -193,7 +193,7 @@ class DailyCountsTest(BaseStatsTest):
         self.assertEqual(DailyCount.get_by_org([self.unicef], "I").total(), 3)
 
     def test_labelling_counts(self):
-        d1 = self.anytime_on_day(date(2015, 1, 1), pytz.timezone("Africa/Kampala"))
+        d1 = self.anytime_on_day(date(2015, 1, 1), zoneinfo.ZoneInfo("Africa/Kampala"))
         msg = self.create_message(self.unicef, 301, self.ann, "Hi", created_on=d1)
         msg.label(self.aids, self.tea)
 
@@ -211,7 +211,7 @@ class DailyCountsTest(BaseStatsTest):
         self.assertEqual(DailyCount.get_by_label([self.tea], "I").day_totals(), [(date(2015, 1, 1), 0)])
 
     def test_case_counts_opened(self):
-        d1 = self.anytime_on_day(date(2015, 1, 1), pytz.timezone("Africa/Kampala"))
+        d1 = self.anytime_on_day(date(2015, 1, 1), zoneinfo.ZoneInfo("Africa/Kampala"))
         msg2 = self.create_message(self.unicef, 234, self.ann, "Hello again", [self.aids], created_on=d1)
 
         with patch.object(timezone, "now", return_value=d1):
@@ -246,7 +246,7 @@ class DailyCountsTest(BaseStatsTest):
         self.assertEqual(TotalCount.get_by_user(self.unicef, [self.user1], DailyCount.TYPE_CASE_CLOSED).total(), 0)
 
     def test_case_counts_closed(self):
-        d1 = self.anytime_on_day(date(2015, 1, 1), pytz.timezone("Africa/Kampala"))
+        d1 = self.anytime_on_day(date(2015, 1, 1), zoneinfo.ZoneInfo("Africa/Kampala"))
         msg2 = self.create_message(self.unicef, 234, self.ann, "Hello again", [self.aids], created_on=d1)
 
         with patch.object(timezone, "now", return_value=d1):
@@ -340,7 +340,7 @@ class DailyCountExportTest(BaseStatsTest):
     def test_partner_export(self):
         url = reverse("statistics.dailycountexport_create")
 
-        tz = pytz.timezone("Africa/Kampala")
+        tz = zoneinfo.ZoneInfo("Africa/Kampala")
         d1 = date(2016, 1, 1)
         d2 = date(2016, 1, 15)
 
@@ -391,7 +391,7 @@ class DailyCountExportTest(BaseStatsTest):
     def test_user_export(self):
         url = reverse("statistics.dailycountexport_create")
 
-        tz = pytz.timezone("Africa/Kampala")
+        tz = zoneinfo.ZoneInfo("Africa/Kampala")
         d1 = date(2016, 1, 1)
         d2 = date(2016, 1, 15)
 
@@ -447,7 +447,7 @@ class ChartsTest(BaseStatsTest):
         self.login(self.user3)
 
         # simulate making requests on March 10th
-        with patch.object(timezone, "now", return_value=datetime(2016, 3, 10, 9, 0, tzinfo=pytz.UTC)):
+        with patch.object(timezone, "now", return_value=datetime(2016, 3, 10, 9, 0, tzinfo=timezone.utc)):
             response = self.url_get("unicef", url)
 
             series = response.json["series"]
@@ -478,7 +478,7 @@ class ChartsTest(BaseStatsTest):
         self.login(self.user3)
 
         # simulate making requests in April
-        with patch.object(timezone, "now", return_value=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC)):
+        with patch.object(timezone, "now", return_value=datetime(2016, 4, 20, 9, 0, tzinfo=timezone.utc)):
             response = self.url_get("unicef", url)
 
             self.assertEqual(
@@ -555,7 +555,7 @@ class ChartsTest(BaseStatsTest):
         self.assertLoginRedirect(self.url_get("unicef", opened_url), opened_url)
         self.assertLoginRedirect(self.url_get("unicef", closed_url), closed_url)
 
-        tz = pytz.timezone("Africa/Kampala")
+        tz = zoneinfo.ZoneInfo("Africa/Kampala")
         d1 = date(2020, 1, 1)
         d2 = date(2020, 3, 15)
 
@@ -573,7 +573,7 @@ class ChartsTest(BaseStatsTest):
         self.login(self.user3)
 
         # simulate making requests in April
-        with patch.object(timezone, "now", return_value=datetime(2016, 4, 20, 9, 0, tzinfo=pytz.UTC)):
+        with patch.object(timezone, "now", return_value=datetime(2016, 4, 20, 9, 0, tzinfo=timezone.utc)):
             response = self.url_get("unicef", opened_url)
 
             self.assertEqual(
@@ -636,7 +636,7 @@ class ChartsTest(BaseStatsTest):
         self.login(self.admin)
 
         # simulate making requests on March 10th
-        with patch.object(timezone, "now", return_value=datetime(2016, 3, 10, 9, 0, tzinfo=pytz.UTC)):
+        with patch.object(timezone, "now", return_value=datetime(2016, 3, 10, 9, 0, tzinfo=timezone.utc)):
             response = self.url_get("unicef", url)
 
             series = response.json["series"]

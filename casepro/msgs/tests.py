@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from unittest.mock import ANY, call, patch
 
-import pytz
 from dash.orgs.models import TaskState
 from dateutil.relativedelta import relativedelta
 from temba_client.utils import format_iso8601
@@ -9,6 +8,7 @@ from temba_client.utils import format_iso8601
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test.utils import override_settings
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.timezone import now
 
 from casepro.contacts.models import Contact
@@ -942,7 +942,7 @@ class MessageTest(BaseCasesTest):
         Label.objects.all().delete()
         Contact.objects.all().delete()
 
-        d1 = datetime(2015, 12, 25, 13, 30, 0, 0, pytz.UTC)
+        d1 = datetime(2015, 12, 25, 13, 30, 0, 0, timezone.utc)
 
         message = Message.objects.create(
             org=self.unicef,
@@ -1645,9 +1645,9 @@ class MessageExportCRUDLTest(BaseCasesTest):
             self.unicef, "C-002", "Bob", fields={"nickname": "Bobby", "age": "32", "state": "IN"}
         )
 
-        d1 = datetime(2015, 12, 25, 13, 0, 0, 0, pytz.UTC)
-        d2 = datetime(2015, 12, 25, 14, 0, 0, 0, pytz.UTC)
-        d3 = datetime(2015, 12, 25, 15, 0, 0, 0, pytz.UTC)
+        d1 = datetime(2015, 12, 25, 13, 0, 0, 0, timezone.utc)
+        d2 = datetime(2015, 12, 25, 14, 0, 0, 0, timezone.utc)
+        d3 = datetime(2015, 12, 25, 15, 0, 0, 0, timezone.utc)
 
         self.create_message(self.unicef, 101, ann, "What is HIV?", [self.aids], created_on=d1, is_handled=True)
         self.create_message(
@@ -1680,9 +1680,11 @@ class MessageExportCRUDLTest(BaseCasesTest):
         self.assertExcelRow(
             sheet, 0, ["Time", "Message ID", "Flagged", "Labels", "Text", "Contact", "Nickname", "Age"]
         )
-        self.assertExcelRow(sheet, 1, [d3, 104, "No", "AIDS", "A" * 32767, "C-002", "Bobby", "32"], pytz.UTC)
-        self.assertExcelRow(sheet, 2, [d2, 102, "Yes", "Pregnancy", "I ♡ RapidPro", "C-002", "Bobby", "32"], pytz.UTC)
-        self.assertExcelRow(sheet, 3, [d1, 101, "No", "AIDS", "What is HIV?", "C-001", "Annie", "28"], pytz.UTC)
+        self.assertExcelRow(sheet, 1, [d3, 104, "No", "AIDS", "A" * 32767, "C-002", "Bobby", "32"], timezone.utc)
+        self.assertExcelRow(
+            sheet, 2, [d2, 102, "Yes", "Pregnancy", "I ♡ RapidPro", "C-002", "Bobby", "32"], timezone.utc
+        )
+        self.assertExcelRow(sheet, 3, [d1, 101, "No", "AIDS", "What is HIV?", "C-001", "Annie", "28"], timezone.utc)
 
         read_url = reverse("msgs.messageexport_read", args=[export.pk])
 
@@ -1925,9 +1927,9 @@ class OutgoingCRUDLTest(BaseCasesTest):
     def test_search_replies(self):
         url = reverse("msgs.outgoing_search_replies")
 
-        d1 = datetime(2016, 5, 24, 9, 0, tzinfo=pytz.UTC)
-        d2 = datetime(2016, 5, 24, 10, 0, tzinfo=pytz.UTC)
-        d3 = datetime(2016, 5, 26, 11, 0, tzinfo=pytz.UTC)
+        d1 = datetime(2016, 5, 24, 9, 0, tzinfo=timezone.utc)
+        d2 = datetime(2016, 5, 24, 10, 0, tzinfo=timezone.utc)
+        d3 = datetime(2016, 5, 26, 11, 0, tzinfo=timezone.utc)
 
         msg1 = self.create_message(self.unicef, 101, self.ann, "Hello?", [self.aids], created_on=d1)
         case = self.create_case(self.unicef, self.ann, self.moh, msg1)
@@ -1986,12 +1988,12 @@ class ReplyExportCRUDLTest(BaseCasesTest):
             self.unicef, "C-002", "Bob", fields={"nickname": "Bobby", "age": "32", "state": "IN"}
         )
 
-        d1 = datetime(2016, 5, 24, 9, 0, tzinfo=pytz.UTC)
-        d2 = datetime(2016, 5, 24, 10, 0, tzinfo=pytz.UTC)
-        d3 = datetime(2016, 5, 24, 11, 0, tzinfo=pytz.UTC)
-        d4 = datetime(2016, 5, 24, 12, 0, tzinfo=pytz.UTC)
-        d5 = datetime(2016, 5, 24, 13, 0, tzinfo=pytz.UTC)
-        d6 = datetime(2016, 5, 24, 14, 0, tzinfo=pytz.UTC)
+        d1 = datetime(2016, 5, 24, 9, 0, tzinfo=timezone.utc)
+        d2 = datetime(2016, 5, 24, 10, 0, tzinfo=timezone.utc)
+        d3 = datetime(2016, 5, 24, 11, 0, tzinfo=timezone.utc)
+        d4 = datetime(2016, 5, 24, 12, 0, tzinfo=timezone.utc)
+        d5 = datetime(2016, 5, 24, 13, 0, tzinfo=timezone.utc)
+        d6 = datetime(2016, 5, 24, 14, 0, tzinfo=timezone.utc)
 
         msg1 = self.create_message(self.unicef, 101, ann, "Hello?", [self.aids], created_on=d1)
         msg2 = self.create_message(self.unicef, 102, bob, "I ♡ SMS", [self.pregnancy], is_flagged=True, created_on=d2)
@@ -2051,7 +2053,7 @@ class ReplyExportCRUDLTest(BaseCasesTest):
                 "Bobby",
                 "32",
             ],
-            pytz.UTC,
+            timezone.utc,
         )
         self.assertExcelRow(
             sheet,
@@ -2069,13 +2071,13 @@ class ReplyExportCRUDLTest(BaseCasesTest):
                 "Bobby",
                 "32",
             ],
-            pytz.UTC,
+            timezone.utc,
         )
         self.assertExcelRow(
             sheet,
             3,
             [d4, "evan@unicef.org", "Bonjour", "3\xa0hours", "Hello?", "No", "MOH", "AIDS", "C-001", "Annie", "28"],
-            pytz.UTC,
+            timezone.utc,
         )
 
         # can now view this download
@@ -2102,12 +2104,12 @@ class TasksTest(BaseCasesTest):
         mock_pull_labels.return_value = (1, 2, 3, 4)
         mock_pull_messages.return_value = (5, 6, 7, 8, None)
 
-        t0 = datetime(2021, 3, 18, 14, 26, 30, 123456, tzinfo=pytz.UTC)
-        t1 = datetime(2021, 3, 18, 15, 26, 30, 123456, tzinfo=pytz.UTC)
-        t2 = datetime(2021, 3, 18, 15, 27, 30, 123456, tzinfo=pytz.UTC)
-        t3 = datetime(2021, 3, 18, 15, 28, 30, 123456, tzinfo=pytz.UTC)
-        t4 = datetime(2021, 3, 18, 15, 29, 30, 123456, tzinfo=pytz.UTC)
-        t5 = datetime(2021, 3, 18, 15, 30, 30, 123456, tzinfo=pytz.UTC)
+        t0 = datetime(2021, 3, 18, 14, 26, 30, 123456, tzinfo=timezone.utc)
+        t1 = datetime(2021, 3, 18, 15, 26, 30, 123456, tzinfo=timezone.utc)
+        t2 = datetime(2021, 3, 18, 15, 27, 30, 123456, tzinfo=timezone.utc)
+        t3 = datetime(2021, 3, 18, 15, 28, 30, 123456, tzinfo=timezone.utc)
+        t4 = datetime(2021, 3, 18, 15, 29, 30, 123456, tzinfo=timezone.utc)
+        t5 = datetime(2021, 3, 18, 15, 30, 30, 123456, tzinfo=timezone.utc)
 
         with override_now(t1):
             pull_messages(self.unicef.id)
@@ -2218,11 +2220,11 @@ class TasksTest(BaseCasesTest):
         fra = self.create_contact(self.unicef, "C-006", "Fra", is_stub=True)
         nic = self.create_contact(self.nyaruka, "C-0101", "Nic")
 
-        d1 = datetime(2014, 1, 1, 7, 0, tzinfo=pytz.UTC)
-        d2 = datetime(2014, 1, 1, 8, 0, tzinfo=pytz.UTC)
-        d3 = datetime(2014, 1, 1, 9, 0, tzinfo=pytz.UTC)
-        d4 = datetime(2014, 1, 1, 10, 0, tzinfo=pytz.UTC)
-        d5 = datetime(2014, 1, 1, 11, 0, tzinfo=pytz.UTC)
+        d1 = datetime(2014, 1, 1, 7, 0, tzinfo=timezone.utc)
+        d2 = datetime(2014, 1, 1, 8, 0, tzinfo=timezone.utc)
+        d3 = datetime(2014, 1, 1, 9, 0, tzinfo=timezone.utc)
+        d4 = datetime(2014, 1, 1, 10, 0, tzinfo=timezone.utc)
+        d5 = datetime(2014, 1, 1, 11, 0, tzinfo=timezone.utc)
 
         msg1 = self.create_message(self.unicef, 101, ann, "What is aids?", created_on=d1)
         msg2 = self.create_message(self.unicef, 102, bob, "Can I catch Hiv?", created_on=d2)

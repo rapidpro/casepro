@@ -1,7 +1,7 @@
 import json
+import zoneinfo
 from datetime import date, datetime, time
 
-import pytz
 from dash.orgs.models import Org
 from dash.test import DashTest
 from xlrd import open_workbook, xldate_as_tuple
@@ -39,8 +39,8 @@ class BaseCasesTest(DashTest):
         settings.SITE_ORGS_STORAGE_ROOT = "test_orgs"
 
         # some orgs
-        self.unicef = self.create_org("UNICEF", timezone=pytz.timezone("Africa/Kampala"), subdomain="unicef")
-        self.nyaruka = self.create_org("Nyaruka", timezone=pytz.timezone("Africa/Kigali"), subdomain="nyaruka")
+        self.unicef = self.create_org("UNICEF", timezone=zoneinfo.ZoneInfo("Africa/Kampala"), subdomain="unicef")
+        self.nyaruka = self.create_org("Nyaruka", timezone=zoneinfo.ZoneInfo("Africa/Kigali"), subdomain="nyaruka")
 
         # some admins for those orgs
         self.admin = self.create_admin(self.unicef, "Kidus", "kidus@unicef.org")
