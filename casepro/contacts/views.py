@@ -4,7 +4,7 @@ from smartmin.views import SmartCRUDL, SmartFormView, SmartListView, SmartReadVi
 from django import forms
 from django.conf import settings
 from django.http import HttpResponseRedirect, JsonResponse
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from casepro.cases.models import Case
 from casepro.utils import JSONEncoder

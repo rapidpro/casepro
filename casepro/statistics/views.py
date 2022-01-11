@@ -8,7 +8,7 @@ from temba_client.utils import parse_iso8601
 
 from django.http import JsonResponse
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from casepro.cases.models import Partner
 from casepro.msgs.models import Label

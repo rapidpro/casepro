@@ -1,7 +1,7 @@
 import regex
 
 from django import forms
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from casepro.contacts.models import Group
 from casepro.rules.forms import FieldTestField

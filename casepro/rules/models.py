@@ -8,7 +8,7 @@ from dash.orgs.models import Org
 from dash.utils import get_obj_cacheable
 
 from django.db import models
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from celery.utils.log import get_task_logger
 

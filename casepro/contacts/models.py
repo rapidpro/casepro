@@ -6,7 +6,7 @@ from django_redis import get_redis_connection
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField, HStoreField
 from django.db import models
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from casepro.utils import get_language_name
 

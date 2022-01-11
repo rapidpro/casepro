@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.db import connection, models
 from django.db.models import Index, Q, Sum
 from django.utils.functional import SimpleLazyObject
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from casepro.cases.models import CaseAction, Partner
 from casepro.msgs.models import Label

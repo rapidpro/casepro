@@ -11,7 +11,7 @@ from django.db import models
 from django.db.models import Index, Prefetch, Q
 from django.utils.timesince import timesince
 from django.utils.timezone import now
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from casepro.contacts.models import Contact, Field
 from casepro.utils import get_language_name, json_encode

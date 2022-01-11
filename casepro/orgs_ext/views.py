@@ -3,7 +3,7 @@ from dash.orgs.views import InferOrgMixin, OrgCRUDL, OrgPermsMixin, TaskCRUDL
 from smartmin.views import SmartCRUDL, SmartUpdateView
 
 from django.urls import reverse
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from casepro.cases.models import Case
 from casepro.contacts.models import Field, Group

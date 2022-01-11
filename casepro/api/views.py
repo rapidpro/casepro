@@ -1,7 +1,7 @@
 import iso8601
 from rest_framework import pagination, routers, viewsets
 
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from casepro.cases.models import Case, CaseAction, Partner
 from casepro.msgs.models import Label
