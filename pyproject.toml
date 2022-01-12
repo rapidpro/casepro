@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "casepro"
-version = "1.8.1"
+version = "1.9.0"
 description = "Case management dashboard for UNICEF and partner organizations"
 authors = ["Nyaruka <code@nyaruka.com>"]
 license = "BSD-3"

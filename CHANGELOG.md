@@ -1,3 +1,7 @@
+v1.9.0
+----------
+ * Update to Django 4
+
 v1.8.1
 ----------
  * Disable transaction sampling in sentry
