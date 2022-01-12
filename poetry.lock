@@ -607,7 +607,7 @@ python-versions = "*"
 
 [[package]]
 name = "rapidpro-dash"
-version = "1.9.0"
+version = "1.9.1"
 description = "Support library for RapidPro dashboards"
 category = "main"
 optional = false
@@ -625,7 +625,7 @@ Pillow = ">=8.1.0,<9.0.0"
 psycopg2-binary = "<2.9.0"
 python-dateutil = ">=2.8.1,<3.0.0"
 rapidpro-python = ">=2.8.3,<3.0.0"
-smartmin = ">=4.0.0,<5.0.0"
+smartmin = "v4.0.1"
 sorl-thumbnail = ">=12.7.0,<13.0.0"
 
 [[package]]
@@ -746,7 +746,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
 
 [[package]]
 name = "smartmin"
-version = "4.0.0"
+version = "4.0.1"
 description = "Scaffolding system for Django object management."
 category = "main"
 optional = false
@@ -849,7 +849,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "a947a14bb2ef2328ad13e313c71c80cdc1bc4cf9fce56bf9aeb4df30ff76e12b"
+content-hash = "1ca0f23ed19bf022e142bcb91cda156d8fa10e1eb466f44b93df3602b6707a8d"
 
 [metadata.files]
 amqp = [
@@ -1170,8 +1170,8 @@ pytz = [
     {file = "pytz-2021.3.tar.gz", hash = "sha256:acad2d8b20a1af07d4e4c9d2e9285c5ed9104354062f275f3fcd88dcef4f1326"},
 ]
 rapidpro-dash = [
-    {file = "rapidpro-dash-1.9.0.tar.gz", hash = "sha256:52b04fe7e86f37432615d017003614368d0858ea8eb1bcac017fde7f3b3866de"},
-    {file = "rapidpro_dash-1.9.0-py3-none-any.whl", hash = "sha256:e50cc35aa30136eec63ed24ae549cb60ac6eaba007c497815683d7b81855eea4"},
+    {file = "rapidpro-dash-1.9.1.tar.gz", hash = "sha256:42ddcb68735bfe53a218ef2047d9428879e2368df638de4ffa9a7c12bb137096"},
+    {file = "rapidpro_dash-1.9.1-py3-none-any.whl", hash = "sha256:811077065f67b3ac9c8a9e70c7b026e1ab7fd14a86bbfcb6899a6aea09963aa7"},
 ]
 rapidpro-python = [
     {file = "rapidpro-python-2.8.3.tar.gz", hash = "sha256:6f41f1a34bc2e8df7bcc54f29b5f1db8e50b1e95221ecf7ec040952e845b1b1e"},
@@ -1293,8 +1293,8 @@ six = [
     {file = "six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"},
 ]
 smartmin = [
-    {file = "smartmin-4.0.0-py3-none-any.whl", hash = "sha256:5e27241e4459c21c9531ae69da0f4fd81d5f141c278723aa750ec16ee1251e41"},
-    {file = "smartmin-4.0.0.tar.gz", hash = "sha256:01157215c2f78b2220324265e8a14981062c30a9deebcbaf93a58c1329ef04d2"},
+    {file = "smartmin-4.0.1-py3-none-any.whl", hash = "sha256:865ea6681e9ddb7ac138a9f84034807a6db3f8bc3e3100edc4651b5f168e9451"},
+    {file = "smartmin-4.0.1.tar.gz", hash = "sha256:86e8074bac02c611e54ff8427424a6b522c2116a80d484fdb01be19e304be2b2"},
 ]
 sorl-thumbnail = [
     {file = "sorl-thumbnail-12.7.0.tar.gz", hash = "sha256:fbe6dfd66a1aceb7e0203895ff5622775e50266f8d8cfd841fe1500bd3e19018"},

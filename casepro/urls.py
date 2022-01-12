@@ -22,7 +22,7 @@ urlpatterns = [
     re_path(r"^i18n/", include("django.conf.urls.i18n")),
     re_path(r"^comments/", include("django_comments.urls")),
     re_path(r"^partials/(?P<template>[a-z0-9\-_]+)\.html$", PartialTemplate.as_view(), name="utils.partial_template"),
-    re_path(r"^jsi18n/$", JavaScriptCatalog, name="django.views.i18n.javascript_catalog"),
+    re_path(r"^jsi18n/$", JavaScriptCatalog.as_view(), name="django.views.i18n.javascript_catalog"),
 ]
 
 backend_options = getattr(settings, "DATA_API_BACKEND_TYPES", [])
