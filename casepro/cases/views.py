@@ -457,7 +457,7 @@ class PartnerCRUDL(SmartCRUDL):
             return Partner.get_all(self.request.org).order_by("name")
 
         def render_to_response(self, context, **response_kwargs):
-            if self.request.is_ajax():
+            if self.request.META.get("HTTP_X_REQUESTED_WITH") == "XMLHttpRequest":
                 with_activity = str_to_bool(self.request.GET.get("with_activity", ""))
                 return self.render_as_json(context["object_list"], with_activity)
             else:

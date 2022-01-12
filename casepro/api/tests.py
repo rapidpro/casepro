@@ -1,5 +1,6 @@
+from urllib.parse import quote
+
 from django.urls import reverse
-from django.utils.http import quote
 
 from casepro.cases.models import CaseAction
 from casepro.test import BaseCasesTest
