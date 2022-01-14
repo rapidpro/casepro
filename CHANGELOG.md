@@ -1,3 +1,7 @@
+v1.9.1
+----------
+ * Update to latest pillow, smartmin and dash
+
 v1.9.0
 ----------
  * Update to Django 4
