@@ -1,3 +1,7 @@
+v1.9.2
+----------
+ * Bump django from 4.0.1 to 4.0.2
+
 v1.9.1
 ----------
  * Update to latest pillow, smartmin and dash
