@@ -33,8 +33,9 @@ class URN(object):
     SCHEME_TEL = "tel"
     SCHEME_TWITTER = "twitter"
     SCHEME_EMAIL = "mailto"
+    SCHEME_WHATSAPP = "whatsapp"
 
-    VALID_SCHEMES = (SCHEME_TEL, SCHEME_TWITTER, SCHEME_EMAIL)
+    VALID_SCHEMES = (SCHEME_TEL, SCHEME_TWITTER, SCHEME_EMAIL, SCHEME_WHATSAPP)
 
     def __init__(self):  # pragma: no cover
         raise ValueError("Class shouldn't be instantiated")
@@ -79,7 +80,7 @@ class URN(object):
 
         norm_path = str(path).strip()
 
-        if scheme == cls.SCHEME_TEL:
+        if scheme == cls.SCHEME_TEL or scheme == cls.SCHEME_WHATSAPP:
             norm_path = cls.normalize_phone(norm_path)
         elif scheme == cls.SCHEME_TWITTER:
             norm_path = norm_path.lower()
