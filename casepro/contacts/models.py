@@ -317,13 +317,12 @@ class Contact(models.Model):
         Gets an existing contact or creates a new contact. Used when opening a case without an initial message
         """
         normalized_urn = URN.normalize(urn)
-
         contact = cls.objects.filter(urns__contains=[normalized_urn]).first()
         if not contact:
             URN.validate(normalized_urn)
-
+            uuid = org.get_backend().push_contact(org, normalized_urn)
             contact = cls.objects.create(org=org, name=name, urns=[normalized_urn], is_stub=False)
-            org.get_backend().push_contact(org, contact)
+            contact.uuid = uuid
         return contact
 
     @classmethod

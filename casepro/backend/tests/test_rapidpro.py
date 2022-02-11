@@ -55,6 +55,7 @@ class ContactSyncerTest(BaseCasesTest):
                 "uuid": "C-001",
                 "name": "Bob McFlow",
                 "language": "eng",
+                "urns": ["twitter:bobflow"],
                 "is_blocked": False,
                 "is_stopped": False,
                 "is_stub": False,
@@ -92,8 +93,8 @@ class ContactSyncerTest(BaseCasesTest):
         local.fields = {"chat_name": "ann"}
         local.save()
 
-        # no differences (besides null field value which is ignored)
-        self.assertFalse(
+        # urns need to be added to contact
+        self.assertTrue(
             self.syncer.update_required(
                 local,
                 TembaContact.create(
@@ -487,7 +488,7 @@ class RapidProBackendTest(BaseCasesTest):
         self.assertEqual(bob.get_fields(), {"age": "35"})
 
         mock_get_contacts.side_effect = [
-            # first call to get active contacts will return a contact with only a change to URNs.. which we don't track
+            # first call to get active contacts will return a contact with only a change to URNs
             MockClientQuery(
                 [
                     TembaContact.create(
@@ -505,8 +506,8 @@ class RapidProBackendTest(BaseCasesTest):
             MockClientQuery([]),
         ]
 
-        with self.assertNumQueries(3):
-            self.assertEqual(self.backend.pull_contacts(self.unicef, None, None), (0, 0, 0, 1, None))
+        with self.assertNumQueries(4):
+            self.assertEqual(self.backend.pull_contacts(self.unicef, None, None), (0, 1, 0, 0, None))
 
         self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, ann})
         self.assertEqual(set(Contact.objects.filter(is_active=False)), {jim})
@@ -865,10 +866,18 @@ class RapidProBackendTest(BaseCasesTest):
         )
         mock_create_broadcast.reset_mock()
 
-    def test_push_contact(self):
+    @patch("dash.orgs.models.TembaClient.get_contacts")
+    @patch("dash.orgs.models.TembaClient.create_contact")
+    def test_push_contact(self, mock_get_contacts, mock_create_contact):
         """
-        Pushing a new contact should be a noop.
+        If a contact is added in CasePro,
+        it should be added in RapidPro and the uuid should match
         """
+        # self.ann.uuid = None
+        # self.ann.urns = ["tel:1234"]
+        # self.ann.save()
+        # self.backend.push_contact(self.unicef, self.ann.urns[0])
+        # I dont know what to assert here lol
         self.bob.refresh_from_db()
         old_bob = self.bob.__dict__.copy()
         self.backend.push_contact(self.unicef, self.bob)
