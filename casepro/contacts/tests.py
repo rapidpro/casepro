@@ -213,12 +213,12 @@ class ContactTest(BaseCasesTest):
         """
         Contact.objects.all().delete()
 
-        # try with a URN that doesn't match an existing contact
+        # try with a URN that doesn't match an existing contact, uuid set from backend
         contact1 = Contact.get_or_create_from_urn(self.unicef, "tel:+27827654321")
 
         self.assertEqual(contact1.urns, ["tel:+27827654321"])
         self.assertIsNone(contact1.name)
-        self.assertIsNone(contact1.uuid)
+        self.assertIsNotNone(contact1.uuid)
 
         # check that the backend was updated
         self.assertTrue(mock_push_contact.called)

@@ -868,19 +868,32 @@ class RapidProBackendTest(BaseCasesTest):
 
     @patch("dash.orgs.models.TembaClient.get_contacts")
     @patch("dash.orgs.models.TembaClient.create_contact")
-    def test_push_contact(self, mock_get_contacts, mock_create_contact):
+    def test_push_contact(self, mock_create_contact, mock_get_contacts):
         """
         If a contact is added in CasePro,
         it should be added in RapidPro and the uuid should match
         """
         # Contact does not exist, so push contacts is called
-        mock_get_contacts.return_value = MockClientQuery([TembaContact.create(uuid="1")])
-        mock_create_contact.return_value = MockClientQuery([TembaContact.create(uuid="1")])
-        self.ann.urns = ["tel:1234"]
+        mock_get_contacts.return_value = TembaContact.create(uuid="1", urns=['tel:1234'])
+        mock_create_contact.return_value = None
+
+        self.ann.urns = ["tel:+1234"]
         self.ann.save()
         self.backend.push_contact(self.unicef, self.ann.urns[0])
-        mock_get_contacts.assert_called_with(urns=["tel:1234"])
-        mock_create_contact.assert_called_with(urn="tel:1234")
+
+        mock_get_contacts.assert_called_once_with(urn="tel:+1234")
+        self.assertNotCalled(mock_create_contact)
+
+        # contact doesn't exist in RapidPro
+        mock_get_contacts.return_value = None
+        mock_create_contact.return_value = TembaContact.create(uuid="1")
+
+        self.ann.urns = ["tel:+1234"]
+        self.ann.save()
+        self.backend.push_contact(self.unicef, self.ann.urns[0])
+
+        mock_get_contacts.assert_called_with(urn="tel:+1234")
+        mock_create_contact.assert_called_once_with(urns=['tel:+1234'])
 
     @patch("dash.orgs.models.TembaClient.bulk_add_contacts")
     def test_add_to_group(self, mock_add_contacts):
