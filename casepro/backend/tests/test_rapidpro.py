@@ -873,16 +873,14 @@ class RapidProBackendTest(BaseCasesTest):
         If a contact is added in CasePro,
         it should be added in RapidPro and the uuid should match
         """
-        # self.ann.uuid = None
-        # self.ann.urns = ["tel:1234"]
-        # self.ann.save()
-        # self.backend.push_contact(self.unicef, self.ann.urns[0])
-        # I dont know what to assert here lol
-        self.bob.refresh_from_db()
-        old_bob = self.bob.__dict__.copy()
-        self.backend.push_contact(self.unicef, self.bob)
-        self.bob.refresh_from_db()
-        self.assertEqual(self.bob.__dict__, old_bob)
+        # Contact does not exist, so push contacts is called
+        mock_get_contacts.return_value = MockClientQuery([TembaContact.create(uuid="1")])
+        mock_create_contact.return_value = MockClientQuery([TembaContact.create(uuid="1")])
+        self.ann.urns = ["tel:1234"]
+        self.ann.save()
+        self.backend.push_contact(self.unicef, self.ann.urns[0])
+        mock_get_contacts.assert_called_with(urns=["tel:1234"])
+        mock_create_contact.assert_called_with(urn="tel:1234")
 
     @patch("dash.orgs.models.TembaClient.bulk_add_contacts")
     def test_add_to_group(self, mock_add_contacts):
