@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "casepro"
-version = "1.9.1"
+version = "1.9.2"
 description = "Case management dashboard for UNICEF and partner organizations"
 authors = ["Nyaruka <code@nyaruka.com>"]
 license = "BSD-3"
@@ -9,7 +9,7 @@ license = "BSD-3"
 python = "^3.9"
 rapidpro-dash = "^1.9.2"
 smartmin = "^4.0.0"
-Django = "^4.0.0"
+Django = "^4.0.2"
 celery = "^5.2.2"
 djangorestframework = "^3.11.2"
 phonenumbers = "^8.12.18"
