@@ -324,6 +324,7 @@ class Contact(models.Model):
             uuid = org.get_backend().push_contact(org, normalized_urn)
             contact = cls.objects.create(org=org, name=name, urns=[normalized_urn], is_stub=False)
             contact.uuid = uuid
+            contact.save()
         return contact
 
     @classmethod
