@@ -335,7 +335,7 @@ class RapidProBackend(BaseBackend):
     def push_contact(self, org, normalised_urn):
         client = self._get_client(org)
         contact = client.get_contacts(urn=f"{normalised_urn}")
-        if not contact:
+        if not contact.all():
             contact = client.create_contact(urns=[normalised_urn])
         return contact.uuid
 
