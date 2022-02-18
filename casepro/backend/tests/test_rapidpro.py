@@ -870,10 +870,10 @@ class RapidProBackendTest(BaseCasesTest):
     @patch("dash.orgs.models.TembaClient.create_contact")
     def test_push_contact(self, mock_create_contact, mock_get_contacts):
         """
-        If a contact is added in CasePro,
-        it should be added in RapidPro and the uuid should match
+        If a contact is added in CasePro if the contact doesnt exist in RapidPro,
+        it must be added
         """
-        # Contact does not exist, so push contacts is called
+        # Contact does exist in RapidPro
         mock_get_contacts.return_value = TembaContact.create(uuid="1", urns=["tel:1234"])
         mock_create_contact.return_value = None
 
@@ -884,7 +884,7 @@ class RapidProBackendTest(BaseCasesTest):
         mock_get_contacts.assert_called_once_with(urn="tel:+1234")
         self.assertNotCalled(mock_create_contact)
 
-        # contact doesn't exist in RapidPro
+        # Contact doesn't exist in RapidPro
         mock_get_contacts.return_value = None
         mock_create_contact.return_value = TembaContact.create(uuid="1")
 
