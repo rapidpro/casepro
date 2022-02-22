@@ -874,7 +874,9 @@ class RapidProBackendTest(BaseCasesTest):
         it must be added
         """
         # Contact does exist in RapidPro
-        mock_get_contacts.return_value = TembaContact.create(uuid="1", urns=["tel:1234"])
+        mock_get_contacts.return_value = MockClientQuery(
+            [TembaContact.create(uuid="1", urns=["tel:1234"])]
+        )
         mock_create_contact.return_value = None
 
         self.ann.urns = ["tel:+1234"]
