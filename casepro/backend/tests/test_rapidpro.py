@@ -885,7 +885,7 @@ class RapidProBackendTest(BaseCasesTest):
         self.assertNotCalled(mock_create_contact)
 
         # Contact doesn't exist in RapidPro
-        mock_get_contacts.return_value = None
+        mock_get_contacts.return_value = MockClientQuery([])
         mock_create_contact.return_value = TembaContact.create(uuid="1")
 
         self.ann.urns = ["tel:+1234"]
