@@ -211,6 +211,7 @@ class ContactTest(BaseCasesTest):
         """
         If no contact with a matching urn exists a new one should be created
         """
+        mock_push_contact.return_value = "00001"
         Contact.objects.all().delete()
 
         # try with a URN that doesn't match an existing contact, uuid set from backend
