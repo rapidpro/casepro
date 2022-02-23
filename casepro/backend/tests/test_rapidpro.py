@@ -112,6 +112,27 @@ class ContactSyncerTest(BaseCasesTest):
             )
         )
 
+        local.urns = ["tel:1234"]
+
+        # no differences (besides null field value which is ignored)
+        self.assertFalse(
+            self.syncer.update_required(
+                local,
+                TembaContact.create(
+                    uuid="000-001",
+                    name="Ann",
+                    urns=["tel:1234"],
+                    groups=[ObjectRef.create(uuid="G-003", name="Reporters")],
+                    fields={"chat_name": "ann", "age": None},
+                    language="eng",
+                    blocked=False,
+                    stopped=False,
+                    modified_on=now(),
+                ),
+                {},
+            )
+        )
+
         # name change
         self.assertTrue(
             self.syncer.update_required(
