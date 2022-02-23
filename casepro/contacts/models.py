@@ -321,13 +321,11 @@ class Contact(models.Model):
         contact = cls.objects.filter(urns__contains=[normalized_urn]).first()
         if not contact:
             URN.validate(normalized_urn)
-            uuid = org.get_backend().push_contact(org, normalized_urn)
+            uuid = org.get_backend().resolve_urn(org, normalized_urn)
             contact = cls.objects.filter(uuid=uuid)
 
             if not contact:
-                contact = cls.objects.create(org=org, name=name, urns=[normalized_urn], is_stub=False)
-                contact.uuid = uuid
-                contact.save()
+                contact = cls.objects.create(org=org, name=name, urns=[normalized_urn], is_stub=False, uuid=uuid)
         return contact
 
     @classmethod

@@ -868,7 +868,7 @@ class RapidProBackendTest(BaseCasesTest):
 
     @patch("dash.orgs.models.TembaClient.get_contacts")
     @patch("dash.orgs.models.TembaClient.create_contact")
-    def test_push_contact(self, mock_create_contact, mock_get_contacts):
+    def test_resolve_urn(self, mock_create_contact, mock_get_contacts):
         """
         If a contact is added in CasePro if the contact doesnt exist in RapidPro,
         it must be added
@@ -879,7 +879,7 @@ class RapidProBackendTest(BaseCasesTest):
 
         self.ann.urns = ["tel:+1234"]
         self.ann.save()
-        self.backend.push_contact(self.unicef, self.ann.urns[0])
+        self.backend.resolve_urn(self.unicef, self.ann.urns[0])
 
         mock_get_contacts.assert_called_once_with(urn="tel:+1234")
         self.assertNotCalled(mock_create_contact)
@@ -890,7 +890,7 @@ class RapidProBackendTest(BaseCasesTest):
 
         self.ann.urns = ["tel:+1234"]
         self.ann.save()
-        self.backend.push_contact(self.unicef, self.ann.urns[0])
+        self.backend.resolve_urn(self.unicef, self.ann.urns[0])
 
         mock_get_contacts.assert_called_with(urn="tel:+1234")
         mock_create_contact.assert_called_once_with(urns=["tel:+1234"])

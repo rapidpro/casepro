@@ -332,11 +332,11 @@ class RapidProBackend(BaseBackend):
                 msg.backend_broadcast_id = broadcast.id
                 msg.save(update_fields=("backend_broadcast_id",))
 
-    def push_contact(self, org, normalised_urn):
+    def resolve_urn(self, org, normalized_urn):
         client = self._get_client(org)
-        contact = client.get_contacts(urn=f"{normalised_urn}")
+        contact = client.get_contacts(urn=normalized_urn)
         if not contact.first():
-            contact = client.create_contact(urns=[normalised_urn])
+            contact = client.create_contact(urns=[normalized_urn])
         else:
             contact = contact.first()
         return contact.uuid
