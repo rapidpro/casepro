@@ -109,7 +109,7 @@ class CaseCRUDL(SmartCRUDL):
             context["can_update"] = can_update
             context["alert"] = self.request.GET.get("alert", None)
             context["case_id"] = case.id
-
+            context["site_redact_urns"] = getattr(settings, "SITE_REDACT_URNS", True)
             return context
 
     class Open(OrgPermsMixin, SmartCreateView):

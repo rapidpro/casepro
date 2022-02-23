@@ -169,7 +169,10 @@
                 .contact-field-label.col-sm-6
                   [[ urn.scheme ]]
                 .contact-field-value.col-sm-6
-                  [[ ]]
+                  - if site_redact_urns
+                    [[ "\u2022".repeat(urn.path.length) ]]
+                  - else
+                    [[ urn.path ]]
               .row{ ng-if:"contact.language" }
                 .contact-field-label.col-sm-6
                   - trans "Language"
