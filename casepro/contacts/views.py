@@ -36,6 +36,7 @@ class ContactCRUDL(SmartCRUDL):
                 "contact": self.object.as_json(full=True),
                 "fields": [f.as_json() for f in fields],
             }
+            context["site_redact_urns"] = getattr(settings, "SITE_REDACT_URNS", True)
             context["backend_url"] = settings.SITE_EXTERNAL_CONTACT_URL % self.object.uuid
             return context
 

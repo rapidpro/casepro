@@ -97,7 +97,7 @@ class BaseBackend(object):
         """
 
     @abstractmethod
-    def push_contact(self, org, contact):
+    def resolve_urn(self, org, contact):
         """
         Pushes a new contact
 

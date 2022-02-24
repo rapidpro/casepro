@@ -45,6 +45,7 @@ class ContactSyncer(BaseSyncer):
             "uuid": remote.uuid,
             "name": remote.name,
             "language": remote.language,
+            "urns": remote.urns,
             "is_blocked": remote.blocked,
             "is_stopped": remote.stopped,
             "is_stub": False,
@@ -59,6 +60,7 @@ class ContactSyncer(BaseSyncer):
             or local.language != remote.language
             or local.is_blocked != remote.blocked
             or local.is_stopped != remote.stopped
+            or local.urns != remote.urns
         ):
             return True
 
@@ -330,8 +332,14 @@ class RapidProBackend(BaseBackend):
                 msg.backend_broadcast_id = broadcast.id
                 msg.save(update_fields=("backend_broadcast_id",))
 
-    def push_contact(self, org, contact):
-        return
+    def resolve_urn(self, org, normalized_urn):
+        client = self._get_client(org)
+        contact = client.get_contacts(urn=normalized_urn)
+        if not contact.first():
+            contact = client.create_contact(urns=[normalized_urn])
+        else:
+            contact = contact.first()
+        return contact.uuid
 
     def add_to_group(self, org, contact, group):
         client = self._get_client(org)

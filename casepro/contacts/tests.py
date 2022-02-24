@@ -206,37 +206,38 @@ class ContactTest(BaseCasesTest):
                 },
             )
 
-    @patch("casepro.test.TestBackend.push_contact")
-    def test_get_or_create_from_urn(self, mock_push_contact):
+    @patch("casepro.test.TestBackend.resolve_urn")
+    def test_get_or_create_from_urn(self, mock_resolve_urn):
         """
         If no contact with a matching urn exists a new one should be created
         """
+        mock_resolve_urn.return_value = "00001"
         Contact.objects.all().delete()
 
-        # try with a URN that doesn't match an existing contact
+        # try with a URN that doesn't match an existing contact, uuid set from backend
         contact1 = Contact.get_or_create_from_urn(self.unicef, "tel:+27827654321")
 
         self.assertEqual(contact1.urns, ["tel:+27827654321"])
         self.assertIsNone(contact1.name)
-        self.assertIsNone(contact1.uuid)
+        self.assertIsNotNone(contact1.uuid)
 
         # check that the backend was updated
-        self.assertTrue(mock_push_contact.called)
-        mock_push_contact.reset_mock()
+        self.assertTrue(mock_resolve_urn.called)
+        mock_resolve_urn.reset_mock()
 
         # try with a URN that does match an existing contact
         contact2 = Contact.get_or_create_from_urn(self.unicef, "tel:+27827654321")
         self.assertEqual(contact2, contact1)
 
         # we shouldn't update the backend because a contact wasn't created
-        self.assertFalse(mock_push_contact.called)
+        self.assertFalse(mock_resolve_urn.called)
 
         # URN will be normalized
         contact3 = Contact.get_or_create_from_urn(self.unicef, "tel:+(278)-2765-4321")
         self.assertEqual(contact3, contact1)
 
         # we shouldn't update the backend because a contact wasn't created
-        self.assertFalse(mock_push_contact.called)
+        self.assertFalse(mock_resolve_urn.called)
 
         # we get an exception if URN isn't valid (e.g. local number)
         self.assertRaises(InvalidURN, Contact.get_or_create_from_urn, self.unicef, "tel:0827654321")

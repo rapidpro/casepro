@@ -52,7 +52,7 @@ namespace('utils', (exports) ->
       rejectFn(v)
 
   exports.formatUrns = (urns) ->
-    scheme_names = {'tel': "Phone", 'mailto': "Email", 'twitter': "Twitter"}
+    scheme_names = {'tel': "Phone", 'mailto': "Email", 'twitter': "Twitter", 'whatsapp': "WhatsApp"}
     formatted_urns = []
     for urn in urns
       urn_parts = urn.split(':')

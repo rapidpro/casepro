@@ -55,6 +55,7 @@ class ContactSyncerTest(BaseCasesTest):
                 "uuid": "C-001",
                 "name": "Bob McFlow",
                 "language": "eng",
+                "urns": ["twitter:bobflow"],
                 "is_blocked": False,
                 "is_stopped": False,
                 "is_stub": False,
@@ -91,6 +92,27 @@ class ContactSyncerTest(BaseCasesTest):
         local.is_stub = False
         local.fields = {"chat_name": "ann"}
         local.save()
+
+        # urns need to be added to contact
+        self.assertTrue(
+            self.syncer.update_required(
+                local,
+                TembaContact.create(
+                    uuid="000-001",
+                    name="Ann",
+                    urns=["tel:1234"],
+                    groups=[ObjectRef.create(uuid="G-003", name="Reporters")],
+                    fields={"chat_name": "ann", "age": None},
+                    language="eng",
+                    blocked=False,
+                    stopped=False,
+                    modified_on=now(),
+                ),
+                {},
+            )
+        )
+
+        local.urns = ["tel:1234"]
 
         # no differences (besides null field value which is ignored)
         self.assertFalse(
@@ -487,7 +509,7 @@ class RapidProBackendTest(BaseCasesTest):
         self.assertEqual(bob.get_fields(), {"age": "35"})
 
         mock_get_contacts.side_effect = [
-            # first call to get active contacts will return a contact with only a change to URNs.. which we don't track
+            # first call to get active contacts will return a contact with only a change to URNs
             MockClientQuery(
                 [
                     TembaContact.create(
@@ -505,8 +527,8 @@ class RapidProBackendTest(BaseCasesTest):
             MockClientQuery([]),
         ]
 
-        with self.assertNumQueries(3):
-            self.assertEqual(self.backend.pull_contacts(self.unicef, None, None), (0, 0, 0, 1, None))
+        with self.assertNumQueries(4):
+            self.assertEqual(self.backend.pull_contacts(self.unicef, None, None), (0, 1, 0, 0, None))
 
         self.assertEqual(set(Contact.objects.filter(is_active=True)), {bob, ann})
         self.assertEqual(set(Contact.objects.filter(is_active=False)), {jim})
@@ -865,15 +887,34 @@ class RapidProBackendTest(BaseCasesTest):
         )
         mock_create_broadcast.reset_mock()
 
-    def test_push_contact(self):
+    @patch("dash.orgs.models.TembaClient.get_contacts")
+    @patch("dash.orgs.models.TembaClient.create_contact")
+    def test_resolve_urn(self, mock_create_contact, mock_get_contacts):
         """
-        Pushing a new contact should be a noop.
+        If a contact is added in CasePro if the contact doesnt exist in RapidPro,
+        it must be added
         """
-        self.bob.refresh_from_db()
-        old_bob = self.bob.__dict__.copy()
-        self.backend.push_contact(self.unicef, self.bob)
-        self.bob.refresh_from_db()
-        self.assertEqual(self.bob.__dict__, old_bob)
+        # Contact does exist in RapidPro
+        mock_get_contacts.return_value = MockClientQuery([TembaContact.create(uuid="1", urns=["tel:1234"])])
+        mock_create_contact.return_value = None
+
+        self.ann.urns = ["tel:+1234"]
+        self.ann.save()
+        self.backend.resolve_urn(self.unicef, self.ann.urns[0])
+
+        mock_get_contacts.assert_called_once_with(urn="tel:+1234")
+        self.assertNotCalled(mock_create_contact)
+
+        # Contact doesn't exist in RapidPro
+        mock_get_contacts.return_value = MockClientQuery([])
+        mock_create_contact.return_value = TembaContact.create(uuid="1")
+
+        self.ann.urns = ["tel:+1234"]
+        self.ann.save()
+        self.backend.resolve_urn(self.unicef, self.ann.urns[0])
+
+        mock_get_contacts.assert_called_with(urn="tel:+1234")
+        mock_create_contact.assert_called_once_with(urns=["tel:+1234"])
 
     @patch("dash.orgs.models.TembaClient.bulk_add_contacts")
     def test_add_to_group(self, mock_add_contacts):
