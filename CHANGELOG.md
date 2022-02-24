@@ -1,3 +1,9 @@
+v1.10.0
+----------
+ * Bump handlebars from 4.7.6 to 4.7.7
+ * Add whatsapp as a valid urn scheme
+ * Implement push contacts for RapidPro and sync contact urns
+
 v1.9.2
 ----------
  * Bump django from 4.0.1 to 4.0.2
