@@ -22,10 +22,6 @@ if TESTING:
 else:
     DEBUG = True
 
-ADMINS = (("Nyaruka", "code@nyaruka.com"),)
-
-MANAGERS = ADMINS
-
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
