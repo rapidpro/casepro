@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('profiles', '0009_generate_api_tokens'),
+        ("profiles", "0009_generate_api_tokens"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='profile',
-            name='email_valid',
+            model_name="profile",
+            name="email_valid",
             field=models.BooleanField(default=True),
         ),
     ]

@@ -34,9 +34,7 @@ class Profile(models.Model):
 
     full_name = models.CharField(verbose_name=_("Full name"), max_length=128, null=True)
 
-    change_password = models.BooleanField(
-        default=False, help_text=_("User must change password on next login")
-    )
+    change_password = models.BooleanField(default=False, help_text=_("User must change password on next login"))
 
     must_use_faq = models.BooleanField(
         default=False,
@@ -46,9 +44,7 @@ class Profile(models.Model):
     email_valid = models.BooleanField(default=True)
 
     @classmethod
-    def create_user(
-        cls, name, email, password, change_password=False, must_use_faq=False
-    ):
+    def create_user(cls, name, email, password, change_password=False, must_use_faq=False):
         """
         Creates an un-attached user
         """
@@ -68,9 +64,7 @@ class Profile(models.Model):
         return user
 
     @classmethod
-    def create_org_user(
-        cls, org, name, email, password, change_password=False, must_use_faq=False
-    ):
+    def create_org_user(cls, org, name, email, password, change_password=False, must_use_faq=False):
         """
         Creates an org-level user (for now these are always admins)
         """
@@ -139,9 +133,7 @@ class Notification(models.Model):
 
     org = models.ForeignKey(Org, on_delete=models.PROTECT)
 
-    user = models.ForeignKey(
-        User, related_name="notifications", on_delete=models.PROTECT
-    )
+    user = models.ForeignKey(User, related_name="notifications", on_delete=models.PROTECT)
 
     type = models.CharField(max_length=1)
 
@@ -155,40 +147,28 @@ class Notification(models.Model):
 
     @classmethod
     def new_message_labelling(cls, org, user, message):
-        return cls.objects.get_or_create(
-            org=org, user=user, type=cls.TYPE_MESSAGE_LABELLING, message=message
-        )
+        return cls.objects.get_or_create(org=org, user=user, type=cls.TYPE_MESSAGE_LABELLING, message=message)
 
     @classmethod
     def new_case_assignment(cls, org, user, case_action):
-        return cls.objects.get_or_create(
-            org=org, user=user, type=cls.TYPE_CASE_ASSIGNMENT, case_action=case_action
-        )
+        return cls.objects.get_or_create(org=org, user=user, type=cls.TYPE_CASE_ASSIGNMENT, case_action=case_action)
 
     @classmethod
     def new_case_action(cls, org, user, case_action):
-        return cls.objects.get_or_create(
-            org=org, user=user, type=cls.TYPE_CASE_ACTION, case_action=case_action
-        )
+        return cls.objects.get_or_create(org=org, user=user, type=cls.TYPE_CASE_ACTION, case_action=case_action)
 
     @classmethod
     def new_case_reply(cls, org, user, message):
-        return cls.objects.get_or_create(
-            org=org, user=user, type=cls.TYPE_CASE_REPLY, message=message
-        )
+        return cls.objects.get_or_create(org=org, user=user, type=cls.TYPE_CASE_REPLY, message=message)
 
     @classmethod
     def send_all(cls):
         unsent = cls.objects.filter(is_sent=False)
-        unsent = unsent.select_related(
-            "org", "user", "message", "case_action"
-        ).order_by("created_on")
+        unsent = unsent.select_related("org", "user", "message", "case_action").order_by("created_on")
 
         for notification in unsent:
             type_name = cls.TYPE_NAME[notification.type]
-            subject, template, context = getattr(
-                notification, "_build_%s_email" % type_name
-            )()
+            subject, template, context = getattr(notification, "_build_%s_email" % type_name)()
             template_path = "profiles/email/%s" % template
 
             if notification.user.email_valid():
@@ -198,9 +178,7 @@ class Notification(models.Model):
 
     def _build_message_labelling_email(self):
         context = {
-            "labels": set(self.user.watched_labels.all()).intersection(
-                self.message.labels.all()
-            ),
+            "labels": set(self.user.watched_labels.all()).intersection(self.message.labels.all()),
             "inbox_url": self.org.make_absolute_url(reverse("cases.inbox")),
         }
         return _("New labelled message"), "message_labelling", context
@@ -209,9 +187,7 @@ class Notification(models.Model):
         case = self.case_action.case
         context = {
             "user": self.case_action.created_by,
-            "case_url": self.org.make_absolute_url(
-                reverse("cases.case_read", args=[case.pk])
-            ),
+            "case_url": self.org.make_absolute_url(reverse("cases.case_read", args=[case.pk])),
         }
         return _("New case assignment #%d") % case.pk, "case_assignment", context
 
@@ -221,9 +197,7 @@ class Notification(models.Model):
             "user": self.case_action.created_by,
             "note": self.case_action.note,
             "assignee": self.case_action.assignee,
-            "case_url": self.org.make_absolute_url(
-                reverse("cases.case_read", args=[case.pk])
-            ),
+            "case_url": self.org.make_absolute_url(reverse("cases.case_read", args=[case.pk])),
         }
 
         if self.case_action.action == CaseAction.ADD_NOTE:
@@ -239,20 +213,13 @@ class Notification(models.Model):
             subject = _("Case #%d was reassigned") % case.pk
             template = "case_reassigned"
         else:  # pragma: no cover
-            raise ValueError(
-                "Notifications not supported for case action type %s"
-                % self.case_action.action
-            )
+            raise ValueError("Notifications not supported for case action type %s" % self.case_action.action)
 
         return subject, template, context
 
     def _build_case_reply_email(self):
         case = self.message.case
-        context = {
-            "case_url": self.org.make_absolute_url(
-                reverse("cases.case_read", args=[case.pk])
-            )
-        }
+        context = {"case_url": self.org.make_absolute_url(reverse("cases.case_read", args=[case.pk]))}
         return _("New reply in case #%d") % case.pk, "case_reply", context
 
 
@@ -277,11 +244,7 @@ def _user_get_full_name(user):
     """
     Override regular get_full_name which returns first_name + last_name
     """
-    return (
-        user.profile.full_name
-        if user.has_profile()
-        else " ".join([user.first_name, user.last_name]).strip()
-    )
+    return user.profile.full_name if user.has_profile() else " ".join([user.first_name, user.last_name]).strip()
 
 
 def _user_get_partner(user, org):
@@ -396,9 +359,7 @@ def _user_can_edit(user, org, other):
         return True
 
     other_partner = other.get_partner(org)
-    return other_partner and user.can_manage(
-        other_partner
-    )  # manager can edit users in same partner org
+    return other_partner and user.can_manage(other_partner)  # manager can edit users in same partner org
 
 
 def _user_must_use_faq(user):

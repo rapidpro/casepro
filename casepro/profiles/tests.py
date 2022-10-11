@@ -56,9 +56,7 @@ class NotificationTest(BaseCasesTest):
         self.aids.watch(self.admin)
         self.pregnancy.watch(self.user1)
         msg1 = self.create_message(self.unicef, 101, self.ann, "Hello", [self.aids])
-        msg2 = self.create_message(
-            self.unicef, 102, self.ann, "Hello", [self.pregnancy]
-        )
+        msg2 = self.create_message(self.unicef, 102, self.ann, "Hello", [self.pregnancy])
 
         send_notifications()
 
@@ -101,10 +99,7 @@ class NotificationTest(BaseCasesTest):
                     [self.admin],
                     "New reply in case #%d" % case1.pk,
                     "profiles/email/case_reply",
-                    {
-                        "case_url": "http://unicef.localhost:8000/case/read/%d/"
-                        % case1.pk
-                    },
+                    {"case_url": "http://unicef.localhost:8000/case/read/%d/" % case1.pk},
                 )
             ]
         )
@@ -128,8 +123,7 @@ class NotificationTest(BaseCasesTest):
                         "user": self.user1,
                         "note": "General note",
                         "assignee": None,
-                        "case_url": "http://unicef.localhost:8000/case/read/%d/"
-                        % case1.pk,
+                        "case_url": "http://unicef.localhost:8000/case/read/%d/" % case1.pk,
                     },
                 ),
                 call(
@@ -140,8 +134,7 @@ class NotificationTest(BaseCasesTest):
                         "user": self.user1,
                         "note": "Close note",
                         "assignee": None,
-                        "case_url": "http://unicef.localhost:8000/case/read/%d/"
-                        % case1.pk,
+                        "case_url": "http://unicef.localhost:8000/case/read/%d/" % case1.pk,
                     },
                 ),
                 call(
@@ -152,8 +145,7 @@ class NotificationTest(BaseCasesTest):
                         "user": self.user1,
                         "note": None,
                         "assignee": None,
-                        "case_url": "http://unicef.localhost:8000/case/read/%d/"
-                        % case1.pk,
+                        "case_url": "http://unicef.localhost:8000/case/read/%d/" % case1.pk,
                     },
                 ),
                 call(
@@ -164,8 +156,7 @@ class NotificationTest(BaseCasesTest):
                         "user": self.admin,
                         "note": None,
                         "assignee": self.who,
-                        "case_url": "http://unicef.localhost:8000/case/read/%d/"
-                        % case1.pk,
+                        "case_url": "http://unicef.localhost:8000/case/read/%d/" % case1.pk,
                     },
                 ),
                 call(
@@ -174,8 +165,7 @@ class NotificationTest(BaseCasesTest):
                     "profiles/email/case_assignment",
                     {
                         "user": self.admin,
-                        "case_url": "http://unicef.localhost:8000/case/read/%d/"
-                        % case1.pk,
+                        "case_url": "http://unicef.localhost:8000/case/read/%d/" % case1.pk,
                     },
                 ),
             ]
@@ -211,30 +201,22 @@ class ProfileTest(BaseCasesTest):
         self.assertIsNotNone(user1.password)
 
         # create org-level user
-        user2 = Profile.create_org_user(
-            self.unicef, "Cary McCase", "cary@unicef.org", "Qwerty123"
-        )
+        user2 = Profile.create_org_user(self.unicef, "Cary McCase", "cary@unicef.org", "Qwerty123")
         self.assertIn(user2, self.unicef.administrators.all())
         self.assertFalse(user2.partners.all())
 
         # create partner-level manager user
-        user3 = Profile.create_partner_user(
-            self.unicef, self.moh, ROLE_MANAGER, "Mo Cases", "mo@moh.com", "Qwerty123"
-        )
+        user3 = Profile.create_partner_user(self.unicef, self.moh, ROLE_MANAGER, "Mo Cases", "mo@moh.com", "Qwerty123")
         self.assertIn(user3, self.unicef.editors.all())
         self.assertIn(user3, self.moh.users.all())
 
         # create partner-level analyst user
-        user4 = Profile.create_partner_user(
-            self.unicef, self.moh, ROLE_ANALYST, "Jo Cases", "jo@moh.com", "Qwerty123"
-        )
+        user4 = Profile.create_partner_user(self.unicef, self.moh, ROLE_ANALYST, "Jo Cases", "jo@moh.com", "Qwerty123")
         self.assertIn(user4, self.unicef.viewers.all())
         self.assertIn(user4, self.moh.users.all())
 
         # test creating user with long email
-        user5 = Profile.create_user(
-            "Lou", "lou123456789012345678901234567890@moh.com", "Qwerty123"
-        )
+        user5 = Profile.create_user("Lou", "lou123456789012345678901234567890@moh.com", "Qwerty123")
         self.assertEqual(user5.email, "lou123456789012345678901234567890@moh.com")
 
 
@@ -301,14 +283,10 @@ class UserTest(BaseCasesTest):
         self.assertIn(self.user1, self.nyaruka.viewers.all())
 
         # error if partner provided for non-partner role
-        self.assertRaises(
-            ValueError, self.user1.update_role, self.unicef, ROLE_ADMIN, self.who
-        )
+        self.assertRaises(ValueError, self.user1.update_role, self.unicef, ROLE_ADMIN, self.who)
 
         # error if no partner provided for partner role
-        self.assertRaises(
-            ValueError, self.user1.update_role, self.unicef, ROLE_MANAGER, None
-        )
+        self.assertRaises(ValueError, self.user1.update_role, self.unicef, ROLE_MANAGER, None)
 
         # set user2 as the primary_contact for moh
         self.moh.primary_contact = self.user2
@@ -424,9 +402,7 @@ class UserTest(BaseCasesTest):
         # setup case which users are watching
         ann = self.create_contact(self.unicef, "C-001", "Ann")
         msg = self.create_message(self.unicef, 101, ann, "Hello", [self.aids])
-        case = self.create_case(
-            self.unicef, ann, self.moh, msg, [self.aids], summary="Summary"
-        )
+        case = self.create_case(self.unicef, ann, self.moh, msg, [self.aids], summary="Summary")
         case.watchers.add(self.admin, self.user1)
 
         # add our admin as a partner user in a different org
@@ -470,9 +446,7 @@ class UserTest(BaseCasesTest):
 
         # assure the primary_contact relationship has been removed
         self.assertEqual(self.klab.primary_contact, None)
-        self.assertEqual(
-            0, self.admin.partners_primary.filter(org=self.nyaruka).count()
-        )
+        self.assertEqual(0, self.admin.partners_primary.filter(org=self.nyaruka).count())
 
     def test_str(self):
         self.assertEqual(str(self.superuser), "testroot")
@@ -510,9 +484,7 @@ class UserCRUDLTest(BaseCasesTest):
         )
 
         user = User.objects.get(email="mcadmin@casely.com")
-        self.assertRedirects(
-            response, "/user/read/%d/" % user.pk, fetch_redirect_response=False
-        )
+        self.assertRedirects(response, "/user/read/%d/" % user.pk, fetch_redirect_response=False)
 
         self.assertEqual(user.get_full_name(), "McAdmin")
         self.assertEqual(user.username, "mcadmin@casely.com")
@@ -549,9 +521,7 @@ class UserCRUDLTest(BaseCasesTest):
         )
 
         user = User.objects.get(email="adrian@casely.com")
-        self.assertRedirects(
-            response, "/user/read/%d/" % user.pk, fetch_redirect_response=False
-        )
+        self.assertRedirects(response, "/user/read/%d/" % user.pk, fetch_redirect_response=False)
 
         self.assertEqual(user.get_full_name(), "Adrian Admin")
         self.assertEqual(user.username, "adrian@casely.com")
@@ -606,9 +576,7 @@ class UserCRUDLTest(BaseCasesTest):
                 "confirm_password": "password123",
             },
         )
-        self.assertFormError(
-            response, "form", "password", "This password is too common."
-        )
+        self.assertFormError(response, "form", "password", "This password is too common.")
 
         # submit again with valid password but mismatched confirmation
         response = self.url_post(
@@ -623,9 +591,7 @@ class UserCRUDLTest(BaseCasesTest):
                 "confirm_password": "Azerty23456!",
             },
         )
-        self.assertFormError(
-            response, "form", "confirm_password", "Passwords don't match."
-        )
+        self.assertFormError(response, "form", "confirm_password", "Passwords don't match.")
 
         # submit again with valid password and confirmation
         response = self.url_post(
@@ -642,9 +608,7 @@ class UserCRUDLTest(BaseCasesTest):
         )
 
         user = User.objects.get(email="mo@casely.com")
-        self.assertRedirects(
-            response, "/user/read/%d/" % user.pk, fetch_redirect_response=False
-        )
+        self.assertRedirects(response, "/user/read/%d/" % user.pk, fetch_redirect_response=False)
 
         # check new user and profile
         self.assertEqual(user.profile.full_name, "Mo Cases")
@@ -701,9 +665,7 @@ class UserCRUDLTest(BaseCasesTest):
         )
 
         user = User.objects.get(email="mo@casely.com")
-        self.assertRedirects(
-            response, "/user/read/%d/" % user.pk, fetch_redirect_response=False
-        )
+        self.assertRedirects(response, "/user/read/%d/" % user.pk, fetch_redirect_response=False)
 
         self.assertEqual(user.get_partner(self.unicef), self.moh)
 
@@ -809,6 +771,7 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(self.user2.profile.full_name, "Richard")
         self.assertEqual(self.user2.profile.change_password, True)
         self.assertEqual(self.user2.profile.must_use_faq, True)
+        self.assertEqual(self.user2.profile.email_valid, True)
         self.assertEqual(self.user2.email, "rick@unicef.org")
         self.assertEqual(self.user2.username, "rick@unicef.org")
         self.assertIn(self.user2, self.unicef.viewers.all())
@@ -841,6 +804,10 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertFormError(response, "form", "role", "This field is required.")
         self.assertFormError(response, "form", "email", "This field is required.")
 
+        # mark email as invalid to check this is reset when it changes
+        self.user2.profile.email_valid = False
+        self.user2.profile.save(update_fields=("email_valid",))
+
         # submit with all required fields
         response = self.url_post(
             "unicef",
@@ -858,6 +825,7 @@ class UserCRUDLTest(BaseCasesTest):
         self.user2.refresh_from_db()
         self.user2.profile.refresh_from_db()
         self.assertEqual(self.user2.profile.full_name, "Bill")
+        self.assertEqual(self.user2.profile.email_valid, True)
         self.assertEqual(self.user2.email, "bill@unicef.org")
         self.assertEqual(self.user2.username, "bill@unicef.org")
         self.assertNotIn(self.user2, self.unicef.viewers.all())
@@ -956,6 +924,7 @@ class UserCRUDLTest(BaseCasesTest):
         self.user2.refresh_from_db()
         self.user2.profile.refresh_from_db()
         self.assertEqual(self.user2.profile.full_name, "Bob")
+        self.assertEqual(self.user2.profile.email_valid, True)
         self.assertEqual(self.user2.email, "bob@unicef.org")
         self.assertEqual(self.user2.username, "bob@unicef.org")
         self.assertNotIn(self.user2, self.unicef.viewers.all())
@@ -975,9 +944,7 @@ class UserCRUDLTest(BaseCasesTest):
         self.login(self.superuser)
 
         # can view a user outside of org, tho can't delete because there is no org
-        response = self.url_get(
-            None, reverse("profiles.user_read", args=[self.admin.pk])
-        )
+        response = self.url_get(None, reverse("profiles.user_read", args=[self.admin.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.context["edit_button_url"],
@@ -989,19 +956,13 @@ class UserCRUDLTest(BaseCasesTest):
         self.login(self.admin)
 
         # view our own profile
-        response = self.url_get(
-            "unicef", reverse("profiles.user_read", args=[self.admin.pk])
-        )
+        response = self.url_get("unicef", reverse("profiles.user_read", args=[self.admin.pk]))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.context["edit_button_url"], reverse("profiles.user_self")
-        )
+        self.assertEqual(response.context["edit_button_url"], reverse("profiles.user_self"))
         self.assertFalse(response.context["can_delete"])
 
         # view other user's profile
-        response = self.url_get(
-            "unicef", reverse("profiles.user_read", args=[self.user1.pk])
-        )
+        response = self.url_get("unicef", reverse("profiles.user_read", args=[self.user1.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.context["edit_button_url"],
@@ -1010,28 +971,20 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertTrue(response.context["can_delete"])
 
         # try to view user from other org
-        response = self.url_get(
-            "unicef", reverse("profiles.user_read", args=[self.user4.pk])
-        )
+        response = self.url_get("unicef", reverse("profiles.user_read", args=[self.user4.pk]))
         self.assertEqual(response.status_code, 404)
 
         # log in as a manager user
         self.login(self.user1)
 
         # view ourselves (can edit)
-        response = self.url_get(
-            "unicef", reverse("profiles.user_read", args=[self.user1.pk])
-        )
+        response = self.url_get("unicef", reverse("profiles.user_read", args=[self.user1.pk]))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.context["edit_button_url"], reverse("profiles.user_self")
-        )
+        self.assertEqual(response.context["edit_button_url"], reverse("profiles.user_self"))
         self.assertFalse(response.context["can_delete"])
 
         # view another user in same partner org (can edit)
-        response = self.url_get(
-            "unicef", reverse("profiles.user_read", args=[self.user2.pk])
-        )
+        response = self.url_get("unicef", reverse("profiles.user_read", args=[self.user2.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.context["edit_button_url"],
@@ -1040,36 +993,26 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertTrue(response.context["can_delete"])
 
         # can't view user in different partner org
-        response = self.url_get(
-            "unicef", reverse("profiles.user_read", args=[self.user3.pk])
-        )
+        response = self.url_get("unicef", reverse("profiles.user_read", args=[self.user3.pk]))
         self.assertEqual(response.status_code, 404)
 
         # log in as an analyst user
         self.login(self.user2)
 
         # view ourselves (can edit)
-        response = self.url_get(
-            "unicef", reverse("profiles.user_read", args=[self.user2.pk])
-        )
+        response = self.url_get("unicef", reverse("profiles.user_read", args=[self.user2.pk]))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.context["edit_button_url"], reverse("profiles.user_self")
-        )
+        self.assertEqual(response.context["edit_button_url"], reverse("profiles.user_self"))
         self.assertFalse(response.context["can_delete"])
 
         # view another user in same partner org (can't edit)
-        response = self.url_get(
-            "unicef", reverse("profiles.user_read", args=[self.user1.pk])
-        )
+        response = self.url_get("unicef", reverse("profiles.user_read", args=[self.user1.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertIsNone(response.context["edit_button_url"])
         self.assertFalse(response.context["can_delete"])
 
         # can't view user in different partner org
-        response = self.url_get(
-            "unicef", reverse("profiles.user_read", args=[self.user3.pk])
-        )
+        response = self.url_get("unicef", reverse("profiles.user_read", args=[self.user3.pk]))
         self.assertEqual(response.status_code, 404)
 
     def test_list(self):
@@ -1181,9 +1124,7 @@ class UserCRUDLTest(BaseCasesTest):
             "now",
             return_value=datetime(2016, 5, 20, 9, 0, tzinfo=timezone.utc),
         ):
-            response = self.url_get(
-                "unicef", url + "?partner=%d&with_activity=true" % self.moh.pk
-            )
+            response = self.url_get("unicef", url + "?partner=%d&with_activity=true" % self.moh.pk)
 
         self.assertEqual(
             response.json["results"],
@@ -1256,14 +1197,13 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertFormError(response, "form", "email", "This field is required.")
 
         # submit with all required fields entered
-        response = self.url_post(
-            "unicef", url, {"name": "Morris", "email": "mo2@trac.com"}
-        )
+        response = self.url_post("unicef", url, {"name": "Morris", "email": "mo2@trac.com"})
         self.assertEqual(response.status_code, 302)
 
         # check updated user and profile
         user = User.objects.get(pk=self.user1.pk)
         self.assertEqual(user.profile.full_name, "Morris")
+        self.assertEqual(user.profile.email_valid, True)
         self.assertEqual(user.email, "mo2@trac.com")
         self.assertEqual(user.username, "mo2@trac.com")
 
@@ -1296,9 +1236,7 @@ class UserCRUDLTest(BaseCasesTest):
                 "confirm_password": "Qwerty12345!",
             },
         )
-        self.assertFormError(
-            response, "form", "current_password", "Please enter your current password."
-        )
+        self.assertFormError(response, "form", "current_password", "Please enter your current password.")
 
         # submit with new password but wrong current password
         response = self.url_post(
@@ -1312,9 +1250,7 @@ class UserCRUDLTest(BaseCasesTest):
                 "confirm_password": "Qwerty12345!",
             },
         )
-        self.assertFormError(
-            response, "form", "current_password", "Please enter your current password."
-        )
+        self.assertFormError(response, "form", "current_password", "Please enter your current password.")
 
         # submit with all required fields entered and valid password fields
         old_password_hash = user.password
@@ -1341,13 +1277,9 @@ class UserCRUDLTest(BaseCasesTest):
         self.user1.profile.save()
 
         # submit without password
-        response = self.url_post(
-            "unicef", url, {"name": "Morris", "email": "mo2@trac.com"}
-        )
+        response = self.url_post("unicef", url, {"name": "Morris", "email": "mo2@trac.com"})
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(
-            response, "form", "new_password", "This field is required."
-        )
+        self.assertFormError(response, "form", "new_password", "This field is required.")
 
         # submit again with new password but no confirmation
         response = self.url_post(
@@ -1356,9 +1288,7 @@ class UserCRUDLTest(BaseCasesTest):
             {"name": "Morris", "email": "mo2@trac.com", "new_password": "Qwerty12345!"},
         )
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(
-            response, "form", "confirm_password", "Passwords don't match."
-        )
+        self.assertFormError(response, "form", "confirm_password", "Passwords don't match.")
 
         # submit again with new password and confirmation
         response = self.url_post(
@@ -1384,59 +1314,41 @@ class UserCRUDLTest(BaseCasesTest):
         # partner data analyst can't delete anyone
         self.login(self.user2)
 
-        response = self.url_post(
-            "unicef", reverse("profiles.user_delete", args=[self.admin.pk])
-        )
+        response = self.url_post("unicef", reverse("profiles.user_delete", args=[self.admin.pk]))
         self.assertEqual(response.status_code, 302)
 
-        response = self.url_post(
-            "unicef", reverse("profiles.user_delete", args=[self.user1.pk])
-        )
+        response = self.url_post("unicef", reverse("profiles.user_delete", args=[self.user1.pk]))
         self.assertEqual(response.status_code, 302)
 
         # partner manager can delete fellow partner org users but not org admins
         self.login(self.user1)
 
-        response = self.url_post(
-            "unicef", reverse("profiles.user_delete", args=[self.user2.pk])
-        )
+        response = self.url_post("unicef", reverse("profiles.user_delete", args=[self.user2.pk]))
         self.assertEqual(response.status_code, 204)
         self.assertIsNone(self.unicef.get_user_org_group(self.user2))
 
-        response = self.url_post(
-            "unicef", reverse("profiles.user_delete", args=[self.admin.pk])
-        )
+        response = self.url_post("unicef", reverse("profiles.user_delete", args=[self.admin.pk]))
         self.assertEqual(response.status_code, 302)
 
         # admins can delete anyone in their org
         self.login(self.admin)
 
-        response = self.url_post(
-            "unicef", reverse("profiles.user_delete", args=[self.user1.pk])
-        )
+        response = self.url_post("unicef", reverse("profiles.user_delete", args=[self.user1.pk]))
         self.assertEqual(response.status_code, 204)
         self.assertIsNone(self.unicef.get_user_org_group(self.user1))
 
         # but not in a different org
-        response = self.url_post(
-            "unicef", reverse("profiles.user_delete", args=[self.norbert.pk])
-        )
+        response = self.url_post("unicef", reverse("profiles.user_delete", args=[self.norbert.pk]))
         self.assertEqual(response.status_code, 404)
 
         # and not themselves
-        response = self.url_post(
-            "unicef", reverse("profiles.user_delete", args=[self.admin.pk])
-        )
+        response = self.url_post("unicef", reverse("profiles.user_delete", args=[self.admin.pk]))
         self.assertEqual(response.status_code, 302)
 
     def test_login(self):
         # test that logins are case-insensitive but passwords aren't
-        self.assertTrue(
-            self.client.login(username="KIDUS@UNICEF.org", password="kidus@unicef.org")
-        )
-        self.assertFalse(
-            self.client.login(username="KIDUS@UNICEF.org", password="KIDUS@UNICEF.org")
-        )
+        self.assertTrue(self.client.login(username="KIDUS@UNICEF.org", password="kidus@unicef.org"))
+        self.assertFalse(self.client.login(username="KIDUS@UNICEF.org", password="KIDUS@UNICEF.org"))
 
 
 class ForcePasswordChangeMiddlewareTest(BaseCasesTest):
