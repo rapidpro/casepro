@@ -37,8 +37,11 @@ class Profile(models.Model):
     change_password = models.BooleanField(default=False, help_text=_("User must change password on next login"))
 
     must_use_faq = models.BooleanField(
-        default=False, help_text=_("User is only allowed to reply with pre-approved responses")
+        default=False,
+        help_text=_("User is only allowed to reply with pre-approved responses"),
     )
+
+    is_email_valid = models.BooleanField(default=True)
 
     @classmethod
     def create_user(cls, name, email, password, change_password=False, must_use_faq=False):
@@ -141,7 +144,8 @@ class Notification(models.Model):
             subject, template, context = getattr(notification, "_build_%s_email" % type_name)()
             template_path = "profiles/email/%s" % template
 
-            send_email([notification.user], str(subject), template_path, context)
+            if notification.user.is_email_valid():
+                send_email([notification.user], str(subject), template_path, context)
 
         unsent.update(is_sent=True)
 
@@ -341,6 +345,13 @@ def _user_must_use_faq(user):
         return False
 
 
+def _user_is_email_valid(user) -> bool:
+    """
+    Whether this user's email address is valid
+    """
+    return user.profile.is_email_valid if user.has_profile() else False
+
+
 def _user_str(user):
     if user.has_profile():
         if user.profile.full_name:
@@ -384,4 +395,5 @@ User.can_edit = _user_can_edit
 User.remove_from_org = _user_remove_from_org
 User.as_json = _user_as_json
 User.must_use_faq = _user_must_use_faq
+User.is_email_valid = _user_is_email_valid
 User.__str__ = _user_str

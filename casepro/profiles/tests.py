@@ -153,6 +153,16 @@ class NotificationTest(BaseCasesTest):
 
         self.assertNotCalled(mock_send_email)
 
+        # no emails sent to users where is_email_valid=False
+        self.admin.profile.is_email_valid = False
+        self.admin.profile.save(update_fields=("is_email_valid",))
+
+        self.create_message(self.unicef, 103, self.ann, "Hola", [self.aids])
+
+        send_notifications()
+
+        self.assertNotCalled(mock_send_email)
+
 
 class ProfileTest(BaseCasesTest):
     def test_create_user(self):
@@ -726,6 +736,7 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(self.user2.profile.full_name, "Richard")
         self.assertEqual(self.user2.profile.change_password, True)
         self.assertEqual(self.user2.profile.must_use_faq, True)
+        self.assertEqual(self.user2.profile.is_email_valid, True)
         self.assertEqual(self.user2.email, "rick@unicef.org")
         self.assertEqual(self.user2.username, "rick@unicef.org")
         self.assertIn(self.user2, self.unicef.viewers.all())
@@ -758,6 +769,10 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertFormError(response, "form", "role", "This field is required.")
         self.assertFormError(response, "form", "email", "This field is required.")
 
+        # mark email as invalid to check this is reset when it changes
+        self.user2.profile.is_email_valid = False
+        self.user2.profile.save(update_fields=("is_email_valid",))
+
         # submit with all required fields
         response = self.url_post(
             "unicef", url, {"name": "Bill", "email": "bill@unicef.org", "partner": self.who.pk, "role": ROLE_MANAGER}
@@ -768,6 +783,7 @@ class UserCRUDLTest(BaseCasesTest):
         self.user2.refresh_from_db()
         self.user2.profile.refresh_from_db()
         self.assertEqual(self.user2.profile.full_name, "Bill")
+        self.assertEqual(self.user2.profile.is_email_valid, True)
         self.assertEqual(self.user2.email, "bill@unicef.org")
         self.assertEqual(self.user2.username, "bill@unicef.org")
         self.assertNotIn(self.user2, self.unicef.viewers.all())
@@ -847,6 +863,7 @@ class UserCRUDLTest(BaseCasesTest):
         self.user2.refresh_from_db()
         self.user2.profile.refresh_from_db()
         self.assertEqual(self.user2.profile.full_name, "Bob")
+        self.assertEqual(self.user2.profile.is_email_valid, True)
         self.assertEqual(self.user2.email, "bob@unicef.org")
         self.assertEqual(self.user2.username, "bob@unicef.org")
         self.assertNotIn(self.user2, self.unicef.viewers.all())
@@ -1098,6 +1115,7 @@ class UserCRUDLTest(BaseCasesTest):
         # check updated user and profile
         user = User.objects.get(pk=self.user1.pk)
         self.assertEqual(user.profile.full_name, "Morris")
+        self.assertEqual(user.profile.is_email_valid, True)
         self.assertEqual(user.email, "mo2@trac.com")
         self.assertEqual(user.username, "mo2@trac.com")
 

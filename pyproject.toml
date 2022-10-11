@@ -36,6 +36,9 @@ polib = "^1.1.0"
 codecov = "^2.1.11"
 colorama = "^0.4.4"
 
+[tool.black]
+line-length = 119
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"

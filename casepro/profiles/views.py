@@ -35,6 +35,11 @@ class UserUpdateMixin(OrgFormMixin):
             initial["partner"] = self.object.get_partner(self.request.org)
         return initial
 
+    def pre_save(self, obj):
+        obj._email_changed = User.objects.get(pk=obj.id).email != self.form.cleaned_data["email"]
+
+        return super().pre_save(obj)
+
     def post_save(self, obj):
         obj = super().post_save(obj)
         data = self.form.cleaned_data
@@ -42,7 +47,8 @@ class UserUpdateMixin(OrgFormMixin):
         obj.profile.full_name = data["name"]
         obj.profile.change_password = data.get("change_password", False)
         obj.profile.must_use_faq = data.get("must_use_faq", False)
-        obj.profile.save(update_fields=("full_name", "change_password", "must_use_faq"))
+        obj.profile.is_email_valid = obj._email_changed or obj.profile.is_email_valid
+        obj.profile.save(update_fields=("full_name", "change_password", "must_use_faq", "is_email_valid"))
 
         if "role" in data:
             role = data["role"]
@@ -92,7 +98,7 @@ class UserCRUDL(SmartCRUDL):
                     "must_use_faq",
                 )
             else:
-                return "name", "email", "password", "confirm_password", "change_password", "must_use_faq"
+                return ("name", "email", "password", "confirm_password", "change_password", "must_use_faq")
 
         def save(self, obj):
             org = self.request.org
