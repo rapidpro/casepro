@@ -98,14 +98,7 @@ class UserCRUDL(SmartCRUDL):
                     "must_use_faq",
                 )
             else:
-                return (
-                    "name",
-                    "email",
-                    "password",
-                    "confirm_password",
-                    "change_password",
-                    "must_use_faq",
-                )
+                return ("name", "email", "password", "confirm_password", "change_password", "must_use_faq")
 
         def save(self, obj):
             org = self.request.org
@@ -121,14 +114,7 @@ class UserCRUDL(SmartCRUDL):
 
                 if partner:
                     self.object = Profile.create_partner_user(
-                        org,
-                        partner,
-                        role,
-                        name,
-                        email,
-                        password,
-                        change_password,
-                        must_use_faq,
+                        org, partner, role, name, email, password, change_password, must_use_faq
                     )
                 else:
                     self.object = Profile.create_org_user(org, name, email, password, change_password, must_use_faq)
@@ -145,15 +131,7 @@ class UserCRUDL(SmartCRUDL):
 
         permission = "profiles.profile_user_create_in"
         form_class = PartnerUserForm
-        fields = (
-            "name",
-            "role",
-            "email",
-            "password",
-            "confirm_password",
-            "change_password",
-            "must_use_faq",
-        )
+        fields = ("name", "role", "email", "password", "confirm_password", "change_password", "must_use_faq")
 
         @classmethod
         def derive_url_pattern(cls, path, action):
@@ -212,13 +190,7 @@ class UserCRUDL(SmartCRUDL):
 
         def derive_fields(self):
             profile_fields = ["name"]
-            user_fields = [
-                "email",
-                "new_password",
-                "confirm_password",
-                "change_password",
-                "must_use_faq",
-            ]
+            user_fields = ["email", "new_password", "confirm_password", "change_password", "must_use_faq"]
 
             if self.request.org:
                 user_partner = self.request.user.get_partner(self.request.org)
@@ -238,13 +210,7 @@ class UserCRUDL(SmartCRUDL):
         """
 
         form_class = UserForm
-        fields = (
-            "name",
-            "email",
-            "current_password",
-            "new_password",
-            "confirm_password",
-        )
+        fields = ("name", "email", "current_password", "new_password", "confirm_password")
         success_url = "@cases.inbox"
         success_message = _("Profile updated")
         title = _("Edit My Profile")

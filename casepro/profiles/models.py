@@ -54,12 +54,7 @@ class Profile(models.Model):
         user.save()
 
         # add profile
-        cls.objects.create(
-            user=user,
-            full_name=name,
-            change_password=change_password,
-            must_use_faq=must_use_faq,
-        )
+        cls.objects.create(user=user, full_name=name, change_password=change_password, must_use_faq=must_use_faq)
 
         return user
 
@@ -68,41 +63,19 @@ class Profile(models.Model):
         """
         Creates an org-level user (for now these are always admins)
         """
-        user = cls.create_user(
-            name,
-            email,
-            password,
-            change_password=change_password,
-            must_use_faq=must_use_faq,
-        )
+        user = cls.create_user(name, email, password, change_password=change_password, must_use_faq=must_use_faq)
         user.update_role(org, ROLE_ADMIN)
         return user
 
     @classmethod
-    def create_partner_user(
-        cls,
-        org,
-        partner,
-        role,
-        name,
-        email,
-        password,
-        change_password=False,
-        must_use_faq=False,
-    ):
+    def create_partner_user(cls, org, partner, role, name, email, password, change_password=False, must_use_faq=False):
         """
         Creates a partner-level user
         """
         if not partner or partner.org != org:  # pragma: no cover
             raise ValueError("Can't create partner user without valid partner for org")
 
-        user = cls.create_user(
-            name,
-            email,
-            password,
-            change_password=change_password,
-            must_use_faq=must_use_faq,
-        )
+        user = cls.create_user(name, email, password, change_password=change_password, must_use_faq=must_use_faq)
         user.update_role(org, role, partner)
         return user
 

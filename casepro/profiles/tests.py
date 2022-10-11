@@ -27,29 +27,14 @@ class NotificationTest(BaseCasesTest):
 
         msg.label(self.aids)
 
-        Notification.objects.get(
-            user=self.admin,
-            message=msg,
-            type=Notification.TYPE_MESSAGE_LABELLING,
-            is_sent=False,
-        )
+        Notification.objects.get(user=self.admin, message=msg, type=Notification.TYPE_MESSAGE_LABELLING, is_sent=False)
 
         # adding more labels won't create new notification for this message and user
         msg.label(self.pregnancy, self.aids)
 
         self.assertEqual(Notification.objects.count(), 2)
-        Notification.objects.get(
-            user=self.admin,
-            message=msg,
-            type=Notification.TYPE_MESSAGE_LABELLING,
-            is_sent=False,
-        )
-        Notification.objects.get(
-            user=self.user1,
-            message=msg,
-            type=Notification.TYPE_MESSAGE_LABELLING,
-            is_sent=False,
-        )
+        Notification.objects.get(user=self.admin, message=msg, type=Notification.TYPE_MESSAGE_LABELLING, is_sent=False)
+        Notification.objects.get(user=self.user1, message=msg, type=Notification.TYPE_MESSAGE_LABELLING, is_sent=False)
 
     @patch("casepro.profiles.models.send_email")
     def test_send_all(self, mock_send_email):
@@ -69,19 +54,13 @@ class NotificationTest(BaseCasesTest):
                     [self.admin],
                     "New labelled message",
                     "profiles/email/message_labelling",
-                    {
-                        "labels": {self.aids},
-                        "inbox_url": "http://unicef.localhost:8000/",
-                    },
+                    {"labels": {self.aids}, "inbox_url": "http://unicef.localhost:8000/"},
                 ),
                 call(
                     [self.user1],
                     "New labelled message",
                     "profiles/email/message_labelling",
-                    {
-                        "labels": {self.pregnancy},
-                        "inbox_url": "http://unicef.localhost:8000/",
-                    },
+                    {"labels": {self.pregnancy}, "inbox_url": "http://unicef.localhost:8000/"},
                 ),
             ]
         )
@@ -163,10 +142,7 @@ class NotificationTest(BaseCasesTest):
                     [self.user3],
                     "New case assignment #%d" % case1.pk,
                     "profiles/email/case_assignment",
-                    {
-                        "user": self.admin,
-                        "case_url": "http://unicef.localhost:8000/case/read/%d/" % case1.pk,
-                    },
+                    {"user": self.admin, "case_url": "http://unicef.localhost:8000/case/read/%d/" % case1.pk},
                 ),
             ]
         )
@@ -557,10 +533,7 @@ class UserCRUDLTest(BaseCasesTest):
             },
         )
         self.assertFormError(
-            response,
-            "form",
-            "password",
-            "This password is too short. It must contain at least 10 characters.",
+            response, "form", "password", "This password is too short. It must contain at least 10 characters."
         )
 
         # submit again with all required fields but password that is too common
@@ -740,15 +713,7 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             set(response.context["form"].fields.keys()),
-            {
-                "name",
-                "email",
-                "new_password",
-                "confirm_password",
-                "change_password",
-                "must_use_faq",
-                "loc",
-            },
+            {"name", "email", "new_password", "confirm_password", "change_password", "must_use_faq", "loc"},
         )
 
         # submit with all required fields, updating name
@@ -810,14 +775,7 @@ class UserCRUDLTest(BaseCasesTest):
 
         # submit with all required fields
         response = self.url_post(
-            "unicef",
-            url,
-            {
-                "name": "Bill",
-                "email": "bill@unicef.org",
-                "partner": self.who.pk,
-                "role": ROLE_MANAGER,
-            },
+            "unicef", url, {"name": "Bill", "email": "bill@unicef.org", "partner": self.who.pk, "role": ROLE_MANAGER}
         )
         self.assertEqual(response.status_code, 302)
 
@@ -846,10 +804,7 @@ class UserCRUDLTest(BaseCasesTest):
             },
         )
         self.assertFormError(
-            response,
-            "form",
-            "new_password",
-            "This password is too short. It must contain at least 10 characters.",
+            response, "form", "new_password", "This password is too short. It must contain at least 10 characters."
         )
 
         # submit with old email, valid password, and switch back to being analyst for MOH
@@ -877,14 +832,7 @@ class UserCRUDLTest(BaseCasesTest):
 
         # try giving user someone else's email address
         response = self.url_post(
-            "unicef",
-            url,
-            {
-                "name": "Bill",
-                "email": "evan@unicef.org",
-                "partner": self.moh.pk,
-                "role": ROLE_ANALYST,
-            },
+            "unicef", url, {"name": "Bill", "email": "evan@unicef.org", "partner": self.moh.pk, "role": ROLE_ANALYST}
         )
         self.assertFormError(response, "form", None, "Email address already taken.")
 
@@ -896,16 +844,7 @@ class UserCRUDLTest(BaseCasesTest):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             set(response.context["form"].fields.keys()),
-            {
-                "name",
-                "email",
-                "role",
-                "new_password",
-                "confirm_password",
-                "change_password",
-                "must_use_faq",
-                "loc",
-            },
+            {"name", "email", "role", "new_password", "confirm_password", "change_password", "must_use_faq", "loc"},
         )
 
         # update partner colleague
@@ -946,10 +885,7 @@ class UserCRUDLTest(BaseCasesTest):
         # can view a user outside of org, tho can't delete because there is no org
         response = self.url_get(None, reverse("profiles.user_read", args=[self.admin.pk]))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.context["edit_button_url"],
-            reverse("profiles.user_update", args=[self.admin.pk]),
-        )
+        self.assertEqual(response.context["edit_button_url"], reverse("profiles.user_update", args=[self.admin.pk]))
         self.assertFalse(response.context["can_delete"])
 
         # log in as an org administrator
@@ -964,10 +900,7 @@ class UserCRUDLTest(BaseCasesTest):
         # view other user's profile
         response = self.url_get("unicef", reverse("profiles.user_read", args=[self.user1.pk]))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.context["edit_button_url"],
-            reverse("profiles.user_update", args=[self.user1.pk]),
-        )
+        self.assertEqual(response.context["edit_button_url"], reverse("profiles.user_update", args=[self.user1.pk]))
         self.assertTrue(response.context["can_delete"])
 
         # try to view user from other org
@@ -986,10 +919,7 @@ class UserCRUDLTest(BaseCasesTest):
         # view another user in same partner org (can edit)
         response = self.url_get("unicef", reverse("profiles.user_read", args=[self.user2.pk]))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.context["edit_button_url"],
-            reverse("profiles.user_update", args=[self.user2.pk]),
-        )
+        self.assertEqual(response.context["edit_button_url"], reverse("profiles.user_update", args=[self.user2.pk]))
         self.assertTrue(response.context["can_delete"])
 
         # can't view user in different partner org
@@ -1043,13 +973,7 @@ class UserCRUDLTest(BaseCasesTest):
                     "role": "M",
                     "partner": {"id": self.moh.pk, "name": "MOH"},
                 },
-                {
-                    "id": self.admin.pk,
-                    "name": "Kidus",
-                    "email": "kidus@unicef.org",
-                    "role": "A",
-                    "partner": None,
-                },
+                {"id": self.admin.pk, "name": "Kidus", "email": "kidus@unicef.org", "role": "A", "partner": None},
                 {
                     "id": self.user2.pk,
                     "name": "Rick",
@@ -1086,15 +1010,7 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_get("unicef", url + "?non_partner=true")
         self.assertEqual(
             response.json["results"],
-            [
-                {
-                    "id": self.admin.pk,
-                    "name": "Kidus",
-                    "email": "kidus@unicef.org",
-                    "role": "A",
-                    "partner": None,
-                }
-            ],
+            [{"id": self.admin.pk, "name": "Kidus", "email": "kidus@unicef.org", "role": "A", "partner": None}],
         )
 
         # add some reply activity
@@ -1119,11 +1035,7 @@ class UserCRUDLTest(BaseCasesTest):
         )  # Mar 20th
 
         # simulate making request in May
-        with patch.object(
-            timezone,
-            "now",
-            return_value=datetime(2016, 5, 20, 9, 0, tzinfo=timezone.utc),
-        ):
+        with patch.object(timezone, "now", return_value=datetime(2016, 5, 20, 9, 0, tzinfo=timezone.utc)):
             response = self.url_get("unicef", url + "?partner=%d&with_activity=true" % self.moh.pk)
 
         self.assertEqual(
@@ -1211,18 +1123,10 @@ class UserCRUDLTest(BaseCasesTest):
         response = self.url_post(
             "unicef",
             url,
-            {
-                "name": "Morris",
-                "email": "mo2@trac.com",
-                "new_password": "123",
-                "confirm_password": "123",
-            },
+            {"name": "Morris", "email": "mo2@trac.com", "new_password": "123", "confirm_password": "123"},
         )
         self.assertFormError(
-            response,
-            "form",
-            "new_password",
-            "This password is too short. It must contain at least 10 characters.",
+            response, "form", "new_password", "This password is too short. It must contain at least 10 characters."
         )
 
         # submit with new password but not current password
@@ -1283,9 +1187,7 @@ class UserCRUDLTest(BaseCasesTest):
 
         # submit again with new password but no confirmation
         response = self.url_post(
-            "unicef",
-            url,
-            {"name": "Morris", "email": "mo2@trac.com", "new_password": "Qwerty12345!"},
+            "unicef", url, {"name": "Morris", "email": "mo2@trac.com", "new_password": "Qwerty12345!"}
         )
         self.assertEqual(response.status_code, 200)
         self.assertFormError(response, "form", "confirm_password", "Passwords don't match.")
