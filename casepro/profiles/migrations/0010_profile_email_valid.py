@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name="profile",
-            name="email_valid",
+            name="is_email_valid",
             field=models.BooleanField(default=True),
         ),
     ]

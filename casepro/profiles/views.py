@@ -47,8 +47,8 @@ class UserUpdateMixin(OrgFormMixin):
         obj.profile.full_name = data["name"]
         obj.profile.change_password = data.get("change_password", False)
         obj.profile.must_use_faq = data.get("must_use_faq", False)
-        obj.profile.email_valid = obj._email_changed or obj.profile.email_valid
-        obj.profile.save(update_fields=("full_name", "change_password", "must_use_faq", "email_valid"))
+        obj.profile.is_email_valid = obj._email_changed or obj.profile.is_email_valid
+        obj.profile.save(update_fields=("full_name", "change_password", "must_use_faq", "is_email_valid"))
 
         if "role" in data:
             role = data["role"]

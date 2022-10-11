@@ -41,7 +41,7 @@ class Profile(models.Model):
         help_text=_("User is only allowed to reply with pre-approved responses"),
     )
 
-    email_valid = models.BooleanField(default=True)
+    is_email_valid = models.BooleanField(default=True)
 
     @classmethod
     def create_user(cls, name, email, password, change_password=False, must_use_faq=False):
@@ -144,7 +144,7 @@ class Notification(models.Model):
             subject, template, context = getattr(notification, "_build_%s_email" % type_name)()
             template_path = "profiles/email/%s" % template
 
-            if notification.user.email_valid():
+            if notification.user.is_email_valid():
                 send_email([notification.user], str(subject), template_path, context)
 
         unsent.update(is_sent=True)
@@ -345,11 +345,11 @@ def _user_must_use_faq(user):
         return False
 
 
-def _user_email_valid(user) -> bool:
+def _user_is_email_valid(user) -> bool:
     """
     Whether this user's email address is valid
     """
-    return user.profile.email_valid if user.has_profile() else False
+    return user.profile.is_email_valid if user.has_profile() else False
 
 
 def _user_str(user):
@@ -395,5 +395,5 @@ User.can_edit = _user_can_edit
 User.remove_from_org = _user_remove_from_org
 User.as_json = _user_as_json
 User.must_use_faq = _user_must_use_faq
-User.email_valid = _user_email_valid
+User.is_email_valid = _user_is_email_valid
 User.__str__ = _user_str
