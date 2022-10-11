@@ -1,3 +1,9 @@
+v1.11.0
+----------
+ * Add is_email_valid flag to profile which we can use to disable sending notifications to broken emails
+ * Bump django from 4.0.2 to 4.0.6
+ * Bump pillow from 9.0.0 to 9.0.1
+
 v1.10.0
 ----------
  * Bump handlebars from 4.7.6 to 4.7.7
