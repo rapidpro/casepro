@@ -1,3 +1,7 @@
+v1.11.2 (2022-12-12)
+-------------------------
+ * Merge pull request #391 from rapidpro/python3.10
+
 v1.11.0
 ----------
  * Add is_email_valid flag to profile which we can use to disable sending notifications to broken emails
