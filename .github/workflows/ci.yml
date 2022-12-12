@@ -4,9 +4,11 @@ jobs:
   test:
     name: Test
     env:
-      python-version: "3.9.x"
       pg-version: "14"
       redis-version: "6.2"
+    strategy:
+      matrix:
+        python-version: ["3.9.x", "3.10.x"]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -28,7 +30,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v1
         with:
-          python-version: ${{ env.python-version }}
+          python-version: ${{ matrix.python-version }}
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
