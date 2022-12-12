@@ -4,7 +4,7 @@
   "repository": "git@github.com:rapidpro/casepro.git",
   "license": "BSD-3-Clause",
   "dependencies": {
-    "coffee-script": "1.10.0",
+    "coffeescript": "2.7.0",
     "less": "2.7.1"
   },
   "devDependencies": {
