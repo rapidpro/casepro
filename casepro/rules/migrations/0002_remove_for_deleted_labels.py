@@ -1,4 +1,4 @@
-from django.db import migrations, models
+from django.db import migrations
 
 
 def remove_rules_for_deleted_labels(apps, schema_editor):

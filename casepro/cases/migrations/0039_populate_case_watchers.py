@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals
 
-from django.db import migrations, models
+from django.db import migrations
 
 
 def populate_case_watchers(apps, schema_editor):

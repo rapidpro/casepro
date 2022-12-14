@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals
 
-from django.db import migrations, models
+from django.db import migrations
 
 
 def fix_admins_with_partners(apps, schema_editor):

@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 from math import ceil
 
-from django.db import migrations, models
+from django.db import migrations
 
 
 def get_partner(org, user):
