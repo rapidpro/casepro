@@ -6,7 +6,7 @@ authors = ["Nyaruka <code@nyaruka.com>"]
 license = "BSD-3"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 rapidpro-dash = "^1.9.2"
 smartmin = "^4.0.0"
 Django = "^4.0.8"

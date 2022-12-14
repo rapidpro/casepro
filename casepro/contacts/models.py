@@ -413,6 +413,12 @@ class Contact(models.Model):
 
         self.org.get_backend().archive_contact_messages(self.org, self)
 
+    def has_rapidpro_ticket(self) -> bool:
+        for group in self.groups.all():
+            if group.name == "Open Tickets":
+                return True
+        return False
+
     def release(self):
         """
         Deletes this contact, removing them from any groups they were part of

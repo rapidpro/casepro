@@ -140,6 +140,15 @@ class ContactTest(BaseCasesTest):
         self.assertEqual(self.ann.get_fields(), {"age": "32", "state": "WA"})  # what is stored on the contact
         self.assertEqual(self.ann.get_fields(visible=True), {"nickname": None, "age": "32"})  # visible fields
 
+    def test_has_rapidpro_ticket(self):
+        open_tickets = Group.objects.create(org=self.unicef, name="Open Tickets", is_dynamic=True)
+
+        self.assertFalse(self.ann.has_rapidpro_ticket())
+
+        self.ann.groups.add(open_tickets)
+
+        self.assertTrue(self.ann.has_rapidpro_ticket())
+
     def test_release(self):
         self.create_message(self.unicef, 101, self.ann, "Hello")
         self.create_message(self.unicef, 102, self.ann, "Goodbye")

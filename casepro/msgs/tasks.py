@@ -80,6 +80,7 @@ def handle_messages(org):
 
     case_replies = []
     num_rules_matched = 0
+    ignored_with_ticket = 0
 
     # fetch all unhandled messages who now have full contacts
     unhandled = Message.get_unhandled(org).filter(contact__is_stub=False)
@@ -91,12 +92,15 @@ def handle_messages(org):
 
         for msg in unhandled:
             open_case = Case.get_open_for_contact_on(org, msg.contact, msg.created_on)
+            has_ticket = msg.contact.has_rapidpro_ticket()
 
-            # only apply rules if there isn't a currently open case for this contact
+            # only apply rules if there isn't a currently open case for this contact or open ticket in RapidPro
             if open_case:
                 open_case.add_reply(msg)
 
                 case_replies.append(msg)
+            elif has_ticket:
+                ignored_with_ticket += 1
             else:
                 rules_matched, actions_deferred = rule_processor.include_messages(msg)
                 num_rules_matched += rules_matched
@@ -110,7 +114,12 @@ def handle_messages(org):
         # mark all of these messages as handled
         Message.objects.filter(pk__in=[m.pk for m in unhandled]).update(is_handled=True, modified_on=timezone.now())
 
-    return {"handled": len(unhandled), "rules_matched": num_rules_matched, "case_replies": len(case_replies)}
+    return {
+        "handled": len(unhandled), 
+        "rules_matched": num_rules_matched, 
+        "case_replies": len(case_replies), 
+        "ignored_with_ticket": ignored_with_ticket
+    }
 
 
 @shared_task
