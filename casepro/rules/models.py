@@ -4,13 +4,12 @@ from collections import defaultdict
 from enum import Enum
 
 import regex
+from celery.utils.log import get_task_logger
 from dash.orgs.models import Org
 from dash.utils import get_obj_cacheable
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-
-from celery.utils.log import get_task_logger
 
 from casepro.contacts.models import Group
 from casepro.msgs.models import Label, Message

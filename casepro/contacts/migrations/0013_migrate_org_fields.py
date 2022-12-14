@@ -3,7 +3,7 @@ from __future__ import print_function, unicode_literals
 
 import json
 
-from django.db import migrations, models
+from django.db import migrations
 
 
 def migrate_contact_fields(apps, schema_editor):

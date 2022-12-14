@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.timezone import now
 
-from casepro.contacts.models import Contact
+from casepro.contacts.models import Contact, Group
 from casepro.msgs.views import ImportTask
 from casepro.profiles.models import Notification
 from casepro.rules.models import ContainsTest, FieldTest, GroupsTest, Quantifier, WordCountTest
@@ -2212,12 +2212,15 @@ class TasksTest(BaseCasesTest):
     @patch("casepro.test.TestBackend.label_messages")
     @patch("casepro.test.TestBackend.archive_messages")
     def test_handle_messages(self, mock_archive_messages, mock_label_messages):
+        open_tickets = Group.objects.create(org=self.unicef, name="Open Tickets", is_dynamic=True)
+
         ann = self.create_contact(self.unicef, "C-001", "Ann")
         bob = self.create_contact(self.unicef, "C-002", "Bob")
         cat = self.create_contact(self.unicef, "C-003", "Cat")
         don = self.create_contact(self.unicef, "C-004", "Don")
         eve = self.create_contact(self.unicef, "C-005", "Eve")
         fra = self.create_contact(self.unicef, "C-006", "Fra", is_stub=True)
+        guy = self.create_contact(self.unicef, "C-007", "Guy", groups=(open_tickets,))
         nic = self.create_contact(self.nyaruka, "C-0101", "Nic")
 
         d1 = datetime(2014, 1, 1, 7, 0, tzinfo=timezone.utc)
@@ -2232,18 +2235,19 @@ class TasksTest(BaseCasesTest):
         msg4 = self.create_message(self.unicef, 104, don, "Php is amaze", created_on=d4)
         msg5 = self.create_message(self.unicef, 105, eve, "Thanks for the pregnancy/HIV info", created_on=d5)
         msg6 = self.create_message(self.unicef, 106, fra, "HIV", created_on=d5)
-        msg7 = self.create_message(self.nyaruka, 201, nic, "HIV", created_on=d5)
+        msg7 = self.create_message(self.unicef, 107, guy, "HIV", created_on=d5)
+        msg8 = self.create_message(self.nyaruka, 201, nic, "HIV", created_on=d5)
 
         # contact #5 has a case open that day
-        msg8 = self.create_message(self.unicef, 108, eve, "Start case", created_on=d1, is_handled=True)
-        case1 = self.create_case(self.unicef, eve, self.moh, msg8)
+        msg9 = self.create_message(self.unicef, 109, eve, "Start case", created_on=d1, is_handled=True)
+        case1 = self.create_case(self.unicef, eve, self.moh, msg9)
         case1.opened_on = d1
         case1.save()
 
         handle_messages(self.unicef.pk)
 
-        self.assertEqual(set(Message.objects.filter(is_handled=True)), {msg1, msg2, msg3, msg4, msg5, msg8})
-        self.assertEqual(set(Message.objects.filter(is_handled=False)), {msg6, msg7})  # stub contact and wrong org
+        self.assertEqual(set(Message.objects.filter(is_handled=True)), {msg1, msg2, msg3, msg4, msg5, msg7, msg9})
+        self.assertEqual(set(Message.objects.filter(is_handled=False)), {msg6, msg8})  # stub contact and wrong org
 
         # check labelling
         self.assertEqual(set(msg1.labels.all()), {self.aids})
@@ -2262,12 +2266,18 @@ class TasksTest(BaseCasesTest):
 
         # check task result
         task_state = self.unicef.get_task_state("message-handle")
-        self.assertEqual(task_state.get_last_results(), {"handled": 5, "case_replies": 1, "rules_matched": 3})
+        self.assertEqual(
+            task_state.get_last_results(),
+            {"handled": 6, "case_replies": 1, "rules_matched": 3, "ignored_with_ticket": 1},
+        )
 
         # check calling again...
         handle_messages(self.unicef.pk)
         task_state = self.unicef.get_task_state("message-handle")
-        self.assertEqual(task_state.get_last_results(), {"handled": 0, "case_replies": 0, "rules_matched": 0})
+        self.assertEqual(
+            task_state.get_last_results(),
+            {"handled": 0, "case_replies": 0, "rules_matched": 0, "ignored_with_ticket": 0},
+        )
 
     def test_trim_old_messages(self):
         ann = self.create_contact(self.unicef, "C-001", "Ann")

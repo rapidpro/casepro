@@ -6,7 +6,7 @@ authors = ["Nyaruka <code@nyaruka.com>"]
 license = "BSD-3"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 rapidpro-dash = "^1.9.2"
 smartmin = "^4.0.0"
 Django = "^4.0.8"
@@ -28,16 +28,48 @@ boto3 = "^1.17.11"
 sentry-sdk = "^0.20.3"
 
 [tool.poetry.dev-dependencies]
-black = "^21.11b1"
-isort = "^5.7.0"
-flake8 = "^3.8.4"
-coverage = "^5.4"
+black = "^22.12.0"
+coverage = {extras = ["toml"], version = "^6.5.0"}
+isort = "^5.10.1"
 polib = "^1.1.0"
 codecov = "^2.1.11"
 colorama = "^0.4.4"
+ruff = "^0.0.178"
 
 [tool.black]
 line-length = 119
+
+[tool.ruff]
+line-length = 120
+select = ["E", "F", "W"]
+ignore = ["E501", "E741", "F405"]
+fix = true
+
+[tool.isort]
+multi_line_output = 3
+force_grid_wrap = 0
+line_length = 119
+include_trailing_comma = true
+combine_as_imports = true
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "DJANGO", "FIRSTPARTY", "LOCALFOLDER"]
+known_django = ["django"]
+
+[tool.coverage.run]
+source = ["./casepro"]
+
+[tool.coverage.report]
+ignore_errors = true
+precision = 0
+show_missing = true
+skip_covered = true
+exclude_lines = [
+    "pragma: no cover",
+    "pragma: needs cover",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]
+omit = ["*/migrations/*", "*/tests*", "*settings*", "casepro/*/management/commands/*", "*/wsgi.py"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
