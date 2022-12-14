@@ -115,10 +115,10 @@ def handle_messages(org):
         Message.objects.filter(pk__in=[m.pk for m in unhandled]).update(is_handled=True, modified_on=timezone.now())
 
     return {
-        "handled": len(unhandled), 
-        "rules_matched": num_rules_matched, 
-        "case_replies": len(case_replies), 
-        "ignored_with_ticket": ignored_with_ticket
+        "handled": len(unhandled),
+        "rules_matched": num_rules_matched,
+        "case_replies": len(case_replies),
+        "ignored_with_ticket": ignored_with_ticket,
     }
 
 

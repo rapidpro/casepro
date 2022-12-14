@@ -2267,17 +2267,17 @@ class TasksTest(BaseCasesTest):
         # check task result
         task_state = self.unicef.get_task_state("message-handle")
         self.assertEqual(
-            task_state.get_last_results(), 
-            {"handled": 6, "case_replies": 1, "rules_matched": 3, "ignored_with_ticket": 1
-        })
+            task_state.get_last_results(),
+            {"handled": 6, "case_replies": 1, "rules_matched": 3, "ignored_with_ticket": 1},
+        )
 
         # check calling again...
         handle_messages(self.unicef.pk)
         task_state = self.unicef.get_task_state("message-handle")
         self.assertEqual(
-            task_state.get_last_results(), 
-            {"handled": 0, "case_replies": 0, "rules_matched": 0, "ignored_with_ticket": 0
-        })
+            task_state.get_last_results(),
+            {"handled": 0, "case_replies": 0, "rules_matched": 0, "ignored_with_ticket": 0},
+        )
 
     def test_trim_old_messages(self):
         ann = self.create_contact(self.unicef, "C-001", "Ann")
