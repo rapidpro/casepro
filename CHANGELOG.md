@@ -1,3 +1,9 @@
+v1.12.0 (2022-12-14)
+-------------------------
+ * Move coverage config to pyproject
+ * Use ruff insdtead of flake8
+ * Don't label messages for contacts with open tickets in RapidPro
+
 v1.11.2 (2022-12-12)
 -------------------------
  * Merge pull request #391 from rapidpro/python3.10
