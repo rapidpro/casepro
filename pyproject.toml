@@ -29,8 +29,8 @@ sentry-sdk = "^0.20.3"
 
 [tool.poetry.dev-dependencies]
 black = "^22.12.0"
-isort = "^5.7.0"
-coverage = "^5.4"
+coverage = {extras = ["toml"], version = "^6.5.0"}
+isort = "^5.10.1"
 polib = "^1.1.0"
 codecov = "^2.1.11"
 colorama = "^0.4.4"
@@ -53,6 +53,23 @@ include_trailing_comma = true
 combine_as_imports = true
 sections = ["FUTURE", "STDLIB", "THIRDPARTY", "DJANGO", "FIRSTPARTY", "LOCALFOLDER"]
 known_django = ["django"]
+
+[tool.coverage.run]
+source = ["./casepro"]
+
+[tool.coverage.report]
+ignore_errors = true
+precision = 0
+show_missing = true
+skip_covered = true
+exclude_lines = [
+    "pragma: no cover",
+    "pragma: needs cover",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]
+omit = ["*/migrations/*", "*/tests*", "*settings*", "casepro/*/management/commands/*", "*/wsgi.py"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
