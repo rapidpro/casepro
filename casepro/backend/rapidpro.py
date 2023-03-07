@@ -397,12 +397,13 @@ class RapidProBackend(BaseBackend):
 
         def remote_as_outgoing(msg):
             return Outgoing(
-                backend_broadcast_id=msg.broadcast, contact=contact, text=msg.text, created_on=msg.created_on
+                backend_id=msg.id,
+                backend_broadcast_id=msg.broadcast,
+                contact=contact,
+                text=msg.text,
+                created_on=msg.created_on,
             )
 
-        """
-                Fetches flows which can be used as a follow-up flow
-                """
         return [remote_as_outgoing(m) for m in remote_messages if m.direction == "out"]
 
     def fetch_flows(self, org):

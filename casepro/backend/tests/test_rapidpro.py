@@ -1076,6 +1076,7 @@ class RapidProBackendTest(BaseCasesTest):
 
         self.assertEqual(len(messages), 1)
         self.assertIsInstance(messages[0], Outgoing)
+        self.assertEqual(messages[0].backend_id, 102)
         self.assertEqual(messages[0].backend_broadcast_id, 201)
         self.assertEqual(messages[0].contact, self.ann)
         self.assertEqual(messages[0].text, "Welcome")
