@@ -798,29 +798,30 @@ class RapidProBackendTest(BaseCasesTest):
 
     @patch("casepro.backend.rapidpro.send_raw_email")
     @patch("dash.orgs.models.TembaClient.create_broadcast")
-    def test_push_outgoing(self, mock_create_broadcast, mock_send_raw_email):
+    @patch("dash.orgs.models.TembaClient.create_message")
+    def test_push_outgoing(self, mock_create_message, mock_create_broadcast, mock_send_raw_email):
         # test with replies sent separately
-        mock_create_broadcast.side_effect = [
-            TembaBroadcast.create(id=201, text="That's great", urns=[], contacts=["C-001"]),
-            TembaBroadcast.create(id=202, text="That's great", urns=[], contacts=["C-002"]),
+        mock_create_message.side_effect = [
+            TembaMessage.create(id=201, text="That's great", contact="C-001"),
+            TembaMessage.create(id=202, text="That's great", contact="C-002"),
         ]
 
         out1 = self.create_outgoing(self.unicef, self.user1, None, "B", "That's great", self.ann)
         out2 = self.create_outgoing(self.unicef, self.user1, None, "B", "That's great", self.bob)
         self.backend.push_outgoing(self.unicef, [out1, out2])
 
-        mock_create_broadcast.assert_has_calls(
+        mock_create_message.assert_has_calls(
             [
-                call(text="That's great", urns=[], contacts=["C-001"]),
-                call(text="That's great", urns=[], contacts=["C-002"]),
+                call(contact="C-001", text="That's great", attachments=[]),
+                call(contact="C-002", text="That's great", attachments=[]),
             ]
         )
-        mock_create_broadcast.reset_mock()
+        mock_create_message.reset_mock()
 
         out1.refresh_from_db()
         out2.refresh_from_db()
-        self.assertEqual(out1.backend_broadcast_id, 201)
-        self.assertEqual(out2.backend_broadcast_id, 202)
+        self.assertEqual(out1.backend_id, 201)
+        self.assertEqual(out2.backend_id, 202)
 
         # test with replies sent as single broadcast
         mock_create_broadcast.side_effect = [

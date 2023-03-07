@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('msgs', '0067_alter_messageexport_created_by_and_more'),
+        ("msgs", "0067_alter_messageexport_created_by_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='outgoing',
-            name='backend_id',
+            model_name="outgoing",
+            name="backend_id",
             field=models.IntegerField(null=True),
         ),
     ]
