@@ -771,6 +771,7 @@ class Outgoing(models.Model):
 
     text = models.TextField(max_length=800)
 
+    backend_id = models.IntegerField(null=True)
     backend_broadcast_id = models.IntegerField(null=True)
 
     contact = models.ForeignKey(
@@ -784,7 +785,6 @@ class Outgoing(models.Model):
     case = models.ForeignKey("cases.Case", null=True, related_name="outgoing_messages", on_delete=models.PROTECT)
 
     created_by = models.ForeignKey(User, related_name="outgoing_messages", on_delete=models.PROTECT)
-
     created_on = models.DateTimeField(default=now)
 
     @classmethod

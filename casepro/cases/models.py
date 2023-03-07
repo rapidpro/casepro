@@ -322,10 +322,11 @@ class Case(models.Model):
 
             # add any backend messages that don't exist locally
             if backend_messages:
+                local_backend_ids = {o.backend_id for o in local_outgoing if o.backend_id}
                 local_broadcast_ids = {o.backend_broadcast_id for o in local_outgoing if o.backend_broadcast_id}
 
                 for msg in backend_messages:
-                    if msg.backend_broadcast_id not in local_broadcast_ids:
+                    if msg.backend_id not in local_backend_ids and msg.backend_broadcast_id not in local_broadcast_ids:
                         timeline.append(TimelineItem(msg))
 
         # fetch and append actions

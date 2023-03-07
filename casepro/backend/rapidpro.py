@@ -325,12 +325,10 @@ class RapidProBackend(BaseBackend):
                 Outgoing.objects.filter(pk__in=[o.id for o in batch]).update(backend_broadcast_id=broadcast.id)
         else:
             for msg in for_backend:
-                contact_uuids = [msg.contact.uuid] if msg.contact else []
-                urns = [msg.urn] if msg.urn else []
-                broadcast = client.create_broadcast(text=msg.text, contacts=contact_uuids, urns=urns)
+                remote = client.create_message(contact=msg.contact.uuid, text=msg.text, attachments=[])
 
-                msg.backend_broadcast_id = broadcast.id
-                msg.save(update_fields=("backend_broadcast_id",))
+                msg.backend_id = remote.id
+                msg.save(update_fields=("backend_id",))
 
     def resolve_urn(self, org, normalized_urn):
         client = self._get_client(org)
@@ -397,12 +395,13 @@ class RapidProBackend(BaseBackend):
 
         def remote_as_outgoing(msg):
             return Outgoing(
-                backend_broadcast_id=msg.broadcast, contact=contact, text=msg.text, created_on=msg.created_on
+                backend_id=msg.id,
+                backend_broadcast_id=msg.broadcast,
+                contact=contact,
+                text=msg.text,
+                created_on=msg.created_on,
             )
 
-        """
-                Fetches flows which can be used as a follow-up flow
-                """
         return [remote_as_outgoing(m) for m in remote_messages if m.direction == "out"]
 
     def fetch_flows(self, org):
