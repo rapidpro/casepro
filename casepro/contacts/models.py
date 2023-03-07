@@ -209,6 +209,7 @@ class Field(models.Model):
     TEMBA_TYPES = {
         "text": TYPE_TEXT,
         "numeric": TYPE_DECIMAL,
+        "number": TYPE_DECIMAL,
         "datetime": TYPE_DATETIME,
         "state": TYPE_STATE,
         "district": TYPE_DISTRICT,
