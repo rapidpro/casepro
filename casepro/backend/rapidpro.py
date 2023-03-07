@@ -46,8 +46,8 @@ class ContactSyncer(BaseSyncer):
             "name": remote.name,
             "language": remote.language,
             "urns": remote.urns,
-            "is_blocked": remote.blocked,
-            "is_stopped": remote.stopped,
+            "is_blocked": remote.status == "blocked",
+            "is_stopped": remote.status == "stopped",
             "is_stub": False,
             "fields": fields,
             Contact.SAVE_GROUPS_ATTR: groups,
@@ -58,8 +58,8 @@ class ContactSyncer(BaseSyncer):
             local.is_stub
             or local.name != remote.name
             or local.language != remote.language
-            or local.is_blocked != remote.blocked
-            or local.is_stopped != remote.stopped
+            or local.is_blocked != (remote.status == "blocked")
+            or local.is_stopped != (remote.status == "stopped")
             or local.urns != remote.urns
         ):
             return True
@@ -86,12 +86,12 @@ class FieldSyncer(BaseSyncer):
         return {
             "org": org,
             "key": remote.key,
-            "label": remote.label,
-            "value_type": self.model.TEMBA_TYPES.get(remote.value_type, self.model.TYPE_TEXT),
+            "label": remote.name,
+            "value_type": self.model.TEMBA_TYPES.get(remote.type, self.model.TYPE_TEXT),
         }
 
     def update_required(self, local, remote, remote_as_kwargs):
-        return local.label != remote.label or local.value_type != self.model.TEMBA_TYPES.get(remote.value_type)
+        return local.label != remote.name or local.value_type != self.model.TEMBA_TYPES.get(remote.type)
 
 
 class GroupSyncer(BaseSyncer):

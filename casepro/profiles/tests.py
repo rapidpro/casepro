@@ -804,7 +804,14 @@ class UserCRUDLTest(BaseCasesTest):
             },
         )
         self.assertFormError(
-            response, "form", "new_password", "This password is too short. It must contain at least 10 characters."
+            response,
+            "form",
+            "new_password",
+            [
+                "This password is too short. It must contain at least 10 characters.",
+                "This password is too common.",
+                "This password is entirely numeric.",
+            ],
         )
 
         # submit with old email, valid password, and switch back to being analyst for MOH
@@ -1126,7 +1133,14 @@ class UserCRUDLTest(BaseCasesTest):
             {"name": "Morris", "email": "mo2@trac.com", "new_password": "123", "confirm_password": "123"},
         )
         self.assertFormError(
-            response, "form", "new_password", "This password is too short. It must contain at least 10 characters."
+            response,
+            "form",
+            "new_password",
+            [
+                "This password is too short. It must contain at least 10 characters.",
+                "This password is too common.",
+                "This password is entirely numeric.",
+            ],
         )
 
         # submit with new password but not current password

@@ -21,7 +21,7 @@ django-celery-email = "^3.0.0"
 django-compressor = "^4.0"
 django-el-pagination = "^3.3.0"
 django-storages = "^1.11.1"
-iso-639 = "^0.4.5"
+iso-639 = {git = "https://github.com/noumar/iso639.git", tag = "0.4.5"}  # https://github.com/python-poetry/poetry/issues/6996
 colorama = "^0.4.4"
 dj-database-url = "^0.5.0"
 boto3 = "^1.17.11"

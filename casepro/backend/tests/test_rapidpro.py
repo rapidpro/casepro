@@ -43,8 +43,7 @@ class ContactSyncerTest(BaseCasesTest):
                 urns=["twitter:bobflow"],
                 groups=[ObjectRef.create(uuid="G-001", name="Customers")],
                 fields={"age": "34"},
-                stopped=False,
-                blocked=False,
+                status="active",
             ),
         )
 
@@ -79,8 +78,7 @@ class ContactSyncerTest(BaseCasesTest):
                     groups=[],
                     fields={},
                     language=None,
-                    blocked=False,
-                    stopped=False,
+                    status="active",
                     modified_on=now(),
                 ),
                 {},
@@ -104,8 +102,7 @@ class ContactSyncerTest(BaseCasesTest):
                     groups=[ObjectRef.create(uuid="G-003", name="Reporters")],
                     fields={"chat_name": "ann", "age": None},
                     language="eng",
-                    blocked=False,
-                    stopped=False,
+                    status="active",
                     modified_on=now(),
                 ),
                 {},
@@ -125,8 +122,7 @@ class ContactSyncerTest(BaseCasesTest):
                     groups=[ObjectRef.create(uuid="G-003", name="Reporters")],
                     fields={"chat_name": "ann", "age": None},
                     language="eng",
-                    blocked=False,
-                    stopped=False,
+                    status="active",
                     modified_on=now(),
                 ),
                 {},
@@ -144,8 +140,7 @@ class ContactSyncerTest(BaseCasesTest):
                     groups=[ObjectRef.create(uuid="G-003", name="Reporters")],
                     fields={"chat_name": "ann"},
                     language="eng",
-                    blocked=False,
-                    stopped=False,
+                    status="active",
                     modified_on=now(),
                 ),
                 {},
@@ -163,8 +158,7 @@ class ContactSyncerTest(BaseCasesTest):
                     groups=[ObjectRef.create(uuid="G-002", name="Females")],
                     fields={"chat_name": "ann"},
                     language="eng",
-                    blocked=False,
-                    stopped=False,
+                    status="active",
                     modified_on=now(),
                 ),
                 {},
@@ -182,8 +176,7 @@ class ContactSyncerTest(BaseCasesTest):
                     groups=[ObjectRef.create(uuid="G-003", name="Reporters")],
                     fields={"chat_name": "ann8111"},
                     language="eng",
-                    blocked=False,
-                    stopped=False,
+                    status="active",
                     modified_on=now(),
                 ),
                 {},
@@ -201,8 +194,7 @@ class ContactSyncerTest(BaseCasesTest):
                     groups=[ObjectRef.create(uuid="G-003", name="Reporters")],
                     fields={"chat_name": "ann", "age": "35"},
                     language="eng",
-                    blocked=False,
-                    stopped=False,
+                    status="active",
                     modified_on=now(),
                 ),
                 {},
@@ -396,8 +388,7 @@ class RapidProBackendTest(BaseCasesTest):
                         urns=["twitter:bobflow"],
                         groups=[ObjectRef.create(uuid="G-001", name="Customers")],
                         fields={"age": "34"},
-                        stopped=False,
-                        blocked=False,
+                        status="active",
                     ),
                     TembaContact.create(
                         uuid="C-002",
@@ -406,8 +397,7 @@ class RapidProBackendTest(BaseCasesTest):
                         urns=["tel:+250783835665"],
                         groups=[ObjectRef.create(uuid="G-002", name="Spammers")],
                         fields={"age": "67"},
-                        stopped=False,
-                        blocked=False,
+                        status="active",
                     ),
                 ],
                 [
@@ -418,8 +408,7 @@ class RapidProBackendTest(BaseCasesTest):
                         urns=["tel:+250783835664"],
                         groups=[],
                         fields={"age": "35"},
-                        stopped=True,
-                        blocked=False,
+                        status="stopped",
                     )
                 ],
             ),
@@ -427,14 +416,7 @@ class RapidProBackendTest(BaseCasesTest):
             MockClientQuery(
                 [
                     TembaContact.create(
-                        uuid="C-004",
-                        name=None,
-                        language=None,
-                        urns=[],
-                        groups=[],
-                        fields=None,
-                        stopped=True,
-                        blocked=False,
+                        uuid="C-004", name=None, language=None, urns=[], groups=[], fields=None, status="stopped"
                     )
                 ]
             ),
@@ -472,8 +454,7 @@ class RapidProBackendTest(BaseCasesTest):
                         urns=["twitter:bobflow"],
                         groups=[ObjectRef.create(uuid="G-002", name="Spammers")],
                         fields={"age": "35"},
-                        stopped=True,
-                        blocked=False,
+                        status="stopped",
                     )
                 ]
             ),
@@ -481,14 +462,7 @@ class RapidProBackendTest(BaseCasesTest):
             MockClientQuery(
                 [
                     TembaContact.create(
-                        uuid="C-002",
-                        name=None,
-                        language=None,
-                        urns=[],
-                        groups=[],
-                        fields=None,
-                        stopped=True,
-                        blocked=False,
+                        uuid="C-002", name=None, language=None, urns=[], groups=[], fields=None, status="stopped"
                     )
                 ]
             ),
@@ -519,8 +493,7 @@ class RapidProBackendTest(BaseCasesTest):
                         urns=["twitter:bobflow22"],
                         groups=[ObjectRef.create(uuid="G-002", name="Spammers")],
                         fields={"age": "35"},
-                        stopped=True,
-                        blocked=False,
+                        status="stopped",
                     )
                 ]
             ),
@@ -540,8 +513,8 @@ class RapidProBackendTest(BaseCasesTest):
 
         mock_get_fields.return_value = MockClientQuery(
             [
-                TembaField.create(key="nick_name", label="Nickname", value_type="text"),
-                TembaField.create(key="age", label="Age", value_type="numeric"),
+                TembaField.create(key="nick_name", name="Nickname", type="text"),
+                TembaField.create(key="age", name="Age", type="number"),
             ]
         )
 
@@ -555,8 +528,8 @@ class RapidProBackendTest(BaseCasesTest):
 
         mock_get_fields.return_value = MockClientQuery(
             [
-                TembaField.create(key="age", label="Age (Years)", value_type="numeric"),
-                TembaField.create(key="homestate", label="Homestate", value_type="state"),
+                TembaField.create(key="age", name="Age (Years)", type="number"),
+                TembaField.create(key="homestate", name="Homestate", type="state"),
             ]
         )
 
@@ -1152,8 +1125,7 @@ class PerfTest(BaseCasesTest):
 
         # setup get_fields
         fields = [
-            TembaField.create(key="field_%d" % f, label="Field #%d" % f, value_type="text")
-            for f in range(0, num_fields)
+            TembaField.create(key="field_%d" % f, label="Field #%d" % f, type="text") for f in range(0, num_fields)
         ]
         mock_get_fields.return_value = MockClientQuery(fields)
 
@@ -1195,8 +1167,7 @@ class PerfTest(BaseCasesTest):
                         fields={
                             "custom_field_%d" % f: field_values[f % len(field_values)] for f in range(0, num_fields)
                         },
-                        stopped=False,
-                        blocked=False,
+                        status="active",
                     )
                 )
             active_fetches.append(batch)
