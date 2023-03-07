@@ -1,3 +1,8 @@
+v1.13.0 (2023-03-07)
+-------------------------
+ * Update dependencies
+ * Switch push_outgoing to use create_message for non-broadcasts
+
 v1.12.0 (2022-12-14)
 -------------------------
  * Move coverage config to pyproject
