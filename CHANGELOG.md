@@ -1,3 +1,7 @@
+v1.13.1 (2023-03-08)
+-------------------------
+ * Msg.backend_id needs to be a bigint
+
 v1.13.0 (2023-03-07)
 -------------------------
  * Update dependencies
