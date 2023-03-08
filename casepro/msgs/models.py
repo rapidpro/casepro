@@ -771,7 +771,7 @@ class Outgoing(models.Model):
 
     text = models.TextField(max_length=800)
 
-    backend_id = models.IntegerField(null=True)
+    backend_id = models.BigIntegerField(null=True)
     backend_broadcast_id = models.IntegerField(null=True)
 
     contact = models.ForeignKey(
