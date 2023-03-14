@@ -1,3 +1,8 @@
+v1.13.2 (2023-03-14)
+-------------------------
+ * Use flow field on synced mesages instead of msg_type
+ * Bump ua-parser-js from 0.7.32 to 0.7.33
+
 v1.13.1 (2023-03-08)
 -------------------------
  * Msg.backend_id needs to be a bigint
