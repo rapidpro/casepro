@@ -169,7 +169,7 @@ class MessageSyncer(BaseSyncer):
         kwargs = {
             "org": org,
             "backend_id": remote.id,
-            "type": "I" if remote.type == "inbox" else "F",
+            "type": Message.TYPE_FLOW if remote.flow else Message.TYPE_INBOX,
             "text": remote.text,
             "is_flagged": remote_message_is_flagged(remote),
             "is_archived": remote_message_is_archived(remote),

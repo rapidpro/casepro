@@ -223,11 +223,12 @@ class MessageSyncerTest(BaseCasesTest):
             contact=ObjectRef.create(uuid="C-001", name="Ann"),
             urn="twitter:ann123",
             direction="in",
-            type="inbox",
+            type="text",
             status="handled",
             visibility="visible",
             text="I have lots of questions!",
             labels=[ObjectRef.create(uuid="L-001", name="Spam"), ObjectRef.create(uuid="L-009", name="Flagged")],
+            flow=None,
             created_on=d1,
         )
 
@@ -280,7 +281,7 @@ class MessageSyncerTest(BaseCasesTest):
                     contact=ObjectRef.create(uuid="C-001", name="Ann"),
                     urn="twitter:ann123",
                     direction="in",
-                    type="inbox",
+                    type="text",
                     status="handled",
                     visibility="visible",
                     text="Yes",
@@ -303,7 +304,7 @@ class MessageSyncerTest(BaseCasesTest):
                     contact=ObjectRef.create(uuid="C-001", name="Ann"),
                     urn="twitter:ann123",
                     direction="in",
-                    type="inbox",
+                    type="text",
                     status="handled",
                     visibility="archived",
                     text="Yes",
@@ -323,7 +324,7 @@ class MessageSyncerTest(BaseCasesTest):
                     contact=ObjectRef.create(uuid="C-001", name="Ann"),
                     urn="twitter:ann123",
                     direction="in",
-                    type="inbox",
+                    type="text",
                     status="handled",
                     visibility="archived",
                     text="Yes",
@@ -343,7 +344,7 @@ class MessageSyncerTest(BaseCasesTest):
                     contact=ObjectRef.create(uuid="C-001", name="Ann"),
                     urn="twitter:ann123",
                     direction="in",
-                    type="inbox",
+                    type="text",
                     status="handled",
                     visibility="visible",
                     text="Yes",
@@ -655,7 +656,7 @@ class RapidProBackendTest(BaseCasesTest):
                     TembaMessage.create(
                         id=101,
                         contact=ObjectRef.create(uuid="C-001", name="Ann"),
-                        type="inbox",
+                        type="text",
                         text="What is aids?",
                         visibility="visible",
                         labels=[
@@ -667,7 +668,7 @@ class RapidProBackendTest(BaseCasesTest):
                     TembaMessage.create(
                         id=102,
                         contact=ObjectRef.create(uuid="C-002", name="Bob"),
-                        type="inbox",
+                        type="text",
                         text="Can I catch Hiv?",
                         visibility="visible",
                         labels=[ObjectRef.create(uuid="L-007", name="Important")],  # new label
@@ -676,7 +677,7 @@ class RapidProBackendTest(BaseCasesTest):
                     TembaMessage.create(
                         id=103,
                         contact=ObjectRef.create(uuid="C-003", name="Cat"),
-                        type="inbox",
+                        type="text",
                         text="I think I'm pregnant",
                         visibility="visible",
                         labels=[],
@@ -685,19 +686,21 @@ class RapidProBackendTest(BaseCasesTest):
                     TembaMessage.create(
                         id=104,
                         contact=ObjectRef.create(uuid="C-004", name="Don"),
-                        type="flow",
+                        type="text",
                         text="Php is amaze",
                         visibility="visible",
                         labels=[],
+                        flow=ObjectRef.create(uuid="F-001", name="Reg"),
                         created_on=d4,
                     ),
                     TembaMessage.create(
                         id=105,
                         contact=ObjectRef.create(uuid="C-005", name="Eve"),
-                        type="flow",
+                        type="text",
                         text="Thanks for the pregnancy/HIV info",
                         visibility="visible",
                         labels=[],
+                        flow=ObjectRef.create(uuid="F-001", name="Reg"),
                         created_on=d5,
                     ),
                 ]
@@ -722,7 +725,7 @@ class RapidProBackendTest(BaseCasesTest):
                     TembaMessage.create(
                         id=101,
                         contact=ObjectRef.create(uuid="C-001", name="Ann"),
-                        type="inbox",
+                        type="text",
                         text="What is aids?",
                         visibility="archived",
                         labels=[
@@ -1023,7 +1026,7 @@ class RapidProBackendTest(BaseCasesTest):
                     broadcast=201,
                     contact=ObjectRef.create(uuid="C-001", name="Ann"),
                     text="Welcome",
-                    type="inbox",
+                    type="text",
                     direction="out",
                     visibility="visible",
                     labels=[],
@@ -1034,7 +1037,7 @@ class RapidProBackendTest(BaseCasesTest):
                     broadcast=None,
                     contact=ObjectRef.create(uuid="C-001", name="Ann"),
                     text="Hello",
-                    type="inbox",
+                    type="text",
                     direction="in",
                     visibility="archived",
                     labels=[
