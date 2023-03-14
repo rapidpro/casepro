@@ -26,6 +26,7 @@ colorama = "^0.4.4"
 dj-database-url = "^0.5.0"
 boto3 = "^1.17.11"
 sentry-sdk = "^0.20.3"
+rapidpro-python = "^2.11.0"
 
 [tool.poetry.dev-dependencies]
 black = "^22.12.0"
