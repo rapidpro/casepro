@@ -44,7 +44,11 @@ def pull_contacts(org, since, until, prev_results):
     contacts_results = {"created": contacts_created, "updated": contacts_updated, "deleted": contacts_deleted}
 
     if new_cursor:
-        contacts_results["resume"] = {"cursor": new_cursor, "since": since.isoformat(), "until": until.isoformat()}
+        contacts_results["resume"] = {
+            "cursor": new_cursor,
+            "since": since.isoformat() if since else None,
+            "until": until.isoformat(),
+        }
     else:
         contacts_results["until"] = until.isoformat()
 
