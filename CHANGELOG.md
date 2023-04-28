@@ -1,3 +1,7 @@
+v1.13.3 (2023-04-28)
+-------------------------
+ * Fix initial syncing of contacts
+
 v1.13.2 (2023-03-14)
 -------------------------
  * Use flow field on synced mesages instead of msg_type
