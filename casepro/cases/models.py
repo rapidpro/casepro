@@ -473,7 +473,8 @@ class Case(models.Model):
             2) they're a non-partner user from same org
             3) they're a partner user in partner which is not restricted
             4) their partner org is assigned to the case
-            5) their partner org can view a label assigned to the case
+            5) they are specifically assigned to the case
+            6) their partner org can view a label assigned to the case
 
         They can additionally update the case if one of 1-4 is true
         """
@@ -482,7 +483,13 @@ class Case(models.Model):
 
         user_partner = user.get_partner(self.org)
 
-        if user.is_superuser or not user_partner or not user_partner.is_restricted or user_partner == self.assignee:
+        if (
+            user.is_superuser
+            or not user_partner
+            or not user_partner.is_restricted
+            or user_partner == self.assignee
+            or user == self.user_assignee
+        ):
             return AccessLevel.update
         elif user_partner and intersection(self.labels.filter(is_active=True), user_partner.get_labels()):
             return AccessLevel.read
