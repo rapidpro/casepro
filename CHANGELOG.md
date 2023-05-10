@@ -1,3 +1,9 @@
+v1.13.4 (2023-05-10)
+-------------------------
+ * Tweak access level checking on cases to let users personally assigned to cases always have update access
+ * Bump django from 4.1.7 to 4.1.9
+ * Bump redis from 4.5.1 to 4.5.4
+
 v1.13.3 (2023-04-28)
 -------------------------
  * Fix initial syncing of contacts
