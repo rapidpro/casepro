@@ -1,3 +1,7 @@
+v1.13.5 (2023-07-06)
+-------------------------
+ * Upgrade to Django 4.2 and PsycoPG 3.1
+
 v1.13.4 (2023-05-10)
 -------------------------
  * Tweak access level checking on cases to let users personally assigned to cases always have update access
