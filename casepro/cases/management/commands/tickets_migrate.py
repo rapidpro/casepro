@@ -25,6 +25,7 @@ class Command(BaseCommand):
         for kase in org.cases.prefetch_related("contact", "assignee", "user_assignee").order_by("id"):
             cases.append(
                 {
+                    "id": kase.id,
                     "opened_on": kase.opened_on.isoformat(),
                     "closed_on": kase.closed_on.isoformat() if kase.closed_on else None,
                     "summary": kase.summary,
