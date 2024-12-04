@@ -1,3 +1,4 @@
+import csv
 import json
 
 from dash.orgs.models import Org
@@ -43,19 +44,15 @@ class Command(BaseCommand):
 
         agents = []
 
-        for agent in list(org.editors.filter(is_active=True)) + list(org.viewers.filter(is_active=True)):
-            partner = agent.get_partner(org)
-
-            agents.append(
-                {
-                    "email": agent.email,
-                    "first_name": agent.first_name,
-                    "last_name": agent.last_name,
-                    "partner": partner.name if partner else None,
-                }
-            )
+        for partner in org.partners.filter(is_active=True).order_by("name"):
+            for agent in partner.get_users():
+                agents.append([agent.email, agent.get_full_name(), partner.name])
 
         with open(agents_filename, "w") as f:
-            f.write(json.dumps(cases))
+            writer = csv.writer(f, dialect="excel")
+            writer.writerow(["Email", "Name", "Partner"])
+
+            for agent in agents:
+                writer.writerow(agent)
 
         self.stdout.write(f"Exported {len(agents)} agent summaries to {agents_filename}")
