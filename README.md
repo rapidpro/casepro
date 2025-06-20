@@ -1,3 +1,6 @@
+> [!WARNING] 
+> The project is no longer under active development.
+
 # CasePro 
 
 [![Build Status](https://github.com/rapidpro/casepro/workflows/CI/badge.svg)](https://github.com/rapidpro/casepro/actions?query=workflow%3ACI) 
