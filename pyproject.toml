@@ -27,6 +27,7 @@ boto3 = "^1.17.11"
 sentry-sdk = "^0.20.3"
 rapidpro-python = "^2.11.0"
 pillow = "10.4.0"
+django-hamlpy = "^1.7.0"
 
 [tool.poetry.dev-dependencies]
 black = "^22.12.0"

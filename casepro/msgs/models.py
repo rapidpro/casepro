@@ -950,7 +950,7 @@ class MessageExport(BaseSearchExport):
         # load all messages to be exported
         items = Message.search(self.org, self.created_by, search, all=True).prefetch_related(
             "contact", "labels", "case__assignee", "case__user_assignee"
-        )
+        )[: self.MAX_ITEMS]
 
         def add_sheet(num):
             sheet = book.add_sheet(str(_("Messages %d" % num)))
@@ -1007,7 +1007,7 @@ class ReplyExport(BaseSearchExport):
         all_fields = base_fields + [f.label for f in contact_fields]
 
         # load all messages to be exported
-        items = Outgoing.search_replies(self.org, self.created_by, search)
+        items = Outgoing.search_replies(self.org, self.created_by, search)[: self.MAX_ITEMS]
 
         def add_sheet(num):
             sheet = book.add_sheet(str(_("Replies %d" % num)))
