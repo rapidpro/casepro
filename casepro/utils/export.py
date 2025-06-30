@@ -45,7 +45,8 @@ class BaseExport(models.Model):
     DATETIME_STYLE = XFStyle()
     DATETIME_STYLE.num_format_str = "DD-MM-YYYY HH:MM:SS"
 
-    MAX_SHEET_ROWS = 65535
+    MAX_SHEET_ROWS = 65_535
+    MAX_ITEMS = 250_000
 
     def do_export(self):
         """
